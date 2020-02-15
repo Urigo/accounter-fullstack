@@ -6,17 +6,17 @@
     "build": "tsc"
   },
   "dependencies": {
-    "pg": "7.17.1"
+    "pg": "7.18.1"
   },
   "devDependencies": {
-    "@types/node": "13.5.2",
+    "@types/node": "13.7.1",
     "@types/pg": "7.14.1",
     "concurrently": "5.1.0",
     "nodemon": "2.0.2",
     "typescript": "3.8.0-beta"
   },
   "engines": {
-    "node": "13.7.0"
+    "node": "13.8.0"
   },
   "license": "MIT"
 }
