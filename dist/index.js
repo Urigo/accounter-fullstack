@@ -1,36 +1,154 @@
 import { printSomething } from './anotherFile';
 console.log('hello world');
 printSomething('new string from function in another file');
-// Node says that when importing from commonjs you only can bring 
+// Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
 const { Pool } = pg;
 import { readFileSync, createReadStream } from 'fs';
 import { createServer } from 'http';
+function currencyCodeToSymbol(currency_code) {
+    let currencySymbol = '₪';
+    if (currency_code == 'USD') {
+        currencySymbol = '$';
+    }
+    else if (currency_code == 'EUR') {
+        currencySymbol = '€';
+    }
+    return currencySymbol;
+}
 async function financialStatus() {
     const pool = new Pool({
-        user: "postgres",
-        host: "localhost",
-        database: "accounter",
-        password: "accounter123",
-        port: 5432
+        user: 'postgres',
+        host: 'localhost',
+        database: 'accounter',
+        password: 'accounter123',
+        port: 5432,
     });
+    const monthTaxReport = '2020-02-01';
+    let missingInvoiceDates = await pool.query(`
+    select *
+    from missing_invoice_dates($1)
+    order by event_date;
+  `, [`$$${monthTaxReport}$$`]);
+    let missingInvoiceDatesHTMLTemplate = '';
+    for (const transaction of missingInvoiceDates.rows) {
+        missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
+    <tr>
+      <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+      <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
+      <td>${transaction.financial_entity}</td>
+      <td>${transaction.user_description}</td>
+      <td>${transaction.tax_invoice_number}</td>
+    </tr>
+    `);
+    }
+    missingInvoiceDatesHTMLTemplate = `
+    <table>
+      <thead>
+          <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>Invoice Number</th>
+          </tr>
+      </thead>
+      <tbody>
+          ${missingInvoiceDatesHTMLTemplate}
+      </tbody>
+    </table>  
+  `;
+    let missingInvoiceNumbers = await pool.query(`
+    select *
+    from missing_invoice_numbers($1)
+    order by event_date;
+  `, [`$$${monthTaxReport}$$`]);
+    let missingInvoiceNumbersHTMLTemplate = '';
+    for (const transaction of missingInvoiceNumbers.rows) {
+        missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
+    <tr>
+      <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+      <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
+      <td>${transaction.financial_entity}</td>
+      <td>${transaction.user_description}</td>
+      <td>${transaction.tax_invoice_number}</td>
+    </tr>
+    `);
+    }
+    missingInvoiceNumbersHTMLTemplate = `
+    <table>
+      <thead>
+          <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>Invoice Number</th>
+          </tr>
+      </thead>
+      <tbody>
+          ${missingInvoiceNumbersHTMLTemplate}
+      </tbody>
+    </table>  
+  `;
+    const lastInvoiceNumbersQuery = readFileSync('src/sql/lastInvoiceNumbers.sql').toString();
+    let lastInvoiceNumbers = await pool.query(lastInvoiceNumbersQuery);
+    let lastInvoiceNumbersHTMLTemplate = '';
+    for (const transaction of lastInvoiceNumbers.rows) {
+        lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
+    <tr>
+      <td>${transaction.tax_invoice_number}</td>
+      <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+      <td>${transaction.financial_entity}</td>
+      <td>${transaction.user_description}</td>
+      <td>${transaction.event_amount}</td>
+    </tr>
+    `);
+    }
+    lastInvoiceNumbersHTMLTemplate = `
+    <table>
+      <thead>
+          <tr>
+            <th>Invoice Number</th>
+            <th>Date</th>
+            <th>Entity</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+      </thead>
+      <tbody>
+          ${lastInvoiceNumbersHTMLTemplate}
+      </tbody>
+    </table>  
+  `;
     const currentVATStatusQuery = readFileSync('src/sql/currentVATStatus.sql').toString();
     // second bonus is to try to move this into Top level await
     let currentVATStatus = await pool.query(currentVATStatusQuery);
-    const getVATTransactionsQuery = `
-    SELECT *
-    FROM get_vat_from_date('2020-01-01', '2020-01-31');  
-  `;
-    let VATTransactions = await pool.query(getVATTransactionsQuery);
+    let VATTransactions = await pool.query(`
+    select *
+    from get_vat_from_date($1);
+  `, [`$$${monthTaxReport}$$`]);
     let VATTransactionsString = '';
     for (const transaction of VATTransactions.rows) {
         VATTransactionsString = VATTransactionsString.concat(`
     <tr>
       <td>${transaction.overall_vat_status}</td>
       <td>${transaction.vat}</td>
-      <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+      <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
       <td>${transaction.event_amount}</td>
       <td>${transaction.financial_entity}</td>
       <td>${transaction.user_description}</td>
@@ -59,23 +177,19 @@ async function financialStatus() {
     let allTransactions = await pool.query(allTransactionsQuery);
     let allTransactionsString = '';
     for (const transaction of allTransactions.rows) {
-        let currencySymbol = '₪';
-        if (transaction.currency_code == 'USD') {
-            currencySymbol = '$';
-        }
-        else if (transaction.currency_code == 'EUR') {
-            currencySymbol = '€';
-        }
         allTransactionsString = allTransactionsString.concat(`
     <tr bank_reference=${transaction.bank_reference}
         account_number=${transaction.account_number}
         account_type=${transaction.account_type}
         currency_code=${transaction.currency_code}
-        event_date=${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}
+        event_date=${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}
         event_amount=${transaction.event_amount}
         event_number=${transaction.event_number}>
       <td>${transaction.formatted_event_date}</td>
-      <td>${transaction.event_amount}${currencySymbol}</td>
+      <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
       <td class="financial_entity" onClick='printElement(this, prompt("New financial entity:"));'>${transaction.financial_entity}</td>
       <td class="user_description" onClick='printElement(this, prompt("New user description:"));'>${transaction.user_description}</td>
       <td class="personal_category" onClick='printElement(this, prompt("New personal category:"));'>${transaction.personal_category}</td>
@@ -109,10 +223,24 @@ async function financialStatus() {
     </table>  
   `;
     return `
-    <h1>Hello World</h1>
+    <h1>Accounter</h1>
 
-    <div> Current VAT balance ₪${currentVATStatus.rows[0].vat_status} </div>
+    <h3>Missing invoice numbers for a month</h3>
+
+    ${missingInvoiceNumbersHTMLTemplate}
+
+    <h3>Missing invoice dates for a month</h3>
+
+    ${missingInvoiceDatesHTMLTemplate}
+
+    <h3>Last invoice numbers</h3>
+
+    ${lastInvoiceNumbersHTMLTemplate}
+
+    <h3>Current VAT balance</h3>
     
+    <div> ₪${currentVATStatus.rows[0].vat_status} </div>
+
     <h3>VAT Transactions for this month:</h3>
 
     ${VATTransactionsString}
@@ -178,11 +306,11 @@ async function main() {
                 ${idType} = ${parseInt(data.event_number)};
         `;
                 const pool = new Pool({
-                    user: "postgres",
-                    host: "localhost",
-                    database: "accounter",
-                    password: "accounter123",
-                    port: 5432
+                    user: 'postgres',
+                    host: 'localhost',
+                    database: 'accounter',
+                    password: 'accounter123',
+                    port: 5432,
                 });
                 console.log(editPropertyQuery);
                 let updateResult = await pool.query(editPropertyQuery);
@@ -194,8 +322,7 @@ async function main() {
         console.log('server is listening');
     });
 }
-main()
-    .catch(e => console.error(e));
+main().catch(e => console.error(e));
 // TODO: Teach about HTML query selectors
 // TODO: Teach about plain Node server without frameworks
 // TODO: Teach about plain Node server without frameworks how to respond to different URLs

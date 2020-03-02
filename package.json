@@ -3,20 +3,22 @@
   "scripts": {
     "start": "node --es-module-specifier-resolution=node dist/index.js",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon --es-module-specifier-resolution=node dist/index.js\"",
-    "build": "tsc"
+    "build": "tsc",
+    "format": "prettier \"**/*.ts\" --write"
   },
   "dependencies": {
-    "pg": "7.18.1"
+    "pg": "7.18.2"
   },
   "devDependencies": {
-    "@types/node": "13.7.1",
+    "@types/node": "13.7.7",
     "@types/pg": "7.14.1",
     "concurrently": "5.1.0",
     "nodemon": "2.0.2",
-    "typescript": "3.8.0-beta"
+    "prettier": "1.19.1",
+    "typescript": "3.8.3"
   },
   "engines": {
-    "node": "13.8.0"
+    "node": "13.9.0"
   },
   "license": "MIT"
 }

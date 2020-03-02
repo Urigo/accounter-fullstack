@@ -12,11 +12,11 @@ export function printElement(clickedElement, newValue) {
         event_number: clickedElement.parentElement.getAttribute('event_number'),
     };
     console.log(changeRequest);
-    fetch("/editProperty", {
-        method: "POST",
-        body: JSON.stringify(changeRequest)
+    fetch('/editProperty', {
+        method: 'POST',
+        body: JSON.stringify(changeRequest),
     }).then(response => {
-        console.log("Request complete! response:", response);
+        console.log('Request complete! response:', response);
     });
 }
 //# sourceMappingURL=browser.js.map
