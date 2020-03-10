@@ -4,9 +4,12 @@
     "start": "node --es-module-specifier-resolution=node dist/index.js",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon --es-module-specifier-resolution=node dist/index.js\"",
     "build": "tsc",
-    "format": "prettier \"**/*.ts\" --write"
+    "format": "prettier \"**/*.ts\" --write",
+    "typegen": "pgtyped -c pgTypedConfig.json"
   },
   "dependencies": {
+    "@pgtyped/cli": "0.3.0",
+    "@pgtyped/query": "0.3.0",
     "pg": "7.18.2"
   },
   "devDependencies": {

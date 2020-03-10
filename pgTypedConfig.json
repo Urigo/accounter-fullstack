@@ -1,0 +1,14 @@
+{
+    "emit": {
+      "mode": "query-file",
+      "queryFileName": "monthlyReportPage.ts",
+      "emitFileName": "queries.types.ts"
+    },
+    "srcDir": "./src/",
+    "db": {
+      "host": "localhost",
+      "user": "postgres",
+      "dbName": "accounter",
+      "password": "accounter123"
+    }
+  }

@@ -2,22 +2,28 @@
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
-const { Pool } = pg;
+const { Client } = pg;
+import query from '@pgtyped/query';
+const { sql } = query;
+const client = new Client({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'accounter',
+    password: 'accounter123',
+    port: 5432,
+});
 export const monthlyReport = async () => {
-    const pool = new Pool({
-        user: 'postgres',
-        host: 'localhost',
-        database: 'accounter',
-        password: 'accounter123',
-        port: 5432,
-    });
+    await client.connect();
     const monthTaxReportDate = '2020-03-01';
-    let monthlyTaxesReport = await pool.query(`
-        select *
-        from get_tax_report_of_month($1);
-    `, [`$$${monthTaxReportDate}$$`]);
+    const monthlyTaxesReportQuery = sql `
+    select *
+    from get_tax_report_of_month($monthTaxReportDate);
+`;
+    const monthlyTaxesReport = await monthlyTaxesReportQuery.run({
+        monthTaxReportDate: monthTaxReportDate,
+    }, client);
     let monthlyReportsHTMLTemplate = '';
-    for (const transaction of monthlyTaxesReport.rows) {
+    for (const transaction of monthlyTaxesReport) {
         monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
       <tr>
         <td>${transaction.תאריך_חשבונית}</td>
