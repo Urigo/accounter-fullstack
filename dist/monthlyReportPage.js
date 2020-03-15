@@ -2,10 +2,10 @@
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
-const { Client } = pg;
+const { Pool } = pg;
 import query from '@pgtyped/query';
 const { sql } = query;
-const client = new Client({
+const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
     database: 'accounter',
@@ -13,7 +13,6 @@ const client = new Client({
     port: 5432,
 });
 export const monthlyReport = async () => {
-    await client.connect();
     const monthTaxReportDate = '2020-03-01';
     const monthlyTaxesReportQuery = sql `
     select *
@@ -21,7 +20,7 @@ export const monthlyReport = async () => {
 `;
     const monthlyTaxesReport = await monthlyTaxesReportQuery.run({
         monthTaxReportDate: monthTaxReportDate,
-    }, client);
+    }, pool);
     let monthlyReportsHTMLTemplate = '';
     for (const transaction of monthlyTaxesReport) {
         monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
