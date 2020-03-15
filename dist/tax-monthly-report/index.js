@@ -1,6 +1,6 @@
 import { printSomething } from './anotherFile';
 import { financialStatus } from './firstPage';
-import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
+import { monthlyReport } from './monthlyReportPage';
 // Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:

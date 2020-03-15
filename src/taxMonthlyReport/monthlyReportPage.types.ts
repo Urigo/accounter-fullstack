@@ -1,4 +1,4 @@
-/** Types generated for queries found in "./src/monthlyReportPage.ts" */
+/** Types generated for queries found in "./src/tax-monthly-report/monthlyReportPage.ts" */
 
 /** 'monthlyTaxesReportQuery' parameters type */
 export interface IMonthlyTaxesReportQueryParams {

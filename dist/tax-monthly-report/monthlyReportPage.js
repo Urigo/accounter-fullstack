@@ -1,46 +1,29 @@
-import { readFileSync } from 'fs';
 // Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
 const { Pool } = pg;
-
 import query from '@pgtyped/query';
 const { sql } = query;
-import {
-  IMonthlyTaxesReportQueryResult,
-  IMonthlyTaxesReportQueryParams,
-} from './monthlyReportPage.types';
-
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'accounter',
-  password: 'accounter123',
-  port: 5432,
+    user: 'postgres',
+    host: 'localhost',
+    database: 'accounter',
+    password: 'accounter123',
+    port: 5432,
 });
-
-export const monthlyReport = async (): Promise<string> => {
-  const monthTaxReportDate = '2020-03-01';
-
-  const monthlyTaxesReportQuery = sql<
-    IMonthlyTaxesReportQueryResult,
-    IMonthlyTaxesReportQueryParams
-  >`
+export const monthlyReport = async () => {
+    const monthTaxReportDate = '2020-03-01';
+    const monthlyTaxesReportQuery = sql `
     select *
     from get_tax_report_of_month($monthTaxReportDate);
 `;
-
-  const monthlyTaxesReport = await monthlyTaxesReportQuery.run(
-    {
-      monthTaxReportDate: monthTaxReportDate,
-    },
-    pool
-  );
-
-  let monthlyReportsHTMLTemplate = '';
-  for (const transaction of monthlyTaxesReport) {
-    monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
+    const monthlyTaxesReport = await monthlyTaxesReportQuery.run({
+        monthTaxReportDate: monthTaxReportDate,
+    }, pool);
+    let monthlyReportsHTMLTemplate = '';
+    for (const transaction of monthlyTaxesReport) {
+        monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
       <tr>
         <td>${transaction.תאריך_חשבונית}</td>
         <td>${transaction.חשבון_חובה_1}</td>
@@ -64,8 +47,8 @@ export const monthlyReport = async (): Promise<string> => {
         <td>${transaction.תאריך_3}</td>
       </tr>
       `);
-  }
-  monthlyReportsHTMLTemplate = `
+    }
+    monthlyReportsHTMLTemplate = `
       <table>
         <thead>
             <tr>
@@ -96,10 +79,10 @@ export const monthlyReport = async (): Promise<string> => {
         </tbody>
       </table>  
     `;
-
-  return `
+    return `
       <h1>Monthly Report</h1>
 
       ${monthlyReportsHTMLTemplate}
     `;
 };
+//# sourceMappingURL=monthlyReportPage.js.map
