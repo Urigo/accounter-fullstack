@@ -6,10 +6,7 @@ const { Pool } = pg;
 
 import query from '@pgtyped/query';
 const { sql } = query;
-import {
-  IMonthlyTaxesReportQueryResult,
-  IMonthlyTaxesReportQueryParams,
-} from './monthlyReportPage.types';
+import { IMonthlyTaxesReportSqlQuery } from './monthlyReportPage.types';
 
 const pool = new Pool({
   user: 'postgres',
@@ -22,15 +19,12 @@ const pool = new Pool({
 export const monthlyReport = async (): Promise<string> => {
   const monthTaxReportDate = '2020-03-01';
 
-  const monthlyTaxesReportQuery = sql<
-    IMonthlyTaxesReportQueryResult,
-    IMonthlyTaxesReportQueryParams
-  >`
+  const monthlyTaxesReportSQL = sql<IMonthlyTaxesReportSqlQuery>`
     select *
     from get_tax_report_of_month($monthTaxReportDate);
 `;
 
-  const monthlyTaxesReport = await monthlyTaxesReportQuery.run(
+  const monthlyTaxesReport = await monthlyTaxesReportSQL.run(
     {
       monthTaxReportDate: monthTaxReportDate,
     },

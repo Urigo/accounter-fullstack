@@ -1,7 +1,7 @@
 {
     "emit": {
       "mode": "query-file",
-      "queryFileName": "monthlyReportPage.ts",
+      "queryFileName": "*.ts",
       "emitFileName": "queries.types.ts"
     },
     "srcDir": "./src/",

@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import pg from 'pg';
 const { Pool } = pg;
 
-function currencyCodeToSymbol(currency_code: string): string {
+export function currencyCodeToSymbol(currency_code: string): string {
   let currencySymbol = '₪';
   if (currency_code == 'USD') {
     currencySymbol = '$';
@@ -259,6 +259,8 @@ export const financialStatus = async (): Promise<string> => {
       <h1>Accounter</h1>
 
       <a href="/monthly-report">Monthly report</a>
+
+      <a href="/private-charts">Private Charts</a>
   
       <h3>Missing invoice numbers for a month</h3>
   

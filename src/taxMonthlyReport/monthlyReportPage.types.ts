@@ -1,12 +1,12 @@
-/** Types generated for queries found in "./src/tax-monthly-report/monthlyReportPage.ts" */
+/** Types generated for queries found in "./src/taxMonthlyReport/monthlyReportPage.ts" */
 
-/** 'monthlyTaxesReportQuery' parameters type */
-export interface IMonthlyTaxesReportQueryParams {
+/** 'monthlyTaxesReportSQL' parameters type */
+export interface IMonthlyTaxesReportSqlParams {
   monthTaxReportDate: string | null;
 }
 
-/** 'monthlyTaxesReportQuery' return type */
-export interface IMonthlyTaxesReportQueryResult {
+/** 'monthlyTaxesReportSQL' return type */
+export interface IMonthlyTaxesReportSqlResult {
   תאריך_חשבונית: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
@@ -27,6 +27,12 @@ export interface IMonthlyTaxesReportQueryResult {
   סוג_תנועה: string;
   תאריך_ערך: string;
   תאריך_3: string;
+}
+
+/** 'monthlyTaxesReportSQL' query type */
+export interface IMonthlyTaxesReportSqlQuery {
+  params: IMonthlyTaxesReportSqlParams;
+  result: IMonthlyTaxesReportSqlResult;
 }
 
 

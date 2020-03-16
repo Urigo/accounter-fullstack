@@ -1,6 +1,7 @@
 import { printSomething } from './anotherFile';
 import { financialStatus } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
+import { topPrivateNotCategorized } from './privateCharts/privateCharts';
 
 // Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
@@ -27,6 +28,11 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       let responseHTML = await monthlyReport();
+      response.end(responseHTML);
+    } else if (request.url == '/private-charts') {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      let responseHTML = await topPrivateNotCategorized();
       response.end(responseHTML);
     } else if (request.url == '/browser.js') {
       response.statusCode = 200;
