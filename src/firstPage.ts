@@ -155,7 +155,7 @@ export const financialStatus = async (): Promise<string> => {
   let VATTransactions = await pool.query(
     `
       select *
-      from get_vat_from_date($1);
+      from get_vat_for_month($1);
     `,
     [`$$${monthTaxReport}$$`]
   );

@@ -133,7 +133,7 @@ export const financialStatus = async () => {
     let currentVATStatus = await pool.query(currentVATStatusQuery);
     let VATTransactions = await pool.query(`
       select *
-      from get_vat_from_date($1);
+      from get_vat_for_month($1);
     `, [`$$${monthTaxReport}$$`]);
     let VATTransactionsString = '';
     for (const transaction of VATTransactions.rows) {
