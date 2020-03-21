@@ -1,9 +1,5 @@
 import { readFileSync } from 'fs';
-// Node says that when importing from commonjs you only can bring
-// const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
-// import * as pg from 'pg'; // Won't work as this does equal this that:
-import pg from 'pg';
-const { Pool } = pg;
+import { pool } from './index';
 
 export function currencyCodeToSymbol(currency_code: string): string {
   let currencySymbol = '₪';
@@ -16,14 +12,6 @@ export function currencyCodeToSymbol(currency_code: string): string {
 }
 
 export const financialStatus = async (): Promise<string> => {
-  const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'accounter',
-    password: 'accounter123',
-    port: 5432,
-  });
-
   const monthTaxReport = '2020-03-01';
 
   let missingInvoiceDates = await pool.query(

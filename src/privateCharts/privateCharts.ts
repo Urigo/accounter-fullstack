@@ -1,22 +1,10 @@
-// Node says that when importing from commonjs you only can bring
-// const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
-// import * as pg from 'pg'; // Won't work as this does equal this that:
-import pg from 'pg';
-const { Pool } = pg;
+import { pool } from '../index';
 
 import query from '@pgtyped/query';
 const { sql } = query;
 import { ITopPrivateExpensesNotCategorizedSqlQuery } from './privateCharts.types';
 
 import { currencyCodeToSymbol } from '../firstPage';
-
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'accounter',
-  password: 'accounter123',
-  port: 5432,
-});
 
 export const topPrivateNotCategorized = async (): Promise<string> => {
   const startingDate = '2020-01-01';
@@ -27,12 +15,19 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
     select *
     from top_private_expenses_not_categorized($startingDate);
 `;
+  let topPrivateNotCategorizedExpenses;
+  try {
+    topPrivateNotCategorizedExpenses = await topPrivateExpensesNotCategorizedSQL.run(
+      { startingDate: startingDate },
+      pool
+    );
+  } catch (error) {
+    console.error(error);
+  }
 
-  const topPrivateNotCategorizedExpenses = await topPrivateExpensesNotCategorizedSQL.run(
-    { startingDate: startingDate },
-    pool
-  );
-
+  if (!topPrivateNotCategorizedExpenses) {
+    return '';
+  }
   let topPrivateExpensesNotCategorizedHTMLTemplate = '';
   for (const transaction of topPrivateNotCategorizedExpenses) {
     topPrivateExpensesNotCategorizedHTMLTemplate = topPrivateExpensesNotCategorizedHTMLTemplate.concat(`

@@ -1,20 +1,8 @@
-// Node says that when importing from commonjs you only can bring
-// const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
-// import * as pg from 'pg'; // Won't work as this does equal this that:
-import pg from 'pg';
-const { Pool } = pg;
-
 import query from '@pgtyped/query';
 const { sql } = query;
 import { IMonthlyTaxesReportSqlQuery } from './monthlyReportPage.types';
 
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'accounter',
-  password: 'accounter123',
-  port: 5432,
-});
+import { pool } from '../index';
 
 export const monthlyReport = async (): Promise<string> => {
   const monthTaxReportDate = '2020-03-01';

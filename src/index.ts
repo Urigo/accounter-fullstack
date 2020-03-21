@@ -16,8 +16,17 @@ printSomething('new string from function in another file');
 import { createReadStream } from 'fs';
 import { createServer } from 'http';
 
+export const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'accounter',
+  password: 'accounter123',
+  port: 5432,
+});
+
 async function main() {
   const server = createServer(async function(request, response) {
+    console.log('create server?');
     console.log(request.url);
     if (request.url == '/') {
       response.statusCode = 200;
@@ -50,6 +59,7 @@ async function main() {
       var readStream = createReadStream('src/browser/browser.ts', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/editProperty') {
+      console.log('new edit');
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
@@ -62,30 +72,62 @@ async function main() {
         let tableToUpdate = 'isracard_creditcard_transactions';
         let accountType = 'card';
         let idType = 'voucher_number';
-        // switch (data.account_type)  {
-        //   case 'creditcard':
-
-        //   }
+        let whereClause = '';
+        switch (data.account_type) {
+          case 'checking_ils':
+            tableToUpdate = 'poalim_ils_account_transactions';
+            accountType = 'account_number';
+            whereClause = `expanded_event_date = ${parseInt(
+              data.event_number
+            )} and reference_number = ${data.bank_reference}
+            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
+            break;
+          case 'checking_usd':
+            tableToUpdate = 'poalim_usd_account_transactions';
+            accountType = 'account_number';
+            whereClause = `event_number = ${parseInt(
+              data.event_number
+            )} and reference_number = ${parseInt(data.bank_reference)}
+            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
+            break;
+          case 'checking_eur':
+            tableToUpdate = 'poalim_eur_account_transactions';
+            accountType = 'account_number';
+            whereClause = `event_number = ${parseInt(
+              data.event_number
+            )} and reference_number = ${parseInt(data.bank_reference)}
+            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
+            break;
+          case 'creditcard':
+            tableToUpdate = 'isracard_creditcard_transactions';
+            accountType = 'card';
+            idType = 'voucher_number';
+            whereClause = `${idType} = ${parseInt(data.event_number)}`;
+            break;
+          default:
+            console.error(`Unknown account types ${data.account_type}`);
+        }
 
         const editPropertyQuery = `
           UPDATE accounter_schema.${tableToUpdate}
           SET ${data.propertyToChange} = '${data.newValue}'
           WHERE ${accountType} = ${parseInt(data.account_number)} AND 
-                ${idType} = ${parseInt(data.event_number)};
+                ${whereClause}
+          RETURNING ${data.propertyToChange};
         `;
 
-        const pool = new Pool({
-          user: 'postgres',
-          host: 'localhost',
-          database: 'accounter',
-          password: 'accounter123',
-          port: 5432,
-        });
-
         console.log(editPropertyQuery);
+        try {
+          let updateResult = await pool.query(editPropertyQuery);
+          console.log(JSON.stringify(updateResult));
+          response.end(JSON.stringify(updateResult));
+        } catch (error) {
+          // TODO: Log important checks
+          console.log('error in insert - ', error);
+          response.end(error);
 
-        let updateResult = await pool.query(editPropertyQuery);
-        console.log(JSON.stringify(updateResult));
+          // console.log('nothing');
+        }
       });
     }
   });
