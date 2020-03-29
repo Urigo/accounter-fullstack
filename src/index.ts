@@ -3,6 +3,10 @@ import { financialStatus } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
 import { topPrivateNotCategorized } from './privateCharts/privateCharts';
 
+import dotenv from 'dotenv';
+const { config } = dotenv;
+config();
+
 // Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
@@ -17,11 +21,8 @@ import { createReadStream } from 'fs';
 import { createServer } from 'http';
 
 export const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'accounter',
-  password: 'accounter123',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: true,
 });
 
 async function main() {

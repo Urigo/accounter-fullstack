@@ -3,3 +3,4 @@ yarn.lock
 .vscode
 .idea
 dist
+.env
