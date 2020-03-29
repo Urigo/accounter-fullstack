@@ -1,5 +1,5 @@
 SELECT *
-FROM top_private_expenses_for_month('2020-01-01');
+FROM top_private_expenses_for_month('2020-03-01');
 
 
 CREATE OR REPLACE FUNCTION top_private_expenses_for_month(month_input varchar)

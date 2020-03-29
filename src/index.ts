@@ -25,7 +25,7 @@ export const pool = new Pool({
 });
 
 async function main() {
-  const server = createServer(async function(request, response) {
+  const server = createServer(async function (request, response) {
     console.log('create server?');
     console.log(request.url);
     if (request.url == '/') {
@@ -63,7 +63,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', chunk => chunks.push(chunk));
+      request.on('data', (chunk) => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
@@ -137,7 +137,7 @@ async function main() {
   });
 }
 
-main().catch(e => console.error(e));
+main().catch((e) => console.error(e));
 
 // TODO: Teach about HTML query selectors
 // TODO: Teach about plain Node server without frameworks

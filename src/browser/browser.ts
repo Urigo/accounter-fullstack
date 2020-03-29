@@ -21,7 +21,7 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
   fetch('/editProperty', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then(response => {
+  }).then((response) => {
     console.log('Request complete! response:', response);
   });
 }

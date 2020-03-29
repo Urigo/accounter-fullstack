@@ -34,5 +34,3 @@ export interface IMonthlyTaxesReportSqlQuery {
   params: IMonthlyTaxesReportSqlParams;
   result: IMonthlyTaxesReportSqlResult;
 }
-
-

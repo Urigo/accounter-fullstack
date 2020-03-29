@@ -19,5 +19,3 @@ export interface ITopPrivateExpensesNotCategorizedSqlQuery {
   params: ITopPrivateExpensesNotCategorizedSqlParams;
   result: ITopPrivateExpensesNotCategorizedSqlResult;
 }
-
-
