@@ -108,8 +108,8 @@ order by event_date;
 CREATE OR REPLACE FUNCTION trip_report(last_date_input varchar,
                                        trip_name varchar,
                                        is_higher_country boolean,
-                                       number_of_days_with_sleep_input int,
-                                       number_of_days_without_sleep_input int default 0)
+                                       number_of_days_with_sleep_input float,
+                                       number_of_days_without_sleep_input float default 0)
     RETURNS TABLE
             (
                 תאריך_חשבונית   varchar,
@@ -143,12 +143,12 @@ with last_day as (
      all_exchange_dates as (
          select dt AS     exchange_date,
                 (select t1.eur
-                 from accounter.accounter_schema.exchange_rates t1
+                 from accounter_schema.exchange_rates t1
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
                  order by t1.exchange_date desc
                  limit 1) eur_rate,
                 (select t1.usd
-                 from accounter.accounter_schema.exchange_rates t1
+                 from accounter_schema.exchange_rates t1
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
                  order by t1.exchange_date desc
                  limit 1) usd_rate
