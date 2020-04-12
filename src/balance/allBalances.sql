@@ -8,16 +8,16 @@ WITH times_table AS (
           )::timestamp
 --         ,now()::timestamp
         , '1 day'::interval))::date dt
-    FROM accounter.accounter_schema.exchange_rates
+    FROM accounter_schema.exchange_rates
 ), all_exchange_dates as (
     select dt AS     exchange_date,
            (select t1.eur
-            from accounter.accounter_schema.exchange_rates t1
+            from accounter_schema.exchange_rates t1
             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
             order by t1.exchange_date desc
             limit 1) eur_rate,
            (select t1.usd
-            from accounter.accounter_schema.exchange_rates t1
+            from accounter_schema.exchange_rates t1
             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
             order by t1.exchange_date desc
             limit 1) usd_rate
@@ -292,7 +292,8 @@ ORDER BY event_date, event_number
         OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
         bank_reference,
         account_number,
-        event_number
+        event_number,
+        user_description
     FROM formatted_merged_tables
     WHERE
           (account_number = 2733 OR account_number = 61066)
@@ -556,7 +557,7 @@ SELECT
     SELECT DISTINCT on (event_date) event_date,
                                     current_balance,
                                     account_number
-    FROM accounter.accounter_schema.poalim_ils_account_transactions
+    FROM accounter_schema.poalim_ils_account_transactions
     WHERE account_number = 61066
     ORDER BY event_date,
              expanded_event_date DESC
@@ -565,7 +566,7 @@ SELECT
     SELECT DISTINCT on (event_date) event_date,
                                     current_balance,
                                     account_number
-    FROM accounter.accounter_schema.poalim_ils_account_transactions
+    FROM accounter_schema.poalim_ils_account_transactions
     WHERE account_number = 410915
     ORDER BY event_date,
              expanded_event_date DESC
@@ -574,7 +575,7 @@ SELECT
     SELECT DISTINCT on (executing_date) executing_date,
                                         current_balance,
                                         account_number
-    FROM accounter.accounter_schema.poalim_usd_account_transactions
+    FROM accounter_schema.poalim_usd_account_transactions
     WHERE account_number = 61066
     ORDER BY executing_date,
              event_number DESC
@@ -582,7 +583,7 @@ SELECT
     SELECT DISTINCT on (executing_date) executing_date,
                                         current_balance,
                                         account_number
-    FROM accounter.accounter_schema.poalim_usd_account_transactions
+    FROM accounter_schema.poalim_usd_account_transactions
     WHERE account_number = 410915
     ORDER BY executing_date,
              event_number DESC
@@ -590,7 +591,7 @@ SELECT
     SELECT DISTINCT on (executing_date) executing_date,
                                         current_balance,
                                         account_number
-    FROM accounter.accounter_schema.poalim_eur_account_transactions
+    FROM accounter_schema.poalim_eur_account_transactions
     WHERE account_number = 61066
     ORDER BY executing_date,
              event_number DESC
@@ -598,7 +599,7 @@ SELECT
     SELECT DISTINCT on (executing_date) executing_date,
                                         current_balance,
                                         account_number
-    FROM accounter.accounter_schema.poalim_eur_account_transactions
+    FROM accounter_schema.poalim_eur_account_transactions
     WHERE account_number = 410915
     ORDER BY executing_date,
              event_number DESC
@@ -635,17 +636,17 @@ SELECT
             order by executing_date desc
             limit 1) eur_personal_balance,
            (select t1.eur
-            from accounter.accounter_schema.exchange_rates t1
+            from accounter_schema.exchange_rates t1
             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
             order by t1.exchange_date desc
             limit 1) eur_rate,
            (select t1.usd
-            from accounter.accounter_schema.exchange_rates t1
+            from accounter_schema.exchange_rates t1
             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
             order by t1.exchange_date desc
             limit 1) usd_rate,
            (select t1.amount
-            from accounter.accounter_schema.dotan_debt t1
+            from accounter_schema.dotan_debt t1
             where date_trunc('day', t1.debt_date)::date <= times_table.dt
             order by t1.debt_date desc
             limit 1) dotan_old_dept,
@@ -654,6 +655,11 @@ SELECT
             where date_trunc('day', t1.event_date)::date <= times_table.dt
             order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference, t1.account_number
             limit 1) dotan_dept,
+           (select t1.user_description
+            from dotan_dept t1
+            where date_trunc('day', t1.event_date)::date <= times_table.dt
+            order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference, t1.account_number
+            limit 1) dotan_event,
            (select t1.VAT_status
             from current_vat_status t1
             where date_trunc('day', t1.event_date)::date <= times_table.dt
@@ -681,7 +687,7 @@ SELECT
             limit 1) dotan_future_dept
     from times_table
     order by dt
-), dotan_dept_in_days as (
+), dotan_future_dept_in_days as (
 select
        dt, (
         select t1.sum_till_this_point
@@ -692,6 +698,15 @@ select
         ) dotan_dept
 from times_table
 order by dt
+), dotan_dept_in_days as (
+select
+        event_date,
+        sum_till_this_point,
+        user_description,
+        event_amount,
+        currency_code
+from dotan_dept
+order by event_date desc
 ), caluculated_values as (
     select dt,
            ils_business_balance,
@@ -773,6 +788,7 @@ order by dt
 )
 SELECT *
 FROM all_balances_till_today;
+-- from dotan_dept_in_days;
 
 /*
 30624.61
