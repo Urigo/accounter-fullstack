@@ -1,14 +1,14 @@
 {
-    "emit": {
-      "mode": "query-file",
-      "queryFileName": "*.ts",
+    "transforms": [{
+      "mode": "ts",
+      "include": "*.ts",
       "emitFileName": "queries.types.ts"
-    },
+    }],
     "srcDir": "./src/",
     "db": {
-      "host": "localhost",
-      "user": "postgres",
-      "dbName": "accounter",
-      "password": "accounter123"
+      "host": "ec2-54-247-125-38.eu-west-1.compute.amazonaws.com",
+      "user": "ocgwhbsexofhta",
+      "dbName": "d7s2fg8r2n733q",
+      "password": "7014f613a64deecde64a3f1be353fdf03280c305f0b1bef312856a3c9c6ce3cf"
     }
   }

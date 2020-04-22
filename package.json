@@ -8,22 +8,22 @@
     "typegen": "pgtyped -c pgTypedConfig.json"
   },
   "dependencies": {
-    "@pgtyped/cli": "0.4.5",
-    "@pgtyped/query": "0.4.5",
+    "@pgtyped/cli": "0.5.0",
+    "@pgtyped/query": "0.5.0",
     "dotenv": "8.2.0",
-    "pg": "8.0.0"
+    "pg": "8.0.3"
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
-    "@types/node": "13.11.0",
+    "@types/node": "13.13.2",
     "@types/pg": "7.14.3",
     "concurrently": "5.1.0",
-    "nodemon": "2.0.2",
-    "prettier": "2.0.4",
+    "nodemon": "2.0.3",
+    "prettier": "2.0.5",
     "typescript": "3.8.3"
   },
   "engines": {
-    "node": "13.12.0"
+    "node": "14.0.0"
   },
   "license": "MIT"
 }
