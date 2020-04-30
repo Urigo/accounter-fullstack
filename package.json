@@ -23,7 +23,7 @@
     "typescript": "3.8.3"
   },
   "engines": {
-    "node": "13.13.0"
+    "node": "14.0.0"
   },
   "license": "MIT"
 }
