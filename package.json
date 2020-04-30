@@ -15,15 +15,15 @@
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
-    "@types/node": "13.13.2",
+    "@types/node": "13.13.4",
     "@types/pg": "7.14.3",
-    "concurrently": "5.1.0",
+    "concurrently": "5.2.0",
     "nodemon": "2.0.3",
     "prettier": "2.0.5",
     "typescript": "3.8.3"
   },
   "engines": {
-    "node": "14.0.0"
+    "node": "14.1.0"
   },
   "license": "MIT"
 }
