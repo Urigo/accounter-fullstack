@@ -13,7 +13,7 @@ export function currencyCodeToSymbol(currency_code: string): string {
 
 export const financialStatus = async (query: any): Promise<string> => {
   let monthTaxReport;
-  if (query) {
+  if (query.month) {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {

@@ -6,7 +6,7 @@ import { pool } from '../index';
 
 export const monthlyReport = async (query: any): Promise<string> => {
   let monthTaxReportDate;
-  if (query) {
+  if (query.month) {
     // TODO: Fix this stupid month calculation
     monthTaxReportDate = `2020-0${query.month}-01`;
   } else {
