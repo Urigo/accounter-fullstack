@@ -32,7 +32,10 @@ async function main() {
   const server = createServer(async function (request, response) {
     console.log('create server?');
     console.log(request.url);
-    if (request.url == '/' || request.url?.startsWith('/?month=')) {
+    if (
+      request.url == '/' ||
+      (request.url && request.url.startsWith('/?month='))
+    ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
@@ -41,7 +44,7 @@ async function main() {
       response.end(responseHTML);
     } else if (
       request.url == '/monthly-report' ||
-      request.url?.startsWith('/monthly-report?month=')
+      (request.url && request.url.startsWith('/monthly-report?month='))
     ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
@@ -51,7 +54,7 @@ async function main() {
       response.end(responseHTML);
     } else if (
       request.url == '/reports-to-review' ||
-      request.url?.startsWith('/reports-to-review?month=')
+      (request.url && request.url.startsWith('/reports-to-review?month='))
     ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
