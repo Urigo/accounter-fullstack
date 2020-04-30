@@ -15,17 +15,22 @@ export const tableStyles = `
 <style>
   table {
     border-collapse: collapse;
+    background-color: #EEEEEE;
   }
   th, td {
     border: 1px solid black;
   }
   th {
     font-size: 10px;
+    background-color: #4F7849;
+    color: white;
   }
   td {
     text-align: center;
     font-size: 14px;
   }
+  tr:hover {background-color: #f5f5f5;}
+  tr:nth-child(even) {background-color: #CEE0CC;}
 </style>
 `;
 
@@ -277,7 +282,7 @@ export const financialStatus = async (query: any): Promise<string> => {
   return `
 
       ${tableStyles}
-      
+
       <h1>Accounter</h1>
 
       <a href="/monthly-report">Monthly report</a>
