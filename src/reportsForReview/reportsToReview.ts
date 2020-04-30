@@ -1,4 +1,5 @@
 import { pool } from '../index';
+import { tableStyles } from '../firstPage';
 
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
@@ -27,25 +28,33 @@ export const reportToReview = async (query: any): Promise<string> => {
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td>${transaction.תאריך_חשבונית}</td>
-        <td>${transaction.חשבון_חובה_1}</td>
-        <td>${transaction.סכום_חובה_1}</td>
-        <td>${transaction.מטח_סכום_חובה_1}</td>
-        <td>${transaction.מטבע}</td>
-        <td>${transaction.חשבון_זכות_1}</td>
-        <td>${transaction.סכום_זכות_1}</td>
-        <td>${transaction.מטח_סכום_זכות_1}</td>
-        <td>${transaction.חשבון_חובה_2}</td>
-        <td>${transaction.סכום_חובה_2}</td>
-        <td>${transaction.מטח_סכום_חובה_2}</td>
-        <td>${transaction.חשבון_זכות_2}</td>
-        <td>${transaction.סכום_זכות_2}</td>
-        <td>${transaction.מטח_סכום_זכות_2}</td>
-        <td>${transaction.פרטים}</td>
-        <td>${transaction.אסמכתא_1}</td>
-        <td>${transaction.אסמכתא_2}</td>
-        <td>${transaction.סוג_תנועה}</td>
+        <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
+        <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
+        <td>${
+          transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
+        }</td>
+        <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
+        <td>${transaction.חשבון_זכות_1 ? transaction.חשבון_זכות_1 : ''}</td>
+        <td>${transaction.סכום_זכות_1 ? transaction.סכום_זכות_1 : ''}</td>
+        <td>${
+          transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
+        }</td>
+        <td>${transaction.חשבון_חובה_2 ? transaction.חשבון_חובה_2 : ''}</td>
+        <td>${transaction.סכום_חובה_2 ? transaction.סכום_חובה_2 : ''}</td>
+        <td>${
+          transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
+        }</td>
+        <td>${transaction.חשבון_זכות_2 ? transaction.חשבון_זכות_2 : ''}</td>
+        <td>${transaction.סכום_זכות_2 ? transaction.סכום_זכות_2 : ''}</td>
+        <td>${
+          transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
+        }</td>
+        <td>${transaction.פרטים ? transaction.פרטים : ''}</td>
+        <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
+        <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
+        <td>${transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
         <td>${transaction.תאריך_ערך}</td>
-        <td>${transaction.תאריך_3}</td>
+        <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
       </tr>
       `);
   }
@@ -53,7 +62,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       <table>
         <thead>
             <tr>
-                <th>Confirmed</th>
+                <th>אושר</th>
                 <th>תאריך_חשבונית</th>
                 <th>חשבון_חובה_1</th>
                 <th>סכום_חובה_1</th>
@@ -83,6 +92,8 @@ export const reportToReview = async (query: any): Promise<string> => {
     `;
 
   return `
+      ${tableStyles}
+
       <h1>Report to review</h1>
 
       ${reportToReviewHTMLTemplate}

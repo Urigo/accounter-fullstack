@@ -11,6 +11,24 @@ export function currencyCodeToSymbol(currency_code: string): string {
   return currencySymbol;
 }
 
+export const tableStyles = `
+<style>
+  table {
+    border-collapse: collapse;
+  }
+  th, td {
+    border: 1px solid black;
+  }
+  th {
+    font-size: 10px;
+  }
+  td {
+    text-align: center;
+    font-size: 14px;
+  }
+</style>
+`;
+
 export const financialStatus = async (query: any): Promise<string> => {
   let monthTaxReport;
   if (query.month) {
@@ -257,6 +275,9 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   return `
+
+      ${tableStyles}
+      
       <h1>Accounter</h1>
 
       <a href="/monthly-report">Monthly report</a>
