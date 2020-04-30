@@ -25,3 +25,18 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
     console.log('Request complete! response:', response);
   });
 }
+
+export function changeConfirmation(id: string, checkbox: HTMLInputElement) {
+  const changeRequest = {
+    id,
+    reviewed: checkbox.checked,
+  };
+  console.log(changeRequest);
+
+  fetch('/reviewTransaction', {
+    method: 'POST',
+    body: JSON.stringify(changeRequest),
+  }).then((response) => {
+    console.log('Review request complete! response:', response);
+  });
+}

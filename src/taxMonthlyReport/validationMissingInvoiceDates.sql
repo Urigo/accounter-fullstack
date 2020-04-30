@@ -35,6 +35,7 @@ WHERE tax_invoice_date IS NULL AND
       financial_entity != 'Poalim' AND /*TODO: Check if we can get those invoices */
       financial_entity != 'Isracard' AND
       financial_entity != 'Tax' AND
+      financial_entity != 'Uri Goldshtein Employee Tax Withholding' AND
       financial_entity != 'VAT'
 ORDER BY event_date;
 

@@ -1,5 +1,9 @@
-SELECT *
-FROM get_tax_report_of_month('2020-03-01');
+select
+       *,
+       gen_random_uuid() as id,
+       false as reviewed
+into table accounter_schema.saved_tax_reports_2020_03
+from get_tax_report_of_month('2020-03-01');
 
 CREATE OR REPLACE FUNCTION get_tax_report_of_month(month_input varchar)
 RETURNS TABLE(

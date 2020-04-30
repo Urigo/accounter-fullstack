@@ -1,3 +1,7 @@
+import { createReadStream } from 'fs';
+import { createServer } from 'http';
+import { parse } from 'url';
+import { reportToReview } from './reportsForReview/reportsToReview';
 import { printSomething } from './anotherFile';
 import { financialStatus } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
@@ -17,9 +21,6 @@ console.log('hello world');
 
 printSomething('new string from function in another file');
 
-import { createReadStream } from 'fs';
-import { createServer } from 'http';
-
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -31,15 +32,32 @@ async function main() {
   const server = createServer(async function (request, response) {
     console.log('create server?');
     console.log(request.url);
-    if (request.url == '/') {
+    if (request.url == '/' || request.url?.startsWith('/?month=')) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
-      let responseHTML = await financialStatus();
+      const url_parts = parse(request.url, true);
+      const query = url_parts.query;
+      let responseHTML = await financialStatus(query);
       response.end(responseHTML);
-    } else if (request.url == '/monthly-report') {
+    } else if (
+      request.url == '/monthly-report' ||
+      request.url?.startsWith('/monthly-report?month=')
+    ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
-      let responseHTML = await monthlyReport();
+      const url_parts = parse(request.url, true);
+      const query = url_parts.query;
+      let responseHTML = await monthlyReport(query);
+      response.end(responseHTML);
+    } else if (
+      request.url == '/reports-to-review' ||
+      request.url?.startsWith('/reports-to-review?month=')
+    ) {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      const url_parts = parse(request.url, true);
+      const query = url_parts.query;
+      let responseHTML = await reportToReview(query);
       response.end(responseHTML);
     } else if (request.url == '/private-charts') {
       response.statusCode = 200;
@@ -127,6 +145,40 @@ async function main() {
         } catch (error) {
           // TODO: Log important checks
           console.log('error in insert - ', error);
+          response.end(error);
+
+          // console.log('nothing');
+        }
+      });
+    } else if (request.url == '/reviewTransaction') {
+      console.log('new review');
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/x-typescript');
+      const chunks: Array<Uint8Array> = [];
+      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('end', async () => {
+        const bufferData = Buffer.concat(chunks);
+        const data = JSON.parse(bufferData.toString());
+        console.log('Data: ', data);
+
+        let tableToUpdate = 'saved_tax_reports_2020_03';
+        let whereClause = '';
+
+        const submitReviewQuery = `
+          UPDATE accounter_schema.${tableToUpdate}
+          SET reviewed = ${data.reviewed}
+          WHERE id = '${data.id}' 
+          RETURNING *;
+        `;
+
+        console.log(submitReviewQuery);
+        try {
+          let updateResult = await pool.query(submitReviewQuery);
+          console.log(JSON.stringify(updateResult));
+          response.end(JSON.stringify(updateResult));
+        } catch (error) {
+          // TODO: Log important checks
+          console.log('error in review submission - ', error);
           response.end(error);
 
           // console.log('nothing');

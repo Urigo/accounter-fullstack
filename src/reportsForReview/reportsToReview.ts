@@ -1,35 +1,31 @@
-import query from '@pgtyped/query';
-const { sql } = query;
-import { IMonthlyTaxesReportSqlQuery } from './monthlyReportPage.types';
-
 import { pool } from '../index';
 
-export const monthlyReport = async (query: any): Promise<string> => {
-  let monthTaxReportDate;
-  if (query) {
-    // TODO: Fix this stupid month calculation
-    monthTaxReportDate = `2020-0${query.month}-01`;
-  } else {
-    monthTaxReportDate = '2020-03-01';
+export const reportToReview = async (query: any): Promise<string> => {
+  let reportMonthToReview;
+  if (!query) {
+    reportMonthToReview = '3';
   }
-  console.log('monthTaxReportDate', monthTaxReportDate);
 
-  const monthlyTaxesReportSQL = sql<IMonthlyTaxesReportSqlQuery>`
-    select *
-    from get_tax_report_of_month($monthTaxReportDate);
-`;
+  console.log('reportMonthToReview', reportMonthToReview);
 
-  const monthlyTaxesReport = await monthlyTaxesReportSQL.run(
-    {
-      monthTaxReportDate: monthTaxReportDate,
-    },
-    pool
+  let reportToReview = await pool.query(
+    `
+      select *
+      from accounter_schema.saved_tax_reports_2020_03
+      order by תאריך_חשבונית;
+    `
   );
 
-  let monthlyReportsHTMLTemplate = '';
-  for (const transaction of monthlyTaxesReport) {
-    monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
+  let reportToReviewHTMLTemplate = '';
+  for (const transaction of reportToReview.rows) {
+    reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
       <tr>
+        <td>
+          <input onchange="changeConfirmation('${
+            transaction.id
+          }', this);" type="checkbox" 
+          id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
+        </td>
         <td>${transaction.תאריך_חשבונית}</td>
         <td>${transaction.חשבון_חובה_1}</td>
         <td>${transaction.סכום_חובה_1}</td>
@@ -53,10 +49,11 @@ export const monthlyReport = async (query: any): Promise<string> => {
       </tr>
       `);
   }
-  monthlyReportsHTMLTemplate = `
+  reportToReviewHTMLTemplate = `
       <table>
         <thead>
             <tr>
+                <th>Confirmed</th>
                 <th>תאריך_חשבונית</th>
                 <th>חשבון_חובה_1</th>
                 <th>סכום_חובה_1</th>
@@ -80,14 +77,21 @@ export const monthlyReport = async (query: any): Promise<string> => {
             </tr>
         </thead>
         <tbody>
-            ${monthlyReportsHTMLTemplate}
+            ${reportToReviewHTMLTemplate}
         </tbody>
       </table>  
     `;
 
   return `
-      <h1>Monthly Report</h1>
+      <h1>Report to review</h1>
 
-      ${monthlyReportsHTMLTemplate}
+      ${reportToReviewHTMLTemplate}
+
+      <script type="module" src="/browser.js"></script>
+      <script type="module">
+        import { changeConfirmation } from '/browser.js';
+  
+        window.changeConfirmation = changeConfirmation;
+      </script>
     `;
 };

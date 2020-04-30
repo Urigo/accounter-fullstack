@@ -11,8 +11,15 @@ export function currencyCodeToSymbol(currency_code: string): string {
   return currencySymbol;
 }
 
-export const financialStatus = async (): Promise<string> => {
-  const monthTaxReport = '2020-03-01';
+export const financialStatus = async (query: any): Promise<string> => {
+  let monthTaxReport;
+  if (query) {
+    // TODO: Fix this stupid month calculation
+    monthTaxReport = `2020-0${query.month}-01`;
+  } else {
+    monthTaxReport = '2020-03-01';
+  }
+  console.log('monthTaxReport', monthTaxReport);
 
   let missingInvoiceDates = await pool.query(
     `
