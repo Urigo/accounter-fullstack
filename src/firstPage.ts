@@ -21,14 +21,51 @@ export const financialStatus = async (query: any): Promise<string> => {
   }
   console.log('monthTaxReport', monthTaxReport);
 
-  let missingInvoiceDates = await pool.query(
-    `
-      select *
-      from missing_invoice_dates($1)
-      order by event_date;
-    `,
-    [`$$${monthTaxReport}$$`]
-  );
+  const lastInvoiceNumbersQuery = readFileSync(
+    'src/sql/lastInvoiceNumbers.sql'
+  ).toString();
+  const currentVATStatusQuery = readFileSync(
+    'src/sql/currentVATStatus.sql'
+  ).toString();
+  const allTransactionsQuery = readFileSync(
+    'src/sql/allTransactions.sql'
+  ).toString();
+  const results: any = await Promise.allSettled([
+    pool.query(
+      `
+        select *
+        from missing_invoice_dates($1)
+        order by event_date;
+      `,
+      [`$$${monthTaxReport}$$`]
+    ),
+    pool.query(
+      `
+        select *
+        from missing_invoice_numbers($1)
+        order by event_date;
+      `,
+      [`$$${monthTaxReport}$$`]
+    ),
+    pool.query(lastInvoiceNumbersQuery),
+    pool.query(currentVATStatusQuery),
+    pool.query(
+      `
+        select *
+        from get_vat_for_month($1);
+      `,
+      [`$$${monthTaxReport}$$`]
+    ),
+    pool.query(allTransactionsQuery),
+  ]);
+
+  let missingInvoiceDates: any = results[0].value;
+  let missingInvoiceNumbers: any = results[1].value;
+  let lastInvoiceNumbers: any = results[2].value;
+  let currentVATStatus: any = results[3].value;
+  let VATTransactions: any = results[4].value;
+  let allTransactions: any = results[5].value;
+
   let missingInvoiceDatesHTMLTemplate = '';
   for (const transaction of missingInvoiceDates.rows) {
     missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
@@ -63,14 +100,6 @@ export const financialStatus = async (query: any): Promise<string> => {
       </table>  
     `;
 
-  let missingInvoiceNumbers = await pool.query(
-    `
-      select *
-      from missing_invoice_numbers($1)
-      order by event_date;
-    `,
-    [`$$${monthTaxReport}$$`]
-  );
   let missingInvoiceNumbersHTMLTemplate = '';
   for (const transaction of missingInvoiceNumbers.rows) {
     missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
@@ -105,10 +134,6 @@ export const financialStatus = async (query: any): Promise<string> => {
       </table>  
     `;
 
-  const lastInvoiceNumbersQuery = readFileSync(
-    'src/sql/lastInvoiceNumbers.sql'
-  ).toString();
-  let lastInvoiceNumbers = await pool.query(lastInvoiceNumbersQuery);
   let lastInvoiceNumbersHTMLTemplate = '';
   for (const transaction of lastInvoiceNumbers.rows) {
     lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
@@ -141,19 +166,6 @@ export const financialStatus = async (query: any): Promise<string> => {
       </table>  
     `;
 
-  const currentVATStatusQuery = readFileSync(
-    'src/sql/currentVATStatus.sql'
-  ).toString();
-  // second bonus is to try to move this into Top level await
-  let currentVATStatus = await pool.query(currentVATStatusQuery);
-
-  let VATTransactions = await pool.query(
-    `
-      select *
-      from get_vat_for_month($1);
-    `,
-    [`$$${monthTaxReport}$$`]
-  );
   let VATTransactionsString = '';
   for (const transaction of VATTransactions.rows) {
     VATTransactionsString = VATTransactionsString.concat(`
@@ -187,12 +199,6 @@ export const financialStatus = async (query: any): Promise<string> => {
         </tbody>
       </table>  
     `;
-
-  const allTransactionsQuery = readFileSync(
-    'src/sql/allTransactions.sql'
-  ).toString();
-  // second bonus is to try to move this into Top level await
-  let allTransactions = await pool.query(allTransactionsQuery);
 
   let allTransactionsString = '';
   for (const transaction of allTransactions.rows) {
