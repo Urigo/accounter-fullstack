@@ -62,7 +62,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       <table>
         <thead>
             <tr>
-                <th>אושר</th>
+                <th>תקין</th>
                 <th>תאריך_חשבונית</th>
                 <th>חשבון_חובה_1</th>
                 <th>סכום_חובה_1</th>
