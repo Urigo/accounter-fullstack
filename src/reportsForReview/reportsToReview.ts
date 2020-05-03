@@ -12,8 +12,8 @@ export const reportToReview = async (query: any): Promise<string> => {
   let reportToReview = await pool.query(
     `
       select *
-      from accounter_schema.saved_tax_reports_2020_03
-      order by תאריך_חשבונית;
+      from accounter_schema.saved_tax_reports_2020_0333
+      order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
     `
   );
 

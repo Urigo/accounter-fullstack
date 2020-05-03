@@ -36,8 +36,9 @@ SELECT tax_invoice_date,
            WHEN full_supplier_name_outbound IS NULL THEN full_supplier_name_heb
            WHEN full_supplier_name_heb IS NULL THEN (COALESCE(full_supplier_name_outbound, '') || COALESCE('/' || city, ''))
            END                       AS bank_description,
-       withholding_tax
-FROM accounter.accounter_schema.isracard_creditcard_transactions
+       withholding_tax,
+       id
+FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR
        full_supplier_name_outbound IS NULL)
   AND (full_supplier_name_outbound <> 'CASH ADVANCE FEE' OR

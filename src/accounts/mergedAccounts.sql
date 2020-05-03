@@ -28,8 +28,9 @@ SELECT tax_invoice_date,
        0                          AS currency_rate,
        null::integer              as contra_currency_code, -- maybe if I'll do a transfer it will also show up?
        activity_description       AS bank_description,
-       withholding_tax
-FROM accounter.accounter_schema.poalim_ils_account_transactions
+       withholding_tax,
+       id
+FROM accounter_schema.poalim_ils_account_transactions
 UNION
 SELECT tax_invoice_date,
        tax_category,
@@ -57,8 +58,9 @@ SELECT tax_invoice_date,
        currency_rate,
        contra_currency_code,
        activity_description || COALESCE('/' || event_details, '') AS bank_description,
-       withholding_tax
-FROM accounter.accounter_schema.poalim_usd_account_transactions
+       withholding_tax,
+       id
+FROM accounter_schema.poalim_usd_account_transactions
 UNION
 SELECT tax_invoice_date,
        tax_category,
@@ -86,5 +88,6 @@ SELECT tax_invoice_date,
        currency_rate,
        contra_currency_code,
        activity_description || COALESCE('/' || event_details, '') AS bank_description,
-       withholding_tax
-FROM accounter.accounter_schema.poalim_eur_account_transactions;
+       withholding_tax,
+       id
+FROM accounter_schema.poalim_eur_account_transactions;

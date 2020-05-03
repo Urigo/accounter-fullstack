@@ -122,7 +122,11 @@ SELECT *,
                                    END) * (
                                                                    select all_exchange_dates.eur_rate
                                                                    from all_exchange_dates
-                                                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                                                                   where all_exchange_dates.exchange_date =
+                                                                         (case when (tax_invoice_date is not null and account_type != 'creditcard')
+                                                                             then tax_invoice_date::text::date
+                                                                             else debit_date::text::date
+                                                                          end)
                                                                )
                                WHEN currency_code = 'USD' THEN (CASE
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
@@ -133,7 +137,11 @@ SELECT *,
                                    END) * (
                                                                    select all_exchange_dates.usd_rate
                                                                    from all_exchange_dates
-                                                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                                                                   where all_exchange_dates.exchange_date =
+                                                                         (case when (tax_invoice_date is not null and account_type != 'creditcard')
+                                                                             then tax_invoice_date::text::date
+                                                                             else debit_date::text::date
+                                                                          end)
                                                                )
                                ELSE -99999999999
            END
@@ -156,7 +164,11 @@ SELECT *,
                                    END) * (
                                                                    select all_exchange_dates.eur_rate
                                                                    from all_exchange_dates
-                                                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                                                                   where all_exchange_dates.exchange_date =
+                                                                         (case when (tax_invoice_date is not null and account_type != 'creditcard')
+                                                                             then tax_invoice_date::text::date
+                                                                             else debit_date::text::date
+                                                                          end)
                                                                )
                                WHEN currency_code = 'USD' THEN (CASE
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
@@ -167,7 +179,11 @@ SELECT *,
                                    END) * (
                                                                    select all_exchange_dates.usd_rate
                                                                    from all_exchange_dates
-                                                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                                                                   where all_exchange_dates.exchange_date =
+                                                                         (case when (tax_invoice_date is not null and account_type != 'creditcard')
+                                                                             then tax_invoice_date::text::date
+                                                                             else debit_date::text::date
+                                                                          end)
                                                                )
                                ELSE -99999999999
            END
