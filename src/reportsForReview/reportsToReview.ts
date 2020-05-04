@@ -17,6 +17,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     `
   );
 
+  let counter = 1;
   let reportToReviewHTMLTemplate = '';
   for (const transaction of reportToReview.rows) {
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
@@ -25,6 +26,7 @@ export const reportToReview = async (query: any): Promise<string> => {
           ? 'style="background-color: #a68613;"'
           : ''
       }>
+        <td>${counter++}</td>
         <td>
           <input onchange="changeConfirmation('${
             transaction.id
@@ -66,6 +68,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       <table>
         <thead>
             <tr>
+                <th>מספר</th>
                 <th>תקין</th>
                 <th>תאריך_חשבונית</th>
                 <th>חשבון_חובה_1</th>
