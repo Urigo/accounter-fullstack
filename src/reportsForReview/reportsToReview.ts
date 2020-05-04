@@ -20,7 +20,11 @@ export const reportToReview = async (query: any): Promise<string> => {
   let reportToReviewHTMLTemplate = '';
   for (const transaction of reportToReview.rows) {
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
-      <tr>
+      <tr ${
+        transaction.חשבון_חובה_1 && transaction.חשבון_חובה_1.startsWith('BANK')
+          ? 'style="background-color: #a68613;"'
+          : ''
+      }>
         <td>
           <input onchange="changeConfirmation('${
             transaction.id
