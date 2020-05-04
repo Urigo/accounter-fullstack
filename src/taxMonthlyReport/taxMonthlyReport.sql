@@ -64,6 +64,89 @@ into table accounter_schema.saved_tax_reports_2020_0333
 from get_tax_report_of_month('2020-03-01') t2
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
+select *
+from get_unified_tax_report_of_month('2020-03-01')
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים;
+
+CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_input varchar)
+RETURNS TABLE(
+       תאריך_חשבונית varchar,
+       חשבון_חובה_1 varchar,
+       סכום_חובה_1 varchar,
+       מטח_סכום_חובה_1 varchar,
+       מטבע varchar,
+       חשבון_זכות_1 varchar,
+       סכום_זכות_1 varchar,
+       מטח_סכום_זכות_1 varchar,
+       חשבון_חובה_2 varchar,
+       סכום_חובה_2 varchar,
+       מטח_סכום_חובה_2 varchar,
+       חשבון_זכות_2 varchar,
+       סכום_זכות_2 varchar,
+       מטח_סכום_זכות_2 varchar,
+       פרטים varchar,
+       אסמכתא_1 int,
+       אסמכתא_2 varchar,
+       סוג_תנועה varchar,
+       תאריך_ערך varchar,
+       תאריך_3 varchar,
+       original_id text,
+       id uuid,
+       reviewed boolean
+)
+LANGUAGE SQL
+AS $$
+
+
+select * from accounter_schema.saved_tax_reports_2020_0333
+UNION ALL
+select
+       formatted_event_date as תאריך_חשבונית,
+       CONCAT('BANK ', formatted_account) as חשבון_חובה_1,
+       event_amount::text as סכום_חובה_1,
+       bank_description as מטח_סכום_חובה_1,
+       currency_code as מטבע,
+       formatted_financial_entity as חשבון_זכות_1,
+       tax_category as סכום_זכות_1,
+       'BANK' as מטח_סכום_זכות_1,
+       'BANK' as חשבון_חובה_2,
+       'BANK' as סכום_חובה_2,
+       'BANK' as מטח_סכום_חובה_2,
+       'BANK' as חשבון_זכות_2,
+       (select all_exchange_dates.usd_rate
+        from all_exchange_dates
+        where all_exchange_dates.exchange_date = debit_date::text::date)::text as סכום_זכות_2,
+       (select all_exchange_dates.eur_rate
+        from all_exchange_dates
+        where all_exchange_dates.exchange_date = debit_date::text::date)::text as מטח_סכום_זכות_2,
+       '0' as פרטים,
+       bank_reference as אסמכתא_1,
+       to_char(tax_invoice_date, 'DD/MM/YYYY') as אסמכתא_2,
+       vat::text as סוג_תנועה,
+       to_char(debit_date, 'DD/MM/YYYY') as תאריך_ערך,
+       formatted_event_date as תאריך_3,
+       id::text as original_id,
+       id as id,
+       false as reviewed
+from formatted_merged_tables
+where
+    business_trip IS NULL AND
+    (account_number = 2733 OR account_number = 61066) AND
+        (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
+            account_type != 'creditcard' AND
+            event_date::text::date >= date_trunc('month', month_input::date) AND
+            event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date OR
+            event_date IS NULL)
+        OR (
+            (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
+             (
+                   debit_date::text::date <= get_creditcard_charge_date(month_input)::date AND debit_date::text::date > get_creditcard_charge_date_former_month(month_input)::date OR
+                   (debit_date IS NULL AND event_date::text::date >= date_trunc('month', month_input::date) AND
+                    event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date)
+             )))
+
+$$;
+
 
 drop function get_tax_report_of_month(month_input varchar);
 
