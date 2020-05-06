@@ -11,9 +11,9 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   let reportToReview = await pool.query(
     `
-      select *
-      from get_unified_tax_report_of_month('2020-03-01')
-      order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים;
+    select *
+    from get_unified_tax_report_of_month('2020-03-01')
+    order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
     `
   );
 
