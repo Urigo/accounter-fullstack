@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
-    "@types/node": "13.13.4",
+    "@types/node": "13.13.5",
     "@types/pg": "7.14.3",
     "concurrently": "5.2.0",
     "nodemon": "2.0.3",
@@ -23,7 +23,7 @@
     "typescript": "3.8.3"
   },
   "engines": {
-    "node": "14.0.0"
+    "node": "14.2.0"
   },
   "license": "MIT"
 }
