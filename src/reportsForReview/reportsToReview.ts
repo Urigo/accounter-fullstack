@@ -12,7 +12,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   let reportToReview = await pool.query(
     `
     select *
-    from get_unified_tax_report_of_month('2020-03-01')
+    from accounter_schema.saved_tax_reports_2020_0344
     order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
     `
   );
