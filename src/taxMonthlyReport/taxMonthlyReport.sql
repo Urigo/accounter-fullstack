@@ -39,34 +39,11 @@ from get_tax_report_of_month('2020-03-01') t2
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id) t3;
 
 
-select
-       *,
-       gen_random_uuid() as id,
-       (
-           select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03_old t1
-           where
-                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '') and
-                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
-                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
-                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
-                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
-                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
-                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
-                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
-                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
-                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
-                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
-                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
-                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '')
-       ) as reviewed
-into table accounter_schema.saved_tax_reports_2020_0333
-from get_tax_report_of_month('2020-03-01') t2
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+
 
 select *
 from get_unified_tax_report_of_month('2020-03-01')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים;
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
 
 CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_input varchar)
 RETURNS TABLE(
@@ -98,7 +75,7 @@ LANGUAGE SQL
 AS $$
 
 
-select * from accounter_schema.saved_tax_reports_2020_0333
+select * from accounter_schema.saved_tax_reports_2020_03
 UNION ALL
 select
        formatted_event_date as תאריך_חשבונית,
@@ -147,6 +124,41 @@ where
 
 $$;
 
+select
+       *,
+       gen_random_uuid() as id,
+       (
+           select t1.reviewed
+           from accounter_schema.saved_tax_reports_2020_03 t1
+           where
+                coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
+                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
+                coalesce(t1.סכום_חובה_1, '' )= coalesce(t2.סכום_חובה_1, '') and
+                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
+                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
+                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
+                coalesce(t1.סכום_זכות_1, '' )= coalesce(t2.סכום_זכות_1, '') and
+                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
+                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
+                coalesce(t1.סכום_חובה_2, '') = coalesce(t2.סכום_חובה_2, '') and
+                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
+                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
+                coalesce(t1.סכום_זכות_2, '') = coalesce(t2.סכום_זכות_2, '') and
+                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
+                coalesce(t1.פרטים, '') = coalesce(t2.פרטים, '') and
+                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
+                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
+                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '') and
+                coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
+                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
+       ) as reviewed
+into table accounter_schema.saved_tax_reports_2020_03_1
+from get_tax_report_of_month('2020-03-01') t2
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+
+select *
+from get_tax_report_of_month('2020-03-01')
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 drop function get_tax_report_of_month(month_input varchar);
 
@@ -211,7 +223,7 @@ WHERE
         END) AS תאריך_חשבונית,
         (CASE WHEN event_amount < 0 THEN
             (CASE WHEN side = 0 THEN
-                tax_category
+                formatted_tax_category
                 ELSE formatted_financial_entity
             END) ELSE
             (CASE WHEN side = 0 THEN
@@ -240,7 +252,7 @@ WHERE
               ELSE formatted_account
            END) ELSE
            (CASE
-               WHEN side = 0 THEN tax_category
+               WHEN side = 0 THEN formatted_tax_category
                ELSE formatted_financial_entity
            END)
         END) AS חשבון_זכות_1,
@@ -250,7 +262,7 @@ WHERE
                 ELSE formatted_event_amount_in_ils
             END) ELSE
             (CASE
-                WHEN side = 0 THEN formatted_invoice_amount_in_ils_if_exists
+                WHEN side = 0 THEN formatted_invoice_amount_in_ils_with_vat_if_exists
                 ELSE formatted_event_amount_in_ils
             END)
         END) AS סכום_זכות_1,
@@ -307,13 +319,17 @@ WHERE
 --             ELSE NULL
             END
         ) AS סוג_תנועה,
-       (CASE
-            WHEN debit_date IS NULL THEN formatted_event_date
-            ELSE formatted_debit_date
-        END) AS תאריך_ערך,
+       (case
+           when (tax_invoice_date is not null and account_type != 'creditcard' and side = 0) then formatted_tax_invoice_date
+           else (CASE
+                    WHEN debit_date IS NULL THEN formatted_event_date
+                    ELSE formatted_debit_date
+                END)
+       end) as תאריך_ערך,
         formatted_event_date AS תאריך_3,
         formatted_invoice_amount_in_ils_if_exists,
         formatted_event_amount_in_ils,
+        formatted_financial_entity,
         event_amount,
         account_type,
         vat,
@@ -423,7 +439,7 @@ WHERE
 ), conversions_fees as (
     SELECT
         תאריך_חשבונית,
-        'הפרשי שער' as חשבון_חובה_1,
+        'שער' as חשבון_חובה_1,
         to_char(float8 (CASE WHEN event_amount > 0 THEN
             ((
                 select סכום_זכות_1
@@ -461,12 +477,61 @@ WHERE
 ), invoice_rates_change as (
     SELECT
             תאריך_חשבונית AS תאריך_חשבונית,
-            'הפרשי שער' AS חשבון_חובה_1,
-            to_char(float8 (formatted_invoice_amount_in_ils_if_exists::float - formatted_event_amount_in_ils::float), 'FM999999999.00') AS סכום_חובה_1,
+            'שער' AS חשבון_חובה_1,
+            to_char(float8 (
+                -- TODO: Remove this when we suport currency on invoice_amount
+                (case
+                    when financial_entity = 'Uri Goldshtein' then tax_invoice_amount::float - formatted_event_amount_in_ils::float
+                    when (tax_invoice_amount IS NOT NULL AND tax_invoice_amount <> 0 AND ABS(tax_invoice_amount) <> event_amount)
+                        then (formatted_invoice_amount_in_ils_if_exists::float - (CASE
+                                        WHEN currency_code = 'EUR' THEN (event_amount - ABS(tax_invoice_amount)) * (
+                                            select all_exchange_dates.eur_rate
+                                            from all_exchange_dates
+                                            where all_exchange_dates.exchange_date = debit_date::text::date
+                                        )
+                                        WHEN currency_code = 'USD' THEN (event_amount - ABS(tax_invoice_amount)) * (
+                                            select all_exchange_dates.usd_rate
+                                            from all_exchange_dates
+                                            where all_exchange_dates.exchange_date = debit_date::text::date
+                                        )
+                                    END)
+                            ) - formatted_event_amount_in_ils::float
+                    else formatted_invoice_amount_in_ils_if_exists::float - formatted_event_amount_in_ils::float
+                   end))*-1
+                , 'FM999999999.00') as סכום_חובה_1,
             '' AS מטח_סכום_חובה_1,
             '' AS מטבע,
-            '' AS חשבון_זכות_1,
-            '' AS סכום_זכות_1,
+            (case
+                when financial_entity = 'Poalim' then ''
+                else formatted_financial_entity
+            end) AS חשבון_זכות_1,
+            (case
+                when financial_entity = 'Poalim' then ''
+                else to_char(float8 (
+                    (case
+                    when financial_entity = 'Uri Goldshtein' then tax_invoice_amount::float - formatted_event_amount_in_ils::float
+
+                    when (tax_invoice_amount IS NOT NULL AND tax_invoice_amount <> 0 AND ABS(tax_invoice_amount) <> event_amount)
+
+                        then (formatted_invoice_amount_in_ils_if_exists::float - (CASE
+                                        WHEN currency_code = 'EUR' THEN (event_amount - ABS(tax_invoice_amount)) * (
+                                            select all_exchange_dates.eur_rate
+                                            from all_exchange_dates
+                                            where all_exchange_dates.exchange_date = debit_date::text::date
+                                        )
+                                        WHEN currency_code = 'USD' THEN (event_amount - ABS(tax_invoice_amount)) * (
+                                            select all_exchange_dates.usd_rate
+                                            from all_exchange_dates
+                                            where all_exchange_dates.exchange_date = debit_date::text::date
+                                        )
+                                    END)
+                            ) - formatted_event_amount_in_ils::float
+
+
+                    else formatted_invoice_amount_in_ils_if_exists::float - formatted_event_amount_in_ils::float
+                   end)
+                    )*-1, 'FM999999999.00')
+            end) as סכום_זכות_1,
             '' AS מטח_סכום_זכות_1,
             '' AS חשבון_חובה_2,
             '' AS סכום_חובה_2,
@@ -486,8 +551,7 @@ WHERE
          tax_invoice_date <> debit_date and
          account_type != 'creditcard' and
          currency_code != 'ILS' and
-         side = 1 and
-         (tax_invoice_amount is null or tax_invoice_amount = event_amount)
+         side = 0
 ), transfer_fees as (
     SELECT
             formatted_event_date AS תאריך_חשבונית,
@@ -538,7 +602,8 @@ WHERE
          tax_invoice_amount IS NOT NULL AND
          tax_invoice_amount <> 0 AND
          ABS(tax_invoice_amount) <> event_amount AND
-        currency_code != 'ILS'
+         currency_code != 'ILS' and
+         financial_entity != 'Uri Goldshtein' -- TODO: Until handling tax invoice currency
 ), withholding_tax as (
     SELECT
             formatted_event_date AS תאריך_חשבונית,
@@ -582,11 +647,11 @@ WHERE
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
        , 'DD/MM/YYYY') AS תאריך_חשבונית,
        'מעמחוז' AS חשבון_חובה_1,
-       to_char(float8 (ABS( SUM(vat)))  , 'FM999999999.00') AS סכום_חובה_1,
+       to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_חובה_1,
        NULL AS מטח_סכום_חובה_1,
        NULL AS מטבע,
        'תשו' AS חשבון_זכות_1,
-       to_char(float8 (ABS( SUM(vat)))  , 'FM999999999.00') AS סכום_זכות_1,
+       to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_זכות_1,
        NULL AS מטח_סכום_זכות_1,
        NULL AS חשבון_חובה_2,
        NULL AS סכום_חובה_2,
@@ -594,7 +659,7 @@ WHERE
        NULL AS חשבון_זכות_2,
        NULL AS סכום_זכות_2,
        NULL AS מטח_סכום_זכות_2,
-       NULL AS פרטים,
+       concat('פקודת מע״מ ', to_char( date_trunc('month', month_input::date)::date , 'MM/YYYY')) as פרטים,
        NULL::integer AS אסמכתא_1,
        NULL AS אסמכתא_2,
        NULL AS סוג_תנועה,
@@ -604,7 +669,7 @@ WHERE
        NULL AS תאריך_3,
        '' as original_id
     FROM
-         merged_tables
+         formatted_merged_tables
     WHERE
          event_date::text::date >= (date_trunc('month', month_input::date))::date AND
          event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date AND
@@ -615,11 +680,11 @@ WHERE
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
        , 'DD/MM/YYYY') AS תאריך_חשבונית,
        'עסק' AS חשבון_חובה_1,
-       to_char(float8 (ABS( SUM(vat)))  , 'FM999999999.00') AS סכום_חובה_1,
+       to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_חובה_1,
        NULL AS מטח_סכום_חובה_1,
        NULL AS מטבע,
        'מעמחוז' AS חשבון_זכות_1,
-       to_char(float8 (ABS( SUM(vat)))  , 'FM999999999.00') AS סכום_זכות_1,
+       to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_זכות_1,
        NULL AS מטח_סכום_זכות_1,
        NULL AS חשבון_חובה_2,
        NULL AS סכום_חובה_2,
@@ -627,7 +692,7 @@ WHERE
        NULL AS חשבון_זכות_2,
        NULL AS סכום_זכות_2,
        NULL AS מטח_סכום_זכות_2,
-       NULL AS פרטים,
+       concat('פקודת מע״מ ', to_char( date_trunc('month', month_input::date)::date , 'MM/YYYY')) as פרטים,
        NULL::integer AS אסמכתא_1,
        NULL AS אסמכתא_2,
        NULL AS סוג_תנועה,
@@ -637,7 +702,7 @@ WHERE
        NULL AS תאריך_3,
        '' as original_id
     FROM
-         merged_tables
+         formatted_merged_tables
     WHERE
          event_date::text::date >= (date_trunc('month', month_input::date))::date AND
          event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date AND

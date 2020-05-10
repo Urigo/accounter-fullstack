@@ -12,6 +12,10 @@ SELECT *,
             WHEN account_type = 'creditcard' THEN 'כא'
             ELSE 'unknown account!!'
            END)                                as formatted_account,
+       (case
+           when financial_entity = 'Poalim' then 'עמל'
+           else tax_category
+       end) as formatted_tax_category,
        (CASE
             WHEN financial_entity = 'Hot Mobile' THEN 'הוט'
             WHEN financial_entity = 'Dotan Simha' THEN 'דותן'
@@ -35,11 +39,17 @@ SELECT *,
             WHEN financial_entity = 'Uri Goldshtein Employee Social Security' THEN 'בלני'
             WHEN financial_entity = 'Uri Goldshtein' THEN 'אורי'
             WHEN financial_entity = 'Raveh Ravid & Co' THEN 'יהל'
+            WHEN financial_entity = 'Production Ready GraphQL' THEN 'ProdReadyGraph'
+            WHEN financial_entity = 'הפרשי שער' THEN 'שער'
             ELSE financial_entity END
            )                                   as formatted_financial_entity,
        to_char(event_date, 'DD/MM/YYYY')       as formatted_event_date,
        to_char(tax_invoice_date, 'DD/MM/YYYY') as formatted_tax_invoice_date,
        to_char(debit_date, 'DD/MM/YYYY')       as formatted_debit_date,
+       (case
+           when tax_category = 'פלאפון' then ((vat::float/3)*2)
+           else vat
+       end) as real_vat,
        (CASE
             WHEN currency_code = 'ILS' THEN event_amount / (
                 select all_exchange_dates.usd_rate
@@ -110,7 +120,7 @@ SELECT *,
                                         WHEN (tax_invoice_amount IS NOT NULL AND
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
-                                            THEN tax_invoice_amount + COALESCE(vat, 0)
+                                            THEN tax_invoice_amount + COALESCE((case when tax_category = 'פלאפון' then ((vat::float/3)*2) else vat end), 0)
                                         ELSE event_amount
                                        END)
                                WHEN currency_code = 'EUR' THEN (CASE
@@ -153,7 +163,7 @@ SELECT *,
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
                                             THEN tax_invoice_amount
-                                        ELSE event_amount + COALESCE(vat, 0)
+                                        ELSE event_amount + COALESCE((case when tax_category = 'פלאפון' then ((vat::float/3)*2) else vat end), 0)
                                        END)
                                WHEN currency_code = 'EUR' THEN (CASE
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
