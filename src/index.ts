@@ -164,7 +164,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_0344';
+        let tableToUpdate = 'saved_tax_reports_2020_03';
         let whereClause = '';
 
         const submitReviewQuery = `
