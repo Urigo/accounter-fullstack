@@ -11,7 +11,7 @@
     "@pgtyped/cli": "0.4.5",
     "@pgtyped/query": "0.4.5",
     "dotenv": "8.2.0",
-    "pg": "8.0.3"
+    "pg": "8.1.0"
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
@@ -23,7 +23,7 @@
     "typescript": "3.8.3"
   },
   "engines": {
-    "node": "14.1.0"
+    "node": "14.2.0"
   },
   "license": "MIT"
 }
