@@ -24,6 +24,8 @@ export const tableStyles = `
     font-size: 10px;
     background-color: #4F7849;
     color: white;
+    position: sticky;
+    top: 0;
   }
   td {
     text-align: center;
@@ -47,9 +49,9 @@ export const financialStatus = async (query: any): Promise<string> => {
   const lastInvoiceNumbersQuery = readFileSync(
     'src/sql/lastInvoiceNumbers.sql'
   ).toString();
-  const currentVATStatusQuery = readFileSync(
-    'src/sql/currentVATStatus.sql'
-  ).toString();
+  // const currentVATStatusQuery = readFileSync(
+  //   'src/sql/currentVATStatus.sql'
+  // ).toString();
   const allTransactionsQuery = readFileSync(
     'src/sql/allTransactions.sql'
   ).toString();
@@ -71,7 +73,7 @@ export const financialStatus = async (query: any): Promise<string> => {
       [`$$${monthTaxReport}$$`]
     ),
     pool.query(lastInvoiceNumbersQuery),
-    pool.query(currentVATStatusQuery),
+    // pool.query(currentVATStatusQuery),
     pool.query(
       `
         select *
@@ -85,9 +87,9 @@ export const financialStatus = async (query: any): Promise<string> => {
   let missingInvoiceDates: any = results[0].value;
   let missingInvoiceNumbers: any = results[1].value;
   let lastInvoiceNumbers: any = results[2].value;
-  let currentVATStatus: any = results[3].value;
-  let VATTransactions: any = results[4].value;
-  let allTransactions: any = results[5].value;
+  // let currentVATStatus: any = results[3].value;
+  let VATTransactions: any = results[3].value;
+  let allTransactions: any = results[4].value;
 
   let missingInvoiceDatesHTMLTemplate = '';
   for (const transaction of missingInvoiceDates.rows) {
@@ -300,10 +302,6 @@ export const financialStatus = async (query: any): Promise<string> => {
       <h3>Last invoice numbers</h3>
   
       ${lastInvoiceNumbersHTMLTemplate}
-  
-      <h3>Current VAT balance</h3>
-      
-      <div> ₪${currentVATStatus.rows[0].vat_status} </div>
   
       <h3>VAT Transactions for this month:</h3>
   
