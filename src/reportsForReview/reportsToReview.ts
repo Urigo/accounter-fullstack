@@ -1,18 +1,61 @@
 import { pool } from '../index';
 import { tableStyles } from '../firstPage';
+import { readFileSync } from 'fs';
+import moment from 'moment';
+// import fetch from 'node-fetch';
+// import XML from 'pixl-xml';
 
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
-  if (!query) {
-    reportMonthToReview = '3';
+  if (query.month) {
+    reportMonthToReview = `2020-0${query.month}-01`;
+  } else {
+    reportMonthToReview = `2020-04-01`;
   }
+
+  const lastInvoiceNumbersQuery = readFileSync(
+    'src/sql/lastInvoiceNumbers.sql'
+  ).toString();
+  let lastInvoiceNumbers = await pool.query(lastInvoiceNumbersQuery);
+
+  let lastInvoiceNumbersHTMLTemplate = '';
+  for (const transaction of lastInvoiceNumbers.rows) {
+    lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
+      <tr>
+        <td>${transaction.tax_invoice_number}</td>
+        <td>${transaction.event_date
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}</td>
+        <td>${transaction.financial_entity}</td>
+        <td>${transaction.user_description}</td>
+        <td>${transaction.event_amount}</td>
+      </tr>
+      `);
+  }
+  lastInvoiceNumbersHTMLTemplate = `
+      <table>
+        <thead>
+            <tr>
+              <th>Invoice Number</th>
+              <th>Date</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${lastInvoiceNumbersHTMLTemplate}
+        </tbody>
+      </table>  
+    `;
 
   console.log('reportMonthToReview', reportMonthToReview);
 
   let reportToReview = await pool.query(
     `
     select *
-    from get_unified_tax_report_of_month('2020-03-01')
+    from get_unified_tax_report_of_month('${reportMonthToReview}')
     order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
     `
   );
@@ -20,6 +63,52 @@ export const reportToReview = async (query: any): Promise<string> => {
   let counter = 1;
   let reportToReviewHTMLTemplate = '';
   for (const transaction of reportToReview.rows) {
+
+    let dailyEuroRate: any = 0;
+    let dailyDollarRate: any = 0;
+    if (transaction.תאריך_ערך) {      
+      let valueDate = moment(transaction.תאריך_ערך, 
+        'DD/MM/YYYY');
+  
+      dailyEuroRate = await pool.query(`
+        select all_exchange_dates.eur_rate
+        from all_exchange_dates
+        where all_exchange_dates.exchange_date = '${valueDate.format('YYYY-MM-DD')}'
+      `);
+
+      dailyDollarRate = await pool.query(`
+        select all_exchange_dates.usd_rate
+        from all_exchange_dates
+        where all_exchange_dates.exchange_date = '${valueDate.format('YYYY-MM-DD')}'
+      `);
+    }
+
+    
+    // let url = `https://www.boi.org.il/currency.xml?rdate=${valueDate.format(
+    //   'YYYYMMDD'
+    // )}`;
+    // let dailyDollarRate = 0;
+    // let dailyEuroRate = 0;
+    // await (async () => {
+    //   try {
+    //     const response = await fetch(url);
+    //     let textRes = await response.text();
+
+    //     let currencyRates: any = XML.parse(textRes);
+
+    //     if (currencyRates.CURRENCY) {
+    //       dailyDollarRate = currencyRates.CURRENCY.find(
+    //         (x: any) => x.CURRENCYCODE === 'USD'
+    //       ).RATE;
+    //       dailyEuroRate = currencyRates.CURRENCY.find(
+    //         (x: any) => x.CURRENCYCODE === 'EUR'
+    //       ).RATE;
+    //     }
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // })();
+
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
       <tr ${
         transaction.חשבון_חובה_1 && transaction.חשבון_חובה_1.startsWith('BANK')
@@ -59,12 +148,27 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
         <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
         <td>${transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
-        <td>${transaction.תאריך_ערך}</td>
+        <td class="valueDate">
+          ${transaction.תאריך_ערך}
+          <div class="valueDateValues">
+            USD - ${dailyDollarRate?.rows[0]?.usd_rate}
+            EUR - ${dailyEuroRate?.rows[0]?.eur_rate}
+          </div>
+        </td>
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
       </tr>
       `);
   }
   reportToReviewHTMLTemplate = `
+      <style>
+        .valueDateValues {
+          display: none;
+        }
+        
+        .valueDate:hover .valueDateValues {
+          display: block;
+        }
+      </style>
       <table>
         <thead>
             <tr>
@@ -100,6 +204,10 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   return `
       ${tableStyles}
+
+      <h3>Last invoice numbers</h3>
+  
+      ${lastInvoiceNumbersHTMLTemplate}
 
       <h1>Report to review</h1>
 
