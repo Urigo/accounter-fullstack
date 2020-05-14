@@ -92,21 +92,23 @@ export const financialStatus = async (query: any): Promise<string> => {
   let allTransactions: any = results[4].value;
 
   let missingInvoiceDatesHTMLTemplate = '';
-  for (const transaction of missingInvoiceDates.rows) {
-    missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
-      <tr>
-        <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
-        <td>${transaction.event_amount}${currencyCodeToSymbol(
-      transaction.currency_code
-    )}</td>
-        <td>${transaction.financial_entity}</td>
-        <td>${transaction.user_description}</td>
-        <td>${transaction.tax_invoice_number}</td>
-      </tr>
-      `);
+  if (missingInvoiceDates?.rows) {
+    for (const transaction of missingInvoiceDates?.rows) {
+      missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
+        <tr>
+          <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(
+        transaction.currency_code
+      )}</td>
+          <td>${transaction.financial_entity}</td>
+          <td>${transaction.user_description}</td>
+          <td>${transaction.tax_invoice_number}</td>
+        </tr>
+        `);
+    }
   }
   missingInvoiceDatesHTMLTemplate = `
       <table>
@@ -126,21 +128,23 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let missingInvoiceNumbersHTMLTemplate = '';
-  for (const transaction of missingInvoiceNumbers.rows) {
-    missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
-      <tr>
-        <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
-        <td>${transaction.event_amount}${currencyCodeToSymbol(
-      transaction.currency_code
-    )}</td>
-        <td>${transaction.financial_entity}</td>
-        <td>${transaction.user_description}</td>
-        <td>${transaction.tax_invoice_number}</td>
-      </tr>
-      `);
+  if (missingInvoiceNumbers?.rows){
+    for (const transaction of missingInvoiceNumbers?.rows) {
+      missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
+        <tr>
+          <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(
+        transaction.currency_code
+      )}</td>
+          <td>${transaction.financial_entity}</td>
+          <td>${transaction.user_description}</td>
+          <td>${transaction.tax_invoice_number}</td>
+        </tr>
+        `);
+    }
   }
   missingInvoiceNumbersHTMLTemplate = `
       <table>
@@ -160,19 +164,21 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let lastInvoiceNumbersHTMLTemplate = '';
-  for (const transaction of lastInvoiceNumbers.rows) {
-    lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
-      <tr>
-        <td>${transaction.tax_invoice_number}</td>
-        <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
-        <td>${transaction.financial_entity}</td>
-        <td>${transaction.user_description}</td>
-        <td>${transaction.event_amount}</td>
-      </tr>
-      `);
+  if (lastInvoiceNumbers?.rows){
+    for (const transaction of lastInvoiceNumbers?.rows) {
+      lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
+        <tr>
+          <td>${transaction.tax_invoice_number}</td>
+          <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+          <td>${transaction.financial_entity}</td>
+          <td>${transaction.user_description}</td>
+          <td>${transaction.event_amount}</td>
+        </tr>
+        `);
+    }
   }
   lastInvoiceNumbersHTMLTemplate = `
       <table>
@@ -192,20 +198,22 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let VATTransactionsString = '';
-  for (const transaction of VATTransactions.rows) {
-    VATTransactionsString = VATTransactionsString.concat(`
-      <tr>
-        <td>${transaction.overall_vat_status}</td>
-        <td>${transaction.vat}</td>
-        <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
-        <td>${transaction.event_amount}</td>
-        <td>${transaction.financial_entity}</td>
-        <td>${transaction.user_description}</td>
-      </tr>
-      `);
+  if (VATTransactions?.rows){
+    for (const transaction of VATTransactions?.rows) {
+      VATTransactionsString = VATTransactionsString.concat(`
+        <tr>
+          <td>${transaction.overall_vat_status}</td>
+          <td>${transaction.vat}</td>
+          <td>${transaction.event_date
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
+          <td>${transaction.event_amount}</td>
+          <td>${transaction.financial_entity}</td>
+          <td>${transaction.user_description}</td>
+        </tr>
+        `);
+    }
   }
   VATTransactionsString = `
       <table>
@@ -226,38 +234,40 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let allTransactionsString = '';
-  for (const transaction of allTransactions.rows) {
-    allTransactionsString = allTransactionsString.concat(`
-      <tr bank_reference=${transaction.bank_reference}
-          account_number=${transaction.account_number}
-          account_type=${transaction.account_type}
-          currency_code=${transaction.currency_code}
-          event_date=${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}
-          event_amount=${transaction.event_amount}
-          event_number=${transaction.event_number}>
-        <td>${transaction.formatted_event_date}</td>
-        <td>${transaction.event_amount}${currencyCodeToSymbol(
-      transaction.currency_code
-    )}</td>
-        <td class="financial_entity" onClick='printElement(this, prompt("New financial entity:"));'>${
-          transaction.financial_entity
-        }</td>
-        <td class="user_description" onClick='printElement(this, prompt("New user description:"));'>${
-          transaction.user_description
-        }</td>
-        <td class="personal_category" onClick='printElement(this, prompt("New personal category:"));'>${
-          transaction.personal_category
-        }</td>
-        <td>${transaction.vat}</td>
-        <td>${transaction.account_number}${transaction.account_type}</td>
-        <td>${transaction.tax_category}</td>
-        <td>${transaction.tax_invoice_number}</td>
-        <td>${transaction.bank_description}</td>
-      </tr>
-      `);
+  if (allTransactions?.rows) {
+    for (const transaction of allTransactions?.rows) {
+      allTransactionsString = allTransactionsString.concat(`
+        <tr bank_reference=${transaction.bank_reference}
+            account_number=${transaction.account_number}
+            account_type=${transaction.account_type}
+            currency_code=${transaction.currency_code}
+            event_date=${transaction.event_date
+              .toISOString()
+              .replace(/T/, ' ')
+              .replace(/\..+/, '')}
+            event_amount=${transaction.event_amount}
+            event_number=${transaction.event_number}>
+          <td>${transaction.formatted_event_date}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(
+        transaction.currency_code
+      )}</td>
+          <td class="financial_entity" onClick='printElement(this, prompt("New financial entity:"));'>${
+            transaction.financial_entity
+          }</td>
+          <td class="user_description" onClick='printElement(this, prompt("New user description:"));'>${
+            transaction.user_description
+          }</td>
+          <td class="personal_category" onClick='printElement(this, prompt("New personal category:"));'>${
+            transaction.personal_category
+          }</td>
+          <td>${transaction.vat}</td>
+          <td>${transaction.account_number}${transaction.account_type}</td>
+          <td>${transaction.tax_category}</td>
+          <td>${transaction.tax_invoice_number}</td>
+          <td>${transaction.bank_description}</td>
+        </tr>
+        `);
+    }
   }
   allTransactionsString = `
       <table>
