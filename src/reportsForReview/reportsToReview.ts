@@ -68,16 +68,23 @@ export const reportToReview = async (query: any): Promise<string> => {
   let reportToReviewHTMLTemplate = '';
   let incomeSum = 0;
   let outcomeSum = 0;
+  let VATincome = 0;
+  let VAToutcome = 0;
   for (const transaction of reportToReview.rows) {
 
-    if (transaction.חשבון_חובה_1 != 
-       'מעמחוז' && transaction.חשבון_חובה_1 != 
-       'עסק') {
-          outcomeSum += סכום_חובה_1;
-          outcomeSum += סכום_חובה_2;
-          incomeSum += סכום_זכות_1;
-          incomeSum += סכום_זכות_2;
-       }
+    if (transaction.חשבון_חובה_1 !=
+      'מעמחוז' && transaction.חשבון_חובה_1 !=
+      'עסק' &&
+      (transaction.פרטים && transaction.פרטים
+       != '0')) {
+      if (transaction.סכום_חובה_1) { outcomeSum += parseFloat(transaction.סכום_חובה_1); }
+      if (transaction.סכום_חובה_2) { outcomeSum += parseFloat(transaction.סכום_חובה_2); }
+      if (transaction.סכום_זכות_1) { incomeSum += parseFloat(transaction.סכום_זכות_1); }
+      if (transaction.סכום_זכות_2) { incomeSum += parseFloat(transaction.סכום_זכות_2); }
+
+      if (transaction.סכום_חובה_2) { VAToutcome += parseFloat(transaction.סכום_חובה_2); }
+      if (transaction.סכום_זכות_2) { VATincome += parseFloat(transaction.סכום_זכות_2); }
+  }
 
     let exchangeRate: any = 0;
     if (transaction.תאריך_ערך) {      
@@ -198,10 +205,21 @@ export const reportToReview = async (query: any): Promise<string> => {
         }
       </style>
       <div>
-      סהכ סכום חובה  : ${outcomeSum}
+      סהכ סכום חובה  :  <br>
+      ${(Math.round(outcomeSum * 100) / 100).toFixed(2)}
       </div>
       <div>
-      סהכ סכום זכות  : ${incomeSum}
+      סהכ סכום זכות  :  <br>
+      ${(Math.round(incomeSum * 100) / 100).toFixed(2)}
+      </div>
+
+      <div>
+     2סהכ חובה  : <br>
+      ${(Math.round(VAToutcome * 100) / 100).toFixed(2)}
+      </div>
+      <div>
+     2סהכ זכות  :  <br>
+     ${(Math.round(VATincome * 100) / 100).toFixed(2)}
       </div>
       <table>
         <thead>
