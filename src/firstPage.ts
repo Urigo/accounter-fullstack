@@ -297,7 +297,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
       <h1>Accounter</h1>
 
-      <a href="/monthly-report">Monthly report</a>
+      <a href="/reports-to-review">Monthly report to review</a>
 
       <a href="/private-charts">Private Charts</a>
   

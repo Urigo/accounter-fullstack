@@ -109,9 +109,9 @@ export const reportToReview = async (query: any): Promise<string> => {
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
       <tr ${transaction.פרטים && transaction.פרטים 
           == '0'
-          ? 'style="background-color: #a68613;"'
+          ? 'class="bank-transaction"'
           : ''
-      }>
+      } onClick='setSelected(this);'>
         <td>${counter++}</td>
         <td>
           <input onchange="changeConfirmation('${
@@ -170,9 +170,20 @@ export const reportToReview = async (query: any): Promise<string> => {
         .invoiceImage {
           display: none;
           position: absolute;
+          height: 90%;
         }
         .invoiceDate:hover .invoiceImage {
           display: block;
+        }
+
+        tr.selected {
+          background-color: coral;
+        }
+        tr.bank-transaction.selected {
+          background-color: coral;
+        }
+        tr.bank-transaction {
+          background-color: #a68613;
         }
       </style>
       <table>
@@ -221,9 +232,10 @@ export const reportToReview = async (query: any): Promise<string> => {
 
       <script type="module" src="/browser.js"></script>
       <script type="module">
-        import { changeConfirmation } from '/browser.js';
+        import { changeConfirmation, setSelected } from '/browser.js';
   
         window.changeConfirmation = changeConfirmation;
+        window.setSelected = setSelected;
       </script>
     `;
 };
