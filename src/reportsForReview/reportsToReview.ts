@@ -66,7 +66,18 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   let counter = 1;
   let reportToReviewHTMLTemplate = '';
+  let incomeSum = 0;
+  let outcomeSum = 0;
   for (const transaction of reportToReview.rows) {
+
+    if (transaction.חשבון_חובה_1 != 
+       'מעמחוז' && transaction.חשבון_חובה_1 != 
+       'עסק') {
+          outcomeSum += סכום_חובה_1;
+          outcomeSum += סכום_חובה_2;
+          incomeSum += סכום_זכות_1;
+          incomeSum += סכום_זכות_2;
+       }
 
     let exchangeRate: any = 0;
     if (transaction.תאריך_ערך) {      
@@ -186,6 +197,12 @@ export const reportToReview = async (query: any): Promise<string> => {
           background-color: #a68613;
         }
       </style>
+      <div>
+      סהכ סכום חובה  : ${outcomeSum}
+      </div>
+      <div>
+      סהכ סכום זכות  : ${incomeSum}
+      </div>
       <table>
         <thead>
             <tr>
