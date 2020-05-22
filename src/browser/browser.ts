@@ -4,6 +4,7 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
   const changeRequest = {
     newValue: newValue,
     propertyToChange: clickedElement.className,
+    id: clickedElement!.parentElement!.getAttribute('transaction_id'),
     bank_reference: clickedElement!.parentElement!.getAttribute(
       'bank_reference'
     ),

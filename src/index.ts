@@ -94,39 +94,18 @@ async function main() {
         console.log('Data: ', data);
 
         let tableToUpdate = 'isracard_creditcard_transactions';
-        let accountType = 'card';
-        let idType = 'voucher_number';
-        let whereClause = '';
         switch (data.account_type) {
           case 'checking_ils':
             tableToUpdate = 'poalim_ils_account_transactions';
-            accountType = 'account_number';
-            whereClause = `expanded_event_date = ${parseInt(
-              data.event_number
-            )} and reference_number = ${data.bank_reference}
-            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
             break;
           case 'checking_usd':
             tableToUpdate = 'poalim_usd_account_transactions';
-            accountType = 'account_number';
-            whereClause = `event_number = ${parseInt(
-              data.event_number
-            )} and reference_number = ${parseInt(data.bank_reference)}
-            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
             break;
           case 'checking_eur':
             tableToUpdate = 'poalim_eur_account_transactions';
-            accountType = 'account_number';
-            whereClause = `event_number = ${parseInt(
-              data.event_number
-            )} and reference_number = ${parseInt(data.bank_reference)}
-            and event_amount = ${Math.abs(parseFloat(data.event_amount))}`;
             break;
           case 'creditcard':
             tableToUpdate = 'isracard_creditcard_transactions';
-            accountType = 'card';
-            idType = 'voucher_number';
-            whereClause = `${idType} = ${parseInt(data.event_number)}`;
             break;
           default:
             console.error(`Unknown account types ${data.account_type}`);
@@ -135,8 +114,7 @@ async function main() {
         const editPropertyQuery = `
           UPDATE accounter_schema.${tableToUpdate}
           SET ${data.propertyToChange} = '${data.newValue}'
-          WHERE ${accountType} = ${parseInt(data.account_number)} AND 
-                ${whereClause}
+          WHERE id = '${data.id}'
           RETURNING ${data.propertyToChange};
         `;
 
@@ -164,7 +142,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_03_04_2';
+        let tableToUpdate = 'saved_tax_reports_2020_03_04';
 
         const submitReviewQuery = `
           UPDATE accounter_schema.${tableToUpdate}

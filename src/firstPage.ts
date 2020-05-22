@@ -246,7 +246,8 @@ export const financialStatus = async (query: any): Promise<string> => {
               .replace(/T/, ' ')
               .replace(/\..+/, '')}
             event_amount=${transaction.event_amount}
-            event_number=${transaction.event_number}>
+            event_number=${transaction.event_number}
+            transaction_id=${transaction.id}>
           <td>${transaction.formatted_event_date}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
         transaction.currency_code
