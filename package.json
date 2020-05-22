@@ -11,24 +11,24 @@
     "@pgtyped/cli": "0.4.5",
     "@pgtyped/query": "0.4.5",
     "dotenv": "8.2.0",
-    "moment": "2.25.3",
+    "moment": "2.26.0",
     "node-fetch": "2.6.0",
     "pg": "8.2.1",
     "pixl-xml": "1.0.13"
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
-    "@types/node": "14.0.1",
+    "@types/node": "14.0.5",
     "@types/node-fetch": "2.5.7",
     "@types/pg": "7.14.3",
     "@types/pixl-xml": "1.0.1",
     "concurrently": "5.2.0",
     "nodemon": "2.0.4",
     "prettier": "2.0.5",
-    "typescript": "3.9.2"
+    "typescript": "3.9.3"
   },
   "engines": {
-    "node": "14.2.0"
+    "node": "14.3.0"
   },
   "license": "MIT"
 }
