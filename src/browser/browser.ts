@@ -27,10 +27,11 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
   });
 }
 
-export function changeConfirmation(id: string, checkbox: HTMLInputElement) {
+export function changeConfirmation(id: string, checkbox: HTMLInputElement, accountType: string) {
   const changeRequest = {
     id,
     reviewed: checkbox.checked,
+    accountType
   };
   console.log(changeRequest);
 

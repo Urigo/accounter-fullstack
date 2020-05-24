@@ -39,7 +39,9 @@ SELECT tax_invoice_date,
        withholding_tax,
        interest,
        proforma_invoice_file,
-       id
+       id,
+       reviewed,
+       0 as current_balance
 FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR
        full_supplier_name_outbound IS NULL)

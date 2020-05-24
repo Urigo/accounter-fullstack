@@ -31,7 +31,9 @@ SELECT tax_invoice_date,
        withholding_tax,
        interest,
        proforma_invoice_file,
-       id
+       id,
+       reviewed,
+       current_balance
 FROM accounter_schema.poalim_ils_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -63,7 +65,9 @@ SELECT tax_invoice_date,
        withholding_tax,
        interest,
        proforma_invoice_file,
-       id
+       id,
+       reviewed,
+       current_balance
 FROM accounter_schema.poalim_usd_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -95,5 +99,7 @@ SELECT tax_invoice_date,
        withholding_tax,
        interest,
        proforma_invoice_file,
-       id
+       id,
+       reviewed,
+       current_balance
 FROM accounter_schema.poalim_eur_account_transactions;

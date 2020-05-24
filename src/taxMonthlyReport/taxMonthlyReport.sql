@@ -67,7 +67,6 @@ AS $$
 (select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04 hashavshevet
 inner join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
-    bank.business_trip is null and
     (bank.account_number = 2733 OR bank.account_number = 61066) AND
         (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
             bank.account_type != 'creditcard' AND
@@ -90,7 +89,7 @@ UNION ALL
        '' as מטבע,
        formatted_financial_entity as חשבון_זכות_1,
        tax_category as סכום_זכות_1,
-       '' as מטח_סכום_זכות_1,
+       to_char(current_balance, 'FM999999999.00') as מטח_סכום_זכות_1,
        '' as חשבון_חובה_2,
        '' as סכום_חובה_2,
        '' as מטח_סכום_חובה_2,
@@ -107,10 +106,9 @@ UNION ALL
        'bank' as origin,
        proforma_invoice_file,
        id as id,
-       false as reviewed
+       reviewed
 from formatted_merged_tables
 where
-    business_trip IS NULL AND
     (account_number = 2733 OR account_number = 61066) AND
         (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             account_type != 'creditcard' AND
