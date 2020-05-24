@@ -22,7 +22,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month('2020-03-01', '2020-04-01')
+      from get_unified_tax_report_of_month('2020-04-01', '2020-04-01')
       order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
       `
     )
@@ -139,7 +139,7 @@ export const reportToReview = async (query: any): Promise<string> => {
         </td>
         <td class="invoiceDate">
           ${transaction.תאריך_חשבונית}
-          <img class="invoiceImage" src="${transaction.proforma_invoice_file}">
+          <img download class="invoiceImage" src="${transaction.proforma_invoice_file}">
         </td>
         <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
         <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>

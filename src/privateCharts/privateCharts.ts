@@ -13,7 +13,7 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
     ITopPrivateExpensesNotCategorizedSqlQuery
   >`
     select *
-    from top_private_expenses_not_categorized($startingDate);
+    from top_expenses_not_categorized($startingDate);
 `;
   let topPrivateNotCategorizedExpenses;
   try {

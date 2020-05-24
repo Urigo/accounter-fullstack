@@ -1,5 +1,5 @@
-drop function top_private_expenses_not_categorized;
-CREATE OR REPLACE FUNCTION top_private_expenses_not_categorized(month_input varchar)
+drop function top_expenses_not_categorized;
+CREATE OR REPLACE FUNCTION top_expenses_not_categorized(month_input varchar)
     RETURNS TABLE
             (
                 amount           numeric,
@@ -18,8 +18,7 @@ select abs(event_amount),
        bank_description,
        currency_code
 from formatted_merged_tables
-where (account_number = 9217 or account_number = 410915)
-    and (personal_category is null or
+where (personal_category is null or
          personal_category = '')
 --         AND event_amount < 0
     and event_date::text::date >= month_input::date

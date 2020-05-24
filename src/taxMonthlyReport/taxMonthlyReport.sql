@@ -1,18 +1,3 @@
-select
-       *,
-       gen_random_uuid() as id,
-       false as reviewed
--- into table accounter_schema.saved_tax_reports_2020_03
-from get_tax_report_of_month('2020-03-01');
-
-select
-       *,
-       gen_random_uuid() as id,
-       false as reviewed
--- into table accounter_schema.saved_tax_reports_2020_01
-from get_tax_report_of_month('2020-01-01')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
-
 SELECT count(CASE WHEN t3.reviewed THEN 1 END) FROM (
 select
        *,
@@ -42,10 +27,12 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id) t3;
 
 
 select *
-from get_unified_tax_report_of_month('2020-03-01')
+from get_unified_tax_report_of_month('2020-03-01', '2020-04-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
 
-CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_input varchar)
+drop function get_unified_tax_report_of_month;
+
+CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_start varchar, month_end varchar)
 RETURNS TABLE(
        תאריך_חשבונית varchar,
        חשבון_חובה_1 varchar,
@@ -67,7 +54,9 @@ RETURNS TABLE(
        סוג_תנועה varchar,
        תאריך_ערך varchar,
        תאריך_3 varchar,
-       original_id text,
+       original_id uuid,
+       origin text,
+       proforma_invoice_file text,
        id uuid,
        reviewed boolean
 )
@@ -75,34 +64,48 @@ LANGUAGE SQL
 AS $$
 
 
-select * from accounter_schema.saved_tax_reports_2020_03
+(select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04 hashavshevet
+inner join formatted_merged_tables bank on hashavshevet.original_id = bank.id
+where
+    bank.business_trip is null and
+    (bank.account_number = 2733 OR bank.account_number = 61066) AND
+        (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
+            bank.account_type != 'creditcard' AND
+            bank.event_date::text::date >= date_trunc('month', month_start::date) AND
+            bank.event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date OR
+            bank.event_date IS NULL)
+        OR (
+            (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
+             (
+                   bank.debit_date::text::date <= get_creditcard_charge_date(month_end)::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month(month_start)::date OR
+                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', month_start::date) AND
+                    bank.event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date)
+             ))))
 UNION ALL
-select
+(select
        formatted_event_date as תאריך_חשבונית,
-       CONCAT('BANK ', formatted_account) as חשבון_חובה_1,
-       event_amount::text as סכום_חובה_1,
+       formatted_account as חשבון_חובה_1,
+       concat(event_amount::text, ' ', currency_code) as סכום_חובה_1,
        bank_description as מטח_סכום_חובה_1,
-       currency_code as מטבע,
+       '' as מטבע,
        formatted_financial_entity as חשבון_זכות_1,
        tax_category as סכום_זכות_1,
-       'BANK' as מטח_סכום_זכות_1,
-       'BANK' as חשבון_חובה_2,
-       'BANK' as סכום_חובה_2,
-       'BANK' as מטח_סכום_חובה_2,
-       'BANK' as חשבון_זכות_2,
-       (select all_exchange_dates.usd_rate
-        from all_exchange_dates
-        where all_exchange_dates.exchange_date = debit_date::text::date)::text as סכום_זכות_2,
-       (select all_exchange_dates.eur_rate
-        from all_exchange_dates
-        where all_exchange_dates.exchange_date = debit_date::text::date)::text as מטח_סכום_זכות_2,
+       '' as מטח_סכום_זכות_1,
+       '' as חשבון_חובה_2,
+       '' as סכום_חובה_2,
+       '' as מטח_סכום_חובה_2,
+       '' as חשבון_זכות_2,
+       '' as סכום_זכות_2,
+       '' as מטח_סכום_זכות_2,
        '0' as פרטים,
        bank_reference as אסמכתא_1,
        to_char(tax_invoice_date, 'DD/MM/YYYY') as אסמכתא_2,
        vat::text as סוג_תנועה,
        to_char(debit_date, 'DD/MM/YYYY') as תאריך_ערך,
        formatted_event_date as תאריך_3,
-       id::text as original_id,
+       id::uuid as original_id,
+       'bank' as origin,
+       proforma_invoice_file,
        id as id,
        false as reviewed
 from formatted_merged_tables
@@ -111,16 +114,16 @@ where
     (account_number = 2733 OR account_number = 61066) AND
         (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             account_type != 'creditcard' AND
-            event_date::text::date >= date_trunc('month', month_input::date) AND
-            event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date OR
+            event_date::text::date >= date_trunc('month', month_start::date) AND
+            event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date OR
             event_date IS NULL)
         OR (
             (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
              (
-                   debit_date::text::date <= get_creditcard_charge_date(month_input)::date AND debit_date::text::date > get_creditcard_charge_date_former_month(month_input)::date OR
-                   (debit_date IS NULL AND event_date::text::date >= date_trunc('month', month_input::date) AND
-                    event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date)
-             )))
+                   debit_date::text::date <= get_creditcard_charge_date(month_end)::date AND debit_date::text::date > get_creditcard_charge_date_former_month(month_start)::date OR
+                   (debit_date IS NULL AND event_date::text::date >= date_trunc('month', month_start::date) AND
+                    event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date)
+             ))))
 
 $$;
 
@@ -129,7 +132,7 @@ select
        gen_random_uuid() as id,
        (
            select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03 t1
+           from accounter_schema.saved_tax_reports_2020_03_04 t1
            where
                 coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
                 coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
@@ -152,18 +155,48 @@ select
                 coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
                 coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
        ) as reviewed
-into table accounter_schema.saved_tax_reports_2020_03_1
-from get_tax_report_of_month('2020-03-01') t2
+into table accounter_schema.saved_tax_reports_2020_03_04_2
+from
+     ((select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+      union all
+      (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)) t2
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
+-- Report to Hashavshevet
+select hashavshevet.*
+from accounter_schema.saved_tax_reports_2020_03_04_2 hashavshevet
+left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
+where
+    (hashavshevet.original_id is null and
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-04-01'::date) and
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month', '2020-04-01'::date) + interval '1 month' - interval '1 day')::date
+    ) or (
+    bank.business_trip is null and
+    (bank.account_number = 2733 OR bank.account_number = 61066) AND
+        (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
+            bank.account_type != 'creditcard' AND
+            bank.event_date::text::date >= date_trunc('month', '2020-04-01'::date) AND
+            bank.event_date::text::date <= (date_trunc('month', '2020-04-01'::date) + interval '1 month' - interval '1 day')::date OR
+            bank.event_date IS NULL)
+        OR (
+            (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
+             (
+                   bank.debit_date::text::date <= get_creditcard_charge_date('2020-04-01')::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month('2020-04-01')::date OR
+                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', '2020-04-01'::date) AND
+                    bank.event_date::text::date <= (date_trunc('month', '2020-04-01'::date) + interval '1 month' - interval '1 day')::date)
+             ))))
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
+
+
 select *
-from get_tax_report_of_month('2020-03-01')
+-- into table accounter_schema.saved_tax_reports_2020_03_04
+from get_tax_report_of_month('2020-04-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 drop function get_tax_report_of_month(month_input varchar);
 
-CREATE OR REPLACE FUNCTION get_tax_report_of_month(month_input varchar)
-RETURNS TABLE(
+create or replace function get_tax_report_of_month(month_input varchar)
+returns table(
        תאריך_חשבונית varchar,
        חשבון_חובה_1 varchar,
        סכום_חובה_1 varchar,
@@ -184,7 +217,9 @@ RETURNS TABLE(
        סוג_תנועה varchar,
        תאריך_ערך varchar,
        תאריך_3 varchar,
-       original_id text
+       original_id uuid,
+       origin text,
+       proforma_invoice_file text
 )
 LANGUAGE SQL
 AS $$
@@ -234,7 +269,7 @@ WHERE
         (CASE WHEN event_amount < 0 THEN
             (CASE
                 WHEN side = 0 THEN formatted_invoice_amount_in_ils_if_exists
-                ELSE formatted_event_amount_in_ils
+                ELSE formatted_event_amount_in_ils_with_interest
             END) ELSE
             (CASE
                 WHEN side = 0 THEN formatted_invoice_amount_in_ils_with_vat_if_exists
@@ -259,7 +294,7 @@ WHERE
         (CASE WHEN event_amount > 0 THEN
             (CASE
                 WHEN side = 0 THEN formatted_invoice_amount_in_ils_if_exists
-                ELSE formatted_event_amount_in_ils
+                ELSE formatted_event_amount_in_ils_with_interest
             END) ELSE
             (CASE
                 WHEN side = 0 THEN formatted_invoice_amount_in_ils_with_vat_if_exists
@@ -272,6 +307,7 @@ WHERE
         END) AS מטח_סכום_זכות_1,
         (CASE
             WHEN (side = 0 AND event_amount < 0 AND vat <> 0) THEN 'תשו'
+            when (side = 1 and event_amount < 0 and interest <> 0) THEN 'הכנרבמ'
 --             ELSE NULL
             END
         ) AS חשבון_חובה_2,
@@ -281,17 +317,21 @@ WHERE
                 else vat
                 end)
                 )), 'FM999999999.00') END)
-
+            when (side = 1 and event_amount < 0 and interest <> 0)
+                then to_char(float8 (ABS(interest) ), 'FM999999999.00')
 --             ELSE NULL
          END) AS סכום_חובה_2,
         '' AS מטח_סכום_חובה_2,
         (CASE
             WHEN (side = 0 AND event_amount > 0 AND vat <> 0) THEN 'עסק'
+            when (side = 1 and event_amount > 0 and interest <> 0) THEN 'הכנרבמ'
 --             ELSE NULL
             END
         ) AS חשבון_זכות_2,
         (CASE
             WHEN (side = 0 AND event_amount > 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(vat)), 'FM999999999.00') END)
+            when (side = 1 and event_amount > 0 and interest <> 0)
+                then to_char(float8 (ABS(interest)), 'FM999999999.00')
 --             ELSE NULL
          END) AS סכום_זכות_2,
         '' AS מטח_סכום_זכות_2,
@@ -343,6 +383,7 @@ WHERE
         currency_code,
         contra_currency_code,
         debit_date,
+        proforma_invoice_file,
         id
     FROM this_month_business, generate_series(0,1) as side /* 0 = Entities, 1 = Accounts */
 ), two_sides as (
@@ -367,7 +408,9 @@ WHERE
         סוג_תנועה,
         תאריך_ערך,
         תאריך_3,
-        id::text as original_id
+        id as original_id,
+        concat('two_sides - ', side) as origin,
+        proforma_invoice_file
     FROM full_report_selection
     WHERE
         financial_entity != 'Isracard' AND
@@ -399,7 +442,9 @@ WHERE
         סוג_תנועה,
         תאריך_ערך,
         תאריך_3,
-        id::text as original_id
+        id as original_id,
+        concat('one_side - ', side) as origin,
+        proforma_invoice_file
     FROM full_report_selection
     WHERE
        (financial_entity = 'Uri Goldshtein' OR
@@ -431,7 +476,9 @@ WHERE
         '' AS סוג_תנועה,
         תאריך_ערך,
         תאריך_3,
-        id::text as original_id
+        id as original_id,
+        'conversions' as origin,
+        proforma_invoice_file
     FROM full_report_selection
     WHERE
          is_conversion IS TRUE AND
@@ -468,7 +515,9 @@ WHERE
         '' AS סוג_תנועה,
         תאריך_ערך,
         תאריך_3,
-        id::text as original_id
+        id as original_id,
+        'conversions_fees' as origin,
+        proforma_invoice_file
     FROM full_report_selection
     WHERE
          is_conversion IS TRUE AND
@@ -545,10 +594,18 @@ WHERE
             '' AS סוג_תנועה,
            תאריך_ערך AS תאריך_ערך,
            תאריך_3 AS תאריך_3,
-           id::text as original_id
+           id as original_id,
+           'invoice_rates_change' as origin,
+           proforma_invoice_file
     FROM full_report_selection
     WHERE
          tax_invoice_date <> debit_date and
+        (select all_exchange_dates.usd_rate
+         from all_exchange_dates
+         where all_exchange_dates.exchange_date = debit_date::text::date) <> (
+         select all_exchange_dates.usd_rate
+         from all_exchange_dates
+         where all_exchange_dates.exchange_date = tax_invoice_date::text::date) and
          account_type != 'creditcard' and
          currency_code != 'ILS' and
          side = 0
@@ -596,7 +653,9 @@ WHERE
             '' AS סוג_תנועה,
            formatted_debit_date AS תאריך_ערך,
            formatted_event_date AS תאריך_3,
-           id::text as original_id
+           id as original_id,
+           'transfer_fees' as origin,
+           proforma_invoice_file
     FROM this_month_business
     WHERE
          tax_invoice_amount IS NOT NULL AND
@@ -626,7 +685,9 @@ WHERE
             '' AS סוג_תנועה,
            formatted_debit_date AS תאריך_ערך,
            formatted_event_date AS תאריך_3,
-           id::text as original_id
+           id as original_id,
+           'withholding_tax' as origin,
+           proforma_invoice_file
     FROM this_month_business
     WHERE
          tax_invoice_amount IS NOT NULL AND
@@ -666,8 +727,12 @@ WHERE
        to_char(
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
        , 'DD/MM/YYYY') AS תאריך_ערך,
-       NULL AS תאריך_3,
-       '' as original_id
+       to_char(
+           (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
+       , 'DD/MM/YYYY') AS תאריך_3,
+       null::uuid as original_id,
+       'all_vat_to_recieve_for_previous_month' as origin,
+       ''
     FROM
          formatted_merged_tables
     WHERE
@@ -699,8 +764,12 @@ WHERE
        to_char(
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
        , 'DD/MM/YYYY') AS תאריך_ערך,
-       NULL AS תאריך_3,
-       '' as original_id
+       to_char(
+           (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
+       , 'DD/MM/YYYY') AS תאריך_3,
+       null::uuid as original_id,
+       'all_vat_to_pay_for_previous_month' as origin,
+       ''
     FROM
          formatted_merged_tables
     WHERE

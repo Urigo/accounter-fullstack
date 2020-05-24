@@ -27,6 +27,7 @@ SELECT *,
             WHEN financial_entity = 'VAT' THEN 'מעמחוז'
             WHEN financial_entity = 'Israeli Corporations Authority' THEN 'רשם החברות'
             WHEN financial_entity = 'SATURN AMSTERDAM ODE' THEN 'SATURN AMS'
+            WHEN financial_entity = 'Linux Foundation' THEN 'LinuxFound'
             WHEN financial_entity = 'Malach' THEN 'מלאך'
             WHEN financial_entity = 'Tax' THEN
                 (CASE
@@ -107,6 +108,21 @@ SELECT *,
                                ELSE -99999999999
            END
            ))), 'FM999999999.00')              as formatted_event_amount_in_ils,
+       to_char(float8(ABS((CASE
+                               WHEN currency_code = 'ILS' THEN event_amount + coalesce(interest, 0)
+                               WHEN currency_code = 'EUR' THEN event_amount * (
+                                   select all_exchange_dates.eur_rate
+                                   from all_exchange_dates
+                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                               )
+                               WHEN currency_code = 'USD' THEN event_amount * (
+                                   select all_exchange_dates.usd_rate
+                                   from all_exchange_dates
+                                   where all_exchange_dates.exchange_date = debit_date::text::date
+                               )
+                               ELSE -99999999999
+           END
+           ))), 'FM999999999.00')              as formatted_event_amount_in_ils_with_interest,
        to_char(float8(ABS((CASE
                                WHEN (tax_invoice_amount IS NOT NULL AND
                                      tax_invoice_amount <> 0 AND

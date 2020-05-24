@@ -37,6 +37,8 @@ SELECT tax_invoice_date,
            WHEN full_supplier_name_heb IS NULL THEN (COALESCE(full_supplier_name_outbound, '') || COALESCE('/' || city, ''))
            END                       AS bank_description,
        withholding_tax,
+       interest,
+       proforma_invoice_file,
        id
 FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR

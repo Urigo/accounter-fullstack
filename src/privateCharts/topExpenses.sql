@@ -1,3 +1,8 @@
+Select ID, Date, SUM(Quantity) OVER (PARTITION BY ID ORDER BY DATE)
+From formatted_merged_tables
+where ;
+
+
 SELECT *
 FROM top_private_expenses;
 
