@@ -1,4 +1,4 @@
-select * from missing_invoice_dates('2020-03-01');
+select * from missing_invoice_dates('2020-05-01');
 
 create or replace function missing_invoice_dates(month_input varchar)
 returns setof formatted_merged_tables
@@ -11,7 +11,6 @@ WITH this_month_business AS (
     WHERE business_trip IS NULL
       AND (account_number = 2733 OR account_number = 61066)
       AND (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
-            account_type != 'creditcard' AND
             event_date::text::date >= date_trunc('month', month_input::date) AND
             event_date::text::date <=
             (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date OR

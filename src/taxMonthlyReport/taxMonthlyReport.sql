@@ -30,6 +30,8 @@ select *
 from get_unified_tax_report_of_month('2020-03-01', '2020-04-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
 
+-- select * get_creditcard_charge_date('2020-05-01');
+
 drop function get_unified_tax_report_of_month;
 
 CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_start varchar, month_end varchar)
@@ -64,9 +66,10 @@ LANGUAGE SQL
 AS $$
 
 
-(select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04 hashavshevet
-inner join formatted_merged_tables bank on hashavshevet.original_id = bank.id
+(select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04_4 hashavshevet
+left outer join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
+    bank is null or (
     (bank.account_number = 2733 OR bank.account_number = 61066) AND
         (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
             bank.account_type != 'creditcard' AND
@@ -79,7 +82,7 @@ where
                    bank.debit_date::text::date <= get_creditcard_charge_date(month_end)::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month(month_start)::date OR
                    (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', month_start::date) AND
                     bank.event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date)
-             ))))
+             )))))
 UNION ALL
 (select
        formatted_event_date as תאריך_חשבונית,
@@ -125,6 +128,7 @@ where
 
 $$;
 
+-- Merge and insert new transactions into existing table
 select
        *,
        gen_random_uuid() as id,
@@ -153,11 +157,14 @@ select
                 coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
                 coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
        ) as reviewed
-into table accounter_schema.saved_tax_reports_2020_03_04_2
-from
-     ((select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+into table accounter_schema.saved_tax_reports_2020_03_04_4
+from (
+    (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
       union all
-      (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)) t2
+    (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+      union all
+    (select * from get_tax_report_of_month('2020-05-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+    ) t2
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 -- Report to Hashavshevet
@@ -188,7 +195,7 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבו�
 
 select *
 -- into table accounter_schema.saved_tax_reports_2020_03_04
-from get_tax_report_of_month('2020-04-01')
+from get_tax_report_of_month('2020-05-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 drop function get_tax_report_of_month(month_input varchar);
