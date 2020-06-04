@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import { reportToReview } from './reportsForReview/reportsToReview';
 import { printSomething } from './anotherFile';
-import { financialStatus } from './firstPage';
+import { financialStatus, tableStyles } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
 import { topPrivateNotCategorized } from './privateCharts/privateCharts';
 
@@ -60,6 +60,36 @@ async function main() {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
       const query = url_parts.query;
+      response.write(`
+        ${tableStyles}
+        <style>
+        .valueDateValues {
+          display: none;
+        }
+        .valueDate:hover .valueDateValues {
+          display: block;
+        }
+        .invoiceImage {
+          display: none;
+          position: absolute;
+          height: 90%;
+        }
+        .invoiceDate:hover .invoiceImage {
+          display: block;
+        }
+
+        tr.selected {
+          background-color: coral;
+        }
+        tr.bank-transaction.selected {
+          background-color: coral;
+        }
+        tr.bank-transaction {
+          background-color: #a68613;
+        }
+      </style>
+      <h1>Loading...</h1>
+      `);
       let responseHTML = await reportToReview(query);
       response.end(responseHTML);
     } else if (request.url == '/private-charts') {
@@ -142,7 +172,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_03_04';
+        let tableToUpdate = 'saved_tax_reports_2020_03_04_05';
         if (data.accountType) {
           if (data.accountType == 'עוש1') {
             tableToUpdate = 'poalim_usd_account_transactions'

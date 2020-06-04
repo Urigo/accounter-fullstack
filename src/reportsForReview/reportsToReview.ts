@@ -1,5 +1,4 @@
 import { pool } from '../index';
-import { tableStyles } from '../firstPage';
 import { readFileSync } from 'fs';
 import moment from 'moment';
 // import fetch from 'node-fetch';
@@ -181,32 +180,6 @@ export const reportToReview = async (query: any): Promise<string> => {
       `);
   }
   reportToReviewHTMLTemplate = `
-      <style>
-        .valueDateValues {
-          display: none;
-        }
-        .valueDate:hover .valueDateValues {
-          display: block;
-        }
-        .invoiceImage {
-          display: none;
-          position: absolute;
-          height: 90%;
-        }
-        .invoiceDate:hover .invoiceImage {
-          display: block;
-        }
-
-        tr.selected {
-          background-color: coral;
-        }
-        tr.bank-transaction.selected {
-          background-color: coral;
-        }
-        tr.bank-transaction {
-          background-color: #a68613;
-        }
-      </style>
       <div>
       סהכ סכום חובה  :  <br>
       ${(Math.round(outcomeSum * 100) / 100).toFixed(2)}
@@ -258,8 +231,6 @@ export const reportToReview = async (query: any): Promise<string> => {
     `;
 
   return `
-      ${tableStyles}
-
       <h3>Last invoice numbers</h3>
   
       ${lastInvoiceNumbersHTMLTemplate}
