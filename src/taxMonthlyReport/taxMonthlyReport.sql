@@ -66,7 +66,7 @@ LANGUAGE SQL
 AS $$
 
 
-(select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04_4 hashavshevet
+(select hashavshevet.* from accounter_schema.saved_tax_reports_2020_03_04_05 hashavshevet
 left outer join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     bank is null or (
@@ -134,7 +134,7 @@ select
        gen_random_uuid() as id,
        (
            select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03_04 t1
+           from accounter_schema.saved_tax_reports_2020_03_04_4 t1
            where
                 coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
                 coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
@@ -157,7 +157,7 @@ select
                 coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
                 coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
        ) as reviewed
-into table accounter_schema.saved_tax_reports_2020_03_04_4
+into table accounter_schema.saved_tax_reports_2020_03_04_05
 from (
     (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
       union all
