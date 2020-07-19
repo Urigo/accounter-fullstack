@@ -8,8 +8,8 @@
     "typegen": "pgtyped -c pgTypedConfig.json"
   },
   "dependencies": {
-    "@pgtyped/cli": "0.8.1",
-    "@pgtyped/query": "0.8.1",
+    "@pgtyped/cli": "0.4.5",
+    "@pgtyped/query": "0.4.5",
     "dotenv": "8.2.0",
     "moment": "2.27.0",
     "node-fetch": "2.6.0",
