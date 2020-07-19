@@ -2,7 +2,7 @@
     "transforms": [{
       "mode": "ts",
       "include": "*.ts",
-      "emitFileName": "queries.types.ts"
+      "emitTemplate": "{{dir}}/{{name}}.types.ts"
     }],
     "srcDir": "./src/",
     "db": {
