@@ -82,6 +82,14 @@ export const financialStatus = async (query: any): Promise<string> => {
       [`$$${monthTaxReport}$$`]
     ),
     pool.query(allTransactionsQuery),
+    pool.query(
+      `
+        select *
+        from missing_invoice_images($1)
+        order by event_date;
+      `,
+      [`$$${monthTaxReport}$$`]
+    ),    
   ]);
 
   let missingInvoiceDates: any = results[0].value;
@@ -90,6 +98,7 @@ export const financialStatus = async (query: any): Promise<string> => {
   // let currentVATStatus: any = results[3].value;
   let VATTransactions: any = results[3].value;
   let allTransactions: any = results[4].value;
+  let missingInvoiceImages: any = results[5].value;
 
   let missingInvoiceDatesHTMLTemplate = '';
   if (missingInvoiceDates?.rows) {
@@ -162,6 +171,42 @@ export const financialStatus = async (query: any): Promise<string> => {
         </tbody>
       </table>  
     `;
+
+    let missingInvoiceImagesHTMLTemplate = '';
+    if (missingInvoiceImages?.rows){
+      for (const transaction of missingInvoiceImages?.rows) {
+        missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
+          <tr>
+            <td>${transaction.event_date
+              .toISOString()
+              .replace(/T/, ' ')
+              .replace(/\..+/, '')}</td>
+            <td>${transaction.event_amount}${currencyCodeToSymbol(
+          transaction.currency_code
+        )}</td>
+            <td>${transaction.financial_entity}</td>
+            <td>${transaction.user_description}</td>
+            <td>${transaction.tax_invoice_number}</td>
+          </tr>
+          `);
+      }
+    }
+    missingInvoiceImagesHTMLTemplate = `
+        <table>
+          <thead>
+              <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Entity</th>
+                  <th>Description</th>
+                  <th>Invoice Number</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${missingInvoiceImagesHTMLTemplate}
+          </tbody>
+        </table>  
+      `;    
 
   let lastInvoiceNumbersHTMLTemplate = '';
   if (lastInvoiceNumbers?.rows){
@@ -309,6 +354,10 @@ export const financialStatus = async (query: any): Promise<string> => {
       <h3>Missing invoice dates for a month</h3>
   
       ${missingInvoiceDatesHTMLTemplate}
+
+      <h3>Missing invoice images</h3>
+
+      ${missingInvoiceImagesHTMLTemplate}
   
       <h3>Last invoice numbers</h3>
   
