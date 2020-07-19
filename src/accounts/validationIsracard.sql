@@ -46,7 +46,7 @@ with all_creditcard_transactions as (
                WHEN payment_sum IS NULL THEN payment_sum_outbound
                WHEN payment_sum_outbound IS NULL THEN payment_sum
                END as real_payment
-    FROM accounter.accounter_schema.isracard_creditcard_transactions
+    FROM accounter_schema.isracard_creditcard_transactions
     WHERE full_supplier_name_outbound <> 'TOTAL FOR DATE'
        OR full_supplier_name_outbound IS NULL
         AND
