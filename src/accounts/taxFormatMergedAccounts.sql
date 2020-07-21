@@ -14,6 +14,7 @@ SELECT *,
            END)                                as formatted_account,
        (case
            when financial_entity = 'Poalim' then 'עמל'
+           when financial_entity = 'Tax Corona Grant' then 'מענק קורונה'
            else tax_category
        end) as formatted_tax_category,
        (CASE
@@ -39,9 +40,11 @@ SELECT *,
             WHEN financial_entity = 'Uri Goldshtein Employee Tax Withholding' THEN 'מהני'
             WHEN financial_entity = 'Uri Goldshtein Employee Social Security' THEN 'בלני'
             WHEN financial_entity = 'Uri Goldshtein' THEN 'אורי'
+            WHEN financial_entity = 'Uri Goldshtein Hoz' THEN 'אוריח'
             WHEN financial_entity = 'Raveh Ravid & Co' THEN 'יהל'
             WHEN financial_entity = 'Production Ready GraphQL' THEN 'ProdReadyGraph'
             WHEN financial_entity = 'הפרשי שער' THEN 'שער'
+            when financial_entity = 'Tax Corona Grant' then 'מענק קורונה'
             ELSE financial_entity END
            )                                   as formatted_financial_entity,
        to_char(event_date, 'DD/MM/YYYY')       as formatted_event_date,
