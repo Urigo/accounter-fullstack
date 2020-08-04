@@ -45,10 +45,10 @@ from trip_report(
         'נסעחול28',
         true,
         0,
-        ('2019-12-09'::date - '2019-12-05'::date + 1) - 1
+        ('2019-12-09'::date - '2019-12-05'::date + 1)
     );
 
-Copenhagen 12/2019 - issue
+-- Copenhagen 12/2019
 select *
 from trip_report(
         '2019-12-14',
@@ -82,18 +82,72 @@ from trip_report(
 -- France 03/2020
 select *
 from trip_report(
-        '2020-02-21',
+        '2020-03-06',
         'נסעחול33',
         true,
         ('2020-03-06'::date - '2020-03-04'::date + 1),
         0
     );
 
--- '2020-02-07'::date - '2020-02-17'::date, Amsterdam 01/2020 31
--- '2020-02-22'::date - '2020-03-03'::date, Amsterdam 01/2020 31
--- '2020-03-07'::date - 'now'::date, Amsterdam 01/2020 31
---
--- NYC 34
+-- Amsterdam 01/2020
+select *
+from trip_report(
+        '2020-06-20',
+        'נסעחול31',
+        true,
+        ('2020-02-17'::date - '2020-02-07'::date + 1) +
+        ('2020-03-03'::date - '2020-02-22'::date + 1) + ('2020-06-20'::date - '2020-03-07'::date + 1),
+        0
+    );
+
+-- NYC Cancelled
+select *
+from trip_report(
+        '2020-03-02',
+        'נסעחול34',
+        true,
+        0,
+        0
+    );
+
+
+select
+       *,
+       gen_random_uuid() as id,
+       (
+           select t1.reviewed
+           from accounter_schema.saved_tax_reports_2020_03_04 t1
+           where
+                coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
+                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
+                coalesce(t1.סכום_חובה_1, '' )= coalesce(t2.סכום_חובה_1, '') and
+                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
+                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
+                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
+                coalesce(t1.סכום_זכות_1, '' )= coalesce(t2.סכום_זכות_1, '') and
+                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
+                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
+                coalesce(t1.סכום_חובה_2, '') = coalesce(t2.סכום_חובה_2, '') and
+                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
+                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
+                coalesce(t1.סכום_זכות_2, '') = coalesce(t2.סכום_זכות_2, '') and
+                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
+                coalesce(t1.פרטים, '') = coalesce(t2.פרטים, '') and
+                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
+                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
+                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '') and
+                coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
+                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
+       ) as reviewed
+into table accounter_schema.saved_tax_reports_2020_03_04_3
+from (
+        (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+          union all
+        (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+          union all
+        (select * from trip_report('2020-02-21','נסעחול33',true,('2020-03-06'::date - '2020-03-04'::date + 1),0))
+    ) t2
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 
 select user_description,
@@ -104,7 +158,9 @@ from formatted_merged_tables
 where tax_category = 'נסעחול28'
 order by event_date;
 
+drop function trip_report;
 
+-- TODO: Send year as a parameter and adjust to it
 CREATE OR REPLACE FUNCTION trip_report(last_date_input varchar,
                                        trip_name varchar,
                                        is_higher_country boolean,
@@ -131,7 +187,10 @@ CREATE OR REPLACE FUNCTION trip_report(last_date_input varchar,
                 אסמכתא_2        varchar,
                 סוג_תנועה       varchar,
                 תאריך_ערך       varchar,
-                תאריך_3         varchar
+                תאריך_3         varchar,
+                original_id    uuid,
+                origin         text,
+                invoice_image  text
             )
     LANGUAGE SQL
 AS
@@ -178,18 +237,21 @@ with last_day as (
                 null                                                            as מטח_סכום_זכות_2,
                 user_description                                                AS פרטים,
                 bank_reference                                                  AS אסמכתא_1,
-                LEFT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,
+                RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,
                 null                                                            as סוג_תנועה,
                 (CASE
                      WHEN debit_date IS NULL THEN formatted_event_date
                      ELSE formatted_debit_date
                     END)                                                        AS תאריך_ערך,
-                formatted_event_date                                            AS תאריך_3
+                formatted_event_date,
+                id as original_id,
+                'trip_report' as origin,
+                '' as invoice_image
          from all_trip_transactions
      ),
      total_money_for_days as (
-         select (number_of_days_with_sleep_input * 80) +
-                (number_of_days_without_sleep_input * 133) as total_usd
+         select (number_of_days_with_sleep_input * 81) +
+                (number_of_days_without_sleep_input * 136) as total_usd
      ),
      higher_countries as (
          select (case
@@ -224,12 +286,15 @@ with last_day as (
                 null                                                                                 as חשבון_זכות_2,
                 null                                                                                 as סכום_זכות_2,
                 null                                                                                 as מטח_סכום_זכות_2,
-                'אש״ל לא מנוצלות'                                                                    as פרטים,
+                'אש״ל לא מנוצלות'                                                                      as פרטים,
                 null::int                                                                            as אסמכתא_1,
                 null                                                                                 as אסמכתא_2,
                 null                                                                                 as סוג_תנועה,
-                to_char(top_value_date.debit_date, 'DD/MM/YYYY')                                     as תאריך_ערך,
-                null                                                                                 AS תאריך_3
+                to_char(last_day.date, 'DD/MM/YYYY')                                                 as תאריך_ערך,
+                to_char(top_value_date.debit_date, 'DD/MM/YYYY')                                     as תאריך_3,
+                null::uuid                                                                           as original_id,
+                'trip_report'                                                                        as origin,
+                ''                                                                                   as invoice_image
          from last_day,
               exchange_rate,
               higher_countries,
