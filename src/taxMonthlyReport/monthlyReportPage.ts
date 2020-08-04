@@ -10,7 +10,7 @@ export const monthlyReport = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReportDate = `2020-0${query.month}-01`;
   } else {
-    monthTaxReportDate = '2020-03-01';
+    monthTaxReportDate = '2020-07-01';
   }
   console.log('monthTaxReportDate', monthTaxReportDate);
 

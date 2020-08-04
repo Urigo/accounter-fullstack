@@ -42,7 +42,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2020-06-01';
+    monthTaxReport = '2020-07-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
