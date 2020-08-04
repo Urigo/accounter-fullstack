@@ -2,31 +2,31 @@ select gen_random_uuid();
 
 -- Report to Hashavshevet
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06 hashavshevet
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 hashavshevet
 left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     (hashavshevet.original_id is null and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-06-01'::date) and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month', '2020-06-01'::date) + interval '1 month' - interval '1 day')::date
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date) and
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month', '2020-07-01'::date) + interval '1 month' - interval '1 day')::date
     ) or (
     bank.business_trip is null and
     (bank.account_number = 2733 OR bank.account_number = 61066) AND
         (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
             bank.account_type != 'creditcard' AND
-            bank.event_date::text::date >= date_trunc('month', '2020-06-01'::date) AND
-            bank.event_date::text::date <= (date_trunc('month', '2020-06-01'::date) + interval '1 month' - interval '1 day')::date OR
+            bank.event_date::text::date >= date_trunc('month', '2020-07-01'::date) AND
+            bank.event_date::text::date <= (date_trunc('month', '2020-07-01'::date) + interval '1 month' - interval '1 day')::date OR
             bank.event_date IS NULL)
         OR (
             (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
              (
-                   bank.debit_date::text::date <= get_creditcard_charge_date('2020-06-01')::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month('2020-06-01')::date OR
-                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', '2020-06-01'::date) AND
-                    bank.event_date::text::date <= (date_trunc('month', '2020-06-01'::date) + interval '1 month' - interval '1 day')::date)
+                   bank.debit_date::text::date <= get_creditcard_charge_date('2020-07-01')::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month('2020-07-01')::date OR
+                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', '2020-07-01'::date) AND
+                    bank.event_date::text::date <= (date_trunc('month', '2020-07-01'::date) + interval '1 month' - interval '1 day')::date)
              ))))
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
 
 select *
-from get_unified_tax_report_of_month('2020-06-01', '2020-06-01')
+from get_unified_tax_report_of_month('2020-03-01', '2020-07-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
 
 drop function get_unified_tax_report_of_month;
@@ -66,7 +66,7 @@ AS $$
 
 (
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06 hashavshevet
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 hashavshevet
 left outer join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     bank is null or (
@@ -183,7 +183,7 @@ select
                 coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
                 coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
        ) as hashavshevet_id
-into table accounter_schema.saved_tax_reports_2020_03_04_05_06_new
+into table accounter_schema.saved_tax_reports_2020_03_04_05_06_07
 from (
     (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
       union all
