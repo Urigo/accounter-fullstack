@@ -41,6 +41,7 @@ SELECT tax_invoice_date,
        proforma_invoice_file,
        id,
        reviewed,
+       hashavshevet_id,
        0 as current_balance
 FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR

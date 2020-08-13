@@ -45,6 +45,8 @@ SELECT *,
             WHEN financial_entity = 'Production Ready GraphQL' THEN 'ProdReadyGraph'
             WHEN financial_entity = 'הפרשי שער' THEN 'שער'
             when financial_entity = 'Tax Corona Grant' then 'מענק קורונה'
+            when financial_entity = 'VAT interest refund' then 'מעמ שער'
+            when financial_entity = 'Tax Shuma' then 'שומה 2018'
             ELSE financial_entity END
            )                                   as formatted_financial_entity,
        to_char(event_date, 'DD/MM/YYYY')       as formatted_event_date,
@@ -251,4 +253,5 @@ SELECT *,
             WHEN currency_code = 'EUR' THEN 'אירו'
             ELSE ''
            END)                                as formatted_currency
-FROM merged_tables;
+FROM merged_tables
+where event_date > '2019-12-31';
