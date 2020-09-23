@@ -9,22 +9,22 @@ export const reportToReview = async (query: any): Promise<string> => {
   if (query.month) {
     reportMonthToReview = `2020-0${query.month}-01`;
   } else {
-    reportMonthToReview = `2020-07-01`;
+    reportMonthToReview = `2020-08-01`;
   }
 
   const lastInvoiceNumbersQuery = readFileSync(
     'src/sql/lastInvoiceNumbers.sql'
   ).toString();
-  
+
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month('2020-03-01', '2020-07-01')
+      from get_unified_tax_report_of_month('2020-03-01', '2020-08-01')
       order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
       `
-    )
+    ),
   ]);
   let lastInvoiceNumbers: any = results[0].value;
   let reportToReview: any = results[1].value;
@@ -70,34 +70,46 @@ export const reportToReview = async (query: any): Promise<string> => {
   let VATincome = 0;
   let VAToutcome = 0;
   for (const transaction of reportToReview.rows) {
+    if (
+      transaction.חשבון_חובה_1 != 'מעמחוז' &&
+      transaction.חשבון_חובה_1 != 'עסק' &&
+      transaction.פרטים &&
+      transaction.פרטים != '0'
+    ) {
+      if (transaction.סכום_חובה_1) {
+        outcomeSum += parseFloat(transaction.סכום_חובה_1);
+      }
+      if (transaction.סכום_חובה_2) {
+        outcomeSum += parseFloat(transaction.סכום_חובה_2);
+      }
+      if (transaction.סכום_זכות_1) {
+        incomeSum += parseFloat(transaction.סכום_זכות_1);
+      }
+      if (transaction.סכום_זכות_2) {
+        incomeSum += parseFloat(transaction.סכום_זכות_2);
+      }
 
-    if (transaction.חשבון_חובה_1 !=
-      'מעמחוז' && transaction.חשבון_חובה_1 !=
-      'עסק' &&
-      (transaction.פרטים && transaction.פרטים
-       != '0')) {
-      if (transaction.סכום_חובה_1) { outcomeSum += parseFloat(transaction.סכום_חובה_1); }
-      if (transaction.סכום_חובה_2) { outcomeSum += parseFloat(transaction.סכום_חובה_2); }
-      if (transaction.סכום_זכות_1) { incomeSum += parseFloat(transaction.סכום_זכות_1); }
-      if (transaction.סכום_זכות_2) { incomeSum += parseFloat(transaction.סכום_זכות_2); }
-
-      if (transaction.סכום_חובה_2) { VAToutcome += parseFloat(transaction.סכום_חובה_2); }
-      if (transaction.סכום_זכות_2) { VATincome += parseFloat(transaction.סכום_זכות_2); }
-  }
+      if (transaction.סכום_חובה_2) {
+        VAToutcome += parseFloat(transaction.סכום_חובה_2);
+      }
+      if (transaction.סכום_זכות_2) {
+        VATincome += parseFloat(transaction.סכום_זכות_2);
+      }
+    }
 
     let exchangeRate: any = 0;
-    if (transaction.תאריך_ערך) {      
-      let valueDate = moment(transaction.תאריך_ערך, 
-        'DD/MM/YYYY');
-  
-        exchangeRate = await pool.query(`
+    if (transaction.תאריך_ערך) {
+      let valueDate = moment(transaction.תאריך_ערך, 'DD/MM/YYYY');
+
+      exchangeRate = await pool.query(`
         select all_exchange_dates.eur_rate, all_exchange_dates.usd_rate
         from all_exchange_dates
-        where all_exchange_dates.exchange_date = '${valueDate.format('YYYY-MM-DD')}'
+        where all_exchange_dates.exchange_date = '${valueDate.format(
+          'YYYY-MM-DD'
+        )}'
       `);
     }
 
-    
     // let url = `https://www.boi.org.il/currency.xml?rdate=${valueDate.format(
     //   'YYYYMMDD'
     // )}`;
@@ -124,24 +136,25 @@ export const reportToReview = async (query: any): Promise<string> => {
     // })();
 
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
-      <tr ${transaction.פרטים && transaction.פרטים 
-          == '0'
+      <tr ${
+        transaction.פרטים && transaction.פרטים == '0'
           ? 'class="bank-transaction"'
           : ''
       } onClick='setSelected(this);'>
         <td>${counter++}</td>
         <td>
-          <input onchange="changeConfirmation('${
-            transaction.id
-          }', this${transaction.פרטים && transaction.פרטים 
-              == '0'
-                ? ", '" + transaction.חשבון_חובה_1 + "'"
-                : ''});" type="checkbox" 
+          <input onchange="changeConfirmation('${transaction.id}', this${
+      transaction.פרטים && transaction.פרטים == '0'
+        ? ", '" + transaction.חשבון_חובה_1 + "'"
+        : ''
+    });" type="checkbox" 
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">
           ${transaction.תאריך_חשבונית}
-          <img download class="invoiceImage" src="${transaction.proforma_invoice_file}">
+          <img download class="invoiceImage" src="${
+            transaction.proforma_invoice_file
+          }">
         </td>
         <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
         <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
@@ -171,12 +184,14 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td class="valueDate">
           ${transaction.תאריך_ערך}
           <div class="valueDateValues">
-            USD-${(exchangeRate?.rows) ? exchangeRate?.rows[0]?.usd_rate : 0}
-            EUR-${(exchangeRate?.rows) ? exchangeRate?.rows[0]?.eur_rate : 0}
+            USD-${exchangeRate?.rows ? exchangeRate?.rows[0]?.usd_rate : 0}
+            EUR-${exchangeRate?.rows ? exchangeRate?.rows[0]?.eur_rate : 0}
           </div>
         </td>
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
-        <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}</td>
+        <td>${
+          transaction.hashavshevet_id ? transaction.hashavshevet_id : ''
+        }</td>
       </tr>
       `);
   }

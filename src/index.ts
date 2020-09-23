@@ -172,19 +172,18 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07';
+        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07_08';
         if (data.accountType) {
           if (data.accountType == 'עוש1') {
-            tableToUpdate = 'poalim_usd_account_transactions'
+            tableToUpdate = 'poalim_usd_account_transactions';
           } else if (data.accountType == 'עוש2') {
-            tableToUpdate = 'poalim_eur_account_transactions'
+            tableToUpdate = 'poalim_eur_account_transactions';
           } else if (data.accountType == 'עוש') {
-            tableToUpdate = 'poalim_ils_account_transactions'
+            tableToUpdate = 'poalim_ils_account_transactions';
           } else if (data.accountType == 'כא') {
-            tableToUpdate = 'isracard_creditcard_transactions'
+            tableToUpdate = 'isracard_creditcard_transactions';
           }
         }
-        
 
         const submitReviewQuery = `
           UPDATE accounter_schema.${tableToUpdate}
