@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { pool } from './index';
+import moment from 'moment';
 
 export function currencyCodeToSymbol(currency_code: string): string {
   let currencySymbol = '₪';
@@ -42,7 +43,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2020-07-01';
+    monthTaxReport = '2020-08-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -89,7 +90,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         order by event_date;
       `,
       [`$$${monthTaxReport}$$`]
-    ),    
+    ),
   ]);
 
   let missingInvoiceDates: any = results[0].value;
@@ -137,7 +138,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let missingInvoiceNumbersHTMLTemplate = '';
-  if (missingInvoiceNumbers?.rows){
+  if (missingInvoiceNumbers?.rows) {
     for (const transaction of missingInvoiceNumbers?.rows) {
       missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
         <tr>
@@ -172,26 +173,26 @@ export const financialStatus = async (query: any): Promise<string> => {
       </table>  
     `;
 
-    let missingInvoiceImagesHTMLTemplate = '';
-    if (missingInvoiceImages?.rows){
-      for (const transaction of missingInvoiceImages?.rows) {
-        missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
+  let missingInvoiceImagesHTMLTemplate = '';
+  if (missingInvoiceImages?.rows) {
+    for (const transaction of missingInvoiceImages?.rows) {
+      missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
             <td>${transaction.event_date
               .toISOString()
               .replace(/T/, ' ')
               .replace(/\..+/, '')}</td>
             <td>${transaction.event_amount}${currencyCodeToSymbol(
-          transaction.currency_code
-        )}</td>
+        transaction.currency_code
+      )}</td>
             <td>${transaction.financial_entity}</td>
             <td>${transaction.user_description}</td>
             <td>${transaction.tax_invoice_number}</td>
           </tr>
           `);
-      }
     }
-    missingInvoiceImagesHTMLTemplate = `
+  }
+  missingInvoiceImagesHTMLTemplate = `
         <table>
           <thead>
               <tr>
@@ -206,10 +207,10 @@ export const financialStatus = async (query: any): Promise<string> => {
               ${missingInvoiceImagesHTMLTemplate}
           </tbody>
         </table>  
-      `;    
+      `;
 
   let lastInvoiceNumbersHTMLTemplate = '';
-  if (lastInvoiceNumbers?.rows){
+  if (lastInvoiceNumbers?.rows) {
     for (const transaction of lastInvoiceNumbers?.rows) {
       lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
         <tr>
@@ -243,7 +244,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     `;
 
   let VATTransactionsString = '';
-  if (VATTransactions?.rows){
+  if (VATTransactions?.rows) {
     for (const transaction of VATTransactions?.rows) {
       VATTransactionsString = VATTransactionsString.concat(`
         <tr>
@@ -308,9 +309,19 @@ export const financialStatus = async (query: any): Promise<string> => {
           }</td>
           <td>${transaction.vat}</td>
           <td>${transaction.account_number}${transaction.account_type}</td>
+          <td class="even_with_dotan" onClick='printElement(this, prompt("New Account to share:"));'>${
+            transaction.financial_accounts_to_balance
+          }</td>
           <td>${transaction.tax_category}</td>
-          <td>${transaction.tax_invoice_number}</td>
           <td>${transaction.bank_description}</td>
+          <td>${transaction.proforma_invoice_file ? 'yes' : ''}</td>
+          <td>${
+            transaction.tax_invoice_date
+              ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
+              : ''
+          }</td>
+          <td>${transaction.tax_invoice_number}</td>
+          <td>${transaction.tax_invoice_file ? 'yes' : ''}</td>
         </tr>
         `);
     }
@@ -326,9 +337,13 @@ export const financialStatus = async (query: any): Promise<string> => {
                 <th>Category</th>
                 <th>VAT</th>
                 <th>Account</th>
+                <th>Share with</th>
                 <th>Tax category</th>
-                <th>Invoice Number</th>
                 <th>Bank Description</th>
+                <th>Invoice Img</th>
+                <th>Invoice Date</th>
+                <th>Invoice Number</th>
+                <th>Invoice File</th>
             </tr>
         </thead>
         <tbody>
