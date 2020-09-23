@@ -42,7 +42,8 @@ SELECT tax_invoice_date,
        id,
        reviewed,
        hashavshevet_id,
-       0 as current_balance
+       0 as current_balance,
+       tax_invoice_file
 FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR
        full_supplier_name_outbound IS NULL)

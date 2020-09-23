@@ -34,7 +34,8 @@ SELECT tax_invoice_date,
        id,
        reviewed,
        hashavshevet_id,
-       current_balance
+       current_balance,
+       tax_invoice_file
 FROM accounter_schema.poalim_ils_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -69,7 +70,8 @@ SELECT tax_invoice_date,
        id,
        reviewed,
        hashavshevet_id,
-       current_balance
+       current_balance,
+       tax_invoice_file
 FROM accounter_schema.poalim_usd_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -104,5 +106,6 @@ SELECT tax_invoice_date,
        id,
        reviewed,
        hashavshevet_id,
-       current_balance
+       current_balance,
+       tax_invoice_file
 FROM accounter_schema.poalim_eur_account_transactions;
