@@ -172,7 +172,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07_08';
+        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07_08_09';
         if (data.accountType) {
           if (data.accountType == 'עוש1') {
             tableToUpdate = 'poalim_usd_account_transactions';
