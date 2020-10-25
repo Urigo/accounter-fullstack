@@ -1,7 +1,3 @@
-import query from '@pgtyped/query';
-const { sql } = query;
-import { IMonthlyTaxesReportSqlQuery } from './monthlyReportPage.types';
-
 import { pool } from '../index';
 
 export const monthlyReport = async (query: any): Promise<string> => {
@@ -14,17 +10,14 @@ export const monthlyReport = async (query: any): Promise<string> => {
   }
   console.log('monthTaxReportDate', monthTaxReportDate);
 
-  const monthlyTaxesReportSQL = sql<IMonthlyTaxesReportSqlQuery>`
+  const monthlyTaxesReportSQL = `
     select *
     from get_tax_report_of_month($monthTaxReportDate);
-`;
+  `;
 
-  const monthlyTaxesReport = await monthlyTaxesReportSQL.run(
-    {
-      monthTaxReportDate: monthTaxReportDate,
-    },
-    pool
-  );
+  const monthlyTaxesReport: any = await pool.query(monthlyTaxesReportSQL,
+    [`$$${monthTaxReportDate}$$`]
+  );;
 
   let monthlyReportsHTMLTemplate = '';
   for (const transaction of monthlyTaxesReport) {

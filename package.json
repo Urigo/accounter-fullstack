@@ -5,12 +5,9 @@
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node dist/index.js\"",
     "build": "tsc",
     "format": "prettier \"**/*.ts\" --write",
-    "typegen": "pgtyped -c pgTypedConfig.json",
     "deploy": "git push heroku master"
   },
   "dependencies": {
-    "@pgtyped/cli": "0.4.5",
-    "@pgtyped/query": "0.4.5",
     "dotenv": "8.2.0",
     "moment": "2.29.1",
     "node-fetch": "2.6.1",

@@ -1,29 +1,17 @@
 import { pool } from '../index';
-
-import query from '@pgtyped/query';
-const { sql } = query;
-import { ITopPrivateExpensesNotCategorizedSqlQuery } from './privateCharts.types';
-
 import { currencyCodeToSymbol } from '../firstPage';
 
 export const topPrivateNotCategorized = async (): Promise<string> => {
   const startingDate = '2020-01-01';
 
-  const topPrivateExpensesNotCategorizedSQL = sql<
-    ITopPrivateExpensesNotCategorizedSqlQuery
-  >`
+  const topPrivateExpensesNotCategorizedSQL = `
     select *
-    from top_expenses_not_categorized($startingDate);
-`;
-  let topPrivateNotCategorizedExpenses;
-  try {
-    topPrivateNotCategorizedExpenses = await topPrivateExpensesNotCategorizedSQL.run(
-      { startingDate: startingDate },
-      pool
-    );
-  } catch (error) {
-    console.error(error);
-  }
+    from top_expenses_not_categorized($1);
+  `;
+  
+  let topPrivateNotCategorizedExpenses: any = await pool.query(topPrivateExpensesNotCategorizedSQL,
+    [`$$${startingDate}$$`]
+  );;
 
   if (!topPrivateNotCategorizedExpenses) {
     return '';
