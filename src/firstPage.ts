@@ -2,6 +2,35 @@ import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
 
+const entitiesWithoutInvoice = [
+  'Poalim',
+  'Isracard'
+];
+const privateBusinessExpenses = [
+  'Google',
+  'Uri Goldshtein',
+  'Uri Goldshtein Employee Social Security',
+  'Hot Mobile',
+  'Apple',
+  'HOT',
+];
+function isBusiness(transaction: any) {
+  return (transaction.account_number == 61066 ||
+    transaction.account_number == 2733) &&
+    !entitiesWithoutInvoice.includes(transaction.financial_entity);
+}
+function shareWithDotan(transaction: any) {
+  if (transaction.financial_accounts_to_balance == 'no' ||
+      transaction.financial_accounts_to_balance === ' ') {
+    return false;
+  } else {
+    return !(
+      !isBusiness(transaction) ||
+      privateBusinessExpenses.includes(transaction.financial_entity)
+    );
+  }
+}
+
 export function currencyCodeToSymbol(currency_code: string): string {
   let currencySymbol = '₪';
   if (currency_code == 'USD') {
@@ -298,30 +327,85 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td>${transaction.event_amount}${currencyCodeToSymbol(
         transaction.currency_code
       )}</td>
-          <td class="financial_entity" onClick='printElement(this, prompt("New financial entity:"));'>${
+          <td class="financial_entity" ${
             transaction.financial_entity
-          }</td>
-          <td class="user_description" onClick='printElement(this, prompt("New user description:"));'>${
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${transaction.financial_entity}
+            <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>Edit</button>
+          </td>
+          <td class="user_description" ${
             transaction.user_description
-          }</td>
-          <td class="personal_category" onClick='printElement(this, prompt("New personal category:"));'>${
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${transaction.user_description}
+            <button type="button" onClick='printElement(this, prompt("New user description:"));'>Edit</button>
+          </td>
+          <td class="personal_category" ${
             transaction.personal_category
-          }</td>
-          <td>${transaction.vat}</td>
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${transaction.personal_category}
+            <button type="button" onClick='printElement(this, prompt("New personal category:"));'></button>
+          </td>
+          <td class="vat">
+            ${transaction.vat}
+            <button type="button" onClick='printElement(this, prompt("New VAT:"));'></button>
+          </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="even_with_dotan" onClick='printElement(this, prompt("New Account to share:"));'>${
+          <td class="even_with_dotan" ${shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''}>${
             transaction.financial_accounts_to_balance
-          }</td>
-          <td>${transaction.tax_category}</td>
-          <td>${transaction.bank_description}</td>
-          <td>${transaction.proforma_invoice_file ? 'yes' : ''}</td>
-          <td>${
-            transaction.tax_invoice_date
-              ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
+          }
+            <button type="button" onClick='printElement(this, prompt("New Account to share:"));'></button>
+          </td>
+          <td class="tax_category" ${
+            isBusiness(transaction) && !transaction.tax_category
+              ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }</td>
-          <td>${transaction.tax_invoice_number}</td>
-          <td>${transaction.tax_invoice_file ? 'yes' : ''}</td>
+          }>
+            ${transaction.tax_category}
+            <button type="button" onClick='printElement(this, prompt("New Tax category:"));'></button>
+          </td>
+          <td>${transaction.detailed_bank_description}</td>
+          <td class="proforma_invoice_file" ${
+            isBusiness(transaction) && !transaction.proforma_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${transaction.proforma_invoice_file ? 'yes' : ''}
+            <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'></button>
+          </td>
+          <td class="tax_invoice_date" ${
+            isBusiness(transaction) && !transaction.tax_invoice_date
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.tax_invoice_date
+          ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
+          : ''
+      }
+            <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'></button>
+          </td>
+          <td class="tax_invoice_number" ${
+            isBusiness(transaction) && !transaction.tax_invoice_number
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${transaction.tax_invoice_number}
+            <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'></button>
+          </td>
+          <td class="tax_invoice_file" ${
+            isBusiness(transaction) && !transaction.tax_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${transaction.tax_invoice_file ? 'yes' : ''}
+            <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'></button>
+          </td>
+          <td class="receipt_invoice_file">
+            ${transaction.receipt_invoice_file ? 'yes' : ''}
+            <button type="button" onClick='printElement(this, prompt("New receipt file:"));'></button>
+          </td>          
         </tr>
         `);
     }
@@ -344,6 +428,7 @@ export const financialStatus = async (query: any): Promise<string> => {
                 <th>Invoice Date</th>
                 <th>Invoice Number</th>
                 <th>Invoice File</th>
+                <th>Receipt File</th>
             </tr>
         </thead>
         <tbody>

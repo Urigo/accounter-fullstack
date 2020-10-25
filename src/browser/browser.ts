@@ -3,19 +3,31 @@ console.log('this should display only in browser');
 export function printElement(clickedElement: HTMLElement, newValue: string) {
   const changeRequest = {
     newValue: newValue,
-    propertyToChange: clickedElement.className,
-    id: clickedElement!.parentElement!.getAttribute('transaction_id'),
-    bank_reference: clickedElement!.parentElement!.getAttribute(
+    propertyToChange: clickedElement!.parentElement!.getAttribute('class'),
+    id: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'transaction_id'
+    ),
+    bank_reference: clickedElement!.parentElement!.parentElement!.getAttribute(
       'bank_reference'
     ),
-    account_number: clickedElement!.parentElement!.getAttribute(
+    account_number: clickedElement!.parentElement!.parentElement!.getAttribute(
       'account_number'
     ),
-    account_type: clickedElement!.parentElement!.getAttribute('account_type'),
-    currency_code: clickedElement!.parentElement!.getAttribute('currency_code'),
-    event_date: clickedElement!.parentElement!.getAttribute('event_date'),
-    event_amount: clickedElement!.parentElement!.getAttribute('event_amount'),
-    event_number: clickedElement!.parentElement!.getAttribute('event_number'),
+    account_type: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'account_type'
+    ),
+    currency_code: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'currency_code'
+    ),
+    event_date: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'event_date'
+    ),
+    event_amount: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'event_amount'
+    ),
+    event_number: clickedElement!.parentElement!.parentElement!.getAttribute(
+      'event_number'
+    ),
   };
   console.log(changeRequest);
 
