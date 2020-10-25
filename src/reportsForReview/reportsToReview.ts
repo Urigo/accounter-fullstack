@@ -9,7 +9,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   if (query.month) {
     reportMonthToReview = `2020-0${query.month}-01`;
   } else {
-    reportMonthToReview = `2020-08-01`;
+    reportMonthToReview = `2020-09-01`;
   }
 
   const lastInvoiceNumbersQuery = readFileSync(
