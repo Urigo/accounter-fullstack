@@ -14,6 +14,14 @@ const privateBusinessExpenses = [
   'Apple',
   'HOT',
 ];
+
+const businessesNotToShare = [
+  'Dotan Simha'
+];
+
+const businessesNeedsVAT = [
+  'Hot Mobile'
+];
 function isBusiness(transaction: any) {
   return (transaction.account_number == 61066 ||
     transaction.account_number == 2733) &&
@@ -21,12 +29,14 @@ function isBusiness(transaction: any) {
 }
 function shareWithDotan(transaction: any) {
   if (transaction.financial_accounts_to_balance == 'no' ||
-      transaction.financial_accounts_to_balance === ' ') {
+      transaction.financial_accounts_to_balance === ' ' ||
+      transaction.financial_accounts_to_balance === 'yes' ) {
     return false;
   } else {
     return !(
       !isBusiness(transaction) ||
-      privateBusinessExpenses.includes(transaction.financial_entity)
+      privateBusinessExpenses.includes(transaction.financial_entity) ||
+      businessesNotToShare.includes(transaction.financial_entity)
     );
   }
 }
