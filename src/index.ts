@@ -205,6 +205,36 @@ async function main() {
           // console.log('nothing');
         }
       });
+    } else if (request.url == '/generateTaxMovements') {
+      console.log('new generateTaxMovements');
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/x-typescript');
+      const chunks: Array<Uint8Array> = [];
+      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('end', async () => {
+        const bufferData = Buffer.concat(chunks);
+        const data = JSON.parse(bufferData.toString());
+        console.log('Data: ', data);
+
+        const editPropertyQuery = `
+          insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+          select * from get_tax_report_of_transaction('${data.transactionId}')
+          returning *;
+        `;
+
+        console.log(editPropertyQuery);
+        try {
+          let updateResult = await pool.query(editPropertyQuery);
+          console.log(JSON.stringify(updateResult));
+          response.end(JSON.stringify(updateResult));
+        } catch (error) {
+          // TODO: Log important checks
+          console.log('error in insert - ', error);
+          response.end(error);
+
+          // console.log('nothing');
+        }
+      });
     }
   });
 

@@ -66,3 +66,17 @@ export function setSelected(elementToSelect: HTMLElement) {
   }
   elementToSelect?.classList.add('selected');
 }
+
+
+export function generateTaxMovements(transactionId: string) {
+  const changeRequest = { transactionId };
+  console.log(changeRequest);
+
+  fetch('/generateTaxMovements', {
+    method: 'POST',
+    body: JSON.stringify(changeRequest),
+  }).then((response) => {
+    console.log('Request complete! response:', response);
+  });
+}
+

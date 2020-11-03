@@ -21,7 +21,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month('2020-09-01', '2020-09-01')
+      from get_unified_tax_report_of_month('2020-10-01', '2020-10-01')
       order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
       `
     ),
@@ -191,7 +191,9 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
         <td>${
           transaction.hashavshevet_id ? transaction.hashavshevet_id : ''
-        }</td>
+        }
+        <button type="button" onClick='generateTaxMovements("${transaction.id}");'></button>
+        </td>
       </tr>
       `);
   }
@@ -258,10 +260,11 @@ export const reportToReview = async (query: any): Promise<string> => {
 
       <script type="module" src="/browser.js"></script>
       <script type="module">
-        import { changeConfirmation, setSelected } from '/browser.js';
+        import { changeConfirmation, setSelected, generateTaxMovements } from '/browser.js';
   
         window.changeConfirmation = changeConfirmation;
         window.setSelected = setSelected;
+        window.generateTaxMovements = generateTaxMovements;
       </script>
     `;
 };
