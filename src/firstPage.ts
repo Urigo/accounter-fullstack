@@ -6,6 +6,11 @@ const entitiesWithoutInvoice = [
   'Poalim',
   'Isracard'
 ];
+
+const entitiesWithoutInvoiceNumuber = [
+  'Uri Goldshtein',
+];
+
 const privateBusinessExpenses = [
   'Google',
   'Uri Goldshtein',
@@ -16,7 +21,15 @@ const privateBusinessExpenses = [
 ];
 
 const businessesNotToShare = [
-  'Dotan Simha'
+  'Dotan Simha',
+];
+
+const businessesWithoutTaxCategory = [
+  'Uri Goldshtein',
+  'Uri Goldshtein Employee Social Security',
+  'Uri Goldshtein Employee Tax Withholding',
+  'VAT',
+  'Tax',
 ];
 
 const businessesNeedsVAT = [
@@ -73,6 +86,14 @@ export const tableStyles = `
   }
   tr:hover {background-color: #f5f5f5;}
   tr:nth-child(even) {background-color: #CEE0CC;}
+
+  table.taxes th {
+    background-color: #93a191;
+  }
+
+  table.taxes th, td {
+    border: 0.5px solid gray;
+  }
 </style>
 `;
 
@@ -82,7 +103,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2020-08-01';
+    monthTaxReport = '2020-10-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -369,7 +390,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'></button>
           </td>
           <td class="tax_category" ${
-            isBusiness(transaction) && !transaction.tax_category
+            isBusiness(transaction) && !businessesWithoutTaxCategory.includes(transaction.financial_entity) && !transaction.tax_category
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
@@ -397,7 +418,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'></button>
           </td>
           <td class="tax_invoice_number" ${
-            isBusiness(transaction) && !transaction.tax_invoice_number
+            isBusiness(transaction) && !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) && !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
@@ -417,6 +438,68 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New receipt file:"));'></button>
           </td>          
         </tr>
+        <!--
+        <tr>
+          <td colspan="15">
+            <table class="taxes">
+              <thead>
+                <tr>
+                  <th>מספר</th>
+                  <th>תקין</th>
+                  <th>תאריך_חשבונית</th>
+                  <th>חשבון_חובה_1</th>
+                  <th>סכום_חובה_1</th>
+                  <th>מטח_סכום_חובה_1</th>
+                  <th>מטבע</th>
+                  <th>חשבון_זכות_1</th>
+                  <th>סכום_זכות_1</th>
+                  <th>מטח_סכום_זכות_1</th>
+                  <th>חשבון_חובה_2</th>
+                  <th>סכום_חובה_2</th>
+                  <th>מטח_סכום_חובה_2</th>
+                  <th>חשבון_זכות_2</th>
+                  <th>סכום_זכות_2</th>
+                  <th>מטח_סכום_זכות_2</th>
+                  <th>פרטים</th>
+                  <th>אסמכתא_1</th>
+                  <th>אסמכתא_2</th>
+                  <th>סוג_תנועה</th>
+                  <th>תאריך_ערך</th>
+                  <th>תאריך_3</th>
+                  <th>חשבשבת</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                  <td>סתם</td>
+                </tr>
+              </tbody>
+            </table>   
+          </td>
+        </tr>
+        -->
         `);
     }
   }
