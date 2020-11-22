@@ -1,3 +1,5 @@
+drop view merged_tables cascade ;
+
 CREATE OR REPLACE VIEW merged_tables AS
 SELECT *
 FROM all_creditcard_transactions
@@ -35,7 +37,16 @@ SELECT tax_invoice_date,
        reviewed,
        hashavshevet_id,
        current_balance,
-       tax_invoice_file
+       tax_invoice_file,
+       concat(
+           activity_description,
+           ' ',
+           coalesce(beneficiary_details_data_party_name,''),
+           ' ',
+           coalesce(beneficiary_details_data_message_detail,''),
+           ' ',
+           coalesce(english_action_desc,'')
+       ) as detailed_bank_description
 FROM accounter_schema.poalim_ils_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -71,7 +82,14 @@ SELECT tax_invoice_date,
        reviewed,
        hashavshevet_id,
        current_balance,
-       tax_invoice_file
+       tax_invoice_file,
+       concat(
+           activity_description,
+           ' ',
+           coalesce(event_details,''),
+           ' ',
+           coalesce(account_name,'')
+       ) as detailed_bank_description
 FROM accounter_schema.poalim_usd_account_transactions
 UNION
 SELECT tax_invoice_date,
@@ -107,5 +125,12 @@ SELECT tax_invoice_date,
        reviewed,
        hashavshevet_id,
        current_balance,
-       tax_invoice_file
+       tax_invoice_file,
+              concat(
+           activity_description,
+           ' ',
+           coalesce(event_details,''),
+           ' ',
+           coalesce(account_name,'')
+       ) as detailed_bank_description
 FROM accounter_schema.poalim_eur_account_transactions;
