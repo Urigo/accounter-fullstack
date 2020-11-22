@@ -30,6 +30,7 @@ SELECT *,
             WHEN financial_entity = 'SATURN AMSTERDAM ODE' THEN 'SATURN AMS'
             WHEN financial_entity = 'Linux Foundation' THEN 'LinuxFound'
             WHEN financial_entity = 'Malach' THEN 'מלאך'
+            WHEN financial_entity = 'Spaans&Spaans' THEN 'Spaans'
             WHEN financial_entity = 'Tax' THEN
                 (CASE
                      WHEN event_date::text::date <= '2019-11-30' THEN 'מקדמות19'
@@ -54,6 +55,8 @@ SELECT *,
        to_char(debit_date, 'DD/MM/YYYY')       as formatted_debit_date,
        (case
            when tax_category = 'פלאפון' then ((vat::float/3)*2)
+           when tax_category = 'ציוד' then ((vat::float/3)*2)
+           when tax_category = 'מידע' then ((vat::float/3)*2)
            else vat
        end) as real_vat,
        (CASE
@@ -141,7 +144,11 @@ SELECT *,
                                         WHEN (tax_invoice_amount IS NOT NULL AND
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
-                                            THEN tax_invoice_amount + COALESCE((case when tax_category = 'פלאפון' then ((vat::float/3)*2) else vat end), 0)
+                                            THEN tax_invoice_amount + COALESCE((case
+                                                when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                                                when tax_category = 'ציוד' then ((vat::float/3)*2)
+                                                when tax_category = 'מידע' then ((vat::float/3)*2)
+                                                else vat end), 0)
                                         ELSE event_amount
                                        END)
                                WHEN currency_code = 'EUR' THEN (CASE
@@ -184,7 +191,12 @@ SELECT *,
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
                                             THEN tax_invoice_amount
-                                        ELSE event_amount + COALESCE((case when tax_category = 'פלאפון' then ((vat::float/3)*2) else vat end), 0)
+                                        ELSE event_amount + COALESCE((
+                                            case
+                                                when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                                                when tax_category = 'ציוד' then ((vat::float/3)*2)
+                                                when tax_category = 'מידע' then ((vat::float/3)*2)
+                                                else vat end), 0)
                                        END)
                                WHEN currency_code = 'EUR' THEN (CASE
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
@@ -254,4 +266,4 @@ SELECT *,
             ELSE ''
            END)                                as formatted_currency
 FROM merged_tables
-where event_date > '2019-12-31';
+-- where event_date > '2019-12-31';
