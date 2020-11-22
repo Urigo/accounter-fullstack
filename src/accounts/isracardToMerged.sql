@@ -43,7 +43,11 @@ SELECT tax_invoice_date,
        reviewed,
        hashavshevet_id,
        0 as current_balance,
-       tax_invoice_file
+       tax_invoice_file,
+       CASE
+           WHEN full_supplier_name_outbound IS NULL THEN full_supplier_name_heb
+           WHEN full_supplier_name_heb IS NULL THEN (COALESCE(full_supplier_name_outbound, '') || COALESCE('/' || city, ''))
+       END                       AS detailed_bank_description
 FROM accounter_schema.isracard_creditcard_transactions
 WHERE (full_supplier_name_outbound <> 'TOTAL FOR DATE' OR
        full_supplier_name_outbound IS NULL)
