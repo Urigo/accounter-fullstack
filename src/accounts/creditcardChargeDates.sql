@@ -1,3 +1,6 @@
+select * from get_creditcard_charge_date('2020-10-01');
+select * from get_creditcard_charge_date_former_month('2020-10-01');
+
 create or replace function get_creditcard_charge_date_former_month(month_input varchar)
 RETURNS date
 LANGUAGE SQL
