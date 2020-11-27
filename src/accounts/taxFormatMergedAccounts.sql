@@ -31,6 +31,9 @@ SELECT *,
             WHEN financial_entity = 'Linux Foundation' THEN 'LinuxFound'
             WHEN financial_entity = 'Malach' THEN 'מלאך'
             WHEN financial_entity = 'Spaans&Spaans' THEN 'Spaans'
+            WHEN financial_entity = 'IMPACT HUB ATHENS' THEN 'IMPACT HUB ATHE'
+            WHEN financial_entity = 'ENTERPRISE GRAPHQL Conference' THEN 'ENTERPRISE GRAP'
+            WHEN financial_entity = 'Yaacov Matri' THEN 'יעקב'
             WHEN financial_entity = 'Tax' THEN
                 (CASE
                      WHEN event_date::text::date <= '2019-11-30' THEN 'מקדמות19'

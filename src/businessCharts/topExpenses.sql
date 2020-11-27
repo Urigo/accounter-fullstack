@@ -13,8 +13,8 @@ WHERE business_trip IS NULL
   AND financial_entity <> 'Dotan Simha'
   AND financial_entity <> 'Isracard'
   AND event_amount < 0
-  --       event_date::text::date >= '2019-12-01' AND
-  --       event_date::text::date <= '2019-12-31' OR
-  --       event_date IS NULL
+  AND event_date::text::date >= '2020-09-01'::text::date
+  AND event_date::text::date <= '2020-09-30'::text::date
+  --        OR event_date IS NULL
 GROUP BY financial_entity
 ORDER BY SUM(event_amount_in_usd_with_vat_if_exists)::numeric(9, 2) NULLS LAST;

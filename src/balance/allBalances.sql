@@ -233,6 +233,23 @@ WHERE
                    (debit_date IS NULL AND event_date::text::date >= '2019-12-01' AND
                     event_date::text::date <= '2019-12-31')
              )))
+), business_account AS (
+SELECT *
+FROM formatted_merged_tables
+WHERE
+    (account_number = 1082 OR account_number = 466803 OR account_number = 1074) AND
+        (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
+            account_type != 'creditcard' AND
+            event_date::text::date >= '2019-12-01' AND
+            event_date::text::date <= '2019-12-31' OR
+            event_date IS NULL)
+        OR (
+            (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
+             (
+                   debit_date::text::date <= '2020-01-02' AND debit_date::text::date > '2019-12-02' OR
+                   (debit_date IS NULL AND event_date::text::date >= '2019-12-01' AND
+                    event_date::text::date <= '2019-12-31')
+             )))
 ), this_month_private_creditcard AS (
 SELECT
     event_date,
@@ -241,7 +258,7 @@ SELECT
 FROM formatted_merged_tables
 WHERE
     account_type = 'creditcard' AND
-    account_number = 9217 AND
+    account_number = 6264 AND
     debit_date > now()
 ), this_month_business_creditcard AS (
 SELECT
@@ -282,6 +299,12 @@ WHERE
     financial_entity = 'Isracard' AND
     debit_date::text::date = '2018-09-02'::text::date
 ORDER BY event_date, event_number
+), deposits AS (
+    select
+           amount,
+           validity_date
+    from accounter_schema.poalim_deposits_account_transactions
+    order by validity_date
 ), dotan_dept AS (
     SELECT
         event_date,
@@ -299,6 +322,24 @@ ORDER BY event_date, event_number
           (account_number = 2733 OR account_number = 61066)
           AND event_date::date >= '2019-12-01'::timestamp
           AND financial_accounts_to_balance = 'no'
+    ORDER BY event_date, event_number, event_amount, bank_reference, account_number
+), dotan_anti_dept AS (
+    SELECT
+        event_date,
+        event_amount,
+        currency_code,
+        event_amount_in_usd_with_vat_if_exists,
+        SUM(event_amount_in_usd_with_vat_if_exists * -1)
+        OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
+        bank_reference,
+        account_number,
+        event_number,
+        user_description
+    FROM formatted_merged_tables
+    WHERE
+          (account_number = 2733 OR account_number = 61066)
+          AND event_date::date >= '2019-12-31'::timestamp
+          AND financial_entity = 'Dotan Simha'
     ORDER BY event_date, event_number, event_amount, bank_reference, account_number
 ), dotan_future_dept AS (
     SELECT
@@ -335,6 +376,26 @@ ORDER BY event_date, event_number
         event_date::date >= '2019-12-01'::timestamp AND
         financial_accounts_to_balance = 'no'
     ORDER BY event_date, event_amount, user_description, account_number
+), new_business_account_transactions AS (
+SELECT
+    event_date,
+    event_amount,
+    currency_code,
+    event_amount_in_usd_with_vat_if_exists,
+    SUM(event_amount_in_usd_with_vat_if_exists / 2)
+    OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
+    bank_reference,
+    account_number,
+    event_number,
+    user_description
+FROM formatted_merged_tables
+WHERE
+      (account_number = 1082 OR account_number = 466803 OR account_number = 1074)
+      AND event_date::date >= '2019-12-01'::timestamp
+      and personal_category <> 'conversion'
+      and financial_entity <> 'Isracard'
+--           AND financial_accounts_to_balance = 'no'
+ORDER BY event_date, event_number, event_amount, bank_reference, account_number
 ), future_balance AS (
     SELECT
         event_date,
@@ -655,6 +716,21 @@ SELECT
             where date_trunc('day', t1.event_date)::date <= times_table.dt
             order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference, t1.account_number
             limit 1) dotan_dept,
+           (select t1.sum_till_this_point
+            from dotan_anti_dept t1
+            where date_trunc('day', t1.event_date)::date <= times_table.dt
+            order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference, t1.account_number
+            limit 1) dotan_anti_dept,
+           (select t1.sum_till_this_point
+            from new_business_account_transactions t1
+            where date_trunc('day', t1.event_date)::date <= times_table.dt
+            order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference, t1.account_number
+            limit 1) new_business_account_transactions,
+            (select t1.amount
+            from deposits t1
+            where date_trunc('day', t1.validity_date)::date <= times_table.dt
+            order by t1.validity_date desc
+            limit 1) deposits,
            (select t1.user_description
             from dotan_dept t1
             where date_trunc('day', t1.event_date)::date <= times_table.dt
@@ -723,6 +799,9 @@ order by event_date desc
            this_month_private_creditcard,
            (dotan_old_dept / usd_rate)                      as dotan_old_dept,
            dotan_dept,
+           dotan_anti_dept,
+           new_business_account_transactions,
+           ((deposits / usd_rate) / 2) as deposits,
            (VAT / usd_rate) as VAT,
            future_transactions,
            dotan_future_dept
@@ -733,6 +812,8 @@ order by event_date desc
            ils_business_in_usd,
            dotan_old_dept,
            dotan_dept,
+           dotan_anti_dept,
+           new_business_account_transactions,
            VAT,
            this_month_business_creditcard,
            this_month_private_creditcard,
@@ -741,11 +822,14 @@ order by event_date desc
            usd_business_balance,
            eur_business_balance,
            eur_business_in_usd,
+           deposits,
            (
                    COALESCE(ils_business_in_usd, 0) +
                    COALESCE(usd_business_balance, 0) +
                    COALESCE(eur_business_in_usd, 0) +
-                   COALESCE(this_month_business_creditcard, 0)
+                   COALESCE(this_month_business_creditcard, 0) +
+                   COALESCE(new_business_account_transactions, 0) +
+                   COALESCE(deposits, 0)
                ) as all_business_accounts,
            (
                            COALESCE(ils_business_in_usd, 0) +
@@ -753,10 +837,13 @@ order by event_date desc
                            COALESCE(eur_business_in_usd, 0) -
                            COALESCE(dotan_old_dept, 0) +
                            COALESCE(dotan_dept, 0) +
+                           COALESCE(dotan_anti_dept, 0) +
                            COALESCE(VAT, 0) +
                            COALESCE(this_month_business_creditcard, 0) +
                            COALESCE(future_transactions, 0) +
-                           COALESCE(dotan_future_dept, 0)
+                           COALESCE(dotan_future_dept, 0) +
+                           COALESCE(new_business_account_transactions, 0) +
+                           COALESCE(deposits, 0)
                ) as everything_business,
            ils_personal_balance,
            ils_personal_in_usd,
@@ -775,6 +862,7 @@ order by event_date desc
                            COALESCE(eur_business_in_usd, 0) -
                            COALESCE(dotan_old_dept, 0) +
                            COALESCE(dotan_dept, 0) +
+                           COALESCE(dotan_anti_dept, 0) +
                            COALESCE(VAT, 0) +
                            COALESCE(this_month_business_creditcard, 0) +
                            COALESCE(ils_personal_in_usd, 0) +
@@ -782,7 +870,9 @@ order by event_date desc
                            COALESCE(eur_personal_in_usd, 0) +
                            COALESCE(this_month_private_creditcard, 0) +
                            COALESCE(future_transactions, 0) +
-                           COALESCE(dotan_future_dept, 0)
+                           COALESCE(dotan_future_dept, 0) +
+                           COALESCE(new_business_account_transactions, 0) +
+                           COALESCE(deposits, 0)
                ) as everything
     from caluculated_values
 )

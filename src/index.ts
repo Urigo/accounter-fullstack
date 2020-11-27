@@ -235,6 +235,8 @@ async function main() {
           // console.log('nothing');
         }
       });
+    } else {
+      return response.end();
     }
   });
 

@@ -37,7 +37,10 @@ const businessesNeedsVAT = [
 ];
 function isBusiness(transaction: any) {
   return (transaction.account_number == 61066 ||
-    transaction.account_number == 2733) &&
+    transaction.account_number == 2733 ||
+    transaction.account_number == 466803 ||
+    transaction.account_number == 1082 ||
+    transaction.account_number == 1074) &&
     !entitiesWithoutInvoice.includes(transaction.financial_entity);
 }
 function shareWithDotan(transaction: any) {
@@ -379,8 +382,13 @@ export const financialStatus = async (query: any): Promise<string> => {
           }>${transaction.personal_category}
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'></button>
           </td>
-          <td class="vat">
-            ${transaction.vat}
+          <td class="vat"  ${
+            !transaction.vat && isBusiness(transaction) && transaction.currency_code == 'ILS' &&
+            !privateBusinessExpenses.includes(transaction.financial_entity) &&
+            !businessesWithoutTaxCategory.includes(transaction.financial_entity)
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${transaction.vat}
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'></button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>

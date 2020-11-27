@@ -1,7 +1,58 @@
+select hashavshevet.*
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
+where
+    origin = 'manual_salary'
+    and to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date)
+;
+
+
+select hashavshevet.*
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
+left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
+where
+    (hashavshevet.original_id is null and
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01'::date) and
+     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month','2020-09-01'::date) + interval '1 month' - interval '1 day')::date
+    ) or (
+    bank.business_trip is null and
+    (bank.account_number = 2733 OR bank.account_number = 61066) AND
+        (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
+            bank.account_type != 'creditcard' AND
+            bank.event_date::text::date >= date_trunc('month', '2020-09-01'::date) AND
+            bank.event_date::text::date <= (date_trunc('month', '2020-09-01'::date) + interval '1 month' - interval '1 day')::date OR
+            bank.event_date IS NULL)
+        OR (
+            (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
+             (
+                   bank.debit_date::text::date <= get_creditcard_charge_date('2020-09-01')::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month('2020-09-01')::date OR
+                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', '2020-09-01'::date) AND
+                    bank.event_date::text::date <= (date_trunc('month', '2020-09-01'::date) + interval '1 month' - interval '1 day')::date)
+             ))))
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
+
+
+select gen_random_uuid();
+select gen_random_uuid();
+select gen_random_uuid();
+select gen_random_uuid();
+select gen_random_uuid();
+select gen_random_uuid();
 select gen_random_uuid();
 
-select * from report_to_hashavshevet_by_month('2020-07-01');
+update accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+SET id = gen_random_uuid()
+where id is null;
 
+select * from report_to_hashavshevet_by_month('2020-09-01');
+
+select *
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+where
+      hashavshevet_id is null
+      and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
+order by (to_date(תאריך_3, 'DD/MM/YYYY'));
+
+drop function report_to_hashavshevet_by_month(month_report varchar);
 CREATE OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report varchar)
 RETURNS TABLE(
        תאריך_חשבונית varchar,
@@ -19,7 +70,7 @@ RETURNS TABLE(
        סכום_זכות_2 varchar,
        מטח_סכום_זכות_2 varchar,
        פרטים varchar,
-       אסמכתא_1 int,
+       אסמכתא_1 bigint,
        אסמכתא_2 varchar,
        סוג_תנועה varchar,
        תאריך_ערך varchar,
@@ -35,7 +86,7 @@ LANGUAGE SQL
 AS $$
 
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 hashavshevet
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
 left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     (hashavshevet.original_id is null and
@@ -61,7 +112,7 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבו�
 $$;
 
 select *
-from get_unified_tax_report_of_month('2020-03-01', '2020-07-01')
+from get_unified_tax_report_of_month('2020-10-01', '2020-10-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
 
 drop function get_unified_tax_report_of_month;
@@ -83,7 +134,7 @@ RETURNS TABLE(
        סכום_זכות_2 varchar,
        מטח_סכום_זכות_2 varchar,
        פרטים varchar,
-       אסמכתא_1 int,
+       אסמכתא_1 bigint,
        אסמכתא_2 varchar,
        סוג_תנועה varchar,
        תאריך_ערך varchar,
@@ -101,7 +152,7 @@ AS $$
 
 (
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 hashavshevet
+from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
 left outer join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     bank is null or (
@@ -113,11 +164,17 @@ where
             bank.event_date IS NULL)
         OR (
             (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
-             (
+            ((
                    bank.debit_date::text::date <= COALESCE(get_creditcard_charge_date(month_end)::date, (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date) AND bank.debit_date::text::date > get_creditcard_charge_date_former_month(month_start)::date OR
                    (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', month_start::date) AND
                     bank.event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date)
-             )))))
+             ) or (
+                 get_creditcard_charge_date(month_end) is null and
+                 bank.debit_date::text::date > month_end::date
+             ))
+        )))
+--         and (bank.reviewed is false or bank.reviewed is null)
+    )
 UNION ALL
 (select
        formatted_event_date as תאריך_חשבונית,
@@ -156,11 +213,17 @@ where
             event_date IS NULL)
         OR (
             (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
-             (
+             ((
                    debit_date::text::date <= get_creditcard_charge_date(month_end)::date AND debit_date::text::date > get_creditcard_charge_date_former_month(month_start)::date OR
                    (debit_date IS NULL AND event_date::text::date >= date_trunc('month', month_start::date) AND
                     event_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date)
-             ))))
+             ) or (
+                 get_creditcard_charge_date(month_end) is null and
+                 debit_date::text::date <= (date_trunc('month', month_end::date) + interval '1 month' - interval '1 day')::date
+             ))
+        ))
+--   and (reviewed is false or reviewed is null)
+)
 
 $$;
 
@@ -170,7 +233,7 @@ select
        gen_random_uuid() as id,
        (
            select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 t1
+           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
            where
                 coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
                 coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
@@ -195,7 +258,7 @@ select
        ) as reviewed,
        (
            select t1.hashavshevet_id
-           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 t1
+           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
            where
                 coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
                 coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
@@ -218,7 +281,7 @@ select
                 coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
                 coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
        ) as hashavshevet_id
-into table accounter_schema.saved_tax_reports_2020_03_04_05_06_07_new
+into table accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 from (
     (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
       union all
@@ -230,17 +293,58 @@ from (
       union all
     (select * from get_tax_report_of_month('2020-07-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
       union all
+    (select * from get_tax_report_of_month('2020-08-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+      union all
+    (select * from get_tax_report_of_month('2020-09-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
+      union all
     (select * from trip_report('2020-06-20','נסעחול31',true,('2020-02-17'::date - '2020-02-07'::date + 1) + ('2020-03-03'::date - '2020-02-22'::date + 1) + ('2020-06-20'::date - '2020-03-07'::date + 1),0))
       union all
     (select תאריך_חשבונית, חשבון_חובה_1, סכום_חובה_1, מטח_סכום_חובה_1, מטבע, חשבון_זכות_1, סכום_זכות_1, מטח_סכום_זכות_1, חשבון_חובה_2, סכום_חובה_2, מטח_סכום_חובה_2, חשבון_זכות_2, סכום_זכות_2, מטח_סכום_זכות_2, פרטים, אסמכתא_1, אסמכתא_2, סוג_תנועה, תאריך_ערך, תאריך_3, original_id, origin, proforma_invoice_file
-     from accounter_schema.saved_tax_reports_2020_03_04_05_06_07 where origin = 'manual_salary')
+     from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 where origin = 'manual_salary')
     ) t2
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 
+-- TODO: Reuse logic of getting business month from the initial query
+-- TODO: Reuse logic of what is deductible
+WITH this_month_business AS (
+SELECT *
+FROM formatted_merged_tables
+WHERE
+    business_trip IS NULL AND
+    (account_number = 2733 OR account_number = 61066) AND
+        (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
+            account_type != 'creditcard' AND
+            event_date::text::date >= date_trunc('month', '2020-08-01'::date) AND
+            event_date::text::date <= (date_trunc('month','2020-08-01'::date) + interval '1 month' - interval '1 day')::date OR
+            event_date IS NULL)
+        OR (
+            (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
+             (
+                   debit_date::text::date <= get_creditcard_charge_date('2020-08-01')::date AND debit_date::text::date > get_creditcard_charge_date_former_month('2020-08-01')::date OR
+                   (debit_date IS NULL AND event_date::text::date >= date_trunc('month', '2020-08-01'::date) AND
+                    event_date::text::date <= (date_trunc('month', '2020-08-01'::date) + interval '1 month' - interval '1 day')::date)
+             )))
+)
+select ((sum(formatted_invoice_amount_in_ils_with_vat_if_exists::float)/100)*3.5)::int advance,
+       (sum(formatted_invoice_amount_in_ils_with_vat_if_exists::float))::int total
+from this_month_business
+where event_amount > 0 and
+      financial_entity != 'Isracard' AND
+      financial_entity != 'Tax' AND
+      financial_entity != 'VAT' AND
+      financial_entity != 'Uri Goldshtein Employee Tax Withholding' AND
+      financial_entity != 'Uri Goldshtein' AND
+      financial_entity != 'Uri Goldshtein Employee Social Security' AND
+      financial_entity != 'Tax Corona Grant' AND
+      financial_entity != 'Uri Goldshtein Hoz' AND
+      financial_entity != 'VAT interest refund' AND
+      financial_entity != 'Tax Shuma' AND
+      is_conversion <> TRUE;
+
 select *
 -- into table accounter_schema.saved_tax_reports_2020_03_04
-from get_tax_report_of_month('2020-07-01')
+from get_tax_report_of_month('2020-10-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
 
 drop function get_tax_report_of_month(month_input varchar);
@@ -262,7 +366,7 @@ returns table(
        סכום_זכות_2 varchar,
        מטח_סכום_זכות_2 varchar,
        פרטים varchar,
-       אסמכתא_1 int,
+       אסמכתא_1 bigint,
        אסמכתא_2 varchar,
        סוג_תנועה varchar,
        תאריך_ערך varchar,
