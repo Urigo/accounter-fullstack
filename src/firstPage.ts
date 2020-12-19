@@ -18,6 +18,8 @@ const privateBusinessExpenses = [
   'Hot Mobile',
   'Apple',
   'HOT',
+  'Yaacov Matri',
+  'Partner',
 ];
 
 const businessesNotToShare = [
@@ -32,8 +34,8 @@ const businessesWithoutTaxCategory = [
   'Tax',
 ];
 
-const businessesNeedsVAT = [
-  'Hot Mobile'
+const businessesWithoutVAT = [
+  'Apple'
 ];
 function isBusiness(transaction: any) {
   return (transaction.account_number == 61066 ||
@@ -52,7 +54,8 @@ function shareWithDotan(transaction: any) {
     return !(
       !isBusiness(transaction) ||
       privateBusinessExpenses.includes(transaction.financial_entity) ||
-      businessesNotToShare.includes(transaction.financial_entity)
+      businessesNotToShare.includes(transaction.financial_entity) ||
+      businessesWithoutTaxCategory.includes(transaction.financial_entity)
     );
   }
 }
@@ -384,7 +387,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           </td>
           <td class="vat"  ${
             !transaction.vat && isBusiness(transaction) && transaction.currency_code == 'ILS' &&
-            !privateBusinessExpenses.includes(transaction.financial_entity) &&
+            !businessesWithoutVAT.includes(transaction.financial_entity) &&
             !businessesWithoutTaxCategory.includes(transaction.financial_entity)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
