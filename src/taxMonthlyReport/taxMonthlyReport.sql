@@ -190,7 +190,7 @@ UNION ALL
        '' as מטח_סכום_חובה_2,
        '' as חשבון_זכות_2,
        '' as סכום_זכות_2,
-       '' as מטח_סכום_זכות_2,
+       id::text as מטח_סכום_זכות_2,
        '0' as פרטים,
        bank_reference as אסמכתא_1,
        to_char(tax_invoice_date, 'DD/MM/YYYY') as אסמכתא_2,
@@ -342,10 +342,42 @@ where event_amount > 0 and
       financial_entity != 'Tax Shuma' AND
       is_conversion <> TRUE;
 
+insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+(
+       תאריך_חשבונית,
+       חשבון_חובה_1,
+       סכום_חובה_1,
+       מטח_סכום_חובה_1,
+       מטבע,
+       חשבון_זכות_1,
+       סכום_זכות_1,
+       מטח_סכום_זכות_1,
+       חשבון_חובה_2,
+       סכום_חובה_2,
+       מטח_סכום_חובה_2,
+       חשבון_זכות_2,
+       סכום_זכות_2,
+       מטח_סכום_זכות_2,
+       פרטים,
+       אסמכתא_1,
+       אסמכתא_2,
+       סוג_תנועה,
+       תאריך_ערך,
+       תאריך_3,
+       original_id,
+       origin,
+       proforma_invoice_file
+)
 select *
 -- into table accounter_schema.saved_tax_reports_2020_03_04
-from get_tax_report_of_month('2020-10-01')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+from get_tax_report_of_month('2020-11-01')
+-- order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id
+;
+
+
+
+select *
+from get_tax_report_of_month('2020-11-01');
 
 drop function get_tax_report_of_month(month_input varchar);
 
@@ -467,7 +499,9 @@ WHERE
         ) AS חשבון_חובה_2,
          (CASE
             WHEN (side = 0 AND event_amount < 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(
-                (case when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                (case
+                    when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                    when tax_category = 'מידע' then ((vat::float/3)*2)
                 else vat
                 end)
                 )), 'FM999999999.00') END)
@@ -538,7 +572,8 @@ WHERE
         contra_currency_code,
         debit_date,
         proforma_invoice_file,
-        id
+        id,
+        formatted_tax_category
     FROM this_month_business, generate_series(0,1) as side /* 0 = Entities, 1 = Accounts */
 ), two_sides as (
     SELECT
@@ -575,6 +610,7 @@ WHERE
         financial_entity != 'Uri Goldshtein Employee Social Security' AND
         financial_entity != 'Tax Corona Grant' AND
         financial_entity != 'Uri Goldshtein Hoz' AND
+        formatted_tax_category != 'אוריח' AND
         financial_entity != 'VAT interest refund' AND
         financial_entity != 'Tax Shuma' AND
         is_conversion <> TRUE
@@ -613,6 +649,7 @@ WHERE
         financial_entity = 'Uri Goldshtein Employee Tax Withholding' OR
         financial_entity = 'Tax Corona Grant' OR
         financial_entity = 'Uri Goldshtein Hoz' or
+        formatted_tax_category = 'אוריח' or
         financial_entity = 'VAT interest refund' or
         financial_entity = 'Tax Shuma') AND
        side = 1
