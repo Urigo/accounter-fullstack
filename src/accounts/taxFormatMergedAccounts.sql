@@ -15,6 +15,7 @@ SELECT *,
        (case
            when financial_entity = 'Poalim' then 'עמל'
            when financial_entity = 'Tax Corona Grant' then 'מענק קורונה'
+           when tax_category = 'Uri Goldshtein Hoz' then 'אוריח'
            else tax_category
        end) as formatted_tax_category,
        (CASE
@@ -45,6 +46,7 @@ SELECT *,
             WHEN financial_entity = 'Uri Goldshtein Employee Social Security' THEN 'בלני'
             WHEN financial_entity = 'Uri Goldshtein' THEN 'אורי'
             WHEN financial_entity = 'Uri Goldshtein Hoz' THEN 'אוריח'
+            when tax_category = 'Uri Goldshtein Hoz' then 'אוריח'
             WHEN financial_entity = 'Raveh Ravid & Co' THEN 'יהל'
             WHEN financial_entity = 'Production Ready GraphQL' THEN 'ProdReadyGraph'
             WHEN financial_entity = 'הפרשי שער' THEN 'שער'
@@ -68,7 +70,7 @@ SELECT *,
                 from all_exchange_dates
                 where all_exchange_dates.exchange_date = debit_date::text::date
             )
-            WHEN currency_code = 'EUR' THEN event_amount / (
+            WHEN currency_code = 'EUR' THEN event_amount * (
                     (
                         select all_exchange_dates.eur_rate
                         from all_exchange_dates
@@ -84,12 +86,12 @@ SELECT *,
            END
            )                                   as event_amount_in_usd,
        (CASE
-            WHEN currency_code = 'ILS' THEN (event_amount + COALESCE(vat, 0)) / (
+            WHEN currency_code = 'ILS' THEN (event_amount - COALESCE(vat, 0)) / (
                 select all_exchange_dates.usd_rate
                 from all_exchange_dates
                 where all_exchange_dates.exchange_date = debit_date::text::date
             )
-            WHEN currency_code = 'EUR' THEN event_amount / (
+            WHEN currency_code = 'EUR' THEN (event_amount - COALESCE(vat, 0)) * (
                     (
                         select all_exchange_dates.eur_rate
                         from all_exchange_dates
@@ -100,7 +102,7 @@ SELECT *,
                         where all_exchange_dates.exchange_date = debit_date::text::date
                     )
                 )
-            WHEN currency_code = 'USD' THEN event_amount
+            WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
             ELSE -99999999999
            END
            )                                   as event_amount_in_usd_with_vat_if_exists,
@@ -173,8 +175,8 @@ SELECT *,
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
-                                                                        THEN tax_invoice_amount
-                                                                    ELSE event_amount
+                                                                        THEN tax_invoice_amount + COALESCE(vat, 0)
+                                                                    ELSE event_amount + COALESCE(vat, 0)
                                    END) * (
                                                                    select all_exchange_dates.usd_rate
                                                                    from all_exchange_dates
@@ -258,8 +260,8 @@ SELECT *,
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
-                                                                        THEN tax_invoice_amount
-                                                                    ELSE event_amount
+                                                                        THEN tax_invoice_amount + COALESCE(vat, 0)
+                                                                    ELSE event_amount + COALESCE(vat, 0)
                               END))
 --                 ELSE NULL
            END), 'FM999999999.00')             as formatted_invoice_foreign_amount_if_exist,
@@ -267,6 +269,15 @@ SELECT *,
             WHEN currency_code = 'USD' THEN '$'
             WHEN currency_code = 'EUR' THEN 'אירו'
             ELSE ''
-           END)                                as formatted_currency
+           END)                                as formatted_currency,
+       (CASE
+            WHEN currency_code != 'ILS' THEN vat
+           END)                                as formatted_foreign_vat,
+       (CASE
+            WHEN currency_code != 'ILS' THEN vat * (
+                                   select all_exchange_dates.usd_rate
+                                   from all_exchange_dates
+                                   where all_exchange_dates.exchange_date = tax_invoice_date::text::date)
+           END)                                as formatted_usd_vat_in_ils
 FROM merged_tables
 -- where event_date > '2019-12-31';

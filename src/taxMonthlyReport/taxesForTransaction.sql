@@ -113,30 +113,58 @@ WHERE
 --             ELSE NULL
             END
         ) AS חשבון_חובה_2,
-         (CASE
-            WHEN (side = 0 AND event_amount < 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(
-                (case when tax_category = 'פלאפון' then ((vat::float/3)*2)
-                else vat
-                end)
-                )), 'FM999999999.00') END)
-            when (side = 1 and event_amount < 0 and interest <> 0)
-                then to_char(float8 (ABS(interest) ), 'FM999999999.00')
---             ELSE NULL
-         END) AS סכום_חובה_2,
-        '' AS מטח_סכום_חובה_2,
+        (case
+            when currency_code = 'ILS' then
+                 (CASE
+                    WHEN (side = 0 AND event_amount < 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(
+                        (case
+                            when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                            when tax_category = 'מידע' then ((vat::float/3)*2)
+                        else vat
+                        end)
+                        )), 'FM999999999.00') END)
+                    when (side = 1 and event_amount < 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+            else
+                (CASE
+                    WHEN (side = 0 AND event_amount < 0) THEN
+                        (CASE WHEN vat <> 0 THEN
+                            to_char(float8 (ABS(formatted_usd_vat_in_ils)), 'FM999999999.00')
+                        END)
+                    when (side = 1 and event_amount < 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+        end) AS סכום_חובה_2,
+        to_char(float8 (formatted_foreign_vat), 'FM999999999.00') AS מטח_סכום_חובה_2,
         (CASE
             WHEN (side = 0 AND event_amount > 0 AND vat <> 0) THEN 'עסק'
             when (side = 1 and event_amount > 0 and interest <> 0) THEN 'הכנרבמ'
 --             ELSE NULL
             END
         ) AS חשבון_זכות_2,
-        (CASE
-            WHEN (side = 0 AND event_amount > 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(vat)), 'FM999999999.00') END)
-            when (side = 1 and event_amount > 0 and interest <> 0)
-                then to_char(float8 (ABS(interest)), 'FM999999999.00')
---             ELSE NULL
-         END) AS סכום_זכות_2,
-        '' AS מטח_סכום_זכות_2,
+        (case
+            when currency_code = 'ILS' then
+                (CASE
+                    WHEN (side = 0 AND event_amount > 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(vat)), 'FM999999999.00') END)
+                    when (side = 1 and event_amount > 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest)), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+            else
+                (CASE
+                    WHEN (side = 0 AND event_amount > 0) THEN
+                        (CASE WHEN vat <> 0 THEN
+                            to_char(float8 (ABS(formatted_usd_vat_in_ils)), 'FM999999999.00')
+                        END)
+                    when (side = 1 and event_amount > 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+        end) AS סכום_זכות_2,
+        to_char(float8 (formatted_foreign_vat), 'FM999999999.00') AS מטח_סכום_זכות_2,
         user_description AS פרטים,
         bank_reference AS אסמכתא_1,
         RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,
@@ -154,7 +182,7 @@ WHERE
                     END)
                 ELSE
                     (CASE
-                        WHEN account_type = 'checking_ils' THEN 'חל'
+                        WHEN vat <> 0 THEN 'חל'
                         ELSE 'הכפ'
                     END)
                 END)
@@ -186,7 +214,8 @@ WHERE
         contra_currency_code,
         debit_date,
         proforma_invoice_file,
-        id
+        id,
+        formatted_tax_category
     FROM this_month_business, generate_series(0,1) as side /* 0 = Entities, 1 = Accounts */
 ), two_sides as (
     SELECT
@@ -223,6 +252,7 @@ WHERE
         financial_entity != 'Uri Goldshtein Employee Social Security' AND
         financial_entity != 'Tax Corona Grant' AND
         financial_entity != 'Uri Goldshtein Hoz' AND
+        formatted_tax_category != 'אוריח' AND
         financial_entity != 'VAT interest refund' AND
         financial_entity != 'Tax Shuma' AND
         is_conversion <> TRUE
@@ -261,6 +291,7 @@ WHERE
         financial_entity = 'Uri Goldshtein Employee Tax Withholding' OR
         financial_entity = 'Tax Corona Grant' OR
         financial_entity = 'Uri Goldshtein Hoz' or
+        formatted_tax_category = 'אוריח' or
         financial_entity = 'VAT interest refund' or
         financial_entity = 'Tax Shuma') AND
        side = 1
