@@ -379,15 +379,19 @@ ORDER BY event_date, event_number
 ), new_business_account_transactions AS (
 SELECT
     event_date,
-    event_amount,
     currency_code,
+    event_amount,
+    event_amount_in_usd,
     event_amount_in_usd_with_vat_if_exists,
-    SUM(event_amount_in_usd_with_vat_if_exists / 2)
-    OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
+    SUM(case
+        when financial_accounts_to_balance = 'uri' then event_amount_in_usd_with_vat_if_exists
+        else (event_amount_in_usd_with_vat_if_exists / 2)
+    end) OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
+    financial_entity,
+    user_description,
     bank_reference,
     account_number,
-    event_number,
-    user_description
+    event_number
 FROM formatted_merged_tables
 WHERE
       (account_number = 1082 OR account_number = 466803 OR account_number = 1074)
@@ -813,6 +817,7 @@ order by event_date desc
            dotan_old_dept,
            dotan_dept,
            dotan_anti_dept,
+           COALESCE(dotan_anti_dept, 0) + COALESCE(dotan_dept, 0) as dotan_overall_dept,
            new_business_account_transactions,
            VAT,
            this_month_business_creditcard,
