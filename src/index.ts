@@ -149,16 +149,18 @@ async function main() {
         `;
 
         console.log(editPropertyQuery);
-        try {
-          let updateResult = await pool.query(editPropertyQuery);
-          console.log(JSON.stringify(updateResult));
-          response.end(JSON.stringify(updateResult));
-        } catch (error) {
-          // TODO: Log important checks
-          console.log('error in insert - ', error);
-          response.end(error);
-
-          // console.log('nothing');
+        if (data.newValue) {
+          try {
+            let updateResult = await pool.query(editPropertyQuery);
+            console.log(JSON.stringify(updateResult));
+            response.end(JSON.stringify(updateResult));
+          } catch (error) {
+            // TODO: Log important checks
+            console.log('error in insert - ', error);
+            response.end(JSON.stringify(error));
+  
+            // console.log('nothing');
+          }
         }
       });
     } else if (request.url == '/reviewTransaction') {
@@ -172,7 +174,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'narkis_review';
+        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07_08_09';
         if (data.accountType) {
           if (data.accountType == 'עוש1') {
             tableToUpdate = 'poalim_usd_account_transactions';
@@ -217,7 +219,7 @@ async function main() {
         console.log('Data: ', data);
 
         const editPropertyQuery = `
-          insert into accounter_schema.narkis_review
+          insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
           select * from get_tax_report_of_transaction('${data.transactionId}')
           returning *;
         `;
