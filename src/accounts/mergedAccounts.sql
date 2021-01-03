@@ -46,7 +46,7 @@ SELECT tax_invoice_date,
            coalesce(beneficiary_details_data_message_detail,''),
            ' ',
            coalesce(english_action_desc,'')
-       ) as detailed_bank_description
+       ) as detailed_bank_description -- Delete and move to JS
 FROM accounter_schema.poalim_ils_account_transactions
 UNION
 SELECT tax_invoice_date,
