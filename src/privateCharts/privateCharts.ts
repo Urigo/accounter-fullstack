@@ -8,10 +8,11 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
     select *
     from top_expenses_not_categorized($1);
   `;
-  
-  let topPrivateNotCategorizedExpenses: any = await pool.query(topPrivateExpensesNotCategorizedSQL,
+
+  let topPrivateNotCategorizedExpenses: any = await pool.query(
+    topPrivateExpensesNotCategorizedSQL,
     [`$$${startingDate}$$`]
-  );;
+  );
 
   if (!topPrivateNotCategorizedExpenses) {
     return '';

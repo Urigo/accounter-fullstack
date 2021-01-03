@@ -2,14 +2,9 @@ import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
 
-const entitiesWithoutInvoice = [
-  'Poalim',
-  'Isracard'
-];
+const entitiesWithoutInvoice = ['Poalim', 'Isracard'];
 
-const entitiesWithoutInvoiceNumuber = [
-  'Uri Goldshtein',
-];
+const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];
 
 const privateBusinessExpenses = [
   'Google',
@@ -22,9 +17,7 @@ const privateBusinessExpenses = [
   'Partner',
 ];
 
-const businessesNotToShare = [
-  'Dotan Simha',
-];
+const businessesNotToShare = ['Dotan Simha'];
 
 const businessesWithoutTaxCategory = [
   'Uri Goldshtein',
@@ -34,21 +27,23 @@ const businessesWithoutTaxCategory = [
   'Tax',
 ];
 
-const businessesWithoutVAT = [
-  'Apple'
-];
+const businessesWithoutVAT = ['Apple'];
 function isBusiness(transaction: any) {
-  return (transaction.account_number == 61066 ||
-    transaction.account_number == 2733 ||
-    transaction.account_number == 466803 ||
-    transaction.account_number == 1082 ||
-    transaction.account_number == 1074) &&
-    !entitiesWithoutInvoice.includes(transaction.financial_entity);
+  return (
+    (transaction.account_number == 61066 ||
+      transaction.account_number == 2733 ||
+      transaction.account_number == 466803 ||
+      transaction.account_number == 1082 ||
+      transaction.account_number == 1074) &&
+    !entitiesWithoutInvoice.includes(transaction.financial_entity)
+  );
 }
 function shareWithDotan(transaction: any) {
-  if (transaction.financial_accounts_to_balance == 'no' ||
-      transaction.financial_accounts_to_balance === ' ' ||
-      transaction.financial_accounts_to_balance === 'yes' ) {
+  if (
+    transaction.financial_accounts_to_balance == 'no' ||
+    transaction.financial_accounts_to_balance === ' ' ||
+    transaction.financial_accounts_to_balance === 'yes'
+  ) {
     return false;
   } else {
     return !(
@@ -386,7 +381,9 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'></button>
           </td>
           <td class="vat"  ${
-            !transaction.vat && isBusiness(transaction) && transaction.currency_code == 'ILS' &&
+            !transaction.vat &&
+            isBusiness(transaction) &&
+            transaction.currency_code == 'ILS' &&
             !businessesWithoutVAT.includes(transaction.financial_entity) &&
             !businessesWithoutTaxCategory.includes(transaction.financial_entity)
               ? 'style="background-color: rgb(236, 207, 57);"'
@@ -395,13 +392,19 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'></button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="even_with_dotan" ${shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''}>${
-            transaction.financial_accounts_to_balance
-          }
+          <td class="even_with_dotan" ${
+            shareWithDotan(transaction)
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${transaction.financial_accounts_to_balance}
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'></button>
           </td>
           <td class="tax_category" ${
-            isBusiness(transaction) && !businessesWithoutTaxCategory.includes(transaction.financial_entity) && !transaction.tax_category
+            isBusiness(transaction) &&
+            !businessesWithoutTaxCategory.includes(
+              transaction.financial_entity
+            ) &&
+            !transaction.tax_category
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
@@ -429,7 +432,11 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'></button>
           </td>
           <td class="tax_invoice_number" ${
-            isBusiness(transaction) && !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) && !transaction.tax_invoice_number
+            isBusiness(transaction) &&
+            !entitiesWithoutInvoiceNumuber.includes(
+              transaction.financial_entity
+            ) &&
+            !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
