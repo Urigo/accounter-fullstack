@@ -1,21 +1,17 @@
-select *
-FROM top_private_expenses_for_month('2020-03-01');
-
-select *
-FROM top_private_expenses_for_month('2020-04-01');
-
-select *
-FROM top_private_expenses_for_month('2020-05-01');
-
-select *
-FROM top_private_expenses_for_month('2020-06-01');
-
-select *
-FROM top_private_expenses_for_month('2020-10-01');
-
-select *
-FROM top_private_expenses_for_month('2020-11-01');
-
+select
+       top_private_expenses_for_month('2020-01-01'),
+       top_private_expenses_for_month('2020-02-01'),
+       top_private_expenses_for_month('2020-03-01'),
+       top_private_expenses_for_month('2020-04-01'),
+       top_private_expenses_for_month('2020-05-01'),
+       top_private_expenses_for_month('2020-06-01'),
+       top_private_expenses_for_month('2020-07-01'),
+       top_private_expenses_for_month('2020-08-01'),
+       top_private_expenses_for_month('2020-09-01'),
+       top_private_expenses_for_month('2020-10-01'),
+       top_private_expenses_for_month('2020-11-01'),
+       top_private_expenses_for_month('2020-12-01')
+;
 
 CREATE OR REPLACE FUNCTION top_private_expenses_for_month(month_input varchar)
     RETURNS TABLE
