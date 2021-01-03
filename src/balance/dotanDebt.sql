@@ -15,7 +15,9 @@ WHERE (account_number = 2733 OR account_number = 61066)
   AND financial_accounts_to_balance = 'no'
 ORDER BY event_date desc , event_number, event_amount, bank_reference, account_number;
 
-select * from dotan_dept;
+select *,
+       event_amount_in_usd_with_vat_if_exists
+from dotan_dept;
 
     SELECT
         event_date,
