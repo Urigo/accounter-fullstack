@@ -1,3 +1,18 @@
+select *
+into table accounter_schema.narkis_review
+from get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+
+select *
+from accounter_schema.narkis_review;
+
+  select *
+  from get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+  order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+
+
+select * from input_salary('0ac973bf-5f2b-4a64-9900-411c8ad5a622');
+
 drop function report_to_hashavshevet_by_month(salary_transaction uuid);
 CREATE OR REPLACE FUNCTION input_salary(salary_transaction_id uuid)
 RETURNS TABLE(
@@ -38,19 +53,25 @@ with salary_transaction as (
                'DD/MM/YYYY'
           ) as end_of_month,
           to_char(executing_date::date, 'MM/YY') as month_year_number
-    from accounter_schema.poalim_usd_account_transactions
+--     from accounter_schema.poalim_usd_account_transactions
+    from accounter_schema.poalim_eur_account_transactions
     where
           id = salary_transaction_id
 )
 insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-("תאריך_חשבונית", "חשבון_חובה_1", "סכום_חובה_1", "מטח_סכום_חובה_1", "מטבע", "חשבון_זכות_1", "סכום_זכות_1", "מטח_סכום_זכות_1", "חשבון_חובה_2", "סכום_חובה_2", "מטח_סכום_חובה_2", "חשבון_זכות_2", "סכום_זכות_2", "מטח_סכום_זכות_2", "פרטים", "אסמכתא_1", "אסמכתא_2", "סוג_תנועה", "תאריך_ערך", "תאריך_3", original_id, origin, proforma_invoice_file, id, reviewed, hashavshevet_id) VALUES
-(salary_transaction.end_of_month, null, null, null, null, 'בלני', 1167, null, null, null, null, null, null, null, ' ב.ל. חו"ז' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, null, null, null, null, 'מהני', 730, null, null, null, null, null, null, null, ' מ.ה. ניכוי' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, null, null, null, null, 'זקופות', 105, null, null, null, null, null, null, null, ' זקופות-זכות' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, null, null, null, null, 'אורי', 8604, null, null, null, null, null, null, null, ' גולדשטיין אורי' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, 'הוצז', 105, null, null, null, null, null, null, null, null, null, null, null, ' זקופות-חובה' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, 'שכע', 10000, null, null, null, null, null, null, null, null, null, null, null, ' הוצ. משכורת' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null),
-(salary_transaction.end_of_month, 'סוצ', 501, null, null, null, null, null, null, null, null, null, null, null, ' הוצ. ב.ל' || salary_transaction.month_year_number, null, null, null, salary_transaction.end_of_month, salary_transaction.value_date, salary_transaction_id, 'manual_salary', null, gen_random_uuid(), null, null)
+    select end_of_month, null, null::integer, null, null, 'בלני', 1167, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' ב.ל. חו"ז', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, null, null::integer, null, null, 'מהני', 731, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' מ.ה. ניכוי', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, null, null::integer, null, null, 'זקופות', 105, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' זקופות-זכות', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, null, null::integer, null, null, 'אורי', 8603, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' גולדשטיין אורי', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, 'הוצז', 105, null, null, null, null, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' זקופות-חובה', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, 'שכע', 10000, null, null, null, null, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' הוצ. משכורת', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
+    union all
+    select end_of_month, 'סוצ', 501, null, null, null, null, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' הוצ. ב.ל' , null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
 returning *;
 
 $$;
