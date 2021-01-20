@@ -17,7 +17,7 @@ SELECT tax_invoice_number,
        financial_entity,
        event_amount,
        event_date
-FROM formatted_merged_tables
+FROM accounter_schema.all_transactions
 WHERE
       (account_number = 2733 OR account_number = 61066) AND
       event_amount > 0 AND

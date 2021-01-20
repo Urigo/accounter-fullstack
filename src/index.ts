@@ -6,6 +6,7 @@ import { printSomething } from './anotherFile';
 import { financialStatus, tableStyles } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
 import { topPrivateNotCategorized } from './privateCharts/privateCharts';
+import { createTaxEntriesForTransaction } from './taxMonthlyReport/taxesForTransaction';
 
 import dotenv from 'dotenv';
 const { config } = dotenv;
@@ -30,8 +31,7 @@ export const pool = new Pool({
 
 async function main() {
   const server = createServer(async function (request, response) {
-    console.log('create server?');
-    console.log(request.url);
+    console.log(`new request ${request.url}`);
     if (
       request.url == '/' ||
       (request.url && request.url.startsWith('/?month='))
@@ -123,26 +123,8 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'isracard_creditcard_transactions';
-        switch (data.account_type) {
-          case 'checking_ils':
-            tableToUpdate = 'poalim_ils_account_transactions';
-            break;
-          case 'checking_usd':
-            tableToUpdate = 'poalim_usd_account_transactions';
-            break;
-          case 'checking_eur':
-            tableToUpdate = 'poalim_eur_account_transactions';
-            break;
-          case 'creditcard':
-            tableToUpdate = 'isracard_creditcard_transactions';
-            break;
-          default:
-            console.error(`Unknown account types ${data.account_type}`);
-        }
-
         const editPropertyQuery = `
-          UPDATE accounter_schema.${tableToUpdate}
+          UPDATE accounter_schema.all_transactions
           SET ${data.propertyToChange} = '${data.newValue}'
           WHERE id = '${data.id}'
           RETURNING ${data.propertyToChange};
@@ -158,7 +140,7 @@ async function main() {
             // TODO: Log important checks
             console.log('error in insert - ', error);
             response.end(JSON.stringify(error));
-  
+
             // console.log('nothing');
           }
         }
@@ -174,17 +156,9 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let tableToUpdate = 'saved_tax_reports_2020_03_04_05_06_07_08_09';
+        let tableToUpdate = 'ledger';
         if (data.accountType) {
-          if (data.accountType == 'עוש1') {
-            tableToUpdate = 'poalim_usd_account_transactions';
-          } else if (data.accountType == 'עוש2') {
-            tableToUpdate = 'poalim_eur_account_transactions';
-          } else if (data.accountType == 'עוש') {
-            tableToUpdate = 'poalim_ils_account_transactions';
-          } else if (data.accountType == 'כא') {
-            tableToUpdate = 'isracard_creditcard_transactions';
-          }
+          tableToUpdate = 'all_transactions';
         }
 
         const submitReviewQuery = `
@@ -218,24 +192,37 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        const editPropertyQuery = `
-          insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-          select * from get_tax_report_of_transaction('${data.transactionId}')
-          returning *;
-        `;
+        /*
+        
+                  Movement for the bank
+                  Movenent for the entity
+                  Movement for VAT
+        */
 
-        console.log(editPropertyQuery);
-        try {
-          let updateResult = await pool.query(editPropertyQuery);
-          console.log(JSON.stringify(updateResult));
-          response.end(JSON.stringify(updateResult));
-        } catch (error) {
-          // TODO: Log important checks
-          console.log('error in insert - ', error);
-          response.end(error);
+        let result = await createTaxEntriesForTransaction(data.transactionId);
 
-          // console.log('nothing');
-        }
+        console.log(result);
+
+        response.end(JSON.stringify(result));
+
+        // const editPropertyQuery = `
+        //   insert into accounter_schema.ledger
+        //   select * from get_tax_report_of_transaction('${data.transactionId}')
+        //   returning *;
+        // `;
+
+        // console.log(editPropertyQuery);
+        // try {
+        //   let updateResult = await pool.query(editPropertyQuery);
+        //   console.log(JSON.stringify(updateResult));
+        //   response.end(JSON.stringify(updateResult));
+        // } catch (error) {
+        //   // TODO: Log important checks
+        //   console.log('error in insert - ', error);
+        //   response.end(error);
+
+        //   // console.log('nothing');
+        // }
       });
     } else {
       return response.end();

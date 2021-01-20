@@ -1,5 +1,5 @@
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
+from accounter_schema.ledger hashavshevet
 where
     origin = 'manual_salary'
     and to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date)
@@ -7,7 +7,7 @@ where
 
 
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
+from accounter_schema.ledger hashavshevet
 left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     (hashavshevet.original_id is null and
@@ -86,7 +86,7 @@ LANGUAGE SQL
 AS $$
 
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
+from accounter_schema.ledger hashavshevet
 left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     (hashavshevet.original_id is null and
@@ -112,7 +112,7 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבו�
 $$;
 
 select *
-from get_unified_tax_report_of_month('2020-10-01', '2020-10-01')
+from get_unified_tax_report_of_month('2020-01-01', '2020-12-01')
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
 
 drop function get_unified_tax_report_of_month;
@@ -152,11 +152,11 @@ AS $$
 
 (
 select hashavshevet.*
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09 hashavshevet
-left outer join formatted_merged_tables bank on hashavshevet.original_id = bank.id
+from accounter_schema.ledger hashavshevet
+left outer join accounter_schema.all_transactions bank on hashavshevet.original_id = bank.id
 where
     bank is null or (
-    (bank.account_number = 2733 OR bank.account_number = 61066) AND
+    (bank.account_number in (2733, 61066)) AND
         (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
             bank.account_type != 'creditcard' AND
             bank.event_date::text::date >= date_trunc('month', month_start::date) AND
@@ -205,7 +205,7 @@ UNION ALL
        hashavshevet_id
 from formatted_merged_tables
 where
-    (account_number = 2733 OR account_number = 61066) AND
+    (account_number in (2733, 61066)) AND
         (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             account_type != 'creditcard' AND
             event_date::text::date >= date_trunc('month', month_start::date) AND
@@ -342,7 +342,7 @@ where event_amount > 0 and
       financial_entity != 'Tax Shuma' AND
       is_conversion <> TRUE;
 
-insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+insert into accounter_schema.ledger
 (
        תאריך_חשבונית,
        חשבון_חובה_1,
@@ -370,14 +370,14 @@ insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 )
 select *
 -- into table accounter_schema.saved_tax_reports_2020_03_04
-from get_tax_report_of_month('2020-11-01')
+from get_tax_report_of_month('2020-12-01')
 -- order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id
 ;
 
 
 
 select *
-from get_tax_report_of_month('2020-11-01');
+from get_tax_report_of_month('2020-12-01');
 
 drop function get_tax_report_of_month(month_input varchar);
 

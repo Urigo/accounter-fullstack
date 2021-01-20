@@ -58,7 +58,7 @@ with salary_transaction as (
     where
           id = salary_transaction_id
 )
-insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+insert into accounter_schema.ledger
     select end_of_month, null, null::integer, null, null, 'בלני', 1167, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' ב.ל. חו"ז', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction
     union all
     select end_of_month, null, null::integer, null, null, 'מהני', 731, null, null, null, null, null, null, null, salary_transaction.month_year_number || ' מ.ה. ניכוי', null::bigint, null, null, salary_transaction.end_of_month, to_char(salary_transaction.value_date, 'DD/MM/YYYY'), salary_transaction_id, 'manual_salary', null from salary_transaction

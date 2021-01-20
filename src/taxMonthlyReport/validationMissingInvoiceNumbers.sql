@@ -1,15 +1,16 @@
-select * from missing_invoice_numbers('2020-05-01');
+select * from missing_invoice_numbers('2020-12-01');
 
+drop function missing_invoice_numbers(month_input varchar);
 create or replace function missing_invoice_numbers(month_input varchar)
-returns setof formatted_merged_tables
+returns setof accounter_schema.all_transactions
 LANGUAGE SQL
 AS $$
 
 WITH this_month_business AS (
     SELECT *
-    FROM formatted_merged_tables
+    FROM accounter_schema.all_transactions
     WHERE business_trip IS NULL
-      AND (account_number = 2733 OR account_number = 61066)
+      AND account_number in (2733, 61066)
       AND (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             event_date::text::date >= date_trunc('month', month_input::date) AND
             event_date::text::date <=

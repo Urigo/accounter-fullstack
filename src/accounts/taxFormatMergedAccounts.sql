@@ -66,9 +66,9 @@ SELECT *,
        end) as real_vat,
        (CASE
             WHEN currency_code = 'ILS' THEN event_amount / (
-                select all_exchange_dates.usd_rate
-                from all_exchange_dates
-                where all_exchange_dates.exchange_date = debit_date::text::date
+                select usd
+                from accounter_schema.exchange_rates
+                where exchange_date = debit_date::text::date
             )
             WHEN currency_code = 'EUR' THEN event_amount * (
                     (
@@ -279,5 +279,5 @@ SELECT *,
                                    from all_exchange_dates
                                    where all_exchange_dates.exchange_date = tax_invoice_date::text::date)
            END)                                as formatted_usd_vat_in_ils
-FROM merged_tables
+FROM accounter_schema.all_transactions
 -- where event_date > '2019-12-31';

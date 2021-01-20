@@ -104,7 +104,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2020-10-01';
+    monthTaxReport = '2020-12-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -117,6 +117,9 @@ export const financialStatus = async (query: any): Promise<string> => {
   const allTransactionsQuery = readFileSync(
     'src/sql/allTransactions.sql'
   ).toString();
+
+  console.time('callingDB');
+
   const results: any = await Promise.allSettled([
     pool.query(
       `
@@ -152,6 +155,86 @@ export const financialStatus = async (query: any): Promise<string> => {
       `,
       [`$$${monthTaxReport}$$`]
     ),
+    pool.query(`
+      with transactions_exclude as (
+        select *
+        from formatted_merged_tables
+        where
+            personal_category <> 'conversion' and
+            personal_category <> 'investments' and
+            financial_entity <> 'Isracard' and
+            financial_entity <> 'Tax' and
+            financial_entity <> 'VAT' and
+            financial_entity <> 'Tax Shuma' and
+            financial_entity <> 'Tax Corona Grant' and
+            financial_entity <> 'Uri Goldshtein' and
+            financial_entity <> 'Uri Goldshtein Hoz' and
+            financial_entity <> 'Uri Goldshtein Employee Social Security' and
+            financial_entity <> 'Uri Goldshtein Employee Tax Withholding' and
+            financial_entity <> 'Dotan Simha'
+    ), business_accounts as (
+        select account_number
+        from accounter_schema.financial_accounts
+        where private_business = 'business'
+    )
+    select
+    --  month
+        to_char(event_date, 'YYYY/mm') as date,
+    --  year
+    --  to_char(event_date, 'YYYY') as date,
+        sum(
+            case when (event_amount > 0 and personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end
+        )::float4 as business_income,
+        sum(
+            case when (event_amount < 0 and personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end
+        )::float4 as business_expenses,
+        sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end)::float4 as overall_business_profit,
+        sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists/2 else 0 end)::float4 as business_profit_share,
+    
+        sum(
+            case when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd_with_vat_if_exists else 0 end
+        )::float4 as private_expenses,
+        sum(case when personal_category <> 'business' then event_amount_in_usd_with_vat_if_exists else 0 end)::float4 as overall_private
+    from transactions_exclude
+    -- where
+    --     account_number in (select account_number
+    --                        from accounter_schema.financial_accounts accounts
+    --                        where accounts.private_business = 'business')
+    where
+        event_date::text::date >= '2020-10-01'::text::date
+    group by date
+    order by date;
+    `),
+    pool.query(`
+    with transactions_exclude as (
+      select *
+      from formatted_merged_tables
+      where
+          personal_category <> 'conversion' and
+          personal_category <> 'investments' and
+          financial_entity <> 'Isracard' and
+          financial_entity <> 'Tax' and
+          financial_entity <> 'VAT' and
+          financial_entity <> 'Tax Shuma' and
+          financial_entity <> 'Tax Corona Grant' and
+          financial_entity <> 'Uri Goldshtein' and
+          financial_entity <> 'Uri Goldshtein Hoz' and
+          financial_entity <> 'Uri Goldshtein Employee Social Security' and
+          financial_entity <> 'Uri Goldshtein Employee Tax Withholding' and
+          financial_entity <> 'Dotan Simha' and
+          personal_category <> 'business'
+  )
+  select
+      personal_category,
+      sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
+  from transactions_exclude
+  where
+    event_date::text::date >= '2021-01-01'::text::date and
+    event_date::text::date <= '2021-01-31'::text::date
+  --   and personal_category = 'family'
+  group by personal_category
+  order by sum(event_amount_in_usd_with_vat_if_exists);    
+    `),
   ]);
 
   let missingInvoiceDates: any = results[0].value;
@@ -161,6 +244,75 @@ export const financialStatus = async (query: any): Promise<string> => {
   let VATTransactions: any = results[3].value;
   let allTransactions: any = results[4].value;
   let missingInvoiceImages: any = results[5].value;
+  let profitTable: any = results[6].value;
+  let thisMonthPrivateExpensesTable: any = results[7].value;
+
+  console.timeEnd('callingDB');
+
+  var formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  });
+
+  let profitTableHTMLTemplate = '';
+  if (profitTable?.rows) {
+    for (const profitMonth of profitTable?.rows) {
+      profitTableHTMLTemplate = profitTableHTMLTemplate.concat(`
+        <tr>
+            <td>${profitMonth.date}</td>
+            <td>${formatter.format(profitMonth.business_income)}</td>
+            <td>${formatter.format(profitMonth.business_expenses)}</td>
+          <td>${formatter.format(profitMonth.overall_business_profit)}</td>
+          <td>${formatter.format(profitMonth.business_profit_share)}</td>
+          <td>${formatter.format(profitMonth.private_expenses)}</td>
+          <td>${formatter.format(profitMonth.overall_private)}</td>
+        </tr>
+        `);
+    }
+    profitTableHTMLTemplate = `
+    <table>
+      <thead>
+          <tr>
+              <th>Date</th>
+              <th>Business Income</th>
+              <th>Business Expenses</th>
+              <th>overall_business_profit</th>
+              <th>business_profit_share</th>
+              <th>private_expenses</th>
+              <th>overall_private</th>
+              </tr>
+      </thead>
+      <tbody>
+          ${profitTableHTMLTemplate}
+      </tbody>
+    </table>  
+  `;
+  }
+
+  let thisMonthPrivateExpensesTableHTMLTemplate = '';
+  if (thisMonthPrivateExpensesTable?.rows) {
+    for (const expenseCategory of thisMonthPrivateExpensesTable?.rows) {
+      thisMonthPrivateExpensesTableHTMLTemplate = thisMonthPrivateExpensesTableHTMLTemplate.concat(`
+        <tr>
+            <td>${expenseCategory.personal_category}</td>
+            <td>${formatter.format(expenseCategory.overall_sum)}</td>
+        </tr>
+        `);
+    }
+    thisMonthPrivateExpensesTableHTMLTemplate = `
+    <table>
+      <thead>
+          <tr>
+              <th>Personal Category</th>
+              <th>Amount</th>
+              </tr>
+      </thead>
+      <tbody>
+          ${thisMonthPrivateExpensesTableHTMLTemplate}
+      </tbody>
+    </table>  
+  `;
+  }
 
   let missingInvoiceDatesHTMLTemplate = '';
   if (missingInvoiceDates?.rows) {
@@ -355,7 +507,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             event_amount=${transaction.event_amount}
             event_number=${transaction.event_number}
             transaction_id=${transaction.id}>
-          <td>${transaction.formatted_event_date}</td>
+          <td>${moment(transaction.event_date).format('DD/MM/YY')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
         transaction.currency_code
       )}</td>
@@ -392,7 +544,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'></button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="even_with_dotan" ${
+          <td class="financial_accounts_to_balance" ${
             shareWithDotan(transaction)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
@@ -558,6 +710,12 @@ export const financialStatus = async (query: any): Promise<string> => {
 
       <a href="/private-charts">Private Charts</a>
   
+      ${profitTableHTMLTemplate}
+
+      <br> 
+
+      ${thisMonthPrivateExpensesTableHTMLTemplate}
+
       <h3>Missing invoice numbers for a month</h3>
   
       ${missingInvoiceNumbersHTMLTemplate}

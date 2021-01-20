@@ -1,5 +1,6 @@
-SELECT * FROM get_vat_for_month('2020-03-01');
+SELECT * FROM get_vat_for_month('2020-12-01');
 
+drop function get_vat_for_month(month_input varchar);
 CREATE OR REPLACE FUNCTION get_vat_for_month(month_input varchar)
 RETURNS TABLE (
     overall_VAT_status numeric(9,2),
@@ -8,7 +9,7 @@ RETURNS TABLE (
     event_amount numeric(9,2),
     financial_entity varchar,
     user_description varchar,
-    bank_reference integer,
+    bank_reference bigint,
     account_number integer)
 LANGUAGE SQL
 AS $$

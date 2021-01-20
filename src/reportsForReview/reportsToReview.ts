@@ -16,6 +16,8 @@ export const reportToReview = async (query: any): Promise<string> => {
     'src/sql/lastInvoiceNumbers.sql'
   ).toString();
 
+  console.log('reportMonthToReview', reportMonthToReview);
+  console.time('callingReportsDB');
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
     pool.query(
@@ -28,6 +30,9 @@ export const reportToReview = async (query: any): Promise<string> => {
   ]);
   let lastInvoiceNumbers: any = results[0].value;
   let reportToReview: any = results[1].value;
+
+  console.timeEnd('callingReportsDB');
+  console.time('renderReports');
 
   let lastInvoiceNumbersHTMLTemplate = '';
   for (const transaction of lastInvoiceNumbers.rows) {
@@ -60,8 +65,6 @@ export const reportToReview = async (query: any): Promise<string> => {
         </tbody>
       </table>  
     `;
-
-  console.log('reportMonthToReview', reportMonthToReview);
 
   let counter = 1;
   let reportToReviewHTMLTemplate = '';
@@ -97,18 +100,21 @@ export const reportToReview = async (query: any): Promise<string> => {
       }
     }
 
-    let exchangeRate: any = 0;
-    if (transaction.תאריך_ערך) {
-      let valueDate = moment(transaction.תאריך_ערך, 'DD/MM/YYYY');
+    // let exchangeRate: any = 0;
+    // if (transaction.תאריך_ערך) {
+    //   let valueDate = moment(transaction.תאריך_ערך, 'DD/MM/YYYY');
 
-      exchangeRate = await pool.query(`
-        select all_exchange_dates.eur_rate, all_exchange_dates.usd_rate
-        from all_exchange_dates
-        where all_exchange_dates.exchange_date = '${valueDate.format(
-          'YYYY-MM-DD'
-        )}'
-      `);
-    }
+    //   exchangeRate = await pool.query(`
+    //     select all_exchange_dates.eur_rate, all_exchange_dates.usd_rate
+    //     from all_exchange_dates
+    //     where all_exchange_dates.exchange_date = '${valueDate.format(
+    //       'YYYY-MM-DD'
+    //     )}'
+    //   `);
+    // }
+
+    const generateTaxFunctionCall = `onClick='generateTaxMovements("${transaction.id}");'`;
+    const sendToHashavshevetFunctionCall = `onClick='sendToHashavshevet("${transaction.id}");'`;
 
     // let url = `https://www.boi.org.il/currency.xml?rdate=${valueDate.format(
     //   'YYYYMMDD'
@@ -184,15 +190,17 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td class="valueDate">
           ${transaction.תאריך_ערך}
           <div class="valueDateValues">
-            USD-${exchangeRate?.rows ? exchangeRate?.rows[0]?.usd_rate : 0}
-            EUR-${exchangeRate?.rows ? exchangeRate?.rows[0]?.eur_rate : 0}
           </div>
         </td>
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
-        <td>${
-          transaction.hashavshevet_id ? transaction.hashavshevet_id : ''
-        }
-        <button type="button" onClick='generateTaxMovements("${transaction.id}");'></button>
+        <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
+        <button type="button"
+          ${
+            transaction.פרטים && transaction.פרטים == '0'
+              ? generateTaxFunctionCall
+              : sendToHashavshevetFunctionCall
+          }>
+        </button>
         </td>
       </tr>
       `);
@@ -248,6 +256,8 @@ export const reportToReview = async (query: any): Promise<string> => {
         </tbody>
       </table>  
     `;
+
+  console.timeEnd('renderReports');
 
   return `
       <script type="module" src="/browser.js"></script>

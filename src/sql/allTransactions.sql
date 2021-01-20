@@ -1,4 +1,4 @@
 SELECT *
-FROM formatted_merged_tables
+FROM accounter_schema.all_transactions
 ORDER BY event_date DESC
-LIMIT 250;
+LIMIT 550;
