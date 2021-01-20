@@ -176,7 +176,7 @@ async function main() {
         } catch (error) {
           // TODO: Log important checks
           console.log('error in review submission - ', error);
-          response.end(error);
+          response.end('error in review submission');
 
           // console.log('nothing');
         }
