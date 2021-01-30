@@ -224,6 +224,35 @@ async function main() {
         //   // console.log('nothing');
         // }
       });
+    } else if (request.url == '/deleteTaxMovements') {
+      console.log('new deleteTaxMovements');
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/x-typescript');
+      const chunks: Array<Uint8Array> = [];
+      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('end', async () => {
+        const bufferData = Buffer.concat(chunks);
+        const data = JSON.parse(bufferData.toString());
+        console.log('Data: ', data);
+
+        const editPropertyQuery = `
+          delete from accounter_schema.ledger
+          where id = '${data.transactionId}'
+          returning *;
+        `;
+
+        try {
+          let updateResult = await pool.query(editPropertyQuery);
+          console.log(JSON.stringify(updateResult));
+          response.end(JSON.stringify(updateResult));
+        } catch (error) {
+          // TODO: Log important checks
+          console.log('error in insert - ', error);
+          response.end(error);
+
+          // console.log('nothing');
+        }
+      });
     } else {
       return response.end();
     }

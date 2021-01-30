@@ -40,9 +40,9 @@ export const reportToReview = async (query: any): Promise<string> => {
       <tr>
         <td>${transaction.tax_invoice_number}</td>
         <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+        .toISOString()
+        .replace(/T/, ' ')
+        .replace(/\..+/, '')}</td>
         <td>${transaction.financial_entity}</td>
         <td>${transaction.user_description}</td>
         <td>${transaction.event_amount}</td>
@@ -142,47 +142,40 @@ export const reportToReview = async (query: any): Promise<string> => {
     // })();
 
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
-      <tr ${
-        transaction.פרטים && transaction.פרטים == '0'
-          ? 'class="bank-transaction"'
-          : ''
+      <tr ${transaction.פרטים && transaction.פרטים == '0'
+        ? 'class="bank-transaction"'
+        : ''
       } onClick='setSelected(this);'>
         <td>${counter++}</td>
         <td>
-          <input onchange="changeConfirmation('${transaction.id}', this${
-      transaction.פרטים && transaction.פרטים == '0'
+          <input onchange="changeConfirmation('${transaction.id}', this${transaction.פרטים && transaction.פרטים == '0'
         ? ", '" + transaction.חשבון_חובה_1 + "'"
         : ''
-    });" type="checkbox" 
+      });" type="checkbox" 
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">
           ${transaction.תאריך_חשבונית}
-          <img download class="invoiceImage" src="${
-            transaction.proforma_invoice_file
-          }">
+          <img download class="invoiceImage" src="${transaction.proforma_invoice_file
+      }">
         </td>
         <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
         <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
-        }</td>
+        <td>${transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
+      }</td>
         <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
         <td>${transaction.חשבון_זכות_1 ? transaction.חשבון_זכות_1 : ''}</td>
         <td>${transaction.סכום_זכות_1 ? transaction.סכום_זכות_1 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
-        }</td>
+        <td>${transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
+      }</td>
         <td>${transaction.חשבון_חובה_2 ? transaction.חשבון_חובה_2 : ''}</td>
         <td>${transaction.סכום_חובה_2 ? transaction.סכום_חובה_2 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
-        }</td>
+        <td>${transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
+      }</td>
         <td>${transaction.חשבון_זכות_2 ? transaction.חשבון_זכות_2 : ''}</td>
         <td>${transaction.סכום_זכות_2 ? transaction.סכום_זכות_2 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
-        }</td>
+        <td>${transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
+      }</td>
         <td>${transaction.פרטים ? transaction.פרטים : ''}</td>
         <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
         <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
@@ -195,12 +188,12 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
         <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button type="button"
-          ${
-            transaction.פרטים && transaction.פרטים == '0'
-              ? generateTaxFunctionCall
-              : sendToHashavshevetFunctionCall
-          }>
+          ${transaction.פרטים && transaction.פרטים == '0'
+        ? generateTaxFunctionCall
+        : sendToHashavshevetFunctionCall
+      }>e
         </button>
+        <button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>
         </td>
       </tr>
       `);
@@ -262,11 +255,12 @@ export const reportToReview = async (query: any): Promise<string> => {
   return `
       <script type="module" src="/browser.js"></script>
       <script type="module">
-        import { changeConfirmation, setSelected, generateTaxMovements } from '/browser.js';
+        import { changeConfirmation, setSelected, generateTaxMovements, deleteTaxMovements } from '/browser.js';
 
         window.changeConfirmation = changeConfirmation;
         window.setSelected = setSelected;
         window.generateTaxMovements = generateTaxMovements;
+        window.deleteTaxMovements = deleteTaxMovements;
       </script>
 
       <h3>Last invoice numbers</h3>

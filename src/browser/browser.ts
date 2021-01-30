@@ -78,3 +78,15 @@ export function generateTaxMovements(transactionId: string) {
     console.log('Request complete! response:', response);
   });
 }
+
+export function deleteTaxMovements(transactionId: string) {
+  const changeRequest = { transactionId };
+  console.log(changeRequest);
+
+  fetch('/deleteTaxMovements', {
+    method: 'POST',
+    body: JSON.stringify(changeRequest),
+  }).then((response) => {
+    console.log('Request complete! response:', response);
+  });
+}
