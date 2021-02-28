@@ -48,8 +48,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         select usd, eur
         from accounter_schema.exchange_rates
         where exchange_date <= to_date('${moment(date).format(
-        'YYYY-MM-DD'
-      )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
+          'YYYY-MM-DD'
+        )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
       `;
 
       try {
@@ -317,25 +317,25 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ? hashNumber(entryForAccounting.creditAmount)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-      entryForAccounting.secondAccountDebitAmount != 0
+    entryForAccounting.secondAccountDebitAmount != 0
       ? 'תשו'
       : null,
     entryForAccounting.secondAccountDebitAmount
       ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-      transaction.currency_code != 'ILS'
+    transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountDebitAmount)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-      entryForAccounting.secondAccountCreditAmount != 0
+    entryForAccounting.secondAccountCreditAmount != 0
       ? 'עסק'
       : null,
     entryForAccounting.secondAccountCreditAmountILS
       ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-      transaction.currency_code != 'ILS'
+    transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountCreditAmount)
       : null,
     entryForAccounting.description,
@@ -352,8 +352,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
           ? transaction.debit_date
           : transaction.tax_invoice_date
         : transaction.tax_invoice_date
-          ? transaction.tax_invoice_date
-          : transaction.debit_date
+        ? transaction.tax_invoice_date
+        : transaction.debit_date
     ),
     hashDateFormat(transaction.event_date),
     transaction.id,
@@ -384,13 +384,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount.description,
     entryForFinancialAccount.reference1
       ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-        .join('')
-        .substr(-9)
+          .join('')
+          .substr(-9)
       : null, // add check on the db for it
     entryForFinancialAccount.reference2
       ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-        .join('')
-        .substr(-9)
+          .join('')
+          .substr(-9)
       : null,
     null,
     hashDateFormat(
