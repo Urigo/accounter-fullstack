@@ -3,6 +3,16 @@ import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 
 const entitiesWithoutInvoiceDate = ['Uri Goldshtein', 'Poalim', 'Isracard'];
+const entitiesWithoutAccounting = ['Isracard'];
+function entitiesToTaxCategory(entity: string): string | null {
+  switch (entity) {
+    case 'Poalim':
+      return 'עמל';
+      break;
+    default:
+      return null;
+  }
+}
 
 const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע'];
 
@@ -81,7 +91,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   entryForFinancialAccount.creditAccount = transaction.financial_entity;
   entryForFinancialAccount.debitAccount = transaction.account_type;
-  entryForAccounting.creditAccount = transaction.tax_category;
+  entryForAccounting.creditAccount = entitiesToTaxCategory(
+    transaction.financial_entity
+  )
+    ? entitiesToTaxCategory(transaction.financial_entity)
+    : transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
   entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount = entryForAccounting.creditAmount = entryForAccounting.debitAmount =
@@ -92,19 +106,19 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   ).eventAmountILS;
   entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS = getILSForDate(
     transaction,
-    invoiceExchangeRates
-
+    transaction.account_type == 'creditcard'
+      ? debitExchangeRates
+      : invoiceExchangeRates
   ).eventAmountILS;
 
   if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
     entryForAccounting.secondAccount = 'VAT'; // TODO: Entities enum
     entryForAccounting.secondAccountCreditAmount =
       transaction.vatAfterDiduction;
-    entryForAccounting.secondAccountCreditAmountILS =
-      getILSForDate(
-        transaction,
-        debitExchangeRates
-      ).vatAfterDiductionILS;
+    entryForAccounting.secondAccountCreditAmountILS = getILSForDate(
+      transaction,
+      debitExchangeRates
+    ).vatAfterDiductionILS;
     entryForAccounting.creditAmount = transaction.amountBeforeVAT;
     entryForAccounting.creditAmountILS = getILSForDate(
       transaction,
@@ -144,9 +158,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     swap(entryForFinancialAccount, 'creditAmount', 'debitAmount');
     swap(entryForFinancialAccount, 'creditAmountILS', 'debitAmountILS');
     swap(entryForFinancialAccount, 'reference1', 'reference2');
-    transaction.tax_category == 'פלאפון'
-      ? (entryForAccounting.movementType = 'פלא')
-      : (entryForAccounting.movementType = 'חס');
+    if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
+      transaction.tax_category == 'פלאפון'
+        ? (entryForAccounting.movementType = 'פלא')
+        : (entryForAccounting.movementType = 'חס');
+    } else {
+      entryForAccounting.movementType = null;
+    }
   }
 
   console.log({
@@ -289,25 +307,53 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     ), // add a check if should have an invoice but doesn't let user know
     hashAccounts(entryForAccounting.debitAccount),
     hashNumber(entryForAccounting.debitAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.debitAmount) : null,
+    transaction.currency_code != 'ILS'
+      ? hashNumber(entryForAccounting.debitAmount)
+      : null,
     hashCurrencyType(transaction.currency_code),
     hashAccounts(entryForAccounting.creditAccount),
     hashNumber(entryForAccounting.creditAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.creditAmount) : null,
-    entryForAccounting.secondAccountDebitAmount != 0 ? 'תשו' : null,
-    hashNumber(entryForAccounting.secondAccountDebitAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.secondAccountDebitAmount) : null,
-    entryForAccounting.secondAccountCreditAmount != 0 ? 'עסק' : null,
-    hashNumber(entryForAccounting.secondAccountCreditAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.secondAccountCreditAmount) : null,
+    transaction.currency_code != 'ILS'
+      ? hashNumber(entryForAccounting.creditAmount)
+      : null,
+    entryForAccounting.secondAccountDebitAmount &&
+      entryForAccounting.secondAccountDebitAmount != 0
+      ? 'תשו'
+      : null,
+    entryForAccounting.secondAccountDebitAmount
+      ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
+      : null,
+    entryForAccounting.secondAccountDebitAmount &&
+      transaction.currency_code != 'ILS'
+      ? hashNumber(entryForAccounting.secondAccountDebitAmount)
+      : null,
+    entryForAccounting.secondAccountCreditAmount &&
+      entryForAccounting.secondAccountCreditAmount != 0
+      ? 'עסק'
+      : null,
+    entryForAccounting.secondAccountCreditAmountILS
+      ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
+      : null,
+    entryForAccounting.secondAccountCreditAmount &&
+      transaction.currency_code != 'ILS'
+      ? hashNumber(entryForAccounting.secondAccountCreditAmount)
+      : null,
     entryForAccounting.description,
-    (entryForAccounting.reference1.match(/\d+/g) || []).join('').substr(-9), // add check on the db for it
-    (entryForAccounting.reference2.match(/\d+/g) || []).join('').substr(-9),
+    entryForAccounting.reference1
+      ? (entryForAccounting.reference1?.match(/\d+/g) || []).join('').substr(-9)
+      : null, // add check on the db for it
+    entryForAccounting.reference2
+      ? (entryForAccounting.reference2?.match(/\d+/g) || []).join('').substr(-9)
+      : null,
     entryForAccounting.movementType,
     hashDateFormat(
-      transaction.tax_invoice_date
-        ? transaction.tax_invoice_date
-        : transaction.debit_date
+      transaction.account_type == 'creditcard'
+        ? transaction.debit_date
+          ? transaction.debit_date
+          : transaction.tax_invoice_date
+        : transaction.tax_invoice_date
+          ? transaction.tax_invoice_date
+          : transaction.debit_date
     ),
     hashDateFormat(transaction.event_date),
     transaction.id,
@@ -320,11 +366,15 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     hashDateFormat(transaction.event_date),
     hashAccounts(entryForFinancialAccount.debitAccount),
     hashNumber(entryForFinancialAccount.debitAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForFinancialAccount.debitAmount) : null,
+    transaction.currency_code != 'ILS'
+      ? hashNumber(entryForFinancialAccount.debitAmount)
+      : null,
     hashCurrencyType(transaction.currency_code),
     hashAccounts(entryForFinancialAccount.creditAccount),
     hashNumber(entryForFinancialAccount.creditAmountILS),
-    transaction.currency_code != 'ILS' ? hashNumber(entryForFinancialAccount.creditAmount) : null,
+    transaction.currency_code != 'ILS'
+      ? hashNumber(entryForFinancialAccount.creditAmount)
+      : null,
     null, // Check for interest transactions (הכנרבמ)
     null,
     null,
@@ -332,16 +382,70 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     null,
     null,
     entryForFinancialAccount.description,
-    entryForFinancialAccount.reference1,
-    entryForFinancialAccount.reference2,
+    entryForFinancialAccount.reference1
+      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
+        .join('')
+        .substr(-9)
+      : null, // add check on the db for it
+    entryForFinancialAccount.reference2
+      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
+        .join('')
+        .substr(-9)
+      : null,
     null,
-    hashDateFormat(transaction.debit_date ? transaction.debit_date : transaction.event_date),
+    hashDateFormat(
+      transaction.debit_date ? transaction.debit_date : transaction.event_date
+    ),
     hashDateFormat(transaction.event_date),
     transaction.id,
     'generated_financial_account',
     transaction.proforma_invoice_file,
     uuidv4(),
   ];
+
+  if (
+    debitExchangeRates != invoiceExchangeRates &&
+    transaction.account_type != 'creditcard' &&
+    transaction.financial_entity != 'Isracard'
+  ) {
+    console.log('שערררררררר');
+    let entryForExchangeRatesDifferenceValues = [
+      hashDateFormat(transaction.event_date),
+      hashAccounts(entryForFinancialAccount.debitAccount),
+      hashNumber(entryForFinancialAccount.debitAmountILS),
+      transaction.currency_code != 'ILS'
+        ? hashNumber(entryForFinancialAccount.debitAmount)
+        : null,
+      hashCurrencyType(transaction.currency_code),
+      hashAccounts(entryForFinancialAccount.creditAccount),
+      hashNumber(entryForFinancialAccount.creditAmountILS),
+      transaction.currency_code != 'ILS'
+        ? hashNumber(entryForFinancialAccount.creditAmount)
+        : null,
+      null, // Check for interest transactions (הכנרבמ)
+      null,
+      null,
+      null,
+      null,
+      null,
+      entryForFinancialAccount.description,
+      (entryForFinancialAccount.reference1.match(/\d+/g) || [])
+        .join('')
+        .substr(-9), // add check on the db for it
+      (entryForFinancialAccount.reference2.match(/\d+/g) || [])
+        .join('')
+        .substr(-9),
+      null,
+      hashDateFormat(
+        transaction.debit_date ? transaction.debit_date : transaction.event_date
+      ),
+      hashDateFormat(transaction.event_date),
+      transaction.id,
+      'generated_financial_account',
+      transaction.proforma_invoice_file,
+      uuidv4(),
+    ];
+  }
 
   let insertMovementQuery = `insert into accounter_schema.ledger (
     תאריך_חשבונית,
@@ -372,14 +476,16 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   let queryConfig = {
     text: insertMovementQuery,
-    values: entryForAccountingValues
-  }
-  try {
-    let updateResult = await pool.query(queryConfig);
-    console.log(JSON.stringify(updateResult.rows[0]));
-  } catch (error) {
-    // TODO: Log important checks
-    console.log('error in insert - ', error);
+    values: entryForAccountingValues,
+  };
+  if (!entitiesWithoutAccounting.includes(transaction.financial_entity)) {
+    try {
+      let updateResult = await pool.query(queryConfig);
+      console.log(JSON.stringify(updateResult.rows[0]));
+    } catch (error) {
+      // TODO: Log important checks
+      console.log('error in insert - ', error);
+    }
   }
 
   queryConfig.values = entryForFinancialAccountValues;
