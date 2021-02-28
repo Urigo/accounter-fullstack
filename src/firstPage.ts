@@ -533,11 +533,15 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'></button>
           </td>
           <td class="vat"  ${
-            !transaction.vat &&
-            isBusiness(transaction) &&
-            transaction.currency_code == 'ILS' &&
-            !businessesWithoutVAT.includes(transaction.financial_entity) &&
-            !businessesWithoutTaxCategory.includes(transaction.financial_entity)
+            (!transaction.vat &&
+              isBusiness(transaction) &&
+              transaction.currency_code == 'ILS' &&
+              !businessesWithoutVAT.includes(transaction.financial_entity) &&
+              !businessesWithoutTaxCategory.includes(
+                transaction.financial_entity
+              )) ||
+            (transaction.vat > 0 && transaction.event_amount < 0) ||
+            (transaction.vat < 0 && transaction.event_amount > 0)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>${transaction.vat}
