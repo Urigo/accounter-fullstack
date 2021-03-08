@@ -27,6 +27,205 @@ const businessesWithoutTaxCategory = [
   'Tax',
 ];
 
+function suggestedTransaction(transaction: any) {
+  let suggestedTransaction: any = {};
+  if (transaction.detailed_bank_description == 'SLACK TAYJ1FSUA/DUBLIN') {
+    suggestedTransaction.financialEntity = 'Slack';
+    suggestedTransaction.userDescription = 'Slack';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('WOLT')) {
+    suggestedTransaction.financialEntity = 'Wolt';
+    suggestedTransaction.userDescription = 'Wolt';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מטח-קניה')) {
+    suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.personalCategory = 'conversion';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes(`רכישת מט"ח`)) {
+    suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.personalCategory = 'conversion';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('חשבונית ירוקה')) {
+    suggestedTransaction.financialEntity = 'Green Invoice';
+    suggestedTransaction.userDescription = 'Green Invoice Monthly Charge';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description == `ע' העברת מט"ח` ||
+    transaction.detailed_bank_description.includes('F.C.COM') ||
+    transaction.detailed_bank_description.includes('ע.מפעולות-ישיר') ||
+    transaction.detailed_bank_description.includes('ריבית חובה')
+  ) {
+    suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.personalCategory = 'financial';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description == 'הוט נט שרותי אינטרנט' ||
+    transaction.detailed_bank_description == 'HOT'
+  ) {
+    suggestedTransaction.financialEntity = 'HOT';
+    suggestedTransaction.personalCategory = 'family';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('יורוקארד') ||
+    transaction.detailed_bank_description.includes('ISRACARD')
+  ) {
+    suggestedTransaction.financialEntity = 'Isracard';
+    suggestedTransaction.userDescription = 'Monthly creditcard charge';
+    suggestedTransaction.personalCategory = 'creditcard';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('MEETUP ORG')) {
+    suggestedTransaction.financialEntity = 'Meetup';
+    suggestedTransaction.userDescription = 'Meetup Monthly charge';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ביטוח לאומי')) {
+    suggestedTransaction.financialEntity =
+      'Uri Goldshtein Employee Social Security';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description == 'HOT MOBILE') {
+    suggestedTransaction.financialEntity = 'Hot Mobile';
+    suggestedTransaction.userDescription = 'Hot Mobile Monthly charge';
+    suggestedTransaction.taxCategory = 'פלאפון';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.personalCategory = 'communications';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('GITHUB')) {
+    suggestedTransaction.financialEntity = 'Github';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    if (transaction.event_amount == -450) {
+      suggestedTransaction.userDescription = 'Monthly Payment for Yaacov';
+    } else if (transaction.event_amount == -4) {
+      suggestedTransaction.userDescription = 'Github CI charges';
+    }
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
+    suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.personalCategory = 'financial';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ארומה')) {
+    suggestedTransaction.financialEntity = 'Aroma';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('סופר פארם')) {
+    suggestedTransaction.financialEntity = 'Super-Pharm';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description == 'חברת פרטנר תקשורת בע') {
+    suggestedTransaction.financialEntity = 'Partner';
+    suggestedTransaction.personalCategory = 'family';
+  } else if (transaction.detailed_bank_description.includes('GOOGLE FI')) {
+    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.userDescription = 'Google Fi';
+    suggestedTransaction.taxCategory = 'סלולר';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.personalCategory = 'communications';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('העברה מחו"ל') &&
+    transaction.detailed_bank_description.includes('SDI PROCUREMEN')
+  ) {
+    suggestedTransaction.financialEntity = 'sdi procurement solutions';
+    suggestedTransaction.taxCategory = 'הכנפט1';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ZOOM')) {
+    suggestedTransaction.financialEntity = 'Zoom';
+    suggestedTransaction.userDescription = 'Zoom for therapy';
+    suggestedTransaction.taxCategory = 'אתר';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.personalCategory = 'love';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('MOUNTAIN V')) {
+    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.userDescription = 'Google Storage';
+    suggestedTransaction.taxCategory = 'אתר';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.personalCategory = 'computer';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description == 'APPLE COM BILL/ITUNES.COM'
+  ) {
+    suggestedTransaction.financialEntity = 'Apple';
+    if (transaction.event_amount == -109.9) {
+      suggestedTransaction.userDescription = 'LinkedIn';
+      suggestedTransaction.personalCategory = 'business';
+    } else {
+      suggestedTransaction.userDescription = 'Apple Services';
+      suggestedTransaction.personalCategory = 'computer';
+    }
+    suggestedTransaction.taxCategory = 'אתר';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description == 'GETT') {
+    suggestedTransaction.financialEntity = 'Gett';
+    suggestedTransaction.userDescription = 'Taxi';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.personalCategory = 'transportation';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ZAPIER')) {
+    suggestedTransaction.financialEntity = 'Zapier';
+    suggestedTransaction.userDescription = 'Zapier monthly charge';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('קרן מכבי- חיוב')) {
+    suggestedTransaction.financialEntity = 'Maccabi';
+    suggestedTransaction.userDescription = 'Monthly health bill';
+    suggestedTransaction.personalCategory = 'health';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('MSFT AZURE')) {
+    suggestedTransaction.financialEntity = 'Azure';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes("ג'אסט לאנס")) {
+    suggestedTransaction.financialEntity = 'Lance';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('CRISP')) {
+    suggestedTransaction.financialEntity = 'Crisp';
+    suggestedTransaction.userDescription = 'Monthly Crisp';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('טל יהלום')) {
+    suggestedTransaction.financialEntity = 'Tal Yahalom';
+    suggestedTransaction.userDescription = 'gift';
+    suggestedTransaction.personalCategory = 'family';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('רוני שפירא')) {
+    suggestedTransaction.financialEntity = 'Roney Shapira';
+    suggestedTransaction.userDescription = 'gift';
+    suggestedTransaction.personalCategory = 'family';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('הלמן-אלדובי') &&
+    transaction.detailed_bank_description.includes('השתלמות')
+  ) {
+    suggestedTransaction.financialEntity = 'Halman Aldubi Training Fund';
+    suggestedTransaction.financialAccountsToBalance = 'training_fund';
+    suggestedTransaction.personalCategory = 'investments';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('הלמן-אלדובי') &&
+    transaction.detailed_bank_description.includes('קרן')
+  ) {
+    suggestedTransaction.financialEntity = 'Halman Aldubi Pension';
+    suggestedTransaction.financialAccountsToBalance = 'pension';
+    suggestedTransaction.personalCategory = 'investments';
+    return suggestedTransaction;
+  }
+}
+
 const businessesWithoutVAT = ['Apple'];
 function isBusiness(transaction: any) {
   return (
@@ -104,7 +303,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2020-12-01';
+    monthTaxReport = '2021-02-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -229,8 +428,8 @@ export const financialStatus = async (query: any): Promise<string> => {
       sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
   from transactions_exclude
   where
-    event_date::text::date >= '2021-01-01'::text::date and
-    event_date::text::date <= '2021-01-31'::text::date
+    event_date::text::date >= '2021-02-01'::text::date and
+    event_date::text::date <= '2021-02-28'::text::date
   --   and personal_category = 'family'
   group by personal_category
   order by sum(event_amount_in_usd_with_vat_if_exists);    
@@ -515,22 +714,46 @@ export const financialStatus = async (query: any): Promise<string> => {
             transaction.financial_entity
               ? ''
               : 'style="background-color: rgb(236, 207, 57);"'
-          }>${transaction.financial_entity}
-            <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>Edit</button>
+          }>${
+        transaction.financial_entity
+          ? transaction.financial_entity
+          : `${
+              suggestedTransaction(transaction)?.financialEntity
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.financialEntity
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
           <td class="user_description" ${
             transaction.user_description
               ? ''
               : 'style="background-color: rgb(236, 207, 57);"'
-          }>${transaction.user_description}
-            <button type="button" onClick='printElement(this, prompt("New user description:"));'>Edit</button>
+          }>${
+        transaction.user_description
+          ? transaction.user_description
+          : `${
+              suggestedTransaction(transaction)?.userDescription
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.userDescription
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
           <td class="personal_category" ${
             transaction.personal_category
               ? ''
               : 'style="background-color: rgb(236, 207, 57);"'
-          }>${transaction.personal_category}
-            <button type="button" onClick='printElement(this, prompt("New personal category:"));'></button>
+          }>${
+        transaction.personal_category
+          ? transaction.personal_category
+          : `${
+              suggestedTransaction(transaction)?.personalCategory
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.personalCategory
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New personal category:"));'>&#x270f;</button>
           </td>
           <td class="vat"  ${
             (!transaction.vat &&
@@ -544,16 +767,32 @@ export const financialStatus = async (query: any): Promise<string> => {
             (transaction.vat < 0 && transaction.event_amount > 0)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${transaction.vat}
-            <button type="button" onClick='printElement(this, prompt("New VAT:"));'></button>
+          }>${
+        transaction.vat
+          ? transaction.vat
+          : `${
+              suggestedTransaction(transaction)?.vat
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.vat
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
           <td class="financial_accounts_to_balance" ${
             shareWithDotan(transaction)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${transaction.financial_accounts_to_balance}
-            <button type="button" onClick='printElement(this, prompt("New Account to share:"));'></button>
+          }>${
+        transaction.financial_accounts_to_balance
+          ? transaction.financial_accounts_to_balance
+          : `${
+              suggestedTransaction(transaction)?.financialAccountsToBalance
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.financialAccountsToBalance
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New Account to share:"));'>&#x270f;</button>
           </td>
           <td class="tax_category" ${
             isBusiness(transaction) &&
@@ -563,9 +802,16 @@ export const financialStatus = async (query: any): Promise<string> => {
             !transaction.tax_category
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>
-            ${transaction.tax_category}
-            <button type="button" onClick='printElement(this, prompt("New Tax category:"));'></button>
+          }>${
+        transaction.tax_category
+          ? transaction.tax_category
+          : `${
+              suggestedTransaction(transaction)?.taxCategory
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.taxCategory
+            }");'>V</button>`
+      }
+            <button type="button" onClick='printElement(this, prompt("New Tax category:"));'>&#x270f;</button>
           </td>
           <td>${transaction.detailed_bank_description}</td>
           <td class="proforma_invoice_file" ${
@@ -574,7 +820,7 @@ export const financialStatus = async (query: any): Promise<string> => {
               : ''
           }>
             ${transaction.proforma_invoice_file ? 'yes' : ''}
-            <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'></button>
+            <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_date" ${
             isBusiness(transaction) && !transaction.tax_invoice_date
@@ -585,7 +831,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
           : ''
       }
-            <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'></button>
+            <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_number" ${
             isBusiness(transaction) &&
@@ -597,7 +843,7 @@ export const financialStatus = async (query: any): Promise<string> => {
               : ''
           }>
             ${transaction.tax_invoice_number}
-            <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'></button>
+            <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_file" ${
             isBusiness(transaction) && !transaction.tax_invoice_file
@@ -605,11 +851,11 @@ export const financialStatus = async (query: any): Promise<string> => {
               : ''
           }>
             ${transaction.tax_invoice_file ? 'yes' : ''}
-            <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'></button>
+            <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
           <td class="receipt_invoice_file">
             ${transaction.receipt_invoice_file ? 'yes' : ''}
-            <button type="button" onClick='printElement(this, prompt("New receipt file:"));'></button>
+            <button type="button" onClick='printElement(this, prompt("New receipt file:"));'>&#x270f;</button>
           </td>          
         </tr>
         <!--
