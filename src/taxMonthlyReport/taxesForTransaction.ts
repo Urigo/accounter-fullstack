@@ -3,7 +3,14 @@ import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 
 const entitiesWithoutInvoiceDate = ['Uri Goldshtein', 'Poalim', 'Isracard'];
-const entitiesWithoutAccounting = ['Isracard'];
+const taxCategoriesWithoutInvoiceDate = ['אוריח'];
+const entitiesWithoutAccounting = [
+  'Isracard',
+  'VAT',
+  'Uri Goldshtein Employee Social Security',
+  'Halman Aldubi Training Fund',
+  'Halman Aldubi Pension',
+];
 function entitiesToTaxCategory(entity: string): string | null {
   switch (entity) {
     case 'Poalim':
@@ -48,8 +55,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         select usd, eur
         from accounter_schema.exchange_rates
         where exchange_date <= to_date('${moment(date).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
+        'YYYY-MM-DD'
+      )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
       `;
 
       try {
@@ -127,7 +134,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForAccounting.secondAccountDebitAmount = entryForAccounting.secondAccountDebitAmountILS = 0;
     entryForAccounting.movementType = 'חל';
   } else {
-    entryForAccounting.movementType = 'הכפ';
+    if (transaction.tax_category != 'אוריח') {
+      entryForAccounting.movementType = 'הכפ';
+    }
   }
   entryForAccounting.reference2 = entryForFinancialAccount.reference2 =
     transaction.bank_reference;
@@ -289,6 +298,12 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'Tax Shuma':
         return 'שומה 2018';
         break;
+      case 'Halman Aldubi Training Fund':
+        return 'הלמןקהל';
+        break;
+      case 'Halman Aldubi Pension':
+        return 'הלמןפנסי';
+        break;
       default:
         return accountType;
     }
@@ -301,7 +316,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   let entryForAccountingValues = [
     hashDateFormat(
-      !entitiesWithoutInvoiceDate.includes(transaction.financial_entity)
+      !entitiesWithoutInvoiceDate.includes(transaction.financial_entity) &&
+        !taxCategoriesWithoutInvoiceDate.includes(transaction.tax_category)
         ? transaction.tax_invoice_date
         : transaction.event_date
     ), // add a check if should have an invoice but doesn't let user know
@@ -317,25 +333,25 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ? hashNumber(entryForAccounting.creditAmount)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-    entryForAccounting.secondAccountDebitAmount != 0
+      entryForAccounting.secondAccountDebitAmount != 0
       ? 'תשו'
       : null,
     entryForAccounting.secondAccountDebitAmount
       ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-    transaction.currency_code != 'ILS'
+      transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountDebitAmount)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-    entryForAccounting.secondAccountCreditAmount != 0
+      entryForAccounting.secondAccountCreditAmount != 0
       ? 'עסק'
       : null,
     entryForAccounting.secondAccountCreditAmountILS
       ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-    transaction.currency_code != 'ILS'
+      transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountCreditAmount)
       : null,
     entryForAccounting.description,
@@ -350,10 +366,12 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.account_type == 'creditcard'
         ? transaction.debit_date
           ? transaction.debit_date
-          : transaction.tax_invoice_date
+          : !taxCategoriesWithoutInvoiceDate.includes(transaction.tax_category)
+            ? transaction.tax_invoice_date
+            : transaction.event_date
         : transaction.tax_invoice_date
-        ? transaction.tax_invoice_date
-        : transaction.debit_date
+          ? transaction.tax_invoice_date
+          : transaction.debit_date
     ),
     hashDateFormat(transaction.event_date),
     transaction.id,
@@ -384,13 +402,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount.description,
     entryForFinancialAccount.reference1
       ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+        .join('')
+        .substr(-9)
       : null, // add check on the db for it
     entryForFinancialAccount.reference2
       ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+        .join('')
+        .substr(-9)
       : null,
     null,
     hashDateFormat(
