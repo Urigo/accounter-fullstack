@@ -9,7 +9,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   if (query.month) {
     reportMonthToReview = `2020-0${query.month}-01`;
   } else {
-    reportMonthToReview = `2021-01-01`;
+    reportMonthToReview = `2021-02-01`;
   }
 
   const lastInvoiceNumbersQuery = readFileSync(
@@ -23,8 +23,8 @@ export const reportToReview = async (query: any): Promise<string> => {
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month('2020-01-01', '2021-01-01')
-      order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+      from get_unified_tax_report_of_month('2020-01-01', '2021-02-01')
+      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
       `
     ),
   ]);
