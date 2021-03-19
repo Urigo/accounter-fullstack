@@ -1,3 +1,11 @@
+select *
+    from accounter_schema.ledger
+    where
+          hashavshevet_id is null
+          and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('30/11/2020', 'DD/MM/YYYY')
+    order by (to_date(תאריך_3, 'DD/MM/YYYY')), original_id, תאריך_חשבונית;
+
+
 select hashavshevet.*
 from accounter_schema.ledger hashavshevet
 where
@@ -366,9 +374,10 @@ insert into accounter_schema.ledger
        תאריך_3,
        original_id,
        origin,
-       proforma_invoice_file
+       proforma_invoice_file,
+       id
 )
-select *
+select *, gen_random_uuid()
 -- into table accounter_schema.saved_tax_reports_2020_03_04
 from get_tax_report_of_month('2020-12-01')
 -- order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id
@@ -497,32 +506,60 @@ WHERE
 --             ELSE NULL
             END
         ) AS חשבון_חובה_2,
-         (CASE
-            WHEN (side = 0 AND event_amount < 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(
-                (case
-                    when tax_category = 'פלאפון' then ((vat::float/3)*2)
-                    when tax_category = 'מידע' then ((vat::float/3)*2)
-                else vat
-                end)
-                )), 'FM999999999.00') END)
-            when (side = 1 and event_amount < 0 and interest <> 0)
-                then to_char(float8 (ABS(interest) ), 'FM999999999.00')
---             ELSE NULL
-         END) AS סכום_חובה_2,
-        '' AS מטח_סכום_חובה_2,
+         (case
+            when currency_code = 'ILS' then
+                 (CASE
+                    WHEN (side = 0 AND event_amount < 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(
+                        (case
+                            when tax_category = 'פלאפון' then ((vat::float/3)*2)
+                            when tax_category = 'מידע' then ((vat::float/3)*2)
+                        else vat
+                        end)
+                        )), 'FM999999999.00') END)
+                    when (side = 1 and event_amount < 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+            else
+                (CASE
+                    WHEN (side = 0 AND event_amount < 0) THEN
+                        (CASE WHEN vat <> 0 THEN
+                            to_char(float8 (ABS(formatted_foreign_vat_in_ils)), 'FM999999999.00')
+                        END)
+                    when (side = 1 and event_amount < 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+        end) AS סכום_חובה_2,
+        (case when (side = 0 and event_amount < 0) then to_char(float8 (abs(formatted_foreign_vat)), 'FM999999999.00')
+        end) AS מטח_סכום_חובה_2,
         (CASE
             WHEN (side = 0 AND event_amount > 0 AND vat <> 0) THEN 'עסק'
             when (side = 1 and event_amount > 0 and interest <> 0) THEN 'הכנרבמ'
 --             ELSE NULL
             END
         ) AS חשבון_זכות_2,
-        (CASE
-            WHEN (side = 0 AND event_amount > 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(vat)), 'FM999999999.00') END)
-            when (side = 1 and event_amount > 0 and interest <> 0)
-                then to_char(float8 (ABS(interest)), 'FM999999999.00')
---             ELSE NULL
-         END) AS סכום_זכות_2,
-        '' AS מטח_סכום_זכות_2,
+        (case
+            when currency_code = 'ILS' then
+                (CASE
+                    WHEN (side = 0 AND event_amount > 0) THEN (CASE WHEN vat <> 0 THEN to_char(float8 (ABS(vat)), 'FM999999999.00') END)
+                    when (side = 1 and event_amount > 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest)), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+            else
+                (CASE
+                    WHEN (side = 0 AND event_amount > 0) THEN
+                        (CASE WHEN vat <> 0 THEN
+                            to_char(float8 (ABS(formatted_foreign_vat_in_ils)), 'FM999999999.00')
+                        END)
+                    when (side = 1 and event_amount > 0 and interest <> 0)
+                        then to_char(float8 (ABS(interest) ), 'FM999999999.00')
+        --             ELSE NULL
+                 END)
+        end) AS סכום_זכות_2,
+        (case when (side = 0 and event_amount > 0) then to_char(float8 (abs(formatted_foreign_vat)), 'FM999999999.00')
+        end) AS מטח_סכום_זכות_2,
         user_description AS פרטים,
         bank_reference AS אסמכתא_1,
         RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,
@@ -540,7 +577,7 @@ WHERE
                     END)
                 ELSE
                     (CASE
-                        WHEN account_type = 'checking_ils' THEN 'חל'
+                        WHEN vat <> 0 THEN 'חל'
                         ELSE 'הכפ'
                     END)
                 END)
@@ -1020,3 +1057,11 @@ ORDER BY to_date(תאריך_חשבונית, 'DD/MM/YYYY'), אסמכתא_1 desc, 
 
 
 $$;
+
+
+select *
+    from accounter_schema.ledger
+    where
+          hashavshevet_id is null
+          and to_date(תאריך_3, 'DD/MM/YYYY') > to_date('30/11/2020', 'DD/MM/YYYY')
+    order by (to_date(תאריך_3, 'DD/MM/YYYY')), original_id, תאריך_חשבונית;

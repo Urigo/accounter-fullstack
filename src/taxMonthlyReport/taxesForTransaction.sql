@@ -1,3 +1,26 @@
+insert into accounter_schema.ledger
+(תאריך_חשבונית, )
+
+
+
+
+select usd, eur
+      from accounter_schema.exchange_rates
+      where exchange_date = to_date(תאריך_3, 'YYYY-MM-DD');
+
+
+select * from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+where original_id is not null;
+
+select * from accounter_schema.all_transactions
+where original_id = $$2c384a0f-57b0-454a-a052-1e30cac638d2$$;
+
+
+create table accounter_schema.ledger as
+select * from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+
+
 insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 select * from get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade')
 returning *;
@@ -131,14 +154,14 @@ WHERE
                 (CASE
                     WHEN (side = 0 AND event_amount < 0) THEN
                         (CASE WHEN vat <> 0 THEN
-                            to_char(float8 (ABS(formatted_usd_vat_in_ils)), 'FM999999999.00')
+                            to_char(float8 (ABS(formatted_foreign_vat_in_ils)), 'FM999999999.00')
                         END)
                     when (side = 1 and event_amount < 0 and interest <> 0)
                         then to_char(float8 (ABS(interest) ), 'FM999999999.00')
         --             ELSE NULL
                  END)
         end) AS סכום_חובה_2,
-        to_char(float8 (formatted_foreign_vat), 'FM999999999.00') AS מטח_סכום_חובה_2,
+        to_char(float8 (abs(formatted_foreign_vat)), 'FM999999999.00') AS מטח_סכום_חובה_2,
         (CASE
             WHEN (side = 0 AND event_amount > 0 AND vat <> 0) THEN 'עסק'
             when (side = 1 and event_amount > 0 and interest <> 0) THEN 'הכנרבמ'
@@ -157,14 +180,14 @@ WHERE
                 (CASE
                     WHEN (side = 0 AND event_amount > 0) THEN
                         (CASE WHEN vat <> 0 THEN
-                            to_char(float8 (ABS(formatted_usd_vat_in_ils)), 'FM999999999.00')
+                            to_char(float8 (ABS(formatted_foreign_vat_in_ils)), 'FM999999999.00')
                         END)
                     when (side = 1 and event_amount > 0 and interest <> 0)
                         then to_char(float8 (ABS(interest) ), 'FM999999999.00')
         --             ELSE NULL
                  END)
         end) AS סכום_זכות_2,
-        to_char(float8 (formatted_foreign_vat), 'FM999999999.00') AS מטח_סכום_זכות_2,
+        to_char(float8 (abs(formatted_foreign_vat)), 'FM999999999.00') AS מטח_סכום_זכות_2,
         user_description AS פרטים,
         bank_reference AS אסמכתא_1,
         RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,

@@ -133,9 +133,21 @@ WITH times_table AS (
                          when financial_accounts_to_balance = 'dotan' then event_amount_in_usd_with_vat_if_exists
                          when financial_accounts_to_balance = 'deposit' then 0
                          when financial_entity = 'VAT' then 0
+                         when financial_entity = 'pension' then 0
+                         when financial_entity = 'training_fund' then 0
                          else (event_amount_in_usd_with_vat_if_exists / 2)
                     end) * -1)
                 OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as sum_till_this_point,
+                SUM((case
+                 when financial_accounts_to_balance = 'pension' then event_amount_in_usd_with_vat_if_exists
+                 else 0
+                end) * -1)
+                OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as pension_sum_till_this_point,
+                SUM((case
+                 when financial_accounts_to_balance = 'training_fund' then event_amount_in_usd_with_vat_if_exists
+                 else 0
+                end) * -1)
+                OVER (ORDER BY event_date, event_number, event_amount, bank_reference, account_number) as training_fund_sum_till_this_point,
                 financial_entity,
                 user_description,
                 bank_reference,
@@ -146,7 +158,7 @@ WITH times_table AS (
          FROM local_formatted_merged_tables
          WHERE (account_number = 2733 OR account_number = 61066)
            AND event_date::date >= '2019-12-01'::timestamp
-           AND financial_accounts_to_balance in ('no', 'dotan', 'uri')
+           AND financial_accounts_to_balance in ('no', 'dotan', 'uri', 'training_fund', 'pension')
          ORDER BY event_date, event_number, event_amount, bank_reference, account_number
      ),
      dotan_future_dept AS (
@@ -388,6 +400,18 @@ WITH times_table AS (
                  order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference,
                           t1.account_number
                  limit 1) dotan_dept,
+                (select t1.pension_sum_till_this_point
+                 from dotan_dept t1
+                 where date_trunc('day', t1.event_date)::date <= times_table.dt
+                 order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference,
+                          t1.account_number
+                 limit 1) pension,
+                (select t1.training_fund_sum_till_this_point
+                 from dotan_dept t1
+                 where date_trunc('day', t1.event_date)::date <= times_table.dt
+                 order by t1.event_date desc, t1.event_number desc, t1.event_amount, t1.bank_reference,
+                          t1.account_number
+                 limit 1) training_fund,
                 (select t1.sum_till_this_point
                  from new_business_account_transactions t1
                  where date_trunc('day', t1.event_date)::date <= times_table.dt
@@ -444,6 +468,8 @@ WITH times_table AS (
                 this_month_private_creditcard,
                 (dotan_old_dept / usd_rate)                    as dotan_old_dept,
                 dotan_dept,
+                pension,
+                training_fund,
                 new_business_account_transactions,
                 VAT,
                 future_transactions,
@@ -489,11 +515,15 @@ WITH times_table AS (
                 usd_personal_balance,
                 eur_personal_balance,
                 eur_personal_in_usd,
+                pension,
+                training_fund,
                 (
                         COALESCE(ils_personal_in_usd, 0) +
                         COALESCE(usd_personal_balance, 0) +
                         COALESCE(eur_personal_in_usd, 0) +
-                        COALESCE(this_month_private_creditcard, 0)
+                        COALESCE(this_month_private_creditcard, 0) +
+                        COALESCE(pension, 0) +
+                        COALESCE(training_fund, 0)
                     ) as everything_personal,
                 (
                                 COALESCE(ils_business_in_usd, 0) +
@@ -509,7 +539,9 @@ WITH times_table AS (
                                 COALESCE(this_month_private_creditcard, 0) +
                                 COALESCE(future_transactions, 0) +
                                 COALESCE(dotan_future_dept, 0) +
-                                COALESCE(new_business_account_transactions, 0)
+                                COALESCE(new_business_account_transactions, 0) +
+                                COALESCE(pension, 0) +
+                                COALESCE(training_fund, 0)
                     ) as everything
          from caluculated_values
      )

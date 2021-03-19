@@ -108,17 +108,19 @@ select
         case when (event_amount < 0 and personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd else 0 end
     )::float4 as business_expenses,
     sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd else 0 end)::float4 as overall_business_profit,
-    sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd/2 else 0 end)::float4 as business_profit_share,
+    sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd/2 else 0 end)::float4 as business_profit_share
 
-    sum(
-        case when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd else 0 end
-    )::float4 as private_expenses,
-    sum(case when personal_category <> 'business' then event_amount_in_usd else 0 end)::float4 as overall_private
+--     sum(
+--         case when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd else 0 end
+--     )::float4 as private_expenses
+--     sum(case when personal_category <> 'business' then event_amount_in_usd else 0 end)::float4 as overall_private
 from transactions_exclude
 -- where
 --     account_number in (select account_number
 --                        from accounter_schema.financial_accounts accounts
 --                        where accounts.private_business = 'business')
+-- where
+--     event_date::text::date >= '2019-01-01'::text::date
 group by date
 order by date;
 
@@ -153,9 +155,9 @@ select
     sum(event_amount_in_usd)::float4 as overall_sum
 from transactions_exclude
 where
-  event_date::text::date >= '2020-01-01'::text::date and
-  event_date::text::date <= '2020-12-31'::text::date and
-      personal_category = 'house'
+  event_date::text::date >= '2021-01-01'::text::date and
+  event_date::text::date <= '2021-01-31'::text::date
+--   and personal_category = 'family'
 group by personal_category
 order by sum(event_amount_in_usd);
 
@@ -189,6 +191,16 @@ select
     personal_category
 from transactions_exclude
 where
-  event_date::text::date >= '2020-01-01'::text::date and
+  event_date::text::date >= '2020-12-01'::text::date and
   event_date::text::date <= '2020-12-31'::text::date
 order by event_amount_in_usd;
+
+
+select
+       sum(formatted_invoice_amount_in_ils_with_vat_if_exists::float4)::float4 as invoice_sum,
+       sum(formatted_event_amount_in_ils_with_vat_if_exist::float4)::float4 as event_sum
+from formatted_merged_tables
+where account_number = 466803
+and event_amount > 0
+and   event_date::text::date >= '2020-12-01'::text::date and
+  event_date::text::date <= '2020-12-31'::text::date

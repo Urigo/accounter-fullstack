@@ -149,7 +149,7 @@ SELECT *,
                                         WHEN (tax_invoice_amount IS NOT NULL AND
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
-                                            THEN tax_invoice_amount + COALESCE((case
+                                            THEN tax_invoice_amount - COALESCE((case
                                                 when tax_category = 'פלאפון' then ((vat::float/3)*2)
                                                 when tax_category = 'ציוד' then ((vat::float/3)*2)
                                                 when tax_category = 'מידע' then ((vat::float/3)*2)
@@ -160,8 +160,8 @@ SELECT *,
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
-                                                                        THEN tax_invoice_amount
-                                                                    ELSE event_amount
+                                                                        THEN tax_invoice_amount - COALESCE(vat, 0)
+                                                                    ELSE event_amount - COALESCE(vat, 0)
                                    END) * (
                                                                    select all_exchange_dates.eur_rate
                                                                    from all_exchange_dates
@@ -175,8 +175,8 @@ SELECT *,
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
-                                                                        THEN tax_invoice_amount + COALESCE(vat, 0)
-                                                                    ELSE event_amount + COALESCE(vat, 0)
+                                                                        THEN tax_invoice_amount - COALESCE(vat, 0)
+                                                                    ELSE event_amount - COALESCE(vat, 0)
                                    END) * (
                                                                    select all_exchange_dates.usd_rate
                                                                    from all_exchange_dates
@@ -196,7 +196,7 @@ SELECT *,
                                               tax_invoice_amount <> 0 AND
                                               ABS(tax_invoice_amount) <> event_amount)
                                             THEN tax_invoice_amount
-                                        ELSE event_amount + COALESCE((
+                                        ELSE event_amount - COALESCE((
                                             case
                                                 when tax_category = 'פלאפון' then ((vat::float/3)*2)
                                                 when tax_category = 'ציוד' then ((vat::float/3)*2)
@@ -208,7 +208,7 @@ SELECT *,
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
                                                                         THEN tax_invoice_amount
-                                                                    ELSE event_amount
+                                                                    ELSE event_amount - coalesce(vat, 0)
                                    END) * (
                                                                    select all_exchange_dates.eur_rate
                                                                    from all_exchange_dates
@@ -223,7 +223,7 @@ SELECT *,
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
                                                                         THEN tax_invoice_amount
-                                                                    ELSE event_amount
+                                                                    ELSE event_amount - coalesce(vat, 0)
                                    END) * (
                                                                    select all_exchange_dates.usd_rate
                                                                    from all_exchange_dates
@@ -237,13 +237,13 @@ SELECT *,
            END
            ))), 'FM999999999.00')              as formatted_invoice_amount_in_ils_if_exists,
        to_char(float8(ABS((CASE
-                               WHEN currency_code = 'ILS' THEN (event_amount + COALESCE(vat, 0))
-                               WHEN currency_code = 'EUR' THEN event_amount * (
+                               WHEN currency_code = 'ILS' THEN (event_amount - COALESCE(vat, 0))
+                               WHEN currency_code = 'EUR' THEN (event_amount - coalesce(vat, 0)) * (
                                    select all_exchange_dates.eur_rate
                                    from all_exchange_dates
                                    where all_exchange_dates.exchange_date = debit_date::text::date
                                )
-                               WHEN currency_code = 'USD' THEN event_amount * (
+                               WHEN currency_code = 'USD' THEN (event_amount - coalesce(vat, 0)) * (
                                    select all_exchange_dates.usd_rate
                                    from all_exchange_dates
                                    where all_exchange_dates.exchange_date = debit_date::text::date
@@ -260,8 +260,8 @@ SELECT *,
                                                                     WHEN (tax_invoice_amount IS NOT NULL AND
                                                                           tax_invoice_amount <> 0 AND
                                                                           ABS(tax_invoice_amount) <> event_amount)
-                                                                        THEN tax_invoice_amount + COALESCE(vat, 0)
-                                                                    ELSE event_amount + COALESCE(vat, 0)
+                                                                        THEN tax_invoice_amount - COALESCE(vat, 0)
+                                                                    ELSE event_amount - COALESCE(vat, 0)
                               END))
 --                 ELSE NULL
            END), 'FM999999999.00')             as formatted_invoice_foreign_amount_if_exist,
@@ -273,11 +273,15 @@ SELECT *,
        (CASE
             WHEN currency_code != 'ILS' THEN vat
            END)                                as formatted_foreign_vat,
-       (CASE
-            WHEN currency_code != 'ILS' THEN vat * (
-                                   select all_exchange_dates.usd_rate
-                                   from all_exchange_dates
-                                   where all_exchange_dates.exchange_date = tax_invoice_date::text::date)
-           END)                                as formatted_usd_vat_in_ils
+            (case
+                when currency_code = 'USD' then vat * (
+                               select all_exchange_dates.usd_rate
+                               from all_exchange_dates
+                               where all_exchange_dates.exchange_date = tax_invoice_date::text::date)
+                when currency_code = 'EUR' then vat * (
+                               select all_exchange_dates.eur_rate
+                               from all_exchange_dates
+                               where all_exchange_dates.exchange_date = tax_invoice_date::text::date)
+            end) as formatted_foreign_vat_in_ils
 FROM accounter_schema.all_transactions
 -- where event_date > '2019-12-31';
