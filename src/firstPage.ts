@@ -40,7 +40,10 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Wolt';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('אי אם פי אם')) {
+  } else if (
+    transaction.detailed_bank_description.includes('אי אם פי אם') ||
+    transaction.detailed_bank_description.includes('איי.אם.פי.אם')
+  ) {
     suggestedTransaction.financialEntity = 'AmPm';
     suggestedTransaction.userDescription = 'Groceries';
     suggestedTransaction.personalCategory = 'food';
@@ -58,9 +61,16 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Green Invoice Monthly Charge';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description == `ע' העברת מט"ח` ||
+    (transaction.detailed_bank_description.includes(`העברת מט"ח`) &&
+      Math.abs(transaction.event_amount) < 200) ||
+    (transaction.detailed_bank_description.includes('מטח') &&
+      Math.abs(transaction.event_amount) < 200) ||
     transaction.detailed_bank_description.includes('F.C.COM') ||
     transaction.detailed_bank_description.includes('ע.מפעולות-ישיר') ||
     transaction.detailed_bank_description.includes('ריבית חובה')
@@ -100,6 +110,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.taxCategory = 'פלאפון';
     suggestedTransaction.financialAccountsToBalance = ' ';
     suggestedTransaction.personalCategory = 'communications';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('GITHUB')) {
     suggestedTransaction.financialEntity = 'Github';
@@ -175,6 +188,14 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Taxi';
     suggestedTransaction.financialAccountsToBalance = ' ';
     suggestedTransaction.personalCategory = 'transportation';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('סונול')) {
+    suggestedTransaction.financialEntity = 'Sonol';
+    suggestedTransaction.userDescription = 'Gas';
+    suggestedTransaction.personalCategory = 'transportation';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ZAPIER')) {
     suggestedTransaction.financialEntity = 'Zapier';
@@ -188,7 +209,8 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'health';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('MSFT AZURE')) {
-    suggestedTransaction.financialEntity = 'Azure';
+    suggestedTransaction.financialEntity = 'Microsoft Azure';
+    suggestedTransaction.userDescription = 'Infrastructure';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
@@ -196,6 +218,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialEntity = 'Lance';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('CRISP')) {
     suggestedTransaction.financialEntity = 'Crisp';
@@ -243,6 +268,19 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('Vignesh')){
+    suggestedTransaction.financialEntity = 'Vignesh T.V.';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('Steinbock Software LTD')){
+    suggestedTransaction.financialEntity = 'Steinbock Software LTD';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('מס הכנסה')) {
     suggestedTransaction.financialEntity = 'Tax';
     suggestedTransaction.personalCategory = 'business';
@@ -253,7 +291,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'learn';
     suggestedTransaction.financialAccountsToBalance = ' ';
     suggestedTransaction.taxCategory = 'יעוץ';
-    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(2);
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('HEROKU')) {
     suggestedTransaction.financialEntity = 'Heroku';
@@ -261,6 +301,97 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.taxCategory = 'אתר';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('חניון')) {
+    suggestedTransaction.financialEntity = 'Parking';
+    suggestedTransaction.userDescription = 'Parking';
+    suggestedTransaction.personalCategory = 'transportation';
+    if (transaction.detailed_bank_description.includes('אחוזות החוף')) {
+      suggestedTransaction.financialEntity = 'Ahuzot';
+    }
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('חשבשבת')) {
+    suggestedTransaction.financialEntity = 'Hashavshevet';
+    suggestedTransaction.userDescription = 'Accounting app';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('יהל-מור')) {
+    suggestedTransaction.financialEntity = 'Raveh Ravid & Co';
+    suggestedTransaction.userDescription = 'Accountancy with Narkis';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.taxCategory = 'הנחש';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('GODADDY')) {
+    suggestedTransaction.financialEntity = 'GoDaddy';
+    suggestedTransaction.userDescription = 'Domain';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('DALET DIGITAL')) {
+    suggestedTransaction.financialEntity = 'Dalet Digital';
+    suggestedTransaction.userDescription = 'Advance Payment - March';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ard')) {
+    suggestedTransaction.financialEntity = 'Arda';
+    suggestedTransaction.userDescription = 'Payment for February 2021';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מועדון הבלוק')) {
+    suggestedTransaction.financialEntity = 'The Block';
+    suggestedTransaction.userDescription = 'Party';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('NAME COM')) {
+    suggestedTransaction.financialEntity = 'NAME COM';
+    suggestedTransaction.userDescription = 'Domain';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;    
+  } else if (transaction.detailed_bank_description.includes('SENTRY')) {
+    suggestedTransaction.financialEntity = 'Sentry';
+    suggestedTransaction.userDescription = 'Monitoring';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('GSUITE')) {
+    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.userDescription = 'G Suite for The Guild';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('רב-פס')) {
+    suggestedTransaction.financialEntity = 'רב-פס';
+    suggestedTransaction.userDescription = 'Bus tickets';
+    suggestedTransaction.personalCategory = 'transportation';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('קיוסק קקל')) {
+    suggestedTransaction.financialEntity = 'לה קפה';
+    suggestedTransaction.userDescription = 'Coffeee';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ספסל בן גוריון')) {
+    suggestedTransaction.financialEntity = 'ספסל בן גוריון';
+    suggestedTransaction.userDescription = 'Coffeee';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else {
+    suggestedTransaction.financialEntity =
+      transaction.detailed_bank_description;
     return suggestedTransaction;
   }
 }
@@ -280,7 +411,9 @@ function shareWithDotan(transaction: any) {
   if (
     transaction.financial_accounts_to_balance == 'no' ||
     transaction.financial_accounts_to_balance === ' ' ||
-    transaction.financial_accounts_to_balance === 'yes'
+    transaction.financial_accounts_to_balance === 'yes' ||
+    transaction.financial_accounts_to_balance === 'pension' ||
+    transaction.financial_accounts_to_balance === 'training_fund'
   ) {
     return false;
   } else {
@@ -342,7 +475,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2021-02-01';
+    monthTaxReport = '2021-03-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -467,8 +600,8 @@ export const financialStatus = async (query: any): Promise<string> => {
       sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
   from transactions_exclude
   where
-    event_date::text::date >= '2021-03-01'::text::date and
-    event_date::text::date <= '2021-03-31'::text::date
+    event_date::text::date >= '2021-04-01'::text::date and
+    event_date::text::date <= '2021-04-30'::text::date
   --   and personal_category = 'family'
   group by personal_category
   order by sum(event_amount_in_usd_with_vat_if_exists);    
@@ -558,12 +691,12 @@ export const financialStatus = async (query: any): Promise<string> => {
       missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-            transaction.currency_code
-          )}</td>
+        transaction.currency_code
+      )}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -594,12 +727,12 @@ export const financialStatus = async (query: any): Promise<string> => {
       missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-            transaction.currency_code
-          )}</td>
+        transaction.currency_code
+      )}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -630,12 +763,12 @@ export const financialStatus = async (query: any): Promise<string> => {
       missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
             <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+              .toISOString()
+              .replace(/T/, ' ')
+              .replace(/\..+/, '')}</td>
             <td>${transaction.event_amount}${currencyCodeToSymbol(
-            transaction.currency_code
-          )}</td>
+        transaction.currency_code
+      )}</td>
             <td>${transaction.financial_entity}</td>
             <td>${transaction.user_description}</td>
             <td>${transaction.tax_invoice_number}</td>
@@ -667,9 +800,9 @@ export const financialStatus = async (query: any): Promise<string> => {
         <tr>
           <td>${transaction.tax_invoice_number}</td>
           <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.event_amount}</td>
@@ -702,9 +835,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td>${transaction.overall_vat_status}</td>
           <td>${transaction.vat}</td>
           <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
@@ -739,128 +872,161 @@ export const financialStatus = async (query: any): Promise<string> => {
             account_type=${transaction.account_type}
             currency_code=${transaction.currency_code}
             event_date=${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}
+              .toISOString()
+              .replace(/T/, ' ')
+              .replace(/\..+/, '')}
             event_amount=${transaction.event_amount}
             event_number=${transaction.event_number}
             transaction_id=${transaction.id}>
           <td>${moment(transaction.event_date).format('DD/MM/YY')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-            transaction.currency_code
-          )}</td>
-          <td class="financial_entity" ${transaction.financial_entity
-          ? ''
-          : 'style="background-color: rgb(236, 207, 57);"'
-        }>${transaction.financial_entity
+        transaction.currency_code
+      )}</td>
+          <td class="financial_entity" ${
+            transaction.financial_entity
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${
+        transaction.financial_entity
           ? transaction.financial_entity
-          : `${suggestedTransaction(transaction)?.financialEntity
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialEntity
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.financialEntity
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.financialEntity
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
-          <td class="user_description" ${transaction.user_description
-          ? ''
-          : 'style="background-color: rgb(236, 207, 57);"'
-        }>${transaction.user_description
+          <td class="user_description" ${
+            transaction.user_description
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${
+        transaction.user_description
           ? transaction.user_description
-          : `${suggestedTransaction(transaction)?.userDescription
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.userDescription
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.userDescription
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.userDescription
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
-          <td class="personal_category" ${transaction.personal_category
-          ? ''
-          : 'style="background-color: rgb(236, 207, 57);"'
-        }>${transaction.personal_category
+          <td class="personal_category" ${
+            transaction.personal_category
+              ? ''
+              : 'style="background-color: rgb(236, 207, 57);"'
+          }>${
+        transaction.personal_category
           ? transaction.personal_category
-          : `${suggestedTransaction(transaction)?.personalCategory
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.personalCategory
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.personalCategory
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.personalCategory
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'>&#x270f;</button>
           </td>
-          <td class="vat"  ${(!transaction.vat &&
-          isBusiness(transaction) &&
-          transaction.currency_code == 'ILS' &&
-          !businessesWithoutVAT.includes(transaction.financial_entity) &&
-          !businessesWithoutTaxCategory.includes(
-            transaction.financial_entity
-          )) ||
-          (transaction.vat > 0 && transaction.event_amount < 0) ||
-          (transaction.vat < 0 && transaction.event_amount > 0)
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>${transaction.vat
+          <td class="vat"  ${
+            (!transaction.vat &&
+              isBusiness(transaction) &&
+              transaction.currency_code == 'ILS' &&
+              !businessesWithoutVAT.includes(transaction.financial_entity) &&
+              !businessesWithoutTaxCategory.includes(
+                transaction.financial_entity
+              )) ||
+            (transaction.vat > 0 && transaction.event_amount < 0) ||
+            (transaction.vat < 0 && transaction.event_amount > 0)
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.vat
           ? transaction.vat
-          : `${suggestedTransaction(transaction)?.vat
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.vat
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.vat
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.vat
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="financial_accounts_to_balance" ${shareWithDotan(transaction)
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>${transaction.financial_accounts_to_balance
+          <td class="financial_accounts_to_balance" ${
+            shareWithDotan(transaction)
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.financial_accounts_to_balance
           ? transaction.financial_accounts_to_balance
-          : `${suggestedTransaction(transaction)?.financialAccountsToBalance
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialAccountsToBalance
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.financialAccountsToBalance
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.financialAccountsToBalance
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'>&#x270f;</button>
           </td>
-          <td class="tax_category" ${isBusiness(transaction) &&
-          !businessesWithoutTaxCategory.includes(
-            transaction.financial_entity
-          ) &&
-          !transaction.tax_category
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>${transaction.tax_category
+          <td class="tax_category" ${
+            isBusiness(transaction) &&
+            !businessesWithoutTaxCategory.includes(
+              transaction.financial_entity
+            ) &&
+            !transaction.tax_category
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.tax_category
           ? transaction.tax_category
-          : `${suggestedTransaction(transaction)?.taxCategory
-          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.taxCategory
-          }");'>V</button>`
-        }
+          : `${
+              suggestedTransaction(transaction)?.taxCategory
+            } <button type="button" onClick='printElement(this, "${
+              suggestedTransaction(transaction)?.taxCategory
+            }");'>V</button>`
+      }
             <button type="button" onClick='printElement(this, prompt("New Tax category:"));'>&#x270f;</button>
           </td>
           <td>${transaction.detailed_bank_description}</td>
-          <td class="proforma_invoice_file" ${isBusiness(transaction) && !transaction.proforma_invoice_file
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>
+          <td class="proforma_invoice_file" ${
+            isBusiness(transaction) && !transaction.proforma_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
             ${transaction.proforma_invoice_file ? 'yes' : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_date" ${isBusiness(transaction) && !transaction.tax_invoice_date
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>${transaction.tax_invoice_date
+          <td class="tax_invoice_date" ${
+            isBusiness(transaction) && !transaction.tax_invoice_date
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.tax_invoice_date
           ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
           : ''
-        }
+      }
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_number" ${isBusiness(transaction) &&
-          !entitiesWithoutInvoiceNumuber.includes(
-            transaction.financial_entity
-          ) &&
-          !transaction.tax_invoice_number
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>
+          <td class="tax_invoice_number" ${
+            isBusiness(transaction) &&
+            !entitiesWithoutInvoiceNumuber.includes(
+              transaction.financial_entity
+            ) &&
+            !transaction.tax_invoice_number
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
             ${transaction.tax_invoice_number}
             <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_file" ${isBusiness(transaction) && !transaction.tax_invoice_file
-          ? 'style="background-color: rgb(236, 207, 57);"'
-          : ''
-        }>
-            ${transaction.tax_invoice_file ? 'yes' : ''}
+          <td class="tax_invoice_file" ${
+            isBusiness(transaction) && !transaction.tax_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${
+              transaction.tax_invoice_file
+                ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>`
+                : ''
+            }
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
           <td class="receipt_invoice_file">
