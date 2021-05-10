@@ -268,12 +268,14 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('Vignesh')){
+  } else if (transaction.detailed_bank_description.includes('Vignesh')) {
     suggestedTransaction.financialEntity = 'Vignesh T.V.';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('Steinbock Software LTD')){
+  } else if (
+    transaction.detailed_bank_description.includes('Steinbock Software LTD')
+  ) {
     suggestedTransaction.financialEntity = 'Steinbock Software LTD';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
@@ -347,6 +349,14 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('עידן')) {
+    suggestedTransaction.financialEntity = 'Idan Am-Shalem';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('מועדון הבלוק')) {
     suggestedTransaction.financialEntity = 'The Block';
     suggestedTransaction.userDescription = 'Party';
@@ -357,7 +367,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Domain';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
-    return suggestedTransaction;    
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('SENTRY')) {
     suggestedTransaction.financialEntity = 'Sentry';
     suggestedTransaction.userDescription = 'Monitoring';
@@ -396,7 +406,12 @@ function suggestedTransaction(transaction: any) {
   }
 }
 
-const businessesWithoutVAT = ['Apple'];
+const businessesWithoutVAT = [
+  'Apple',
+  'Halman Aldubi Training Fund',
+  'Halman Aldubi Pension',
+  'Employees Social Security',
+];
 function isBusiness(transaction: any) {
   return (
     (transaction.account_number == 61066 ||
