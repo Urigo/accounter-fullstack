@@ -502,15 +502,15 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       null,
       entryForFinancialAccount.description,
       entryForFinancialAccount.reference1
-      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
-      : null, // add check on the db for it
-    entryForFinancialAccount.reference2
-      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
-      : null,
+        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
+            .join('')
+            .substr(-9)
+        : null, // add check on the db for it
+      entryForFinancialAccount.reference2
+        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
+            .join('')
+            .substr(-9)
+        : null,
       null,
       hashDateFormat(
         transaction.debit_date ? transaction.debit_date : transaction.event_date
@@ -529,7 +529,10 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       console.log(JSON.stringify(updateResult));
     } catch (error) {
       // TODO: Log important checks
-      console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
+      console.log(
+        'error in insert entryForExchangeRatesDifferenceValues - ',
+        error
+      );
     }
   }
 
