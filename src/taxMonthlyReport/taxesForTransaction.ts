@@ -10,6 +10,9 @@ const entitiesWithoutAccounting = [
   'Uri Goldshtein Employee Social Security',
   'Halman Aldubi Training Fund',
   'Halman Aldubi Pension',
+  'Tax',
+  'Uri Goldshtein Hoz',
+  'Uri Goldshtein',
 ];
 function entitiesToTaxCategory(entity: string): string | null {
   switch (entity) {
@@ -266,7 +269,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         return 'יעקב';
         break;
       case 'Tax':
-        return 'מקדמות20';
+        return 'מקדמות21';
         break;
       case 'Uri Goldshtein Employee Tax Withholding':
         return 'מהני';
@@ -421,50 +424,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     uuidv4(),
   ];
 
-  if (
-    debitExchangeRates != invoiceExchangeRates &&
-    transaction.account_type != 'creditcard' &&
-    transaction.financial_entity != 'Isracard'
-  ) {
-    console.log('שערררררררר');
-    let entryForExchangeRatesDifferenceValues = [
-      hashDateFormat(transaction.event_date),
-      hashAccounts(entryForFinancialAccount.debitAccount),
-      hashNumber(entryForFinancialAccount.debitAmountILS),
-      transaction.currency_code != 'ILS'
-        ? hashNumber(entryForFinancialAccount.debitAmount)
-        : null,
-      hashCurrencyType(transaction.currency_code),
-      hashAccounts(entryForFinancialAccount.creditAccount),
-      hashNumber(entryForFinancialAccount.creditAmountILS),
-      transaction.currency_code != 'ILS'
-        ? hashNumber(entryForFinancialAccount.creditAmount)
-        : null,
-      null, // Check for interest transactions (הכנרבמ)
-      null,
-      null,
-      null,
-      null,
-      null,
-      entryForFinancialAccount.description,
-      (entryForFinancialAccount.reference1.match(/\d+/g) || [])
-        .join('')
-        .substr(-9), // add check on the db for it
-      (entryForFinancialAccount.reference2.match(/\d+/g) || [])
-        .join('')
-        .substr(-9),
-      null,
-      hashDateFormat(
-        transaction.debit_date ? transaction.debit_date : transaction.event_date
-      ),
-      hashDateFormat(transaction.event_date),
-      transaction.id,
-      'generated_financial_account',
-      transaction.proforma_invoice_file,
-      uuidv4(),
-    ];
-  }
-
   let insertMovementQuery = `insert into accounter_schema.ledger (
     תאריך_חשבונית,
     חשבון_חובה_1,
@@ -516,5 +475,76 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     console.log('error in insert - ', error);
   }
 
+  if (
+    debitExchangeRates != invoiceExchangeRates &&
+    transaction.account_type != 'creditcard' &&
+    transaction.financial_entity != 'Isracard'
+  ) {
+    console.log('שערררררררר');
+    let entryForExchangeRatesDifferenceValues = [
+      hashDateFormat(transaction.event_date),
+      hashAccounts(entryForFinancialAccount.debitAccount),
+      hashNumber(entryForFinancialAccount.debitAmountILS),
+      transaction.currency_code != 'ILS'
+        ? hashNumber(entryForFinancialAccount.debitAmount)
+        : null,
+      hashCurrencyType(transaction.currency_code),
+      hashAccounts(entryForFinancialAccount.creditAccount),
+      hashNumber(entryForFinancialAccount.creditAmountILS),
+      transaction.currency_code != 'ILS'
+        ? hashNumber(entryForFinancialAccount.creditAmount)
+        : null,
+      null, // Check for interest transactions (הכנרבמ)
+      null,
+      null,
+      null,
+      null,
+      null,
+      entryForFinancialAccount.description,
+      entryForFinancialAccount.reference1
+      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
+          .join('')
+          .substr(-9)
+      : null, // add check on the db for it
+    entryForFinancialAccount.reference2
+      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
+          .join('')
+          .substr(-9)
+      : null,
+      null,
+      hashDateFormat(
+        transaction.debit_date ? transaction.debit_date : transaction.event_date
+      ),
+      hashDateFormat(transaction.event_date),
+      transaction.id,
+      'generated_financial_account',
+      transaction.proforma_invoice_file,
+      uuidv4(),
+    ];
+
+    queryConfig.values = entryForExchangeRatesDifferenceValues;
+
+    try {
+      let updateResult = await pool.query(queryConfig);
+      console.log(JSON.stringify(updateResult));
+    } catch (error) {
+      // TODO: Log important checks
+      console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
+    }
+  }
+
   return 'done';
 }
+
+// Salary
+/*
+  Traning fund from Salary
+    Emploee - 1.5 percent from salary
+    Employer - 4.5 percent from salary
+  Pension fund from Salary
+    Emploee - 6 percent from salary
+    Employer - 
+      6.5 percent Gemel from salary
+      Compensation fund from Salary
+        8.333 percent from Employer
+*/
