@@ -26,6 +26,148 @@ function entitiesToTaxCategory(entity: string): string | null {
 
 const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע'];
 
+export function hashDateFormat(date: Date): string {
+  return moment(date).format('DD/MM/YYYY');
+}
+
+export function hashAccounts(accountType: string): string | null {
+  switch (accountType) {
+    case 'checking_ils':
+      return 'עוש';
+      break;
+    case 'checking_eur':
+      return 'עוש2';
+      break;
+    case 'checking_usd':
+      return 'עוש1';
+      break;
+    case 'creditcard':
+      return 'כא';
+      break;
+    case 'Hot Mobile':
+      return 'הוט';
+      break;
+    case 'Dotan Simha':
+      return 'דותן';
+      break;
+    case 'Kamil Kisiela':
+      return 'Kamil';
+      break;
+    case 'MapMe':
+      return 'מאפלאבס';
+      break;
+    case 'Idan Am-Shalem':
+      return 'עםשלם';
+      break;
+    case 'Isracard':
+      return 'כא';
+      break;
+    case 'Poalim':
+      return 'Poalim Bank';
+      break;
+    case 'VAT':
+      return 'מעמחוז';
+      break;
+    case 'Israeli Corporations Authority':
+      return 'רשם החברות';
+      break;
+    case 'SATURN AMSTERDAM ODE':
+      return 'SATURN AMS';
+      break;
+    case 'Linux Foundation':
+      return 'LinuxFound';
+      break;
+    case 'Malach':
+      return 'מלאך';
+      break;
+    case 'Spaans&Spaans':
+      return 'Spaans';
+      break;
+    case 'IMPACT HUB ATHENS':
+      return 'IMPACT HUB ATHE';
+      break;
+    case 'ENTERPRISE GRAPHQL Conference':
+      return 'ENTERPRISE GRAP';
+      break;
+    case 'Yaacov Matri':
+      return 'יעקב';
+      break;
+    case 'Tax':
+      return 'מקדמות21';
+      break;
+    case 'Uri Goldshtein Employee Tax Withholding':
+      return 'מהני';
+      break;
+    case 'Uri Goldshtein Employee Social Security':
+      return 'בלני';
+      break;
+    case 'Uri Goldshtein':
+      return 'אורי';
+      break;
+    case 'Uri Goldshtein Hoz':
+      return 'אוריח';
+      break;
+    case 'Raveh Ravid & Co':
+      return 'יהל';
+      break;
+    case 'Production Ready GraphQL':
+      return 'ProdReadyGraph';
+      break;
+    case 'הפרשי שער':
+      return 'שער';
+      break;
+    case 'Tax Corona Grant':
+      return 'מענק קורונה';
+      break;
+    case 'VAT interest refund':
+      return 'מעמ שער';
+      break;
+    case 'Tax Shuma':
+      return 'שומה 2018';
+      break;
+    case 'Halman Aldubi Training Fund':
+      return 'הלמןקהל';
+      break;
+    case 'Halman Aldubi Pension':
+      return 'הלמןפנסי';
+      break;
+    default:
+      return accountType;
+  }
+}
+
+export function hashNumber(number: any): string | null {
+  let formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(2);
+  return formattedNumber == '0.00' ? null : formattedNumber;
+}
+
+export let insertMovementQuery = `insert into accounter_schema.ledger (
+  תאריך_חשבונית,
+  חשבון_חובה_1,
+  סכום_חובה_1,
+  מטח_סכום_חובה_1,
+  מטבע,
+  חשבון_זכות_1,
+  סכום_זכות_1,
+  מטח_סכום_זכות_1,
+  חשבון_חובה_2,
+  סכום_חובה_2,
+  מטח_סכום_חובה_2,
+  חשבון_זכות_2,
+  סכום_זכות_2,
+  מטח_סכום_זכות_2,
+  פרטים,
+  אסמכתא_1,
+  אסמכתא_2,
+  סוג_תנועה,
+  תאריך_ערך,
+  תאריך_3,
+  original_id,
+  origin,
+  proforma_invoice_file,
+  id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) returning *;
+`;
+
 export async function createTaxEntriesForTransaction(transactionId: string) {
   let transaction: any = await pool.query(`
     SELECT *
@@ -41,14 +183,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   // credit זכות
   // debit חובה
 
-  transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(
-    transaction.tax_category
-  )
-    ? transaction.vat
-    : (transaction.vat / 3) * 2;
-  // Add a check if there is vat and it's not equal for 17 percent, let us know
-  transaction.amountBeforeVAT =
-    transaction.event_amount - transaction.vatAfterDiduction; // parseFloat
+  addTrueVATtoTransaction(transaction); // parseFloat
 
   let debitExchangeRates;
   let invoiceExchangeRates;
@@ -108,18 +243,23 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     : transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
-  entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount = entryForAccounting.creditAmount = entryForAccounting.debitAmount =
-    transaction.event_amount;
-  entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS = getILSForDate(
-    transaction,
-    debitExchangeRates
-  ).eventAmountILS;
-  entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS = getILSForDate(
-    transaction,
-    transaction.account_type == 'creditcard'
-      ? debitExchangeRates
-      : invoiceExchangeRates
-  ).eventAmountILS;
+  entryForFinancialAccount.creditAmount =
+    entryForFinancialAccount.debitAmount =
+    entryForAccounting.creditAmount =
+    entryForAccounting.debitAmount =
+      transaction.event_amount;
+  entryForFinancialAccount.creditAmountILS =
+    entryForFinancialAccount.debitAmountILS = getILSForDate(
+      transaction,
+      debitExchangeRates
+    ).eventAmountILS;
+  entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS =
+    getILSForDate(
+      transaction,
+      transaction.account_type == 'creditcard'
+        ? debitExchangeRates
+        : invoiceExchangeRates
+    ).eventAmountILS;
 
   if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
     entryForAccounting.secondAccount = 'VAT'; // TODO: Entities enum
@@ -134,7 +274,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction,
       debitExchangeRates
     ).amountBeforeVATILS;
-    entryForAccounting.secondAccountDebitAmount = entryForAccounting.secondAccountDebitAmountILS = 0;
+    entryForAccounting.secondAccountDebitAmount =
+      entryForAccounting.secondAccountDebitAmountILS = 0;
     entryForAccounting.movementType = 'חל';
   } else {
     if (transaction.tax_category != 'אוריח') {
@@ -184,10 +325,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount,
   });
 
-  function hashDateFormat(date: Date): string {
-    return moment(date).format('DD/MM/YYYY');
-  }
-
   function hashCurrencyType(accountType: string): string | null {
     switch (accountType) {
       case 'ILS':
@@ -204,117 +341,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         console.error(errorMessage);
         return errorMessage;
     }
-  }
-
-  function hashAccounts(accountType: string): string | null {
-    switch (accountType) {
-      case 'checking_ils':
-        return 'עוש';
-        break;
-      case 'checking_eur':
-        return 'עוש2';
-        break;
-      case 'checking_usd':
-        return 'עוש1';
-        break;
-      case 'creditcard':
-        return 'כא';
-        break;
-      case 'Hot Mobile':
-        return 'הוט';
-        break;
-      case 'Dotan Simha':
-        return 'דותן';
-        break;
-      case 'Kamil Kisiela':
-        return 'Kamil';
-        break;
-      case 'MapMe':
-        return 'מאפלאבס';
-        break;
-      case 'Idan Am-Shalem':
-        return 'עםשלם';
-        break;
-      case 'Isracard':
-        return 'כא';
-        break;
-      case 'Poalim':
-        return 'Poalim Bank';
-        break;
-      case 'VAT':
-        return 'מעמחוז';
-        break;
-      case 'Israeli Corporations Authority':
-        return 'רשם החברות';
-        break;
-      case 'SATURN AMSTERDAM ODE':
-        return 'SATURN AMS';
-        break;
-      case 'Linux Foundation':
-        return 'LinuxFound';
-        break;
-      case 'Malach':
-        return 'מלאך';
-        break;
-      case 'Spaans&Spaans':
-        return 'Spaans';
-        break;
-      case 'IMPACT HUB ATHENS':
-        return 'IMPACT HUB ATHE';
-        break;
-      case 'ENTERPRISE GRAPHQL Conference':
-        return 'ENTERPRISE GRAP';
-        break;
-      case 'Yaacov Matri':
-        return 'יעקב';
-        break;
-      case 'Tax':
-        return 'מקדמות21';
-        break;
-      case 'Uri Goldshtein Employee Tax Withholding':
-        return 'מהני';
-        break;
-      case 'Uri Goldshtein Employee Social Security':
-        return 'בלני';
-        break;
-      case 'Uri Goldshtein':
-        return 'אורי';
-        break;
-      case 'Uri Goldshtein Hoz':
-        return 'אוריח';
-        break;
-      case 'Raveh Ravid & Co':
-        return 'יהל';
-        break;
-      case 'Production Ready GraphQL':
-        return 'ProdReadyGraph';
-        break;
-      case 'הפרשי שער':
-        return 'שער';
-        break;
-      case 'Tax Corona Grant':
-        return 'מענק קורונה';
-        break;
-      case 'VAT interest refund':
-        return 'מעמ שער';
-        break;
-      case 'Tax Shuma':
-        return 'שומה 2018';
-        break;
-      case 'Halman Aldubi Training Fund':
-        return 'הלמןקהל';
-        break;
-      case 'Halman Aldubi Pension':
-        return 'הלמןפנסי';
-        break;
-      default:
-        return accountType;
-    }
-  }
-
-  function hashNumber(number: any): string | null {
-    let formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(2);
-    return formattedNumber == '0.00' ? null : formattedNumber;
   }
 
   let entryForAccountingValues = [
@@ -424,33 +450,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     uuidv4(),
   ];
 
-  let insertMovementQuery = `insert into accounter_schema.ledger (
-    תאריך_חשבונית,
-    חשבון_חובה_1,
-    סכום_חובה_1,
-    מטח_סכום_חובה_1,
-    מטבע,
-    חשבון_זכות_1,
-    סכום_זכות_1,
-    מטח_סכום_זכות_1,
-    חשבון_חובה_2,
-    סכום_חובה_2,
-    מטח_סכום_חובה_2,
-    חשבון_זכות_2,
-    סכום_זכות_2,
-    מטח_סכום_זכות_2,
-    פרטים,
-    אסמכתא_1,
-    אסמכתא_2,
-    סוג_תנועה,
-    תאריך_ערך,
-    תאריך_3,
-    original_id,
-    origin,
-    proforma_invoice_file,
-    id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) returning *;
-  `;
-
   let queryConfig = {
     text: insertMovementQuery,
     values: entryForAccountingValues,
@@ -539,6 +538,16 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   return 'done';
 }
 
+export function addTrueVATtoTransaction(transaction: any) {
+  transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(
+    transaction.tax_category
+  )
+    ? transaction.vat
+    : (transaction.vat / 3) * 2;
+  // Add a check if there is vat and it's not equal for 17 percent, let us know
+  transaction.amountBeforeVAT =
+    transaction.event_amount - transaction.vatAfterDiduction;
+}
 // Salary
 /*
   Traning fund from Salary
