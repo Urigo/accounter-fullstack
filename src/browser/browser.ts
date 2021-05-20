@@ -7,27 +7,32 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
     id: clickedElement!.parentElement!.parentElement!.getAttribute(
       'transaction_id'
     ),
-    bank_reference: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'bank_reference'
-    ),
-    account_number: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'account_number'
-    ),
-    account_type: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'account_type'
-    ),
-    currency_code: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'currency_code'
-    ),
-    event_date: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'event_date'
-    ),
-    event_amount: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'event_amount'
-    ),
-    event_number: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'event_number'
-    ),
+    bank_reference:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'bank_reference'
+      ),
+    account_number:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'account_number'
+      ),
+    account_type:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'account_type'
+      ),
+    currency_code:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'currency_code'
+      ),
+    event_date:
+      clickedElement!.parentElement!.parentElement!.getAttribute('event_date'),
+    event_amount:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'event_amount'
+      ),
+    event_number:
+      clickedElement!.parentElement!.parentElement!.getAttribute(
+        'event_number'
+      ),
   };
   console.log(changeRequest);
 

@@ -161,7 +161,10 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = ' ';
     suggestedTransaction.personalCategory = 'love';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('MOUNTAIN V')) {
+  } else if (
+    transaction.detailed_bank_description.includes('MOUNTAIN V') ||
+    transaction.detailed_bank_description.includes('STORAG')
+  ) {
     suggestedTransaction.financialEntity = 'Google';
     suggestedTransaction.userDescription = 'Google Storage';
     suggestedTransaction.taxCategory = 'אתר';
@@ -371,6 +374,18 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('SENTRY')) {
     suggestedTransaction.financialEntity = 'Sentry';
     suggestedTransaction.userDescription = 'Monitoring';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('RENDER')) {
+    suggestedTransaction.financialEntity = 'Render';
+    suggestedTransaction.userDescription = 'Hosting';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ELASTIC')) {
+    suggestedTransaction.financialEntity = 'Elasticsearch AS';
+    suggestedTransaction.userDescription = 'Hive storage';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
@@ -678,7 +693,8 @@ export const financialStatus = async (query: any): Promise<string> => {
   let thisMonthPrivateExpensesTableHTMLTemplate = '';
   if (thisMonthPrivateExpensesTable?.rows) {
     for (const expenseCategory of thisMonthPrivateExpensesTable?.rows) {
-      thisMonthPrivateExpensesTableHTMLTemplate = thisMonthPrivateExpensesTableHTMLTemplate.concat(`
+      thisMonthPrivateExpensesTableHTMLTemplate =
+        thisMonthPrivateExpensesTableHTMLTemplate.concat(`
         <tr>
             <td>${expenseCategory.personal_category}</td>
             <td>${formatter.format(expenseCategory.overall_sum)}</td>
@@ -739,15 +755,16 @@ export const financialStatus = async (query: any): Promise<string> => {
   let missingInvoiceNumbersHTMLTemplate = '';
   if (missingInvoiceNumbers?.rows) {
     for (const transaction of missingInvoiceNumbers?.rows) {
-      missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
+      missingInvoiceNumbersHTMLTemplate =
+        missingInvoiceNumbersHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date
             .toISOString()
             .replace(/T/, ' ')
             .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+          transaction.currency_code
+        )}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -775,15 +792,16 @@ export const financialStatus = async (query: any): Promise<string> => {
   let missingInvoiceImagesHTMLTemplate = '';
   if (missingInvoiceImages?.rows) {
     for (const transaction of missingInvoiceImages?.rows) {
-      missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
+      missingInvoiceImagesHTMLTemplate =
+        missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
             <td>${transaction.event_date
               .toISOString()
               .replace(/T/, ' ')
               .replace(/\..+/, '')}</td>
             <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+          transaction.currency_code
+        )}</td>
             <td>${transaction.financial_entity}</td>
             <td>${transaction.user_description}</td>
             <td>${transaction.tax_invoice_number}</td>

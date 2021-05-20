@@ -19,11 +19,12 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
   }
   let topPrivateExpensesNotCategorizedHTMLTemplate = '';
   for (const transaction of topPrivateNotCategorizedExpenses) {
-    topPrivateExpensesNotCategorizedHTMLTemplate = topPrivateExpensesNotCategorizedHTMLTemplate.concat(`
+    topPrivateExpensesNotCategorizedHTMLTemplate =
+      topPrivateExpensesNotCategorizedHTMLTemplate.concat(`
       <tr>
         <td>${transaction.amount}${currencyCodeToSymbol(
-      transaction.currency_code
-    )}</td>
+        transaction.currency_code
+      )}</td>
         <td>${transaction.bank_description}</td>
         <td>${new Intl.DateTimeFormat('en-US', {
           month: 'short',
