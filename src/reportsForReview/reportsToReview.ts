@@ -9,7 +9,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   if (query.month) {
     reportMonthToReview = `2020-0${query.month}-01`;
   } else {
-    reportMonthToReview = `2021-04-01`;
+    reportMonthToReview = `2021-05-01`;
   }
 
   const lastInvoiceNumbersQuery = readFileSync(
@@ -18,12 +18,14 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   console.log('reportMonthToReview', reportMonthToReview);
   console.time('callingReportsDB');
+  let currrentCompany = 'Software Products Guilda Ltd.';
+  currrentCompany = 'Uri Goldshtein LTD';
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month('2020-01-01', '2021-04-01')
+      from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', '2021-05-01')
       order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
       `
     ),

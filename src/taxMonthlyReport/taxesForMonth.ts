@@ -51,14 +51,14 @@ export async function createTaxEntriesForMonth(month: Date) {
       let entryForMonthlyVAT = [
         hashDateFormat(moment(month).endOf('month').toDate()),
         transactionType == TransactionType.Expenses
-          ? hashAccounts('VAT')
+          ? hashAccounts('VAT', null, null, null, null, null, null)
           : 'עסק',
         hashNumber(expensesVATSum),
         null,
         null,
         transactionType == TransactionType.Expenses
           ? 'תשו'
-          : hashAccounts('VAT'),
+          : hashAccounts('VAT', null, null, null, null, null, null),
         hashNumber(expensesVATSum),
         null,
         null,

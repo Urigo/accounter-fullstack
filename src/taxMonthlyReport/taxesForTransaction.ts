@@ -7,22 +7,15 @@ const taxCategoriesWithoutInvoiceDate = ['אוריח'];
 const entitiesWithoutAccounting = [
   'Isracard',
   'VAT',
-  'Uri Goldshtein Employee Social Security',
+  'Social Security Deductions',
+  'Tax Deductions',
+  'Tax',
+  'Poalim',
   'Halman Aldubi Training Fund',
   'Halman Aldubi Pension',
-  'Tax',
   'Uri Goldshtein Hoz',
   'Uri Goldshtein',
 ];
-function entitiesToTaxCategory(entity: string): string | null {
-  switch (entity) {
-    case 'Poalim':
-      return 'עמל';
-      break;
-    default:
-      return null;
-  }
-}
 
 const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע'];
 
@@ -30,19 +23,164 @@ export function hashDateFormat(date: Date): string {
   return moment(date).format('DD/MM/YYYY');
 }
 
-export function hashAccounts(accountType: string): string | null {
+async function getHashFinancialAccounts(transaction: any) {
+  let hashFinancialAccountsResult: any = await pool.query(`
+    select hashavshevet_account_ils,
+           hashavshevet_account_usd,
+           hashavshevet_account_eur
+    from accounter_schema.financial_accounts
+    where
+      account_number = $$${transaction.account_number}$$;
+  `);
+  return hashFinancialAccountsResult.rows[0];
+}
+
+async function getHashBusinessIndexes(transaction: any, owner: any) {
+  let businessIDResult: any;
+  try {
+    businessIDResult = await pool.query(`
+    select id
+    from accounter_schema.businesses
+    where
+      name = $$${transaction.financial_entity}$$;
+  `);
+  } catch (error) {
+    console.log('Finding business id error - ', error);
+  }
+
+  console.log('businessIDResult', businessIDResult);
+
+  let hashBusinessIndexResult: any;
+  try {
+    hashBusinessIndexResult = await pool.query(`
+    select hash_index, auto_tax_category
+    from accounter_schema.hash_business_indexes
+    where
+      business = $$${businessIDResult.rows[0].id}$$ and
+      hash_owner = $$${owner}$$;
+  `);
+  } catch (error) {
+    console.log('Finding business Hash id error - ', error);
+  }
+  console.log('hashBusinessIndexResult.rows', hashBusinessIndexResult?.rows);
+  return hashBusinessIndexResult?.rows[0];
+}
+
+async function getVATIndexes(owner: any) {
+  let hashVATInputsIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_inputs';
+  `);
+  let hashVATOutputsIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_outputs';
+  `);
+  let hashVATIncomesMovementTypeIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Incomes_Movement_Type';
+  `);
+  let hashVATFreeIncomesMovementTypeIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Free_Incomes_Movement_Type';
+  `);
+  let hashVATExpensesMovementTypeIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Expenses_Movement_Type';
+  `);
+  let hashVATIncomesIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Incomes';
+  `);
+  let hashVATFreeIncomesIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Free_Incomes';
+  `);
+  let hashCurrencyRatesDifferencesIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'Currency_Rates_Differences';
+  `);
+
+  return {
+    vatInputsIndex: hashVATInputsIndexResult.rows[0].hash_index,
+    vatOutputsIndex: hashVATOutputsIndexResult.rows[0].hash_index,
+    vatIncomesMovementTypeIndex:
+      hashVATIncomesMovementTypeIndexResult.rows[0].hash_index,
+    vatFreeIncomesMovementTypeIndex:
+      hashVATFreeIncomesMovementTypeIndexResult.rows[0].hash_index,
+    vatIncomesIndex: hashVATIncomesIndexResult.rows[0].hash_index,
+    vatFreeIncomesIndex: hashVATFreeIncomesIndexResult.rows[0].hash_index,
+    vatExpensesMovementTypeIndex:
+      hashVATExpensesMovementTypeIndexResult.rows[0].hash_index,
+    hashCurrencyRatesDifferencesIndex:
+      hashCurrencyRatesDifferencesIndexResult.rows[0].hash_index,
+  };
+}
+
+export function hashAccounts(
+  accountType: string,
+  financialAccounts: any,
+  hashBusinessIndexes: any,
+  hashVATIndexes: any,
+  currency: any,
+  isracardHashIndexes: any,
+  transactionDescription: any
+): string | null {
+  let creditCardHashAccount;
   switch (accountType) {
     case 'checking_ils':
-      return 'עוש';
-      break;
-    case 'checking_eur':
-      return 'עוש2';
+      return financialAccounts.hashavshevet_account_ils;
       break;
     case 'checking_usd':
-      return 'עוש1';
+      return financialAccounts.hashavshevet_account_usd;
+      break;
+    case 'checking_eur':
+      return financialAccounts.hashavshevet_account_eur;
       break;
     case 'creditcard':
-      return 'כא';
+      switch (currency) {
+        case 'ILS':
+          creditCardHashAccount = financialAccounts.hashavshevet_account_ils;
+          break;
+        case 'USD':
+          creditCardHashAccount = financialAccounts.hashavshevet_account_usd;
+          break;
+        case 'EUR':
+          creditCardHashAccount = financialAccounts.hashavshevet_account_eur;
+          break;
+        default:
+          const errorMessage = `Unknown currency - ${currency}`;
+          console.error(errorMessage);
+          creditCardHashAccount = errorMessage;
+      }
+      return creditCardHashAccount;
+      break;
+    case 'Isracard':
+      console.log('isracardHashIndexes', isracardHashIndexes);
+      return isracardHashIndexes;
       break;
     case 'Hot Mobile':
       return 'הוט';
@@ -50,23 +188,8 @@ export function hashAccounts(accountType: string): string | null {
     case 'Dotan Simha':
       return 'דותן';
       break;
-    case 'Kamil Kisiela':
-      return 'Kamil';
-      break;
     case 'MapMe':
       return 'מאפלאבס';
-      break;
-    case 'Idan Am-Shalem':
-      return 'עםשלם';
-      break;
-    case 'Isracard':
-      return 'כא';
-      break;
-    case 'Poalim':
-      return 'Poalim Bank';
-      break;
-    case 'VAT':
-      return 'מעמחוז';
       break;
     case 'Israeli Corporations Authority':
       return 'רשם החברות';
@@ -92,15 +215,6 @@ export function hashAccounts(accountType: string): string | null {
     case 'Yaacov Matri':
       return 'יעקב';
       break;
-    case 'Tax':
-      return 'מקדמות21';
-      break;
-    case 'Uri Goldshtein Employee Tax Withholding':
-      return 'מהני';
-      break;
-    case 'Uri Goldshtein Employee Social Security':
-      return 'בלני';
-      break;
     case 'Uri Goldshtein':
       return 'אורי';
       break;
@@ -112,9 +226,6 @@ export function hashAccounts(accountType: string): string | null {
       break;
     case 'Production Ready GraphQL':
       return 'ProdReadyGraph';
-      break;
-    case 'הפרשי שער':
-      return 'שער';
       break;
     case 'Tax Corona Grant':
       return 'מענק קורונה';
@@ -132,6 +243,17 @@ export function hashAccounts(accountType: string): string | null {
       return 'הלמןפנסי';
       break;
     default:
+      if (
+        hashBusinessIndexes &&
+        !Object.values(hashVATIndexes).includes(accountType) &&
+        hashBusinessIndexes.auto_tax_category != accountType
+      ) {
+        if (transactionDescription == 'הפקדה לפקדון') {
+          return '4668039';
+        } else {
+          return hashBusinessIndexes.hash_index;
+        }
+      }
       return accountType;
   }
 }
@@ -165,7 +287,8 @@ export let insertMovementQuery = `insert into accounter_schema.ledger (
   original_id,
   origin,
   proforma_invoice_file,
-  id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) returning *;
+  id,
+  business) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) returning *;
 `;
 
 export async function createTaxEntriesForTransaction(transactionId: string) {
@@ -177,9 +300,57 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   `);
   transaction = transaction.rows[0]; // Why numeric values are text?
 
+  let ownerResult: any = await pool.query(`
+    SELECT owner
+    FROM accounter_schema.financial_accounts
+    WHERE
+        account_number = $$${transaction.account_number}$$
+  `);
+  let owner = ownerResult.rows[0].owner;
+
+  let financialAccounts = await getHashFinancialAccounts(transaction);
+  let hashBusinessIndexes = await getHashBusinessIndexes(transaction, owner);
+  let hashVATIndexes = await getVATIndexes(owner);
+
+  let isracardHashIndexes;
+  if (transaction.financial_entity == 'Isracard') {
+    let hashCreditcardIndexResult: any = await pool.query(`
+      select hashavshevet_account_ils,
+            hashavshevet_account_usd,
+            hashavshevet_account_eur
+      from accounter_schema.financial_accounts
+      where
+        account_number = $$${transaction.bank_reference}$$;
+  `);
+    console.log('transaction.bank_reference', transaction.bank_reference);
+    console.log('hashCreditcardIndexResult', hashCreditcardIndexResult.rows[0]);
+    switch (transaction.currency_code) {
+      case 'ILS':
+        isracardHashIndexes =
+          hashCreditcardIndexResult.rows[0].hashavshevet_account_ils;
+        break;
+      case 'USD':
+        isracardHashIndexes =
+          hashCreditcardIndexResult.rows[0].hashavshevet_account_usd;
+        break;
+      case 'EUR':
+        isracardHashIndexes =
+          hashCreditcardIndexResult.rows[0].hashavshevet_account_eur;
+        break;
+      default:
+        const errorMessage = `Unknown account type - ${transaction.currency_code}`;
+        console.error(errorMessage);
+        return errorMessage;
+    }
+  }
+
   let entryForFinancialAccount: any = {};
   let entryForAccounting: any = {};
 
+  if (transaction.is_conversion == true) {
+    console.log('conversation!');
+    return;
+  }
   // credit זכות
   // debit חובה
 
@@ -236,10 +407,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   entryForFinancialAccount.creditAccount = transaction.financial_entity;
   entryForFinancialAccount.debitAccount = transaction.account_type;
-  entryForAccounting.creditAccount = entitiesToTaxCategory(
-    transaction.financial_entity
-  )
-    ? entitiesToTaxCategory(transaction.financial_entity)
+  entryForAccounting.creditAccount = hashBusinessIndexes?.auto_tax_category
+    ? hashBusinessIndexes?.auto_tax_category
     : transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
@@ -262,7 +431,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     ).eventAmountILS;
 
   if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
-    entryForAccounting.secondAccount = 'VAT'; // TODO: Entities enum
     entryForAccounting.secondAccountCreditAmount =
       transaction.vatAfterDiduction;
     entryForAccounting.secondAccountCreditAmountILS = getILSForDate(
@@ -276,10 +444,19 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     ).amountBeforeVATILS;
     entryForAccounting.secondAccountDebitAmount =
       entryForAccounting.secondAccountDebitAmountILS = 0;
-    entryForAccounting.movementType = 'חל';
+    entryForAccounting.movementType =
+      hashVATIndexes.vatIncomesMovementTypeIndex;
+    if (transaction.event_amount > 0) {
+      entryForAccounting.creditAccount = hashVATIndexes.vatIncomesIndex;
+    }
   } else {
     if (transaction.tax_category != 'אוריח') {
-      entryForAccounting.movementType = 'הכפ';
+      entryForAccounting.movementType =
+        hashVATIndexes.vatFreeIncomesMovementTypeIndex;
+
+      if (transaction.event_amount > 0) {
+        entryForAccounting.creditAccount = hashVATIndexes.vatFreeIncomesIndex;
+      }
     }
   }
   entryForAccounting.reference2 = entryForFinancialAccount.reference2 =
@@ -314,7 +491,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
       transaction.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
-        : (entryForAccounting.movementType = 'חס');
+        : (entryForAccounting.movementType =
+            hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
@@ -350,20 +528,36 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         ? transaction.tax_invoice_date
         : transaction.event_date
     ), // add a check if should have an invoice but doesn't let user know
-    hashAccounts(entryForAccounting.debitAccount),
+    hashAccounts(
+      entryForAccounting.debitAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    ),
     hashNumber(entryForAccounting.debitAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.debitAmount)
       : null,
     hashCurrencyType(transaction.currency_code),
-    hashAccounts(entryForAccounting.creditAccount),
+    hashAccounts(
+      entryForAccounting.creditAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    ),
     hashNumber(entryForAccounting.creditAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.creditAmount)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
     entryForAccounting.secondAccountDebitAmount != 0
-      ? 'תשו'
+      ? hashVATIndexes.vatInputsIndex
       : null,
     entryForAccounting.secondAccountDebitAmount
       ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
@@ -374,7 +568,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       : null,
     entryForAccounting.secondAccountCreditAmount &&
     entryForAccounting.secondAccountCreditAmount != 0
-      ? 'עסק'
+      ? hashVATIndexes.vatOutputsIndex
       : null,
     entryForAccounting.secondAccountCreditAmountILS
       ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
@@ -407,17 +601,34 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     'generated_accounting',
     transaction.proforma_invoice_file,
     uuidv4(),
+    owner,
   ];
 
   let entryForFinancialAccountValues = [
     hashDateFormat(transaction.event_date),
-    hashAccounts(entryForFinancialAccount.debitAccount),
+    hashAccounts(
+      entryForFinancialAccount.debitAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    ),
     hashNumber(entryForFinancialAccount.debitAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForFinancialAccount.debitAmount)
       : null,
     hashCurrencyType(transaction.currency_code),
-    hashAccounts(entryForFinancialAccount.creditAccount),
+    hashAccounts(
+      entryForFinancialAccount.creditAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    ),
     hashNumber(entryForFinancialAccount.creditAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForFinancialAccount.creditAmount)
@@ -448,6 +659,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     'generated_financial_account',
     transaction.proforma_invoice_file,
     uuidv4(),
+    owner,
   ];
 
   let queryConfig = {
@@ -475,24 +687,36 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   }
 
   if (
-    debitExchangeRates != invoiceExchangeRates &&
+    getILSForDate(transaction, invoiceExchangeRates).eventAmountILS !=
+      getILSForDate(transaction, debitExchangeRates).eventAmountILS &&
     transaction.account_type != 'creditcard' &&
-    transaction.financial_entity != 'Isracard'
+    transaction.financial_entity != 'Isracard' &&
+    transaction.tax_invoice_date
   ) {
     console.log('שערררררררר');
     let entryForExchangeRatesDifferenceValues = [
-      hashDateFormat(transaction.event_date),
-      hashAccounts(entryForFinancialAccount.debitAccount),
-      hashNumber(entryForFinancialAccount.debitAmountILS),
-      transaction.currency_code != 'ILS'
-        ? hashNumber(entryForFinancialAccount.debitAmount)
-        : null,
-      hashCurrencyType(transaction.currency_code),
-      hashAccounts(entryForFinancialAccount.creditAccount),
-      hashNumber(entryForFinancialAccount.creditAmountILS),
-      transaction.currency_code != 'ILS'
-        ? hashNumber(entryForFinancialAccount.creditAmount)
-        : null,
+      hashDateFormat(transaction.tax_invoice_date),
+      hashVATIndexes.hashCurrencyRatesDifferencesIndex,
+      hashNumber(
+        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
+          getILSForDate(transaction, debitExchangeRates).eventAmountILS
+      ),
+      null,
+      hashCurrencyType('ILS'),
+      hashAccounts(
+        entryForFinancialAccount.debitAccount,
+        financialAccounts,
+        hashBusinessIndexes,
+        hashVATIndexes,
+        transaction.currency_code,
+        isracardHashIndexes,
+        transaction.bank_description
+      ),
+      hashNumber(
+        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
+          getILSForDate(transaction, debitExchangeRates).eventAmountILS
+      ),
+      hashCurrencyType('ILS'),
       null, // Check for interest transactions (הכנרבמ)
       null,
       null,
@@ -516,9 +740,10 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ),
       hashDateFormat(transaction.event_date),
       transaction.id,
-      'generated_financial_account',
+      'generated_invoice_rates_change',
       transaction.proforma_invoice_file,
       uuidv4(),
+      owner,
     ];
 
     queryConfig.values = entryForExchangeRatesDifferenceValues;

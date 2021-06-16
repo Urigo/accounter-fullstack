@@ -9,7 +9,7 @@ const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];
 const privateBusinessExpenses = [
   'Google',
   'Uri Goldshtein',
-  'Uri Goldshtein Employee Social Security',
+  'Social Security Deductions',
   'Hot Mobile',
   'Apple',
   'HOT',
@@ -21,8 +21,8 @@ const businessesNotToShare = ['Dotan Simha'];
 
 const businessesWithoutTaxCategory = [
   'Uri Goldshtein',
-  'Uri Goldshtein Employee Social Security',
-  'Uri Goldshtein Employee Tax Withholding',
+  'Social Security Deductions',
+  'Tax Deductions',
   'VAT',
   'Tax',
 ];
@@ -45,6 +45,16 @@ function suggestedTransaction(transaction: any) {
     transaction.detailed_bank_description.includes('איי.אם.פי.אם')
   ) {
     suggestedTransaction.financialEntity = 'AmPm';
+    suggestedTransaction.userDescription = 'Groceries';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('סופר יודה')) {
+    suggestedTransaction.financialEntity = 'סופר יודה';
+    suggestedTransaction.userDescription = 'Groceries';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('הצרכניה-צמרת')) {
+    suggestedTransaction.financialEntity = 'הצרכניה-צמרת';
     suggestedTransaction.userDescription = 'Groceries';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
@@ -93,16 +103,18 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Monthly creditcard charge';
     suggestedTransaction.personalCategory = 'creditcard';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('MEETUP ORG')) {
+  } else if (transaction.detailed_bank_description.includes('MEETUP')) {
     suggestedTransaction.financialEntity = 'Meetup';
     suggestedTransaction.userDescription = 'Meetup Monthly charge';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ביטוח לאומי')) {
-    suggestedTransaction.financialEntity =
-      'Uri Goldshtein Employee Social Security';
+    suggestedTransaction.financialEntity = 'Social Security Deductions';
+    suggestedTransaction.userDescription =
+      'Salaries of Uri Dotan and Gil March 2021';
     suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description == 'HOT MOBILE') {
     suggestedTransaction.financialEntity = 'Hot Mobile';
@@ -140,7 +152,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'family';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('GOOGLE FI')) {
-    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.financialEntity = 'Google Fi';
     suggestedTransaction.userDescription = 'Google Fi';
     suggestedTransaction.taxCategory = 'סלולר';
     suggestedTransaction.financialAccountsToBalance = ' ';
@@ -165,7 +177,7 @@ function suggestedTransaction(transaction: any) {
     transaction.detailed_bank_description.includes('MOUNTAIN V') ||
     transaction.detailed_bank_description.includes('STORAG')
   ) {
-    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.financialEntity = 'Google Storage';
     suggestedTransaction.userDescription = 'Google Storage';
     suggestedTransaction.taxCategory = 'אתר';
     suggestedTransaction.financialAccountsToBalance = ' ';
@@ -218,7 +230,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes("ג'אסט לאנס")) {
-    suggestedTransaction.financialEntity = 'Lance';
+    suggestedTransaction.financialEntity = 'JustLance LTD';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
@@ -226,7 +238,7 @@ function suggestedTransaction(transaction: any) {
     );
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('CRISP')) {
-    suggestedTransaction.financialEntity = 'Crisp';
+    suggestedTransaction.financialEntity = 'Crisp IM SARL';
     suggestedTransaction.userDescription = 'Monthly Crisp';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
@@ -286,9 +298,26 @@ function suggestedTransaction(transaction: any) {
       2
     );
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('מס הכנסה')) {
+  } else if (transaction.detailed_bank_description.includes('מס הכנסה עצ')) {
     suggestedTransaction.financialEntity = 'Tax';
+    suggestedTransaction.userDescription = 'Advance Tax for April 2021';
     suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מס הכנסה ני')) {
+    suggestedTransaction.financialEntity = 'Tax Deductions';
+    suggestedTransaction.userDescription =
+      'Tax for employees for March-April 2021';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('המכס ומעמ-גביי תשלום')
+  ) {
+    suggestedTransaction.financialEntity = 'VAT';
+    suggestedTransaction.userDescription = 'VAT for March-April 2021';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('מטרי')) {
     suggestedTransaction.financialEntity = 'Yaacov Matri';
@@ -341,13 +370,14 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('DALET DIGITAL')) {
-    suggestedTransaction.financialEntity = 'Dalet Digital';
+    suggestedTransaction.financialEntity =
+      'Dalet Digital Media Systems USA Inc';
     suggestedTransaction.userDescription = 'Advance Payment - March';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ard')) {
-    suggestedTransaction.financialEntity = 'Arda';
+    suggestedTransaction.financialEntity = 'Arda Tanrikulu';
     suggestedTransaction.userDescription = 'Payment for February 2021';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -363,6 +393,16 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('מועדון הבלוק')) {
     suggestedTransaction.financialEntity = 'The Block';
     suggestedTransaction.userDescription = 'Party';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('סלון ברלין')) {
+    suggestedTransaction.financialEntity = 'סלון ברלין';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('סילון')) {
+    suggestedTransaction.financialEntity = 'סילון';
+    suggestedTransaction.userDescription = 'Bar';
     suggestedTransaction.personalCategory = 'fun';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('NAME COM')) {
@@ -400,6 +440,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Bus tickets';
     suggestedTransaction.personalCategory = 'transportation';
     suggestedTransaction.financialAccountsToBalance = ' ';
+    suggestedTransaction.taxCategory = 'נסע';
     suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
       2
     );
@@ -425,7 +466,8 @@ const businessesWithoutVAT = [
   'Apple',
   'Halman Aldubi Training Fund',
   'Halman Aldubi Pension',
-  'Employees Social Security',
+  'Social Security Deductions',
+  'Tax Deductions',
 ];
 function isBusiness(transaction: any) {
   return (
@@ -505,7 +547,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2021-03-01';
+    monthTaxReport = '2021-05-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -570,8 +612,8 @@ export const financialStatus = async (query: any): Promise<string> => {
             financial_entity <> 'Tax Corona Grant' and
             financial_entity <> 'Uri Goldshtein' and
             financial_entity <> 'Uri Goldshtein Hoz' and
-            financial_entity <> 'Uri Goldshtein Employee Social Security' and
-            financial_entity <> 'Uri Goldshtein Employee Tax Withholding' and
+            financial_entity <> 'Social Security Deductions' and
+            financial_entity <> 'Tax Deductions' and
             financial_entity <> 'Dotan Simha'
     ), business_accounts as (
         select account_number
@@ -620,8 +662,8 @@ export const financialStatus = async (query: any): Promise<string> => {
           financial_entity <> 'Tax Corona Grant' and
           financial_entity <> 'Uri Goldshtein' and
           financial_entity <> 'Uri Goldshtein Hoz' and
-          financial_entity <> 'Uri Goldshtein Employee Social Security' and
-          financial_entity <> 'Uri Goldshtein Employee Tax Withholding' and
+          financial_entity <> 'Social Security Deductions' and
+          financial_entity <> 'Tax Deductions' and
           financial_entity <> 'Dotan Simha' and
           personal_category <> 'business'
   )
@@ -630,8 +672,8 @@ export const financialStatus = async (query: any): Promise<string> => {
       sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
   from transactions_exclude
   where
-    event_date::text::date >= '2021-04-01'::text::date and
-    event_date::text::date <= '2021-04-30'::text::date
+    event_date::text::date >= '2021-05-01'::text::date and
+    event_date::text::date <= '2021-05-31'::text::date
   --   and personal_category = 'family'
   group by personal_category
   order by sum(event_amount_in_usd_with_vat_if_exists);    
@@ -911,7 +953,16 @@ export const financialStatus = async (query: any): Promise<string> => {
             event_amount=${transaction.event_amount}
             event_number=${transaction.event_number}
             transaction_id=${transaction.id}>
-          <td>${moment(transaction.event_date).format('DD/MM/YY')}</td>
+          <td>
+            ${moment(transaction.event_date).format('DD/MM/YY')}
+            ${
+              transaction.debit_date
+                ? `<div style="font-size: 12px; color: gray;">` +
+                  moment(transaction.debit_date).format('DD/MM/YY') +
+                  `</div>`
+                : ''
+            }
+          </td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
         transaction.currency_code
       )}</td>
