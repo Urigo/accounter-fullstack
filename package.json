@@ -16,7 +16,7 @@
     "date-fns": "2.22.1",
     "dotenv": "10.0.0",
     "lodash": "^4.17.21",
-    "modern-poalim-scraper": "0.0.2",
+    "modern-poalim-scraper": "0.0.3",
     "moment": "2.29.1",
     "node-fetch": "2.6.1",
     "pg": "8.6.0",
