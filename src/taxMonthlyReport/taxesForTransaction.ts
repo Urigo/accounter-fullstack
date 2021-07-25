@@ -52,13 +52,15 @@ async function getHashBusinessIndexes(transaction: any, owner: any) {
 
   let hashBusinessIndexResult: any;
   try {
-    hashBusinessIndexResult = await pool.query(`
+    const businessHashInfoQuery = `
     select hash_index, auto_tax_category
     from accounter_schema.hash_business_indexes
     where
       business = $$${businessIDResult.rows[0].id}$$ and
       hash_owner = $$${owner}$$;
-  `);
+  `;
+    console.log('businessHashInfoQuery', businessHashInfoQuery);
+    hashBusinessIndexResult = await pool.query(businessHashInfoQuery);
   } catch (error) {
     console.log('Finding business Hash id error - ', error);
   }
@@ -66,7 +68,7 @@ async function getHashBusinessIndexes(transaction: any, owner: any) {
   return hashBusinessIndexResult?.rows[0];
 }
 
-async function getVATIndexes(owner: any) {
+export async function getVATIndexes(owner: any) {
   let hashVATInputsIndexResult: any = await pool.query(`
     select hash_index
     from accounter_schema.hash_gov_indexes
@@ -291,6 +293,61 @@ export let insertMovementQuery = `insert into accounter_schema.ledger (
   business) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) returning *;
 `;
 
+export function getILSForDate(transaction: any, date: any) {
+  let amounts: any = {};
+  if (['USD', 'EUR'].includes(transaction.currency_code)) {
+    let currencyKey = transaction.currency_code.toLowerCase();
+    amounts.eventAmountILS =
+      transaction.event_amount * date?.rows[0][currencyKey];
+    amounts.vatAfterDiductionILS =
+      transaction.vatAfterDiduction * date?.rows[0][currencyKey];
+    amounts.amountBeforeVATILS =
+      transaction.amountBeforeVAT * date?.rows[0][currencyKey];
+  } else if (transaction.currency_code == 'ILS') {
+    amounts.eventAmountILS = transaction.event_amount;
+    amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;
+    amounts.amountBeforeVATILS = transaction.amountBeforeVAT;
+  } else {
+    // TODO: Log important checks
+    console.log('New account currency - ', transaction.currency_code);
+  }
+  return amounts;
+}
+
+async function getExchangeRates(currencyCode: any, date: Date) {
+  if (currencyCode != 'ILS') {
+    const exchangeQuery = `
+      select usd, eur
+      from accounter_schema.exchange_rates
+      where exchange_date <= to_date('${moment(date).format(
+        'YYYY-MM-DD'
+      )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
+    `;
+
+    try {
+      // Make sure we get a value in a day without values (small and limit 1)
+      return await pool.query(exchangeQuery);
+    } catch (error) {
+      console.log('error in DB - ', error);
+    }
+  }
+}
+
+export async function getTransactionExchangeRates(transaction: any) {
+  let debitExchangeRates = await getExchangeRates(
+    transaction.currency_code,
+    transaction.debit_date
+  );
+  let invoiceExchangeRates = await getExchangeRates(
+    transaction.currency_code,
+    transaction.tax_invoice_date
+  );
+  return {
+    debitExchangeRates,
+    invoiceExchangeRates,
+  };
+}
+
 export async function createTaxEntriesForTransaction(transactionId: string) {
   let transaction: any = await pool.query(`
     SELECT *
@@ -346,62 +403,18 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   let entryForFinancialAccount: any = {};
   let entryForAccounting: any = {};
-
-  if (transaction.is_conversion == true) {
-    console.log('conversation!');
-    return;
-  }
   // credit זכות
   // debit חובה
 
   addTrueVATtoTransaction(transaction); // parseFloat
 
-  let debitExchangeRates;
-  let invoiceExchangeRates;
-  async function getExchangeRates(date: Date) {
-    if (transaction.currency_code != 'ILS') {
-      const exchangeQuery = `
-        select usd, eur
-        from accounter_schema.exchange_rates
-        where exchange_date <= to_date('${moment(date).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
-      `;
-
-      try {
-        // Make sure we get a value in a day without values (small and limit 1)
-        return await pool.query(exchangeQuery);
-      } catch (error) {
-        console.log('error in DB - ', error);
-      }
-    }
-  }
-
-  debitExchangeRates = await getExchangeRates(transaction.debit_date);
-  invoiceExchangeRates = await getExchangeRates(transaction.tax_invoice_date);
+  let transactionsExchnageRates = await getTransactionExchangeRates(
+    transaction
+  );
+  let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
+  let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
 
   //////  invoice date
-
-  function getILSForDate(transaction: any, date: any) {
-    let amounts: any = {};
-    if (['USD', 'EUR'].includes(transaction.currency_code)) {
-      let currencyKey = transaction.currency_code.toLowerCase();
-      amounts.eventAmountILS =
-        transaction.event_amount * date?.rows[0][currencyKey];
-      amounts.vatAfterDiductionILS =
-        transaction.vatAfterDiduction * date?.rows[0][currencyKey];
-      amounts.amountBeforeVATILS =
-        transaction.amountBeforeVAT * date?.rows[0][currencyKey];
-    } else if (transaction.currency_code == 'ILS') {
-      amounts.eventAmountILS = transaction.event_amount;
-      amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;
-      amounts.amountBeforeVATILS = transaction.amountBeforeVAT;
-    } else {
-      // TODO: Log important checks
-      console.log('New account currency - ', transaction.currency_code);
-    }
-    return amounts;
-  }
 
   entryForAccounting.movementType = null;
 
@@ -661,6 +674,56 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     uuidv4(),
     owner,
   ];
+
+  if (transaction.is_conversion) {
+    let conversionOtherSide: any = await pool.query(`
+      select event_amount
+      from accounter_schema.all_transactions
+      where
+        bank_reference = $$${transaction.bank_reference}$$ and 
+        id <> $$${transaction.id}$$;
+    `);
+    console.log('conversation!  ', conversionOtherSide.rows);
+
+    if (transaction.event_amount > 0 && transaction.currency_code != 'ILS') {
+      entryForFinancialAccountValues[2] = hashNumber(
+        conversionOtherSide.rows[0].event_amount
+      );
+      entryForFinancialAccountValues[5] = null;
+      entryForFinancialAccountValues[6] = null;
+      entryForFinancialAccountValues[7] = null;
+    } else if (
+      transaction.event_amount < 0 &&
+      transaction.currency_code == 'ILS'
+    ) {
+      entryForFinancialAccountValues[1] = null;
+      entryForFinancialAccountValues[2] = null;
+      entryForFinancialAccountValues[3] = null;
+      entryForFinancialAccountValues[7] = hashNumber(
+        conversionOtherSide.rows[0].event_amount
+      );
+    } else if (
+      transaction.event_amount > 0 &&
+      transaction.currency_code == 'ILS'
+    ) {
+      entryForFinancialAccountValues[3] = hashNumber(
+        conversionOtherSide.rows[0].event_amount
+      );
+      entryForFinancialAccountValues[5] = null;
+      entryForFinancialAccountValues[6] = null;
+      entryForFinancialAccountValues[7] = null;
+    } else if (
+      transaction.event_amount < 0 &&
+      transaction.currency_code != 'ILS'
+    ) {
+      entryForFinancialAccountValues[1] = null;
+      entryForFinancialAccountValues[2] = null;
+      entryForFinancialAccountValues[3] = null;
+      entryForFinancialAccountValues[6] = hashNumber(
+        conversionOtherSide.rows[0].event_amount
+      );
+    }
+  }
 
   let queryConfig = {
     text: insertMovementQuery,

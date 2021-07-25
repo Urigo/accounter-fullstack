@@ -2,7 +2,15 @@ import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
 
-const entitiesWithoutInvoice = ['Poalim', 'Isracard'];
+const entitiesWithoutInvoice = [
+  'Poalim',
+  'Isracard',
+  'Tax Deductions',
+  'Tax',
+  'VAT',
+];
+
+// TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
 
 const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];
 
@@ -127,13 +135,13 @@ function suggestedTransaction(transaction: any) {
     );
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('GITHUB')) {
-    suggestedTransaction.financialEntity = 'Github';
+    suggestedTransaction.financialEntity = 'GitHub';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     if (transaction.event_amount == -450) {
       suggestedTransaction.userDescription = 'Monthly Payment for Yaacov';
     } else if (transaction.event_amount == -4) {
-      suggestedTransaction.userDescription = 'Github CI charges';
+      suggestedTransaction.userDescription = 'GitHub CI charges';
     }
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
@@ -142,6 +150,7 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ארומה')) {
     suggestedTransaction.financialEntity = 'Aroma';
+    suggestedTransaction.financialEntity = 'Coffee';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('סופר פארם')) {
@@ -213,7 +222,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'transportation';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ZAPIER')) {
-    suggestedTransaction.financialEntity = 'Zapier';
+    suggestedTransaction.financialEntity = 'Zapier Inc.';
     suggestedTransaction.userDescription = 'Zapier monthly charge';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
@@ -242,6 +251,31 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Monthly Crisp';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('VERCEL')) {
+    suggestedTransaction.financialEntity = 'Vercel Inc.';
+    suggestedTransaction.userDescription = 'Vercel Hosting';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('הוק האוס אוף קופי')
+  ) {
+    suggestedTransaction.financialEntity = 'HOC - House Of Coffee';
+    suggestedTransaction.userDescription = 'Coffee';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מנטנטו')) {
+    suggestedTransaction.financialEntity = 'Men Tenten Ramen Bar';
+    suggestedTransaction.userDescription = 'Food';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('משק ברזילי בע"מ')
+  ) {
+    suggestedTransaction.financialEntity = 'Meshek Barzilay';
+    suggestedTransaction.userDescription = 'Food';
+    suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('טל יהלום')) {
     suggestedTransaction.financialEntity = 'Tal Yahalom';
@@ -312,7 +346,8 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (
-    transaction.detailed_bank_description.includes('המכס ומעמ-גביי תשלום')
+    transaction.detailed_bank_description.includes('המכס ומעמ-גביי תשלום') ||
+    transaction.detailed_bank_description.includes('CUSTOM + V.A.T')
   ) {
     suggestedTransaction.financialEntity = 'VAT';
     suggestedTransaction.userDescription = 'VAT for March-April 2021';
@@ -452,8 +487,20 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ספסל בן גוריון')) {
     suggestedTransaction.financialEntity = 'ספסל בן גוריון';
-    suggestedTransaction.userDescription = 'Coffeee';
+    suggestedTransaction.userDescription = 'Coffee';
     suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('CALENDLY')) {
+    suggestedTransaction.financialEntity = 'Calendly LLC';
+    suggestedTransaction.userDescription = 'Calendar service';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.event_amount == -600) {
+    suggestedTransaction.financialEntity = 'Zaum';
+    suggestedTransaction.userDescription = 'Matic Zavadlal - April 2021';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else {
     suggestedTransaction.financialEntity =
@@ -557,9 +604,6 @@ export const financialStatus = async (query: any): Promise<string> => {
   // const currentVATStatusQuery = readFileSync(
   //   'src/sql/currentVATStatus.sql'
   // ).toString();
-  const allTransactionsQuery = readFileSync(
-    'src/sql/allTransactions.sql'
-  ).toString();
 
   console.time('callingDB');
 
@@ -589,7 +633,12 @@ export const financialStatus = async (query: any): Promise<string> => {
       `,
       [`$$${monthTaxReport}$$`]
     ),
-    pool.query(allTransactionsQuery),
+    pool.query(`
+      select *
+      from accounter_schema.all_transactions
+      order by event_date desc
+      limit 1550;
+    `),
     pool.query(
       `
         select *
@@ -764,12 +813,12 @@ export const financialStatus = async (query: any): Promise<string> => {
       missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+            transaction.currency_code
+          )}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -805,8 +854,8 @@ export const financialStatus = async (query: any): Promise<string> => {
             .replace(/T/, ' ')
             .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-          transaction.currency_code
-        )}</td>
+              transaction.currency_code
+            )}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -838,12 +887,12 @@ export const financialStatus = async (query: any): Promise<string> => {
         missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
             <td>${transaction.event_date
-              .toISOString()
-              .replace(/T/, ' ')
-              .replace(/\..+/, '')}</td>
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}</td>
             <td>${transaction.event_amount}${currencyCodeToSymbol(
-          transaction.currency_code
-        )}</td>
+              transaction.currency_code
+            )}</td>
             <td>${transaction.financial_entity}</td>
             <td>${transaction.user_description}</td>
             <td>${transaction.tax_invoice_number}</td>
@@ -875,9 +924,9 @@ export const financialStatus = async (query: any): Promise<string> => {
         <tr>
           <td>${transaction.tax_invoice_number}</td>
           <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.event_amount}</td>
@@ -910,9 +959,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td>${transaction.overall_vat_status}</td>
           <td>${transaction.vat}</td>
           <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
@@ -947,175 +996,133 @@ export const financialStatus = async (query: any): Promise<string> => {
             account_type=${transaction.account_type}
             currency_code=${transaction.currency_code}
             event_date=${transaction.event_date
-              .toISOString()
-              .replace(/T/, ' ')
-              .replace(/\..+/, '')}
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}
             event_amount=${transaction.event_amount}
             event_number=${transaction.event_number}
             transaction_id=${transaction.id}>
           <td>
             ${moment(transaction.event_date).format('DD/MM/YY')}
-            ${
-              transaction.debit_date
-                ? `<div style="font-size: 12px; color: gray;">` +
-                  moment(transaction.debit_date).format('DD/MM/YY') +
-                  `</div>`
-                : ''
-            }
+            ${transaction.debit_date
+          ? `<div style="font-size: 12px; color: gray;">` +
+          moment(transaction.debit_date).format('DD/MM/YY') +
+          `</div>`
+          : ''
+        }
           </td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
-          <td class="financial_entity" ${
-            transaction.financial_entity
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.financial_entity
+          transaction.currency_code
+        )}</td>
+          <td class="financial_entity" ${transaction.financial_entity
+          ? ''
+          : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.financial_entity
           ? transaction.financial_entity
-          : `${
-              suggestedTransaction(transaction)?.financialEntity
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialEntity
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.financialEntity
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialEntity
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
-          <td class="user_description" ${
-            transaction.user_description
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.user_description
+          <td class="user_description" ${transaction.user_description
+          ? ''
+          : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.user_description
           ? transaction.user_description
-          : `${
-              suggestedTransaction(transaction)?.userDescription
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.userDescription
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.userDescription
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.userDescription
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
-          <td class="personal_category" ${
-            transaction.personal_category
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.personal_category
+          <td class="personal_category" ${transaction.personal_category
+          ? ''
+          : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.personal_category
           ? transaction.personal_category
-          : `${
-              suggestedTransaction(transaction)?.personalCategory
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.personalCategory
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.personalCategory
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.personalCategory
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'>&#x270f;</button>
           </td>
-          <td class="vat"  ${
-            (!transaction.vat &&
-              isBusiness(transaction) &&
-              transaction.currency_code == 'ILS' &&
-              !businessesWithoutVAT.includes(transaction.financial_entity) &&
-              !businessesWithoutTaxCategory.includes(
-                transaction.financial_entity
-              )) ||
-            (transaction.vat > 0 && transaction.event_amount < 0) ||
-            (transaction.vat < 0 && transaction.event_amount > 0)
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${
-        transaction.vat
+          <td class="vat"  ${(!transaction.vat &&
+          isBusiness(transaction) &&
+          transaction.currency_code == 'ILS' &&
+          !businessesWithoutVAT.includes(transaction.financial_entity) &&
+          !businessesWithoutTaxCategory.includes(
+            transaction.financial_entity
+          )) ||
+          (transaction.vat > 0 && transaction.event_amount < 0) ||
+          (transaction.vat < 0 && transaction.event_amount > 0)
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>${transaction.vat
           ? transaction.vat
-          : `${
-              suggestedTransaction(transaction)?.vat
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.vat
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.vat
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.vat
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="financial_accounts_to_balance" ${
-            shareWithDotan(transaction)
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${
-        transaction.financial_accounts_to_balance
+          <td class="financial_accounts_to_balance" ${shareWithDotan(transaction)
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>${transaction.financial_accounts_to_balance
           ? transaction.financial_accounts_to_balance
-          : `${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.financialAccountsToBalance
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialAccountsToBalance
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'>&#x270f;</button>
           </td>
-          <td class="tax_category" ${
-            isBusiness(transaction) &&
-            !businessesWithoutTaxCategory.includes(
-              transaction.financial_entity
-            ) &&
-            !transaction.tax_category
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${
-        transaction.tax_category
-          ? transaction.tax_category
-          : `${
-              suggestedTransaction(transaction)?.taxCategory
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.taxCategory
-            }");'>V</button>`
-      }
+          <td class="tax_category">${transaction.tax_category}
             <button type="button" onClick='printElement(this, prompt("New Tax category:"));'>&#x270f;</button>
           </td>
           <td>${transaction.detailed_bank_description}</td>
-          <td class="proforma_invoice_file" ${
-            isBusiness(transaction) && !transaction.proforma_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="proforma_invoice_file" ${isBusiness(transaction) && !transaction.proforma_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.proforma_invoice_file ? 'yes' : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_date" ${
-            isBusiness(transaction) && !transaction.tax_invoice_date
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${
-        transaction.tax_invoice_date
+          <td class="tax_invoice_date" ${isBusiness(transaction) && !transaction.tax_invoice_date
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>${transaction.tax_invoice_date
           ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
           : ''
-      }
+        }
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_number" ${
-            isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(
-              transaction.financial_entity
-            ) &&
-            !transaction.tax_invoice_number
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="tax_invoice_number" ${isBusiness(transaction) &&
+          !entitiesWithoutInvoiceNumuber.includes(
+            transaction.financial_entity
+          ) &&
+          !transaction.tax_invoice_number
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.tax_invoice_number}
             <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_file" ${
-            isBusiness(transaction) && !transaction.tax_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
-            ${
-              transaction.tax_invoice_file
-                ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>`
-                : ''
-            }
+          <td class="tax_invoice_file" ${isBusiness(transaction) && !transaction.tax_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
+            ${transaction.tax_invoice_file
+          ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>`
+          : ''
+        }
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
-          <td class="receipt_invoice_file">
-            ${transaction.receipt_invoice_file ? 'yes' : ''}
-            <button type="button" onClick='printElement(this, prompt("New receipt file:"));'>&#x270f;</button>
+          <td class="links">
+            ${transaction.links ? 'yes' : ''}
+            <button type="button" onClick='printElement(this, prompt("New links:"));'>&#x270f;</button>
+            <button type="button" onClick='updateClipboard("${transaction.links}");'>&#9986;</button>
           </td>          
         </tr>
         <!--
@@ -1252,9 +1259,10 @@ export const financialStatus = async (query: any): Promise<string> => {
   
       <script type="module" src="/browser.js"></script>
       <script type="module">
-        import { printElement } from '/browser.js';
+        import { printElement, updateClipboard } from '/browser.js';
   
         window.printElement = printElement;
+        window.updateClipboard = updateClipboard;
       </script>
     `;
 };
