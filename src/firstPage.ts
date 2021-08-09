@@ -48,6 +48,11 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Wolt';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('חומוס פול התימני')) {
+    suggestedTransaction.financialEntity = 'חומוס פול התימני';
+    suggestedTransaction.userDescription = 'Food';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('אי אם פי אם') ||
     transaction.detailed_bank_description.includes('איי.אם.פי.אם')
@@ -150,9 +155,14 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ארומה')) {
     suggestedTransaction.financialEntity = 'Aroma';
-    suggestedTransaction.financialEntity = 'Coffee';
+    suggestedTransaction.userDescription = 'Coffee';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('פפואה')) {
+    suggestedTransaction.financialEntity = 'פפואה';
+    suggestedTransaction.userDescription = 'Coffee';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('סופר פארם')) {
     suggestedTransaction.financialEntity = 'Super-Pharm';
     return suggestedTransaction;
@@ -440,6 +450,16 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Bar';
     suggestedTransaction.personalCategory = 'fun';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('אלברט 1943')) {
+    suggestedTransaction.financialEntity = 'אלברט 1943';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('תורגמן יצחק ואברהם')) {
+    suggestedTransaction.financialEntity = 'תורגמן יצחק ואברהם';
+    suggestedTransaction.userDescription = 'טמבוריה';
+    suggestedTransaction.personalCategory = 'house';
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('NAME COM')) {
     suggestedTransaction.financialEntity = 'NAME COM';
     suggestedTransaction.userDescription = 'Domain';
@@ -464,9 +484,16 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('GSUITE')) {
+  } else if (transaction.detailed_bank_description.includes('GSUITE') || 
+  transaction.detailed_bank_description.includes('GOOGLE CLOUD')) {
     suggestedTransaction.financialEntity = 'Google';
     suggestedTransaction.userDescription = 'G Suite for The Guild';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גיא אברהם')) {
+    suggestedTransaction.financialEntity = 'Guy Avraham';
+    suggestedTransaction.userDescription = 'Wix Hashavshevet project';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
@@ -504,7 +531,15 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else {
     suggestedTransaction.financialEntity =
-      transaction.detailed_bank_description;
+      transaction.detailed_bank_description.replaceAll(`"`, '');
+    suggestedTransaction.userDescription = 'Food';
+    suggestedTransaction.personalCategory = 'food';
+
+    if (transaction.is_conversion) {
+      suggestedTransaction.financialEntity = 'Poalim';
+      suggestedTransaction.userDescription = 'Conversion for ';
+      suggestedTransaction.personalCategory = 'conversion';
+    }
     return suggestedTransaction;
   }
 }
@@ -598,9 +633,20 @@ export const financialStatus = async (query: any): Promise<string> => {
   }
   console.log('monthTaxReport', monthTaxReport);
 
-  const lastInvoiceNumbersQuery = readFileSync(
-    'src/sql/lastInvoiceNumbers.sql'
-  ).toString();
+  const lastInvoiceNumbersQuery = `
+    SELECT tax_invoice_number,
+      user_description,
+      financial_entity,
+      event_amount,
+      event_date
+    FROM accounter_schema.all_transactions
+    WHERE
+      (account_number in ('466803', '1074', '1082')) AND
+      event_amount > 0 AND
+      financial_entity != 'Poalim'
+    ORDER BY event_date DESC
+    limit 10;
+  `;
   // const currentVATStatusQuery = readFileSync(
   //   'src/sql/currentVATStatus.sql'
   // ).toString();
