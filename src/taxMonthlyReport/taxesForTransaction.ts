@@ -35,7 +35,7 @@ async function getHashFinancialAccounts(transaction: any) {
   return hashFinancialAccountsResult.rows[0];
 }
 
-async function getHashBusinessIndexes(transaction: any, owner: any) {
+export async function getHashBusinessIndexes(transaction: any, owner: any) {
   let businessIDResult: any;
   try {
     businessIDResult = await pool.query(`
@@ -265,6 +265,11 @@ export function hashNumber(number: any): string | null {
   return formattedNumber == '0.00' ? null : formattedNumber;
 }
 
+export function hashNumberRounded(number: any): string | null {
+  let formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(0);
+  return formattedNumber == '0.00' ? null : formattedNumber;
+}
+
 export let insertMovementQuery = `insert into accounter_schema.ledger (
   תאריך_חשבונית,
   חשבון_חובה_1,
@@ -320,8 +325,8 @@ async function getExchangeRates(currencyCode: any, date: Date) {
       select usd, eur
       from accounter_schema.exchange_rates
       where exchange_date <= to_date('${moment(date).format(
-        'YYYY-MM-DD'
-      )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
+      'YYYY-MM-DD'
+    )}', 'YYYY-MM-DD') order by exchange_date desc limit 1;
     `;
 
     try {
@@ -429,7 +434,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount.debitAmount =
     entryForAccounting.creditAmount =
     entryForAccounting.debitAmount =
-      transaction.event_amount;
+    transaction.event_amount;
   entryForFinancialAccount.creditAmountILS =
     entryForFinancialAccount.debitAmountILS = getILSForDate(
       transaction,
@@ -505,7 +510,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : (entryForAccounting.movementType =
-            hashVATIndexes.vatExpensesMovementTypeIndex);
+          hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
@@ -569,25 +574,25 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ? hashNumber(entryForAccounting.creditAmount)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-    entryForAccounting.secondAccountDebitAmount != 0
+      entryForAccounting.secondAccountDebitAmount != 0
       ? hashVATIndexes.vatInputsIndex
       : null,
     entryForAccounting.secondAccountDebitAmount
       ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
       : null,
     entryForAccounting.secondAccountDebitAmount &&
-    transaction.currency_code != 'ILS'
+      transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountDebitAmount)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-    entryForAccounting.secondAccountCreditAmount != 0
+      entryForAccounting.secondAccountCreditAmount != 0
       ? hashVATIndexes.vatOutputsIndex
       : null,
     entryForAccounting.secondAccountCreditAmountILS
       ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
       : null,
     entryForAccounting.secondAccountCreditAmount &&
-    transaction.currency_code != 'ILS'
+      transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountCreditAmount)
       : null,
     entryForAccounting.description,
@@ -603,11 +608,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         ? transaction.debit_date
           ? transaction.debit_date
           : !taxCategoriesWithoutInvoiceDate.includes(transaction.tax_category)
-          ? transaction.tax_invoice_date
-          : transaction.event_date
+            ? transaction.tax_invoice_date
+            : transaction.event_date
         : transaction.tax_invoice_date
-        ? transaction.tax_invoice_date
-        : transaction.debit_date
+          ? transaction.tax_invoice_date
+          : transaction.debit_date
     ),
     hashDateFormat(transaction.event_date),
     transaction.id,
@@ -655,13 +660,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount.description,
     entryForFinancialAccount.reference1
       ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+        .join('')
+        .substr(-9)
       : null, // add check on the db for it
     entryForFinancialAccount.reference2
       ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+        .join('')
+        .substr(-9)
       : null,
     null,
     hashDateFormat(
@@ -751,7 +756,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   if (
     getILSForDate(transaction, invoiceExchangeRates).eventAmountILS !=
-      getILSForDate(transaction, debitExchangeRates).eventAmountILS &&
+    getILSForDate(transaction, debitExchangeRates).eventAmountILS &&
     transaction.account_type != 'creditcard' &&
     transaction.financial_entity != 'Isracard' &&
     transaction.tax_invoice_date
@@ -762,7 +767,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       hashVATIndexes.hashCurrencyRatesDifferencesIndex,
       hashNumber(
         getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
-          getILSForDate(transaction, debitExchangeRates).eventAmountILS
+        getILSForDate(transaction, debitExchangeRates).eventAmountILS
       ),
       null,
       hashCurrencyType('ILS'),
@@ -777,7 +782,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ),
       hashNumber(
         getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
-          getILSForDate(transaction, debitExchangeRates).eventAmountILS
+        getILSForDate(transaction, debitExchangeRates).eventAmountILS
       ),
       hashCurrencyType('ILS'),
       null, // Check for interest transactions (הכנרבמ)
@@ -789,13 +794,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       entryForFinancialAccount.description,
       entryForFinancialAccount.reference1
         ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+          .join('')
+          .substr(-9)
         : null, // add check on the db for it
       entryForFinancialAccount.reference2
         ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+          .join('')
+          .substr(-9)
         : null,
       null,
       hashDateFormat(
@@ -843,7 +848,7 @@ export function addTrueVATtoTransaction(transaction: any) {
     Employer - 4.5 percent from salary
   Pension fund from Salary
     Emploee - 6 percent from salary
-    Employer - 
+    Employer -
       6.5 percent Gemel from salary
       Compensation fund from Salary
         8.333 percent from Employer

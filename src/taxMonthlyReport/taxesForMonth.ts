@@ -9,6 +9,8 @@ import {
   getVATIndexes,
   getILSForDate,
   getTransactionExchangeRates,
+  getHashBusinessIndexes,
+  hashNumberRounded,
 } from './taxesForTransaction';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -171,18 +173,20 @@ export async function createTaxEntriesForMonth(
 
     console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
+      let hashBusinessIndexes = await getHashBusinessIndexes({ financial_entity: 'VAT' }, owner);
+
       let entryForMonthlyVAT = [
         hashDateFormat(moment(month).endOf('month').toDate()),
         transactionType == TransactionType.Expenses
-          ? hashAccounts('VAT', null, null, null, null, null, null)
+          ? hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null)
           : hashVATIndexes.vatOutputsIndex,
-        hashNumber(expensesVATSum),
+        hashNumberRounded(expensesVATSum),
         null,
         null,
         transactionType == TransactionType.Expenses
           ? hashVATIndexes.vatInputsIndex
-          : hashAccounts('VAT', null, null, null, null, null, null),
-        hashNumber(expensesVATSum),
+          : hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null),
+        hashNumberRounded(expensesVATSum),
         null,
         null,
         null,
@@ -213,8 +217,8 @@ export async function createTaxEntriesForMonth(
       };
 
       try {
-        // let updateResult = await pool.query(queryConfig);
-        // console.log(JSON.stringify(updateResult.rows[0]));
+        let updateResult = await pool.query(queryConfig);
+        console.log(JSON.stringify(updateResult.rows[0]));
       } catch (error) {
         // TODO: Log important checks
         console.log(`error in insert monthly VAT ${transactionType} - `, error);
@@ -226,6 +230,6 @@ export async function createTaxEntriesForMonth(
 let currrentCompany = 'Software Products Guilda Ltd.';
 currrentCompany = 'Uri Goldshtein LTD';
 await createTaxEntriesForMonth(
-  moment('2021-06-01', 'YYYY-MM-DD').toDate(),
+  moment('2021-05-01', 'YYYY-MM-DD').toDate(),
   currrentCompany
 );
