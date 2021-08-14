@@ -9,43 +9,48 @@ const { camelCase, upperFirst } = lodash;
 
 import { saveTransactionsToDB } from './data/saveTransactionsToDB';
 import { getCurrencyRates } from './data/currency';
-import {
-  isBefore,
-  subYears,
-  addMonths,
-  startOfMonth,
-} from 'date-fns'; // TODO: Use Temporal with polyfill instead
+import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
 
 function getTransactionsFromCards(CardsTransactionsListBean: any) {
   let allData: any = [];
-  CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: any) => {
-    const txnGroups =
-      CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
-    if (txnGroups) {
-      txnGroups.forEach((txnGroup: any) => {
-        if (txnGroup.txnIsrael) {
-          let israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
-            ...transaction,
-            card: cardInformation.slice(cardInformation.length - 4),
-          }));
-          allData.push(...israelTransactions);
-        }
-        if (txnGroup.txnAbroad) {
-          let abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
-            ...transaction,
-            card: cardInformation.slice(cardInformation.length - 4),
-          }));
-          allData.push(...abroadTransactions);
-        }
-      });
+  CardsTransactionsListBean.cardNumberList.forEach(
+    (cardInformation: any, index: any) => {
+      const txnGroups =
+        CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
+      if (txnGroups) {
+        txnGroups.forEach((txnGroup: any) => {
+          if (txnGroup.txnIsrael) {
+            let israelTransactions = txnGroup.txnIsrael.map(
+              (transaction: any) => ({
+                ...transaction,
+                card: cardInformation.slice(cardInformation.length - 4),
+              })
+            );
+            allData.push(...israelTransactions);
+          }
+          if (txnGroup.txnAbroad) {
+            let abroadTransactions = txnGroup.txnAbroad.map(
+              (transaction: any) => ({
+                ...transaction,
+                card: cardInformation.slice(cardInformation.length - 4),
+              })
+            );
+            allData.push(...abroadTransactions);
+          }
+        });
+      }
     }
-  });
+  );
 
   return allData;
 }
 
 // TODO: Remove all any
-async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+async function getILSfromBankAndSave(
+  newScraperIstance: any,
+  account: any,
+  pool: pg.Pool
+) {
   let ILSTransactions = await newScraperIstance.getILSTransactions(account);
   console.log(
     `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
@@ -191,7 +196,8 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         getDepositsAndSave(newPoalimInstance, account, pool),
       ]);
       console.log(
-        `got and saved ILS and Foreign for ${account.accountNumber
+        `got and saved ILS and Foreign for ${
+          account.accountNumber
         } - ${JSON.stringify(results)}`
       );
     })
@@ -201,7 +207,11 @@ async function getBankData(pool: pg.Pool, scraper: any) {
   // console.log('closed');
 }
 
-async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+async function getDepositsAndSave(
+  newScraperIstance: any,
+  account: any,
+  pool: pg.Pool
+) {
   console.log('getting deposits');
   let deposits = await newScraperIstance.getDeposits(account);
   console.log(
@@ -300,7 +310,11 @@ async function getCreditCardTransactionsAndSave(
   }
 }
 
-async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) {
+async function getCreditCardData(
+  pool: pg.Pool,
+  scraper: any,
+  credentials: any
+) {
   console.log('start getCreditCardData');
   console.log('Creditcard Login');
   let newIsracardInstance = await scraper.isracard(
