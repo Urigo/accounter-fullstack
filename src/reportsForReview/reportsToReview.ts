@@ -4,12 +4,14 @@ import moment from 'moment';
 // import fetch from 'node-fetch';
 // import XML from 'pixl-xml';
 
+import { createTaxEntriesForMonth } from '../taxMonthlyReport/taxesForMonth';
+
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
   if (query.month) {
     reportMonthToReview = `2020-0${query.month}-01`;
   } else {
-    reportMonthToReview = `2021-06-01`;
+    reportMonthToReview = `2021-07-01`;
   }
 
   const lastInvoiceNumbersQuery = readFileSync(
@@ -19,13 +21,13 @@ export const reportToReview = async (query: any): Promise<string> => {
   console.log('reportMonthToReview', reportMonthToReview);
   console.time('callingReportsDB');
   let currrentCompany = 'Software Products Guilda Ltd.';
-  currrentCompany = 'Uri Goldshtein LTD';
+  // currrentCompany = 'Uri Goldshtein LTD';
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
     pool.query(
       `
       select *
-      from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', '2021-06-01')
+      from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', '2021-07-01')
       order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
       `
     ),
@@ -42,9 +44,9 @@ export const reportToReview = async (query: any): Promise<string> => {
       <tr>
         <td>${transaction.tax_invoice_number}</td>
         <td>${transaction.event_date
-        .toISOString()
-        .replace(/T/, ' ')
-        .replace(/\..+/, '')}</td>
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}</td>
         <td>${transaction.financial_entity}</td>
         <td>${transaction.user_description}</td>
         <td>${transaction.event_amount}</td>
@@ -150,36 +152,43 @@ export const reportToReview = async (query: any): Promise<string> => {
     // })();
 
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
-      <tr ${movementOrBank ? 'class="bank-transaction"' : ''
+      <tr ${
+        movementOrBank ? 'class="bank-transaction"' : ''
       } onClick='setSelected(this);'>
         <td>${counter++}</td>
         <td>
-          <input onchange="changeConfirmation('${transaction.id}', this${movementOrBank ? ", '" + transaction.חשבון_חובה_1 + "'" : ''
-      });" type="checkbox" 
+          <input onchange="changeConfirmation('${transaction.id}', this${
+      movementOrBank ? ", '" + transaction.חשבון_חובה_1 + "'" : ''
+    });" type="checkbox" 
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">
           ${transaction.תאריך_חשבונית}
-          <img download class="invoiceImage" src="${transaction.proforma_invoice_file
-      }">
+          <img download class="invoiceImage" src="${
+            transaction.proforma_invoice_file
+          }">
         </td>
         <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
         <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
-        <td>${transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
-      }</td>
+        <td>${
+          transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
+        }</td>
         <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
         <td>${transaction.חשבון_זכות_1 ? transaction.חשבון_זכות_1 : ''}</td>
         <td>${transaction.סכום_זכות_1 ? transaction.סכום_זכות_1 : ''}</td>
-        <td>${transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
-      }</td>
+        <td>${
+          transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
+        }</td>
         <td>${transaction.חשבון_חובה_2 ? transaction.חשבון_חובה_2 : ''}</td>
         <td>${transaction.סכום_חובה_2 ? transaction.סכום_חובה_2 : ''}</td>
-        <td>${transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
-      }</td>
+        <td>${
+          transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
+        }</td>
         <td>${transaction.חשבון_זכות_2 ? transaction.חשבון_זכות_2 : ''}</td>
         <td>${transaction.סכום_זכות_2 ? transaction.סכום_זכות_2 : ''}</td>
-        <td>${transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
-      }</td>
+        <td>${
+          transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
+        }</td>
         <td>${transaction.פרטים ? transaction.פרטים : ''}</td>
         <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
         <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
@@ -190,21 +199,24 @@ export const reportToReview = async (query: any): Promise<string> => {
           </div>
         </td>
         <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
-        <td ${missingHashavshevetSync
-        ? 'style="background-color: rgb(255,0,0);"'
-        : ''
-      }>
+        <td ${
+          missingHashavshevetSync
+            ? 'style="background-color: rgb(255,0,0);"'
+            : ''
+        }>
           ${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button type="button"
-          ${movementOrBank
-        ? generateTaxFunctionCall
-        : sendToHashavshevetFunctionCall
-      }>e
+          ${
+            movementOrBank
+              ? generateTaxFunctionCall
+              : sendToHashavshevetFunctionCall
+          }>e
         </button>
-        ${movementOrBank
-        ? ''
-        : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`
-      }
+        ${
+          movementOrBank
+            ? ''
+            : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`
+        }
         </td>
       </tr>
       `);
@@ -263,6 +275,13 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   console.timeEnd('renderReports');
 
+  let taxReportHTML = await createTaxEntriesForMonth(
+    moment(reportMonthToReview, 'YYYY-MM-DD').toDate(),
+    currrentCompany,
+    pool,
+  );
+
+
   return `
       <script type="module" src="/browser.js"></script>
       <script type="module">
@@ -274,6 +293,14 @@ export const reportToReview = async (query: any): Promise<string> => {
         window.deleteTaxMovements = deleteTaxMovements;
       </script>
 
+      ${taxReportHTML.monthTaxHTMLTemplate}
+      <br>
+      ${taxReportHTML.overallMonthTaxHTMLTemplate}
+      <br>
+      ${taxReportHTML.monthVATReportHTMLTemplate}
+      <br>
+      ${taxReportHTML.overallVATHTMLTemplate}
+      <br>
       <h3>Last invoice numbers</h3>
   
       ${lastInvoiceNumbersHTMLTemplate}
