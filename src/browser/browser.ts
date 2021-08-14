@@ -96,11 +96,13 @@ export function deleteTaxMovements(transactionId: string) {
   });
 }
 
-
 export function updateClipboard(newClip: string) {
-  navigator.clipboard.writeText(newClip).then(function () {
-    console.log('clipboard successfully set');
-  }, function () {
-    console.log('clipboard failed');
-  });
+  navigator.clipboard.writeText(newClip).then(
+    function () {
+      console.log('clipboard successfully set');
+    },
+    function () {
+      console.log('clipboard failed');
+    }
+  );
 }
