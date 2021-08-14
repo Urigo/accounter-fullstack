@@ -107,8 +107,12 @@ export async function saveTransactionsToDB(
       } else {
         console.log('not found');
 
-        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
-        columnNames = columnNames.filter((columnName: string) => columnName != 'id');
+        let columnNames = columnNamesResult.rows.map(
+          (column: any) => column.column_name
+        );
+        columnNames = columnNames.filter(
+          (columnName: string) => columnName != 'id'
+        );
         let text = `INSERT INTO accounter_schema.${tableName}
         (
           ${columnNames.map((x: any) => x).join(', ')},
@@ -243,7 +247,11 @@ function normalizeBeneficiaryDetailsData(transaction: any) {
   }
 }
 
-function findMissingTransactionKeys(transaction: any, columnNames: any, knownOptionals: string[]) {
+function findMissingTransactionKeys(
+  transaction: any,
+  columnNames: any,
+  knownOptionals: string[]
+) {
   const allKeys = Object.keys(transaction);
   let fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
     camelCase(column.column_name)
@@ -300,14 +308,15 @@ function createWhereClause(
         actualCondition = `${dBcolumn.column_name} IS NULL`;
         if (isNotNull) {
           actualCondition = `
-            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName]
-            }$$ OR 
+            ${dBcolumn.column_name} = $$${
+            transaction[camelCaseColumnName]
+          }$$ OR 
             ${dBcolumn.column_name} = $$${transaction[
-              camelCaseColumnName
-            ].replace('הנחה', 'צבירת')}$$ OR 
+            camelCaseColumnName
+          ].replace('הנחה', 'צבירת')}$$ OR 
             ${dBcolumn.column_name} = $$${transaction[
-              camelCaseColumnName
-            ].replace('צבירת', 'הנחה')}$$
+            camelCaseColumnName
+          ].replace('צבירת', 'הנחה')}$$
           `;
         }
         whereClause = whereClause.concat(`  (${actualCondition}) AND  `);
