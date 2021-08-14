@@ -1160,7 +1160,11 @@ export const financialStatus = async (query: any): Promise<string> => {
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${transaction.proforma_invoice_file ? 'yes' : ''}
+            ${
+              transaction.proforma_invoice_file
+                ? `<a href="${transaction.proforma_invoice_file}" target="_blank">yes</a>`
+                : ''
+            }
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_date" ${
