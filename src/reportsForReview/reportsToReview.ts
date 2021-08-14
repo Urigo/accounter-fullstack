@@ -278,9 +278,8 @@ export const reportToReview = async (query: any): Promise<string> => {
   let taxReportHTML = await createTaxEntriesForMonth(
     moment(reportMonthToReview, 'YYYY-MM-DD').toDate(),
     currrentCompany,
-    pool,
+    pool
   );
-
 
   return `
       <script type="module" src="/browser.js"></script>
