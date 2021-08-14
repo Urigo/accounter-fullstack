@@ -102,6 +102,7 @@ function suggestedTransaction(transaction: any) {
   ) {
     suggestedTransaction.financialEntity = 'Poalim';
     suggestedTransaction.personalCategory = 'financial';
+    suggestedTransaction.userDescription = `Fees for bank_reference=${transaction.bank_reference}`;
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description == 'הוט נט שרותי אינטרנט' ||
