@@ -1,3 +1,18 @@
+SELECT
+   DISTINCT text_code, english_action_desc, activity_description
+FROM
+   accounter_schema.poalim_ils_account_transactions;
+
+update accounter_schema.all_transactions
+set is_conversion = true
+where detailed_bank_description like '%FOREX PURCHASE%' or
+      detailed_bank_description like '%FOREX SALE%';
+
+select event_date, current_balance, bank_description, personal_category, event_amount, financial_entity, user_description
+from accounter_schema.all_transactions
+where detailed_bank_description like '%FOREX PURCHASE%' or
+      detailed_bank_description like '%FOREX SALE%';
+
 create or replace function insert_creditcard_transaction_into_merged_table()
     RETURNS trigger AS
 $$
@@ -10,21 +25,11 @@ BEGIN
         AND (NEW.supplier_name <> 'סך חיוב בש"ח:' OR
              NEW.supplier_name IS NULL) then
 
-        INSERT INTO accounter_schema.all_transactions (tax_invoice_date,
-                                                       tax_category,
+        INSERT INTO accounter_schema.all_transactions (
                                                        currency_code,
                                                        event_date,
                                                        debit_date,
                                                        event_amount,
-                                                       financial_entity,
-                                                       vat,
-                                                       user_description,
-                                                       tax_invoice_number,
-                                                       tax_invoice_amount,
-                                                       receipt_invoice_number,
-                                                       business_trip,
-                                                       personal_category,
-                                                       financial_accounts_to_balance,
                                                        bank_reference,
                                                        event_number,
                                                        account_number,
@@ -33,42 +38,26 @@ BEGIN
                                                        currency_rate,
                                                        contra_currency_code,
                                                        bank_description,
-                                                       withholding_tax,
-                                                       interest,
-                                                       proforma_invoice_file,
                                                        original_id,
                                                        id,
-                                                       reviewed,
-                                                       hashavshevet_id,
                                                        current_balance,
-                                                       tax_invoice_file,
                                                        detailed_bank_description)
 
-        VALUES (NEW.tax_invoice_date,
-                NEW.tax_category,
+        VALUES (
                 (CASE
                      WHEN NEW.currency_id = 'ש"ח' THEN 'ILS'
                      WHEN NEW.currency_id = 'NIS' THEN 'ILS'
                      ELSE NEW.currency_id END
                     ),
                 CASE
-                    WHEN NEW.full_purchase_date IS NULL THEN NEW.full_purchase_date_outbound::text::date
-                    WHEN NEW.full_purchase_date_outbound IS NULL THEN NEW.full_purchase_date::text::date
+                    WHEN NEW.full_purchase_date IS NULL THEN to_date(NEW.full_purchase_date_outbound, 'DD/MM/YYYY')
+                    WHEN NEW.full_purchase_date_outbound IS NULL THEN to_date(NEW.full_purchase_date, 'DD/MM/YYYY')
                     END,
-                NEW.full_payment_date::text::date,
+                to_date(NEW.full_payment_date, 'DD/MM/YYYY'),
                 CASE
                     WHEN NEW.payment_sum IS NULL THEN (NEW.payment_sum_outbound * -1)
                     WHEN NEW.payment_sum_outbound IS NULL THEN (NEW.payment_sum * -1)
                     END,
-                NEW.financial_entity,
-                NEW.vat,
-                NEW.user_description,
-                NEW.tax_invoice_number,
-                NEW.tax_invoice_amount,
-                NEW.receipt_invoice_number,
-                NEW.business_trip,
-                NEW.personal_category,
-                NEW.even_with_dotan,
                 NEW.voucher_number,
                 NEW.voucher_number,
                 NEW.card,
@@ -81,15 +70,9 @@ BEGIN
                     WHEN NEW.full_supplier_name_heb IS NULL THEN (COALESCE(NEW.full_supplier_name_outbound, '') ||
                                                                   COALESCE('/' || NEW.city, ''))
                     END,
-                NEW.withholding_tax,
-                NEW.interest,
-                NEW.proforma_invoice_file,
                 NEW.id,
                 gen_random_uuid(),
-                NEW.reviewed,
-                NEW.hashavshevet_id,
                 0,
-                NEW.tax_invoice_file,
                 CASE
                     WHEN NEW.full_supplier_name_outbound IS NULL THEN NEW.full_supplier_name_heb
                     WHEN NEW.full_supplier_name_heb IS NULL THEN (COALESCE(NEW.full_supplier_name_outbound, '') ||
@@ -120,21 +103,11 @@ create or replace function insert_ils_transaction_into_merged_table()
 $$
 BEGIN
 
-    INSERT INTO accounter_schema.all_transactions (tax_invoice_date,
-                                                   tax_category,
+    INSERT INTO accounter_schema.all_transactions (
                                                    currency_code,
                                                    event_date,
                                                    debit_date,
                                                    event_amount,
-                                                   financial_entity,
-                                                   vat,
-                                                   user_description,
-                                                   tax_invoice_number,
-                                                   tax_invoice_amount,
-                                                   receipt_invoice_number,
-                                                   business_trip,
-                                                   personal_category,
-                                                   financial_accounts_to_balance,
                                                    bank_reference,
                                                    event_number,
                                                    account_number,
@@ -143,19 +116,12 @@ BEGIN
                                                    currency_rate,
                                                    contra_currency_code,
                                                    bank_description,
-                                                   withholding_tax,
-                                                   interest,
-                                                   proforma_invoice_file,
                                                    original_id,
                                                    id,
-                                                   reviewed,
-                                                   hashavshevet_id,
                                                    current_balance,
-                                                   tax_invoice_file,
                                                    detailed_bank_description)
 
-    VALUES (new.tax_invoice_date,
-            new.tax_category,
+    VALUES (
             'ILS',
             new.event_date::text::date,
             new.event_date::text::date,
@@ -163,32 +129,17 @@ BEGIN
                  WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
                  ELSE new.event_amount END
                 ),
-            new.financial_entity,
-            new.vat,
-            new.user_description,
-            new.tax_invoice_number,
-            new.tax_invoice_amount,
-            new.receipt_invoice_number,
-            new.business_trip,
-            new.personal_category,
-            new.even_with_dotan,
             new.reference_number,
             new.expanded_event_date,
             new.account_number,
             'checking_ils',
-            (new.activity_type_code = 142),
+            (new.text_code = 22 or new.text_code = 23),
             0,
             null::integer, -- maybe if I'll do a transfer it will also show up?
             new.activity_description,
-            new.withholding_tax,
-            new.interest,
-            new.proforma_invoice_file,
             new.id,
             gen_random_uuid(),
-            new.reviewed,
-            new.hashavshevet_id,
             new.current_balance,
-            new.tax_invoice_file,
             concat(
                     new.activity_description,
                     ' ',
@@ -222,21 +173,11 @@ create or replace function insert_usd_transaction_into_merged_table()
 $$
 BEGIN
 
-    INSERT INTO accounter_schema.all_transactions (tax_invoice_date,
-                                                   tax_category,
+    INSERT INTO accounter_schema.all_transactions (
                                                    currency_code,
                                                    event_date,
                                                    debit_date,
                                                    event_amount,
-                                                   financial_entity,
-                                                   vat,
-                                                   user_description,
-                                                   tax_invoice_number,
-                                                   tax_invoice_amount,
-                                                   receipt_invoice_number,
-                                                   business_trip,
-                                                   personal_category,
-                                                   financial_accounts_to_balance,
                                                    bank_reference,
                                                    event_number,
                                                    account_number,
@@ -245,19 +186,12 @@ BEGIN
                                                    currency_rate,
                                                    contra_currency_code,
                                                    bank_description,
-                                                   withholding_tax,
-                                                   interest,
-                                                   proforma_invoice_file,
                                                    original_id,
                                                    id,
-                                                   reviewed,
-                                                   hashavshevet_id,
                                                    current_balance,
-                                                   tax_invoice_file,
                                                    detailed_bank_description)
 
-    VALUES (new.tax_invoice_date,
-            new.tax_category,
+    VALUES (
             'USD',
             new.executing_date::text::date,
             new.value_date::text::date,
@@ -265,15 +199,6 @@ BEGIN
                  WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
                  ELSE new.event_amount END
                 ),
-            new.financial_entity,
-            new.vat,
-            new.user_description,
-            new.tax_invoice_number,
-            new.tax_invoice_amount,
-            new.receipt_invoice_number,
-            new.business_trip,
-            new.personal_category,
-            new.even_with_dotan,
             new.reference_number,
             new.event_number,
             new.account_number,
@@ -282,15 +207,9 @@ BEGIN
             new.currency_rate,
             new.contra_currency_code,
             new.activity_description || COALESCE('/' || new.event_details, ''),
-            new.withholding_tax,
-            new.interest,
-            new.proforma_invoice_file,
             new.id,
             gen_random_uuid(),
-            new.reviewed,
-            new.hashavshevet_id,
             new.current_balance,
-            new.tax_invoice_file,
             concat(
                     new.activity_description,
                     ' ',
@@ -322,21 +241,11 @@ create or replace function insert_eur_transaction_into_merged_table()
 $$
 BEGIN
 
-    INSERT INTO accounter_schema.all_transactions (tax_invoice_date,
-                                                   tax_category,
+    INSERT INTO accounter_schema.all_transactions (
                                                    currency_code,
                                                    event_date,
                                                    debit_date,
                                                    event_amount,
-                                                   financial_entity,
-                                                   vat,
-                                                   user_description,
-                                                   tax_invoice_number,
-                                                   tax_invoice_amount,
-                                                   receipt_invoice_number,
-                                                   business_trip,
-                                                   personal_category,
-                                                   financial_accounts_to_balance,
                                                    bank_reference,
                                                    event_number,
                                                    account_number,
@@ -345,19 +254,12 @@ BEGIN
                                                    currency_rate,
                                                    contra_currency_code,
                                                    bank_description,
-                                                   withholding_tax,
-                                                   interest,
-                                                   proforma_invoice_file,
                                                    original_id,
                                                    id,
-                                                   reviewed,
-                                                   hashavshevet_id,
                                                    current_balance,
-                                                   tax_invoice_file,
                                                    detailed_bank_description)
 
-    VALUES (new.tax_invoice_date,
-            new.tax_category,
+    VALUES (
             'EUR',
             new.executing_date::text::date,
             new.value_date::text::date,
@@ -365,15 +267,6 @@ BEGIN
                  WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
                  ELSE new.event_amount END
                 ),
-            new.financial_entity,
-            new.vat,
-            new.user_description,
-            new.tax_invoice_number,
-            new.tax_invoice_amount,
-            new.receipt_invoice_number,
-            new.business_trip,
-            new.personal_category,
-            new.even_with_dotan,
             new.reference_number,
             new.event_number,
             new.account_number,
@@ -382,15 +275,9 @@ BEGIN
             new.currency_rate,
             new.contra_currency_code,
             new.activity_description || COALESCE('/' || new.event_details, ''),
-            new.withholding_tax,
-            new.interest,
-            new.proforma_invoice_file,
             new.id,
             gen_random_uuid(),
-            new.reviewed,
-            new.hashavshevet_id,
             new.current_balance,
-            new.tax_invoice_file,
             concat(
                     new.activity_description,
                     ' ',

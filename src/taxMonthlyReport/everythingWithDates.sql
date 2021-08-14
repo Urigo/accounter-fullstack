@@ -1,3 +1,22 @@
+SELECT *
+                FROM accounter_schema.all_transactions
+                WHERE
+                      account_number in ('2733', '61066')  and
+                        event_date::text::date >= (date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')))::date AND
+                        event_date::text::date <= (date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day')::date AND
+                        vat > 0;
+
+SELECT *
+                FROM accounter_schema.all_transactions
+                WHERE
+                      account_number in ('466803', '1074', '1082')  and
+                        event_date >= date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) AND
+                        event_date <= date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
+                        vat > 0;
+
+
+
+
 select *,
               CASE
            WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound::text::date

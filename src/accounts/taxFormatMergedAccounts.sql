@@ -40,10 +40,12 @@ SELECT *,
                      WHEN event_date::text::date <= '2019-11-30' THEN 'מקדמות19'
                      WHEN (event_date::text::date <= '2020-01-31' AND event_date::text::date > '2019-11-30')
                          THEN 'מקדמותל'
-                     WHEN event_date::text::date > '2020-01-31' THEN 'מקדמות20'
+                     WHEN (event_date::text::date <= '2021-01-31' AND event_date::text::date > '2020-11-30')
+                         THEN 'מקדמות20'                         
+                     WHEN event_date::text::date > '2021-01-31' THEN 'מקדמות21'
                     END)
-            WHEN financial_entity = 'Uri Goldshtein Employee Tax Withholding' THEN 'מהני'
-            WHEN financial_entity = 'Uri Goldshtein Employee Social Security' THEN 'בלני'
+            WHEN financial_entity = 'Tax Deductions' THEN 'מהני'
+            WHEN financial_entity = 'Social Security Deductions' THEN 'בלני'
             WHEN financial_entity = 'Uri Goldshtein' THEN 'אורי'
             WHEN financial_entity = 'Uri Goldshtein Hoz' THEN 'אוריח'
             when tax_category = 'Uri Goldshtein Hoz' then 'אוריח'

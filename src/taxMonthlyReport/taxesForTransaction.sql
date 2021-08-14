@@ -1,5 +1,4 @@
-insert into accounter_schema.ledger
-(תאריך_חשבונית, )
+uuid_generate_v4();
 
 
 

@@ -1,3 +1,7 @@
+
+
+
+
 SELECT * FROM get_vat_for_month('2020-12-01');
 
 drop function get_vat_for_month(month_input varchar);

@@ -1,3 +1,14 @@
+select * from accounter_schema.all_transactions
+where account_number in ('466803', '1074', '1082')
+order by event_date::text::date, event_number;
+
+select pils.serial_number, at.* from accounter_schema.all_transactions at
+left join accounter_schema.poalim_ils_account_transactions pils on pils.id = at.original_id
+left join accounter_schema.poalim_usd_account_transactions pusd on pusd.id = at.original_id
+left join accounter_schema.poalim_eur_account_transactions peur on peur.id = at.original_id
+    where at.account_number in ('466803', '1074', '1082')
+    order by at.event_date::text::date, at.event_number, greatest(pils.serial_number);
+
 alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_short_product_name_enum check (data_0_short_product_name in ('פריים'));
 
 

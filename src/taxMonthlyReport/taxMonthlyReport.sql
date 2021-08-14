@@ -2,9 +2,16 @@ select *
     from accounter_schema.ledger
     where
           hashavshevet_id is null
-          and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('30/11/2020', 'DD/MM/YYYY')
+          and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('30/04/2021', 'DD/MM/YYYY')
+          and business = 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
     order by (to_date(תאריך_3, 'DD/MM/YYYY')), original_id, תאריך_חשבונית;
 
+
+select hash_index, auto_tax_category
+     from accounter_schema.hash_business_indexes
+     where
+       business = $$5b7b0977-2c6f-4b26-93d9-d90c1698edcc$$ and
+       hash_owner = $$6a20aa69-57ff-446e-8d6a-1e96d095e988$$;
 
 select hashavshevet.*
 from accounter_schema.ledger hashavshevet
@@ -12,6 +19,39 @@ where
     origin = 'manual_salary'
     and to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date)
 ;
+
+
+update accounter_schema.isracard_creditcard_transactions
+set full_purchase_date_outbound = to_char(to_date(full_purchase_date_outbound, 'YYYY-MM-DD'), 'DD/MM/YYYY')
+where full_purchase_date_outbound is not null;
+
+
+update accounter_schema.isracard_creditcard_transactions
+set full_purchase_date = to_char(to_date(full_purchase_date, 'YYYY-MM-DD'), 'DD/MM/YYYY')
+where full_purchase_date is not null;
+
+update accounter_schema.isracard_creditcard_transactions
+set full_payment_date = to_char(to_date(full_payment_date, 'YYYY-MM-DD'), 'DD/MM/YYYY')
+where full_payment_date is not null;
+
+
+select count(*)
+from accounter_schema.poalim_ils_account_transactions
+where poalim_ils_account_transactions.hashavshevet_id is not null;
+
+select count(*)
+from accounter_schema.all_transactions
+where all_transactions.hashavshevet_id is not null
+and account_type = 'checking_ils';
+
+select to_char(to_date(full_purchase_date_outbound, 'YYYY-MM-DD'), 'DD/MM/YYYY')
+from accounter_schema.isracard_creditcard_transactions
+where full_purchase_date_outbound is not null
+order by full_purchase_date_outbound::date;
+
+
+
+
 
 
 select hashavshevet.*
@@ -37,7 +77,6 @@ where
                     bank.event_date::text::date <= (date_trunc('month', '2020-09-01'::date) + interval '1 month' - interval '1 day')::date)
              ))))
 order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
-
 
 select gen_random_uuid();
 select gen_random_uuid();
@@ -120,12 +159,12 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבו�
 $$;
 
 select *
-from get_unified_tax_report_of_month('2020-01-01', '2020-12-01')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+      from get_unified_tax_report_of_month('Software Products Guilda Ltd.', '2020-01-01', '2021-05-01')
+      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
 
 drop function get_unified_tax_report_of_month;
 
-CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(month_start varchar, month_end varchar)
+CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(business_name text, month_start varchar, month_end varchar)
 RETURNS TABLE(
        תאריך_חשבונית varchar,
        חשבון_חובה_1 varchar,
@@ -159,12 +198,47 @@ AS $$
 
 
 (
-select hashavshevet.*
+select hashavshevet.תאריך_חשבונית,
+       hashavshevet.חשבון_חובה_1,
+       hashavshevet.סכום_חובה_1,
+       hashavshevet.מטח_סכום_חובה_1,
+       hashavshevet.מטבע,
+       hashavshevet.חשבון_זכות_1,
+       hashavshevet.סכום_זכות_1,
+       hashavshevet.מטח_סכום_זכות_1,
+       hashavshevet.חשבון_חובה_2,
+       hashavshevet.סכום_חובה_2,
+       hashavshevet.מטח_סכום_חובה_2,
+       hashavshevet.חשבון_זכות_2,
+       hashavshevet.סכום_זכות_2,
+       hashavshevet.מטח_סכום_זכות_2,
+       hashavshevet.פרטים,
+       hashavshevet.אסמכתא_1,
+       hashavshevet.אסמכתא_2,
+       hashavshevet.סוג_תנועה,
+       hashavshevet.תאריך_ערך,
+       hashavshevet.תאריך_3,
+       hashavshevet.original_id,
+       hashavshevet.origin,
+       hashavshevet.proforma_invoice_file,
+       hashavshevet.id,
+       hashavshevet.reviewed,
+       hashavshevet.hashavshevet_id
 from accounter_schema.ledger hashavshevet
 left outer join accounter_schema.all_transactions bank on hashavshevet.original_id = bank.id
 where
-    bank is null or (
-    (bank.account_number in (2733, 61066)) AND
+    (bank is null and business = (
+    select id
+    from accounter_schema.businesses
+    where name = business_name
+)) or (
+    (bank.account_number in (select account_number
+from accounter_schema.financial_accounts
+where owner = (
+    select id
+    from accounter_schema.businesses
+    where name = business_name
+))) AND
         (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
             bank.account_type != 'creditcard' AND
             bank.event_date::text::date >= date_trunc('month', month_start::date) AND
@@ -213,7 +287,13 @@ UNION ALL
        hashavshevet_id
 from formatted_merged_tables
 where
-    (account_number in (2733, 61066)) AND
+    (account_number in (select account_number
+from accounter_schema.financial_accounts
+where owner = (
+    select id
+    from accounter_schema.businesses
+    where name = business_name
+))) AND
         (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             account_type != 'creditcard' AND
             event_date::text::date >= date_trunc('month', month_start::date) AND
@@ -235,6 +315,13 @@ where
 
 $$;
 
+select account_number
+from accounter_schema.financial_accounts
+where owner = (
+    select id
+    from accounter_schema.businesses
+    where name = 'Uri Goldshtein LTD'
+);
 -- Merge and insert new transactions into existing table
 select
        *,
