@@ -196,7 +196,7 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('MOUNTAIN V') ||
-    transaction.detailed_bank_description.includes('STORAG')
+    transaction.detailed_bank_description.includes('STORA')
   ) {
     suggestedTransaction.financialEntity = 'Google Storage';
     suggestedTransaction.userDescription = 'Google Storage';
