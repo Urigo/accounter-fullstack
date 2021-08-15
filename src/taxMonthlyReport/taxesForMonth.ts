@@ -215,8 +215,8 @@ export async function createTaxEntriesForMonth(
     </thead>
     <tbody>
         <tr>
-          <td>${incomeSum}</td>
-          <td>${(incomeSum / 100) * 8.2}</td>
+          <td>${hashNumberRounded(incomeSum)}</td>
+          <td>${hashNumberRounded((incomeSum / 100) * 8.2)}</td>
           <td>${VATFreeIncomeSum}</td>
           <td>${VATIncomeSum}</td>
         </tr>
