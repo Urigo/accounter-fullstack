@@ -109,7 +109,8 @@ function suggestedTransaction(transaction: any) {
     transaction.detailed_bank_description == 'HOT'
   ) {
     suggestedTransaction.financialEntity = 'HOT';
-    suggestedTransaction.personalCategory = 'family';
+    suggestedTransaction.userDescription = `Internet Provider`;
+    suggestedTransaction.personalCategory = 'computer';
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('יורוקארד') ||
@@ -642,7 +643,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     // TODO: Fix this stupid month calculation
     monthTaxReport = `2020-0${query.month}-01`;
   } else {
-    monthTaxReport = '2021-05-01';
+    monthTaxReport = '2021-08-01';
   }
   console.log('monthTaxReport', monthTaxReport);
 
@@ -780,8 +781,8 @@ export const financialStatus = async (query: any): Promise<string> => {
       sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
   from transactions_exclude
   where
-    event_date::text::date >= '2021-05-01'::text::date and
-    event_date::text::date <= '2021-05-31'::text::date
+    event_date::text::date >= '2021-08-01'::text::date and
+    event_date::text::date <= '2021-08-31'::text::date
   --   and personal_category = 'family'
   group by personal_category
   order by sum(event_amount_in_usd_with_vat_if_exists);    
