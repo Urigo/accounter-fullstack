@@ -10,7 +10,7 @@ WITH this_month_business AS (
     SELECT *
     FROM accounter_schema.all_transactions
     WHERE business_trip IS NULL
-      AND account_number in (2733, 61066)
+      AND account_number in (2733, 61066, 1082, 1074, 466803)
       AND (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
             event_date::text::date >= date_trunc('month', month_input::date) AND
             event_date::text::date <=

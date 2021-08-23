@@ -25,7 +25,7 @@ SELECT
        real_vat::numeric(9,2), event_date, event_amount, financial_entity, user_description, bank_reference, account_number
 FROM formatted_merged_tables
 WHERE
-        (account_number = 2733 OR account_number = 61066) AND
+        (account_number in (2733, 61066, 1082, 1074, 466803)) AND
         (vat IS NOT NULL AND vat <> 0) AND
         event_date::text::date >= date_trunc('month', month_input::date) AND
         event_date::text::date <= (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
