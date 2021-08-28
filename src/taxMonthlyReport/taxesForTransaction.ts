@@ -10,6 +10,7 @@ const entitiesWithoutAccounting = [
   'Social Security Deductions',
   'Tax Deductions',
   'Tax',
+  'Dividend Tax Deduction Origin',
   'Poalim',
   'Halman Aldubi Training Fund',
   'Halman Aldubi Pension',
@@ -682,7 +683,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   if (transaction.is_conversion) {
     let conversionOtherSide: any = await pool.query(`
-      select event_amount
+      select event_amount, currency_code
       from accounter_schema.all_transactions
       where
         bank_reference = $$${transaction.bank_reference}$$ and 
@@ -704,6 +705,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       entryForFinancialAccountValues[1] = null;
       entryForFinancialAccountValues[2] = null;
       entryForFinancialAccountValues[3] = null;
+      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
       entryForFinancialAccountValues[7] = hashNumber(
         conversionOtherSide.rows[0].event_amount
       );
@@ -714,6 +716,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       entryForFinancialAccountValues[3] = hashNumber(
         conversionOtherSide.rows[0].event_amount
       );
+      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
       entryForFinancialAccountValues[5] = null;
       entryForFinancialAccountValues[6] = null;
       entryForFinancialAccountValues[7] = null;
@@ -764,13 +767,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     console.log('שערררררררר');
     let entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.tax_invoice_date),
-      hashVATIndexes.hashCurrencyRatesDifferencesIndex,
-      hashNumber(
-        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
-          getILSForDate(transaction, debitExchangeRates).eventAmountILS
-      ),
-      null,
-      hashCurrencyType('ILS'),
       hashAccounts(
         entryForFinancialAccount.debitAccount,
         financialAccounts,
@@ -779,7 +775,14 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         transaction.currency_code,
         isracardHashIndexes,
         transaction.bank_description
+      ),      
+      hashNumber(
+        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
+          getILSForDate(transaction, debitExchangeRates).eventAmountILS
       ),
+      null,
+      hashCurrencyType('ILS'),
+      hashVATIndexes.hashCurrencyRatesDifferencesIndex,
       hashNumber(
         getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
           getILSForDate(transaction, debitExchangeRates).eventAmountILS
