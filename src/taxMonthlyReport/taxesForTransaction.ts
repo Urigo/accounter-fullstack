@@ -415,7 +415,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   transaction.tax_category = hashBusinessIndexes?.auto_tax_category
     ? hashBusinessIndexes?.auto_tax_category
     : transaction.tax_category;
-    
+
   addTrueVATtoTransaction(transaction); // parseFloat
 
   let transactionsExchnageRates = await getTransactionExchangeRates(
@@ -707,7 +707,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       entryForFinancialAccountValues[1] = null;
       entryForFinancialAccountValues[2] = null;
       entryForFinancialAccountValues[3] = null;
-      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
+      entryForFinancialAccountValues[4] = hashCurrencyType(
+        conversionOtherSide.rows[0].currency_code
+      );
       entryForFinancialAccountValues[7] = hashNumber(
         conversionOtherSide.rows[0].event_amount
       );
@@ -718,7 +720,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       entryForFinancialAccountValues[3] = hashNumber(
         conversionOtherSide.rows[0].event_amount
       );
-      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
+      entryForFinancialAccountValues[4] = hashCurrencyType(
+        conversionOtherSide.rows[0].currency_code
+      );
       entryForFinancialAccountValues[5] = null;
       entryForFinancialAccountValues[6] = null;
       entryForFinancialAccountValues[7] = null;
@@ -777,7 +781,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         transaction.currency_code,
         isracardHashIndexes,
         transaction.bank_description
-      ),      
+      ),
       hashNumber(
         getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
           getILSForDate(transaction, debitExchangeRates).eventAmountILS
