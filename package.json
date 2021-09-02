@@ -16,9 +16,9 @@
     "date-fns": "2.23.0",
     "dotenv": "10.0.0",
     "lodash": "^4.17.21",
-    "modern-poalim-scraper": "0.0.6",
+    "modern-poalim-scraper": "0.0.9",
     "moment": "2.29.1",
-    "node-fetch": "2.6.1",
+    "node-fetch": "3.0.0",
     "pg": "8.7.1",
     "pixl-xml": "1.0.13",
     "uuid": "8.3.2"
@@ -26,7 +26,7 @@
   "devDependencies": {
     "@types/dotenv": "8.2.0",
     "@types/lodash": "^4.14.172",
-    "@types/node": "16.7.4",
+    "@types/node": "16.7.10",
     "@types/node-fetch": "2.5.12",
     "@types/pg": "8.6.1",
     "@types/pixl-xml": "1.0.2",
