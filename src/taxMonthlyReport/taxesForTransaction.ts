@@ -412,6 +412,10 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   // credit זכות
   // debit חובה
 
+  transaction.tax_category = hashBusinessIndexes?.auto_tax_category
+    ? hashBusinessIndexes?.auto_tax_category
+    : transaction.tax_category;
+    
   addTrueVATtoTransaction(transaction); // parseFloat
 
   let transactionsExchnageRates = await getTransactionExchangeRates(
@@ -426,9 +430,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   entryForFinancialAccount.creditAccount = transaction.financial_entity;
   entryForFinancialAccount.debitAccount = transaction.account_type;
-  entryForAccounting.creditAccount = hashBusinessIndexes?.auto_tax_category
-    ? hashBusinessIndexes?.auto_tax_category
-    : transaction.tax_category;
+  entryForAccounting.creditAccount = transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
   entryForFinancialAccount.creditAmount =
