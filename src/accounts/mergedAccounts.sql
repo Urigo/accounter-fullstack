@@ -23,7 +23,8 @@ alter table accounter_schema.poalim_deposits_account_transactions add constraint
 alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_interest_calculating_method_description_enum check (data_0_interest_calculating_method_description in ('קו ישר'));
 alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_interest_crediting_method_description_enum check (data_0_interest_crediting_method_description in ('לקרן הפיקדון'));
 alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_interest_payment_description_enum check (data_0_interest_payment_description in ('תחנה'));
-alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_lien_description_enum check (data_0_lien_description in ('משועבד'));
+alter table accounter_schema.poalim_deposits_account_transactions drop constraint data_0_lien_description_enum;
+alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_lien_description_enum check (data_0_lien_description in ('משועבד', 'מבטיח אשראי'));
 alter table accounter_schema.poalim_deposits_account_transactions add constraint data_0_time_unit_description_enum check (data_0_time_unit_description in ('ימים'));
 
 
