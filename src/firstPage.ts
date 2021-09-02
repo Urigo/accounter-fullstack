@@ -257,7 +257,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Video recording for business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
-    return suggestedTransaction;    
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes("ג'אסט לאנס")) {
     suggestedTransaction.financialEntity = 'JustLance LTD';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -544,8 +544,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else {
-    suggestedTransaction.financialEntity =
-      transaction.detailed_bank_description.replaceAll(`"`, '');
+    suggestedTransaction.financialEntity = transaction.detailed_bank_description
+      .replaceAll(`"`, '')
+      .replaceAll(`'`, '');
     suggestedTransaction.userDescription = 'Food';
     suggestedTransaction.personalCategory = 'food';
 
