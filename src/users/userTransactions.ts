@@ -1,7 +1,12 @@
 import { tableStyles } from '../firstPage';
 import { pool } from '../index';
 
-type Transaction = {
+export const businesses = {
+  'Software Products Guilda Ltd.': '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+  'Uri Goldshtein LTD': 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
+};
+
+export type LedgerEntity = {
   תאריך_חשבונית: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
@@ -30,11 +35,6 @@ type Transaction = {
   hashavshevet_id: string;
 };
 
-const enum Direction {
-  Debit = -1,
-  Credit = 1,
-}
-
 export const userTransactions = async (query: {
   id?: string;
   name?: string;
@@ -50,18 +50,18 @@ export const userTransactions = async (query: {
   }
   console.log('userTransactions', userName);
 
-  const currrentCompany = 'Uri Goldshtein LTD';
+  const currrentCompany = businesses['Uri Goldshtein LTD'];
   const results: any = await pool.query(
     `
       select *
-      from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', '2021-08-01')
-      where חשבון_חובה_1 = '${userName}' or חשבון_חובה_2 = '${userName}' or חשבון_זכות_1 = '${userName}' or חשבון_זכות_2 = '${userName}'
-      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+      from accounter_schema.ledger
+      where business = '${currrentCompany}' and '${userName}' in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
+      order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
       `
   );
 
   if (results.rows?.length) {
-    const transactions = results.rows as Transaction[];
+    const transactions = results.rows as LedgerEntity[];
 
     let tableBody = '';
     let balanceForeign: number = 0;
@@ -140,13 +140,14 @@ export const userTransactions = async (query: {
           <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
           <td>${direction === -1 ? amountForeign : ''}</td>
           <td>${direction === 1 ? amountForeign : ''}</td>
-          <td>${balanceForeign}</td>
+          <td>${balanceForeign.toFixed(2)}</td>
           <td>${direction === -1 ? amountNis : ''}</td>
           <td>${direction === 1 ? amountNis : ''}</td>
-          <td>${balanceNis}</td>
+          <td>${balanceNis.toFixed(2)}</td>
         </tr>
         `);
     }
+
     const transactionsTable = `
         <table>
           <thead>
@@ -168,10 +169,59 @@ export const userTransactions = async (query: {
               </tr>
           </thead>
           <tbody>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>0.00</td>
+              <td></td>
+              <td></td>
+              <td>0.00</td>
+            </tr>
               ${tableBody}
           </tbody>
         </table>
       `;
+
+    const sumTable = `
+      <table>
+        <thead>
+          <tr>
+            <th colspan="2">מט"ח</th>
+            <th colspan="2">שקל</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${sumForeignDebit.toFixed(2)}</td>
+            <td>חובה</td>
+            <td>${sumNisDebit.toFixed(2)}</td>
+            <td>חובה</td>
+          </tr>
+          <tr>
+            <td>${sumForeignCredit.toFixed(2)}</td>
+            <td>זכות</td>
+            <td>${sumNisCredit.toFixed(2)}</td>
+            <td>זכות</td>
+          </tr>
+          <tr>
+            <td>${balanceForeign.toFixed(2)}</td>
+            <td>הפרש</td>
+            <td>${balanceNis.toFixed(2)}</td>
+            <td>הפרש</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
 
     return `
         ${tableStyles}
@@ -179,7 +229,10 @@ export const userTransactions = async (query: {
         <h1>User [${userName}] Transactions Card</h1>
   
         ${transactionsTable}
-      `;
+        <br>
+        <h2>User Card Totals</h2>
+        ${sumTable}
+        `;
   }
 
   return `No data found for user name="${userName}"`;
