@@ -119,6 +119,8 @@ export const reportToReview = async (query: any): Promise<string> => {
 
     const generateTaxFunctionCall = `onClick='generateTaxMovements("${transaction.id}");'`;
     const sendToHashavshevetFunctionCall = `onClick='sendToHashavshevet("${transaction.id}");'`;
+    const generateGoToUserTransactionsFunctionCall = (userName: string) =>
+      `<a href='/user-transactions?name=${userName}'>${userName}</a>`;
     const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
     const missingHashavshevetSync =
       (movementOrBank &&
@@ -168,23 +170,39 @@ export const reportToReview = async (query: any): Promise<string> => {
             transaction.proforma_invoice_file
           }">
         </td>
-        <td>${transaction.חשבון_חובה_1 ? transaction.חשבון_חובה_1 : ''}</td>
+        <td>${
+          transaction.חשבון_חובה_1
+            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1)
+            : ''
+        }</td>
         <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
         <td>${
           transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
         }</td>
         <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
-        <td>${transaction.חשבון_זכות_1 ? transaction.חשבון_זכות_1 : ''}</td>
+        <td>${
+          transaction.חשבון_זכות_1
+            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1)
+            : ''
+        }</td>
         <td>${transaction.סכום_זכות_1 ? transaction.סכום_זכות_1 : ''}</td>
         <td>${
           transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
         }</td>
-        <td>${transaction.חשבון_חובה_2 ? transaction.חשבון_חובה_2 : ''}</td>
+        <td>${
+          transaction.חשבון_חובה_2
+            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2)
+            : ''
+        }</td>
         <td>${transaction.סכום_חובה_2 ? transaction.סכום_חובה_2 : ''}</td>
         <td>${
           transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
         }</td>
-        <td>${transaction.חשבון_זכות_2 ? transaction.חשבון_זכות_2 : ''}</td>
+        <td>${
+          transaction.חשבון_זכות_2
+            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2)
+            : ''
+        }</td>
         <td>${transaction.סכום_זכות_2 ? transaction.סכום_זכות_2 : ''}</td>
         <td>${
           transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
