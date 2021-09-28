@@ -7,6 +7,7 @@ import { financialStatus, tableStyles } from './firstPage';
 import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
 import { topPrivateNotCategorized } from './privateCharts/privateCharts';
 import { createTaxEntriesForTransaction } from './taxMonthlyReport/taxesForTransaction';
+import { userTransactions } from './users/userTransactions';
 
 import dotenv from 'dotenv';
 const { config } = dotenv;
@@ -16,6 +17,7 @@ config();
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
+import { getAllUsers } from './users/getAllUsers';
 const { Pool } = pg;
 
 console.log('hello world');
@@ -253,6 +255,21 @@ async function main() {
           // console.log('nothing');
         }
       });
+    } else if (
+      request.url == '/user-transactions' ||
+      (request.url && request.url.startsWith('/user-transactions?'))
+    ) {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      const url_parts = parse(request.url, true);
+      const query = url_parts.query;
+      let responseHTML = await userTransactions(query);
+      response.end(responseHTML);
+    } else if (request.url == '/all-users') {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      let responseHTML = await getAllUsers();
+      response.end(responseHTML);
     } else {
       return response.end();
     }
