@@ -119,9 +119,34 @@ export const reportToReview = async (query: any): Promise<string> => {
 
     const generateTaxFunctionCall = `onClick='generateTaxMovements("${transaction.id}");'`;
     const sendToHashavshevetFunctionCall = `onClick='sendToHashavshevet("${transaction.id}");'`;
-    const generateGoToUserTransactionsFunctionCall = (userName: string) =>
-      `<a href='/user-transactions?name=${userName}'>${userName}</a>`;
+    const generateGoToUserTransactionsFunctionCall = (
+      userName?: string | null
+    ) => {
+      if (!userName) {
+        return '';
+      }
+      return `<a href='/user-transactions?name=${userName}'>${userName}</a>`;
+    };
     const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
+    const addHoverEditButton = (
+      attribute: string,
+      viewableHtml?: string
+    ): string => {
+      const elementId = `${attribute}-${transaction.id}`;
+      const content = viewableHtml || transaction[attribute] || '';
+
+      if (movementOrBank) {
+        return content;
+      }
+
+      return `
+      ${content}
+      <div class="editor">
+        <input type="text" id="${elementId}" value="${transaction[attribute]}">
+        <br>
+        <button onclick='editTransactionAttribute("${movementOrBank}", "${transaction.id}", "${attribute}", document.getElementById("${elementId}").value)'>Execute</button>
+      </div>`;
+    };
     const missingHashavshevetSync =
       (movementOrBank &&
         !transaction.hashavshevet_id &&
@@ -165,58 +190,46 @@ export const reportToReview = async (query: any): Promise<string> => {
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">
-          ${transaction.תאריך_חשבונית}
+          ${addHoverEditButton('תאריך_חשבונית')}
           <img download class="invoiceImage" src="${
             transaction.proforma_invoice_file
           }">
         </td>
-        <td>${
-          transaction.חשבון_חובה_1
-            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1)
-            : ''
-        }</td>
-        <td>${transaction.סכום_חובה_1 ? transaction.סכום_חובה_1 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_חובה_1 ? transaction.מטח_סכום_חובה_1 : ''
-        }</td>
-        <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
-        <td>${
-          transaction.חשבון_זכות_1
-            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1)
-            : ''
-        }</td>
-        <td>${transaction.סכום_זכות_1 ? transaction.סכום_זכות_1 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_זכות_1 ? transaction.מטח_סכום_זכות_1 : ''
-        }</td>
-        <td>${
-          transaction.חשבון_חובה_2
-            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2)
-            : ''
-        }</td>
-        <td>${transaction.סכום_חובה_2 ? transaction.סכום_חובה_2 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_חובה_2 ? transaction.מטח_סכום_חובה_2 : ''
-        }</td>
-        <td>${
-          transaction.חשבון_זכות_2
-            ? generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2)
-            : ''
-        }</td>
-        <td>${transaction.סכום_זכות_2 ? transaction.סכום_זכות_2 : ''}</td>
-        <td>${
-          transaction.מטח_סכום_זכות_2 ? transaction.מטח_סכום_זכות_2 : ''
-        }</td>
-        <td>${transaction.פרטים ? transaction.פרטים : ''}</td>
-        <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
-        <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
-        <td>${transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
+        <td>${addHoverEditButton(
+          'חשבון_חובה_1',
+          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1)
+        )}</td>
+        <td>${addHoverEditButton('סכום_חובה_1')}</td>
+        <td>${addHoverEditButton('מטח_סכום_חובה_1')}</td>
+        <td>${addHoverEditButton('מטבע')}</td>
+        <td>${addHoverEditButton(
+          'חשבון_זכות_1',
+          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1)
+        )}</td>
+        <td>${addHoverEditButton('סכום_זכות_1')}</td>
+        <td>${addHoverEditButton('מטח_סכום_זכות_1')}</td>
+        <td>${addHoverEditButton(
+          'חשבון_חובה_2',
+          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2)
+        )}</td>
+        <td>${addHoverEditButton('סכום_חובה_2')}</td>
+        <td>${addHoverEditButton('מטח_סכום_חובה_2')}</td>
+        <td>${addHoverEditButton(
+          'חשבון_זכות_2',
+          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2)
+        )}</td>
+        <td>${addHoverEditButton('סכום_זכות_2')}</td>
+        <td>${addHoverEditButton('מטח_סכום_זכות_2')}</td>
+        <td>${addHoverEditButton('פרטים')}</td>
+        <td>${addHoverEditButton('אסמכתא_1')}</td>
+        <td>${addHoverEditButton('אסמכתא_2')}</td>
+        <td>${addHoverEditButton('סוג_תנועה')}</td>
         <td class="valueDate">
-          ${transaction.תאריך_ערך}
+          ${addHoverEditButton('תאריך_ערך')}
           <div class="valueDateValues">
           </div>
         </td>
-        <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
+        <td>${addHoverEditButton('תאריך_3')}</td>
         <td ${
           missingHashavshevetSync
             ? 'style="background-color: rgb(255,0,0);"'
@@ -302,12 +315,13 @@ export const reportToReview = async (query: any): Promise<string> => {
   return `
       <script type="module" src="/browser.js"></script>
       <script type="module">
-        import { changeConfirmation, setSelected, generateTaxMovements, deleteTaxMovements } from '/browser.js';
+        import { changeConfirmation, setSelected, generateTaxMovements, deleteTaxMovements, editTransactionAttribute } from '/browser.js';
 
         window.changeConfirmation = changeConfirmation;
         window.setSelected = setSelected;
         window.generateTaxMovements = generateTaxMovements;
         window.deleteTaxMovements = deleteTaxMovements;
+        window.editTransactionAttribute = editTransactionAttribute;
       </script>
 
       ${taxReportHTML.monthTaxHTMLTemplate}
