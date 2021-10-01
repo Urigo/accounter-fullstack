@@ -18,6 +18,7 @@ config();
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
 import { getAllUsers } from './users/getAllUsers';
+import { updateBankTransactionAttribute } from './taxMonthlyReport/updateTransactions';
 const { Pool } = pg;
 
 console.log('hello world');
@@ -77,6 +78,30 @@ async function main() {
           height: 90%;
         }
         .invoiceDate:hover .invoiceImage {
+          display: block;
+        }
+        td .editor {
+          visibility: hidden;
+          width: 120px;
+          background-color: black;
+          color: #fff;
+          text-align: center;
+          border-radius: 6px;
+          padding: 5px 0;
+
+          /* Position the tooltip */
+          position: absolute;
+          z-index: 1;
+        }
+        td:hover .editor {
+          visibility: visible;
+        }
+        .editButton {
+          display: none;
+          position: absolute;
+          height: 90%;
+        }
+        .bank-transaction:hover .editButton {
           display: block;
         }
 
@@ -225,6 +250,27 @@ async function main() {
 
         //   // console.log('nothing');
         // }
+      });
+    } else if (request.url == '/editTransactionAttribute') {
+      console.log('new editTransactionAttribute');
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/x-typescript');
+      const chunks: Array<Uint8Array> = [];
+      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('end', async () => {
+        const bufferData = Buffer.concat(chunks);
+        const data = JSON.parse(bufferData.toString());
+        console.log('Data: ', data);
+
+        let result = await updateBankTransactionAttribute(
+          data.transactionId,
+          data.attribute,
+          data.value
+        );
+
+        console.log(result);
+
+        response.end(JSON.stringify(result));
       });
     } else if (request.url == '/deleteTaxMovements') {
       console.log('new deleteTaxMovements');
