@@ -54,14 +54,18 @@ export async function createTaxEntriesForMonth(
   businessName: String,
   pool: pg.Pool
 ) {
+
+  let businessIdByNameQuery = `
+  (
+    select id
+    from accounter_schema.businesses
+    where name = $$${businessName}$$
+  )
+  `;
   let ownerResult: any = await pool.query(`
     select owner
     from accounter_schema.financial_accounts
-    where owner = (
-      select id
-      from accounter_schema.businesses
-      where name = $$${businessName}$$
-)
+    where owner = ${businessIdByNameQuery}
   `);
   let owner = ownerResult.rows[0].owner;
   let hashVATIndexes = await getVATIndexes(owner);
@@ -69,11 +73,7 @@ export async function createTaxEntriesForMonth(
   const getCurrentBusinessAccountsQuery = `
     (select account_number
       from accounter_schema.financial_accounts
-      where owner = (
-          select id
-          from accounter_schema.businesses
-          where name = $$${businessName}$$
-    ))
+      where owner = ${businessIdByNameQuery})
   `;
 
   let getAllIncomeTransactionsQuery = `
@@ -99,83 +99,105 @@ export async function createTaxEntriesForMonth(
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
-    let transactionsExchnageRates = await getTransactionExchangeRates(
-      monthIncomeTransaction
+
+    let isExcludedFromTaxReportQuery = `
+      select include_in_tax_report
+      from accounter_schema.hash_business_indexes
+      where business = (
+        select id
+        from accounter_schema.businesses
+        where name = $$${monthIncomeTransaction.financial_entity}$$
+      ) and hash_owner = ${businessIdByNameQuery};    
+    `;
+    let isExcludedFromTaxReport: any = await pool.query(
+      isExcludedFromTaxReportQuery
     );
-    addTrueVATtoTransaction(monthIncomeTransaction);
-    let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
-    let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
-    console.log('Income Tax Transaction: ', {
-      name: monthIncomeTransaction.financial_entity,
-      invoiceDate: hashDateFormat(monthIncomeTransaction.tax_invoice_date),
-      amount: monthIncomeTransaction.event_amount,
-      currency: monthIncomeTransaction.currency_code,
-      ILSAmountInvoiceExchangeRates: getILSForDate(
-        monthIncomeTransaction,
-        invoiceExchangeRates
-      ).eventAmountILS,
-      ILSAmountDebitExchangeRates: getILSForDate(
-        monthIncomeTransaction,
-        debitExchangeRates
-      ).eventAmountILS,
-      invoiceImage: monthIncomeTransaction.proforma_invoice_file,
-      vat: monthIncomeTransaction.vat,
-    });
-    incomeSum +=
-      parseFloat(
-        getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
-          .eventAmountILS
-      ) - monthIncomeTransaction.vat;
-    if (monthIncomeTransaction.vat) {
-      console.log(
-        'vat income',
-        parseFloat(
-          getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
-            .eventAmountILS
-        ) - monthIncomeTransaction.vat
+    if (isExcludedFromTaxReport.rowCount == 0 || isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == null || isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == true) {
+      let transactionsExchnageRates = await getTransactionExchangeRates(
+        monthIncomeTransaction
       );
-      VATIncomeSum +=
+      let hashBusinessIndexes = await getHashBusinessIndexes(
+        { financial_entity: monthIncomeTransaction.financial_entity },
+        owner
+      );
+      monthIncomeTransaction.tax_category = hashBusinessIndexes?.auto_tax_category
+        ? hashBusinessIndexes?.auto_tax_category
+        : monthIncomeTransaction.tax_category;
+      addTrueVATtoTransaction(monthIncomeTransaction);
+      let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
+      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+      console.log('Income Tax Transaction: ', {
+        name: monthIncomeTransaction.financial_entity,
+        invoiceDate: hashDateFormat(monthIncomeTransaction.tax_invoice_date),
+        amount: monthIncomeTransaction.event_amount,
+        currency: monthIncomeTransaction.currency_code,
+        ILSAmountInvoiceExchangeRates: getILSForDate(
+          monthIncomeTransaction,
+          invoiceExchangeRates
+        ).eventAmountILS,
+        ILSAmountDebitExchangeRates: getILSForDate(
+          monthIncomeTransaction,
+          debitExchangeRates
+        ).eventAmountILS,
+        invoiceImage: monthIncomeTransaction.proforma_invoice_file,
+        vat: monthIncomeTransaction.vat,
+      });
+      incomeSum +=
         parseFloat(
           getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
             .eventAmountILS
         ) - monthIncomeTransaction.vat;
-    } else {
-      console.log(
-        'not vat income',
-        parseFloat(
+      if (monthIncomeTransaction.vat) {
+        console.log(
+          'vat income',
+          parseFloat(
+            getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+              .eventAmountILS
+          ) - monthIncomeTransaction.vat
+        );
+        VATIncomeSum +=
+          parseFloat(
+            getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+              .eventAmountILS
+          ) - monthIncomeTransaction.vat;
+      } else {
+        console.log(
+          'not vat income',
+          parseFloat(
+            getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+              .eventAmountILS
+          )
+        );
+        VATFreeIncomeSum += parseFloat(
           getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
             .eventAmountILS
-        )
-      );
-      VATFreeIncomeSum += parseFloat(
-        getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
-          .eventAmountILS
-      );
+        );
+      }
+      console.log('SUM till now - ', incomeSum);
+      console.log('VAT free income SUM till now - ', VATFreeIncomeSum);
+      console.log('VAT income SUM till now - ', VATIncomeSum);
+      monthTaxHTMLTemplate = monthTaxHTMLTemplate.concat(`
+      <tr>
+        <td>${monthIncomeTransaction.financial_entity}</td>
+        <td>${hashDateFormat(monthIncomeTransaction.tax_invoice_date)}</td>
+        <td>${monthIncomeTransaction.event_amount}${
+        monthIncomeTransaction.currency_code
+      }</td>
+        <td>${monthIncomeTransaction.vat}</td>
+        <td>${
+          getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+            .eventAmountILS
+        }</td>
+        <td>${
+          getILSForDate(monthIncomeTransaction, debitExchangeRates).eventAmountILS
+        }</td>
+        <td><a href="${monthIncomeTransaction.proforma_invoice_file}">P</a></td>
+        <td>${incomeSum}</td>
+        <td>${VATFreeIncomeSum}</td>
+        <td>${VATIncomeSum}</td>
+      </tr>
+      `);
     }
-    console.log('SUM till now - ', incomeSum);
-    console.log('VAT free income SUM till now - ', VATFreeIncomeSum);
-    console.log('VAT income SUM till now - ', VATIncomeSum);
-    monthTaxHTMLTemplate = monthTaxHTMLTemplate.concat(`
-    <tr>
-      <td>${monthIncomeTransaction.financial_entity}</td>
-      <td>${hashDateFormat(monthIncomeTransaction.tax_invoice_date)}</td>
-      <td>${monthIncomeTransaction.event_amount}${
-      monthIncomeTransaction.currency_code
-    }</td>
-      <td>${monthIncomeTransaction.vat}</td>
-      <td>${
-        getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
-          .eventAmountILS
-      }</td>
-      <td>${
-        getILSForDate(monthIncomeTransaction, debitExchangeRates).eventAmountILS
-      }</td>
-      <td><a href="${monthIncomeTransaction.proforma_invoice_file}">P</a></td>
-      <td>${incomeSum}</td>
-      <td>${VATFreeIncomeSum}</td>
-      <td>${VATIncomeSum}</td>
-    </tr>
-    `);
   }
   monthTaxHTMLTemplate = `
   <table>
@@ -233,16 +255,24 @@ export async function createTaxEntriesForMonth(
     );
     let expensesVATSum = 0;
     for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
+      let hashBusinessIndexes = await getHashBusinessIndexes(
+        { financial_entity: monthIncomeVATTransaction.financial_entity },
+        owner
+      );
+      monthIncomeVATTransaction.tax_category = hashBusinessIndexes?.auto_tax_category
+        ? hashBusinessIndexes?.auto_tax_category
+        : monthIncomeVATTransaction.tax_category;
       addTrueVATtoTransaction(monthIncomeVATTransaction);
       console.log('vat transaction: ', {
         name: monthIncomeVATTransaction.financial_entity,
         invoiceDate: hashDateFormat(monthIncomeVATTransaction.tax_invoice_date),
         amount: monthIncomeVATTransaction.event_amount,
         currency: monthIncomeVATTransaction.currency_code,
-        vat: monthIncomeVATTransaction.vat,
-        actualVat: monthIncomeVATTransaction.vatAfterDiduction,
+        vat: Math.round((parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100) / 100,
+        actualVat: Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100
       });
-      expensesVATSum += parseFloat(monthIncomeVATTransaction.vatAfterDiduction);
+      
+      expensesVATSum += Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100;
       monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
     <tr>
       <td>${monthIncomeVATTransaction.financial_entity}</td>
@@ -250,9 +280,9 @@ export async function createTaxEntriesForMonth(
       <td>${monthIncomeVATTransaction.event_amount}${
         monthIncomeVATTransaction.currency_code
       }</td>
-      <td>${monthIncomeVATTransaction.vat}</td>
-      <td>${monthIncomeVATTransaction.vatAfterDiduction}</td>
-      <td>${expensesVATSum}</td>
+      <td>${Math.round((parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100) / 100}</td>
+      <td>${Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100}</td>
+      <td>${Math.round((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
     </tr>
     `);
     }
