@@ -85,8 +85,6 @@ export const getAllTransactions = async (): Promise<string> => {
       </table>
     );
 
-    console.log(content);
-
     return content;
   } catch (error) {
     console.error(`Failed to compile React:`, error);
