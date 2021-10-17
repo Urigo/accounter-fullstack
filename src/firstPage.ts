@@ -43,11 +43,22 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('CLOUDFLARE')) {
+    suggestedTransaction.financialEntity = 'Cloudflare';
+    suggestedTransaction.userDescription = 'Domain Registration';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('WOLT')) {
     suggestedTransaction.financialEntity = 'Wolt';
     suggestedTransaction.userDescription = 'Wolt';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('שטראוס מים')) {
+    suggestedTransaction.financialEntity = 'Tami4';
+    suggestedTransaction.userDescription = 'Water';
+    suggestedTransaction.personalCategory = 'food';
+    return suggestedTransaction;    
   } else if (
     transaction.detailed_bank_description.includes('חומוס פול התימני')
   ) {
@@ -98,11 +109,23 @@ function suggestedTransaction(transaction: any) {
       Math.abs(transaction.event_amount) < 200) ||
     transaction.detailed_bank_description.includes('F.C.COM') ||
     transaction.detailed_bank_description.includes('ע.מפעולות-ישיר') ||
-    transaction.detailed_bank_description.includes('ריבית חובה')
+    transaction.detailed_bank_description.includes('ריבית חובה') ||
+    transaction.detailed_bank_description.includes('FEE')
   ) {
     suggestedTransaction.financialEntity = 'Poalim';
     suggestedTransaction.personalCategory = 'financial';
     suggestedTransaction.userDescription = `Fees for bank_reference=${transaction.bank_reference}`;
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ריבית זכות')) {
+    suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.userDescription = 'Interest fees on Euro plus';
+    suggestedTransaction.personalCategory = 'financial';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('דותן שמחה')) {
+    suggestedTransaction.financialEntity = 'Dotan Simha';
+    suggestedTransaction.userDescription = 'August salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = 0;
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description == 'הוט נט שרותי אינטרנט' ||
@@ -117,7 +140,7 @@ function suggestedTransaction(transaction: any) {
     transaction.detailed_bank_description.includes('ISRACARD')
   ) {
     suggestedTransaction.financialEntity = 'Isracard';
-    suggestedTransaction.userDescription = 'Monthly creditcard charge';
+    suggestedTransaction.userDescription = 'Creditcard charge';
     suggestedTransaction.personalCategory = 'creditcard';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('MEETUP')) {
@@ -145,6 +168,7 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('GITHUB')) {
     suggestedTransaction.financialEntity = 'GitHub';
+    suggestedTransaction.userDescription = 'GitHub Actions';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     if (transaction.event_amount == -450) {
@@ -153,8 +177,19 @@ function suggestedTransaction(transaction: any) {
       suggestedTransaction.userDescription = 'GitHub CI charges';
     }
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גילדה למוצרי תוכנה')) {
+    suggestedTransaction.financialEntity = 'Software Products Guilda Ltd.';
+    suggestedTransaction.userDescription = 'The Guild work';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('אורי גולדשטיין בע')) {
+    suggestedTransaction.financialEntity = 'Uri Goldshgtein LTD';
+    suggestedTransaction.userDescription = 'Transaction to company';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
     suggestedTransaction.financialEntity = 'Poalim';
+    suggestedTransaction.userDescription = 'Bank creditcard fees';
     suggestedTransaction.personalCategory = 'financial';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ארומה')) {
@@ -168,7 +203,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('סופר פארם')) {
-    suggestedTransaction.financialEntity = 'Super-Pharm';
+    suggestedTransaction.financialEntity = 'SuperPharm';
+    suggestedTransaction.userDescription = 'Personal care';
+    suggestedTransaction.personalCategory = 'health';    
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description == 'חברת פרטנר תקשורת בע') {
     suggestedTransaction.financialEntity = 'Partner';
@@ -241,6 +278,18 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('NOTION')) {
+    suggestedTransaction.financialEntity = 'Notion Labs Inc.';
+    suggestedTransaction.userDescription = 'Notion monthly charge';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ALTINITY')) {
+    suggestedTransaction.financialEntity = 'ALTINITY';
+    suggestedTransaction.userDescription = 'ALTINITY DB Hosting';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('קרן מכבי- חיוב')) {
     suggestedTransaction.financialEntity = 'Maccabi';
     suggestedTransaction.userDescription = 'Monthly health bill';
@@ -266,6 +315,11 @@ function suggestedTransaction(transaction: any) {
       2
     );
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('LANCE GLOBAL')) {
+    suggestedTransaction.financialEntity = 'Lance Global Inc';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('CRISP')) {
     suggestedTransaction.financialEntity = 'Crisp IM SARL';
     suggestedTransaction.userDescription = 'Monthly Crisp';
@@ -326,12 +380,29 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('גרדוש')) {
     suggestedTransaction.financialEntity = 'Gil Gardosh';
     suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.userDescription = 'August Salary';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.vat = '0';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גלעד תדהר')) {
+    suggestedTransaction.financialEntity = 'Gilad Tidhar';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.userDescription = 'August Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('PAYPER')) {
+    suggestedTransaction.financialEntity = 'Payper';
+    suggestedTransaction.userDescription = 'Invoice Management Software';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = ((transaction.event_amount / 117) * 17).toFixed(
+      2
+    );
+    return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('העברת מט"ח') &&
-    transaction.detailed_bank_description.includes('fv')
+    transaction.detailed_bank_description.includes('fbv')
   ) {
     suggestedTransaction.financialEntity = 'Kamil Kisiela';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -408,7 +479,8 @@ function suggestedTransaction(transaction: any) {
       2
     );
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('יהל-מור')) {
+  } else if (transaction.detailed_bank_description.includes('יהל-מור') ||
+            transaction.detailed_bank_description.includes('רווה רביד')) {
     suggestedTransaction.financialEntity = 'Raveh Ravid & Co';
     suggestedTransaction.userDescription = 'Accountancy with Narkis';
     suggestedTransaction.personalCategory = 'business';
@@ -431,6 +503,12 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('OUTREACH')) {
+    suggestedTransaction.financialEntity = 'Outreach Corporation';
+    suggestedTransaction.userDescription = 'Apollo GraphQL server (aka Giraffe) improvements in Outreach - 1st month';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('ard')) {
     suggestedTransaction.financialEntity = 'Arda Tanrikulu';
     suggestedTransaction.userDescription = 'Payment for February 2021';
@@ -450,6 +528,11 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Party';
     suggestedTransaction.personalCategory = 'fun';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('EVENTBUZZ TICKETS')) {
+    suggestedTransaction.financialEntity = 'EVENTBUZZ TICKETS';
+    suggestedTransaction.userDescription = 'Party';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('סלון ברלין')) {
     suggestedTransaction.financialEntity = 'סלון ברלין';
     suggestedTransaction.userDescription = 'Bar';
@@ -460,11 +543,36 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Bar';
     suggestedTransaction.personalCategory = 'fun';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גוגיס')) {
+    suggestedTransaction.financialEntity = 'גוגיס';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('אלברט 1943')) {
     suggestedTransaction.financialEntity = 'אלברט 1943';
     suggestedTransaction.userDescription = 'Bar';
     suggestedTransaction.personalCategory = 'fun';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('223')) {
+    suggestedTransaction.financialEntity = '223 Bar';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('רמפה')) {
+    suggestedTransaction.financialEntity = 'Ala Rampa';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('K-BAR')) {
+    suggestedTransaction.financialEntity = 'K BAR';
+    suggestedTransaction.userDescription = 'Bar';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('NETFLIX')) {
+    suggestedTransaction.financialEntity = 'Netflix';
+    suggestedTransaction.userDescription = 'TV';
+    suggestedTransaction.personalCategory = 'fun';
+    return suggestedTransaction;    
   } else if (
     transaction.detailed_bank_description.includes('תורגמן יצחק ואברהם')
   ) {
@@ -472,6 +580,13 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'טמבוריה';
     suggestedTransaction.personalCategory = 'house';
     return suggestedTransaction;
+   } else if (
+      transaction.detailed_bank_description.includes('קאופמן מנעולים')
+    ) {
+      suggestedTransaction.financialEntity = 'קאופמן מנעולים';
+      suggestedTransaction.userDescription = 'טמבוריה';
+      suggestedTransaction.personalCategory = 'house';
+      return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('NAME COM')) {
     suggestedTransaction.financialEntity = 'NAME COM';
     suggestedTransaction.userDescription = 'Domain';
@@ -531,12 +646,23 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Coffee';
     suggestedTransaction.personalCategory = 'food';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גולדשטיין בן_עמי')) {
+    suggestedTransaction.financialEntity = 'Benami Goldshtein';
+    suggestedTransaction.userDescription = 'Rent for 09-2021';
+    suggestedTransaction.personalCategory = 'house';
+    return suggestedTransaction;    
   } else if (transaction.detailed_bank_description.includes('CALENDLY')) {
     suggestedTransaction.financialEntity = 'Calendly LLC';
     suggestedTransaction.userDescription = 'Calendar service';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('קיי אס פי מחשבים')) {
+    suggestedTransaction.financialEntity = 'KSP';
+    suggestedTransaction.userDescription = 'Computer';
+    suggestedTransaction.personalCategory = 'computer';
+    suggestedTransaction.financialAccountsToBalance = ' ';
+    return suggestedTransaction;    
   } else if (transaction.event_amount == -600) {
     suggestedTransaction.financialEntity = 'Zaum';
     suggestedTransaction.userDescription = 'Matic Zavadlal - April 2021';
@@ -658,7 +784,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     WHERE
       (account_number in ('466803', '1074', '1082')) AND
       event_amount > 0 AND
-      financial_entity != 'Poalim'
+      (financial_entity != 'Poalim' OR financial_entity IS NULL)
     ORDER BY event_date DESC
     limit 10;
   `;
