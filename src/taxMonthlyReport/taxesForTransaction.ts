@@ -18,7 +18,7 @@ const entitiesWithoutAccounting = [
   'Uri Goldshtein',
 ];
 
-const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע'];
+const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע', 'מחשבים'];
 
 export function hashDateFormat(date: Date): string {
   return moment(date).format('DD/MM/YYYY');
