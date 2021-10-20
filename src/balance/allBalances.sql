@@ -347,6 +347,12 @@ WITH times_table AS (
          ORDER BY executing_date,
                   event_number DESC
      ),
+     usd_interactive_brokers_personal_balance as (
+         SELECT DISTINCT on (date) date,
+                                   balance
+         FROM accounter_schema.interactive_broker_account
+         ORDER BY date desc
+     ),
      all_balances as (
          select dt,
                 (select t1.current_balance
@@ -379,6 +385,11 @@ WITH times_table AS (
                  where date_trunc('day', t1.executing_date)::date <= times_table.dt
                  order by executing_date desc
                  limit 1) eur_personal_balance,
+                (select t1.balance
+                 from usd_interactive_brokers_personal_balance t1
+                 where date_trunc('day', t1.date)::date <= times_table.dt
+                 order by date desc
+                 limit 1) interative_brokers_personal,
                 (select t1.eur
                  from accounter_schema.exchange_rates t1
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
@@ -465,6 +476,7 @@ WITH times_table AS (
                 eur_personal_balance,
                 (ils_personal_balance / usd_rate)              as ils_personal_in_usd,
                 (eur_personal_balance * (eur_rate / usd_rate)) as eur_personal_in_usd,
+                interative_brokers_personal,
                 this_month_private_creditcard,
                 (dotan_old_dept / usd_rate)                    as dotan_old_dept,
                 dotan_dept,
@@ -517,13 +529,15 @@ WITH times_table AS (
                 eur_personal_in_usd,
                 pension,
                 training_fund,
+                interative_brokers_personal,
                 (
                         COALESCE(ils_personal_in_usd, 0) +
                         COALESCE(usd_personal_balance, 0) +
                         COALESCE(eur_personal_in_usd, 0) +
                         COALESCE(this_month_private_creditcard, 0) +
                         COALESCE(pension, 0) +
-                        COALESCE(training_fund, 0)
+                        COALESCE(training_fund, 0) +
+                        COALESCE(interative_brokers_personal, 0)
                     ) as everything_personal,
                 (
                                 COALESCE(ils_business_in_usd, 0) +
@@ -541,7 +555,8 @@ WITH times_table AS (
                                 COALESCE(dotan_future_dept, 0) +
                                 COALESCE(new_business_account_transactions, 0) +
                                 COALESCE(pension, 0) +
-                                COALESCE(training_fund, 0)
+                                COALESCE(training_fund, 0) +
+                                COALESCE(interative_brokers_personal, 0)
                     ) as everything
          from caluculated_values
      )
