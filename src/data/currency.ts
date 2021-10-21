@@ -5,7 +5,10 @@ import puppeteer from 'puppeteer';
 
 // TODO: Compare to this library: https://github.com/TobiasNickel/tXml
 
-async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) {
+async function getCurrencyRatesForDate(
+  currentDate: Date,
+  page: puppeteer.Page
+) {
   const url = `https://www.boi.org.il/currency.xml?rdate=${format(
     currentDate,
     'yyyyMMdd'
@@ -18,8 +21,10 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
     try {
       await page.goto(url);
       // await page.screenshot({ path: 'example.png' });
-      let textRes = await page.evaluate('document.getElementById("webkit-xml-viewer-source-xml").innerHTML');
-      textRes = textRes.replace(/(\r\n|\n|\r)/gm,"").replaceAll(' ','');
+      let textRes = await page.evaluate(
+        'document.getElementById("webkit-xml-viewer-source-xml").innerHTML'
+      );
+      textRes = textRes.replace(/(\r\n|\n|\r)/gm, '').replaceAll(' ', '');
 
       let currencyRates: any = XML.parse(textRes);
 
@@ -36,7 +41,7 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
         currencyRates.ERROR3 == 'ATTENTION: Date should be in format YYYYMMDD'
       ) {
         console.log(`regular error missing ${format(currentDate, 'yyyyMMdd')}`);
-      }  else if (
+      } else if (
         currencyRates.ERROR1 == 'Requesteddateisinvalidor' &&
         currencyRates.ERROR2 == 'Noexchangeratepublishedforthisdate' &&
         currencyRates.ERROR3 == 'ATTENTION:DateshouldbeinformatYYYYMMDD'
@@ -165,8 +170,10 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
           }
         } else {
           if (
-            parseFloat(currencyRates.dollarRate.toString()).toFixed(4) == parseFloat(existingRate.rows[0].usd).toFixed(4) &&
-            parseFloat(currencyRates.euroRate.toString()).toFixed(4) == parseFloat(existingRate.rows[0].eur).toFixed(4)
+            parseFloat(currencyRates.dollarRate.toString()).toFixed(4) ==
+              parseFloat(existingRate.rows[0].usd).toFixed(4) &&
+            parseFloat(currencyRates.euroRate.toString()).toFixed(4) ==
+              parseFloat(existingRate.rows[0].eur).toFixed(4)
           ) {
             console.log(`Same for ${format(currentDate, 'yyyy-MM-dd')}`);
           } else {

@@ -318,11 +318,12 @@ export let insertMovementQuery = `insert into accounter_schema.ledger (
 
 export function getILSForDate(transaction: any, date: any) {
   let amounts: any = {};
-  let amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
+  let amountToUse = transaction.tax_invoice_amount
+    ? transaction.tax_invoice_amount
+    : transaction.event_amount;
   if (['USD', 'EUR'].includes(transaction.currency_code)) {
     let currencyKey = transaction.currency_code.toLowerCase();
-    amounts.eventAmountILS =
-      amountToUse * date?.rows[0][currencyKey];
+    amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
     amounts.vatAfterDiductionILS =
       transaction.vatAfterDiduction * date?.rows[0][currencyKey];
     amounts.amountBeforeVATILS =
@@ -864,15 +865,16 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 }
 
 export function addTrueVATtoTransaction(transaction: any) {
-  let amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
+  let amountToUse = transaction.tax_invoice_amount
+    ? transaction.tax_invoice_amount
+    : transaction.event_amount;
   transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(
     transaction.tax_category
   )
     ? parseFloat(transaction.vat)
     : (transaction.vat / 3) * 2;
   // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
-  transaction.amountBeforeVAT =
-    amountToUse - transaction.vatAfterDiduction;
+  transaction.amountBeforeVAT = amountToUse - transaction.vatAfterDiduction;
 
   transaction.amountBeforeFullVAT = amountToUse - transaction.vat;
 }

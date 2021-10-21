@@ -107,7 +107,12 @@ export function updateClipboard(newClip: string) {
   );
 }
 
-export function editTransactionAttribute(movementOrBank: boolean, transactionId: string, attribute: string, value: string) {
+export function editTransactionAttribute(
+  movementOrBank: boolean,
+  transactionId: string,
+  attribute: string,
+  value: string
+) {
   const changeRequest = { movementOrBank, transactionId, attribute, value };
   console.log(changeRequest);
 

@@ -46,9 +46,9 @@ function getVATTransaction(
 		FROM accounter_schema.all_transactions
 		WHERE
 			account_number in (${getCurrentBusinessAccountsQuery}) AND
-			event_date >= date_trunc('month', to_date('${moment(month).subtract(1, 'months').format(
-        'YYYY-MM-DD'
-      )}', 'YYYY-MM-DD')) AND
+			event_date >= date_trunc('month', to_date('${moment(month)
+        .subtract(1, 'months')
+        .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
 			event_date <= date_trunc('month', to_date('${moment(month).format(
         'YYYY-MM-DD'
       )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
@@ -331,46 +331,58 @@ export async function createTaxEntriesForMonth(
       );
       let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
       let amountBeforeVAT = 0;
-      if (!monthIncomeVATTransaction.vat || monthIncomeVATTransaction.vat == 0 || monthIncomeVATTransaction.vat == '0.00') {
-        amountBeforeVAT = Math.round(
-          (parseFloat(getILSForDate(
-            monthIncomeVATTransaction,
-            invoiceExchangeRates
-          ).eventAmountILS) +
-            Number.EPSILON) *
-            100
-        ) / 100;
+      if (
+        !monthIncomeVATTransaction.vat ||
+        monthIncomeVATTransaction.vat == 0 ||
+        monthIncomeVATTransaction.vat == '0.00'
+      ) {
+        amountBeforeVAT =
+          Math.round(
+            (parseFloat(
+              getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+                .eventAmountILS
+            ) +
+              Number.EPSILON) *
+              100
+          ) / 100;
       } else {
-        amountBeforeVAT = Math.round(
-          (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
-            Number.EPSILON) *
-            100
-        ) / 100 // TODO: Add amount before VAT in ILS always
+        amountBeforeVAT =
+          Math.round(
+            (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
+              Number.EPSILON) *
+              100
+          ) / 100; // TODO: Add amount before VAT in ILS always
       }
-      if (!monthIncomeVATTransaction.vat || monthIncomeVATTransaction.vat == 0 || monthIncomeVATTransaction.vat == '0.00') {
+      if (
+        !monthIncomeVATTransaction.vat ||
+        monthIncomeVATTransaction.vat == 0 ||
+        monthIncomeVATTransaction.vat == '0.00'
+      ) {
         expensesWithoutVATVATSum +=
-        Math.round(
-          (parseFloat(getILSForDate(
-            monthIncomeVATTransaction,
-            invoiceExchangeRates
-          ).eventAmountILS) +
-            Number.EPSILON) *
-            100
-        ) / 100;
+          Math.round(
+            (parseFloat(
+              getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+                .eventAmountILS
+            ) +
+              Number.EPSILON) *
+              100
+          ) / 100;
       } else {
         expensesWithVATExcludingVATSum +=
-        Math.round(
-          (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
-            Number.EPSILON) *
-            100
-        ) / 100;
+          Math.round(
+            (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
+              Number.EPSILON) *
+              100
+          ) / 100;
       }
       monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
     <tr>
       <td>${monthIncomeVATTransaction.financial_entity}-${
         monthIncomeVATTransaction.vatNumber
       }</td>
-      <td><a href="${monthIncomeVATTransaction.proforma_invoice_file}">P</a></td>
+      <td><a href="${
+        monthIncomeVATTransaction.proforma_invoice_file
+      }">P</a></td>
       <td>${monthIncomeVATTransaction.tax_invoice_number}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.tax_invoice_date)}</td>
       <td>${monthIncomeVATTransaction.event_amount} ${
@@ -391,7 +403,8 @@ export async function createTaxEntriesForMonth(
       <td>${Math.round((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
       <td>${amountBeforeVAT}</td> 
       <td>${
-        Math.round((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) / 100
+        Math.round((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) /
+        100
       }</td>
       <td>${expensesWithoutVATVATSum}</td>
     </tr>
