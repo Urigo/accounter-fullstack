@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/server';
 import { pool } from '..';
+import { TransactionRow } from './transactionRow';
 
 export interface AllTransactionsEntity {
   tax_invoice_date: Date | null;
@@ -42,9 +43,47 @@ export interface AllTransactionsEntity {
   receipt_date: string | null;
 }
 
+export type transactionColumnName =
+  | 'Date'
+  | 'Amount'
+  | 'Entity'
+  | 'Description'
+  | 'Category'
+  | 'VAT'
+  | 'Account'
+  | 'Share with'
+  | 'Tax category'
+  | 'Bank Description'
+  | 'Invoice Img'
+  | 'Invoice Date'
+  | 'Invoice Number'
+  | 'Invoice File'
+  | 'Receipt File';
+
 export const getAllTransactions = async (): Promise<string> => {
+  const columns: transactionColumnName[] = [
+    'Date',
+    'Amount',
+    'Entity',
+    'Description',
+    'Category',
+    'VAT',
+    'Account',
+    'Share with',
+    'Tax category',
+    'Bank Description',
+    'Invoice Img',
+    'Invoice Date',
+    'Invoice Number',
+    'Invoice File',
+    'Receipt File',
+  ];
+
   const res = await pool.query<AllTransactionsEntity>(
-    `select * from accounter_schema.all_transactions`
+    `select *
+    from accounter_schema.all_transactions
+    order by event_date desc
+    limit 1550;`
   );
 
   const pageLength = 200;
@@ -61,23 +100,14 @@ export const getAllTransactions = async (): Promise<string> => {
           <>
             <thead>
               <tr>
-                {Object.keys(transactions[0]).map((key) => (
+                {columns.map((key) => (
                   <th>{key}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {transactions.map((row) => (
-                <tr>
-                  {Object.keys(transactions[0]).map((key) => {
-                    let field = row[key as keyof AllTransactionsEntity];
-                    return (
-                      <td>
-                        {typeof field === 'string' ? field : field?.toString()}
-                      </td>
-                    );
-                  })}
-                </tr>
+                <TransactionRow transaction={row} columns={columns} />
               ))}
             </tbody>
           </>
