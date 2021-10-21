@@ -5,6 +5,7 @@ import moment from 'moment';
 // import XML from 'pixl-xml';
 
 import { createTaxEntriesForMonth } from '../taxMonthlyReport/taxesForMonth';
+import { lastInvoiceNumbersQuery, getLastInvoiceNumbers } from '../firstPage';
 
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
@@ -14,14 +15,10 @@ export const reportToReview = async (query: any): Promise<string> => {
     reportMonthToReview = `2021-08-01`;
   }
 
-  const lastInvoiceNumbersQuery = readFileSync(
-    'src/sql/lastInvoiceNumbers.sql'
-  ).toString();
-
   console.log('reportMonthToReview', reportMonthToReview);
   console.time('callingReportsDB');
   let currrentCompany = 'Software Products Guilda Ltd.';
-  currrentCompany = 'Uri Goldshtein LTD';
+  // currrentCompany = 'Uri Goldshtein LTD';
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
     pool.query(
@@ -37,38 +34,6 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   console.timeEnd('callingReportsDB');
   console.time('renderReports');
-
-  let lastInvoiceNumbersHTMLTemplate = '';
-  for (const transaction of lastInvoiceNumbers.rows) {
-    lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
-      <tr>
-        <td>${transaction.tax_invoice_number}</td>
-        <td>${transaction.event_date
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}</td>
-        <td>${transaction.financial_entity}</td>
-        <td>${transaction.user_description}</td>
-        <td>${transaction.event_amount}</td>
-      </tr>
-      `);
-  }
-  lastInvoiceNumbersHTMLTemplate = `
-      <table>
-        <thead>
-            <tr>
-              <th>Invoice Number</th>
-              <th>Date</th>
-              <th>Entity</th>
-              <th>Description</th>
-              <th>Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${lastInvoiceNumbersHTMLTemplate}
-        </tbody>
-      </table>  
-    `;
 
   let counter = 1;
   let reportToReviewHTMLTemplate = '';
@@ -334,7 +299,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       <br>
       <h3>Last invoice numbers</h3>
   
-      ${lastInvoiceNumbersHTMLTemplate}
+      ${getLastInvoiceNumbers(lastInvoiceNumbers)}
 
       <h1>Report to review</h1>
 
