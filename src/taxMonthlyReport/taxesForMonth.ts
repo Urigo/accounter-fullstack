@@ -34,18 +34,26 @@ function getVATTransaction(
     ))
   `;
 
+  let symbolToUse: any = transactionType;
+  let extraSymbol = '';
+  if (transactionType === TransactionType.Income) {
+    symbolToUse = '>=';
+    extraSymbol = ' and event_amount > 0';
+  }
+
   return `
 		SELECT *
 		FROM accounter_schema.all_transactions
 		WHERE
 			account_number in (${getCurrentBusinessAccountsQuery}) AND
-			event_date >= date_trunc('month', to_date('${moment(month).format(
+			event_date >= date_trunc('month', to_date('${moment(month).subtract(1, 'months').format(
         'YYYY-MM-DD'
       )}', 'YYYY-MM-DD')) AND
 			event_date <= date_trunc('month', to_date('${moment(month).format(
         'YYYY-MM-DD'
       )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
-			vat ${transactionType} 0;	
+			vat ${symbolToUse} 0 ${extraSymbol}
+      order by event_date;	
 	`;
 }
 
@@ -54,7 +62,6 @@ export async function createTaxEntriesForMonth(
   businessName: String,
   pool: pg.Pool
 ) {
-
   let businessIdByNameQuery = `
   (
     select id
@@ -87,7 +94,8 @@ export async function createTaxEntriesForMonth(
         event_date <= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
-        event_amount > 0 and is_conversion is false;	
+        event_amount > 0 and is_conversion is false
+        order by event_date;	
     `;
 
   let monthIncomeTransactions: any = await pool.query(
@@ -98,8 +106,8 @@ export async function createTaxEntriesForMonth(
   let incomeSum = 0;
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
+  let advancePercentageRate = 8.2;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
-
     let isExcludedFromTaxReportQuery = `
       select include_in_tax_report
       from accounter_schema.hash_business_indexes
@@ -112,7 +120,11 @@ export async function createTaxEntriesForMonth(
     let isExcludedFromTaxReport: any = await pool.query(
       isExcludedFromTaxReportQuery
     );
-    if (isExcludedFromTaxReport.rowCount == 0 || isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == null || isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == true) {
+    if (
+      isExcludedFromTaxReport.rowCount == 0 ||
+      isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == null ||
+      isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == true
+    ) {
       let transactionsExchnageRates = await getTransactionExchangeRates(
         monthIncomeTransaction
       );
@@ -120,9 +132,10 @@ export async function createTaxEntriesForMonth(
         { financial_entity: monthIncomeTransaction.financial_entity },
         owner
       );
-      monthIncomeTransaction.tax_category = hashBusinessIndexes?.auto_tax_category
-        ? hashBusinessIndexes?.auto_tax_category
-        : monthIncomeTransaction.tax_category;
+      monthIncomeTransaction.tax_category =
+        hashBusinessIndexes?.auto_tax_category
+          ? hashBusinessIndexes?.auto_tax_category
+          : monthIncomeTransaction.tax_category;
       addTrueVATtoTransaction(monthIncomeTransaction);
       let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
       let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
@@ -179,17 +192,21 @@ export async function createTaxEntriesForMonth(
       monthTaxHTMLTemplate = monthTaxHTMLTemplate.concat(`
       <tr>
         <td>${monthIncomeTransaction.financial_entity}</td>
+        <td>${monthIncomeTransaction.tax_invoice_number}</td>
         <td>${hashDateFormat(monthIncomeTransaction.tax_invoice_date)}</td>
-        <td>${monthIncomeTransaction.event_amount}${
+        <td>${monthIncomeTransaction.tax_invoice_amount}</td>
+        <td>${monthIncomeTransaction.event_amount} ${
         monthIncomeTransaction.currency_code
       }</td>
         <td>${monthIncomeTransaction.vat}</td>
+        <td>${monthIncomeTransaction.amountBeforeVAT}</td>
         <td>${
           getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
             .eventAmountILS
         }</td>
         <td>${
-          getILSForDate(monthIncomeTransaction, debitExchangeRates).eventAmountILS
+          getILSForDate(monthIncomeTransaction, debitExchangeRates)
+            .eventAmountILS
         }</td>
         <td><a href="${monthIncomeTransaction.proforma_invoice_file}">P</a></td>
         <td>${incomeSum}</td>
@@ -204,9 +221,12 @@ export async function createTaxEntriesForMonth(
     <thead>
         <tr>
           <th>Name</th>
+          <th>Invoice Number</th>
           <th>Tax Invoice Date</th>
+          <th>Tax Invoice Amount</th>
           <th>Amount</th>
           <th>VAT</th>
+          <th>SUM Before VAT</th>
           <th>In ILS Invoice</th>
           <th>In ILS Debit</th>
           <th>Image</th>
@@ -221,7 +241,7 @@ export async function createTaxEntriesForMonth(
   </table>  
 `;
   console.log('SUM to tax ------ ', incomeSum);
-  console.log('Advance sum ------ ', (incomeSum / 100) * 8.2); // TODO: Move 8.2 to read from table
+  console.log('Advance sum ------ ', (incomeSum / 100) * advancePercentageRate); // TODO: Move 8.2 to read from table
   console.log('VAT free SUM ------ ', VATFreeIncomeSum);
   console.log('VAT income SUM ------ ', VATIncomeSum);
 
@@ -230,7 +250,8 @@ export async function createTaxEntriesForMonth(
     <thead>
         <tr>
           <th>Sum to Tax</th>
-          <th>Advance Sum</th>
+          <th>Advance Percentage Rate</th>
+          <th>Advance Percent</th>
           <th>VAT Freee Sum</th>
           <th>VAT Income Sum</th>
         </tr>
@@ -238,7 +259,10 @@ export async function createTaxEntriesForMonth(
     <tbody>
         <tr>
           <td>${hashNumberRounded(incomeSum)}</td>
-          <td>${hashNumberRounded((incomeSum / 100) * 8.2)}</td>
+          <td>${hashNumberRounded(
+            (incomeSum / 100) * advancePercentageRate
+          )}</td>
+          <td>${advancePercentageRate}</td>
           <td>${VATFreeIncomeSum}</td>
           <td>${VATIncomeSum}</td>
         </tr>
@@ -254,38 +278,127 @@ export async function createTaxEntriesForMonth(
       getVATTransaction(month, transactionType, businessName)
     );
     let expensesVATSum = 0;
+    let expensesWithVATExcludingVATSum = 0;
+    let expensesWithoutVATVATSum = 0;
     for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
       let hashBusinessIndexes = await getHashBusinessIndexes(
         { financial_entity: monthIncomeVATTransaction.financial_entity },
         owner
       );
-      monthIncomeVATTransaction.tax_category = hashBusinessIndexes?.auto_tax_category
-        ? hashBusinessIndexes?.auto_tax_category
-        : monthIncomeVATTransaction.tax_category;
+      monthIncomeVATTransaction.tax_category =
+        hashBusinessIndexes?.auto_tax_category
+          ? hashBusinessIndexes?.auto_tax_category
+          : monthIncomeVATTransaction.tax_category;
       addTrueVATtoTransaction(monthIncomeVATTransaction);
+      let businessVATNumberQuery = `
+        select vat_number
+        from accounter_schema.businesses
+        where
+            name = $$${monthIncomeVATTransaction.financial_entity}$$;    
+      `;
+      let financialEntityVATNumber: any = await pool.query(
+        businessVATNumberQuery
+      );
+      monthIncomeVATTransaction.vatNumber =
+        financialEntityVATNumber?.rows[0]?.vat_number;
       console.log('vat transaction: ', {
         name: monthIncomeVATTransaction.financial_entity,
         invoiceDate: hashDateFormat(monthIncomeVATTransaction.tax_invoice_date),
         amount: monthIncomeVATTransaction.event_amount,
         currency: monthIncomeVATTransaction.currency_code,
-        vat: Math.round((parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100) / 100,
-        actualVat: Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100
+        vat:
+          Math.round(
+            (parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100
+          ) / 100,
+        actualVat:
+          Math.round(
+            (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
+              Number.EPSILON) *
+              100
+          ) / 100,
+        vatNumber: monthIncomeVATTransaction.vatNumber,
       });
-      
-      expensesVATSum += Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100;
+
+      expensesVATSum +=
+        Math.round(
+          (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
+            Number.EPSILON) *
+            100
+        ) / 100;
+
+      let transactionsExchnageRates = await getTransactionExchangeRates(
+        monthIncomeVATTransaction
+      );
+      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+      let amountBeforeVAT = 0;
+      if (!monthIncomeVATTransaction.vat || monthIncomeVATTransaction.vat == 0 || monthIncomeVATTransaction.vat == '0.00') {
+        amountBeforeVAT = Math.round(
+          (parseFloat(getILSForDate(
+            monthIncomeVATTransaction,
+            invoiceExchangeRates
+          ).eventAmountILS) +
+            Number.EPSILON) *
+            100
+        ) / 100;
+      } else {
+        amountBeforeVAT = Math.round(
+          (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
+            Number.EPSILON) *
+            100
+        ) / 100 // TODO: Add amount before VAT in ILS always
+      }
+      if (!monthIncomeVATTransaction.vat || monthIncomeVATTransaction.vat == 0 || monthIncomeVATTransaction.vat == '0.00') {
+        expensesWithoutVATVATSum +=
+        Math.round(
+          (parseFloat(getILSForDate(
+            monthIncomeVATTransaction,
+            invoiceExchangeRates
+          ).eventAmountILS) +
+            Number.EPSILON) *
+            100
+        ) / 100;
+      } else {
+        expensesWithVATExcludingVATSum +=
+        Math.round(
+          (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
+            Number.EPSILON) *
+            100
+        ) / 100;
+      }
       monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
     <tr>
-      <td>${monthIncomeVATTransaction.financial_entity}</td>
+      <td>${monthIncomeVATTransaction.financial_entity}-${
+        monthIncomeVATTransaction.vatNumber
+      }</td>
+      <td><a href="${monthIncomeVATTransaction.proforma_invoice_file}">P</a></td>
+      <td>${monthIncomeVATTransaction.tax_invoice_number}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.tax_invoice_date)}</td>
-      <td>${monthIncomeVATTransaction.event_amount}${
+      <td>${monthIncomeVATTransaction.event_amount} ${
         monthIncomeVATTransaction.currency_code
       }</td>
-      <td>${Math.round((parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100) / 100}</td>
-      <td>${Math.round((parseFloat(monthIncomeVATTransaction.vatAfterDiduction) + Number.EPSILON) * 100) / 100}</td>
+      <td>${
+        Math.round(
+          (parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100
+        ) / 100
+      }</td>
+      <td>${
+        Math.round(
+          (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
+            Number.EPSILON) *
+            100
+        ) / 100
+      }</td>
       <td>${Math.round((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
+      <td>${amountBeforeVAT}</td> 
+      <td>${
+        Math.round((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) / 100
+      }</td>
+      <td>${expensesWithoutVATVATSum}</td>
     </tr>
     `);
     }
+
+    console.log(JSON.stringify(monthIncomeVATTransactions.rows));
 
     console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
@@ -398,11 +511,16 @@ export async function createTaxEntriesForMonth(
     <thead>
         <tr>
           <th>Name</th>
+          <th>Invoice Image</th>
+          <th>Invoice Number</th>
           <th>Tax Invoice Date</th>
           <th>Amount</th>
           <th>VAT</th>
           <th>Actual VAT</th>
           <th>Sum till now</th>
+          <th>Amount Before VAT</th>
+          <th>Hayavot without VAT SUM till now</th>
+          <th>Pturot SUM till now</th>
         </tr>
     </thead>
     <tbody>

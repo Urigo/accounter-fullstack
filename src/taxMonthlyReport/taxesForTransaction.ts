@@ -77,6 +77,13 @@ export async function getVATIndexes(owner: any) {
       hash_owner = $$${owner}$$ and
       gov_entity = 'VAT_inputs';
   `);
+  let hashVATPropertyInputsIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Property_Inputs';
+  `);
   let hashVATOutputsIndexResult: any = await pool.query(`
     select hash_index
     from accounter_schema.hash_gov_indexes
@@ -105,6 +112,13 @@ export async function getVATIndexes(owner: any) {
       hash_owner = $$${owner}$$ and
       gov_entity = 'VAT_Expenses_Movement_Type';
   `);
+  let hashVATPropertyExpensesMovementTypeIndexResult: any = await pool.query(`
+    select hash_index
+    from accounter_schema.hash_gov_indexes
+    where
+      hash_owner = $$${owner}$$ and
+      gov_entity = 'VAT_Property_Expenses_Movement_Type';
+  `);
   let hashVATIncomesIndexResult: any = await pool.query(`
     select hash_index
     from accounter_schema.hash_gov_indexes
@@ -129,6 +143,7 @@ export async function getVATIndexes(owner: any) {
 
   return {
     vatInputsIndex: hashVATInputsIndexResult.rows[0].hash_index,
+    vatPropertyInputsIndex: hashVATPropertyInputsIndexResult.rows[0].hash_index,
     vatOutputsIndex: hashVATOutputsIndexResult.rows[0].hash_index,
     vatIncomesMovementTypeIndex:
       hashVATIncomesMovementTypeIndexResult.rows[0].hash_index,
@@ -138,6 +153,8 @@ export async function getVATIndexes(owner: any) {
     vatFreeIncomesIndex: hashVATFreeIncomesIndexResult.rows[0].hash_index,
     vatExpensesMovementTypeIndex:
       hashVATExpensesMovementTypeIndexResult.rows[0].hash_index,
+    vatExpensesPropertyMovementTypeIndex:
+      hashVATPropertyExpensesMovementTypeIndexResult.rows[0].hash_index,
     hashCurrencyRatesDifferencesIndex:
       hashCurrencyRatesDifferencesIndexResult.rows[0].hash_index,
   };
@@ -301,16 +318,17 @@ export let insertMovementQuery = `insert into accounter_schema.ledger (
 
 export function getILSForDate(transaction: any, date: any) {
   let amounts: any = {};
+  let amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
   if (['USD', 'EUR'].includes(transaction.currency_code)) {
     let currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS =
-      transaction.event_amount * date?.rows[0][currencyKey];
+      amountToUse * date?.rows[0][currencyKey];
     amounts.vatAfterDiductionILS =
       transaction.vatAfterDiduction * date?.rows[0][currencyKey];
     amounts.amountBeforeVATILS =
       transaction.amountBeforeVAT * date?.rows[0][currencyKey];
   } else if (transaction.currency_code == 'ILS') {
-    amounts.eventAmountILS = transaction.event_amount;
+    amounts.eventAmountILS = amountToUse;
     amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;
     amounts.amountBeforeVATILS = transaction.amountBeforeVAT;
   } else {
@@ -512,6 +530,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
       transaction.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
+        : transaction.is_property
+        ? (entryForAccounting.movementType =
+            hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
         : (entryForAccounting.movementType =
             hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
@@ -578,7 +599,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       : null,
     entryForAccounting.secondAccountDebitAmount &&
     entryForAccounting.secondAccountDebitAmount != 0
-      ? hashVATIndexes.vatInputsIndex
+      ? transaction.is_property
+        ? hashVATIndexes.vatPropertyInputsIndex
+        : hashVATIndexes.vatInputsIndex
       : null,
     entryForAccounting.secondAccountDebitAmount
       ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
@@ -841,14 +864,17 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 }
 
 export function addTrueVATtoTransaction(transaction: any) {
+  let amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
   transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(
     transaction.tax_category
   )
-    ? transaction.vat
+    ? parseFloat(transaction.vat)
     : (transaction.vat / 3) * 2;
-  // Add a check if there is vat and it's not equal for 17 percent, let us know
+  // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
   transaction.amountBeforeVAT =
-    transaction.event_amount - transaction.vatAfterDiduction;
+    amountToUse - transaction.vatAfterDiduction;
+
+  transaction.amountBeforeFullVAT = amountToUse - transaction.vat;
 }
 // Salary
 /*
