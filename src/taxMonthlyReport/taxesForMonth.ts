@@ -22,7 +22,8 @@ enum TransactionType {
 function getVATTransaction(
   month: Date,
   transactionType: TransactionType,
-  businessName: String
+  businessName: String,
+  VATCadence: String,
 ): any {
   const getCurrentBusinessAccountsQuery = `
     (select account_number
@@ -41,15 +42,20 @@ function getVATTransaction(
     extraSymbol = ' and event_amount > 0';
   }
 
+  let initialMonth = moment(month).format('YYYY-MM-DD');
+  if (VATCadence == '1') {
+    initialMonth = moment(month).format('YYYY-MM-DD');
+  } else if (VATCadence == '2') {
+    initialMonth = moment(month).subtract(1, 'months').format('YYYY-MM-DD');
+  }
+
   return {
     transactionsByInvoiceDate: `
       SELECT *
       FROM accounter_schema.all_transactions
       WHERE
         account_number in (${getCurrentBusinessAccountsQuery}) AND
-        tax_invoice_date >= date_trunc('month', to_date('${moment(month)
-          .subtract(1, 'months')
-          .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
+        tax_invoice_date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
         tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
@@ -91,6 +97,12 @@ export async function createTaxEntriesForMonth(
     where name = $$${businessName}$$
   )
   `;
+  let VATCadenceByNameResult: any = await pool.query(`
+    select vat_report_cadence
+    from accounter_schema.businesses
+    where name = $$${businessName}$$
+  `);
+  let VATCadence = VATCadenceByNameResult.rows[0].vat_report_cadence;
   let ownerResult: any = await pool.query(`
     select owner
     from accounter_schema.financial_accounts
@@ -293,15 +305,17 @@ export async function createTaxEntriesForMonth(
 `;
 
   let monthVATReportHTMLTemplate = '';
+  let leftMonthVATReportHTMLTemplate = '';
   let overallVATHTMLTemplate = '';
   let transactionsForReport = [];
+  let leftTransactionsReport = [];
   for (const transactionType of Object.values(TransactionType)) {
     console.log(`VAT transactions - ${transactionType}`);
     let monthIncomeVATTransactions: any = await pool.query(
-      getVATTransaction(month, transactionType, businessName).transactionsByInvoiceDate
+      getVATTransaction(month, transactionType, businessName, VATCadence).transactionsByInvoiceDate
     );
     let leftTransactions: any = await pool.query(
-      getVATTransaction(month, transactionType, businessName).transactionsByEventDate
+      getVATTransaction(month, transactionType, businessName, VATCadence).transactionsByEventDate
     );    
     console.log('left transactions', leftTransactions?.rows);
     let expensesVATSum = 0;
@@ -413,6 +427,7 @@ export async function createTaxEntriesForMonth(
       }">P</a></td>
       <td>${monthIncomeVATTransaction.tax_invoice_number}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.tax_invoice_date)}</td>
+      <td>${hashDateFormat(monthIncomeVATTransaction.event_date)}</td>
       <td>${monthIncomeVATTransaction.event_amount} ${
         monthIncomeVATTransaction.currency_code
       }</td>
@@ -439,7 +454,22 @@ export async function createTaxEntriesForMonth(
     `);
     }
 
-    transactionsForReport.push(monthIncomeVATTransactions.rows);
+    for (const leftTransaction of leftTransactions?.rows) {      
+      leftMonthVATReportHTMLTemplate = leftMonthVATReportHTMLTemplate.concat(`
+      <tr>
+        <td>${leftTransaction.financial_entity}-${leftTransaction.vatNumber}</td>
+        <td><a href="${leftTransaction.proforma_invoice_file}">P</a></td>
+        <td>${leftTransaction.tax_invoice_number}</td>
+        <td>${hashDateFormat(leftTransaction.tax_invoice_date)}</td>
+        <td>${hashDateFormat(leftTransaction.event_date)}</td>
+        <td>${leftTransaction.event_amount} ${leftTransaction.currency_code}</td>
+        <td>${leftTransaction.vat}</td>
+      </tr>
+      `);
+    }
+
+    transactionsForReport.push(...monthIncomeVATTransactions.rows);
+    leftTransactionsReport.push(...leftTransactions.rows);
 
     // console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
@@ -557,6 +587,7 @@ export async function createTaxEntriesForMonth(
           <th>Invoice Image</th>
           <th>Invoice Number</th>
           <th>Tax Invoice Date</th>
+          <th>Event Date</th>
           <th>Amount</th>
           <th>VAT</th>
           <th>Actual VAT</th>
@@ -570,6 +601,24 @@ export async function createTaxEntriesForMonth(
         ${monthVATReportHTMLTemplate}
     </tbody>
   </table>  
+  `;
+  leftMonthVATReportHTMLTemplate = `
+  <table>
+    <thead>
+        <tr>
+          <th>Name</th>
+          <th>Invoice Image</th>
+          <th>Invoice Number</th>
+          <th>Tax Invoice Date</th>
+          <th>Event Date</th>
+          <th>Amount</th>
+          <th>VAT</th>
+        </tr>
+    </thead>
+    <tbody>
+        ${leftMonthVATReportHTMLTemplate}
+    </tbody>
+  </table>    
   `;
   overallVATHTMLTemplate = `
   <table>
@@ -591,6 +640,7 @@ export async function createTaxEntriesForMonth(
     overallMonthTaxHTMLTemplate,
     monthVATReportHTMLTemplate,
     overallVATHTMLTemplate,
+    leftMonthVATReportHTMLTemplate,
   };
 }
 

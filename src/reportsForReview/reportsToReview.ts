@@ -9,15 +9,23 @@ import { lastInvoiceNumbersQuery, getLastInvoiceNumbers } from '../firstPage';
 
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
+  let currrentCompany;
   if (query.month) {
-    reportMonthToReview = `2020-0${query.month}-01`;
+    reportMonthToReview = `2021-${query.month}-01`;
   } else {
     reportMonthToReview = `2021-08-01`;
   }
 
+  if (query.company) {
+    currrentCompany = query.company;
+  } else {
+    currrentCompany = 'Software Products Guilda Ltd.';
+  }
+  
+
   console.log('reportMonthToReview', reportMonthToReview);
   console.time('callingReportsDB');
-  let currrentCompany = 'Software Products Guilda Ltd.';
+  // let currrentCompany = 'Software Products Guilda Ltd.';
   // currrentCompany = 'Uri Goldshtein LTD';
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
@@ -294,6 +302,9 @@ export const reportToReview = async (query: any): Promise<string> => {
       ${taxReportHTML.overallMonthTaxHTMLTemplate}
       <br>
       ${taxReportHTML.monthVATReportHTMLTemplate}
+      <br>
+      Left transactions:
+      ${taxReportHTML.leftMonthVATReportHTMLTemplate}
       <br>
       ${taxReportHTML.overallVATHTMLTemplate}
       <br>
