@@ -49,7 +49,7 @@ export async function getHashBusinessIndexes(transaction: any, owner: any) {
     console.log('Finding business id error - ', error);
   }
 
-  console.log('businessIDResult', businessIDResult);
+  // console.log('businessIDResult', businessIDResult);
 
   let hashBusinessIndexResult: any;
   try {
@@ -60,12 +60,12 @@ export async function getHashBusinessIndexes(transaction: any, owner: any) {
       business = $$${businessIDResult.rows[0].id}$$ and
       hash_owner = $$${owner}$$;
   `;
-    console.log('businessHashInfoQuery', businessHashInfoQuery);
+    // console.log('businessHashInfoQuery', businessHashInfoQuery);
     hashBusinessIndexResult = await pool.query(businessHashInfoQuery);
   } catch (error) {
     console.log('Finding business Hash id error - ', error);
   }
-  console.log('hashBusinessIndexResult.rows', hashBusinessIndexResult?.rows);
+  // console.log('hashBusinessIndexResult.rows', hashBusinessIndexResult?.rows);
   return hashBusinessIndexResult?.rows[0];
 }
 
