@@ -21,7 +21,6 @@ export const reportToReview = async (query: any): Promise<string> => {
   } else {
     currrentCompany = 'Software Products Guilda Ltd.';
   }
-  
 
   console.log('reportMonthToReview', reportMonthToReview);
   console.time('callingReportsDB');

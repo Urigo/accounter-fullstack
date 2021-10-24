@@ -23,7 +23,7 @@ function getVATTransaction(
   month: Date,
   transactionType: TransactionType,
   businessName: String,
-  VATCadence: String,
+  VATCadence: String
 ): any {
   const getCurrentBusinessAccountsQuery = `
     (select account_number
@@ -81,7 +81,7 @@ function getVATTransaction(
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' ) AND        
         vat ${symbolToUse} 0 ${extraSymbol}
         order by event_date;	    
-    `
+    `,
   };
 }
 
@@ -312,11 +312,13 @@ export async function createTaxEntriesForMonth(
   for (const transactionType of Object.values(TransactionType)) {
     console.log(`VAT transactions - ${transactionType}`);
     let monthIncomeVATTransactions: any = await pool.query(
-      getVATTransaction(month, transactionType, businessName, VATCadence).transactionsByInvoiceDate
+      getVATTransaction(month, transactionType, businessName, VATCadence)
+        .transactionsByInvoiceDate
     );
     let leftTransactions: any = await pool.query(
-      getVATTransaction(month, transactionType, businessName, VATCadence).transactionsByEventDate
-    );    
+      getVATTransaction(month, transactionType, businessName, VATCadence)
+        .transactionsByEventDate
+    );
     console.log('left transactions', leftTransactions?.rows);
     let expensesVATSum = 0;
     let expensesWithVATExcludingVATSum = 0;
@@ -454,15 +456,19 @@ export async function createTaxEntriesForMonth(
     `);
     }
 
-    for (const leftTransaction of leftTransactions?.rows) {      
+    for (const leftTransaction of leftTransactions?.rows) {
       leftMonthVATReportHTMLTemplate = leftMonthVATReportHTMLTemplate.concat(`
       <tr>
-        <td>${leftTransaction.financial_entity}-${leftTransaction.vatNumber}</td>
+        <td>${leftTransaction.financial_entity}-${
+        leftTransaction.vatNumber
+      }</td>
         <td><a href="${leftTransaction.proforma_invoice_file}">P</a></td>
         <td>${leftTransaction.tax_invoice_number}</td>
         <td>${hashDateFormat(leftTransaction.tax_invoice_date)}</td>
         <td>${hashDateFormat(leftTransaction.event_date)}</td>
-        <td>${leftTransaction.event_amount} ${leftTransaction.currency_code}</td>
+        <td>${leftTransaction.event_amount} ${
+        leftTransaction.currency_code
+      }</td>
         <td>${leftTransaction.vat}</td>
       </tr>
       `);

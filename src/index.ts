@@ -58,7 +58,8 @@ async function main() {
     } else if (
       request.url == '/reports-to-review' ||
       (request.url && request.url.startsWith('/reports-to-review?month=')) ||
-      request.url && request.url.startsWith('/reports-to-review?company=')) {
+      (request.url && request.url.startsWith('/reports-to-review?company='))
+    ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
