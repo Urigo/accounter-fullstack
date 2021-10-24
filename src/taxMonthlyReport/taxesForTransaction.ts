@@ -64,6 +64,7 @@ export async function getHashBusinessIndexes(transaction: any, owner: any) {
     hashBusinessIndexResult = await pool.query(businessHashInfoQuery);
   } catch (error) {
     console.log('Finding business Hash id error - ', error);
+    console.log(`failed query: ${transaction.financial_entity}`);
   }
   // console.log('hashBusinessIndexResult.rows', hashBusinessIndexResult?.rows);
   return hashBusinessIndexResult?.rows[0];
