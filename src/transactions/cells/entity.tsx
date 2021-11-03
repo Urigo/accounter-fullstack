@@ -15,12 +15,12 @@ export const Entity: React.FC<Props> = ({ transaction }) => {
     : suggestedTransaction(transaction)?.financialEntity;
 
   return (
-    <div
+    <td
       style={
         isFinancialEntity ? undefined : { backgroundColor: 'rgb(236, 207, 57)' }
       }
     >
-      {cellText}
+      {cellText ?? 'undefined'}
       {!transaction.financial_entity && (
         <ConfirmButton
           transaction={transaction}
@@ -33,6 +33,6 @@ export const Entity: React.FC<Props> = ({ transaction }) => {
         propertyName={'financial_entity'}
         promptText="New financial entity:"
       />
-    </div>
+    </td>
   );
 };

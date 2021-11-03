@@ -78,7 +78,7 @@ export const TransactionRow: React.FC<Props> = ({ transaction, columns }) => {
               break;
             }
           }
-          return <td>{cell}</td>;
+          return <div>{cell}</div>;
         })}
       </tr>
       <tr>

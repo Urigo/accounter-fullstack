@@ -50,14 +50,14 @@ export const ShareWith: React.FC<Props> = ({ transaction }) => {
     : suggestedTransaction(transaction)?.financialAccountsToBalance;
 
   return (
-    <div
+    <td
       style={
         shareWithDotan(transaction)
-          ? undefined
-          : { backgroundColor: 'rgb(236, 207, 57)' }
+          ? { backgroundColor: 'rgb(236, 207, 57)' }
+          : undefined
       }
     >
-      {cellText}
+      {cellText ?? 'undefined'}
       {!transaction.financial_accounts_to_balance && (
         <ConfirmButton
           transaction={transaction}
@@ -70,6 +70,6 @@ export const ShareWith: React.FC<Props> = ({ transaction }) => {
         propertyName={'financial_accounts_to_balance'}
         promptText="New Account to share:"
       />
-    </div>
+    </td>
   );
 };

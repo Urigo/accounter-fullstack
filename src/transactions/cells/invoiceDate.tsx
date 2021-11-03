@@ -12,7 +12,7 @@ export const InvoiceDate: React.FC<Props> = ({ transaction }) => {
   const indicator = isBusiness(transaction) && !transaction.tax_invoice_date;
 
   return (
-    <div
+    <td
       style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
     >
       {transaction.tax_invoice_date &&
@@ -22,6 +22,6 @@ export const InvoiceDate: React.FC<Props> = ({ transaction }) => {
         propertyName={'tax_invoice_date'}
         promptText="New Invoice Date:"
       />
-    </div>
+    </td>
   );
 };

@@ -6,5 +6,5 @@ type Props = {
 };
 
 export const BankDescription: React.FC<Props> = ({ transaction }) => {
-  return <div>{transaction.detailed_bank_description}</div>;
+  return <td>{transaction.detailed_bank_description}</td>;
 };

@@ -7,9 +7,9 @@ type Props = {
 
 export const Account: React.FC<Props> = ({ transaction }) => {
   return (
-    <div>
+    <td>
       {transaction.account_number}
       {transaction.account_type}
-    </div>
+    </td>
   );
 };

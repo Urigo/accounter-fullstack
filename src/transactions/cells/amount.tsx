@@ -17,9 +17,9 @@ export const Amount: React.FC<Props> = ({ transaction }) => {
   };
 
   return (
-    <div>
+    <td>
       {transaction.event_amount}
       {currencyCodeToSymbol(transaction.currency_code)}
-    </div>
+    </td>
   );
 };

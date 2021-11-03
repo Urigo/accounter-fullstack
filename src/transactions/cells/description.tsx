@@ -15,14 +15,14 @@ export const Description: React.FC<Props> = ({ transaction }) => {
     : suggestedTransaction(transaction)?.userDescription;
 
   return (
-    <div
+    <td
       style={
         transaction.user_description
           ? undefined
           : { backgroundColor: 'rgb(236, 207, 57)' }
       }
     >
-      {cellText}
+      {cellText ?? 'undefined'}
       {isDescription && (
         <ConfirmButton
           transaction={transaction}
@@ -35,6 +35,6 @@ export const Description: React.FC<Props> = ({ transaction }) => {
         propertyName={'user_description'}
         promptText="New user description:"
       />
-    </div>
+    </td>
   );
 };

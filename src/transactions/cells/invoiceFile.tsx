@@ -11,7 +11,7 @@ export const InvoiceFile: React.FC<Props> = ({ transaction }) => {
   const indicator = isBusiness(transaction) && !transaction.tax_invoice_file;
 
   return (
-    <div
+    <td
       style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
     >
       {transaction.tax_invoice_file && (
@@ -24,6 +24,6 @@ export const InvoiceFile: React.FC<Props> = ({ transaction }) => {
         propertyName={'tax_invoice_file'}
         promptText="New Invoice path:"
       />
-    </div>
+    </td>
   );
 };

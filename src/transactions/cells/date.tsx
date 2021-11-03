@@ -8,13 +8,13 @@ type Props = {
 
 export const Date: React.FC<Props> = ({ transaction }) => {
   return (
-    <div>
+    <td>
       {moment(transaction.event_date).format('DD/MM/YY')}
       {transaction.debit_date && (
         <div style={{ fontSize: '12px', color: 'gray' }}>
           {moment(transaction.debit_date).format('DD/MM/YY')}
         </div>
       )}
-    </div>
+    </td>
   );
 };

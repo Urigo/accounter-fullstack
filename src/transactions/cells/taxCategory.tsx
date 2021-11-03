@@ -8,13 +8,13 @@ type Props = {
 
 export const TaxCategory: React.FC<Props> = ({ transaction }) => {
   return (
-    <div>
-      {transaction.tax_category}
+    <td>
+      {transaction.tax_category ?? 'null'}
       <UpdateButton
         transaction={transaction}
         propertyName={'tax_category'}
         promptText="New Tax category:"
       />
-    </div>
+    </td>
   );
 };

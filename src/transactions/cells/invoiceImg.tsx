@@ -12,7 +12,7 @@ export const InvoiceImg: React.FC<Props> = ({ transaction }) => {
     isBusiness(transaction) && !transaction.proforma_invoice_file;
 
   return (
-    <div
+    <td
       style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
     >
       {transaction.proforma_invoice_file && (
@@ -25,6 +25,6 @@ export const InvoiceImg: React.FC<Props> = ({ transaction }) => {
         propertyName={'proforma_invoice_file'}
         promptText="New Invoice Photo:"
       />
-    </div>
+    </td>
   );
 };

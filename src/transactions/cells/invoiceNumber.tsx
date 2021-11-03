@@ -16,15 +16,15 @@ export const InvoiceNumber: React.FC<Props> = ({ transaction }) => {
     !transaction.tax_invoice_number;
 
   return (
-    <div
+    <td
       style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
     >
-      {transaction.tax_invoice_number}
+      {transaction.tax_invoice_number ?? 'null'}
       <UpdateButton
         transaction={transaction}
         propertyName={'tax_invoice_number'}
         promptText="New Invoice Number:"
       />
-    </div>
+    </td>
   );
 };

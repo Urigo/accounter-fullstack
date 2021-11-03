@@ -19,7 +19,7 @@ export const ReceiptFile: React.FC<Props> = ({ transaction }) => {
   };
 
   return (
-    <div>
+    <td>
       {transaction.links && 'yes'}
       <UpdateButton
         transaction={transaction}
@@ -29,6 +29,6 @@ export const ReceiptFile: React.FC<Props> = ({ transaction }) => {
       <button type="button" onClick={clipboardUpdate}>
         &#9986;
       </button>
-    </div>
+    </td>
   );
 };
