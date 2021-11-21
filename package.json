@@ -12,10 +12,10 @@
     "sqlgen": "npx pgtyped -c pgTypedConfig.json"
   },
   "dependencies": {
-    "date-fns": "2.25.0",
+    "date-fns": "2.26.0",
     "dotenv": "10.0.0",
     "lodash": "^4.17.21",
-    "modern-poalim-scraper": "0.1.2",
+    "modern-poalim-scraper": "0.1.7",
     "moment": "2.29.1",
     "pg": "8.7.1",
     "pixl-xml": "1.0.13",
@@ -23,18 +23,18 @@
   },
   "devDependencies": {
     "@types/dotenv": "8.2.0",
-    "@types/lodash": "^4.14.176",
-    "@types/node": "16.11.4",
+    "@types/lodash": "^4.14.177",
+    "@types/node": "16.11.9",
     "@types/pg": "8.6.1",
     "@types/pixl-xml": "1.0.2",
-    "@types/uuid": "8.3.1",
-    "concurrently": "6.3.0",
-    "nodemon": "2.0.14",
+    "@types/uuid": "8.3.3",
+    "concurrently": "6.4.0",
+    "nodemon": "2.0.15",
     "prettier": "2.4.1",
-    "typescript": "4.4.4"
+    "typescript": "4.5.2"
   },
   "engines": {
-    "node": "17.0.0"
+    "node": "17.0.1"
   },
   "license": "MIT"
 }
