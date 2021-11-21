@@ -322,7 +322,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       let responseHTML = await  getAllTransactions();
-      response.end(`${tableStyles} ${responseHTML}`);
+      response.end(`<div id="app">${responseHTML}</div>`);
     } else {
       return response.end();
     }

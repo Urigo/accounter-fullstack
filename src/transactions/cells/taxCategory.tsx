@@ -4,11 +4,12 @@ import { AllTransactionsEntity } from '../getAllTransactions';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const TaxCategory: React.FC<Props> = ({ transaction }) => {
+export const TaxCategory: React.FC<Props> = ({ transaction, style }) => {
   return (
-    <td>
+    <td style={{...style}}>
       {transaction.tax_category ?? 'null'}
       <UpdateButton
         transaction={transaction}

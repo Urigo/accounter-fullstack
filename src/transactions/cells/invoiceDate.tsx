@@ -6,14 +6,18 @@ import { isBusiness } from '../utils';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const InvoiceDate: React.FC<Props> = ({ transaction }) => {
+export const InvoiceDate: React.FC<Props> = ({ transaction, style }) => {
   const indicator = isBusiness(transaction) && !transaction.tax_invoice_date;
 
   return (
     <td
-      style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
+      style={{
+        ...style,
+        ...(indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
+      }}
     >
       {transaction.tax_invoice_date &&
         moment(transaction.tax_invoice_date).format('DD/MM/YY')}

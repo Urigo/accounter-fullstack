@@ -10,9 +10,10 @@ import {
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Vat: React.FC<Props> = ({ transaction }) => {
+export const Vat: React.FC<Props> = ({ transaction, style }) => {
   const businessesWithoutVAT = [
     'Apple',
     'Halman Aldubi Training Fund',
@@ -39,7 +40,10 @@ export const Vat: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
+      style={{
+        ...style,
+        ...(indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
+      }}
     >
       {cellText ?? 'undefined'}
       {!transaction.vat && (

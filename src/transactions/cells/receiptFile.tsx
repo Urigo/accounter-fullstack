@@ -4,9 +4,10 @@ import { AllTransactionsEntity } from '../getAllTransactions';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const ReceiptFile: React.FC<Props> = ({ transaction }) => {
+export const ReceiptFile: React.FC<Props> = ({ transaction, style }) => {
   const clipboardUpdate = () => {
     navigator.clipboard.writeText(transaction.links).then(
       function () {
@@ -19,7 +20,7 @@ export const ReceiptFile: React.FC<Props> = ({ transaction }) => {
   };
 
   return (
-    <td>
+    <td style={{...style}}>
       {transaction.links && 'yes'}
       <UpdateButton
         transaction={transaction}

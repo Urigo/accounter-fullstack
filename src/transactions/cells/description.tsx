@@ -6,9 +6,10 @@ import { suggestedTransaction } from '../utils';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Description: React.FC<Props> = ({ transaction }) => {
+export const Description: React.FC<Props> = ({ transaction, style }) => {
   const isDescription = !!transaction.user_description;
   const cellText = transaction.user_description
     ? transaction.user_description
@@ -16,11 +17,12 @@ export const Description: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={
-        transaction.user_description
-          ? undefined
-          : { backgroundColor: 'rgb(236, 207, 57)' }
-      }
+      style={{
+        ...style,
+        ...(transaction.user_description
+          ? {}
+          : { backgroundColor: 'rgb(236, 207, 57)' }),
+      }}
     >
       {cellText ?? 'undefined'}
       {isDescription && (

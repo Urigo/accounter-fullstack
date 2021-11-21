@@ -5,9 +5,10 @@ import { entitiesWithoutInvoiceNumuber, isBusiness } from '../utils';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const InvoiceNumber: React.FC<Props> = ({ transaction }) => {
+export const InvoiceNumber: React.FC<Props> = ({ transaction, style }) => {
   const indicator =
     isBusiness(transaction) &&
     !entitiesWithoutInvoiceNumuber.includes(
@@ -17,7 +18,10 @@ export const InvoiceNumber: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : undefined}
+      style={{
+        ...style,
+        ...(indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
+      }}
     >
       {transaction.tax_invoice_number ?? 'null'}
       <UpdateButton

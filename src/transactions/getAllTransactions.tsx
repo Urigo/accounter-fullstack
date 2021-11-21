@@ -95,19 +95,19 @@ export const getAllTransactions = async (): Promise<string> => {
 
   try {
     const content = ReactDOM.renderToString(
-      <table>
+      <table style={styles.table}>
         {transactions.length && (
           <>
             <thead>
               <tr>
                 {columns.map((key) => (
-                  <th>{key}</th>
+                  <th style={styles.th}>{key}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {transactions.map((row) => (
-                <TransactionRow transaction={row} columns={columns} />
+              {transactions.map((row, i) => (
+                <TransactionRow transaction={row} columns={columns} index={i} />
               ))}
             </tbody>
           </>
@@ -121,4 +121,19 @@ export const getAllTransactions = async (): Promise<string> => {
 
     throw error;
   }
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  table: {
+    borderCollapse: 'collapse',
+    backgroundColor: '#EEEEEE',
+  },
+  th: {
+    border: '1px solid black',
+    fontSize: '10px',
+    backgroundColor: '#4F7849',
+    color: 'white',
+    position: 'sticky',
+    top: 0,
+  },
 };

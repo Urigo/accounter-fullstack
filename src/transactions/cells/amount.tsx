@@ -3,9 +3,10 @@ import { AllTransactionsEntity } from '../getAllTransactions';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Amount: React.FC<Props> = ({ transaction }) => {
+export const Amount: React.FC<Props> = ({ transaction, style }) => {
   const currencyCodeToSymbol = (currency_code: string): string => {
     let currencySymbol = '₪';
     if (currency_code == 'USD') {
@@ -17,7 +18,7 @@ export const Amount: React.FC<Props> = ({ transaction }) => {
   };
 
   return (
-    <td>
+    <td style={{...style}}>
       {transaction.event_amount}
       {currencyCodeToSymbol(transaction.currency_code)}
     </td>

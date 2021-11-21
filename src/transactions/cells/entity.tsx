@@ -6,9 +6,10 @@ import { suggestedTransaction } from '../utils';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Entity: React.FC<Props> = ({ transaction }) => {
+export const Entity: React.FC<Props> = ({ transaction, style }) => {
   const isFinancialEntity = !!transaction.financial_entity;
   const cellText = transaction.financial_entity
     ? transaction.financial_entity
@@ -16,9 +17,10 @@ export const Entity: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={
-        isFinancialEntity ? undefined : { backgroundColor: 'rgb(236, 207, 57)' }
-      }
+      style={{
+        ...style,
+        ...(isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }),
+      }}
     >
       {cellText ?? 'undefined'}
       {!transaction.financial_entity && (

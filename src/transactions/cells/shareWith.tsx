@@ -10,9 +10,10 @@ import {
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const ShareWith: React.FC<Props> = ({ transaction }) => {
+export const ShareWith: React.FC<Props> = ({ transaction, style }) => {
   const businessesNotToShare = ['Dotan Simha'];
 
   const privateBusinessExpenses = [
@@ -51,11 +52,12 @@ export const ShareWith: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={
-        shareWithDotan(transaction)
+      style={{
+        ...style,
+        ...(shareWithDotan(transaction)
           ? { backgroundColor: 'rgb(236, 207, 57)' }
-          : undefined
-      }
+          : {}),
+      }}
     >
       {cellText ?? 'undefined'}
       {!transaction.financial_accounts_to_balance && (

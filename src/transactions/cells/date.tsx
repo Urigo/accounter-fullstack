@@ -4,11 +4,12 @@ import { AllTransactionsEntity } from '../getAllTransactions';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Date: React.FC<Props> = ({ transaction }) => {
+export const Date: React.FC<Props> = ({ transaction, style }) => {
   return (
-    <td>
+    <td style={{...style}}>
       {moment(transaction.event_date).format('DD/MM/YY')}
       {transaction.debit_date && (
         <div style={{ fontSize: '12px', color: 'gray' }}>

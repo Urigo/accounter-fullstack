@@ -6,9 +6,10 @@ import { suggestedTransaction } from '../utils';
 
 type Props = {
   transaction: AllTransactionsEntity;
+  style: React.CSSProperties;
 };
 
-export const Category: React.FC<Props> = ({ transaction }) => {
+export const Category: React.FC<Props> = ({ transaction, style }) => {
   const isPersonalCategory = !!transaction.personal_category;
   const cellText = transaction.personal_category
     ? transaction.personal_category
@@ -16,11 +17,10 @@ export const Category: React.FC<Props> = ({ transaction }) => {
 
   return (
     <td
-      style={
-        isPersonalCategory
-          ? undefined
-          : { backgroundColor: 'rgb(236, 207, 57)' }
-      }
+      style={{
+        ...style,
+        ...(isPersonalCategory ? {} : { backgroundColor: 'rgb(236, 207, 57)' }),
+      }}
     >
       {cellText ?? 'undefined'}
       {!transaction.personal_category && (
