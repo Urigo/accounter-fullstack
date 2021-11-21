@@ -203,66 +203,66 @@ export function hashAccounts(
       console.log('isracardHashIndexes', isracardHashIndexes);
       return isracardHashIndexes;
       break;
-    case 'Hot Mobile':
-      return 'הוט';
-      break;
-    case 'Dotan Simha':
-      return 'דותן';
-      break;
-    case 'MapMe':
-      return 'מאפלאבס';
-      break;
-    case 'Israeli Corporations Authority':
-      return 'רשם החברות';
-      break;
-    case 'SATURN AMSTERDAM ODE':
-      return 'SATURN AMS';
-      break;
-    case 'Linux Foundation':
-      return 'LinuxFound';
-      break;
-    case 'Malach':
-      return 'מלאך';
-      break;
-    case 'Spaans&Spaans':
-      return 'Spaans';
-      break;
-    case 'IMPACT HUB ATHENS':
-      return 'IMPACT HUB ATHE';
-      break;
-    case 'ENTERPRISE GRAPHQL Conference':
-      return 'ENTERPRISE GRAP';
-      break;
-    case 'Yaacov Matri':
-      return 'יעקב';
-      break;
-    case 'Uri Goldshtein':
-      return 'אורי';
-      break;
-    case 'Uri Goldshtein Hoz':
-      return 'אוריח';
-      break;
-    case 'Raveh Ravid & Co':
-      return 'יהל';
-      break;
-    case 'Production Ready GraphQL':
-      return 'ProdReadyGraph';
-      break;
-    case 'Tax Corona Grant':
-      return 'מענק קורונה';
-      break;
-    case 'VAT interest refund':
-      return 'מעמ שער';
-      break;
-    case 'Tax Shuma':
-      return 'שומה 2018';
-      break;
-    case 'Halman Aldubi Training Fund':
-      return 'הלמןקהל';
-      break;
-    case 'Halman Aldubi Pension':
-      return 'הלמןפנסי';
-      break;
+    // case 'Hot Mobile':
+    //   return 'הוט';
+    //   break;
+    // case 'Dotan Simha':
+    //   return 'דותן';
+    //   break;
+    // case 'MapMe':
+    //   return 'מאפלאבס';
+    //   break;
+    // case 'Israeli Corporations Authority':
+    //   return 'רשם החברות';
+    //   break;
+    // case 'SATURN AMSTERDAM ODE':
+    //   return 'SATURN AMS';
+    //   break;
+    // case 'Linux Foundation':
+    //   return 'LinuxFound';
+    //   break;
+    // case 'Malach':
+    //   return 'מלאך';
+    //   break;
+    // case 'Spaans&Spaans':
+    //   return 'Spaans';
+    //   break;
+    // case 'IMPACT HUB ATHENS':
+    //   return 'IMPACT HUB ATHE';
+    //   break;
+    // case 'ENTERPRISE GRAPHQL Conference':
+    //   return 'ENTERPRISE GRAP';
+    //   break;
+    // case 'Yaacov Matri':
+    //   return 'יעקב';
+    //   break;
+    // case 'Uri Goldshtein':
+    //   return 'אורי';
+    //   break;
+    // case 'Uri Goldshtein Hoz':
+    //   return 'אוריח';
+    //   break;
+    // case 'Raveh Ravid & Co':
+    //   return 'יהל';
+    //   break;
+    // case 'Production Ready GraphQL':
+    //   return 'ProdReadyGraph';
+    //   break;
+    // case 'Tax Corona Grant':
+    //   return 'מענק קורונה';
+    //   break;
+    // case 'VAT interest refund':
+    //   return 'מעמ שער';
+    //   break;
+    // case 'Tax Shuma':
+    //   return 'שומה 2018';
+    //   break;
+    // case 'Halman Aldubi Training Fund':
+    //   return 'הלמןקהל';
+    //   break;
+    // case 'Halman Aldubi Pension':
+    //   return 'הלמןפנסי';
+    //   break;
     default:
       if (
         hashBusinessIndexes &&
@@ -270,12 +270,16 @@ export function hashAccounts(
         hashBusinessIndexes.auto_tax_category != accountType
       ) {
         if (transactionDescription == 'הפקדה לפקדון') {
-          return '4668039';
+          return 'פקדון';
         } else {
-          return hashBusinessIndexes.hash_index;
+          if (hashBusinessIndexes.hash_index) {
+            return hashBusinessIndexes.hash_index;
+          } else {
+            return accountType.substring(0, 15);
+          }
         }
       }
-      return accountType;
+      return accountType.substring(0, 15);
   }
 }
 
