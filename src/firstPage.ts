@@ -125,6 +125,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialEntity = 'Dotan Simha';
     suggestedTransaction.userDescription = 'August salary';
     suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'dotan';
     suggestedTransaction.vat = 0;
     return suggestedTransaction;
   } else if (
@@ -190,6 +191,18 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialEntity = 'Uri Goldshgtein LTD';
     suggestedTransaction.userDescription = 'Transaction to company';
     suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גולדשטין אורי')) {
+    suggestedTransaction.financialEntity = 'Uri Goldshgtein';
+    suggestedTransaction.userDescription = '10/21 Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.vat = 0;
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('רשם החברות')) {
+    suggestedTransaction.financialEntity = 'Israeli Corporations Authority';
+    suggestedTransaction.userDescription = 'Company registration yearly fee';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
     suggestedTransaction.financialEntity = 'Poalim';
@@ -274,6 +287,11 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('סונול')) {
     suggestedTransaction.financialEntity = 'Sonol';
     suggestedTransaction.userDescription = 'Gas';
+    suggestedTransaction.personalCategory = 'transportation';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('UBER')) {
+    suggestedTransaction.financialEntity = 'Uber';
+    suggestedTransaction.userDescription = 'Taxi';
     suggestedTransaction.personalCategory = 'transportation';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ZAPIER')) {
@@ -406,7 +424,8 @@ function suggestedTransaction(transaction: any) {
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('העברת מט"ח') &&
-    transaction.detailed_bank_description.includes('fbv')
+    (transaction.detailed_bank_description.includes('fbv') ||
+      transaction.detailed_bank_description.includes('fv'))
   ) {
     suggestedTransaction.financialEntity = 'Kamil Kisiela';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -518,6 +537,7 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Domain';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = 0;
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('DALET DIGITAL')) {
     suggestedTransaction.financialEntity =
@@ -609,6 +629,11 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('קאופמן מנעולים')) {
     suggestedTransaction.financialEntity = 'קאופמן מנעולים';
     suggestedTransaction.userDescription = 'טמבוריה';
+    suggestedTransaction.personalCategory = 'house';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('EUFYLIFE')) {
+    suggestedTransaction.financialEntity = 'Eufy';
+    suggestedTransaction.userDescription = 'Home Camera';
     suggestedTransaction.personalCategory = 'house';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('NAME COM')) {
@@ -893,56 +918,7 @@ export const financialStatus = async (query: any): Promise<string> => {
       `,
       [`$$${monthTaxReport}$$`]
     ),
-    pool.query(`
-      with transactions_exclude as (
-        select *
-        from formatted_merged_tables
-        where
-            personal_category <> 'conversion' and
-            personal_category <> 'investments' and
-            financial_entity <> 'Isracard' and
-            financial_entity <> 'Tax' and
-            financial_entity <> 'VAT' and
-            financial_entity <> 'Tax Shuma' and
-            financial_entity <> 'Tax Corona Grant' and
-            financial_entity <> 'Uri Goldshtein' and
-            financial_entity <> 'Uri Goldshtein Hoz' and
-            financial_entity <> 'Social Security Deductions' and
-            financial_entity <> 'Tax Deductions' and
-            financial_entity <> 'Dotan Simha'
-    ), business_accounts as (
-        select account_number
-        from accounter_schema.financial_accounts
-        where private_business = 'business'
-    )
-    select
-    --  month
-        to_char(event_date, 'YYYY/mm') as date,
-    --  year
-    --  to_char(event_date, 'YYYY') as date,
-        sum(
-            case when (event_amount > 0 and personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end
-        )::float4 as business_income,
-        sum(
-            case when (event_amount < 0 and personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end
-        )::float4 as business_expenses,
-        sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists else 0 end)::float4 as overall_business_profit,
-        sum(case when (personal_category = 'business' and account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists/2 else 0 end)::float4 as business_profit_share,
-    
-        sum(
-            case when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd_with_vat_if_exists else 0 end
-        )::float4 as private_expenses,
-        sum(case when personal_category <> 'business' then event_amount_in_usd_with_vat_if_exists else 0 end)::float4 as overall_private
-    from transactions_exclude
-    -- where
-    --     account_number in (select account_number
-    --                        from accounter_schema.financial_accounts accounts
-    --                        where accounts.private_business = 'business')
-    where
-        event_date::text::date >= '2020-10-01'::text::date
-    group by date
-    order by date;
-    `),
+    pool.query(readFileSync('src/monthlyCharts.sql').toString()),
     pool.query(`
     with transactions_exclude as (
       select *
@@ -1275,7 +1251,6 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="vat"  ${
             (!transaction.vat &&
               isBusiness(transaction) &&
-              transaction.currency_code == 'ILS' &&
               !businessesWithoutVAT.includes(transaction.financial_entity) &&
               !businessesWithoutTaxCategory.includes(
                 transaction.financial_entity
