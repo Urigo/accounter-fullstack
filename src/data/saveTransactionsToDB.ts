@@ -54,6 +54,7 @@ export async function saveTransactionsToDB(
 
     let optionalTransactionKeys: string[] = [];
     if (accountType == 'ils') {
+      // TODO: Save the mandatory values to DB accourding to schema
       optionalTransactionKeys = [
         'beneficiaryDetailsDataPartyName',
         'beneficiaryDetailsDataMessageHeadline',
@@ -63,9 +64,24 @@ export async function saveTransactionsToDB(
         'beneficiaryDetailsDataRecordNumber',
         'activityDescriptionIncludeValueDate',
         'urlAddressNiar',
+        'displayCreditAccountDetails',
+        'displayRTGSIncomingTrsDetails',
       ];
     } else if (accountType == 'usd' || accountType == 'eur') {
-      optionalTransactionKeys = ['metadata', 'urlAddressNiar'];
+      // TODO: Save the mandatory values to DB accourding to schema
+      optionalTransactionKeys = [
+        'metadata',
+        'urlAddressNiar',
+        'displayCreditAccountDetails',
+        'displayRTGSIncomingTrsDetails',
+        'recordSerialNumber',
+        'expendedExecutingDate',
+      ];
+    } else if (accountType == 'deposits') {
+      // TODO: Check if we want to save it to DB
+      optionalTransactionKeys = [
+        'data0ExpectedRepaymentSwitch',
+      ];
     } else if (accountType == 'isracard') {
       optionalTransactionKeys = ['clientIpAddress'];
     }
@@ -73,7 +89,8 @@ export async function saveTransactionsToDB(
     findMissingTransactionKeys(
       transaction,
       columnNamesResult,
-      optionalTransactionKeys
+      optionalTransactionKeys,
+      accountType
     );
 
     let additionalColumnsToExcludeFromTransactionComparison = [];
@@ -250,7 +267,8 @@ function normalizeBeneficiaryDetailsData(transaction: any) {
 function findMissingTransactionKeys(
   transaction: any,
   columnNames: any,
-  knownOptionals: string[]
+  knownOptionals: string[],
+  accountType: string
 ) {
   const allKeys = Object.keys(transaction);
   let fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
@@ -267,8 +285,10 @@ function findMissingTransactionKeys(
   if (InTransactionNotInDB.length != 0 || inDBNotInTransaction.length != 0) {
     // TODO: Log important checks
     if (!inDBNotInTransaction.every((e) => knownOptionals.includes(e))) {
-      console.log('new keys!! InTransactionNotInDB', InTransactionNotInDB);
       console.log('new keys!! inDBNotInTransaction', inDBNotInTransaction);
+    }
+    if (!InTransactionNotInDB.every((e) => knownOptionals.includes(e))) {
+      console.log(`new keys!! InTransactionNotInDB ${accountType}`, InTransactionNotInDB);
     }
   }
 }
