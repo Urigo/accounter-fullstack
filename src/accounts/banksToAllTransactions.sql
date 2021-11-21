@@ -23,6 +23,8 @@ BEGIN
         AND (NEW.full_supplier_name_outbound <> 'CASH ADVANCE FEE' OR
              NEW.full_supplier_name_outbound IS NULL)
         AND (NEW.supplier_name <> 'סך חיוב בש"ח:' OR
+             NEW.supplier_name IS NULL)
+        AND (NEW.supplier_name <> 'סך חיוב  ב-$:' OR
              NEW.supplier_name IS NULL) then
 
         INSERT INTO accounter_schema.all_transactions (
@@ -47,6 +49,7 @@ BEGIN
                 (CASE
                      WHEN NEW.currency_id = 'ש"ח' THEN 'ILS'
                      WHEN NEW.currency_id = 'NIS' THEN 'ILS'
+                     WHEN NEW.currency_id = 'דולר' THEN 'USD'
                      ELSE NEW.currency_id END
                     ),
                 CASE
