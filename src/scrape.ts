@@ -57,7 +57,12 @@ async function getILSfromBankAndSave(
     ILSTransactions.isValid
   );
   if (!ILSTransactions.isValid) {
-    console.log(ILSTransactions.errors);
+    console.log(
+      `newScraperIstance.getILSTransactions ${JSON.stringify(
+        account.accountNumber
+      )} schema error: `,
+      ILSTransactions.errors
+    );
   }
 
   if (
@@ -121,7 +126,12 @@ async function getForeignTransactionsfromBankAndSave(
     foreignTransactions.isValid
   );
   if (!foreignTransactions.isValid) {
-    console.log(foreignTransactions.errors);
+    console.log(
+      `getForeignTransactions ${JSON.stringify(
+        account.accountNumber
+      )} schema error: `,
+      foreignTransactions.errors
+    );
   }
 
   await Promise.all(
@@ -183,8 +193,157 @@ async function getBankData(pool: pg.Pool, scraper: any) {
   let accounts = await newPoalimInstance.getAccountsData();
   console.log('finished getting accounts', accounts.isValid);
   if (!accounts.isValid) {
-    console.log(accounts.errors);
+    console.log(`getAccountsData Poalim schema errors: `, accounts.errors);
   }
+  const tableName = 'financial_accounts';
+  for (const account of accounts.data) {
+    let whereClause = `
+    SELECT * FROM ${`accounter_schema.` + tableName}
+    WHERE 
+    `;
+
+    let columnNamesResult = await pool.query(`
+      SELECT * 
+      FROM information_schema.columns
+      WHERE table_schema = 'accounter_schema'
+      AND table_name = '${tableName}';
+    `);
+
+    let columnNamesToExcludeFromComparison = [
+      'privateBusiness',
+      'owner',
+      'hashavshevetAccountIls',
+      'hashavshevetAccountUsd',
+      'hashavshevetAccountEur',
+    ];
+
+    for (const dBcolumn of columnNamesResult.rows) {
+      let camelCaseColumnName = camelCase(dBcolumn.column_name);
+      if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
+        let actualCondition = '';
+        let isNotNull =
+          typeof account[camelCaseColumnName] !== 'undefined' &&
+          account[camelCaseColumnName] != null;
+
+        whereClause = whereClause.concat('  ' + dBcolumn.column_name);
+
+        if (
+          dBcolumn.data_type == 'character varying' ||
+          dBcolumn.data_type == 'USER-DEFINED' ||
+          dBcolumn.data_type == 'text'
+        ) {
+          if (isNotNull && camelCaseColumnName != 'beneficiaryDetailsData') {
+            actualCondition = `= $$` + account[camelCaseColumnName] + `$$`;
+          }
+        } else if (
+          dBcolumn.data_type == 'date' ||
+          dBcolumn.data_type == 'bit'
+        ) {
+          actualCondition = `= '` + account[camelCaseColumnName] + `'`;
+          // if (dBcolumn.data_type == 'bit') {
+          //   console.log('bit - ', actualCondition);
+          //   console.log(transaction.eventAmount)
+          // }
+        } else if (
+          dBcolumn.data_type == 'integer' ||
+          dBcolumn.data_type == 'numeric' ||
+          dBcolumn.data_type == 'bigint'
+        ) {
+          actualCondition = `= ` + account[camelCaseColumnName];
+        } else if (isNotNull && dBcolumn.data_type == 'json') {
+          let firstKey = Object.keys(account[camelCaseColumnName])[0];
+          actualCondition =
+            `->> '` +
+            firstKey +
+            `' = '` +
+            account[camelCaseColumnName][firstKey] +
+            `'`;
+          if (Object.keys(account[camelCaseColumnName]).length > 1) {
+            // TODO: Log important checks
+            console.log(
+              'more keys in json!',
+              Object.keys(account[camelCaseColumnName])
+            );
+          }
+        } else if (!isNotNull && dBcolumn.data_type == 'json') {
+        } else {
+          // TODO: Log important checks
+          console.log(
+            'unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName
+          );
+        }
+
+        whereClause = whereClause.concat(
+          ` ${isNotNull ? actualCondition : 'IS NULL'} AND
+             `
+        );
+      }
+    }
+
+    const lastIndexOfAND = whereClause.lastIndexOf('AND');
+    whereClause = whereClause.substring(0, lastIndexOfAND);
+
+    try {
+      let res = await pool.query(whereClause);
+
+      if (res.rowCount > 0) {
+        // console.log('found');
+      } else {
+        console.log('Account not found!!');
+
+        let columnNames = columnNamesResult.rows.map(
+          (column: any) => column.column_name
+        );
+
+        columnNames = columnNames.filter(
+          (columnName: string) => columnName != 'id'
+        );
+        let text = `INSERT INTO accounter_schema.${tableName}
+        (
+          ${columnNames.map((x: any) => x).join(', ')},
+        )`;
+        const lastIndexOfComma = text.lastIndexOf(',');
+        text = text
+          .substring(0, lastIndexOfComma)
+          .concat(text.substring(lastIndexOfComma + 1, text.length));
+
+        let arrayKeys = columnNames.keys();
+        let denseKeys = [...arrayKeys];
+        denseKeys = denseKeys.map((x) => x + 1);
+        const keysOfInputs = denseKeys.join(', $');
+        text = text.concat(` VALUES($${keysOfInputs}) RETURNING *`);
+
+        let values = [
+          account.accountNumber,
+          'business',
+          null,
+          null,
+          null,
+          null,
+          account.bankNumber,
+          account.branchNumber,
+          account.extendedBankNumber,
+          account.partyPreferredIndication,
+          account.partyAccountInvolvementCode,
+          account.accountDealDate,
+          account.accountUpdateDate,
+          account.metegDoarNet,
+          account.kodHarshaatPeilut,
+          account.accountClosingReasonCode,
+          account.accountAgreementOpeningDate,
+          account.serviceAuthorizationDesc,
+          account.branchTypeCode,
+          account.mymailEntitlementSwitch,
+        ];
+
+        let res = await pool.query(text, values);
+        console.log(res);
+      }
+    } catch (error) {
+      console.log('Accounts pg error - ', error);
+    }
+  }
+
   await Promise.all(
     accounts.data.map(async (account: any) => {
       console.log(
@@ -219,7 +378,10 @@ async function getDepositsAndSave(
     deposits.isValid
   );
   if (!deposits.isValid) {
-    console.log(deposits.errors);
+    console.log(
+      `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
+      deposits.errors
+    );
   }
 
   if (
@@ -280,9 +442,15 @@ async function getCreditCardTransactionsAndSave(
   );
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
-    console.log(monthTransactions.errors);
+    console.log(
+      `newIsracardInstance.getMonthTransactions ${JSON.stringify(
+        id
+      )} schema error: `,
+      monthTransactions.errors
+    );
   }
   if (monthTransactions?.data?.Header?.Status != '1') {
+    console.error(`Replace password for creditcard ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
   let allData = getTransactionsFromCards(
