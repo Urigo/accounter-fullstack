@@ -4,7 +4,7 @@
  (result should be empty)
  */
 SELECT *
-FROM accounter.accounter_schema.isracard_creditcard_transactions
+FROM accounter_schema.isracard_creditcard_transactions
 WHERE full_supplier_name_outbound != 'TOTAL FOR DATE'
   AND full_supplier_name_outbound != 'CASH ADVANCE FEE'
   AND full_purchase_date IS NULL
@@ -16,7 +16,7 @@ WHERE full_supplier_name_outbound != 'TOTAL FOR DATE'
  (result should be empty)
  */
 SELECT *
-FROM accounter.accounter_schema.isracard_creditcard_transactions
+FROM accounter_schema.isracard_creditcard_transactions
 WHERE full_supplier_name_outbound != 'TOTAL FOR DATE'
   AND full_supplier_name_outbound != 'CASH ADVANCE FEE'
   AND payment_sum IS NULL
@@ -28,7 +28,7 @@ WHERE full_supplier_name_outbound != 'TOTAL FOR DATE'
  (result should be empty)
  */
 SELECT *
-FROM accounter.accounter_schema.isracard_creditcard_transactions
+FROM accounter_schema.isracard_creditcard_transactions
 WHERE full_supplier_name_outbound != 'TOTAL FOR DATE'
   AND full_supplier_name_outbound != 'CASH ADVANCE FEE'
   AND voucher_number IS NULL;

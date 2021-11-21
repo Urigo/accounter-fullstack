@@ -4,6 +4,21 @@ FROM formatted_merged_tables;
 DROP VIEW formatted_merged_tables CASCADE;
 
 CREATE OR REPLACE VIEW formatted_merged_tables AS
+with all_exchange_dates as (
+     select dt AS     exchange_date,
+            (select t1.eur
+             from accounter_schema.exchange_rates t1
+             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
+             order by t1.exchange_date desc
+             limit 1) eur_rate,
+            (select t1.usd
+             from accounter_schema.exchange_rates t1
+             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
+             order by t1.exchange_date desc
+             limit 1) usd_rate
+     from times_table
+     order by dt
+ )
 SELECT *,
        (CASE
             WHEN account_type = 'checking_ils' THEN 'עוש'
