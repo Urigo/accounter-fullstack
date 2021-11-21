@@ -59,7 +59,8 @@ function getVATTransaction(
         tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
-        vat ${symbolToUse} 0 ${extraSymbol}
+        (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
+        AND financial_entity <> 'Social Security Deductions'
         order by tax_invoice_date;	    
     `,
     transactionsByEventDate: `
@@ -79,7 +80,8 @@ function getVATTransaction(
         tax_invoice_date > date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' ) AND        
-        vat ${symbolToUse} 0 ${extraSymbol}
+        (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
+        AND financial_entity <> 'Social Security Deductions'
         order by event_date;	    
     `,
   };
