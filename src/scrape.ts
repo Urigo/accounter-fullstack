@@ -216,6 +216,9 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       'hashavshevetAccountUsd',
       'hashavshevetAccountEur',
     ];
+    if (account.accountUpdateDate == 0) {
+      columnNamesToExcludeFromComparison.push('accountUpdateDate');
+    }
 
     for (const dBcolumn of columnNamesResult.rows) {
       let camelCaseColumnName = camelCase(dBcolumn.column_name);
