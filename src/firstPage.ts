@@ -631,6 +631,13 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'טמבוריה';
     suggestedTransaction.personalCategory = 'house';
     return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes("חב' חשמל דן חשבונות")
+  ) {
+    suggestedTransaction.financialEntity = 'חב חשמל דן חשבונות';
+    suggestedTransaction.userDescription = 'Electricity bill';
+    suggestedTransaction.personalCategory = 'house';
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('EUFYLIFE')) {
     suggestedTransaction.financialEntity = 'Eufy';
     suggestedTransaction.userDescription = 'Home Camera';
@@ -664,7 +671,7 @@ function suggestedTransaction(transaction: any) {
     transaction.detailed_bank_description.includes('GSUITE') ||
     transaction.detailed_bank_description.includes('GOOGLE CLOUD')
   ) {
-    suggestedTransaction.financialEntity = 'Google';
+    suggestedTransaction.financialEntity = 'Google Ireland Limited';
     suggestedTransaction.userDescription = 'G Suite for The Guild';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -821,9 +828,8 @@ export const lastInvoiceNumbersQuery = `
   WHERE
     (account_number in ('466803', '1074', '1082')) AND
     event_amount > 0 AND
-    (financial_entity != 'Poalim' OR financial_entity IS NULL)
-  ORDER BY event_date DESC
-  limit 10;
+    (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
+  ORDER BY event_date DESC;
 `;
 
 export function getLastInvoiceNumbers(lastInvoiceNumbers: any) {
@@ -907,8 +913,9 @@ export const financialStatus = async (query: any): Promise<string> => {
     pool.query(`
       select *
       from accounter_schema.all_transactions
+      -- where account_number in ('466803', '1074', '1082')
       order by event_date desc
-      limit 1550;
+      limit 2550;
     `),
     pool.query(
       `
@@ -1337,6 +1344,63 @@ export const financialStatus = async (query: any): Promise<string> => {
             }
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
+
+          <td class="receipt_image" ${
+            isBusiness(transaction) &&
+            !transaction.receipt_image &&
+            !transaction.proforma_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${
+              transaction.receipt_image
+                ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>`
+                : ''
+            }
+            <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
+          </td>
+          <td class="receipt_date" ${
+            isBusiness(transaction) &&
+            !transaction.receipt_date &&
+            !transaction.tax_invoice_date
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>${
+        transaction.receipt_date
+          ? moment(transaction.receipt_date).format('DD/MM/YY')
+          : ''
+      }
+            <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
+          </td>
+          <td class="receipt_number" ${
+            isBusiness(transaction) &&
+            !entitiesWithoutInvoiceNumuber.includes(
+              transaction.financial_entity
+            ) &&
+            !transaction.receipt_number &&
+            !transaction.tax_invoice_number
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${transaction.receipt_number}
+            <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
+          </td>
+          <td class="receipt_url" ${
+            isBusiness(transaction) &&
+            !transaction.receipt_url &&
+            !transaction.tax_invoice_file
+              ? 'style="background-color: rgb(236, 207, 57);"'
+              : ''
+          }>
+            ${
+              transaction.receipt_url
+                ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>`
+                : ''
+            }
+            <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
+          </td>
+          
+          
           <td class="links">
             ${transaction.links ? 'yes' : ''}
             <button type="button" onClick='printElement(this, prompt("New links:"));'>&#x270f;</button>
@@ -1428,7 +1492,11 @@ export const financialStatus = async (query: any): Promise<string> => {
                 <th>Invoice Date</th>
                 <th>Invoice Number</th>
                 <th>Invoice File</th>
-                <th>Receipt File</th>
+                <th>Receipt Image</th>
+                <th>Receipt Date</th>
+                <th>Receipt Number</th>
+                <th>Receipt URL</th>
+                <th>Links</th>
             </tr>
         </thead>
         <tbody>
