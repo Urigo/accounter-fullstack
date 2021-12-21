@@ -271,15 +271,16 @@ export function hashAccounts(
       ) {
         if (transactionDescription == 'הפקדה לפקדון') {
           return 'פקדון';
+          // return '4668039';
         } else {
           if (hashBusinessIndexes.hash_index) {
             return hashBusinessIndexes.hash_index;
           } else {
-            return accountType.substring(0, 15);
+            return accountType ? accountType.substring(0, 15) : null;
           }
         }
       }
-      return accountType.substring(0, 15);
+      return accountType ? accountType.substring(0, 15) : null;
   }
 }
 
@@ -440,6 +441,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     ? hashBusinessIndexes?.auto_tax_category
     : transaction.tax_category;
 
+  let originalTransaction = { ...transaction };
+  if (transaction.tax_invoice_currency) {
+    transaction.currency_code = transaction.tax_invoice_currency;
+    transaction.event_amount = transaction.tax_invoice_amount;
+    transaction.debit_date = transaction.tax_invoice_date;
+  }
+
   addTrueVATtoTransaction(transaction); // parseFloat
 
   let transactionsExchnageRates = await getTransactionExchangeRates(
@@ -503,6 +511,12 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         entryForAccounting.creditAccount = hashVATIndexes.vatFreeIncomesIndex;
       }
     }
+  }
+
+  if (transaction.tax_invoice_currency) {
+    entryForFinancialAccount.creditAmountILS =
+      entryForFinancialAccount.debitAmountILS =
+        originalTransaction.event_amount;
   }
   entryForAccounting.reference2 = entryForFinancialAccount.reference2 =
     transaction.bank_reference;
@@ -793,6 +807,75 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   }
 
   if (
+    transaction.tax_invoice_currency &&
+    entryForFinancialAccount.debitAmountILS != entryForAccounting.debitAmountILS
+  ) {
+    console.log('שערררררררר של different currencies');
+    let entryForExchangeRatesDifferenceValues = [
+      hashDateFormat(transaction.event_date),
+      hashVATIndexes.hashCurrencyRatesDifferencesIndex,
+      hashNumber(
+        entryForFinancialAccount.debitAmountILS -
+          entryForAccounting.debitAmountILS
+      ),
+      null,
+      hashCurrencyType('ILS'),
+      hashAccounts(
+        entryForFinancialAccount.creditAccount,
+        financialAccounts,
+        hashBusinessIndexes,
+        hashVATIndexes,
+        transaction.currency_code,
+        isracardHashIndexes,
+        transaction.bank_description
+      ),
+      hashNumber(
+        entryForFinancialAccount.debitAmountILS -
+          entryForAccounting.debitAmountILS
+      ),
+      hashCurrencyType('ILS'),
+      null, // Check for interest transactions (הכנרבמ)
+      null,
+      null,
+      null,
+      null,
+      null,
+      entryForFinancialAccount.description,
+      entryForFinancialAccount.reference1
+        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
+            .join('')
+            .substr(-9)
+        : null, // add check on the db for it
+      entryForFinancialAccount.reference2
+        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
+            .join('')
+            .substr(-9)
+        : null,
+      null,
+      hashDateFormat(
+        transaction.debit_date ? transaction.debit_date : transaction.event_date
+      ),
+      hashDateFormat(transaction.event_date),
+      transaction.id,
+      'generated_invoice_rates_change_invoice_currency',
+      transaction.proforma_invoice_file,
+      uuidv4(),
+      owner,
+    ];
+
+    queryConfig.values = entryForExchangeRatesDifferenceValues;
+
+    try {
+      let updateResult = await pool.query(queryConfig);
+      console.log(JSON.stringify(updateResult));
+    } catch (error) {
+      // TODO: Log important checks
+      console.log(
+        'error in insert entryForExchangeRatesDifferenceValues - ',
+        error
+      );
+    }
+  } else if (
     getILSForDate(transaction, invoiceExchangeRates).eventAmountILS !=
       getILSForDate(transaction, debitExchangeRates).eventAmountILS &&
     transaction.account_type != 'creditcard' &&
