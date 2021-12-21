@@ -445,7 +445,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   if (transaction.tax_invoice_currency) {
     transaction.currency_code = transaction.tax_invoice_currency;
     transaction.event_amount = transaction.tax_invoice_amount;
-    transaction.debit_date = transaction.tax_invoice_date;
+    if (transaction.account_type == 'creditcard') {
+      transaction.account_type = 'checking_usd';
+    } else {
+      transaction.debit_date = transaction.tax_invoice_date;
+    }
   }
 
   addTrueVATtoTransaction(transaction); // parseFloat
@@ -811,6 +815,26 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     entryForFinancialAccount.debitAmountILS != entryForAccounting.debitAmountILS
   ) {
     console.log('שערררררררר של different currencies');
+    let credit = hashAccounts(
+      entryForFinancialAccount.creditAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    );
+    if (transaction.event_amount < 0) {
+      credit = hashAccounts(
+        entryForFinancialAccount.debitAccount,
+        financialAccounts,
+        hashBusinessIndexes,
+        hashVATIndexes,
+        transaction.currency_code,
+        isracardHashIndexes,
+        transaction.bank_description
+      );
+    }
     let entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.event_date),
       hashVATIndexes.hashCurrencyRatesDifferencesIndex,
@@ -820,15 +844,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       ),
       null,
       hashCurrencyType('ILS'),
-      hashAccounts(
-        entryForFinancialAccount.creditAccount,
-        financialAccounts,
-        hashBusinessIndexes,
-        hashVATIndexes,
-        transaction.currency_code,
-        isracardHashIndexes,
-        transaction.bank_description
-      ),
+      credit,
       hashNumber(
         entryForFinancialAccount.debitAmountILS -
           entryForAccounting.debitAmountILS
