@@ -61,6 +61,8 @@ function getVATTransaction(
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
         (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
         AND financial_entity <> 'Social Security Deductions'
+        AND financial_entity <> 'Tax'
+        AND financial_entity <> 'VAT'
         order by tax_invoice_date;	    
     `,
     transactionsByEventDate: `
@@ -144,6 +146,30 @@ export async function createTaxEntriesForMonth(
   let VATIncomeSum = 0;
   let advancePercentageRate = 8.2;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
+    if (monthIncomeTransaction.tax_invoice_currency) {
+      let originalCurrency = monthIncomeTransaction.currency_code;
+      monthIncomeTransaction.currency_code =
+        monthIncomeTransaction.tax_invoice_currency;
+
+      let transactionsExchnageRates = await getTransactionExchangeRates(
+        monthIncomeTransaction
+      );
+      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+
+      monthIncomeTransaction.event_amount =
+        monthIncomeTransaction.tax_invoice_amount = getILSForDate(
+          monthIncomeTransaction,
+          invoiceExchangeRates
+        ).eventAmountILS;
+      monthIncomeTransaction.debit_date =
+        monthIncomeTransaction.tax_invoice_date;
+      monthIncomeTransaction.vat =
+        monthIncomeTransaction.vat *
+        invoiceExchangeRates?.rows[0][
+          monthIncomeTransaction.currency_code.toLowerCase()
+        ];
+      monthIncomeTransaction.currency_code = originalCurrency;
+    }
     let isExcludedFromTaxReportQuery = `
       select include_in_tax_report
       from accounter_schema.hash_business_indexes
@@ -326,6 +352,31 @@ export async function createTaxEntriesForMonth(
     let expensesWithVATExcludingVATSum = 0;
     let expensesWithoutVATVATSum = 0;
     for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
+      if (monthIncomeVATTransaction.tax_invoice_currency) {
+        let originalCurrency = monthIncomeVATTransaction.currency_code;
+        monthIncomeVATTransaction.currency_code =
+          monthIncomeVATTransaction.tax_invoice_currency;
+
+        let transactionsExchnageRates = await getTransactionExchangeRates(
+          monthIncomeVATTransaction
+        );
+        let invoiceExchangeRates =
+          transactionsExchnageRates.invoiceExchangeRates;
+
+        monthIncomeVATTransaction.event_amount =
+          monthIncomeVATTransaction.tax_invoice_amount = getILSForDate(
+            monthIncomeVATTransaction,
+            invoiceExchangeRates
+          ).eventAmountILS;
+        monthIncomeVATTransaction.debit_date =
+          monthIncomeVATTransaction.tax_invoice_date;
+        monthIncomeVATTransaction.vat =
+          monthIncomeVATTransaction.vat *
+          invoiceExchangeRates?.rows[0][
+            monthIncomeVATTransaction.currency_code.toLowerCase()
+          ];
+        monthIncomeVATTransaction.currency_code = originalCurrency;
+      }
       let hashBusinessIndexes = await getHashBusinessIndexes(
         { financial_entity: monthIncomeVATTransaction.financial_entity },
         owner
@@ -370,7 +421,6 @@ export async function createTaxEntriesForMonth(
             Number.EPSILON) *
             100
         ) / 100;
-
       let transactionsExchnageRates = await getTransactionExchangeRates(
         monthIncomeVATTransaction
       );
