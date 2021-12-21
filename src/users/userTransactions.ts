@@ -50,7 +50,7 @@ export const userTransactions = async (query: {
   }
   console.log('userTransactions', userName);
 
-  const currrentCompany = businesses['Uri Goldshtein LTD'];
+  const currrentCompany = businesses['Software Products Guilda Ltd.'];
   const results: any = await pool.query(
     `
       select *
