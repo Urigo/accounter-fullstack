@@ -63,6 +63,7 @@ function getVATTransaction(
         AND financial_entity <> 'Social Security Deductions'
         AND financial_entity <> 'Tax'
         AND financial_entity <> 'VAT'
+        AND financial_entity <> 'Dotan Simha Dividend'
         order by tax_invoice_date;	    
     `,
     transactionsByEventDate: `
@@ -87,6 +88,14 @@ function getVATTransaction(
         order by event_date;	    
     `,
   };
+}
+
+export function stringNumberRounded(number: string): number {
+  return Math.round((parseFloat(number) + Number.EPSILON) * 100) / 100;
+}
+
+export function numberRounded(number: number): number {
+  return Math.round((number + Number.EPSILON) * 100) / 100;
 }
 
 export async function createTaxEntriesForMonth(
@@ -221,7 +230,11 @@ export async function createTaxEntriesForMonth(
         parseFloat(
           getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
             .eventAmountILS
-        ) - monthIncomeTransaction.vat;
+        ) -
+        parseFloat(
+          getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+            .vatAfterDiductionILS
+        );
       if (monthIncomeTransaction.vat) {
         // console.log(
         //   'vat income',
@@ -234,7 +247,11 @@ export async function createTaxEntriesForMonth(
           parseFloat(
             getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
               .eventAmountILS
-          ) - monthIncomeTransaction.vat;
+          ) -
+          parseFloat(
+            getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+              .vatAfterDiductionILS
+          );
       } else {
         // console.log(
         //   'not vat income',
@@ -261,19 +278,27 @@ export async function createTaxEntriesForMonth(
         monthIncomeTransaction.currency_code
       }</td>
         <td>${monthIncomeTransaction.vat}</td>
+        <td>${stringNumberRounded(
+          getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+            .vatAfterDiductionILS
+        )}</td>
         <td>${monthIncomeTransaction.amountBeforeVAT}</td>
-        <td>${
+        <td>${stringNumberRounded(
+          getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
+            .amountBeforeVATILS
+        )}</td>
+        <td>${stringNumberRounded(
           getILSForDate(monthIncomeTransaction, invoiceExchangeRates)
             .eventAmountILS
-        }</td>
-        <td>${
+        )}</td>
+        <td>${stringNumberRounded(
           getILSForDate(monthIncomeTransaction, debitExchangeRates)
             .eventAmountILS
-        }</td>
+        )}</td>
         <td><a href="${monthIncomeTransaction.proforma_invoice_file}">P</a></td>
-        <td>${incomeSum}</td>
-        <td>${VATFreeIncomeSum}</td>
-        <td>${VATIncomeSum}</td>
+        <td>${numberRounded(incomeSum)}</td>
+        <td>${numberRounded(VATFreeIncomeSum)}</td>
+        <td>${numberRounded(VATIncomeSum)}</td>
       </tr>
       `);
     }
@@ -288,7 +313,9 @@ export async function createTaxEntriesForMonth(
           <th>Tax Invoice Amount</th>
           <th>Amount</th>
           <th>VAT</th>
+          <th>VAT in Shekels</th>
           <th>SUM Before VAT</th>
+          <th>SUM Before VAT in Shekels</th>
           <th>In ILS Invoice</th>
           <th>In ILS Debit</th>
           <th>Image</th>
@@ -415,38 +442,29 @@ export async function createTaxEntriesForMonth(
       //   vatNumber: monthIncomeVATTransaction.vatNumber,
       // });
 
-      expensesVATSum +=
-        Math.round(
-          (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
-            Number.EPSILON) *
-            100
-        ) / 100;
       let transactionsExchnageRates = await getTransactionExchangeRates(
         monthIncomeVATTransaction
       );
       let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+      expensesVATSum += stringNumberRounded(
+        getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+          .vatAfterDiductionILS
+      );
       let amountBeforeVAT = 0;
       if (
         !monthIncomeVATTransaction.vat ||
         monthIncomeVATTransaction.vat == 0 ||
         monthIncomeVATTransaction.vat == '0.00'
       ) {
-        amountBeforeVAT =
-          Math.round(
-            (parseFloat(
-              getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-                .eventAmountILS
-            ) +
-              Number.EPSILON) *
-              100
-          ) / 100;
+        amountBeforeVAT = stringNumberRounded(
+          getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+            .eventAmountILS
+        );
       } else {
-        amountBeforeVAT =
-          Math.round(
-            (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
-              Number.EPSILON) *
-              100
-          ) / 100; // TODO: Add amount before VAT in ILS always
+        amountBeforeVAT = stringNumberRounded(
+          getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+            .amountBeforeFullVATILS
+        ); // TODO: Add amount before VAT in ILS always
       }
       monthIncomeVATTransaction.amountBeforeFullVAT = amountBeforeVAT;
       if (
@@ -454,22 +472,14 @@ export async function createTaxEntriesForMonth(
         monthIncomeVATTransaction.vat == 0 ||
         monthIncomeVATTransaction.vat == '0.00'
       ) {
-        expensesWithoutVATVATSum +=
-          Math.round(
-            (parseFloat(
-              getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-                .eventAmountILS
-            ) +
-              Number.EPSILON) *
-              100
-          ) / 100;
+        expensesWithoutVATVATSum += stringNumberRounded(
+          getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+            .eventAmountILS
+        );
       } else {
-        expensesWithVATExcludingVATSum +=
-          Math.round(
-            (parseFloat(monthIncomeVATTransaction.amountBeforeFullVAT) +
-              Number.EPSILON) *
-              100
-          ) / 100;
+        expensesWithVATExcludingVATSum += stringNumberRounded(
+          monthIncomeVATTransaction.amountBeforeFullVAT
+        );
       }
       monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
     <tr>
@@ -482,23 +492,23 @@ export async function createTaxEntriesForMonth(
       <td>${monthIncomeVATTransaction.tax_invoice_number}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.tax_invoice_date)}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.event_date)}</td>
-      <td>${monthIncomeVATTransaction.event_amount} ${
-        monthIncomeVATTransaction.currency_code
+      <td>${monthIncomeVATTransaction.currency_code} ${
+        monthIncomeVATTransaction.event_amount
       }</td>
-      <td>${
-        Math.round(
-          (parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100
-        ) / 100
-      }</td>
-      <td>${
-        Math.round(
-          (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
-            Number.EPSILON) *
-            100
-        ) / 100
-      }</td>
+      <td>${stringNumberRounded(
+        getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+          .eventAmountILS
+      )}</td>      
+      <td>${stringNumberRounded(monthIncomeVATTransaction.vat)}</td>
+      <td>${stringNumberRounded(
+        getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+          .vatAfterDiductionILS
+      )}</td>
+      <td>${stringNumberRounded(
+        monthIncomeVATTransaction.vatAfterDiduction
+      )}</td>
       <td>${Math.round((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
-      <td>${amountBeforeVAT}</td> 
+      <td>${amountBeforeVAT}</td>
       <td>${
         Math.round((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) /
         100
@@ -579,14 +589,16 @@ export async function createTaxEntriesForMonth(
         hashDateFormat(moment(month).endOf('month').toDate()),
         null,
         transactionType == TransactionType.Expenses
-          ? 'all_vat_to_pay_for_previous_month'
-          : 'all_vat_to_recieve_for_previous_month',
+          ? 'generated_all_vat_to_pay_for_previous_month'
+          : 'generated_all_vat_to_recieve_for_previous_month',
         null,
         uuidv4(),
+        false,
+        null,
         owner,
       ];
 
-      // console.log('entryForMonthlyVAT', entryForMonthlyVAT);
+      console.log('entryForMonthlyVAT', entryForMonthlyVAT);
 
       overallVATHTMLTemplate = overallVATHTMLTemplate.concat(`
             <tr>
@@ -647,10 +659,12 @@ export async function createTaxEntriesForMonth(
           <th>Tax Invoice Date</th>
           <th>Event Date</th>
           <th>Amount</th>
+          <th>Amount ILS</th>
           <th>VAT</th>
+          <th>VAT in ILS</th>
           <th>Actual VAT</th>
           <th>Sum till now</th>
-          <th>Amount Before VAT</th>
+          <th>Amount Before VAT ILS</th>
           <th>Hayavot without VAT SUM till now</th>
           <th>Pturot SUM till now</th>
         </tr>

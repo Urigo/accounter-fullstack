@@ -334,10 +334,13 @@ export function getILSForDate(transaction: any, date: any) {
       transaction.vatAfterDiduction * date?.rows[0][currencyKey];
     amounts.amountBeforeVATILS =
       transaction.amountBeforeVAT * date?.rows[0][currencyKey];
+    amounts.amountBeforeFullVATILS =
+      transaction.amountBeforeFullVAT * date?.rows[0][currencyKey];
   } else if (transaction.currency_code == 'ILS') {
     amounts.eventAmountILS = amountToUse;
     amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;
     amounts.amountBeforeVATILS = transaction.amountBeforeVAT;
+    amounts.amountBeforeFullVATILS = transaction.amountBeforeFullVAT;
   } else {
     // TODO: Log important checks
     console.log('New account currency - ', transaction.currency_code);
@@ -672,6 +675,28 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     owner,
   ];
 
+  let foreignBalance = null;
+  if (transaction.financial_entity == 'Isracard') {
+    let originalInvoicedAmountAndCurrency: any = await pool.query(`
+      select tax_invoice_amount, tax_invoice_currency
+      from accounter_schema.all_transactions
+      where
+        debit_date = to_date('${moment(transaction.event_date).format(
+          'YYYY-MM-DD'
+        )}', 'YYYY-MM-DD')
+        and account_number = $$${transaction.bank_reference}$$
+        and tax_invoice_currency is not null;  
+  `);
+    if (
+      originalInvoicedAmountAndCurrency &&
+      originalInvoicedAmountAndCurrency.rows &&
+      originalInvoicedAmountAndCurrency.rows.length > 0
+    ) {
+      foreignBalance = hashNumber(
+        originalInvoicedAmountAndCurrency.rows[0].tax_invoice_amount
+      );
+    }
+  }
   let entryForFinancialAccountValues = [
     hashDateFormat(transaction.event_date),
     hashAccounts(
@@ -686,8 +711,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     hashNumber(entryForFinancialAccount.debitAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForFinancialAccount.debitAmount)
-      : null,
-    hashCurrencyType(transaction.currency_code),
+      : foreignBalance,
+    hashCurrencyType(transaction.currency_code), // TODO: Check if it works for forgien creditcard in ILS
     hashAccounts(
       entryForFinancialAccount.creditAccount,
       financialAccounts,
@@ -700,7 +725,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     hashNumber(entryForFinancialAccount.creditAmountILS),
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForFinancialAccount.creditAmount)
-      : null,
+      : foreignBalance,
     null, // Check for interest transactions (הכנרבמ)
     null,
     null,
