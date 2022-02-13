@@ -8,6 +8,10 @@ const entitiesWithoutInvoice = [
   'Tax Deductions',
   'Tax',
   'VAT',
+  'Dotan Employee',
+  'Uri Employee',
+  'Gilad Employee',
+  'Gil Employee',
 ];
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
@@ -172,8 +176,9 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'GitHub Actions';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
-    if (transaction.event_amount == -450) {
-      suggestedTransaction.userDescription = 'Monthly Payment for Yaacov';
+    if (transaction.event_amount <= -450) {
+      suggestedTransaction.userDescription =
+        'Monthly Sponsor for Yaacov and Benjie';
     } else if (transaction.event_amount == -4) {
       suggestedTransaction.userDescription = 'GitHub CI charges';
     }
@@ -289,6 +294,11 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Gas';
     suggestedTransaction.personalCategory = 'transportation';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('CARPOOL')) {
+    suggestedTransaction.financialEntity = 'Google Waze';
+    suggestedTransaction.userDescription = 'Waze Carpool';
+    suggestedTransaction.personalCategory = 'transportation';
+    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('UBER')) {
     suggestedTransaction.financialEntity = 'Uber';
     suggestedTransaction.userDescription = 'Taxi';
@@ -301,14 +311,20 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('NOTION')) {
-    suggestedTransaction.financialEntity = 'Notion Labs Inc.';
+    suggestedTransaction.financialEntity = 'Notion Labs, Inc';
     suggestedTransaction.userDescription = 'Notion monthly charge';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('ALTINITY')) {
-    suggestedTransaction.financialEntity = 'ALTINITY';
+    suggestedTransaction.financialEntity = 'Altinity Inc';
     suggestedTransaction.userDescription = 'ALTINITY DB Hosting';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('PULUMI')) {
+    suggestedTransaction.financialEntity = 'Pulumi Comporation';
+    suggestedTransaction.userDescription = 'Infrastructure Hosting';
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
@@ -1261,20 +1277,22 @@ export const financialStatus = async (query: any): Promise<string> => {
               !businessesWithoutVAT.includes(transaction.financial_entity) &&
               !businessesWithoutTaxCategory.includes(
                 transaction.financial_entity
-              )) ||
+              ) &&
+              transaction.currency_code == 'ILS') ||
             (transaction.vat > 0 && transaction.event_amount < 0) ||
             (transaction.vat < 0 && transaction.event_amount > 0)
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${
-        transaction.vat
-          ? transaction.vat
-          : `${
-              suggestedTransaction(transaction)?.vat
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.vat
-            }");'>V</button>`
-      }
+          }>
+          ${
+            transaction.vat || transaction.vat == 0
+              ? transaction.vat
+              : `${
+                  suggestedTransaction(transaction)?.vat
+                } <button type="button" onClick='printElement(this, "${
+                  suggestedTransaction(transaction)?.vat
+                }");'>V</button>`
+          }
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
