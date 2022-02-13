@@ -11,6 +11,8 @@ import {
   getTransactionExchangeRates,
   getHashBusinessIndexes,
   hashNumberRounded,
+  hashNumber,
+  hashNumberNoAbs,
 } from './taxesForTransaction';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -64,10 +66,11 @@ function getVATTransaction(
         AND financial_entity <> 'Tax'
         AND financial_entity <> 'VAT'
         AND financial_entity <> 'Dotan Simha Dividend'
+        -- AND id not in (select transaction_id from accounter_schema.taxes_transactions)
         order by tax_invoice_date;	    
     `,
     transactionsByEventDate: `
-      SELECT *
+      (SELECT *
       FROM accounter_schema.all_transactions
       WHERE
         account_number in (${getCurrentBusinessAccountsQuery}) AND
@@ -85,17 +88,55 @@ function getVATTransaction(
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' ) AND        
         (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
         AND financial_entity <> 'Social Security Deductions'
-        order by event_date;	    
+        order by event_date)
+      UNION ALL
+      (SELECT *
+      FROM accounter_schema.all_transactions
+      WHERE
+        account_number in (${getCurrentBusinessAccountsQuery}) AND
+        tax_invoice_date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
+        tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
+          'YYYY-MM-DD'
+        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
+        (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
+        AND financial_entity <> 'Social Security Deductions'
+        AND financial_entity <> 'Tax'
+        AND financial_entity <> 'VAT'
+        AND financial_entity <> 'Dotan Simha Dividend'
+        AND id in (select transaction_id from accounter_schema.taxes_transactions)
+        order by tax_invoice_date)	     
+      ;	    
+    `,
+    transactionsWithSharedInvoice: `
+      SELECT *
+      FROM accounter_schema.all_transactions
+      WHERE
+        account_number in (${getCurrentBusinessAccountsQuery}) AND
+        tax_invoice_date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
+        tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
+          'YYYY-MM-DD'
+        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
+        (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
+        AND financial_entity <> 'Social Security Deductions'
+        AND financial_entity <> 'Tax'
+        AND financial_entity <> 'VAT'
+        AND financial_entity <> 'Dotan Simha Dividend'
+        AND id in (select transaction_id from accounter_schema.taxes_transactions)
+        order by tax_invoice_date;	    
     `,
   };
 }
 
+function parseIntRound(v: any) {
+  return parseInt(v + Math.sign(v) / 2);
+}
+
 export function stringNumberRounded(number: string): number {
-  return Math.round((parseFloat(number) + Number.EPSILON) * 100) / 100;
+  return parseIntRound((parseFloat(number) + Number.EPSILON) * 100) / 100;
 }
 
 export function numberRounded(number: number): number {
-  return Math.round((number + Number.EPSILON) * 100) / 100;
+  return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
 export async function createTaxEntriesForMonth(
@@ -374,118 +415,166 @@ export async function createTaxEntriesForMonth(
       getVATTransaction(month, transactionType, businessName, VATCadence)
         .transactionsByEventDate
     );
+    // let sharedInvoiceTransactions: any = await pool.query(
+    //   getVATTransaction(month, transactionType, businessName, VATCadence)
+    //     .transactionsWithSharedInvoice
+    // );
     console.log('left transactions', leftTransactions?.rows);
     let expensesVATSum = 0;
+    let expensesVATSumWithoutRound = 0;
     let expensesWithVATExcludingVATSum = 0;
     let expensesWithoutVATVATSum = 0;
+    let sharedInvoiceIDs: any[] = [];
+    let changedVATTransactions = [];
     for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
-      if (monthIncomeVATTransaction.tax_invoice_currency) {
-        let originalCurrency = monthIncomeVATTransaction.currency_code;
-        monthIncomeVATTransaction.currency_code =
-          monthIncomeVATTransaction.tax_invoice_currency;
+      let referencedInvoice: any = await pool.query(`
+        select * from accounter_schema.taxes where
+        id = (
+          select tax_id from accounter_schema.taxes_transactions where
+          transaction_id = $$${monthIncomeVATTransaction.id}$$
+        )
+      `);
+      console.log('referenced invoice', referencedInvoice?.rows);
+      if (
+        referencedInvoice?.rows &&
+        referencedInvoice?.rows.length > 0 &&
+        sharedInvoiceIDs.includes(referencedInvoice.rows[0].id)
+      ) {
+        console.log('DO NOTHING');
+      } else {
+        if (
+          referencedInvoice?.rows &&
+          referencedInvoice?.rows.length > 0 &&
+          !sharedInvoiceIDs.includes(referencedInvoice.rows[0].id)
+        ) {
+          sharedInvoiceIDs.push(referencedInvoice.rows[0].id);
+          monthIncomeVATTransaction.event_amount =
+            referencedInvoice.rows[0].tax_invoice_amount;
+          monthIncomeVATTransaction.tax_invoice_amount =
+            referencedInvoice.rows[0].tax_invoice_amount;
+          monthIncomeVATTransaction.vat = referencedInvoice.rows[0].vat;
+          monthIncomeVATTransaction.tax_invoice_date =
+            referencedInvoice.rows[0].tax_invoice_date;
+          monthIncomeVATTransaction.proforma_invoice_file =
+            referencedInvoice.rows[0].tax_invoice_image;
+          monthIncomeVATTransaction.tax_invoice_number =
+            referencedInvoice.rows[0].tax_invoice_number;
+          monthIncomeVATTransaction.tax_invoice_file =
+            referencedInvoice.rows[0].tax_invoice_file;
+        }
+        if (monthIncomeVATTransaction.tax_invoice_currency) {
+          let originalCurrency = monthIncomeVATTransaction.currency_code;
+          monthIncomeVATTransaction.currency_code =
+            monthIncomeVATTransaction.tax_invoice_currency;
+
+          let transactionsExchnageRates = await getTransactionExchangeRates(
+            monthIncomeVATTransaction
+          );
+          let invoiceExchangeRates =
+            transactionsExchnageRates.invoiceExchangeRates;
+
+          monthIncomeVATTransaction.event_amount =
+            monthIncomeVATTransaction.tax_invoice_amount = getILSForDate(
+              monthIncomeVATTransaction,
+              invoiceExchangeRates
+            ).eventAmountILS;
+          monthIncomeVATTransaction.debit_date =
+            monthIncomeVATTransaction.tax_invoice_date;
+          monthIncomeVATTransaction.vat =
+            monthIncomeVATTransaction.vat *
+            invoiceExchangeRates?.rows[0][
+              monthIncomeVATTransaction.currency_code.toLowerCase()
+            ];
+          monthIncomeVATTransaction.currency_code = originalCurrency;
+        }
+        let hashBusinessIndexes = await getHashBusinessIndexes(
+          { financial_entity: monthIncomeVATTransaction.financial_entity },
+          owner
+        );
+        monthIncomeVATTransaction.tax_category =
+          hashBusinessIndexes?.auto_tax_category
+            ? hashBusinessIndexes?.auto_tax_category
+            : monthIncomeVATTransaction.tax_category;
+        addTrueVATtoTransaction(monthIncomeVATTransaction);
+        let businessVATNumberQuery = `
+        select vat_number
+        from accounter_schema.businesses
+        where
+            name = $$${monthIncomeVATTransaction.financial_entity}$$;    
+      `;
+        let financialEntityVATNumber: any = await pool.query(
+          businessVATNumberQuery
+        );
+        monthIncomeVATTransaction.vatNumber =
+          financialEntityVATNumber?.rows[0]?.vat_number;
+        // console.log('vat transaction: ', {
+        //   name: monthIncomeVATTransaction.financial_entity,
+        //   invoiceDate: hashDateFormat(monthIncomeVATTransaction.tax_invoice_date),
+        //   amount: monthIncomeVATTransaction.event_amount,
+        //   currency: monthIncomeVATTransaction.currency_code,
+        //   vat:
+        //     Math.round(
+        //       (parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100
+        //     ) / 100,
+        //   actualVat:
+        //     Math.round(
+        //       (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
+        //         Number.EPSILON) *
+        //         100
+        //     ) / 100,
+        //   vatNumber: monthIncomeVATTransaction.vatNumber,
+        // });
 
         let transactionsExchnageRates = await getTransactionExchangeRates(
           monthIncomeVATTransaction
         );
         let invoiceExchangeRates =
           transactionsExchnageRates.invoiceExchangeRates;
-
-        monthIncomeVATTransaction.event_amount =
-          monthIncomeVATTransaction.tax_invoice_amount = getILSForDate(
-            monthIncomeVATTransaction,
-            invoiceExchangeRates
-          ).eventAmountILS;
-        monthIncomeVATTransaction.debit_date =
-          monthIncomeVATTransaction.tax_invoice_date;
-        monthIncomeVATTransaction.vat =
-          monthIncomeVATTransaction.vat *
-          invoiceExchangeRates?.rows[0][
-            monthIncomeVATTransaction.currency_code.toLowerCase()
-          ];
-        monthIncomeVATTransaction.currency_code = originalCurrency;
-      }
-      let hashBusinessIndexes = await getHashBusinessIndexes(
-        { financial_entity: monthIncomeVATTransaction.financial_entity },
-        owner
-      );
-      monthIncomeVATTransaction.tax_category =
-        hashBusinessIndexes?.auto_tax_category
-          ? hashBusinessIndexes?.auto_tax_category
-          : monthIncomeVATTransaction.tax_category;
-      addTrueVATtoTransaction(monthIncomeVATTransaction);
-      let businessVATNumberQuery = `
-        select vat_number
-        from accounter_schema.businesses
-        where
-            name = $$${monthIncomeVATTransaction.financial_entity}$$;    
-      `;
-      let financialEntityVATNumber: any = await pool.query(
-        businessVATNumberQuery
-      );
-      monthIncomeVATTransaction.vatNumber =
-        financialEntityVATNumber?.rows[0]?.vat_number;
-      // console.log('vat transaction: ', {
-      //   name: monthIncomeVATTransaction.financial_entity,
-      //   invoiceDate: hashDateFormat(monthIncomeVATTransaction.tax_invoice_date),
-      //   amount: monthIncomeVATTransaction.event_amount,
-      //   currency: monthIncomeVATTransaction.currency_code,
-      //   vat:
-      //     Math.round(
-      //       (parseFloat(monthIncomeVATTransaction.vat) + Number.EPSILON) * 100
-      //     ) / 100,
-      //   actualVat:
-      //     Math.round(
-      //       (parseFloat(monthIncomeVATTransaction.vatAfterDiduction) +
-      //         Number.EPSILON) *
-      //         100
-      //     ) / 100,
-      //   vatNumber: monthIncomeVATTransaction.vatNumber,
-      // });
-
-      let transactionsExchnageRates = await getTransactionExchangeRates(
-        monthIncomeVATTransaction
-      );
-      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
-      expensesVATSum += stringNumberRounded(
-        getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-          .vatAfterDiductionILS
-      );
-      let amountBeforeVAT = 0;
-      if (
-        !monthIncomeVATTransaction.vat ||
-        monthIncomeVATTransaction.vat == 0 ||
-        monthIncomeVATTransaction.vat == '0.00'
-      ) {
-        amountBeforeVAT = stringNumberRounded(
+        let roundedVATToAdd = parseIntRound(
           getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-            .eventAmountILS
+            .vatAfterDiductionILS
         );
-      } else {
-        amountBeforeVAT = stringNumberRounded(
+        expensesVATSum += roundedVATToAdd;
+        expensesVATSumWithoutRound += stringNumberRounded(
           getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-            .amountBeforeFullVATILS
-        ); // TODO: Add amount before VAT in ILS always
-      }
-      monthIncomeVATTransaction.amountBeforeFullVAT = amountBeforeVAT;
-      if (
-        !monthIncomeVATTransaction.vat ||
-        monthIncomeVATTransaction.vat == 0 ||
-        monthIncomeVATTransaction.vat == '0.00'
-      ) {
-        expensesWithoutVATVATSum += stringNumberRounded(
-          getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
-            .eventAmountILS
+            .vatAfterDiductionILS
         );
-      } else {
-        expensesWithVATExcludingVATSum += stringNumberRounded(
-          monthIncomeVATTransaction.amountBeforeFullVAT
-        );
-      }
-      monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
+        let amountBeforeVAT = 0;
+        if (
+          !monthIncomeVATTransaction.vat ||
+          monthIncomeVATTransaction.vat == 0 ||
+          monthIncomeVATTransaction.vat == '0.00'
+        ) {
+          amountBeforeVAT = stringNumberRounded(
+            getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+              .eventAmountILS
+          );
+        } else {
+          amountBeforeVAT = stringNumberRounded(
+            getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+              .amountBeforeFullVATILS
+          ); // TODO: Add amount before VAT in ILS always
+        }
+        monthIncomeVATTransaction.amountBeforeFullVAT = amountBeforeVAT;
+        if (
+          !monthIncomeVATTransaction.vat ||
+          monthIncomeVATTransaction.vat == 0 ||
+          monthIncomeVATTransaction.vat == '0.00'
+        ) {
+          expensesWithoutVATVATSum += stringNumberRounded(
+            getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
+              .eventAmountILS
+          );
+        } else {
+          expensesWithVATExcludingVATSum += parseIntRound(
+            monthIncomeVATTransaction.amountBeforeFullVAT
+          );
+        }
+        monthVATReportHTMLTemplate = monthVATReportHTMLTemplate.concat(`
     <tr>
       <td>${monthIncomeVATTransaction.financial_entity}-${
-        monthIncomeVATTransaction.vatNumber
-      }</td>
+          monthIncomeVATTransaction.vatNumber
+        }</td>
       <td><a href="${
         monthIncomeVATTransaction.proforma_invoice_file
       }">P</a></td>
@@ -493,12 +582,12 @@ export async function createTaxEntriesForMonth(
       <td>${hashDateFormat(monthIncomeVATTransaction.tax_invoice_date)}</td>
       <td>${hashDateFormat(monthIncomeVATTransaction.event_date)}</td>
       <td>${monthIncomeVATTransaction.currency_code} ${
-        monthIncomeVATTransaction.event_amount
-      }</td>
+          monthIncomeVATTransaction.event_amount
+        }</td>
       <td>${stringNumberRounded(
         getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
           .eventAmountILS
-      )}</td>      
+      )}</td>
       <td>${stringNumberRounded(monthIncomeVATTransaction.vat)}</td>
       <td>${stringNumberRounded(
         getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
@@ -507,15 +596,35 @@ export async function createTaxEntriesForMonth(
       <td>${stringNumberRounded(
         monthIncomeVATTransaction.vatAfterDiduction
       )}</td>
-      <td>${Math.round((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
+      <td>${roundedVATToAdd}</td>
+      <td>${parseIntRound((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
       <td>${amountBeforeVAT}</td>
       <td>${
-        Math.round((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) /
+        parseIntRound((expensesWithVATExcludingVATSum + Number.EPSILON) * 100) /
         100
       }</td>
       <td>${expensesWithoutVATVATSum}</td>
     </tr>
     `);
+        monthIncomeVATTransaction.vat = getILSForDate(
+          monthIncomeVATTransaction,
+          invoiceExchangeRates
+        ).vatAfterDiductionILS.toString();
+        monthIncomeVATTransaction.vatAfterDiduction = getILSForDate(
+          monthIncomeVATTransaction,
+          invoiceExchangeRates
+        ).vatAfterDiductionILS;
+        // monthIncomeVATTransaction.amountBeforeFullVAT = getILSForDate(
+        //   monthIncomeVATTransaction,
+        //   invoiceExchangeRates
+        // ).amountBeforeFullVATILS;
+        // monthIncomeVATTransaction.event_amount =
+        //   monthIncomeVATTransaction.tax_invoice_amount = getILSForDate(
+        //     monthIncomeVATTransaction,
+        //     invoiceExchangeRates
+        //   ).eventAmountILS.toString();
+        changedVATTransactions.push(monthIncomeVATTransaction);
+      }
     }
 
     for (const leftTransaction of leftTransactions?.rows) {
@@ -536,7 +645,7 @@ export async function createTaxEntriesForMonth(
       `);
     }
 
-    transactionsForReport.push(...monthIncomeVATTransactions.rows);
+    transactionsForReport.push(...changedVATTransactions);
     leftTransactionsReport.push(...leftTransactions.rows);
 
     // console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
@@ -559,7 +668,7 @@ export async function createTaxEntriesForMonth(
               null
             )
           : hashVATIndexes.vatOutputsIndex,
-        hashNumberRounded(expensesVATSum),
+        hashNumber(expensesVATSum),
         null,
         null,
         transactionType == TransactionType.Expenses
@@ -573,7 +682,7 @@ export async function createTaxEntriesForMonth(
               null,
               null
             ),
-        hashNumberRounded(expensesVATSum),
+        hashNumber(expensesVATSum),
         null,
         null,
         null,
@@ -593,8 +702,8 @@ export async function createTaxEntriesForMonth(
           : 'generated_all_vat_to_recieve_for_previous_month',
         null,
         uuidv4(),
-        false,
-        null,
+        // false,
+        // null,
         owner,
       ];
 
@@ -645,6 +754,63 @@ export async function createTaxEntriesForMonth(
       //   // TODO: Log important checks
       //   console.log(`error in insert monthly VAT ${transactionType} - `, error);
       // }
+
+      if (expensesVATSumWithoutRound != expensesVATSum) {
+        let entryForMonthlyRoundVATDifference = [
+          hashDateFormat(moment(month).endOf('month').toDate()),
+          transactionType == TransactionType.Expenses
+            ? hashVATIndexes.vatInputsIndex
+            : hashVATIndexes.vatOutputsIndex,
+          hashNumberNoAbs(expensesVATSumWithoutRound - expensesVATSum),
+          null,
+          null,
+          'ביטול',
+          hashNumberNoAbs(expensesVATSumWithoutRound - expensesVATSum),
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          `פקודת מעמ ${moment(month).format('MM/YYYY')}`,
+          null,
+          null,
+          null,
+          hashDateFormat(moment(month).endOf('month').toDate()),
+          hashDateFormat(moment(month).endOf('month').toDate()),
+          null,
+          transactionType == TransactionType.Expenses
+            ? 'generated_all_vat_to_pay_for_previous_month'
+            : 'generated_all_vat_to_recieve_for_previous_month',
+          null,
+          uuidv4(),
+          // false,
+          // null,
+          owner,
+        ];
+
+        queryConfig = {
+          text: insertMovementQuery,
+          values: entryForMonthlyRoundVATDifference,
+        };
+
+        console.log(
+          'entryForMonthlyRoundVATDifference',
+          entryForMonthlyRoundVATDifference
+        );
+
+        // try {
+        //   let updateResult = await pool.query(queryConfig);
+        //   console.log(JSON.stringify(updateResult.rows[0]));
+        // } catch (error) {
+        //   // TODO: Log important checks
+        //   console.log(
+        //     `error in insert monthly VAT ${transactionType} - `,
+        //     error
+        //   );
+        // }
+      }
     }
   }
 
@@ -663,6 +829,7 @@ export async function createTaxEntriesForMonth(
           <th>VAT</th>
           <th>VAT in ILS</th>
           <th>Actual VAT</th>
+          <th>Rounded VAT to add</th>
           <th>Sum till now</th>
           <th>Amount Before VAT ILS</th>
           <th>Hayavot without VAT SUM till now</th>
