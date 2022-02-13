@@ -11,9 +11,9 @@ export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;
   let currrentCompany;
   if (query.month) {
-    reportMonthToReview = `2021-${query.month}-01`;
+    reportMonthToReview = `${query.month}-01`;
   } else {
-    reportMonthToReview = `2021-08-01`;
+    reportMonthToReview = `2020-12-01`;
   }
 
   if (query.company) {

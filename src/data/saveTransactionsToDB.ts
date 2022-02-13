@@ -79,9 +79,7 @@ export async function saveTransactionsToDB(
       ];
     } else if (accountType == 'deposits') {
       // TODO: Check if we want to save it to DB
-      optionalTransactionKeys = [
-        'data0ExpectedRepaymentSwitch',
-      ];
+      optionalTransactionKeys = ['data0ExpectedRepaymentSwitch'];
     } else if (accountType == 'isracard') {
       optionalTransactionKeys = ['clientIpAddress'];
     }
@@ -224,7 +222,11 @@ export async function saveTransactionsToDB(
           // console.log('nothing');
         } catch (error) {
           // TODO: Log important checks
-          console.log('error in insert - ', error);
+          console.log(
+            `error in insert - ${error} - ${text} - ${values} - ${JSON.stringify(
+              transaction
+            )}`
+          );
           // console.log('nothing');
         }
       }
@@ -288,7 +290,10 @@ function findMissingTransactionKeys(
       console.log('new keys!! inDBNotInTransaction', inDBNotInTransaction);
     }
     if (!InTransactionNotInDB.every((e) => knownOptionals.includes(e))) {
-      console.log(`new keys!! InTransactionNotInDB ${accountType}`, InTransactionNotInDB);
+      console.log(
+        `new keys!! InTransactionNotInDB ${accountType}`,
+        InTransactionNotInDB
+      );
     }
   }
 }
