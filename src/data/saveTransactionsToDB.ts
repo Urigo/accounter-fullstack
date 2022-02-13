@@ -3,7 +3,13 @@ import lodash from 'lodash';
 const { camelCase } = lodash;
 import moment from 'moment';
 
-export type AccountTypes = 'ils' | 'usd' | 'eur' | 'deposits' | 'isracard';
+export type AccountTypes =
+  | 'ils'
+  | 'usd'
+  | 'eur'
+  | 'gbp'
+  | 'deposits'
+  | 'isracard';
 
 export async function saveTransactionsToDB(
   transactions: any,
@@ -29,7 +35,11 @@ export async function saveTransactionsToDB(
       if (transaction.activityDescriptionIncludeValueDate == undefined) {
         transaction.activityDescriptionIncludeValueDate = null;
       }
-    } else if (accountType == 'usd' || accountType == 'eur') {
+    } else if (
+      accountType == 'usd' ||
+      accountType == 'eur' ||
+      accountType == 'gbp'
+    ) {
       normalizeForeignTransactionMetadata(transaction);
       if (transaction.contraAccountFieldNameLable == 0) {
         console.log('old API!');
@@ -67,7 +77,11 @@ export async function saveTransactionsToDB(
         'displayCreditAccountDetails',
         'displayRTGSIncomingTrsDetails',
       ];
-    } else if (accountType == 'usd' || accountType == 'eur') {
+    } else if (
+      accountType == 'usd' ||
+      accountType == 'eur' ||
+      accountType == 'gbp'
+    ) {
       // TODO: Save the mandatory values to DB accourding to schema
       optionalTransactionKeys = [
         'metadata',
@@ -166,7 +180,9 @@ export async function saveTransactionsToDB(
                 JSON.stringify(transaction)
               );
             } else if (
-              (accountType == 'usd' || accountType == 'eur') &&
+              (accountType == 'usd' ||
+                accountType == 'eur' ||
+                accountType == 'gbp') &&
               moment(transaction.executingDate, 'YYYY-MM-DD').diff(
                 moment(),
                 'months'
@@ -513,7 +529,11 @@ function transactionValuesToArray(transaction: any, accountType: AccountTypes) {
       transaction.branchNumber,
       transaction.accountNumber,
     ];
-  } else if (accountType == 'usd' || accountType == 'eur') {
+  } else if (
+    accountType == 'usd' ||
+    accountType == 'eur' ||
+    accountType == 'gbp'
+  ) {
     values = [
       transaction.metadataAttributesOriginalEventKey,
       transaction.metadataAttributesContraBranchNumber,

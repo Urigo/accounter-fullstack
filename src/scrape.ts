@@ -137,13 +137,16 @@ async function getForeignTransactionsfromBankAndSave(
   await Promise.all(
     foreignTransactions.data.balancesAndLimitsDataList.map(
       async (foreignAccountsArray: any) => {
-        let accountCurrency: 'usd' | 'eur' | undefined;
+        let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
         switch (foreignAccountsArray.currencyCode) {
           case 19:
             accountCurrency = 'usd';
             break;
           case 100:
             accountCurrency = 'eur';
+            break;
+          case 27:
+            accountCurrency = 'gbp';
             break;
           default:
             // TODO: Log important checks

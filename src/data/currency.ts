@@ -16,6 +16,7 @@ async function getCurrencyRatesForDate(
   // console.log(url);
   let dailyDollarRate = 0;
   let dailyEuroRate = 0;
+  let dailyGBPRate = 0;
 
   await (async () => {
     try {
@@ -34,6 +35,9 @@ async function getCurrencyRatesForDate(
         ).RATE;
         dailyEuroRate = currencyRates.CURRENCY.find(
           (x: any) => x.CURRENCYCODE === 'EUR'
+        ).RATE;
+        dailyGBPRate = currencyRates.CURRENCY.find(
+          (x: any) => x.CURRENCYCODE === 'GBP'
         ).RATE;
       } else if (
         currencyRates.ERROR1 == 'Requested date is invalid or' &&
@@ -58,10 +62,11 @@ async function getCurrencyRatesForDate(
     }
   })();
 
-  if (dailyDollarRate != 0 && dailyEuroRate != 0) {
+  if (dailyDollarRate != 0 && dailyEuroRate != 0 && dailyGBPRate != 0) {
     return {
       dollarRate: dailyDollarRate,
       euroRate: dailyEuroRate,
+      gbpRate: dailyGBPRate,
     };
   } else {
     return undefined;
@@ -92,13 +97,14 @@ export async function getCurrencyRates(pool: Pool) {
       if (currencyRates) {
         let text = `
             INSERT INTO accounter_schema.exchange_rates 
-            (exchange_date, usd, eur) VALUES ($1, $2, $3) RETURNING *
+            (exchange_date, usd, eur, gbp) VALUES ($1, $2, $3, $4) RETURNING *
           `;
 
         let values = [
           format(currentDate, 'yyyy-MM-dd'),
           currencyRates.dollarRate,
           currencyRates.euroRate,
+          currencyRates.gbpRate,
         ];
 
         try {

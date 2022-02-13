@@ -61,8 +61,14 @@ BEGIN
                     WHEN NEW.payment_sum IS NULL THEN (NEW.payment_sum_outbound * -1)
                     WHEN NEW.payment_sum_outbound IS NULL THEN (NEW.payment_sum * -1)
                     END,
-                NEW.voucher_number,
-                NEW.voucher_number,
+                CASE
+                    WHEN NEW.voucher_number IS NULL THEN (NEW.voucher_number_ratz)
+                    ELSE NEW.voucher_number
+                END,
+                CASE
+                    WHEN NEW.voucher_number IS NULL THEN (NEW.voucher_number_ratz)
+                    ELSE NEW.voucher_number
+                END,
                 NEW.card,
                 'creditcard',
                 FALSE,
@@ -304,3 +310,77 @@ CREATE TRIGGER new_eur_transaction_insert_trigger
     FOR EACH ROW
 
 EXECUTE PROCEDURE insert_eur_transaction_into_merged_table();
+
+
+
+
+
+
+
+
+
+create or replace function insert_gbp_transaction_into_merged_table()
+    RETURNS trigger AS
+$$
+BEGIN
+
+    INSERT INTO accounter_schema.all_transactions (
+                                                   currency_code,
+                                                   event_date,
+                                                   debit_date,
+                                                   event_amount,
+                                                   bank_reference,
+                                                   event_number,
+                                                   account_number,
+                                                   account_type,
+                                                   is_conversion,
+                                                   currency_rate,
+                                                   contra_currency_code,
+                                                   bank_description,
+                                                   original_id,
+                                                   id,
+                                                   current_balance,
+                                                   detailed_bank_description)
+
+    VALUES (
+            'GBP',
+            new.executing_date::text::date,
+            new.value_date::text::date,
+            (CASE
+                 WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
+                 ELSE new.event_amount END
+                ),
+            new.reference_number,
+            new.event_number,
+            new.account_number,
+            'checking_gbp',
+            (new.rate_fixing_code <> 0),
+            new.currency_rate,
+            new.contra_currency_code,
+            new.activity_description || COALESCE('/' || new.event_details, ''),
+            new.id,
+            gen_random_uuid(),
+            new.current_balance,
+            concat(
+                    new.activity_description,
+                    ' ',
+                    coalesce(new.event_details, ''),
+                    ' ',
+                    coalesce(new.account_name, '')
+                ));
+    RETURN NEW;
+END;
+$$
+    LANGUAGE 'plpgsql';
+
+
+
+CREATE TRIGGER new_gbp_transaction_insert_trigger
+
+    AFTER INSERT
+
+    ON accounter_schema.poalim_gbp_account_transactions
+
+    FOR EACH ROW
+
+EXECUTE PROCEDURE insert_gbp_transaction_into_merged_table();
