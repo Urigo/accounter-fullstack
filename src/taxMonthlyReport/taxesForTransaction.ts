@@ -1,6 +1,7 @@
 import { pool } from '../index';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
+import { numberRounded } from './taxesForMonth';
 
 const entitiesWithoutInvoiceDate = ['Uri Goldshtein', 'Poalim', 'Isracard'];
 const taxCategoriesWithoutInvoiceDate = ['אוריח'];
@@ -18,7 +19,7 @@ const entitiesWithoutAccounting = [
   'Uri Goldshtein',
 ];
 
-const taxCategoriesWithNotFullVAT = ['פלאפון', 'ציוד', 'מידע', 'מחשבים'];
+const taxCategoriesWithNotFullVAT = ['פלאפון', 'מידע', 'מחשבים'];
 
 export function hashDateFormat(date: Date): string {
   return moment(date).format('DD/MM/YYYY');
@@ -276,16 +277,21 @@ export function hashAccounts(
           if (hashBusinessIndexes.hash_index) {
             return hashBusinessIndexes.hash_index;
           } else {
-            return accountType ? accountType.substring(0, 15) : null;
+            return accountType ? accountType.substring(0, 15).trimEnd() : null;
           }
         }
       }
-      return accountType ? accountType.substring(0, 15) : null;
+      return accountType ? accountType.substring(0, 15).trimEnd() : null;
   }
 }
 
 export function hashNumber(number: any): string | null {
   let formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(2);
+  return formattedNumber == '0.00' ? null : formattedNumber;
+}
+
+export function hashNumberNoAbs(number: any): string | null {
+  let formattedNumber = Number.parseFloat(number).toFixed(2);
   return formattedNumber == '0.00' ? null : formattedNumber;
 }
 
@@ -440,11 +446,36 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   // credit זכות
   // debit חובה
 
+  // if (transaction.vat == 0 &&
+  //     !transaction.tax_invoice_date &&
+  //     !transaction.tax_invoice_number &&
+  //     !transaction.tax_invoice_file &&
+  //     !transaction.
+  //     transaction.receipt_number &&
+  //     ) {
+
   transaction.tax_category = hashBusinessIndexes?.auto_tax_category
     ? hashBusinessIndexes?.auto_tax_category
     : transaction.tax_category;
 
   let originalTransaction = { ...transaction };
+
+  if (
+    transaction.currency_code != 'ILS' &&
+    !transaction.tax_invoice_date &&
+    !transaction.tax_invoice_number &&
+    !transaction.tax_invoice_file &&
+    !transaction.proforma_invoice_file &&
+    transaction.receipt_number &&
+    transaction.receipt_date &&
+    transaction.receipt_url &&
+    transaction.receipt_image
+  ) {
+    transaction.tax_invoice_date = transaction.receipt_date;
+    transaction.tax_invoice_number = transaction.receipt_number;
+    transaction.tax_invoice_file = transaction.receipt_url;
+    transaction.proforma_invoice_file = transaction.receipt_image;
+  }
   if (transaction.tax_invoice_currency) {
     transaction.currency_code = transaction.tax_invoice_currency;
     transaction.event_amount = transaction.tax_invoice_amount;
@@ -472,11 +503,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   entryForAccounting.creditAccount = transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
-  entryForFinancialAccount.creditAmount =
-    entryForFinancialAccount.debitAmount =
-    entryForAccounting.creditAmount =
-    entryForAccounting.debitAmount =
-      transaction.event_amount;
+  entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount =
+    transaction.event_amount;
+  entryForAccounting.creditAmount = entryForAccounting.debitAmount =
+    transaction.tax_invoice_amount
+      ? transaction.tax_invoice_amount
+      : transaction.event_amount;
+
   entryForFinancialAccount.creditAmountILS =
     entryForFinancialAccount.debitAmountILS = getILSForDate(
       transaction,
@@ -676,6 +709,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   ];
 
   let foreignBalance = null;
+  let currency = hashCurrencyType(transaction.currency_code);
   if (transaction.financial_entity == 'Isracard') {
     let originalInvoicedAmountAndCurrency: any = await pool.query(`
       select tax_invoice_amount, tax_invoice_currency
@@ -695,6 +729,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       foreignBalance = hashNumber(
         originalInvoicedAmountAndCurrency.rows[0].tax_invoice_amount
       );
+      currency = hashCurrencyType(
+        originalInvoicedAmountAndCurrency.rows[0].tax_invoice_currency
+      );
     }
   }
   let entryForFinancialAccountValues = [
@@ -712,7 +749,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     transaction.currency_code != 'ILS'
       ? hashNumber(entryForFinancialAccount.debitAmount)
       : foreignBalance,
-    hashCurrencyType(transaction.currency_code), // TODO: Check if it works for forgien creditcard in ILS
+    currency, // TODO: Check if it works for forgien creditcard in ILS
     hashAccounts(
       entryForFinancialAccount.creditAccount,
       financialAccounts,
@@ -924,9 +961,17 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     transaction.tax_invoice_date
   ) {
     console.log('שערררררררר');
-    let entryForExchangeRatesDifferenceValues = [
-      hashDateFormat(transaction.tax_invoice_date),
-      hashAccounts(
+    let credit = hashAccounts(
+      entryForFinancialAccount.creditAccount,
+      financialAccounts,
+      hashBusinessIndexes,
+      hashVATIndexes,
+      transaction.currency_code,
+      isracardHashIndexes,
+      transaction.bank_description
+    );
+    if (transaction.event_amount < 0) {
+      credit = hashAccounts(
         entryForFinancialAccount.debitAccount,
         financialAccounts,
         hashBusinessIndexes,
@@ -934,18 +979,24 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         transaction.currency_code,
         isracardHashIndexes,
         transaction.bank_description
-      ),
-      hashNumber(
-        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
-          getILSForDate(transaction, debitExchangeRates).eventAmountILS
-      ),
+      );
+    }
+    let amount = hashNumberNoAbs(
+      numberRounded(
+        getILSForDate(transaction, debitExchangeRates).eventAmountILS
+      ) -
+        numberRounded(
+          getILSForDate(transaction, invoiceExchangeRates).eventAmountILS
+        )
+    );
+    let entryForExchangeRatesDifferenceValues = [
+      hashDateFormat(transaction.tax_invoice_date),
+      credit,
+      amount,
       null,
       hashCurrencyType('ILS'),
       hashVATIndexes.hashCurrencyRatesDifferencesIndex,
-      hashNumber(
-        getILSForDate(transaction, invoiceExchangeRates).eventAmountILS -
-          getILSForDate(transaction, debitExchangeRates).eventAmountILS
-      ),
+      amount,
       hashCurrencyType('ILS'),
       null, // Check for interest transactions (הכנרבמ)
       null,
