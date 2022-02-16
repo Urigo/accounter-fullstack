@@ -9,7 +9,12 @@ with all_exchange_dates as (
             from accounter_schema.exchange_rates t1
             where date_trunc('day', t1.exchange_date)::date <= times_table.dt
             order by t1.exchange_date desc
-            limit 1) usd_rate
+            limit 1) usd_rate,
+           (select t1.gbp
+            from accounter_schema.exchange_rates t1
+            where date_trunc('day', t1.exchange_date)::date <= times_table.dt
+            order by t1.exchange_date desc
+            limit 1) gbp_rate            
     from times_table
     order by dt
 ), formatted_merged_tables as (
@@ -37,6 +42,21 @@ with all_exchange_dates as (
                                  limit 1
                              )
                          )
+                    WHEN currency_code = 'GBP' THEN (event_amount - COALESCE(vat, 0)) * (
+                            (
+                                select all_exchange_dates.gbp_rate
+                                from all_exchange_dates
+                                where all_exchange_dates.exchange_date <= debit_date::text::date
+                                order by all_exchange_dates.exchange_date desc
+                                limit 1
+                            ) / (
+                                select all_exchange_dates.usd_rate
+                                from all_exchange_dates
+                                where all_exchange_dates.exchange_date <= debit_date::text::date
+                                order by all_exchange_dates.exchange_date desc
+                                limit 1
+                            )
+                        )                         
                      WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
                      ELSE -99999999999
                     END
@@ -46,29 +66,31 @@ with all_exchange_dates as (
  transactions_exclude as (
      select *
      from formatted_merged_tables
-     where personal_category <> 'conversion'
-       and personal_category <> 'investments'
-       and financial_entity <> 'Isracard'
-       and financial_entity <> 'Tax'
-       and financial_entity <> 'VAT'
-       and financial_entity <> 'Tax Shuma'
-       and financial_entity <> 'Tax Corona Grant'
-       and financial_entity <> 'Uri Goldshtein'
-       and financial_entity <> 'Uri Goldshtein Hoz'
-       and financial_entity <> 'Social Security Deductions'
-       and financial_entity <> 'Tax Deductions'
-       and financial_entity <> 'Dotan Simha'
+      where 
+        personal_category <> 'conversion'
+        and personal_category <> 'investments'
+        and financial_entity <> 'Isracard'
+        and financial_entity <> 'Tax'
+        and financial_entity <> 'VAT'
+        and financial_entity <> 'Tax Shuma'
+        and financial_entity <> 'Tax Corona Grant'
+        and financial_entity <> 'Uri Goldshtein'
+        and financial_entity <> 'Uri Goldshtein Hoz'
+        and financial_entity <> 'Social Security Deductions'
+        and financial_entity <> 'Tax Deductions'
+        and financial_entity <> 'Dotan Simha'
  ),
  business_accounts as (
      select account_number
      from accounter_schema.financial_accounts
      where private_business = 'business'
+     -- where owner = '6a20aa69-57ff-446e-8d6a-1e96d095e988'
  )
 select
     --  month
     to_char(event_date, 'YYYY/mm') as date,
     --  year
-    --  to_char(event_date, 'YYYY') as date,
+    -- to_char(event_date, 'YYYY') as date,
     sum(
             case
                 when (event_amount > 0 and personal_category = 'business' and

@@ -797,6 +797,8 @@ export function currencyCodeToSymbol(currency_code: string): string {
     currencySymbol = '$';
   } else if (currency_code == 'EUR') {
     currencySymbol = '€';
+  } else if (currency_code == 'GBP') {
+    currencySymbol = '£';
   }
   return currencySymbol;
 }

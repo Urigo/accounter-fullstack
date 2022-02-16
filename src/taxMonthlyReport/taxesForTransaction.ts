@@ -333,7 +333,7 @@ export function getILSForDate(transaction: any, date: any) {
   let amountToUse = transaction.tax_invoice_amount
     ? transaction.tax_invoice_amount
     : transaction.event_amount;
-  if (['USD', 'EUR'].includes(transaction.currency_code)) {
+  if (['USD', 'EUR', 'GBP'].includes(transaction.currency_code)) {
     let currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
     amounts.vatAfterDiductionILS =
@@ -357,7 +357,7 @@ export function getILSForDate(transaction: any, date: any) {
 async function getExchangeRates(currencyCode: any, date: Date) {
   if (currencyCode != 'ILS') {
     const exchangeQuery = `
-      select usd, eur
+      select usd, eur, gbp
       from accounter_schema.exchange_rates
       where exchange_date <= to_date('${moment(date).format(
         'YYYY-MM-DD'
