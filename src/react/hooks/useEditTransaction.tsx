@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { TransactionType } from '../comnponents/FinancialStatus/AllTransactionsString';
+import { TransactionType } from '../models/types';
 
 export const useEditTransaction = () => {
   const onEditTransaction = useCallback(

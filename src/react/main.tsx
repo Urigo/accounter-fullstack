@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { FinancialStatus } from './comnponents/FinancialStatus';
+import { FinancialStatus } from './components/FinancialStatus';
 
 const rootElement = document.getElementById('root');
 
@@ -12,8 +12,21 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<FinancialStatus />} />
-        <Route path="/test1" element={<div>test1</div>} />
-        <Route path="/test2" element={<div>test2</div>} />
+        <Route path="/financial-status" element={<FinancialStatus />} />
+        <Route path="/monthly-report" element={<div>missing</div>} />
+        <Route path="/reports-to-review" element={<div>missing</div>} />
+        <Route path="/private-charts" element={<div>missing</div>} />
+        <Route path="/browser.js" element={<div>missing</div>} />
+        <Route path="/browser.js.map" element={<div>missing</div>} />
+        <Route path="/src/browser/browser.ts" element={<div>missing</div>} />
+        <Route path="/editProperty" element={<div>missing</div>} />
+        <Route path="/reviewTransaction" element={<div>missing</div>} />
+        <Route path="/generateTaxMovements" element={<div>missing</div>} />
+        <Route path="/editTransactionAttribute" element={<div>missing</div>} />
+        <Route path="/deleteTaxMovements" element={<div>missing</div>} />
+        <Route path="/user-transactions" element={<div>missing</div>} />
+        <Route path="/all-users" element={<div>missing</div>} />
+        <Route path="/____" element={<div>missing</div>} />
         <Route
           path="*"
           element={
