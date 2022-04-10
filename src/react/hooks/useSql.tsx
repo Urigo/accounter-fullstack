@@ -4,6 +4,7 @@ import type {
   MonthTaxReport,
   ProfitRowType,
   ThisMonthPrivateExpensesType,
+  TopPrivateNotCategorizedExpense,
   TransactionType,
   VatTransaction,
 } from '../models/types';
@@ -173,6 +174,24 @@ export const useSql = () => {
     return monthlyTaxesReport;
   };
 
+  const onGetTopPrivateNotCategorized = (
+    startingDate: string = '2020-01-01'
+  ) => {
+    // /* sql req */
+    //   await pool.query(
+    //     `
+    //   select *
+    //   from top_expenses_not_categorized($1);
+    // `,
+    //     [`$$${startingDate}$$`]
+    //   );
+
+    const topPrivateNotCategorizedExpenses: TopPrivateNotCategorizedExpense[] =
+      [];
+
+    return topPrivateNotCategorizedExpenses;
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -188,5 +207,7 @@ export const useSql = () => {
     getAllTransactions: () => onGetAllTransactions(),
     getMonthlyTaxesReport: (monthTaxReport: string) =>
       onGetMonthlyTaxesReport(monthTaxReport),
+    getTopPrivateNotCategorized: (startingDate?: string) =>
+      onGetTopPrivateNotCategorized(startingDate),
   };
 };

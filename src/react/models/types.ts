@@ -123,3 +123,11 @@ export interface MonthTaxReport {
   תאריך_ערך: string;
   תאריך_3: string;
 }
+
+export interface TopPrivateNotCategorizedExpense {
+  amount: number;
+  currency_code: string;
+  bank_description: string;
+  date: string;
+  description: string;
+}

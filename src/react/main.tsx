@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
+import { TopPrivateNotCategorized } from './components/TopPrivateNotCategorized';
 
 const rootElement = document.getElementById('root');
 
@@ -16,7 +17,7 @@ root.render(
         <Route path="/financial-status" element={<FinancialStatus />} />
         <Route path="/monthly-report" element={<MonthlyReport />} />
         <Route path="/reports-to-review" element={<div>missing</div>} />
-        <Route path="/private-charts" element={<div>missing</div>} />
+        <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
         <Route path="/browser.js" element={<div>missing</div>} />
         <Route path="/browser.js.map" element={<div>missing</div>} />
         <Route path="/src/browser/browser.ts" element={<div>missing</div>} />
