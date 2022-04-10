@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { FinancialStatus } from './components/FinancialStatus';
+import { MonthlyReport } from './components/MonthlyReport';
 
 const rootElement = document.getElementById('root');
 
@@ -13,7 +14,7 @@ root.render(
       <Routes>
         <Route path="/" element={<FinancialStatus />} />
         <Route path="/financial-status" element={<FinancialStatus />} />
-        <Route path="/monthly-report" element={<div>missing</div>} />
+        <Route path="/monthly-report" element={<MonthlyReport />} />
         <Route path="/reports-to-review" element={<div>missing</div>} />
         <Route path="/private-charts" element={<div>missing</div>} />
         <Route path="/browser.js" element={<div>missing</div>} />
