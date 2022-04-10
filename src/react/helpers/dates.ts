@@ -1,3 +1,5 @@
+import moment from "moment";
+
 export const parseMonth = (month?: string): string | undefined => {
   if (!month) {
     return undefined;
@@ -27,3 +29,7 @@ export const parseYear = (year?: string): string | undefined => {
 
   return year;
 };
+
+export function hashDateFormat(date: Date): string {
+  return moment(date).format('DD/MM/YYYY');
+}

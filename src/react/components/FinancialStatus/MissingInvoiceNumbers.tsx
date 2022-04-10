@@ -1,18 +1,9 @@
 import { FC } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
+import { useSql } from '../../hooks/useSql';
+import type { MissingInvoice } from '../../models/types';
 
-interface MissingInvoiceNumber {
-  event_date: Date;
-  event_amount: string;
-  currency_code: string;
-  financial_entity: string;
-  user_description: string;
-  tax_invoice_number: string;
-}
-
-const MissingInvoiceNumberRow: FC<{ data: MissingInvoiceNumber }> = ({
-  data,
-}) => {
+const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
   return (
     <tr>
       <td>
@@ -29,19 +20,12 @@ const MissingInvoiceNumberRow: FC<{ data: MissingInvoiceNumber }> = ({
   );
 };
 
-// /* sql req */
-// pool.query(
-//   `
-//     select *
-//     from missing_invoice_numbers($1)
-//     order by event_date;
-//   `,
-//   [`$$${monthTaxReport}$$`]
-// )
+export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({
+  monthTaxReport,
+}) => {
+  const { getMissingInvoiceNumbers } = useSql();
 
-export const MissingInvoiceNumbers: FC = () => {
-  // TODO: fetch missing invoice numbers data from DB
-  const missingInvoiceNumbers: MissingInvoiceNumber[] = [];
+  const missingInvoiceNumbers = getMissingInvoiceNumbers(monthTaxReport);
 
   return (
     <table>

@@ -1,28 +1,13 @@
 import { FC } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
+import { useSql } from '../../hooks/useSql';
 
-interface MissingInvoiceImages {
-  event_date: Date;
-  event_amount: number;
-  currency_code: string;
-  financial_entity: string;
-  user_description: string;
-  tax_invoice_number: number;
-}
+export const MissingInvoiceImages: FC<{ monthTaxReport: string }> = ({
+  monthTaxReport,
+}) => {
+  const { getMissingInvoiceImages } = useSql();
 
-// /* sql req */
-// pool.query(
-//   `
-//     select *
-//     from missing_invoice_images($1)
-//     order by event_date;
-//   `,
-//   [`$$${monthTaxReport}$$`]
-// ),
-
-export const MissingInvoiceImages: FC = () => {
-  // TODO: fetch missing invoice images data from DB
-  const missingInvoiceImages: MissingInvoiceImages[] = [];
+  const missingInvoiceImages = getMissingInvoiceImages(monthTaxReport);
 
   return (
     <table>

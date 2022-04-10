@@ -32,15 +32,15 @@ export const FinancialStatus: FC = () => {
       <br />
       <ThisMonthPrivateExpensesTable />
       <h3>Missing invoice numbers for a month</h3>
-      <MissingInvoiceNumbers />
+      <MissingInvoiceNumbers monthTaxReport={monthTaxReport} />
       <h3>Missing invoice dates for a month</h3>
-      <MissingInvoiceDates />
+      <MissingInvoiceDates monthTaxReport={monthTaxReport} />
       <h3>Missing invoice images</h3>
-      <MissingInvoiceImages />
+      <MissingInvoiceImages monthTaxReport={monthTaxReport} />
       <h3>Last invoice numbers</h3>
       <LastInvoiceNumbers />
       <h3>VAT Transactions for this month:</h3>
-      <VatTransactionsString />
+      <VatTransactionsString monthTaxReport={monthTaxReport} />
       <h3>All Transactions</h3>
       <AllTransactionsString />
     </>

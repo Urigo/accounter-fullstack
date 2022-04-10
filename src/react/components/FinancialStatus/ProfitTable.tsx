@@ -1,15 +1,7 @@
 import { FC } from 'react';
 import { formatCurrency } from '../../helpers/currency';
-
-interface ProfitRowType {
-  date: string;
-  business_income: number;
-  business_expenses: number;
-  overall_business_profit: number;
-  business_profit_share: number;
-  private_expenses: number;
-  overall_private: number;
-}
+import { useSql } from '../../hooks/useSql';
+import type { ProfitRowType } from '../../models/types';
 
 const ProfitRow: FC<{ data: ProfitRowType }> = ({ data }) => {
   return (
@@ -25,12 +17,10 @@ const ProfitRow: FC<{ data: ProfitRowType }> = ({ data }) => {
   );
 };
 
-// /* sql req */
-// readFileSync('src/monthlyCharts.sql').toString()
-
 export const ProfitTable: FC = () => {
-  // TODO: fetch profit data from DB
-  const profitRows: ProfitRowType[] = [];
+  const { getProfitTable } = useSql();
+
+  const profitRows = getProfitTable();
 
   return profitRows.length > 0 ? (
     <table>

@@ -1,19 +1,12 @@
 import { FC } from 'react';
-import type { TransactionColumn, TransactionType } from '../../../models/types';
+import { useSql } from '../../../hooks/useSql';
+import type { TransactionColumn } from '../../../models/types';
 import { TransactionRow } from './TransactionRow';
 
-// /* sql req */
-// pool.query(`
-//       select *
-//       from accounter_schema.all_transactions
-//       -- where account_number in ('466803', '1074', '1082')
-//       order by event_date desc
-//       limit 2550;
-//     `)
-
 export const AllTransactionsString: FC = () => {
-  // TODO: fetch all transactions data from DB
-  const allTransactions: TransactionType[] = [];
+  const { getAllTransactions } = useSql();
+
+  const allTransactions = getAllTransactions();
 
   const columns: TransactionColumn[] = [
     'Date',

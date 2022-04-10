@@ -1,26 +1,12 @@
 import { FC } from 'react';
+import { useSql } from '../../hooks/useSql';
 
-interface VatTransaction {
-  overall_vat_status: string;
-  vat: number;
-  event_date: Date;
-  event_amount: number;
-  financial_entity: string;
-  user_description: string;
-}
+export const VatTransactionsString: FC<{ monthTaxReport: string }> = ({
+  monthTaxReport,
+}) => {
+  const { getVatTransactions } = useSql();
 
-// /* sql req */
-// pool.query(
-//   `
-//     select *
-//     from get_vat_for_month($1);
-//   `,
-//   [`$$${monthTaxReport}$$`]
-// ),
-
-export const VatTransactionsString: FC = () => {
-  // TODO: fetch vat transactions data from DB
-  const vatTransactions: VatTransaction[] = [];
+  const vatTransactions = getVatTransactions(monthTaxReport);
 
   return (
     <table>

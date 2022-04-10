@@ -59,3 +59,67 @@ export type TransactionColumn =
   | 'Receipt Number'
   | 'Receipt URL'
   | 'Links';
+
+export interface LastInvoiceNumber {
+  tax_invoice_number: number;
+  event_date: Date;
+  financial_entity: string;
+  user_description: string;
+  event_amount: number;
+}
+
+export interface MissingInvoice {
+  event_date: Date;
+  event_amount: number;
+  currency_code: string;
+  financial_entity: string;
+  user_description: string;
+  tax_invoice_number: number;
+}
+
+export interface ProfitRowType {
+  date: string;
+  business_income: number;
+  business_expenses: number;
+  overall_business_profit: number;
+  business_profit_share: number;
+  private_expenses: number;
+  overall_private: number;
+}
+
+export interface ThisMonthPrivateExpensesType {
+  personal_category: string;
+  overall_sum: number;
+}
+
+export interface VatTransaction {
+  overall_vat_status: string;
+  vat: number;
+  event_date: Date;
+  event_amount: number;
+  financial_entity: string;
+  user_description: string;
+}
+
+export interface MonthTaxReport {
+  תאריך_חשבונית: string;
+  חשבון_חובה_1: string;
+  סכום_חובה_1: string;
+  מטח_סכום_חובה_1: string;
+  מטבע: string;
+  חשבון_זכות_1: string;
+  סכום_זכות_1: string;
+  מטח_סכום_זכות_1: string;
+  חשבון_חובה_2: string;
+  סכום_חובה_2: string;
+  מטח_סכום_חובה_2: string;
+  חשבון_זכות_2: string;
+  סכום_זכות_2: string;
+  מטח_סכום_זכות_2: string;
+  פרטים: string;
+  אסמכתא_1: string;
+  אסמכתא_2: string;
+  סוג_תנועה: string;
+  תאריך_ערך: string;
+  תאריך_3: string;
+}

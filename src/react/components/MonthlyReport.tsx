@@ -1,40 +1,11 @@
 import { FC } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../helpers';
-
-interface MonthTaxReport {
-  תאריך_חשבונית: string;
-  חשבון_חובה_1: string;
-  סכום_חובה_1: string;
-  מטח_סכום_חובה_1: string;
-  מטבע: string;
-  חשבון_זכות_1: string;
-  סכום_זכות_1: string;
-  מטח_סכום_זכות_1: string;
-  חשבון_חובה_2: string;
-  סכום_חובה_2: string;
-  מטח_סכום_חובה_2: string;
-  חשבון_זכות_2: string;
-  סכום_זכות_2: string;
-  מטח_סכום_זכות_2: string;
-  פרטים: string;
-  אסמכתא_1: string;
-  אסמכתא_2: string;
-  סוג_תנועה: string;
-  תאריך_ערך: string;
-  תאריך_3: string;
-}
-
-// /* sql req */
-// const monthlyTaxesReport: any = await pool.query(`
-// select *
-// from get_tax_report_of_month($monthTaxReportDate);
-// `, [
-//   `$$${monthTaxReportDate}$$`,
-// ]);
+import { useSql } from '../hooks/useSql';
 
 export const MonthlyReport: FC = () => {
-  let [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const { getMonthlyTaxesReport } = useSql();
 
   const month = searchParams.get('month');
   const year = searchParams.get('year');
@@ -45,8 +16,7 @@ export const MonthlyReport: FC = () => {
   const monthTaxReport = `${parsedYear}-${parsedMonth}-01`;
   console.log('monthTaxReport', monthTaxReport);
 
-  // TODO: fetch data from DB
-  const monthlyTaxesReport: MonthTaxReport[] = [];
+  const monthlyTaxesReport = getMonthlyTaxesReport(monthTaxReport);
 
   return (
     <>
