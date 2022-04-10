@@ -1,25 +1,24 @@
-import * as React from 'react';
-import { ConfirmButton } from '../components/confirmButton';
-import { UpdateButton } from '../components/updateButton';
-import { AllTransactionsEntity } from '../getAllTransactions';
-import { suggestedTransaction } from '../utils';
+import { CSSProperties, FC } from 'react';
+import type { TransactionType } from '../../../../models/types';
+import { ConfirmButton, UpdateButton } from '../../../common';
+import { suggestedTransaction } from '../../../../helpers';
 
 type Props = {
-  transaction: AllTransactionsEntity;
-  style: React.CSSProperties;
+  transaction: TransactionType;
+  style?: CSSProperties;
 };
 
-export const Category: React.FC<Props> = ({ transaction, style }) => {
+export const Category: FC<Props> = ({ transaction, style }) => {
   const isPersonalCategory = !!transaction.personal_category;
-  const cellText = transaction.personal_category
-    ? transaction.personal_category
-    : suggestedTransaction(transaction)?.financialEntity;
+  const cellText =
+    transaction.personal_category ??
+    suggestedTransaction(transaction)?.financialEntity;
 
   return (
     <td
       style={{
-        ...style,
         ...(isPersonalCategory ? {} : { backgroundColor: 'rgb(236, 207, 57)' }),
+        ...style,
       }}
     >
       {cellText ?? 'undefined'}

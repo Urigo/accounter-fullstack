@@ -1,21 +1,24 @@
 import * as React from 'react';
-import { AllTransactionsEntity } from '../getAllTransactions';
+import type { TransactionType } from '../../models/types';
 
 type Props = {
-  transaction: AllTransactionsEntity;
-  propertyName: keyof AllTransactionsEntity;
-  promptText: string;
+  transaction: TransactionType;
+  propertyName: keyof TransactionType;
+  value?: string;
 };
 
-export const UpdateButton: React.FC<Props> = ({
+export const ConfirmButton: React.FC<Props> = ({
   transaction,
   propertyName,
-  promptText,
+  value,
 }) => {
   const updateToNew = () => {
-    const newValue = prompt(promptText);
+    if (!value) {
+      return;
+    }
+
     const changeRequest = {
-      newValue,
+      newValue: value,
       propertyToChange: propertyName,
       id: transaction.id,
       bank_reference: transaction.bank_reference,
@@ -43,7 +46,7 @@ export const UpdateButton: React.FC<Props> = ({
     <div>
       {transaction.tax_category}
       <button type="button" onClick={updateToNew}>
-        &#x270f;
+        V
       </button>
     </div>
   );

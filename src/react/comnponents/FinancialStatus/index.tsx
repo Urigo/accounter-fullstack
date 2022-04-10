@@ -43,13 +43,6 @@ export const FinancialStatus: FC = () => {
       <VatTransactionsString />
       <h3>All Transactions</h3>
       <AllTransactionsString />
-      {/* <script type="module" src="/browser.js"></script>
-    <script type="module">
-      import { printElement, updateClipboard } from '/browser.js';
-
-      window.printElement = printElement;
-      window.updateClipboard = updateClipboard;
-    </script> */}
     </>
   );
 };

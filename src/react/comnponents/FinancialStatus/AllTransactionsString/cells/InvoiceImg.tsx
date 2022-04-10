@@ -1,22 +1,22 @@
-import * as React from 'react';
-import { UpdateButton } from '../components/updateButton';
-import { AllTransactionsEntity } from '../getAllTransactions';
-import { isBusiness } from '../utils';
+import { CSSProperties, FC } from 'react';
+import type { TransactionType } from '../../../../models/types';
+import { UpdateButton } from '../../../common';
+import { isBusiness } from '../../../../helpers';
 
 type Props = {
-  transaction: AllTransactionsEntity;
-  style: React.CSSProperties;
+  transaction: TransactionType;
+  style?: CSSProperties;
 };
 
-export const InvoiceImg: React.FC<Props> = ({ transaction, style }) => {
+export const InvoiceImg: FC<Props> = ({ transaction, style }) => {
   const indicator =
     isBusiness(transaction) && !transaction.proforma_invoice_file;
 
   return (
     <td
       style={{
-        ...style,
         ...(indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
+        ...style,
       }}
     >
       {transaction.proforma_invoice_file && (
