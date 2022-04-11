@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AllUsers } from './components/AllUsers';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
 import { TopPrivateNotCategorized } from './components/TopPrivateNotCategorized';
@@ -20,7 +21,7 @@ root.render(
         <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
         <Route path="/generate-tax-movements" element={<div>missing</div>} />
         <Route path="/user-transactions" element={<div>missing</div>} />
-        <Route path="/all-users" element={<div>missing</div>} />
+        <Route path="/all-users" element={<AllUsers />} />
         <Route path="/____" element={<div>missing</div>} />
         <Route
           path="*"

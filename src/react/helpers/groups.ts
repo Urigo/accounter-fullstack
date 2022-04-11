@@ -40,3 +40,8 @@ export const privateBusinessExpenses = [
 ];
 
 export const businessesNotToShare = ['Dotan Simha'];
+
+export const businesses: Record<string, string> = {
+  'Software Products Guilda Ltd.': '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+  'Uri Goldshtein LTD': 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
+};

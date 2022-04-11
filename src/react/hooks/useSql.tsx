@@ -283,6 +283,25 @@ export const useSql = () => {
     }
   };
 
+  const onGetAllUsers = (currrentCompany?: string) => {
+    // TODO: get ALL users, or from current company? NULL will fetch all of them.
+
+    // /* sql req */
+    // const query =
+    //   ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
+    //     .map(
+    //       (column) =>
+    //         `select ${column} as userName from accounter_schema.ledger${
+    //           currrentCompany ? ` where business = '${currrentCompany}'` : ''
+    //         }`
+    //     )
+    //     .join(' union ') + ' order by userName';
+    // await pool.query(query);
+    const results = undefined;
+
+    return results;
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -318,5 +337,6 @@ export const useSql = () => {
       id: string;
       accountType?: string;
     }) => onReviewTransaction(data),
+    getAllUsers: (companyId?: string) => onGetAllUsers(companyId),
   };
 };
