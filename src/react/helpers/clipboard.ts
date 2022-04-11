@@ -1,10 +1,10 @@
 export const writeToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text).then(
-    () => {
-      console.log('clipboard successfully set');
-    },
-    () => {
-      console.log('clipboard failed');
-    }
-  );
+  const onSuccess = () => {
+    console.log('clipboard successfully set');
+  };
+  const onError = () => {
+    console.log('clipboard failed');
+  };
+
+  navigator.clipboard.writeText(text).then(onSuccess, onError);
 };

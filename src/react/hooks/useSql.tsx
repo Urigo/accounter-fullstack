@@ -192,6 +192,97 @@ export const useSql = () => {
     return topPrivateNotCategorizedExpenses;
   };
 
+  const onUpdateBankTransactionAttribute = (data: {
+    transactionId: string;
+    attribute: string;
+    value: any;
+  }) => {
+    // TODO: add some validations (attribute exists, value is of right type)
+
+    // /* sql req */
+    //   await pool.query(
+    //     `
+    //   update accounter_schema.ledger
+    //   set ${data.attribute} = $1
+    //   where id = $2;
+    // `,
+    //     [data.value, data.transactionId]
+    //   );
+
+    const result = undefined;
+    return result;
+  };
+
+  const onEditTransactionProperty = (data: {
+    propertyToChange: string;
+    newValue: any;
+    id: string;
+  }) => {
+    console.log('new edit');
+    console.log('Data: ', data);
+
+    if (data.newValue) {
+      try {
+        // TODO: add some validations (attribute exists, value is of right type)
+
+        // /* sql req */
+        // await pool.query(`
+        //   UPDATE accounter_schema.all_transactions
+        //   SET ${data.propertyToChange} = '${data.newValue}'
+        //   WHERE id = '${data.id}'
+        //   RETURNING ${data.propertyToChange};
+        // `);
+
+        const updateResult = undefined;
+        return updateResult;
+      } catch (error) {
+        console.log('error in insert - ', error);
+        return;
+      }
+    }
+  };
+
+  const onDeleteTaxMovement = (transactionId: string) => {
+    try {
+      // /* sql req */
+      // pool.query(`
+      //   delete from accounter_schema.ledger
+      //   where id = '${transactionId}'
+      //   returning *;
+      // `);
+
+      const updateResult = undefined;
+      return updateResult;
+    } catch (error) {
+      console.log('error in insert - ', error);
+      return;
+    }
+  };
+
+  const onReviewTransaction = (data: {
+    reviewed: boolean;
+    id: string;
+    accountType?: string;
+  }) => {
+    const tableToUpdate = data.accountType ? 'all_transactions' : 'ledger';
+
+    try {
+      // /* sql req */
+      // pool.query(`
+      //   UPDATE accounter_schema.${tableToUpdate}
+      //   SET reviewed = ${data.reviewed}
+      //   WHERE id = '${data.id}'
+      //   RETURNING *;
+      // `);
+
+      let updateResult = undefined;
+      return updateResult;
+    } catch (error) {
+      console.log('error in review submission - ', error);
+      return;
+    }
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -209,5 +300,23 @@ export const useSql = () => {
       onGetMonthlyTaxesReport(monthTaxReport),
     getTopPrivateNotCategorized: (startingDate?: string) =>
       onGetTopPrivateNotCategorized(startingDate),
+    updateBankTransactionAttribute: (data: {
+      transactionId: string;
+      attribute: string;
+      value: any;
+    }) => onUpdateBankTransactionAttribute(data),
+    editProperty: (data: {
+      propertyToChange: string;
+      newValue: any;
+      id: string;
+    }) => onEditTransactionProperty(data),
+    deleteTaxMovement: (transactionId: string) => {
+      onDeleteTaxMovement(transactionId);
+    },
+    reviewTransaction: (data: {
+      reviewed: boolean;
+      id: string;
+      accountType?: string;
+    }) => onReviewTransaction(data),
   };
 };
