@@ -3,3 +3,4 @@ yarn.lock
 .idea
 dist
 .env
+.package-lock.json
