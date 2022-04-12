@@ -1,5 +1,7 @@
+import { businesses } from '../helpers';
 import type {
   LastInvoiceNumber,
+  LedgerEntity,
   MissingInvoice,
   MonthTaxReport,
   ProfitRowType,
@@ -302,6 +304,22 @@ export const useSql = () => {
     return results;
   };
 
+  const onGetUserTransactions = (
+    userName: string,
+    companyId: string = businesses['Software Products Guilda Ltd.']
+  ) => {
+    // /* sql req */
+    // await pool.query(`
+    //   select *
+    //   from accounter_schema.ledger
+    //   where business = '${companyId}' and '${userName}' in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
+    //   order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
+    // `);
+
+    const transactions: LedgerEntity[] = [];
+    return transactions;
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -338,5 +356,7 @@ export const useSql = () => {
       accountType?: string;
     }) => onReviewTransaction(data),
     getAllUsers: (companyId?: string) => onGetAllUsers(companyId),
+    getUserTransactions: (userName: string, companyId?: string) =>
+      onGetUserTransactions(userName, companyId),
   };
 };

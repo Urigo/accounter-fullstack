@@ -5,6 +5,7 @@ import { AllUsers } from './components/AllUsers';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
 import { TopPrivateNotCategorized } from './components/TopPrivateNotCategorized';
+import { UserTransactions } from './components/UserTransactions';
 
 const rootElement = document.getElementById('root');
 
@@ -20,9 +21,8 @@ root.render(
         <Route path="/reports-to-review" element={<div>missing</div>} />
         <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
         <Route path="/generate-tax-movements" element={<div>missing</div>} />
-        <Route path="/user-transactions" element={<div>missing</div>} />
+        <Route path="/user-transactions" element={<UserTransactions />} />
         <Route path="/all-users" element={<AllUsers />} />
-        <Route path="/____" element={<div>missing</div>} />
         <Route
           path="*"
           element={

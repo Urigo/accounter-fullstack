@@ -131,3 +131,32 @@ export interface TopPrivateNotCategorizedExpense {
   date: string;
   description: string;
 }
+
+export type LedgerEntity = {
+  תאריך_חשבונית: string;
+  חשבון_חובה_1: string;
+  סכום_חובה_1: string;
+  מטח_סכום_חובה_1: string;
+  מטבע: string;
+  חשבון_זכות_1: string;
+  סכום_זכות_1: string;
+  מטח_סכום_זכות_1: string;
+  חשבון_חובה_2: string;
+  סכום_חובה_2: string;
+  מטח_סכום_חובה_2: string;
+  חשבון_זכות_2: string;
+  סכום_זכות_2: string;
+  מטח_סכום_זכות_2: string;
+  פרטים: string;
+  אסמכתא_1: string;
+  אסמכתא_2: string;
+  סוג_תנועה: string;
+  תאריך_ערך: string;
+  תאריך_3: string;
+  original_id: string;
+  origin: string;
+  proforma_invoice_file: string;
+  id: string;
+  reviewed: string;
+  hashavshevet_id: string;
+};
