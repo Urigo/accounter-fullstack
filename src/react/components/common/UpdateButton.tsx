@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEditTransaction } from '../../hooks/useEditTransaction';
+import { useSql } from '../../hooks/useSql';
 import type { TransactionType } from '../../models/types';
 
 type Props = {
@@ -13,13 +13,17 @@ export const UpdateButton: React.FC<Props> = ({
   propertyName,
   promptText,
 }) => {
-  const { editTransaction } = useEditTransaction();
+  const { editTransaction } = useSql();
 
   return (
     <button
       type="button"
       onClick={() =>
-        editTransaction(transaction, propertyName, prompt(promptText) ?? '')
+        editTransaction({
+          propertyToChange: propertyName,
+          newValue: prompt(promptText) ?? '',
+          id: transaction.id,
+        })
       }
     >
       &#x270f;

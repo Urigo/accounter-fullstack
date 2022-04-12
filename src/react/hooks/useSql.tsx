@@ -320,6 +320,11 @@ export const useSql = () => {
     return transactions;
   };
 
+  const onGenerateTaxMovement = (transactionId: string) => {
+    // TODO: do the heavy lifting of createTaxEntriesForTransaction func on server side
+    return undefined;
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -342,7 +347,7 @@ export const useSql = () => {
       attribute: string;
       value: any;
     }) => onUpdateBankTransactionAttribute(data),
-    editProperty: (data: {
+    editTransaction: (data: {
       propertyToChange: string;
       newValue: any;
       id: string;
@@ -358,5 +363,7 @@ export const useSql = () => {
     getAllUsers: (companyId?: string) => onGetAllUsers(companyId),
     getUserTransactions: (userName: string, companyId?: string) =>
       onGetUserTransactions(userName, companyId),
+    generateTaxMovement: (transactionId: string) =>
+      onGenerateTaxMovement(transactionId),
   };
 };

@@ -20,7 +20,6 @@ root.render(
         <Route path="/monthly-report" element={<MonthlyReport />} />
         <Route path="/reports-to-review" element={<div>missing</div>} />
         <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
-        <Route path="/generate-tax-movements" element={<div>missing</div>} />
         <Route path="/user-transactions" element={<UserTransactions />} />
         <Route path="/all-users" element={<AllUsers />} />
         <Route
