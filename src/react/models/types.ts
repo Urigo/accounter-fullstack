@@ -157,6 +157,6 @@ export type LedgerEntity = {
   origin: string;
   proforma_invoice_file: string;
   id: string;
-  reviewed: string;
+  reviewed: boolean;
   hashavshevet_id: string;
 };

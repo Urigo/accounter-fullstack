@@ -325,6 +325,22 @@ export const useSql = () => {
     return undefined;
   };
 
+  const onGetReportToReview = (
+    company: string = 'Software Products Guilda Ltd.',
+    reportMonthToReview: string = '2020-12-01'
+  ) => {
+    // /* sql req */
+    // pool.query(`
+    //   select *
+    //   from get_unified_tax_report_of_month($$${company}$$, '2020-01-01', $$${reportMonthToReview}$$)
+    //   order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+    // `);
+
+    const transactions: LedgerEntity[] = [];
+
+    return transactions;
+  };
+
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) =>
@@ -365,5 +381,9 @@ export const useSql = () => {
       onGetUserTransactions(userName, companyId),
     generateTaxMovement: (transactionId: string) =>
       onGenerateTaxMovement(transactionId),
+    getReportToReview: (
+      currentCompany?: string,
+      reportMonthToReview?: string
+    ) => onGetReportToReview(currentCompany, reportMonthToReview),
   };
 };
