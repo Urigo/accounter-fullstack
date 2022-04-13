@@ -1,11 +1,17 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
+import type { ThisMonthPrivateExpensesType } from '../../models/types';
 
 export const ThisMonthPrivateExpensesTable: FC = () => {
   const { getThisMonthPrivateExpenses } = useSql();
+  const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<
+    ThisMonthPrivateExpensesType[]
+  >([]);
 
-  const thisMonthPrivateExpenses = getThisMonthPrivateExpenses();
+  useEffect(() => {
+    getThisMonthPrivateExpenses().then(setThisMonthPrivateExpenses);
+  }, []);
 
   return thisMonthPrivateExpenses.length > 0 ? (
     <table>
@@ -16,8 +22,8 @@ export const ThisMonthPrivateExpensesTable: FC = () => {
         </tr>
       </thead>
       <tbody>
-        {thisMonthPrivateExpenses.map((row) => (
-          <tr>
+        {thisMonthPrivateExpenses.map((row, i) => (
+          <tr key={i}>
             <td>{row.personal_category}</td>
             <td>{formatCurrency.format(row.overall_sum)}</td>
           </tr>

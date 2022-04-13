@@ -1,12 +1,16 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
+import type { VatTransaction } from '../../models/types';
 
 export const VatTransactionsString: FC<{ monthTaxReport: string }> = ({
   monthTaxReport,
 }) => {
   const { getVatTransactions } = useSql();
+  const [vatTransactions, setVatTransactions] = useState<VatTransaction[]>([]);
 
-  const vatTransactions = getVatTransactions(monthTaxReport);
+  useEffect(() => {
+    getVatTransactions(monthTaxReport).then(setVatTransactions);
+  }, []);
 
   return (
     <table>
@@ -21,12 +25,12 @@ export const VatTransactionsString: FC<{ monthTaxReport: string }> = ({
         </tr>
       </thead>
       <tbody>
-        {vatTransactions.map((row) => (
-          <tr>
+        {vatTransactions.map((row, i) => (
+          <tr key={i}>
             <td>{row.overall_vat_status}</td>
             <td>{row.vat}</td>
             <td>
-              {row.event_date
+              {new Date(row.event_date)
                 .toISOString()
                 .replace(/T/, ' ')
                 .replace(/\..+/, '')}

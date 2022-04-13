@@ -20,6 +20,7 @@ export const ReportsToReview: FC = () => {
     searchParams.get('company') ?? 'Software Products Guilda Ltd.';
   console.log('currrentCompany', currrentCompany);
 
+  // TODO: complete missing parts
   return (
     <>
       {/* {taxReportHTML.monthTaxHTMLTemplate} */}

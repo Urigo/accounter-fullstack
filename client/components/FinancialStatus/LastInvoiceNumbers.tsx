@@ -1,10 +1,16 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
+import type { LastInvoiceNumber } from '../../models/types';
 
 export const LastInvoiceNumbers: FC = () => {
   const { getLastInvoiceNumbers } = useSql();
+  const [lastInvoiceNumbers, setLastInvoiceNumbers] = useState<
+    LastInvoiceNumber[]
+  >([]);
 
-  const lastInvoiceNumbers = getLastInvoiceNumbers();
+  useEffect(() => {
+    getLastInvoiceNumbers().then(setLastInvoiceNumbers);
+  }, []);
 
   return (
     <table>
@@ -18,11 +24,11 @@ export const LastInvoiceNumbers: FC = () => {
         </tr>
       </thead>
       <tbody>
-        {lastInvoiceNumbers.map((row) => (
-          <tr>
+        {lastInvoiceNumbers.map((row, i) => (
+          <tr key={i}>
             <td>{row.tax_invoice_number}</td>
             <td>
-              {row.event_date
+              {new Date(row.event_date)
                 .toISOString()
                 .replace(/T/, ' ')
                 .replace(/\..+/, '')}

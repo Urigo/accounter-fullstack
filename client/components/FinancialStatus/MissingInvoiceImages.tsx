@@ -1,13 +1,19 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
+import { MissingInvoice } from '../../models/types';
 
 export const MissingInvoiceImages: FC<{ monthTaxReport: string }> = ({
   monthTaxReport,
 }) => {
   const { getMissingInvoiceImages } = useSql();
+  const [missingInvoiceImages, setMissingInvoiceImages] = useState<
+    MissingInvoice[]
+  >([]);
 
-  const missingInvoiceImages = getMissingInvoiceImages(monthTaxReport);
+  useEffect(() => {
+    getMissingInvoiceImages(monthTaxReport).then(setMissingInvoiceImages);
+  }, []);
 
   return (
     <table>
@@ -21,10 +27,10 @@ export const MissingInvoiceImages: FC<{ monthTaxReport: string }> = ({
         </tr>
       </thead>
       <tbody>
-        {missingInvoiceImages.map((row) => (
-          <tr>
+        {missingInvoiceImages.map((row, i) => (
+          <tr key={i}>
             <td>
-              {row.event_date
+              {new Date(row.event_date)
                 .toISOString()
                 .replace(/T/, ' ')
                 .replace(/\..+/, '')}

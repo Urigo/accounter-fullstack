@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { ProfitRowType } from '../../models/types';
@@ -19,8 +19,11 @@ const ProfitRow: FC<{ data: ProfitRowType }> = ({ data }) => {
 
 export const ProfitTable: FC = () => {
   const { getProfitTable } = useSql();
+  const [profitRows, setProfitRows] = useState<ProfitRowType[]>([]);
 
-  const profitRows = getProfitTable();
+  useEffect(() => {
+    getProfitTable().then(setProfitRows);
+  }, []);
 
   return profitRows.length > 0 ? (
     <table>
@@ -36,8 +39,8 @@ export const ProfitTable: FC = () => {
         </tr>
       </thead>
       <tbody>
-        {profitRows.map((row) => (
-          <ProfitRow data={row} />
+        {profitRows.map((row, i) => (
+          <ProfitRow key={i} data={row} />
         ))}
       </tbody>
     </table>

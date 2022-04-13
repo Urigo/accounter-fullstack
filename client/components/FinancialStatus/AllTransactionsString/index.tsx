@@ -1,12 +1,15 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSql } from '../../../hooks/useSql';
-import type { TransactionColumn } from '../../../models/types';
+import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { TransactionRow } from './TransactionRow';
 
 export const AllTransactionsString: FC = () => {
   const { getAllTransactions } = useSql();
+  const [allTransactions, setAllTransactions] = useState<TransactionType[]>([]);
 
-  const allTransactions = getAllTransactions();
+  useEffect(() => {
+    getAllTransactions().then(setAllTransactions);
+  }, []);
 
   const columns: TransactionColumn[] = [
     'Date',
@@ -41,7 +44,12 @@ export const AllTransactionsString: FC = () => {
       </thead>
       <tbody>
         {allTransactions.map((row, i) => (
-          <TransactionRow transaction={row} columns={columns} index={i} />
+          <TransactionRow
+            transaction={row}
+            columns={columns}
+            index={i}
+            key={row.id}
+          />
         ))}
       </tbody>
     </table>

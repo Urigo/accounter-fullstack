@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { MissingInvoice } from '../../models/types';
@@ -7,7 +7,10 @@ const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
   return (
     <tr>
       <td>
-        {data.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}
+        {new Date(data.event_date)
+          .toISOString()
+          .replace(/T/, ' ')
+          .replace(/\..+/, '')}
       </td>
       <td>
         {data.event_amount}
@@ -24,8 +27,13 @@ export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({
   monthTaxReport,
 }) => {
   const { getMissingInvoiceNumbers } = useSql();
+  const [missingInvoiceNumbers, setMissingInvoiceNumbers] = useState<
+    MissingInvoice[]
+  >([]);
 
-  const missingInvoiceNumbers = getMissingInvoiceNumbers(monthTaxReport);
+  useEffect(() => {
+    getMissingInvoiceNumbers(monthTaxReport).then(setMissingInvoiceNumbers);
+  }, []);
 
   return (
     <table>
@@ -39,8 +47,8 @@ export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({
         </tr>
       </thead>
       <tbody>
-        {missingInvoiceNumbers.map((row) => (
-          <MissingInvoiceNumberRow data={row} />
+        {missingInvoiceNumbers.map((row, i) => (
+          <MissingInvoiceNumberRow key={i} data={row} />
         ))}
       </tbody>
     </table>

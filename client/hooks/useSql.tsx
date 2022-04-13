@@ -11,154 +11,98 @@ import type {
   VatTransaction,
 } from '../models/types';
 
+const serverUrl = 'http://localhost:4001';
+
 export const useSql = () => {
-  const onGetLastInvoiceNumbers = () => {
-    //   SELECT tax_invoice_number,
-    //     user_description,
-    //     financial_entity,
-    //     event_amount,
-    //     event_date
-    //   FROM accounter_schema.all_transactions
-    //   WHERE
-    //     (account_number in ('466803', '1074', '1082')) AND
-    //     event_amount > 0 AND
-    //     (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
-    //   ORDER BY event_date DESC;
+  const onGetLastInvoiceNumbers = async () => {
+    const lastInvoiceNumbers = await fetch(
+      `${serverUrl}/getLastInvoiceNumbers`
+    ).then((res) => res.json());
 
-    // TODO: fetch last invoices data from DB
-    const lastInvoiceNumbers: LastInvoiceNumber[] = [];
-
-    return lastInvoiceNumbers;
+    return (lastInvoiceNumbers ?? []) as LastInvoiceNumber[];
   };
 
-  const onGetMissingInvoiceDates = (monthTaxReport: string) => {
-    // /* sql req */
-    // pool.query(
-    //   `
-    //     select *
-    //     from missing_invoice_dates($1)
-    //     order by event_date;
-    //   `,
-    //   [`$$${monthTaxReport}$$`]
-    // ),
+  const onGetMissingInvoiceDates = async (monthTaxReport: string) => {
+    const missingInvoiceDates = await fetch(
+      `${serverUrl}/getMissingInvoiceDates`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monthTaxReport }),
+      }
+    ).then((res) => res.json());
 
-    // TODO: fetch missing invoice dates data from DB
-    const missingInvoiceDates: MissingInvoice[] = [];
-
-    return missingInvoiceDates;
+    return (missingInvoiceDates ?? []) as MissingInvoice[];
   };
 
-  const onGetMissingInvoiceImages = (monthTaxReport: string) => {
-    // /* sql req */
-    // pool.query(
-    //   `
-    //     select *
-    //     from missing_invoice_images($1)
-    //     order by event_date;
-    //   `,
-    //   [`$$${monthTaxReport}$$`]
-    // ),
+  const onGetMissingInvoiceImages = async (monthTaxReport: string) => {
+    const missingInvoiceImages = await fetch(
+      `${serverUrl}/getMissingInvoiceImages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monthTaxReport }),
+      }
+    ).then((res) => res.json());
 
-    // TODO: fetch missing invoice images data from DB
-    const missingInvoiceImages: MissingInvoice[] = [];
-
-    return missingInvoiceImages;
+    return (missingInvoiceImages ?? []) as MissingInvoice[];
   };
 
-  const onGetMissingInvoiceNumbers = (monthTaxReport: string) => {
-    // /* sql req */
-    // pool.query(
-    //   `
-    //     select *
-    //     from missing_invoice_numbers($1)
-    //     order by event_date;
-    //   `,
-    //   [`$$${monthTaxReport}$$`]
-    // )
+  const onGetMissingInvoiceNumbers = async (monthTaxReport: string) => {
+    const missingInvoiceNumbers = await fetch(
+      `${serverUrl}/getMissingInvoiceNumbers`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monthTaxReport }),
+      }
+    ).then((res) => res.json());
 
-    // TODO: fetch missing invoice numbers data from DB
-    const missingInvoiceNumbers: MissingInvoice[] = [];
-
-    return missingInvoiceNumbers;
+    return (missingInvoiceNumbers ?? []) as MissingInvoice[];
   };
 
-  const onGetProfitTable = () => {
-    // /* sql req */
-    // readFileSync('src/monthlyCharts.sql').toString()
+  const onGetProfitTable = async () => {
+    const profitRows = await fetch(`${serverUrl}/getProfitTable`).then((res) =>
+      res.json()
+    );
 
-    // TODO: fetch profit data from DB
-    const profitRows: ProfitRowType[] = [];
+    console.log(profitRows);
 
-    return profitRows;
+    return (profitRows ?? []) as ProfitRowType[];
   };
 
-  const onGetThisMonthPrivateExpenses = () => {
-    // /* sql req */
-    // `with transactions_exclude as (
-    //   select *
-    //   from formatted_merged_tables
-    //   where
-    //       personal_category <> 'conversion' and
-    //       personal_category <> 'investments' and
-    //       financial_entity <> 'Isracard' and
-    //       financial_entity <> 'Tax' and
-    //       financial_entity <> 'VAT' and
-    //       financial_entity <> 'Tax Shuma' and
-    //       financial_entity <> 'Tax Corona Grant' and
-    //       financial_entity <> 'Uri Goldshtein' and
-    //       financial_entity <> 'Uri Goldshtein Hoz' and
-    //       financial_entity <> 'Social Security Deductions' and
-    //       financial_entity <> 'Tax Deductions' and
-    //       financial_entity <> 'Dotan Simha' and
-    //       personal_category <> 'business'
-    // )
-    // select
-    //   personal_category,
-    //   sum(event_amount_in_usd_with_vat_if_exists)::float4 as overall_sum
-    // from transactions_exclude
-    // where
-    // event_date::text::date >= '2021-08-01'::text::date and
-    // event_date::text::date <= '2021-08-31'::text::date
-    // --   and personal_category = 'family'
-    // group by personal_category
-    // order by sum(event_amount_in_usd_with_vat_if_exists);`;
+  const onGetThisMonthPrivateExpenses = async () => {
+    const thisMonthPrivateExpenses = await fetch(
+      `${serverUrl}/getThisMonthPrivateExpenses`
+    ).then((res) => res.json());
 
-    // TODO: fetch this month's private expenses data from DB
-    const thisMonthPrivateExpenses: ThisMonthPrivateExpensesType[] = [];
-
-    return thisMonthPrivateExpenses;
+    return (thisMonthPrivateExpenses ?? []) as ThisMonthPrivateExpensesType[];
   };
 
-  const onGetVatTransactions = (monthTaxReport: string) => {
-    // /* sql req */
-    // pool.query(
-    //   `
-    //     select *
-    //     from get_vat_for_month($1);
-    //   `,
-    //   [`$$${monthTaxReport}$$`]
-    // ),
+  const onGetVatTransactions = async (monthTaxReport: string) => {
+    const vatTransactions = await fetch(`${serverUrl}/getVatTransactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ monthTaxReport }),
+    }).then((res) => res.json());
 
-    // TODO: fetch vat transactions data from DB
-    const vatTransactions: VatTransaction[] = [];
-
-    return vatTransactions;
+    return (vatTransactions ?? []) as VatTransaction[];
   };
 
-  const onGetAllTransactions = () => {
-    // /* sql req */
-    // pool.query(`
-    //       select *
-    //       from accounter_schema.all_transactions
-    //       -- where account_number in ('466803', '1074', '1082')
-    //       order by event_date desc
-    //       limit 2550;
-    //     `)
+  const onGetAllTransactions = async () => {
+    const allTransactions = await fetch(`${serverUrl}/getAllTransactions`).then(
+      (res) => res.json()
+    );
 
-    // TODO: fetch all transactions data from DB
-    const allTransactions: TransactionType[] = [];
-
-    return allTransactions;
+    return (allTransactions ?? []) as TransactionType[];
   };
 
   const onGetMonthlyTaxesReport = (monthTaxReport: string) => {

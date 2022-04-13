@@ -62,14 +62,14 @@ export type TransactionColumn =
 
 export interface LastInvoiceNumber {
   tax_invoice_number: number;
-  event_date: Date;
+  event_date: string;
   financial_entity: string;
   user_description: string;
   event_amount: number;
 }
 
 export interface MissingInvoice {
-  event_date: Date;
+  event_date: string;
   event_amount: number;
   currency_code: string;
   financial_entity: string;
@@ -95,7 +95,7 @@ export interface ThisMonthPrivateExpensesType {
 export interface VatTransaction {
   overall_vat_status: string;
   vat: number;
-  event_date: Date;
+  event_date: string;
   event_amount: number;
   financial_entity: string;
   user_description: string;
