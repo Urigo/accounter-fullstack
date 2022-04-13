@@ -20,6 +20,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "client/**/*"],
+  "include": ["src/**/*", "client/**/*", "server/**/*", "temp-server/index.ts"],
   "references": [{ "path": "tsconfig.node.json" }]
 }
