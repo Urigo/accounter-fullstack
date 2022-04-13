@@ -13,7 +13,7 @@
     "react:dev": "vite",
     "react:build": "tsc && vite build",
     "react:preview": "vite preview",
-    "server:dev": "cd server && yarn dev"
+    "server:dev": "cd temp-server && yarn dev"
   },
   "dependencies": {
     "date-fns": "2.28.0",
