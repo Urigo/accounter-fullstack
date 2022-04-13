@@ -72,8 +72,6 @@ export const useSql = () => {
       res.json()
     );
 
-    console.log(profitRows);
-
     return (profitRows ?? []) as ProfitRowType[];
   };
 
