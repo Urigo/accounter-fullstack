@@ -176,10 +176,10 @@ export async function createTaxEntriesForMonth(
       FROM accounter_schema.all_transactions
       WHERE
         account_number in (${getCurrentBusinessAccountsQuery}) AND
-        event_date >= date_trunc('month', to_date('${moment(month).format(
+        tax_invoice_date >= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) AND
-        event_date <= date_trunc('month', to_date('${moment(month).format(
+        tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
         event_amount > 0 and is_conversion is false
