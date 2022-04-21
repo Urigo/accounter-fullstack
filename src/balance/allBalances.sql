@@ -22,7 +22,12 @@ WITH times_table AS (
                  from accounter_schema.exchange_rates t1
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
                  order by t1.exchange_date desc
-                 limit 1) usd_rate
+                 limit 1) usd_rate,
+                (select t1.gbp
+                 from accounter_schema.exchange_rates t1
+                 where date_trunc('day', t1.exchange_date)::date <= times_table.dt
+                 order by t1.exchange_date desc
+                 limit 1) gbp_rate
          from times_table
          order by dt
      ),
@@ -37,6 +42,17 @@ WITH times_table AS (
                      WHEN currency_code = 'EUR' THEN event_amount * (
                              (
                                  select all_exchange_dates.eur_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             ) / (
+                                 select all_exchange_dates.usd_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             )
+                         )
+                     WHEN currency_code = 'GBP' THEN event_amount * (
+                             (
+                                 select all_exchange_dates.gbp_rate
                                  from all_exchange_dates
                                  where all_exchange_dates.exchange_date = debit_date::text::date
                              ) / (
@@ -66,6 +82,17 @@ WITH times_table AS (
                                  where all_exchange_dates.exchange_date = debit_date::text::date
                              )
                          )
+                     WHEN currency_code = 'GBP' THEN (event_amount - COALESCE(vat, 0)) * (
+                             (
+                                 select all_exchange_dates.gbp_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             ) / (
+                                 select all_exchange_dates.usd_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             )
+                         )
                      WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
                      ELSE -99999999999
                     END
@@ -79,6 +106,17 @@ WITH times_table AS (
                      WHEN currency_code = 'EUR' THEN coalesce(vat, 0) * (
                              (
                                  select all_exchange_dates.eur_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             ) / (
+                                 select all_exchange_dates.usd_rate
+                                 from all_exchange_dates
+                                 where all_exchange_dates.exchange_date = debit_date::text::date
+                             )
+                         )
+                     WHEN currency_code = 'GBP' THEN coalesce(vat, 0) * (
+                             (
+                                 select all_exchange_dates.gbp_rate
                                  from all_exchange_dates
                                  where all_exchange_dates.exchange_date = debit_date::text::date
                              ) / (
@@ -188,6 +226,19 @@ WITH times_table AS (
                                              limit 1
                                          )
                                      )
+                                 WHEN currency_code = 'GBP' THEN event_amount * (
+                                         (
+                                             select all_exchange_dates.gbp_rate
+                                             from all_exchange_dates
+                                             order by all_exchange_dates.exchange_date desc
+                                             limit 1
+                                         ) / (
+                                             select all_exchange_dates.usd_rate
+                                             from all_exchange_dates
+                                             order by all_exchange_dates.exchange_date desc
+                                             limit 1
+                                         )
+                                     )
                                  WHEN currency_code = 'USD' THEN event_amount
                                  ELSE -99999999999
                                 END) / 2) * -1)
@@ -254,6 +305,19 @@ WITH times_table AS (
                      WHEN currency_code = 'EUR' THEN event_amount * (
                              (
                                  select all_exchange_dates.eur_rate
+                                 from all_exchange_dates
+                                 order by all_exchange_dates.exchange_date desc
+                                 limit 1
+                             ) / (
+                                 select all_exchange_dates.usd_rate
+                                 from all_exchange_dates
+                                 order by all_exchange_dates.exchange_date desc
+                                 limit 1
+                             )
+                         )
+                     WHEN currency_code = 'GBP' THEN event_amount * (
+                             (
+                                 select all_exchange_dates.gbp_rate
                                  from all_exchange_dates
                                  order by all_exchange_dates.exchange_date desc
                                  limit 1
@@ -395,6 +459,11 @@ WITH times_table AS (
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
                  order by t1.exchange_date desc
                  limit 1) eur_rate,
+                (select t1.gbp
+                 from accounter_schema.exchange_rates t1
+                 where date_trunc('day', t1.exchange_date)::date <= times_table.dt
+                 order by t1.exchange_date desc
+                 limit 1) gbp_rate,
                 (select t1.usd
                  from accounter_schema.exchange_rates t1
                  where date_trunc('day', t1.exchange_date)::date <= times_table.dt
