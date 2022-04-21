@@ -8,9 +8,9 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/dist/index.js",
+            "program": "${workspaceFolder}/dist/scrape.js",
             "console": "integratedTerminal",
-            "runtimeArgs": ["--experimental-specifier-resolution=node"],
+            "runtimeArgs": ["--experimental-specifier-resolution=node", "--experimental-json-modules"],
         }
     ]
 }
