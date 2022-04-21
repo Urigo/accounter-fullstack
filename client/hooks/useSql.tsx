@@ -103,163 +103,145 @@ export const useSql = () => {
     return (allTransactions ?? []) as TransactionType[];
   };
 
-  const onGetMonthlyTaxesReport = (monthTaxReport: string) => {
-    // /* sql req */
-    // await pool.query(`
-    // select *
-    // from get_tax_report_of_month($monthTaxReportDate);
-    // `, [
-    //   `$$${monthTaxReportDate}$$`,
-    // ]);
+  const onGetMonthlyTaxesReport = async (monthTaxReport: string) => {
+    const monthlyTaxesReport = await fetch(
+      `${serverUrl}/getMonthlyTaxesReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monthTaxReport }),
+      }
+    ).then((res) => res.json());
 
-    // TODO: fetch data from DB
-    const monthlyTaxesReport: MonthTaxReport[] = [];
-
-    return monthlyTaxesReport;
+    return (monthlyTaxesReport ?? []) as MonthTaxReport[];
   };
 
-  const onGetTopPrivateNotCategorized = (
+  const onGetTopPrivateNotCategorized = async (
     startingDate: string = '2020-01-01'
   ) => {
-    // /* sql req */
-    //   await pool.query(
-    //     `
-    //   select *
-    //   from top_expenses_not_categorized($1);
-    // `,
-    //     [`$$${startingDate}$$`]
-    //   );
+    const topPrivateNotCategorizedExpenses = await fetch(
+      `${serverUrl}/getTopPrivateNotCategorized`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ startingDate }),
+      }
+    ).then((res) => res.json());
 
-    const topPrivateNotCategorizedExpenses: TopPrivateNotCategorizedExpense[] =
-      [];
-
-    return topPrivateNotCategorizedExpenses;
+    return (topPrivateNotCategorizedExpenses ??
+      []) as TopPrivateNotCategorizedExpense[];
   };
 
-  const onUpdateBankTransactionAttribute = (data: {
+  const onUpdateBankTransactionAttribute = async (data: {
     transactionId: string;
     attribute: string;
     value: any;
   }) => {
-    // TODO: add some validations (attribute exists, value is of right type)
+    const result = await fetch(`${serverUrl}/updateBankTransactionAttribute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...data }),
+    }).then((res) => res.json());
 
-    // /* sql req */
-    //   await pool.query(
-    //     `
-    //   update accounter_schema.ledger
-    //   set ${data.attribute} = $1
-    //   where id = $2;
-    // `,
-    //     [data.value, data.transactionId]
-    //   );
-
-    const result = undefined;
     return result;
   };
 
-  const onEditTransactionProperty = (data: {
+  const onEditTransactionProperty = async (data: {
     propertyToChange: string;
     newValue: any;
     id: string;
   }) => {
-    console.log('new edit');
-    console.log('Data: ', data);
-
     if (data.newValue) {
       try {
-        // TODO: add some validations (attribute exists, value is of right type)
+        const result = await fetch(`${serverUrl}/editTransaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...data }),
+        }).then((res) => res.json());
 
-        // /* sql req */
-        // await pool.query(`
-        //   UPDATE accounter_schema.all_transactions
-        //   SET ${data.propertyToChange} = '${data.newValue}'
-        //   WHERE id = '${data.id}'
-        //   RETURNING ${data.propertyToChange};
-        // `);
-
-        const updateResult = undefined;
-        return updateResult;
+        return result;
       } catch (error) {
         console.log('error in insert - ', error);
         return;
       }
     }
+    console.log('error in insert - no value');
   };
 
-  const onDeleteTaxMovement = (transactionId: string) => {
+  const onDeleteTaxMovement = async (transactionId: string) => {
     try {
-      // /* sql req */
-      // pool.query(`
-      //   delete from accounter_schema.ledger
-      //   where id = '${transactionId}'
-      //   returning *;
-      // `);
+      const result = await fetch(`${serverUrl}/deleteTaxMovement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactionId }),
+      }).then((res) => res.json());
 
-      const updateResult = undefined;
-      return updateResult;
+      return result;
     } catch (error) {
       console.log('error in insert - ', error);
       return;
     }
   };
 
-  const onReviewTransaction = (data: {
+  const onReviewTransaction = async (data: { 
     reviewed: boolean;
     id: string;
     accountType?: string;
   }) => {
-    const tableToUpdate = data.accountType ? 'all_transactions' : 'ledger';
-
     try {
-      // /* sql req */
-      // pool.query(`
-      //   UPDATE accounter_schema.${tableToUpdate}
-      //   SET reviewed = ${data.reviewed}
-      //   WHERE id = '${data.id}'
-      //   RETURNING *;
-      // `);
+      const result = await fetch(
+        `${serverUrl}/reviewTransaction`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...data }),
+        }
+      ).then((res) => res.json());
 
-      let updateResult = undefined;
-      return updateResult;
+      return result;
     } catch (error) {
       console.log('error in review submission - ', error);
       return;
     }
   };
 
-  const onGetAllUsers = (currrentCompany?: string) => {
-    // TODO: get ALL users, or from current company? NULL will fetch all of them.
+  const onGetAllUsers = async (currrentCompany?: string) => {
+    const result = await fetch(`${serverUrl}/getAllUsers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ currrentCompany }),
+    }).then((res) => res.json());
 
-    // /* sql req */
-    // const query =
-    //   ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
-    //     .map(
-    //       (column) =>
-    //         `select ${column} as userName from accounter_schema.ledger${
-    //           currrentCompany ? ` where business = '${currrentCompany}'` : ''
-    //         }`
-    //     )
-    //     .join(' union ') + ' order by userName';
-    // await pool.query(query);
-    const results = undefined;
-
-    return results;
+    return result;
   };
 
-  const onGetUserTransactions = (
+  const onGetUserTransactions = async (
     userName: string,
     companyId: string = businesses['Software Products Guilda Ltd.']
   ) => {
-    // /* sql req */
-    // await pool.query(`
-    //   select *
-    //   from accounter_schema.ledger
-    //   where business = '${companyId}' and '${userName}' in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
-    //   order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
-    // `);
+    const transactions = await fetch(`${serverUrl}/getUserTransactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userName, companyId }),
+    }).then((res) => res.json());
 
-    const transactions: LedgerEntity[] = [];
-    return transactions;
+    return (transactions ?? []) as LedgerEntity[];
   };
 
   const onGenerateTaxMovement = (transactionId: string) => {
@@ -267,20 +249,19 @@ export const useSql = () => {
     return undefined;
   };
 
-  const onGetReportToReview = (
+  const onGetReportToReview = async (
     company: string = 'Software Products Guilda Ltd.',
     reportMonthToReview: string = '2020-12-01'
   ) => {
-    // /* sql req */
-    // pool.query(`
-    //   select *
-    //   from get_unified_tax_report_of_month($$${company}$$, '2020-01-01', $$${reportMonthToReview}$$)
-    //   order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
-    // `);
+    const transactions = await fetch(`${serverUrl}/getReportToReview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ company, reportMonthToReview }),
+    }).then((res) => res.json());
 
-    const transactions: LedgerEntity[] = [];
-
-    return transactions;
+    return (transactions ?? []) as LedgerEntity[];
   };
 
   return {

@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import { Pool } from 'pg';
 import { config } from 'dotenv';
+import { generateTaxMovement } from './generateTaxMovement';
 
 config();
 
@@ -315,57 +316,240 @@ app.get('/getAllTransactions', async (req: Request, res: Response) => {
   res.send(queryRes.rows);
 });
 
-app.get('/getMonthlyTaxesReport', async (req: Request, res: Response) => {
+app.post('/getMonthlyTaxesReport', async (req: Request, res: Response) => {
   console.log('getMonthlyTaxesReport request');
-  res.send('getMonthlyTaxesReport');
+
+  const monthTaxReport = req.body?.monthTaxReport;
+
+  // TODO: add format validation
+  if (!monthTaxReport) {
+    throw new Error('monthTaxReport is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      select *
+      from get_tax_report_of_month($1);
+    `,
+    [`$$${monthTaxReport}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
 app.get('/getTopPrivateNotCategorized', async (req: Request, res: Response) => {
   console.log('getTopPrivateNotCategorized request');
-  res.send('getTopPrivateNotCategorized');
+
+  const startingDate = req.body?.startingDate;
+
+  // TODO: add format validation
+  if (!startingDate) {
+    throw new Error('startingDate is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      select *
+      from top_expenses_not_categorized($1);
+    `,
+    [`$$${startingDate}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
-app.get(
+app.post(
   '/updateBankTransactionAttribute',
   async (req: Request, res: Response) => {
     console.log('updateBankTransactionAttribute request');
-    res.send('updateBankTransactionAttribute');
+
+    const { transactionId, attribute, value } = req.body;
+
+    // TODO: add format validation
+    if (!transactionId) {
+      throw new Error('transactionId is missing');
+    }
+    if (!attribute) {
+      throw new Error('attribute is missing');
+    }
+    if (!value) {
+      throw new Error('value is missing');
+    }
+
+    const queryRes = await pool.query(
+      `
+        update accounter_schema.ledger
+        set ${attribute} = $1
+        where id = $2;
+      `,
+      [value, transactionId]
+    );
+
+    res.send(queryRes.rows);
   }
 );
 
-app.get('/editTransaction', async (req: Request, res: Response) => {
+app.post('/editTransaction', async (req: Request, res: Response) => {
   console.log('editTransaction request');
-  res.send('editTransaction');
+
+  const { id, propertyToChange, newValue } = req.body;
+
+  // TODO: add format validation
+  if (!id) {
+    throw new Error('id is missing');
+  }
+  if (!propertyToChange) {
+    throw new Error('propertyToChange is missing');
+  }
+  if (!newValue) {
+    throw new Error('newValue is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      UPDATE accounter_schema.all_transactions
+      SET ${propertyToChange} = $1
+      WHERE id = $2
+      RETURNING ${propertyToChange};
+    `,
+    [newValue, id]
+  );
+
+  res.send(queryRes.rows);
 });
 
-app.get('/deleteTaxMovement', async (req: Request, res: Response) => {
+app.post('/deleteTaxMovement', async (req: Request, res: Response) => {
   console.log('deleteTaxMovement request');
-  res.send('deleteTaxMovement');
+
+  const transactionId = req.body?.transactionId;
+
+  // TODO: add format validation
+  if (!transactionId) {
+    throw new Error('transactionId is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+    delete from accounter_schema.ledger
+    where id = $1
+    returning *;
+    `,
+    [`$$${transactionId}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
-app.get('/reviewTransaction', async (req: Request, res: Response) => {
+app.post('/reviewTransaction', async (req: Request, res: Response) => {
   console.log('reviewTransaction request');
-  res.send('reviewTransaction');
+
+  const { id, reviewed, accountType } = req.body;
+  const tableToUpdate = accountType ? 'all_transactions' : 'ledger';
+
+  // TODO: add format validation
+  if (!id) {
+    throw new Error('id is missing');
+  }
+  if (!reviewed) {
+    throw new Error('reviewed is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      UPDATE accounter_schema.${tableToUpdate}
+      SET reviewed = $1
+      WHERE id = $2
+      RETURNING *;
+    `,
+    [`$$${reviewed}$$`, `$$${id}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
-app.get('/getAllUsers', async (req: Request, res: Response) => {
+app.post('/getAllUsers', async (req: Request, res: Response) => {
   console.log('getAllUsers request');
-  res.send('getAllUsers');
+
+  const currrentCompany = req.body?.currrentCompany;
+
+  const query =
+    ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
+      .map(
+        (column) =>
+          `select ${column} as userName from accounter_schema.ledger${
+            currrentCompany ? ` where business = '${currrentCompany}'` : ''
+          }`
+      )
+      .join(' union ') + ' order by userName';
+
+  const queryRes = await pool.query(query);
+
+  res.send(queryRes.rows);
 });
 
-app.get('/getUserTransactions', async (req: Request, res: Response) => {
+app.post('/getUserTransactions', async (req: Request, res: Response) => {
   console.log('getUserTransactions request');
-  res.send('getUserTransactions');
+
+  const { userName, companyId } = req.body;
+
+  // TODO: add format validation
+  if (!userName) {
+    throw new Error('userName is missing');
+  }
+  if (!companyId) {
+    throw new Error('companyId is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      select *
+      from accounter_schema.ledger
+      where business = $1 and $2 in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
+      order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
+    `,
+    [`$$${userName}$$`, `$$${companyId}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
-app.get('/generateTaxMovement', async (req: Request, res: Response) => {
+app.post('/generateTaxMovement', async (req: Request, res: Response) => {
   console.log('generateTaxMovement request');
-  res.send('generateTaxMovement');
+
+  const transactionId = req.body?.transactionId;
+
+  // TODO: add format validation
+  if (!transactionId) {
+    throw new Error('transactionId is missing');
+  }
+
+  const result = await generateTaxMovement(transactionId);
+  res.send(result);
 });
 
-app.get('/getReportToReview', async (req: Request, res: Response) => {
+app.post('/getReportToReview', async (req: Request, res: Response) => {
   console.log('getReportToReview request');
-  res.send('getReportToReview');
+
+  const { company, reportMonthToReview } = req.body;
+
+  // TODO: add format validation
+  if (!company) {
+    throw new Error('company is missing');
+  }
+  if (!reportMonthToReview) {
+    throw new Error('reportMonthToReview is missing');
+  }
+
+  const queryRes = await pool.query(
+    `
+      select *
+      from get_unified_tax_report_of_month($1, '2020-01-01', $2)
+      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+    `,
+    [`$$${company}$$`, `$$${reportMonthToReview}$$`]
+  );
+
+  res.send(queryRes.rows);
 });
 
 app.listen(port, () => {
