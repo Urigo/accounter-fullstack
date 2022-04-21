@@ -220,6 +220,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       'hashavshevetAccountEur',
       'hashavshevetAccountEur',
       'hashavshevetAccountGbp',
+      'metegDoarNet',
     ];
     if (account.accountUpdateDate == 0) {
       columnNamesToExcludeFromComparison.push('accountUpdateDate');

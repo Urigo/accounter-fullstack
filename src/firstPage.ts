@@ -126,11 +126,78 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.personalCategory = 'financial';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('דותן שמחה')) {
-    suggestedTransaction.financialEntity = 'Dotan Simha';
-    suggestedTransaction.userDescription = 'August salary';
+    suggestedTransaction.financialEntity = 'Dotan Employee';
+    suggestedTransaction.userDescription = '02/2022 Salary';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'dotan';
     suggestedTransaction.vat = 0;
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גולדשטין אורי')) {
+    suggestedTransaction.financialEntity = 'Uri Employee';
+    suggestedTransaction.userDescription = '02/2022 Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'uri';
+    suggestedTransaction.vat = 0;
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גרדוש')) {
+    suggestedTransaction.financialEntity = 'Gil Employee';
+    suggestedTransaction.userDescription = '02/2022 Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('גלעד תדהר')) {
+    suggestedTransaction.financialEntity = 'Gilad Employee';
+    suggestedTransaction.userDescription = '02/2022 Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('תובל שמחה')) {
+    suggestedTransaction.financialEntity = 'Tuval Employee';
+    suggestedTransaction.userDescription = '02/2022 Salary';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('מנורה מבטחים פנס')
+  ) {
+    suggestedTransaction.financialEntity = 'מנורה פנסיה';
+    suggestedTransaction.userDescription = 'Pension 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('פניקס אקסלנס')) {
+    suggestedTransaction.financialEntity = 'פניקס השתלמות';
+    suggestedTransaction.userDescription = 'Training Fund 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (
+    transaction.detailed_bank_description.includes('מיטב דש גמל ופנס')
+  ) {
+    suggestedTransaction.financialEntity = 'איילון פנסיה';
+    suggestedTransaction.userDescription = 'Pension 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מגדל מקפת')) {
+    suggestedTransaction.financialEntity = 'מגדל פנסיה';
+    suggestedTransaction.userDescription = 'Training Fund 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('מגדל השתלמות')) {
+    suggestedTransaction.financialEntity = 'מגדל השתלמות';
+    suggestedTransaction.userDescription = 'Training Fund 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.vat = '0';
     return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description == 'הוט נט שרותי אינטרנט' ||
@@ -197,14 +264,26 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.userDescription = 'Transaction to company';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('גולדשטין אורי')) {
-    suggestedTransaction.financialEntity = 'Uri Goldshgtein';
-    suggestedTransaction.userDescription = '10/21 Salary';
+  } else if (transaction.event_amount == -4329) {
+    suggestedTransaction.financialEntity = 'Avi Peretz';
+    suggestedTransaction.userDescription = 'Office rent';
     suggestedTransaction.personalCategory = 'business';
-    suggestedTransaction.vat = 0;
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('פיוז אוטוטק')) {
+    suggestedTransaction.financialEntity = 'פיוז אוטוטק בעמ';
+    suggestedTransaction.userDescription = 'The Guild Enterprise Support 02/22';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('ט.מ.ל מערכות')) {
+    suggestedTransaction.financialEntity = 'Tamal';
+    suggestedTransaction.userDescription = 'Salary software';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('רשם החברות')) {
-    suggestedTransaction.financialEntity = 'Israeli Corporations Authority';
+    suggestedTransaction.financialEntity = 'מ.המשפטים-רשם החברות';
     suggestedTransaction.userDescription = 'Company registration yearly fee';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
@@ -415,20 +494,6 @@ function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'pension';
     suggestedTransaction.personalCategory = 'investments';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('גרדוש')) {
-    suggestedTransaction.financialEntity = 'Gil Gardosh';
-    suggestedTransaction.financialAccountsToBalance = 'no';
-    suggestedTransaction.userDescription = 'August Salary';
-    suggestedTransaction.personalCategory = 'business';
-    suggestedTransaction.vat = '0';
-    return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('גלעד תדהר')) {
-    suggestedTransaction.financialEntity = 'Gilad Tidhar';
-    suggestedTransaction.financialAccountsToBalance = 'no';
-    suggestedTransaction.userDescription = 'August Salary';
-    suggestedTransaction.personalCategory = 'business';
-    suggestedTransaction.vat = '0';
-    return suggestedTransaction;
   } else if (transaction.detailed_bank_description.includes('PAYPER')) {
     suggestedTransaction.financialEntity = 'Payper';
     suggestedTransaction.userDescription = 'Invoice Management Software';
@@ -462,16 +527,21 @@ function suggestedTransaction(transaction: any) {
       2
     );
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('מס הכנסה עצ')) {
-    suggestedTransaction.financialEntity = 'Tax';
-    suggestedTransaction.userDescription = 'Advance Tax for April 2021';
+  } else if (transaction.detailed_bank_description.includes('מס הכנסה')) {
+    if (transaction.detailed_bank_description.includes('מס הכנסה ני')) {
+      suggestedTransaction.financialEntity = 'Tax Deductions';
+      suggestedTransaction.userDescription =
+        'Tax for employees for March-April 2021';
+    } else {
+      suggestedTransaction.financialEntity = 'Tax';
+      suggestedTransaction.userDescription = 'Advance Tax for April 2021';
+    }
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
-  } else if (transaction.detailed_bank_description.includes('מס הכנסה ני')) {
-    suggestedTransaction.financialEntity = 'Tax Deductions';
-    suggestedTransaction.userDescription =
-      'Tax for employees for March-April 2021';
+  } else if (transaction.detailed_bank_description.includes('גורניצקי')) {
+    suggestedTransaction.financialEntity = 'Gornitzky & Co., Advocates';
+    suggestedTransaction.userDescription = '10-11/21 lawyer support';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
@@ -497,6 +567,12 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('HEROKU')) {
     suggestedTransaction.financialEntity = 'Heroku';
     suggestedTransaction.userDescription = 'accounter DB';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('RAINTANK INC')) {
+    suggestedTransaction.financialEntity = 'Raintank Inc dba Grafana Labs';
+    suggestedTransaction.userDescription = 'Grafana Cloud';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
@@ -572,6 +648,12 @@ function suggestedTransaction(transaction: any) {
   } else if (transaction.detailed_bank_description.includes('ard')) {
     suggestedTransaction.financialEntity = 'Arda Tanrikulu';
     suggestedTransaction.userDescription = 'Payment for February 2021';
+    suggestedTransaction.personalCategory = 'business';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('deel')) {
+    suggestedTransaction.financialEntity = 'Deel Germany GmbH';
+    suggestedTransaction.userDescription = 'Laurin Salary';
     suggestedTransaction.personalCategory = 'business';
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
