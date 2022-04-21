@@ -113,11 +113,10 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
 export const UserTransactions: FC = () => {
   let [searchParams] = useSearchParams();
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
-
-  const [username, setUsername] = useState<string>(
+  const [inputValue, setInputValue] = useState<string>(
     searchParams.get('name') ?? ''
   );
-  const [inputValue, setInputValue] = useState<string>('');
+  const [username, setUsername] = useState<string>(inputValue);
   const { getUserTransactions } = useSql();
   let balanceForeign: number = 0;
   let sumForeignDebit: number = 0;
@@ -205,17 +204,19 @@ export const UserTransactions: FC = () => {
 
   const onUsernameChanged: FormEventHandler<HTMLFormElement> = (event) => {
     setUsername(inputValue);
+    if (!inputValue || inputValue === '') {
+      setTransactions([]);
+    } else {
+      getUserTransactions(inputValue).then(setTransactions);
+    }
     event.preventDefault();
   };
 
-  // on username change, re-fetch transactions
   useEffect(() => {
-    if (!username || username === '') {
-      setTransactions([]);
-    } else {
-      getUserTransactions(username).then(setTransactions);
+    if (inputValue && inputValue !== '') {
+      getUserTransactions(inputValue).then(setTransactions);
     }
-  }, [username, getUserTransactions]);
+  }, []);
 
   // on transactions change, modify new data
   const modifiedTransactions = useMemo(

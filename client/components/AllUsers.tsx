@@ -8,7 +8,7 @@ export const AllUsers: FC = () => {
 
   // TODO: set company from UI
   // TODO: get ALL users, or from current company? NULL will fetch all of them.
-  const companyId = businesses['Uri Goldshtein LTD'];
+  const companyId = businesses['Software Products Guilda Ltd.'];
 
   useEffect(() => {
     getAllUsers(companyId).then(setUsers);

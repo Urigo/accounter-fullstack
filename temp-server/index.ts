@@ -10,8 +10,11 @@ const port = 4001;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use((_req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
+app.use((req, res, next) => {
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    req.headers.origin ?? 'http://localhost:3000'
+  );
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -337,26 +340,29 @@ app.post('/getMonthlyTaxesReport', async (req: Request, res: Response) => {
   res.send(queryRes.rows);
 });
 
-app.get('/getTopPrivateNotCategorized', async (req: Request, res: Response) => {
-  console.log('getTopPrivateNotCategorized request');
+app.post(
+  '/getTopPrivateNotCategorized',
+  async (req: Request, res: Response) => {
+    console.log('getTopPrivateNotCategorized request');
 
-  const startingDate = req.body?.startingDate;
+    const startingDate = req.body?.startingDate;
 
-  // TODO: add format validation
-  if (!startingDate) {
-    throw new Error('startingDate is missing');
-  }
+    // TODO: add format validation
+    if (!startingDate) {
+      throw new Error('startingDate is missing');
+    }
 
-  const queryRes = await pool.query(
-    `
+    const queryRes = await pool.query(
+      `
       select *
       from top_expenses_not_categorized($1);
     `,
-    [`$$${startingDate}$$`]
-  );
+      [`$$${startingDate}$$`]
+    );
 
-  res.send(queryRes.rows);
-});
+    res.send(queryRes.rows);
+  }
+);
 
 app.post(
   '/updateBankTransactionAttribute',
@@ -504,10 +510,10 @@ app.post('/getUserTransactions', async (req: Request, res: Response) => {
     `
       select *
       from accounter_schema.ledger
-      where business = $1 and $2 in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
+      where business = '${companyId}' and $1 in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
       order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
     `,
-    [`$$${userName}$$`, `$$${companyId}$$`]
+    [`$$${userName}$$`]
   );
 
   res.send(queryRes.rows);
