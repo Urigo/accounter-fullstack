@@ -28,16 +28,84 @@ export const reportToReview = async (query: any): Promise<string> => {
   // currrentCompany = 'Uri Goldshtein LTD';
   const results: any = await Promise.allSettled([
     pool.query(lastInvoiceNumbersQuery),
-    pool.query(
-      `
+    // pool.query(
+    //   `
+    //   select *
+    //   from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', $$${reportMonthToReview}$$)
+    //   order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+    //   `
+    // ),
+    pool.query(`
       select *
-      from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', $$${reportMonthToReview}$$)
-      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
-      `
-    ),
+      from accounter_schema.ledger
+      where business = $$6a20aa69-57ff-446e-8d6a-1e96d095e988$$
+      order by to_date(תאריך_3, 'DD/MM/YYYY') desc;
+      `),
+    pool.query(`
+      select *
+      from accounter_schema.all_transactions
+      where account_number in ('466803', '1082', '1074')
+      order by event_date desc;
+    `),
   ]);
   let lastInvoiceNumbers: any = results[0].value;
-  let reportToReview: any = results[1].value;
+  let reportToReview: any = {};
+  let allLedger: any = results[1].value;
+  let allTransactions: any = results[2].value;
+
+  allTransactions.rows = allTransactions.rows.map((transaction: any) => {
+    transaction.תאריך_חשבונית = moment(transaction.event_date).format(
+      'DD/MM/YYYY'
+    );
+    transaction.חשבון_חובה_1 = transaction.account_type
+      ? transaction.account_type
+      : '';
+    transaction.סכום_חובה_1 = `${transaction.event_amount} ${transaction.currency_code}`;
+    transaction.מטח_סכום_חובה_1 = transaction.bank_description;
+    transaction.מטבע = '';
+    transaction.חשבון_זכות_1 = transaction.financial_entity;
+    transaction.סכום_זכות_1 = transaction.tax_category;
+    transaction.מטח_סכום_זכות_1 = transaction.current_balance;
+    transaction.חשבון_חובה_2 =
+      transaction.סכום_חובה_2 =
+      transaction.מטח_סכום_חובה_2 =
+      transaction.חשבון_זכות_2 =
+      transaction.סכום_זכות_2 =
+        '';
+    transaction.מטח_סכום_זכות_2 = transaction.id;
+    transaction.פרטים = '0';
+    transaction.אסמכתא_1 = transaction.bank_reference;
+    transaction.אסמכתא_2 = moment(transaction.tax_invoice_date).format(
+      'DD/MM/YYYY'
+    );
+    transaction.סוג_תנועה = transaction.vat;
+    transaction.תאריך_ערך = moment(transaction.debit_date).format('DD/MM/YYYY');
+    transaction.תאריך_3 = moment(transaction.event_date).format('DD/MM/YY');
+    transaction.original_id = transaction.id;
+    transaction.origin = 'bank';
+    return transaction;
+  });
+
+  reportToReview.rows = allLedger.rows.concat(allTransactions.rows);
+  reportToReview.rows.sort((a: any, b: any) => {
+    const date1 = moment(a.תאריך_3, 'DD/MM/YYYY').valueOf();
+    const date2 = moment(b.תאריך_3, 'DD/MM/YYYY').valueOf();
+
+    if (date1 > date2) {
+      return -1;
+    } else if (date1 < date2) {
+      return 1;
+    } else {
+      if (a.original_id > b.original_id) {
+        return -1;
+      } else if (a.original_id < b.original_id) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  });
+  // console.log(JSON.stringify(reportToReview.rows));
 
   console.timeEnd('callingReportsDB');
   console.time('renderReports');
@@ -48,8 +116,9 @@ export const reportToReview = async (query: any): Promise<string> => {
   let outcomeSum = 0;
   let VATincome = 0;
   let VAToutcome = 0;
-  for (const transaction of reportToReview.rows) {
+  for (let transaction of reportToReview.rows) {
     if (
+      transaction.סכום_חובה_1 &&
       transaction.חשבון_חובה_1 != 'מעמחוז' &&
       transaction.חשבון_חובה_1 != 'עסק' &&
       transaction.פרטים &&
@@ -106,7 +175,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     ): string => {
       const elementId = `${attribute}-${transaction.id}`;
       const content = viewableHtml || transaction[attribute] || '';
-
+      return content;
       if (movementOrBank) {
         return content;
       }
