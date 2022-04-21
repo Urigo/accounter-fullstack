@@ -1,9 +1,9 @@
-import { FC, ReactElement, useState } from 'react';
+import { FC, ReactElement, ReactNode, useState } from 'react';
 
-export const HoverHandler: FC<{ hoverElement: ReactElement }> = ({
-  children,
-  hoverElement,
-}) => {
+export const HoverHandler: FC<{
+  hoverElement: ReactElement;
+  children: ReactNode;
+}> = ({ children, hoverElement }) => {
   const [isHover, setIsHover] = useState(false);
 
   return (
@@ -11,8 +11,10 @@ export const HoverHandler: FC<{ hoverElement: ReactElement }> = ({
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
     >
-      {children}
-      {isHover && { hoverElement }}
+      <>
+        {children}
+        {isHover && { hoverElement }}
+      </>
     </div>
   );
 };

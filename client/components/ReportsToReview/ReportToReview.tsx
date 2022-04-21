@@ -1,4 +1,4 @@
-import { FC, useState, ReactElement } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { LedgerEntity } from '../../models/types';
 import { HoverHandler } from '../common/HoverHandler';
@@ -146,9 +146,7 @@ const TransactionRow: FC<{
       <td>{addHoverEditButton('אסמכתא_1')}</td>
       <td>{addHoverEditButton('אסמכתא_2')}</td>
       <td>{addHoverEditButton('סוג_תנועה')}</td>
-      <td className="valueDate">
-        {addHoverEditButton('תאריך_ערך')}
-      </td>
+      <td className="valueDate">{addHoverEditButton('תאריך_ערך')}</td>
       <td>{addHoverEditButton('תאריך_3')}</td>
       <td
         style={
@@ -190,9 +188,13 @@ export const ReportToReview: FC<{
 }> = ({ reportMonthToReview, currrentCompany }) => {
   const { getReportToReview } = useSql();
   const [selectedRow, setSelectedRow] = useState<string | undefined>(undefined);
+  const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
 
-  const transactions: LedgerEntity[] =
-    getReportToReview(currrentCompany, reportMonthToReview) ?? [];
+  useEffect(() => {
+    getReportToReview(currrentCompany, reportMonthToReview).then(
+      setTransactions
+    );
+  }, []);
 
   const [incomeSum, outcomeSum, VATincome, VAToutcome] = transactions.reduce(
     ([income, outcome, vatIn, vatOut], transaction) => {

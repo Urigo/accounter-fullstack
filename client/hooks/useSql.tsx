@@ -193,22 +193,19 @@ export const useSql = () => {
     }
   };
 
-  const onReviewTransaction = async (data: { 
+  const onReviewTransaction = async (data: {
     reviewed: boolean;
     id: string;
     accountType?: string;
   }) => {
     try {
-      const result = await fetch(
-        `${serverUrl}/reviewTransaction`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...data }),
-        }
-      ).then((res) => res.json());
+      const result = await fetch(`${serverUrl}/reviewTransaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...data }),
+      }).then((res) => res.json());
 
       return result;
     } catch (error) {
@@ -226,7 +223,7 @@ export const useSql = () => {
       body: JSON.stringify({ currrentCompany }),
     }).then((res) => res.json());
 
-    return result;
+    return (result ?? []) as { username: string }[];
   };
 
   const onGetUserTransactions = async (

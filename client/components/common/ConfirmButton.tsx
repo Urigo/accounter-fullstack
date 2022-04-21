@@ -14,7 +14,7 @@ export const ConfirmButton: React.FC<Props> = ({
   value,
 }) => {
   const updateToNew = () => {
-    const { editProperty } = useSql();
+    const { editTransaction } = useSql();
     if (!value) {
       return;
     }
@@ -36,7 +36,7 @@ export const ConfirmButton: React.FC<Props> = ({
     };
     console.log(changeRequest);
 
-    editProperty(changeRequest);
+    editTransaction(changeRequest);
   };
 
   return (

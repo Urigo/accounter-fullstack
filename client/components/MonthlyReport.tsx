@@ -1,11 +1,15 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../helpers';
 import { useSql } from '../hooks/useSql';
+import type { MonthTaxReport } from '../models/types';
 
 export const MonthlyReport: FC = () => {
   const [searchParams] = useSearchParams();
   const { getMonthlyTaxesReport } = useSql();
+  const [monthlyTaxesReport, setMonthlyTaxesReport] = useState<
+    MonthTaxReport[]
+  >([]);
 
   const month = searchParams.get('month');
   const year = searchParams.get('year');
@@ -16,7 +20,9 @@ export const MonthlyReport: FC = () => {
   const monthTaxReport = `${parsedYear}-${parsedMonth}-01`;
   console.log('monthTaxReport', monthTaxReport);
 
-  const monthlyTaxesReport = getMonthlyTaxesReport(monthTaxReport);
+  useEffect(() => {
+    getMonthlyTaxesReport(monthTaxReport).then(setMonthlyTaxesReport);
+  }, []);
 
   return (
     <>

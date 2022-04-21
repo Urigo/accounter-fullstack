@@ -112,6 +112,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
 
 export const UserTransactions: FC = () => {
   let [searchParams] = useSearchParams();
+  const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
 
   const [username, setUsername] = useState<string>(
     searchParams.get('name') ?? ''
@@ -208,10 +209,13 @@ export const UserTransactions: FC = () => {
   };
 
   // on username change, re-fetch transactions
-  const transactions = useMemo(
-    () => (username === '' ? [] : getUserTransactions(username) ?? []),
-    [username, getUserTransactions]
-  );
+  useEffect(() => {
+    if (!username || username === '') {
+      setTransactions([]);
+    } else {
+      getUserTransactions(username).then(setTransactions);
+    }
+  }, [username, getUserTransactions]);
 
   // on transactions change, modify new data
   const modifiedTransactions = useMemo(
