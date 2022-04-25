@@ -1,0 +1,11 @@
+{
+    "commands.commands": [
+      {
+        "command": "terminals.runTerminals",
+        "color": "#eab308",
+        "text": "$(rocket) Run Accounter $(rocket)",
+        "tooltip": "Start dev environment"
+      }
+    ],
+  }
+  

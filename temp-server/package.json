@@ -1,0 +1,29 @@
+{
+  "name": "temp-server",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "concurrently \"tsc -w\" \"nodemon -q dist/index.js\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "16.0.0",
+    "express": "4.17.3",
+    "moment": "2.29.3",
+    "pg": "8.7.3",
+    "uuid": "8.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.13",
+    "@types/node": "17.0.23",
+    "@types/uuid": "8.3.4",
+    "concurrently": "7.1.0",
+    "nodemon": "2.0.15",
+    "typescript": "4.6.3"
+  }
+}
