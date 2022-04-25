@@ -9,5 +9,4 @@
     "allowSyntheticDefaultImports": true // So we can import default value from node_modules https://stackoverflow.com/a/54302557/1426570
   },
   "include": ["src/**/*"]
-  }
-  
+}
