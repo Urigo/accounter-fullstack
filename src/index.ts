@@ -19,7 +19,6 @@ config();
 import pg from 'pg';
 import { getAllUsers } from './users/getAllUsers';
 import { updateBankTransactionAttribute } from './taxMonthlyReport/updateTransactions';
-import { getAllTransactions } from './transactions/getAllTransactions';
 const { Pool } = pg;
 
 console.log('hello world');
@@ -318,11 +317,6 @@ async function main() {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       let responseHTML = await getAllUsers();
       response.end(responseHTML);
-    } else if (request.url == '/all-transactions') {
-      response.statusCode = 200;
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      let responseHTML = await  getAllTransactions();
-      response.end(`<div id="app">${responseHTML}</div>`);
     } else {
       return response.end();
     }
