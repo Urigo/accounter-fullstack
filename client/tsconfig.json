@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "strict": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "moduleResolution": "node", // Needed for npm modules that use commonjs
+    "allowSyntheticDefaultImports": true, // So we can import default value from node_modules https://stackoverflow.com/a/54302557/1426570
+    
+    
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "useDefineForClassFields": true,
+    "allowJs": false,
+    "skipLibCheck": false,
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*", "client/**/*", "server/**/*", "temp-server/index.ts"],
+  "references": [{ "path": "tsconfig.node.json" }]
+}
