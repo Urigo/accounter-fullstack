@@ -1,0 +1,21 @@
+{
+    "autorun": false,
+    "terminals": [
+      {
+        "name": "app:dev",
+        "description": "Run App",
+        "focus": true,
+        "open": true,
+        "cwd": "client",
+        "command": "nvm use 18.0.0 && yarn dev"
+      },
+      {
+        "name": "proxy:dev",
+        "description": "Run proxy",
+        "open": true,
+        "cwd": "temp-server",
+        "command": "yarn dev"
+      }
+    ]
+  }
+  
