@@ -306,13 +306,22 @@ app.post('/getVatTransactions', async (req: Request, res: Response) => {
   res.send(queryRes.rows);
 });
 
-app.get('/getAllTransactions', async (req: Request, res: Response) => {
+app.post('/getAllTransactions', async (req: Request, res: Response) => {
   console.log('getAllTransactions request');
 
+  const financialEntity = req.body?.financialEntity;
+  let accountsToFetch = '';
+  if (financialEntity == 'Guild') {
+    accountsToFetch = `where account_number in ('466803', '1074', '1082')`;
+  } else if (financialEntity == 'UriLTD') {
+    accountsToFetch = `where account_number in ('61066', '2733')`;
+  } else if (financialEntity == 'Uri') {
+    accountsToFetch = `where account_number in ('410915', '6264')`;
+  }
   const queryRes = await pool.query(`
     select *
     from accounter_schema.all_transactions
-    -- where account_number in ('466803', '1074', '1082')
+    ${accountsToFetch}
     order by event_date desc
     limit 2550;
   `);

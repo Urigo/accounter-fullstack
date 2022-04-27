@@ -2,13 +2,17 @@ import { FC, useEffect, useState } from 'react';
 import { useSql } from '../../../hooks/useSql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { TransactionRow } from './TransactionRow';
+import { useSearchParams } from 'react-router-dom';
 
 export const AllTransactionsString: FC = () => {
+  let [searchParams] = useSearchParams();
+  const financialEntity = searchParams.get('financialEntity');
+
   const { getAllTransactions } = useSql();
   const [allTransactions, setAllTransactions] = useState<TransactionType[]>([]);
 
   useEffect(() => {
-    getAllTransactions().then(setAllTransactions);
+    getAllTransactions(financialEntity).then(setAllTransactions);
   }, []);
 
   const columns: TransactionColumn[] = [

@@ -95,8 +95,14 @@ export const useSql = () => {
     return (vatTransactions ?? []) as VatTransaction[];
   };
 
-  const onGetAllTransactions = async () => {
-    const allTransactions = await fetch(`${serverUrl}/getAllTransactions`).then(
+  const onGetAllTransactions = async (financialEntity: string | null) => {
+    const allTransactions = await fetch(`${serverUrl}/getAllTransactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ financialEntity }),
+    }).then(
       (res) => res.json()
     );
 
@@ -273,7 +279,7 @@ export const useSql = () => {
     getThisMonthPrivateExpenses: () => onGetThisMonthPrivateExpenses(),
     getVatTransactions: (monthTaxReport: string) =>
       onGetVatTransactions(monthTaxReport),
-    getAllTransactions: () => onGetAllTransactions(),
+    getAllTransactions: (financialEntity: string | null) => onGetAllTransactions(financialEntity),
     getMonthlyTaxesReport: (monthTaxReport: string) =>
       onGetMonthlyTaxesReport(monthTaxReport),
     getTopPrivateNotCategorized: (startingDate?: string) =>
