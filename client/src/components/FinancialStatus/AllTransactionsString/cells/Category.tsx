@@ -12,7 +12,7 @@ export const Category: FC<Props> = ({ transaction, style }) => {
   const isPersonalCategory = !!transaction.personal_category;
   const cellText =
     transaction.personal_category ??
-    suggestedTransaction(transaction)?.financialEntity;
+    suggestedTransaction(transaction)?.personalCategory;
 
   return (
     <td
