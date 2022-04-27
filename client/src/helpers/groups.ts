@@ -16,6 +16,15 @@ export const entitiesWithoutInvoice = [
   'Uri Employee',
   'Gilad Employee',
   'Gil Employee',
+  'Tuval Employee',
+  'מגדל השתלמות',
+  'מנורה פנסיה',
+  'מגדל פנסיה',
+  'איילון פנסיה',
+  'פניקס השתלמות',
+  'Social Security Deductions',
+  'Dotan Dividend',
+  'Uri Dividend',
 ];
 
 export const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];

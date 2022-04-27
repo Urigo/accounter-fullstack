@@ -2,60 +2,17 @@ import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
 import { suggestedTransaction } from '../client/src/helpers/transactions';
-
-const entitiesWithoutInvoice = [
-  'Poalim',
-  'Isracard',
-  'Tax Deductions',
-  'Tax',
-  'VAT',
-  'Dotan Employee',
-  'Uri Employee',
-  'Gilad Employee',
-  'Gil Employee',
-  'Tuval Employee',
-  'מגדל השתלמות',
-  'מנורה פנסיה',
-  'מגדל פנסיה',
-  'איילון פנסיה',
-  'פניקס השתלמות',
-  'Social Security Deductions',
-  'Dotan Dividend',
-  'Uri Dividend',
-];
+import {
+  entitiesWithoutInvoice,
+  entitiesWithoutInvoiceNumuber,
+  privateBusinessExpenses,
+  businessesNotToShare,
+  businessesWithoutTaxCategory,
+  businessesWithoutVAT,
+} from '../client/src/helpers/groups';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
 
-const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];
-
-const privateBusinessExpenses = [
-  'Google',
-  'Uri Goldshtein',
-  'Social Security Deductions',
-  'Hot Mobile',
-  'Apple',
-  'HOT',
-  'Yaacov Matri',
-  'Partner',
-];
-
-const businessesNotToShare = ['Dotan Simha'];
-
-const businessesWithoutTaxCategory = [
-  'Uri Goldshtein',
-  'Social Security Deductions',
-  'Tax Deductions',
-  'VAT',
-  'Tax',
-];
-
-const businessesWithoutVAT = [
-  'Apple',
-  'Halman Aldubi Training Fund',
-  'Halman Aldubi Pension',
-  'Social Security Deductions',
-  'Tax Deductions',
-];
 function isBusiness(transaction: any) {
   return (
     (transaction.account_number == 61066 ||
