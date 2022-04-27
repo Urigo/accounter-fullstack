@@ -405,10 +405,9 @@ app.post(
 );
 
 app.post('/editTransaction', async (req: Request, res: Response) => {
-  console.log('editTransaction request');
-
   const { id, propertyToChange, newValue } = req.body;
 
+  console.log(`editTransaction request ${id} ${propertyToChange} ${newValue}`);
   // TODO: add format validation
   if (!id) {
     throw new Error('id is missing');
