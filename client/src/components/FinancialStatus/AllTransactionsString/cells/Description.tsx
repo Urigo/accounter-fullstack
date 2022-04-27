@@ -17,14 +17,12 @@ export const Description: FC<Props> = ({ transaction, style }) => {
   return (
     <td
       style={{
-        ...(transaction.user_description
-          ? {}
-          : { backgroundColor: 'rgb(236, 207, 57)' }),
+        ...(isDescription ? {} : { backgroundColor: 'rgb(236, 207, 57)' }),
         ...style,
       }}
     >
       {cellText ?? 'undefined'}
-      {isDescription && (
+      {!transaction.user_description && (
         <ConfirmButton
           transaction={transaction}
           propertyName={'user_description'}
