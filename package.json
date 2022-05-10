@@ -11,6 +11,7 @@
     "month": "node --experimental-specifier-resolution=node dist/taxMonthlyReport/taxesForMonth.js",
     "sqlgen": "npx pgtyped -c pgTypedConfig.json",
     "react:dev": "cd client && yarn dev",
+    "react:install": "cd temp-server && yarn install && cd ../client && yarn install && cd ../",
     "server:dev": "cd temp-server && yarn dev"
   },
   "dependencies": {
