@@ -1,5 +1,6 @@
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { addMocksToSchema } from '@graphql-tools/mock';
+import { resolvers } from './resolvers.mjs';
 
 const typeDefs = /* GraphQL */ `
   # Scalars
@@ -365,5 +366,5 @@ const typeDefs = /* GraphQL */ `
   }
 `;
 
-export const schema = makeExecutableSchema({ typeDefs });
+export const schema = makeExecutableSchema({ typeDefs, resolvers });
 const schemaWithMocks = addMocksToSchema({ schema });
