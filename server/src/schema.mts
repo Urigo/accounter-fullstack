@@ -64,7 +64,7 @@ const typeDefs = /* GraphQL */ `
 
   # Main Module
   " Financial entity, identifier by ID, can be a company or invdividual "
-  type FinancialEntity {
+  type LtdFinancialEntity implements FinancialEntity {
     id: ID!
     govermentId: String!
     name: String!
@@ -77,6 +77,27 @@ const typeDefs = /* GraphQL */ `
 
     accounts: [FinancialAccount!]!
     charges(filter: ChargeFilter): [Charge!]!
+    linkedEntities: [FinancialEntity!]!
+  }
+
+  type PersonalFinancialEntity implements FinancialEntity {
+    id: ID!
+    name: String!
+    email: String!
+
+    accounts: [FinancialAccount!]!
+    charges(filter: ChargeFilter): [Charge!]!
+
+    linkedEntities: [FinancialEntity!]!
+    documents: [Document]
+  }
+
+  interface FinancialEntity {
+    id: ID!
+    accounts: [FinancialAccount!]!
+    charges(filter: ChargeFilter): [Charge!]!
+
+    linkedEntities: [FinancialEntity!]!
   }
 
   input ChargeFilter {
@@ -170,6 +191,12 @@ const typeDefs = /* GraphQL */ `
     id: ID!
     name: String!
     dates: DateRange!
+  }
+
+  type Unprocessed implements Document & Linkable {
+    id: ID!
+    image: URL!
+    file: URL
   }
 
   " invoice document "
