@@ -431,6 +431,12 @@ export function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     suggestedTransaction.personalCategory = 'business';
     return suggestedTransaction;
+  } else if (transaction.detailed_bank_description.includes('RETOOL')) {
+    suggestedTransaction.financialEntity = 'Retool Inc';
+    suggestedTransaction.userDescription = 'Retool';
+    suggestedTransaction.financialAccountsToBalance = 'no';
+    suggestedTransaction.personalCategory = 'business';
+    return suggestedTransaction;
   } else if (
     transaction.detailed_bank_description.includes('הוק האוס אוף קופי')
   ) {
