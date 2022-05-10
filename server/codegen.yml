@@ -1,0 +1,8 @@
+overwrite: true
+schema: "../**/*.graphql"
+generates:
+  src/__generated__/types.mts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-resolvers"

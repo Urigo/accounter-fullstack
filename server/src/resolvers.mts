@@ -1,22 +1,40 @@
-export const resolvers = {
+import { FinancialEntityResolvers, Resolvers } from './__generated__/types.mjs';
+
+const commonfinancialEntityFields: FinancialEntityResolvers = {
+  __resolveType: (parent) => parent.__typename!,
+  id: (parent) => parent.id,
+  accounts: (parent) => [], // TODO: implement
+  charges: (parent) => [], // TODO: implement
+  linkedEntities: (parent) => [], // TODO: implement
+};
+
+export const resolvers: Resolvers = {
   Query: {
-    financialEntity: (parent: unknown, args: { id: string }) => {
-        // Implement...
+    financialEntity: (_parent, { id }) => {
+      // Implement...
     },
   },
-  FinancialEntity: {
-    id: (parent: FinancialEntity) => parent.id,
-    govermentId: (parent: FinancialEntity) => parent.govermentId,
-    name: (parent: FinancialEntity) => parent.name,
-    address: (parent: FinancialEntity) => parent.address,
+  LtdFinancialEntity: {
+    __isTypeOf: (parent) => parent.__typename === 'LtdFinancialEntity',
+    ...commonfinancialEntityFields,
+    govermentId: (parent) => parent.govermentId,
+    name: (parent) => parent.name,
+    address: (parent) => parent.address,
 
-    englishName: (parent: FinancialEntity) => parent.englishName,
-    email: (parent: FinancialEntity) => parent.email,
-    website: (parent: FinancialEntity) => parent.website,
-    phoneNumber: (parent: FinancialEntity) => parent.phoneNumber,
+    englishName: (parent) => parent.englishName,
+    email: (parent) => parent.email,
+    website: (parent) => parent.website,
+    phoneNumber: (parent) => parent.phoneNumber,
 
-    accounts: (parent: FinancialEntity) => parent.accounts,
-    charges: (parent: FinancialEntity, args: { filter: ChargeFilter }) =>
-      parent.charges,
+    accounts: (parent) => parent.accounts,
+    charges: (parent, { filter }) => parent.charges,
+    linkedEntities: (parent) => parent.linkedEntities,
+  },
+  PersonalFinancialEntity: {
+    __isTypeOf: (parent) => parent.__typename === 'PersonalFinancialEntity',
+    ...commonfinancialEntityFields,
+    name: (parent) => parent.name
+    email: (parent) => parent.email
+    documents: (parent) => parent.documents
   },
 };
