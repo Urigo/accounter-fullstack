@@ -616,6 +616,9 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'USD':
         return '$';
         break;
+      case 'GBP':
+        return 'לש';
+        break;
       default:
         const errorMessage = `Unknown account type - ${accountType}`;
         console.error(errorMessage);
