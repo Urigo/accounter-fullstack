@@ -27,9 +27,13 @@ const commonFinancialEntityFields:
     );
     return accounts;
   },
-  charges: async (DbBusiness) => {
+  charges: async (DbBusiness, { filter }) => {
     const charges = await getChargesByFinancialEntityIds.run(
-      { financialEntityIds: [DbBusiness.id] },
+      {
+        financialEntityIds: [DbBusiness.id],
+        fromDate: filter?.fromDate,
+        toDate: filter?.toDate,
+      },
       pool
     );
     return charges;
@@ -41,9 +45,13 @@ const commonFinancialAccountFields:
   | CardFinancialAccountResolvers
   | BankFinancialAccountResolvers = {
   id: (DbAccount) => DbAccount.account_number.toString(),
-  charges: async (DbAccount) => {
+  charges: async (DbAccount, { filter }) => {
     const charges = await getChargesByFinancialAccountIds.run(
-      { financialAccountIds: [DbAccount.account_number] },
+      {
+        financialAccountIds: [DbAccount.account_number],
+        fromDate: filter?.fromDate,
+        toDate: filter?.toDate,
+      },
       pool
     );
     return charges;
