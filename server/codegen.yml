@@ -4,10 +4,13 @@ generates:
   src/__generated__/types.mts:
     config:
       mappers:
-        LtdFinancialEntity: ./sqlQueries.types.mjs#IgetFinancialEntitiesByIdsResult
-        PersonalFinancialEntity: ./sqlQueries.types.mjs#IgetFinancialEntitiesByIdsResult
-        BankFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
-        CardFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
+        LtdFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
+        PersonalFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
+        BankFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
+        CardFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
+        Charge: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByFinancialAccountIdsResult
+        NamedCounterparty: string
     plugins:
       - "typescript"
       - "typescript-operations"

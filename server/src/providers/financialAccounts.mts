@@ -1,9 +1,9 @@
 import pgQuery from '@pgtyped/query';
-import { IGetAccountsByFeIdsQuery } from '../__generated__/financialAccounts.types.mjs';
+import { IGetFinancialAccountsByFeIdsQuery } from '../__generated__/financialAccounts.types.mjs';
 
 const { sql } = pgQuery;
 
-export const getAccountsByFeIds = sql<IGetAccountsByFeIdsQuery>`
+export const getFinancialAccountsByFeIds = sql<IGetFinancialAccountsByFeIdsQuery>`
     SELECT *
     FROM accounter_schema.financial_accounts
     WHERE owner IN $$financialEntityIds;`;

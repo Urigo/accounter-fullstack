@@ -1,5 +1,12 @@
+import { formatFinancialAmount } from './helpers/amount.mjs';
+import {
+  getChargesByFinancialAccountIds,
+  getChargesByFinancialEntityIds,
+} from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import { getFinancialEntitiesByIds } from './providers/sqlQueries.mjs';
+import { getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
+import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
+import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -12,8 +19,21 @@ const commonFinancialEntityFields:
   | LtdFinancialEntityResolvers
   | PersonalFinancialEntityResolvers = {
   id: (DbBusiness) => DbBusiness.id,
-  accounts: () => [], // TODO: implement
-  charges: () => [], // TODO: implement
+  accounts: async (DbBusiness) => {
+    // TODO: add funcionality for linkedEntities data
+    const accounts = await getFinancialAccountsByFeIds.run(
+      { financialEntityIds: [DbBusiness.id] },
+      pool
+    );
+    return accounts;
+  },
+  charges: async (DbBusiness) => {
+    const charges = await getChargesByFinancialEntityIds.run(
+      { financialEntityIds: [DbBusiness.id] },
+      pool
+    );
+    return charges;
+  },
   linkedEntities: () => [], // TODO: implement
 };
 
@@ -21,7 +41,13 @@ const commonFinancialAccountFields:
   | CardFinancialAccountResolvers
   | BankFinancialAccountResolvers = {
   id: (DbAccount) => DbAccount.account_number.toString(),
-  charges: () => [], // TODO: implement
+  charges: async (DbAccount) => {
+    const charges = await getChargesByFinancialAccountIds.run(
+      { financialAccountIds: [DbAccount.account_number] },
+      pool
+    );
+    return charges;
+  },
 };
 
 export const resolvers: Resolvers = {
@@ -58,9 +84,9 @@ export const resolvers: Resolvers = {
     bankNumber: (DbAccount) => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
     branchNumber: (DbAccount) => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
     routingNumber: () => '', // TODO: implement
-    iban: () => '', // TODO: implement
-    swift: () => '', // TODO: implement
-    country: () => '', // TODO: implement
+    iban: () => '', // TODO: missing in DB
+    swift: () => '', // TODO: missing in DB
+    country: () => '', // TODO: missing in DB
     name: (DbAccount) => DbAccount.account_number.toString(),
   },
   CardFinancialAccount: {
@@ -68,5 +94,47 @@ export const resolvers: Resolvers = {
     ...commonFinancialAccountFields,
     number: (DbAccount) => DbAccount.account_number.toString(),
     fourDigits: (DbAccount) => DbAccount.account_number.toString(),
+  },
+  Charge: {
+    id: (DbCharge) => DbCharge.id!,
+    createdAt: () => null, // TODO: missing in DB
+    additionalDocument: () => [], // TODO: implement
+    ledgerRecords: async (DbCharge) => {
+      const records = await getLedgerRecordsByChargeIds.run(
+        { chargeIds: [DbCharge.id] },
+        pool
+      );
+      return records;
+    },
+    transactions: () => [], // TODO: implement
+    counterparty: () => '', // TODO: implement
+    description: () => '', // TODO: implement
+    tags: (DbCharge) =>
+      DbCharge.personal_category ? [DbCharge.personal_category] : [],
+    beneficiaries: () => [], // TODO: implement
+  },
+  LedgerRecord: {
+    id: (DbLedgerRecord) => DbLedgerRecord.id,
+    creditAccount: (DbLedgerRecord) => DbLedgerRecord.חשבון_זכות_1 ?? '',
+    debitAccount: (DbLedgerRecord) => DbLedgerRecord.חשבון_חובה_1 ?? '',
+    originalAmount: (DbLedgerRecord) =>
+      formatFinancialAmount(
+        DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1,
+        DbLedgerRecord.מטבע
+      ),
+    date: (DbLedgerRecord) => DbLedgerRecord.תאריך_חשבונית,
+    description: () => '', // TODO: missing in DB
+    accountantApproval: (DbLedgerRecord) => ({
+      approved: DbLedgerRecord.reviewed ?? false,
+      remark: '', // TODO: missing in DB
+    }),
+    localCurrencyAmount: (DbLedgerRecord) =>
+      formatFinancialAmount(DbLedgerRecord.סכום_חובה_1, null),
+    hashavshevetId: (DbLedgerRecord) =>
+      DbLedgerRecord.hashavshevet_id?.toString() ?? null,
+  },
+  NamedCounterparty: {
+    __isTypeOf: () => true,
+    name: (parent) => parent,
   },
 };

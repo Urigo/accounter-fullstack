@@ -6,7 +6,7 @@ config();
 
 async function main() {
   const schema = await getSchema();
-  const server = createServer({ schema });
+  const server = createServer({ schema, maskedErrors: false });
   await server.start();
 }
 
