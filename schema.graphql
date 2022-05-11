@@ -23,6 +23,7 @@
     image: URL!
     " link to original file gmail, pdf "
     file: URL
+    # relatedTransactions: [Transaction!]!
   }
 
   " Represent financial amount "
@@ -56,6 +57,7 @@
   # Root types
   type Query {
     financialEntity(id: ID!): FinancialEntity!
+    documents: [Document!]!
   }
 
   # Main Module
@@ -204,10 +206,11 @@
     id: ID!
     image: URL!
     file: URL
+    vat: FinancialAmount
 
     serialNumber: String!
     date: Date!
-    amount: FinancialAmount!
+    amount: FinancialAmount
   }
 
   " proforma document "
@@ -215,10 +218,11 @@
     id: ID!
     image: URL!
     file: URL
+    vat: FinancialAmount
 
     serialNumber: String!
     date: Date!
-    amount: FinancialAmount!
+    amount: FinancialAmount
   }
 
   " receipt document "
@@ -228,6 +232,7 @@
     image: URL!
     " gmail, pdf "
     file: URL
+    vat: FinancialAmount
 
     invoice: Invoice
     serialNumber: String!

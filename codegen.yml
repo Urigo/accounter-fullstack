@@ -12,6 +12,9 @@ generates:
         Charge: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByFinancialAccountIdsResult
         NamedCounterparty: string
+        Invoice: ./sqlQueries.types.mjs#IGetEmailDocsResult
+        Proforma: ./sqlQueries.types.mjs#IGetEmailDocsResult
+        Receipt: ./sqlQueries.types.mjs#IGetEmailDocsResult
     plugins:
       - "typescript"
       - "typescript-resolvers"
