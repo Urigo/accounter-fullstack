@@ -1,7 +1,7 @@
 import pgQuery from '@pgtyped/query';
 import {
   IGetAccountsByFeIdsQuery,
-  IGetFEsByIdsQuery,
+  IGetFinancialEntitiesByIdsQuery,
   IGetLastInvoiceNumbersQuery,
 } from '../__generated__/sqlQueries.types.mjs';
 
@@ -25,7 +25,7 @@ export const getAccountsByFeIds = sql<IGetAccountsByFeIdsQuery>`
     FROM accounter_schema.financial_accounts
     WHERE owner IN $$financialEntityIds;`;
 
-export const getFEsByIds = sql<IGetFEsByIdsQuery>`
+export const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
     SELECT *
     FROM accounter_schema.businesses
     WHERE id IN $$ids;`;
