@@ -4,8 +4,8 @@ generates:
   src/__generated__/types.mts:
     config:
       mappers:
-        LtdFinancialEntity: ./sqlQueries.types.mjs#IGetFEsByIdsResult
-        PersonalFinancialEntity: ./sqlQueries.types.mjs#IGetFEsByIdsResult
+        LtdFinancialEntity: ./sqlQueries.types.mjs#IgetFinancialEntitiesByIdsResult
+        PersonalFinancialEntity: ./sqlQueries.types.mjs#IgetFinancialEntitiesByIdsResult
         BankFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
         CardFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
     plugins:

@@ -1,5 +1,5 @@
 import { pool } from './providers/db.mjs';
-import { getFEsByIds } from './providers/sqlQueries.mjs';
+import { getFinancialEntitiesByIds } from './providers/sqlQueries.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -27,7 +27,7 @@ const commonFinancialAccountFields:
 export const resolvers: Resolvers = {
   Query: {
     financialEntity: async (_, { id }) => {
-      const dbFe = await getFEsByIds.run({ ids: [id] }, pool);
+      const dbFe = await getFinancialEntitiesByIds.run({ ids: [id] }, pool);
       return dbFe[0];
     },
   },
@@ -53,6 +53,7 @@ export const resolvers: Resolvers = {
   },
   BankFinancialAccount: {
     __isTypeOf: (DbAccount) => !!DbAccount.bank_number,
+    ...commonFinancialAccountFields,
     accountNumber: (DbAccount) => DbAccount.account_number.toString(),
     bankNumber: (DbAccount) => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
     branchNumber: (DbAccount) => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
@@ -64,6 +65,7 @@ export const resolvers: Resolvers = {
   },
   CardFinancialAccount: {
     __isTypeOf: (DbAccount) => !DbAccount.bank_number,
+    ...commonFinancialAccountFields,
     number: (DbAccount) => DbAccount.account_number.toString(),
     fourDigits: (DbAccount) => DbAccount.account_number.toString(),
   },
