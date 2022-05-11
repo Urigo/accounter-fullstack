@@ -1,0 +1,14 @@
+overwrite: true
+schema: "../**/*.graphql"
+generates:
+  src/__generated__/types.mts:
+    config:
+      mappers:
+        LtdFinancialEntity: ./sqlQueries.types.mjs#IGetFEsByIdsResult
+        PersonalFinancialEntity: ./sqlQueries.types.mjs#IGetFEsByIdsResult
+        BankFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
+        CardFinancialAccount: ./sqlQueries.types.mjs#IGetAccountsByFeIdsResult
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-resolvers"

@@ -1,7 +1,11 @@
 import { createServer } from '@graphql-yoga/node';
-import { schema } from './schema.mjs';
+import { getSchema } from './schema.mjs';
+import { config } from 'dotenv';
+
+config();
 
 async function main() {
+  const schema = await getSchema();
   const server = createServer({ schema });
   await server.start();
 }
