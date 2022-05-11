@@ -1,40 +1,70 @@
-import { FinancialEntityResolvers, Resolvers } from './__generated__/types.mjs';
+import { pool } from './providers/db.mjs';
+import { getFEsByIds } from './providers/sqlQueries.mjs';
+import {
+  BankFinancialAccountResolvers,
+  CardFinancialAccountResolvers,
+  LtdFinancialEntityResolvers,
+  PersonalFinancialEntityResolvers,
+  Resolvers,
+} from './__generated__/types.mjs';
 
-const commonfinancialEntityFields: FinancialEntityResolvers = {
-  __resolveType: (parent) => parent.__typename!,
-  id: (parent) => parent.id,
-  accounts: (parent) => [], // TODO: implement
-  charges: (parent) => [], // TODO: implement
-  linkedEntities: (parent) => [], // TODO: implement
+const commonFinancialEntityFields:
+  | LtdFinancialEntityResolvers
+  | PersonalFinancialEntityResolvers = {
+  id: (DbBusiness) => DbBusiness.id,
+  accounts: () => [], // TODO: implement
+  charges: () => [], // TODO: implement
+  linkedEntities: () => [], // TODO: implement
+};
+
+const commonFinancialAccountFields:
+  | CardFinancialAccountResolvers
+  | BankFinancialAccountResolvers = {
+  id: (DbAccount) => DbAccount.account_number.toString(),
+  charges: () => [], // TODO: implement
 };
 
 export const resolvers: Resolvers = {
   Query: {
-    financialEntity: (_parent, { id }) => {
-      // Implement...
+    financialEntity: async (_, { id }) => {
+      const dbFe = await getFEsByIds.run({ ids: [id] }, pool);
+      return dbFe[0];
     },
   },
   LtdFinancialEntity: {
-    __isTypeOf: (parent) => parent.__typename === 'LtdFinancialEntity',
-    ...commonfinancialEntityFields,
-    govermentId: (parent) => parent.govermentId,
-    name: (parent) => parent.name,
-    address: (parent) => parent.address,
+    __isTypeOf: () => true,
+    ...commonFinancialEntityFields,
+    govermentId: (DbBusiness) => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
+    name: (DbBusiness) => DbBusiness.hebrew_name ?? DbBusiness.name,
+    address: (DbBusiness) =>
+      DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
 
-    englishName: (parent) => parent.englishName,
-    email: (parent) => parent.email,
-    website: (parent) => parent.website,
-    phoneNumber: (parent) => parent.phoneNumber,
-
-    accounts: (parent) => parent.accounts,
-    charges: (parent, { filter }) => parent.charges,
-    linkedEntities: (parent) => parent.linkedEntities,
+    englishName: (DbBusiness) => DbBusiness.name ?? null,
+    email: (DbBusiness) => DbBusiness.email,
+    website: (DbBusiness) => DbBusiness.website,
+    phoneNumber: (DbBusiness) => DbBusiness.phone_number,
   },
   PersonalFinancialEntity: {
-    __isTypeOf: (parent) => parent.__typename === 'PersonalFinancialEntity',
-    ...commonfinancialEntityFields,
-    name: (parent) => parent.name
-    email: (parent) => parent.email
-    documents: (parent) => parent.documents
+    __isTypeOf: () => false,
+    ...commonFinancialEntityFields,
+    name: (DbBusiness) => DbBusiness.name,
+    email: (DbBusiness) => DbBusiness.email ?? '', // TODO: remove alternative ''
+    documents: () => [], // TODO: implement
+  },
+  BankFinancialAccount: {
+    __isTypeOf: (DbAccount) => !!DbAccount.bank_number,
+    accountNumber: (DbAccount) => DbAccount.account_number.toString(),
+    bankNumber: (DbAccount) => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
+    branchNumber: (DbAccount) => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
+    routingNumber: () => '', // TODO: implement
+    iban: () => '', // TODO: implement
+    swift: () => '', // TODO: implement
+    country: () => '', // TODO: implement
+    name: (DbAccount) => DbAccount.account_number.toString(),
+  },
+  CardFinancialAccount: {
+    __isTypeOf: (DbAccount) => !DbAccount.bank_number,
+    number: (DbAccount) => DbAccount.account_number.toString(),
+    fourDigits: (DbAccount) => DbAccount.account_number.toString(),
   },
 };

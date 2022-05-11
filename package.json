@@ -14,7 +14,7 @@
     "react:install": "cd server && yarn install && cd ../temp-server && yarn install && cd ../client && yarn install && cd ../",
     "temp-server:dev": "cd temp-server && yarn dev",
     "server:dev": "cd server && yarn dev",
-    "codegen": " cd server && yarn codegen && cd ../"
+    "generate": " cd server && yarn generate && cd ../"
   },
   "dependencies": {
     "date-fns": "2.28.0",

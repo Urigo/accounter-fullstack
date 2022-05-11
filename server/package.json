@@ -4,30 +4,39 @@
   "description": "",
   "type": "module",
   "main": "./server/src/main.mts",
+  "license": "MIT",
   "scripts": {
     "dev": "nodemon --exec \"yarn start\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "start": "node dist/main.mjs",
     "prestart": "yarn build",
     "build": "tsc",
-    "codegen": "graphql-codegen --config codegen.yml"
+    "codegen": "graphql-codegen --config codegen.yml",
+    "sqlgen": "dotenv yarn pgtyped",
+    "pgtyped": "pgtyped -c pgconfig.json",
+    "generate": "yarn sqlgen && yarn codegen"
   },
   "devDependencies": {
-    "@graphql-codegen/typescript-resolvers": "2.6.4",
+    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/introspection": "2.1.1",
     "@graphql-codegen/typescript": "2.4.11",
     "@graphql-codegen/typescript-operations": "2.4.0",
-    "@graphql-codegen/introspection": "2.1.1",
-    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/typescript-resolvers": "2.6.4",
     "@types/node": "17.0.23",
     "prettier": "2.6.2",
     "typescript": "4.7.0-beta"
   },
   "dependencies": {
-    "@graphql-tools/load-files": "^6.5.3",
+    "@graphql-tools/load-files": "6.5.3",
     "@graphql-tools/mock": "8.6.5",
     "@graphql-tools/schema": "8.3.6",
     "@graphql-yoga/node": "2.1.0",
+    "@pgtyped/cli": "0.13.0",
+    "@pgtyped/query": "0.13.0",
+    "dotenv": "16.0.0",
+    "dotenv-cli": "5.1.0",
     "graphql": "16.3.0",
-    "nodemon": "2.0.15"
+    "nodemon": "2.0.15",
+    "pg": "8.7.3"
   },
   "engines": {
     "node": "18.0.0"
