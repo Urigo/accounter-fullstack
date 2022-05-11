@@ -14,14 +14,14 @@
         "description": "Run server",
         "open": true,
         "cwd": "server",
-        "command": "yarn dev"
+        "command": "nvm use 18.1.0 && yarn dev"
       },
       {
         "name": "temp-server:dev",
         "description": "Run temp-server",
         "open": true,
         "cwd": "temp-server",
-        "command": "yarn dev"
+        "command": "nvm use 18.1.0 && yarn dev"
       }
     ]
   }
