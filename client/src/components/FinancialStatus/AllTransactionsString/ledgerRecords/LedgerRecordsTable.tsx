@@ -1,8 +1,9 @@
 import { FC } from 'react';
 import { LedgerRecordRow } from './LedgerRecordRow';
+import { LedgerRecordsFragment } from '../../../../__generated__/types';
 
 type Props = {
-  ledgerRecords: any[];
+  ledgerRecords: LedgerRecordsFragment['ledgerRecords'];
 };
 
 export const LedgerRecordsTable: FC<Props> = ({ ledgerRecords }) => {

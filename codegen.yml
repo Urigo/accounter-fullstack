@@ -1,5 +1,6 @@
 overwrite: true
 schema: "./**/*.graphql"
+documents: "./client/src/**/*.tsx"
 generates:
   server/src/__generated__/types.mts:
     config:
@@ -13,5 +14,14 @@ generates:
         NamedCounterparty: string
     plugins:
       - "typescript"
-      - "typescript-operations"
       - "typescript-resolvers"
+  client/src/__generated__/types.ts:
+    config:
+      fetcher:
+        func: '../hooks/useGraphql#useGraphql'
+        isReactHook: true
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-query"
+  

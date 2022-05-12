@@ -33,6 +33,7 @@
     "@graphql-codegen/introspection": "2.1.1",
     "@graphql-codegen/typescript": "2.4.11",
     "@graphql-codegen/typescript-operations": "2.4.0",
+    "@graphql-codegen/typescript-react-query": "3.5.12",
     "@graphql-codegen/typescript-resolvers": "2.6.4",
     "@types/dotenv": "8.2.0",
     "@types/lodash": "4.14.182",

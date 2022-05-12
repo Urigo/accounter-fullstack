@@ -1,17 +1,29 @@
-import { GraphQLClient } from 'graphql-request';
+export const useGraphql = <TData, TVariables>(
+  query: string,
+  options?: RequestInit['headers']
+): ((variables?: TVariables) => Promise<TData>) => {
+  const url = 'http://localhost:4000/graphql';
 
-export const useGraphql = () => {
-  const endpoint = 'http://localhost:4000/graphql';
+  return async (variables?: TVariables) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options ?? {}),
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
 
-  const graphQLClient = new GraphQLClient(endpoint, {
-    // TODO: add auth
-    headers: {},
-  });
+    const json = await res.json();
 
-  const onRequest = async <T, V>(query: string, variables?: V): Promise<T> => {
-    const data = await graphQLClient.request<T, V>(query, variables);
-    return data;
+    if (json.errors) {
+      const { message } = json.errors[0] || 'Error..';
+      throw new Error(message);
+    }
+
+    return json.data;
   };
-
-  return { request: onRequest };
 };

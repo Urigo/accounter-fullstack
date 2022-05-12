@@ -1,5 +1,7 @@
+import gql from 'graphql-tag';
 import { CSSProperties, FC, useState } from 'react';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
+import { ChargesFragment } from '../../../__generated__/types';
 import {
   Account,
   Amount,
@@ -23,11 +25,20 @@ import { ReceiptNumber } from './cells/ReceiptNumber';
 import { ReceiptUrl } from './cells/ReceiptUrl';
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
+gql`
+  fragment Charges on FinancialEntity {
+    charges {
+      id
+      ...ledgerRecords
+    }
+  }
+`;
+
 type Props = {
   transaction: TransactionType;
   columns: TransactionColumn[];
   index: number;
-  charge?: any;
+  charge?: ChargesFragment['charges']['0'];
 };
 
 const rowStyle = ({
