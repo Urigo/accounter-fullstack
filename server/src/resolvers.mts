@@ -12,6 +12,7 @@ import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
+  CommonTransactionResolvers,
   ConversionTransactionResolvers,
   FeeTransactionResolvers,
   LtdFinancialEntityResolvers,
@@ -67,10 +68,11 @@ const commonFinancialAccountFields:
 const commonTransactionFields:
   | ConversionTransactionResolvers
   | FeeTransactionResolvers
-  | WireTransactionResolvers = {
+  | WireTransactionResolvers
+  | CommonTransactionResolvers = {
   id: (DbTransaction) => DbTransaction.id!,
   referenceNumber: (DbTransaction) => DbTransaction.bank_reference ?? 'Missing',
-  createdAt: () => null, // TODO: missing in DB
+  createdAt: (DbTransaction) => DbTransaction.event_date,
   effectiveDate: (DbTransaction) => DbTransaction.debit_date,
   direction: (DbTransaction) =>
     parseFloat(DbTransaction.event_amount!) > 0
@@ -220,9 +222,9 @@ export const resolvers: Resolvers = {
       );
       return records;
     },
-    transactions: () => [], // TODO: implement
+    transactions: (DbCharge) => [DbCharge],
     counterparty: (DbCharge) => DbCharge.financial_entity ?? '',
-    description: () => '', // TODO: implement
+    description: () => 'Missing', // TODO: implement
     tags: (DbCharge) =>
       DbCharge.personal_category ? [DbCharge.personal_category] : [],
     beneficiaries: async (DbCharge) => {
@@ -290,8 +292,17 @@ export const resolvers: Resolvers = {
           }
           return [];
       }
-    }, // TODO: implement
-    vat: (DbCharge) => formatFinancialAmount(DbCharge.vat),
+    },
+    vat: (DbCharge) =>
+      DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null,
+    withholdingTax: (DbCharge) =>
+      formatFinancialAmount(DbCharge.withholding_tax),
+    invoice: () => null, // TODO: implement
+    accountantApproval: (DbCharge) => ({
+      approved: DbCharge.reviewed ?? false,
+      remark: 'Missing', // TODO: missing in DB
+    }),
+    property: (DbCharge) => DbCharge.is_property,
   },
   LedgerRecord: {
     id: (DbLedgerRecord) => DbLedgerRecord.id,
@@ -303,10 +314,10 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.מטבע
       ),
     date: (DbLedgerRecord) => DbLedgerRecord.תאריך_חשבונית,
-    description: () => '', // TODO: missing in DB
+    description: () => 'Missing', // TODO: missing in DB
     accountantApproval: (DbLedgerRecord) => ({
       approved: DbLedgerRecord.reviewed ?? false,
-      remark: '', // TODO: missing in DB
+      remark: 'Missing', // TODO: missing in DB
     }),
     localCurrencyAmount: (DbLedgerRecord) =>
       formatFinancialAmount(DbLedgerRecord.סכום_חובה_1, null),
@@ -322,14 +333,18 @@ export const resolvers: Resolvers = {
     counterparty: (parent) => parent.name,
     percentage: (parent) => parent.percentage,
   },
-  WireTransaction: {
-    ...commonTransactionFields,
-  },
-  FeeTransaction: {
-    ...commonTransactionFields,
-  },
-  ConversionTransaction: {
-    __isTypeOf: (DbTransaction) => DbTransaction.is_conversion ?? false,
+  // WireTransaction: {
+  //   ...commonTransactionFields,
+  // },
+  // FeeTransaction: {
+  //   ...commonTransactionFields,
+  // },
+  // ConversionTransaction: {
+  //   // __isTypeOf: (DbTransaction) => DbTransaction.is_conversion ?? false,
+  //   ...commonTransactionFields,
+  // },
+  CommonTransaction: {
+    __isTypeOf: () => true,
     ...commonTransactionFields,
   },
 };

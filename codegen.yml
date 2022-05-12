@@ -18,6 +18,7 @@ generates:
         WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
     plugins:
       - "typescript"
