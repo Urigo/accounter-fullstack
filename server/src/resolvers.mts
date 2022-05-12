@@ -1,4 +1,5 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
+import currency from 'currency.js';
 import {
   getChargesByFinancialAccountIds,
   getChargesByFinancialEntityIds,
@@ -7,6 +8,7 @@ import { pool } from './providers/db.mjs';
 import { getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
+import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -64,6 +66,65 @@ export const resolvers: Resolvers = {
       const dbFe = await getFinancialEntitiesByIds.run({ ids: [id] }, pool);
       return dbFe[0];
     },
+    documents: async () => {
+      const dbDocs = await getEmailDocs.run(void 0, pool);
+      return dbDocs;
+    },
+  },
+  Invoice: {
+    __isTypeOf(DocumentRoot) {
+      return (
+        DocumentRoot.payper_document_type == 'חשבונית מס קבלה' ||
+        DocumentRoot.payper_document_type == 'חשבונית'
+      );
+    },
+    id: (DocumentRoot) => DocumentRoot.id,
+    image: (DocumentRoot) => DocumentRoot.image_url,
+    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
+    date: (DocumentRoot) => DocumentRoot.payper_document_date,
+    amount: (DocumentRoot) =>
+      formatFinancialAmount(
+        DocumentRoot.payper_total_for_payment,
+          DocumentRoot.payper_currency_symbol
+      ),
+    file: (DocumentRoot) =>
+      `https://mail.google.com/mail/u/0/#inbox/${DocumentRoot.email_id}`,
+      vat: (DocumentRoot) =>
+      formatFinancialAmount(
+        DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+      ),
+  },
+  Proforma: {
+    __isTypeOf(DocumentRoot) {
+      return DocumentRoot.payper_document_type == 'חשבון עסקה';
+    },
+    id: (DocumentRoot) => DocumentRoot.id,
+    image: (DocumentRoot) => DocumentRoot.image_url,
+    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
+    date: (DocumentRoot) => DocumentRoot.payper_document_date,
+    amount: (DocumentRoot) =>
+      formatFinancialAmount(
+        DocumentRoot.payper_total_for_payment,
+          DocumentRoot.payper_currency_symbol
+      ),
+    vat: (DocumentRoot) =>
+    formatFinancialAmount(
+      DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+    ),
+  },
+  Receipt: {
+    __isTypeOf(DocumentRoot) {
+      return DocumentRoot.payper_document_type == 'קבלה';
+    },
+    id: (DocumentRoot) => DocumentRoot.id,
+    image: (DocumentRoot) => DocumentRoot.image_url,
+    file: (DocumentRoot) => DocumentRoot.file_hash ?? '',
+    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
+    date: (DocumentRoot) => DocumentRoot.payper_document_date,
+    vat: (DocumentRoot) =>
+    formatFinancialAmount(
+      DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+    ),
   },
   LtdFinancialEntity: {
     __isTypeOf: () => true,
@@ -106,7 +167,10 @@ export const resolvers: Resolvers = {
   Charge: {
     id: (DbCharge) => DbCharge.id!,
     createdAt: () => null, // TODO: missing in DB
-    additionalDocument: () => [], // TODO: implement
+    additionalDocument: (DbCharge) => {
+      const docs = getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      return docs;
+    },
     ledgerRecords: async (DbCharge) => {
       const records = await getLedgerRecordsByChargeIds.run(
         { chargeIds: [DbCharge.id] },
