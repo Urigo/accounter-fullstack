@@ -21,11 +21,13 @@ import { ReceiptDate } from './cells/ReceiptDate';
 import { ReceiptImg } from './cells/ReceiptImg';
 import { ReceiptNumber } from './cells/ReceiptNumber';
 import { ReceiptUrl } from './cells/ReceiptUrl';
+import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 type Props = {
   transaction: TransactionType;
   columns: TransactionColumn[];
   index: number;
+  charge?: any;
 };
 
 const rowStyle = ({
@@ -38,7 +40,12 @@ const rowStyle = ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const TransactionRow: FC<Props> = ({ transaction, columns, index }) => {
+export const TransactionRow: FC<Props> = ({
+  transaction,
+  columns,
+  index,
+  charge,
+}) => {
   const [hover, setHover] = useState(false);
 
   return (
@@ -113,7 +120,15 @@ export const TransactionRow: FC<Props> = ({ transaction, columns, index }) => {
       </tr>
       <tr>
         <td colSpan={columns.length}>
-          here will be the sub-transaction thingy
+          {charge?.ledgerRecords ? (
+            charge.ledgerRecords.length > 0 ? (
+              <LedgerRecordsTable ledgerRecords={charge.ledgerRecords} />
+            ) : (
+              <p>No ledger records for this charge</p>
+            )
+          ) : (
+            <p>Weird. no matching charge found</p>
+          )}
         </td>
       </tr>
     </>
