@@ -1,7 +1,8 @@
 overwrite: true
-schema: "../**/*.graphql"
+schema: "./**/*.graphql"
+documents: "./client/src/**/*.tsx"
 generates:
-  src/__generated__/types.mts:
+  server/src/__generated__/types.mts:
     config:
       mappers:
         LtdFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
@@ -13,5 +14,14 @@ generates:
         NamedCounterparty: string
     plugins:
       - "typescript"
-      - "typescript-operations"
       - "typescript-resolvers"
+  client/src/__generated__/types.ts:
+    config:
+      fetcher:
+        func: '../hooks/useGraphql#useGraphql'
+        isReactHook: true
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-query"
+  
