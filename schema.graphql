@@ -105,6 +105,10 @@
     withoutDocuments: Boolean
     " Include only charges that doesn't have invoice document linked "
     withoutInvoice: Boolean
+    " Include only charges occured after this date "
+    fromDate: String
+    " Include only charges occured before this date "
+    toDate: String
   }
 
   " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "

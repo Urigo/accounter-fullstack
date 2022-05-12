@@ -3,11 +3,11 @@
       {
         "mode": "sql",
         "include": "**/*.sql",
-        "emitTemplate": "{{dir}}/{{name}}.queries.ts"
+        "emitTemplate": "src/__generated__/{{name}}.types.mts"
       },
       {
         "mode": "ts",
-        "include": "**/sqlQueries.mts",
+        "include": "**/providers/**/*.mts",
         "emitTemplate": "src/__generated__/{{name}}.types.mts"
       }
     ],
