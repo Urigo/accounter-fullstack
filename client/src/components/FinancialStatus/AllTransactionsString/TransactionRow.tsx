@@ -131,14 +131,13 @@ export const TransactionRow: FC<Props> = ({
       </tr>
       <tr>
         <td colSpan={columns.length}>
-          {charge?.ledgerRecords ? (
-            charge.ledgerRecords.length > 0 ? (
-              <LedgerRecordsTable ledgerRecords={charge.ledgerRecords} />
-            ) : (
+          {!charge && <p>No Data</p>}
+          {charge &&
+            (!charge.ledgerRecords || charge.ledgerRecords.length === 0) && (
               <p>No ledger records for this charge</p>
-            )
-          ) : (
-            <p>Weird. no matching charge found</p>
+            )}
+          {charge?.ledgerRecords && charge.ledgerRecords.length > 0 && (
+            <LedgerRecordsTable ledgerRecords={charge.ledgerRecords} />
           )}
         </td>
       </tr>
