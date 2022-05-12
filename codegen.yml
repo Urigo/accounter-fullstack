@@ -15,6 +15,10 @@ generates:
         Invoice: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Proforma: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Receipt: ./sqlQueries.types.mjs#IGetEmailDocsResult
+        WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
     plugins:
       - "typescript"
       - "typescript-resolvers"

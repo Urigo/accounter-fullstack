@@ -11,7 +11,8 @@ export const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccount
     FROM accounter_schema.all_transactions
     WHERE account_number IN $$financialAccountIds
     AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE));`;
+    AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY event_date DESC;`;
 
 export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT *
@@ -22,4 +23,5 @@ export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityId
       WHERE owner IN $$financialEntityIds
     )
     AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE));`;
+    AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY event_date DESC;`;

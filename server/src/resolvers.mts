@@ -12,9 +12,13 @@ import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
+  ConversionTransactionResolvers,
+  FeeTransactionResolvers,
   LtdFinancialEntityResolvers,
   PersonalFinancialEntityResolvers,
   Resolvers,
+  TransactionDirection,
+  WireTransactionResolvers,
 } from './__generated__/types.mjs';
 
 const commonFinancialEntityFields:
@@ -58,6 +62,44 @@ const commonFinancialAccountFields:
     );
     return charges;
   },
+};
+
+const commonTransactionFields:
+  | ConversionTransactionResolvers
+  | FeeTransactionResolvers
+  | WireTransactionResolvers = {
+  id: (DbTransaction) => DbTransaction.id!,
+  referenceNumber: (DbTransaction) => DbTransaction.bank_reference ?? 'Missing',
+  createdAt: () => null, // TODO: missing in DB
+  effectiveDate: (DbTransaction) => DbTransaction.debit_date,
+  direction: (DbTransaction) =>
+    parseFloat(DbTransaction.event_amount!) > 0
+      ? TransactionDirection.Credit
+      : TransactionDirection.Debit,
+  amount: (DbTransaction) => formatFinancialAmount(DbTransaction.event_amount),
+  description: (DbTransaction) =>
+    `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
+  userNote: (DbTransaction) => DbTransaction.user_description,
+  account: async (DbTransaction) => {
+    if (!DbTransaction.account_number) {
+      throw new Error(
+        `Transaction ID="${DbTransaction.id}" is missing account_number`
+      );
+    }
+    const accounts = await getFinancialAccountsByFeIds.run(
+      { financialEntityIds: [DbTransaction.account_number.toString()] },
+      pool
+    );
+    return accounts[0];
+  },
+  balance: (DbTransaction) =>
+    formatFinancialAmount(DbTransaction.current_balance),
+  accountantApproval: (DbTransaction) => ({
+    approved: DbTransaction.reviewed ?? false,
+    remark: 'Missing', // TODO: missing in DB
+  }),
+  hashavshevetId: (DbTransaction) =>
+    DbTransaction.hashavshevet_id?.toString() ?? '',
 };
 
 export const resolvers: Resolvers = {
@@ -179,11 +221,77 @@ export const resolvers: Resolvers = {
       return records;
     },
     transactions: () => [], // TODO: implement
-    counterparty: () => '', // TODO: implement
+    counterparty: (DbCharge) => DbCharge.financial_entity ?? '',
     description: () => '', // TODO: implement
     tags: (DbCharge) =>
       DbCharge.personal_category ? [DbCharge.personal_category] : [],
-    beneficiaries: () => [], // TODO: implement
+    beneficiaries: async (DbCharge) => {
+      switch (DbCharge.financial_accounts_to_balance) {
+        case 'no':
+          return [
+            {
+              name: 'Uri',
+              percentage: 50,
+            },
+            {
+              name: 'Dotan',
+              percentage: 50,
+            },
+          ];
+        case 'uri':
+          return [
+            {
+              name: 'Uri',
+              percentage: 100,
+            },
+          ];
+        case 'dotan':
+          return [
+            {
+              name: 'dotan',
+              percentage: 100,
+            },
+          ];
+        default:
+          {
+            // case Guild account
+            const guildAccounts = await getFinancialAccountsByFeIds.run(
+              { financialEntityIds: ['6a20aa69-57ff-446e-8d6a-1e96d095e988'] },
+              pool
+            );
+            const guildAccountsIds = guildAccounts.map((a) => a.account_number);
+            if (guildAccountsIds.includes(DbCharge.account_number!)) {
+              return [
+                {
+                  name: 'Uri',
+                  percentage: 50,
+                },
+                {
+                  name: 'Dotan',
+                  percentage: 50,
+                },
+              ];
+            }
+
+            // case UriLTD account
+            const uriAccounts = await getFinancialAccountsByFeIds.run(
+              { financialEntityIds: ['a1f66c23-cea3-48a8-9a4b-0b4a0422851a'] },
+              pool
+            );
+            const uriAccountsIds = uriAccounts.map((a) => a.account_number);
+            if (uriAccountsIds.includes(DbCharge.account_number!)) {
+              return [
+                {
+                  name: 'Uri',
+                  percentage: 100,
+                },
+              ];
+            }
+          }
+          return [];
+      }
+    }, // TODO: implement
+    vat: (DbCharge) => formatFinancialAmount(DbCharge.vat),
   },
   LedgerRecord: {
     id: (DbLedgerRecord) => DbLedgerRecord.id,
@@ -208,5 +316,15 @@ export const resolvers: Resolvers = {
   NamedCounterparty: {
     __isTypeOf: () => true,
     name: (parent) => parent,
+  },
+  BeneficiaryCounterparty: {
+    __isTypeOf: () => true,
+    counterparty: (parent) => parent.name,
+    percentage: (parent) => parent.percentage,
+  },
+  WireTransaction: {},
+  FeeTransaction: {},
+  ConversionTransaction: {
+    __isTypeOf: (DbTransaction) => DbTransaction.is_conversion ?? false,
   },
 };
