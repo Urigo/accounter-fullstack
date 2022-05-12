@@ -322,9 +322,14 @@ export const resolvers: Resolvers = {
     counterparty: (parent) => parent.name,
     percentage: (parent) => parent.percentage,
   },
-  WireTransaction: {},
-  FeeTransaction: {},
+  WireTransaction: {
+    ...commonTransactionFields,
+  },
+  FeeTransaction: {
+    ...commonTransactionFields,
+  },
   ConversionTransaction: {
     __isTypeOf: (DbTransaction) => DbTransaction.is_conversion ?? false,
+    ...commonTransactionFields,
   },
 };
