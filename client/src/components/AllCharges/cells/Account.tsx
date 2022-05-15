@@ -1,5 +1,5 @@
 import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../../models/types';
+import type { TransactionType } from '../../../models/types';
 
 type Props = {
   transaction: TransactionType;
