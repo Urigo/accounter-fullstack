@@ -1,5 +1,6 @@
 import gql from 'graphql-tag';
 import { CSSProperties, FC, useState } from 'react';
+import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
 import {
   ChargesFieldsFragment,
@@ -28,7 +29,7 @@ import {
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
-  fragment ChargesFields on FinancialEntity {
+  fragment chargesFields on FinancialEntity {
     ...vatFields
     charges {
       id
@@ -41,6 +42,20 @@ gql`
       ...shareWithFields
       ...bankDescriptionFields
       ...ledgerRecordsFields
+      ...suggestedCharge
+    }
+  }
+`;
+
+gql`
+  fragment suggestedCharge on Charge {
+    description
+    transactions {
+      __typename
+      amount {
+        raw
+      }
+      referenceNumber
     }
   }
 `;
