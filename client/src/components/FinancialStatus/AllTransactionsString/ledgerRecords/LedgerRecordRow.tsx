@@ -40,7 +40,7 @@ export const LedgerRecordRow: FC<Props> = ({ ledgerRecord }) => {
       <td>{ledgerRecord.localCurrencyAmount.formatted}</td>
       <td>{ledgerRecord.originalAmount.formatted}</td>
       <td>{ledgerRecord.date}</td>
-      <td>{ledgerRecord.accountantApproval.approved}</td>
+      <td>{ledgerRecord.accountantApproval.approved && "V"}</td>
       <td>{ledgerRecord.hashavshevetId}</td>
       <td>{ledgerRecord.description}</td>
     </tr>
