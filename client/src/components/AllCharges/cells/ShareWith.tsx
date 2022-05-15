@@ -1,40 +1,51 @@
 import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { ConfirmButton, UpdateButton } from '../../common';
-import { shareWithDotan, suggestedTransaction } from '../../../helpers';
+import gql from 'graphql-tag';
+import { ShareWithFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment shareWithFields on Charge {
+    beneficiaries {
+      counterparty {
+        name
+      }
+      percentage
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  beneficiaries: ShareWithFieldsFragment['beneficiaries'];
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({ transaction, style }) => {
-  const cellText =
-    transaction.financial_accounts_to_balance ??
-    suggestedTransaction(transaction)?.financialAccountsToBalance;
+export const ShareWith: FC<Props> = ({ beneficiaries, style }) => {
+  const cellData = beneficiaries; // ?? suggestedTransaction(transaction)?.financialAccountsToBalance;
 
   return (
     <td
-      style={{
-        ...(shareWithDotan(transaction)
-          ? { backgroundColor: 'rgb(236, 207, 57)' }
-          : {}),
-        ...style,
-      }}
+      // style={{
+      //   ...(shareWithDotan(transaction)
+      //     ? { backgroundColor: 'rgb(236, 207, 57)' }
+      //     : {}),
+      //   ...style,
+      // }}
     >
-      {cellText ?? 'undefined'}
-      {!transaction.financial_accounts_to_balance && (
+      {cellData.map(
+        (beneficiary) =>
+          `${beneficiary.counterparty.name}: ${beneficiary.percentage}`
+      )}
+      {/* {!transaction.financial_accounts_to_balance && (
         <ConfirmButton
           transaction={transaction}
           propertyName={'financial_accounts_to_balance'}
           value={cellText}
         />
-      )}
-      <UpdateButton
+      )} */}
+      {/* <UpdateButton
         transaction={transaction}
         propertyName={'financial_accounts_to_balance'}
         promptText="New Account to share:"
-      />
+      /> */}
     </td>
   );
 };

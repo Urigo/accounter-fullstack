@@ -1,7 +1,10 @@
 import gql from 'graphql-tag';
 import { CSSProperties, FC, useState } from 'react';
 import type { TransactionColumn } from '../../models/types';
-import { ChargesFieldsFragment } from '../../__generated__/types';
+import {
+  ChargesFieldsFragment,
+  VatFieldsFragment,
+} from '../../__generated__/types';
 import {
   Account,
   Amount,
@@ -15,18 +18,18 @@ import {
   InvoiceImg,
   InvoiceNumber,
   Links,
+  ReceiptDate,
+  ReceiptImg,
+  ReceiptNumber,
+  ReceiptUrl,
   ShareWith,
-  TaxCategory,
   Vat,
 } from './cells';
-import { ReceiptDate } from './cells/ReceiptDate';
-import { ReceiptImg } from './cells/ReceiptImg';
-import { ReceiptNumber } from './cells/ReceiptNumber';
-import { ReceiptUrl } from './cells/ReceiptUrl';
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
   fragment ChargesFields on FinancialEntity {
+    ...vatFields
     charges {
       id
       ...dateFields
@@ -34,6 +37,9 @@ gql`
       ...entityFields
       ...descriptionFields
       ...categoryFields
+      ...accountFields
+      ...shareWithFields
+      ...bankDescriptionFields
       ...ledgerRecordsFields
     }
   }
@@ -43,6 +49,8 @@ type Props = {
   columns: TransactionColumn[];
   index: number;
   charge: ChargesFieldsFragment['charges']['0'];
+  financialEntityType: VatFieldsFragment['__typename'];
+  financialEntityName?: string;
 };
 
 const rowStyle = ({
@@ -55,7 +63,13 @@ const rowStyle = ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow: FC<Props> = ({ columns, index, charge }) => {
+export const ChargeRow: FC<Props> = ({
+  columns,
+  index,
+  charge,
+  financialEntityType,
+  financialEntityName,
+}) => {
   const [hover, setHover] = useState(false);
 
   return (
@@ -91,18 +105,25 @@ export const ChargeRow: FC<Props> = ({ columns, index, charge }) => {
             case 'Category': {
               return <Category tags={charge.tags} />;
             }
-            // case 'VAT': {
-            //   return <Vat vat={charge.vat.formatted} />;
-            // }
-            // case 'Account': {
-            //   return <Account charge={charge} />;
-            // }
-            // case 'Share with': {
-            //   return <ShareWith charge={charge} />;
-            // }
-            // case 'Bank Description': {
-            //   return <BankDescription charge={charge} />;
-            // }
+            case 'VAT': {
+              return (
+                <Vat
+                  vat={charge.vat}
+                  financialEntityType={financialEntityType}
+                  financialEntityName={financialEntityName}
+                  amount={charge.transactions[0].amount.raw}
+                ></Vat>
+              );
+            }
+            case 'Account': {
+              return <Account account={charge.transactions[0].account} />;
+            }
+            case 'Share with': {
+              return <ShareWith beneficiaries={charge.beneficiaries} />;
+            }
+            case 'Bank Description': {
+              return <BankDescription description={charge.description} />;
+            }
             // case 'Invoice Img': {
             //   return <InvoiceImg charge={charge} />;
             // }

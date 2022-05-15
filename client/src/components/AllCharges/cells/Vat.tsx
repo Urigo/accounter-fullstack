@@ -1,32 +1,56 @@
 import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { ConfirmButton, UpdateButton } from '../../common';
 import {
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
-  isBusiness,
-  suggestedTransaction,
 } from '../../../helpers';
+import gql from 'graphql-tag';
+import { Currency, VatFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment vatFields on FinancialEntity {
+    __typename
+    ... on LtdFinancialEntity {
+      name
+    }
+    charges {
+      vat {
+        raw
+        formatted
+        currency
+      }
+      transactions {
+        amount {
+          raw
+        }
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  financialEntityType: VatFieldsFragment['__typename'];
+  financialEntityName?: string;
+  vat: VatFieldsFragment['charges'][0]['vat'];
+  amount?: VatFieldsFragment['charges'][0]['transactions'][0]['amount']['raw'];
   style?: CSSProperties;
 };
 
-export const Vat: FC<Props> = ({ transaction, style }) => {
+export const Vat: FC<Props> = ({
+  financialEntityType,
+  financialEntityName = '',
+  vat,
+  amount = 0,
+  style,
+}) => {
   const indicator =
-    (!transaction.vat &&
-      isBusiness(transaction) &&
-      transaction.currency_code === 'ILS' &&
-      !businessesWithoutVAT.includes(transaction.financial_entity || '') &&
-      !businessesWithoutTaxCategory.includes(
-        transaction.financial_entity ?? ''
-      )) ||
-    (transaction.vat &&
-      ((transaction.vat > 0 && Number(transaction.event_amount) < 0) ||
-        (transaction.vat < 0 && Number(transaction.event_amount) > 0)));
+    (!vat?.raw &&
+      financialEntityType === 'LtdFinancialEntity' &&
+      (!vat || vat.currency === Currency.Nis) &&
+      !businessesWithoutVAT.includes(financialEntityName) &&
+      !businessesWithoutTaxCategory.includes(financialEntityName)) ||
+    (vat?.raw && ((vat.raw > 0 && amount < 0) || (vat.raw < 0 && amount > 0)));
 
-  const cellText = transaction.vat ?? suggestedTransaction(transaction)?.vat;
+  const cellText = vat?.formatted; // ?? suggestedTransaction(transaction)?.vat;
 
   return (
     <td
@@ -36,18 +60,18 @@ export const Vat: FC<Props> = ({ transaction, style }) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {!transaction.vat && (
+      {/* {!transaction.vat && (
         <ConfirmButton
           transaction={transaction}
           propertyName={'vat'}
           value={cellText?.toString()}
         />
-      )}
-      <UpdateButton
+      )} */}
+      {/* <UpdateButton
         transaction={transaction}
         propertyName={'vat'}
         promptText="New VAT:"
-      />
+      /> */}
     </td>
   );
 };

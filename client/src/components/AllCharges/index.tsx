@@ -72,6 +72,12 @@ export const AllCharges: FC = () => {
             index={i}
             key={charge.id}
             charge={charge as ChargesFieldsFragment['charges']['0']}
+            financialEntityType={data!.financialEntity.__typename}
+            financialEntityName={
+              'name' in data!.financialEntity
+                ? data!.financialEntity.name
+                : undefined
+            }
           />
         ))}
       </tbody>

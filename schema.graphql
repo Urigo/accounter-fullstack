@@ -181,7 +181,7 @@
   # Business Trip Module
   extend type Charge {
     " should be later in busines trip module? "
-    businessTrip: BusinessTrip!
+    businessTrip: BusinessTrip
   }
 
   extend input ChargeFilter {

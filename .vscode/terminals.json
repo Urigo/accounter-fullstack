@@ -4,7 +4,6 @@
       {
         "name": "app:dev",
         "description": "Run App",
-        "focus": true,
         "open": true,
         "cwd": "client",
         "command": "nvm use 18.1.0 && yarn dev"
