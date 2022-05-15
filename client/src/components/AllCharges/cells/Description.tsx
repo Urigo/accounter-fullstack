@@ -1,5 +1,6 @@
 import { CSSProperties, FC } from 'react';
 import gql from 'graphql-tag';
+import type { SuggestedCharge } from '../../../helpers';
 
 gql`
   fragment descriptionFields on Charge {
@@ -11,12 +12,17 @@ gql`
 
 type Props = {
   description: string;
+  alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Description: FC<Props> = ({ description, style }) => {
-  const isDescription = !(description.trim() === '');
-  const cellText = description; // ?? suggestedTransaction(transaction)?.userDescription;
+export const Description: FC<Props> = ({
+  description,
+  alternativeCharge,
+  style,
+}) => {
+  const isDescription = !(description === '');
+  const cellText = description ?? alternativeCharge?.userDescription;
 
   return (
     <td

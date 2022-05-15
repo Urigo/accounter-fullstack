@@ -2,6 +2,7 @@ import { CSSProperties, FC } from 'react';
 import {
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
+  SuggestedCharge,
 } from '../../../helpers';
 import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
@@ -32,6 +33,7 @@ type Props = {
   financialEntityName?: string;
   vat: VatFieldsFragment['charges'][0]['vat'];
   amount?: VatFieldsFragment['charges'][0]['transactions'][0]['amount']['raw'];
+  alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
@@ -40,6 +42,7 @@ export const Vat: FC<Props> = ({
   financialEntityName = '',
   vat,
   amount = 0,
+  alternativeCharge,
   style,
 }) => {
   const indicator =
@@ -50,7 +53,7 @@ export const Vat: FC<Props> = ({
       !businessesWithoutTaxCategory.includes(financialEntityName)) ||
     (vat?.raw && ((vat.raw > 0 && amount < 0) || (vat.raw < 0 && amount > 0)));
 
-  const cellText = vat?.formatted; // ?? suggestedTransaction(transaction)?.vat;
+  const cellText = vat?.formatted ?? alternativeCharge?.vat?.formatted;
 
   return (
     <td

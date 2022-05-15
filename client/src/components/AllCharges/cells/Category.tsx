@@ -1,5 +1,6 @@
 import { CSSProperties, FC } from 'react';
 import gql from 'graphql-tag';
+import type { SuggestedCharge } from '../../../helpers';
 
 gql`
   fragment categoryFields on Charge {
@@ -9,12 +10,13 @@ gql`
 
 type Props = {
   tags: string[];
+  alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Category: FC<Props> = ({ tags, style }) => {
+export const Category: FC<Props> = ({ tags, alternativeCharge, style }) => {
   const isPersonalCategory = tags.length === 0;
-  const cellText = tags.join(', '); // ?? suggestedTransaction(transaction)?.personalCategory;
+  const cellText = tags.join(', ') ?? alternativeCharge?.personalCategory;
 
   return (
     <td

@@ -1,6 +1,7 @@
 import { CSSProperties, FC } from 'react';
 import gql from 'graphql-tag';
 import { ShareWithFieldsFragment } from '../../../__generated__/types';
+import type { SuggestedCharge } from '../../../helpers';
 
 gql`
   fragment shareWithFields on Charge {
@@ -15,30 +16,35 @@ gql`
 
 type Props = {
   beneficiaries: ShareWithFieldsFragment['beneficiaries'];
+  alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({ beneficiaries, style }) => {
-  const cellData = beneficiaries; // ?? suggestedTransaction(transaction)?.financialAccountsToBalance;
-
+export const ShareWith: FC<Props> = ({
+  beneficiaries,
+  alternativeCharge,
+  style,
+}) => {
   return (
     <td
-      // style={{
-      //   ...(shareWithDotan(transaction)
-      //     ? { backgroundColor: 'rgb(236, 207, 57)' }
-      //     : {}),
-      //   ...style,
-      // }}
+    // style={{
+    //   ...(shareWithDotan(transaction)
+    //     ? { backgroundColor: 'rgb(236, 207, 57)' }
+    //     : {}),
+    //   ...style,
+    // }}
     >
-      {cellData.map(
+      {beneficiaries.map(
         (beneficiary) =>
           `${beneficiary.counterparty.name}: ${beneficiary.percentage}`
       )}
+      {beneficiaries.length === 0 &&
+        alternativeCharge?.financialAccountsToBalance}
       {/* {!transaction.financial_accounts_to_balance && (
         <ConfirmButton
           transaction={transaction}
           propertyName={'financial_accounts_to_balance'}
-          value={cellText}
+          value={alternativeCharge?.financialAccountsToBalance}
         />
       )} */}
       {/* <UpdateButton
