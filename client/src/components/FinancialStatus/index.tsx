@@ -26,8 +26,9 @@ export const FinancialStatus: FC = () => {
   return (
     <>
       <h1>Accounter</h1>
-      <a href="/reports-to-review">Monthly report to review</a>
-      <a href="/private-charts">Private Charts</a>
+      <a href="/reports-to-review"> Monthly report to review</a>
+      <a href="/private-charts"> Private Charts</a>
+      <a href="/documents"> Documents</a>
       <ProfitTable />
       <br />
       <ThisMonthPrivateExpensesTable />
