@@ -31,6 +31,7 @@ import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 gql`
   fragment chargesFields on FinancialEntity {
     ...vatFields
+    ...shareWithFields
     charges {
       id
       ...dateFields
@@ -39,7 +40,6 @@ gql`
       ...descriptionFields
       ...categoryFields
       ...accountFields
-      ...shareWithFields
       ...bankDescriptionFields
       ...ledgerRecordsFields
       ...suggestedCharge
@@ -159,6 +159,8 @@ export const ChargeRow: FC<Props> = ({
               return (
                 <ShareWith
                   beneficiaries={charge.beneficiaries}
+                  financialEntityType={financialEntityType}
+                  financialEntityName={financialEntityName}
                   alternativeCharge={alternativeCharge}
                 />
               );
