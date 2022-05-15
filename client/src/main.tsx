@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AllCharges } from './components/AllCharges';
 import { AllUsers } from './components/AllUsers';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
@@ -20,6 +21,7 @@ root.render(
         <Routes>
           <Route path="/" element={<FinancialStatus />} />
           <Route path="/financial-status" element={<FinancialStatus />} />
+          <Route path="/all-charges" element={<AllCharges />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />
           <Route path="/reports-to-review" element={<ReportsToReview />} />
           <Route

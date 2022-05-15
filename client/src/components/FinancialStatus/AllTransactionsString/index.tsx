@@ -4,11 +4,11 @@ import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { TransactionRow } from './TransactionRow';
 import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
-import { useFinancialEntityQuery } from '../../../__generated__/types';
+import { useFinancialEntityOldQuery } from '../../../__generated__/types';
 import { businesses } from '../../../helpers';
 
 gql`
-  query FinancialEntity($financialEntityId: ID!) {
+  query FinancialEntityOld($financialEntityId: ID!) {
     financialEntity(id: $financialEntityId) {
       ...Charges
     }
@@ -27,7 +27,7 @@ export const AllTransactionsString: FC = () => {
       ? businesses['Uri Goldshtein LTD']
       : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
-  const { data } = useFinancialEntityQuery({
+  const { data } = useFinancialEntityOldQuery({
     financialEntityId,
   });
 

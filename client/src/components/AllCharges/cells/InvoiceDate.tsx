@@ -1,0 +1,31 @@
+import moment from 'moment';
+import { CSSProperties, FC } from 'react';
+import type { TransactionType } from '../../../models/types';
+import { UpdateButton } from '../../common';
+import { isBusiness } from '../../../helpers';
+
+type Props = {
+  transaction: TransactionType;
+  style?: CSSProperties;
+};
+
+export const InvoiceDate: FC<Props> = ({ transaction, style }) => {
+  const indicator = isBusiness(transaction) && !transaction.tax_invoice_date;
+
+  return (
+    <td
+      style={{
+        ...(indicator ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
+        ...style,
+      }}
+    >
+      {transaction.tax_invoice_date &&
+        moment(transaction.tax_invoice_date).format('DD/MM/YY')}
+      <UpdateButton
+        transaction={transaction}
+        propertyName={'tax_invoice_date'}
+        promptText="New Invoice Date:"
+      />
+    </td>
+  );
+};
