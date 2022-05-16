@@ -26,7 +26,7 @@ export const InvoiceNumber: FC<Props> = ({ transaction, style }) => {
       {transaction.tax_invoice_number ?? 'null'}
       <UpdateButton
         transaction={transaction}
-        propertyName={'tax_invoice_number'}
+        propertyName="tax_invoice_number"
         promptText="New Invoice Number:"
       />
     </td>

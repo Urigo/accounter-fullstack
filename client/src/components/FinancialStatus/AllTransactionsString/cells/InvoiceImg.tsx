@@ -26,7 +26,7 @@ export const InvoiceImg: FC<Props> = ({ transaction, style }) => {
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'proforma_invoice_file'}
+        propertyName="proforma_invoice_file"
         promptText="New Invoice Photo:"
       />
     </td>

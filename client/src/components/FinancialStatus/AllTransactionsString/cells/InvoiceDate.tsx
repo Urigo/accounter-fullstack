@@ -23,7 +23,7 @@ export const InvoiceDate: FC<Props> = ({ transaction, style }) => {
         moment(transaction.tax_invoice_date).format('DD/MM/YY')}
       <UpdateButton
         transaction={transaction}
-        propertyName={'tax_invoice_date'}
+        propertyName="tax_invoice_date"
         promptText="New Invoice Date:"
       />
     </td>

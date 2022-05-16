@@ -27,7 +27,7 @@ export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
       {transaction.receipt_number ?? 'null'}
       <UpdateButton
         transaction={transaction}
-        propertyName={'receipt_number'}
+        propertyName="receipt_number"
         promptText="New Receipt Number:"
       />
     </td>

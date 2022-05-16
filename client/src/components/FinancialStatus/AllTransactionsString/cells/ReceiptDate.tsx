@@ -23,7 +23,7 @@ export const ReceiptDate: FC<Props> = ({ transaction, style }) => {
         moment(transaction.receipt_date).format('DD/MM/YY')}
       <UpdateButton
         transaction={transaction}
-        propertyName={'receipt_date'}
+        propertyName="receipt_date"
         promptText="New Receipt Date:"
       />
     </td>
