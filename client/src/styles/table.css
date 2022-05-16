@@ -11,6 +11,7 @@ background-color: #4F7849;
 color: white;
 position: sticky;
 top: 0;
+z-index: 2;
 }
 td {
 text-align: center;

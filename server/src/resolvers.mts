@@ -113,60 +113,69 @@ export const resolvers: Resolvers = {
       const dbDocs = await getEmailDocs.run(void 0, pool);
       return dbDocs;
     },
+    
   },
   Invoice: {
-    __isTypeOf(DocumentRoot) {
+    __isTypeOf(documentRoot) {
       return (
-        DocumentRoot.payper_document_type == 'חשבונית מס קבלה' ||
-        DocumentRoot.payper_document_type == 'חשבונית'
+        documentRoot.payper_document_type == 'חשבונית מס קבלה' ||
+        documentRoot.payper_document_type == 'חשבונית'
       );
     },
-    id: (DocumentRoot) => DocumentRoot.id,
-    image: (DocumentRoot) => DocumentRoot.image_url,
-    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
-    date: (DocumentRoot) => DocumentRoot.payper_document_date,
-    amount: (DocumentRoot) =>
+    id: (documentRoot) => documentRoot.id,
+    image: (documentRoot) => documentRoot.image_url,
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    amount: (documentRoot) =>
       formatFinancialAmount(
-        DocumentRoot.payper_total_for_payment,
-          DocumentRoot.payper_currency_symbol
+        documentRoot.payper_total_for_payment,
+        documentRoot.payper_currency_symbol
       ),
-    file: (DocumentRoot) =>
-      `https://mail.google.com/mail/u/0/#inbox/${DocumentRoot.email_id}`,
-      vat: (DocumentRoot) =>
+    file: (documentRoot) =>
+      `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
+      vat: (documentRoot) =>
       formatFinancialAmount(
-        DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+        documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
       ),
   },
   Proforma: {
-    __isTypeOf(DocumentRoot) {
-      return DocumentRoot.payper_document_type == 'חשבון עסקה';
+    __isTypeOf(documentRoot) {
+      return documentRoot.payper_document_type == 'חשבונית מס';
     },
-    id: (DocumentRoot) => DocumentRoot.id,
-    image: (DocumentRoot) => DocumentRoot.image_url,
-    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
-    date: (DocumentRoot) => DocumentRoot.payper_document_date,
-    amount: (DocumentRoot) =>
+    id: (documentRoot) => documentRoot.id,
+    image: (documentRoot) => documentRoot.image_url,
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    amount: (documentRoot) =>
       formatFinancialAmount(
-        DocumentRoot.payper_total_for_payment,
-          DocumentRoot.payper_currency_symbol
+        documentRoot.payper_total_for_payment,
+        documentRoot.payper_currency_symbol
       ),
-    vat: (DocumentRoot) =>
+    vat: (documentRoot) =>
     formatFinancialAmount(
-      DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+      documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
     ),
   },
-  Receipt: {
-    __isTypeOf(DocumentRoot) {
-      return DocumentRoot.payper_document_type == 'קבלה';
+  Unprocessed: {
+    __isTypeOf(documentRoot) {
+      return documentRoot.payper_document_type == null;
     },
-    id: (DocumentRoot) => DocumentRoot.id,
-    image: (DocumentRoot) => DocumentRoot.image_url,
-    file: (DocumentRoot) => DocumentRoot.file_hash ?? '',
-    serialNumber: (DocumentRoot) => DocumentRoot.payper_document_id ?? '',
-    date: (DocumentRoot) => DocumentRoot.payper_document_date,
-    vat: (DocumentRoot) =>
+    id: (documentRoot) => documentRoot.id,
+    image: (documentRoot) => documentRoot.image_url,
+    file: (documentRoot) => documentRoot.file_hash ?? '',
+  },
+  Receipt: {
+    __isTypeOf(documentRoot) {
+      return documentRoot.payper_document_type == 'קבלה';
+    },
+    id: (documentRoot) => documentRoot.id,
+    image: (documentRoot) => documentRoot.image_url,
+    file: (documentRoot) => documentRoot.file_hash ?? '',
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    vat: (documentRoot) =>
     formatFinancialAmount(
-      DocumentRoot.payper_vat_paytment, DocumentRoot.payper_currency_symbol
+      documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
     ),
   },
   LtdFinancialEntity: {

@@ -8,6 +8,8 @@
     "generate": "cd ../ && yarn generate && cd client"
   },
   "dependencies": {
+    "@mantine/core": "4.2.4",
+    "@mantine/hooks": "4.2.4",
     "react": "18.0.0",
     "react-dom": "18.0.0",
     "react-query": "3.39.0",

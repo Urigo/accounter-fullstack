@@ -20,6 +20,7 @@ generates:
         ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
+        Unprocessed: ./sqlQueries.types.mjs#IGetEmailDocsResult
     plugins:
       - "typescript"
       - "typescript-resolvers"

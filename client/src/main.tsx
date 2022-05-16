@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AllCharges } from './components/AllCharges';
 import { AllUsers } from './components/AllUsers';
+import { DocumentsReport } from './components/docs';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
 import { ReportsToReview } from './components/ReportsToReview';
@@ -24,6 +25,7 @@ root.render(
           <Route path="/all-charges" element={<AllCharges />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />
           <Route path="/reports-to-review" element={<ReportsToReview />} />
+          <Route path="/documents" element={<DocumentsReport />} />
           <Route
             path="/private-charts"
             element={<TopPrivateNotCategorized />}
