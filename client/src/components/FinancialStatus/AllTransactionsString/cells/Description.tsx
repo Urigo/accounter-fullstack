@@ -25,13 +25,13 @@ export const Description: FC<Props> = ({ transaction, style }) => {
       {!transaction.user_description && (
         <ConfirmButton
           transaction={transaction}
-          propertyName={'user_description'}
+          propertyName="user_description"
           value={cellText}
         />
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'user_description'}
+        propertyName="user_description"
         promptText="New user description:"
       />
     </td>

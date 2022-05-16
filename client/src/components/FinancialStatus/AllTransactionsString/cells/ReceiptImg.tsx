@@ -28,7 +28,7 @@ export const ReceiptImg: FC<Props> = ({ transaction, style }) => {
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'receipt_image'}
+        propertyName="receipt_image"
         promptText="New Receipt Photo:"
       />
     </td>

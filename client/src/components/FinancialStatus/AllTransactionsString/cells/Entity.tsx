@@ -25,13 +25,13 @@ export const Entity: FC<Props> = ({ transaction, style }) => {
       {!transaction.financial_entity && (
         <ConfirmButton
           transaction={transaction}
-          propertyName={'financial_entity'}
+          propertyName="financial_entity"
           value={cellText}
         />
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'financial_entity'}
+        propertyName="financial_entity"
         promptText="New financial entity:"
       />
     </td>

@@ -14,7 +14,7 @@ export const Links: FC<Props> = ({ transaction, style }) => {
       {transaction.links && 'yes'}
       <UpdateButton
         transaction={transaction}
-        propertyName={'links'}
+        propertyName="links"
         promptText="New links:"
       />
       <button type="button" onClick={() => writeToClipboard(transaction.links)}>

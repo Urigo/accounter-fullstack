@@ -28,7 +28,7 @@ export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'receipt_url'}
+        propertyName="receipt_url"
         promptText="New Receipt url:"
       />
     </td>

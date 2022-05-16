@@ -26,13 +26,13 @@ export const ShareWith: FC<Props> = ({ transaction, style }) => {
       {!transaction.financial_accounts_to_balance && (
         <ConfirmButton
           transaction={transaction}
-          propertyName={'financial_accounts_to_balance'}
+          propertyName="financial_accounts_to_balance"
           value={cellText}
         />
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'financial_accounts_to_balance'}
+        propertyName="financial_accounts_to_balance"
         promptText="New Account to share:"
       />
     </td>

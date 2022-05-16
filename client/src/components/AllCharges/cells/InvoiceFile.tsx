@@ -25,7 +25,7 @@ export const InvoiceFile: FC<Props> = ({ transaction, style }) => {
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'tax_invoice_file'}
+        propertyName="tax_invoice_file"
         promptText="New Invoice path:"
       />
     </td>

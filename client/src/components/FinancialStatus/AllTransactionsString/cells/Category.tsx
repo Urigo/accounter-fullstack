@@ -25,13 +25,13 @@ export const Category: FC<Props> = ({ transaction, style }) => {
       {!transaction.personal_category && (
         <ConfirmButton
           transaction={transaction}
-          propertyName={'personal_category'}
+          propertyName="personal_category"
           value={cellText}
         />
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'personal_category'}
+        propertyName="personal_category"
         promptText="New personal category:"
       />
     </td>

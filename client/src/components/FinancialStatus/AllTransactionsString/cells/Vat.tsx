@@ -39,13 +39,13 @@ export const Vat: FC<Props> = ({ transaction, style }) => {
       {!transaction.vat && (
         <ConfirmButton
           transaction={transaction}
-          propertyName={'vat'}
+          propertyName="vat"
           value={cellText?.toString()}
         />
       )}
       <UpdateButton
         transaction={transaction}
-        propertyName={'vat'}
+        propertyName="vat"
         promptText="New VAT:"
       />
     </td>
