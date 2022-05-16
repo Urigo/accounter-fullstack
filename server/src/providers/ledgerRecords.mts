@@ -1,7 +1,7 @@
 import pgQuery from '@pgtyped/query';
 import {
   IGetLedgerRecordsByChargeIdsQuery,
-  IGetLedgerRecordsByFinancialAccountIdsQuery,
+  IGetLedgerRecordsByFinancialAccountNumbersQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
 } from '../__generated__/ledgerRecords.types.mjs';
 
@@ -12,13 +12,13 @@ export const getLedgerRecordsByChargeIds = sql<IGetLedgerRecordsByChargeIdsQuery
     FROM accounter_schema.ledger
     WHERE original_id IN $$chargeIds;`;
 
-export const getLedgerRecordsByFinancialAccountIds = sql<IGetLedgerRecordsByFinancialAccountIdsQuery>`
+export const getLedgerRecordsByFinancialAccountNumbers = sql<IGetLedgerRecordsByFinancialAccountNumbersQuery>`
     SELECT *
     FROM accounter_schema.ledger
     WHERE original_id IN (
         SELECT id
         FROM accounter_schema.all_transactions
-        WHERE account_number IN $$financialAccountIds
+        WHERE account_number IN $$financialAccountNumbers
     );`;
 
 export const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`

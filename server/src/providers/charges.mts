@@ -1,15 +1,15 @@
 import pgQuery from '@pgtyped/query';
 import {
-  IGetChargesByFinancialAccountIdsQuery,
+  IGetChargesByFinancialAccountNumbersQuery,
   IGetChargesByFinancialEntityIdsQuery,
 } from '../__generated__/charges.types.mjs';
 
 const { sql } = pgQuery;
 
-export const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuery>`
+export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
     SELECT *
     FROM accounter_schema.all_transactions
-    WHERE account_number IN $$financialAccountIds
+    WHERE account_number IN $$financialAccountNumbers
     AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY event_date DESC;`;
