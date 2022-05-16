@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import { CSSProperties, FC, useState } from 'react';
+import { CSSProperties, useState } from 'react';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
 import {
@@ -40,13 +40,14 @@ gql`
 
 gql`
   fragment suggestedCharge on Charge {
-    description
     transactions {
       __typename
       amount {
         raw
       }
+      userNote
       referenceNumber
+      description
     }
   }
 `;
@@ -69,17 +70,17 @@ const rowStyle = ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow: FC<Props> = ({
+export const ChargeRow = ({
   columns,
   index,
   charge,
   financialEntityType,
   financialEntityName,
-}) => {
+}: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
     !charge.counterparty.name ||
-    !charge.transactions[0].description.trim() ||
+    !charge.transactions[0].userNote?.trim() ||
     charge.tags.length === 0 ||
     !charge.vat ||
     charge.beneficiaries.length === 0
@@ -119,7 +120,7 @@ export const ChargeRow: FC<Props> = ({
             case 'Description': {
               return (
                 <Description
-                  description={charge.transactions[0].description.trim()}
+                  userNote={charge.transactions[0].userNote?.trim()}
                   alternativeCharge={alternativeCharge}
                 />
               );
@@ -157,7 +158,11 @@ export const ChargeRow: FC<Props> = ({
               );
             }
             case 'Bank Description': {
-              return <BankDescription description={charge.description} />;
+              return (
+                <BankDescription
+                  description={charge.transactions[0].description}
+                />
+              );
             }
             // case 'Invoice Img': {
             //   return <InvoiceImg charge={charge} />;
@@ -186,8 +191,10 @@ export const ChargeRow: FC<Props> = ({
             // case 'Links': {
             //   return <Links charge={charge} />;
             // }
+            default: {
+              return <td>missing impl</td>;
+            }
           }
-          return <td>missing impl</td>;
         })}
       </tr>
       <tr>

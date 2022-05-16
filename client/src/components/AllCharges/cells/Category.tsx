@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
 import type { SuggestedCharge } from '../../../helpers';
 
@@ -14,8 +14,8 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Category: FC<Props> = ({ tags, alternativeCharge, style }) => {
-  const isPersonalCategory = tags.length === 0;
+export const Category = ({ tags, alternativeCharge, style }: Props) => {
+  const isPersonalCategory = tags.length > 0;
   const cellText = tags.join(', ') ?? alternativeCharge?.personalCategory;
 
   return (
