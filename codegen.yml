@@ -9,16 +9,16 @@ generates:
         PersonalFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
         BankFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
         CardFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
-        Charge: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
-        LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByFinancialAccountIdsResult
+        Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByFinancialAccountNumbersResult
         NamedCounterparty: string
         Invoice: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Proforma: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Receipt: ./sqlQueries.types.mjs#IGetEmailDocsResult
-        WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
-        FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
-        ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
-        CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountIdsResult
+        WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./sqlQueries.types.mjs#IGetEmailDocsResult
     plugins:

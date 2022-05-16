@@ -1,10 +1,13 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
 import {
-  getChargesByFinancialAccountIds,
+  getChargesByFinancialAccountNumbers,
   getChargesByFinancialEntityIds,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import { getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
+import {
+  getFinancialAccountsByAccountNumbers,
+  getFinancialAccountsByFeIds,
+} from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
 import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
@@ -50,11 +53,11 @@ const commonFinancialEntityFields:
 const commonFinancialAccountFields:
   | CardFinancialAccountResolvers
   | BankFinancialAccountResolvers = {
-  id: (DbAccount) => DbAccount.account_number.toString(),
+  id: (DbAccount) => DbAccount.id,
   charges: async (DbAccount, { filter }) => {
-    const charges = await getChargesByFinancialAccountIds.run(
+    const charges = await getChargesByFinancialAccountNumbers.run(
       {
-        financialAccountIds: [DbAccount.account_number],
+        financialAccountNumbers: [DbAccount.account_number],
         fromDate: filter?.fromDate,
         toDate: filter?.toDate,
       },
@@ -82,13 +85,14 @@ const commonTransactionFields:
     `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
   userNote: (DbTransaction) => DbTransaction.user_description,
   account: async (DbTransaction) => {
+    // TODO: enhance logic to be based on ID instead of account_number
     if (!DbTransaction.account_number) {
       throw new Error(
         `Transaction ID="${DbTransaction.id}" is missing account_number`
       );
     }
-    const accounts = await getFinancialAccountsByFeIds.run(
-      { financialEntityIds: [DbTransaction.account_number.toString()] },
+    const accounts = await getFinancialAccountsByAccountNumbers.run(
+      { accountNumbers: [DbTransaction.account_number] },
       pool
     );
     return accounts[0];
@@ -113,7 +117,6 @@ export const resolvers: Resolvers = {
       const dbDocs = await getEmailDocs.run(void 0, pool);
       return dbDocs;
     },
-    
   },
   Invoice: {
     __isTypeOf(documentRoot) {
@@ -133,9 +136,10 @@ export const resolvers: Resolvers = {
       ),
     file: (documentRoot) =>
       `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
-      vat: (documentRoot) =>
+    vat: (documentRoot) =>
       formatFinancialAmount(
-        documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
+        documentRoot.payper_vat_paytment,
+        documentRoot.payper_currency_symbol
       ),
   },
   Proforma: {
@@ -152,9 +156,10 @@ export const resolvers: Resolvers = {
         documentRoot.payper_currency_symbol
       ),
     vat: (documentRoot) =>
-    formatFinancialAmount(
-      documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
-    ),
+      formatFinancialAmount(
+        documentRoot.payper_vat_paytment,
+        documentRoot.payper_currency_symbol
+      ),
   },
   Unprocessed: {
     __isTypeOf(documentRoot) {
@@ -174,9 +179,10 @@ export const resolvers: Resolvers = {
     serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
     date: (documentRoot) => documentRoot.payper_document_date,
     vat: (documentRoot) =>
-    formatFinancialAmount(
-      documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol
-    ),
+      formatFinancialAmount(
+        documentRoot.payper_vat_paytment,
+        documentRoot.payper_currency_symbol
+      ),
   },
   LtdFinancialEntity: {
     __isTypeOf: () => true,
@@ -269,8 +275,10 @@ export const resolvers: Resolvers = {
               { financialEntityIds: ['6a20aa69-57ff-446e-8d6a-1e96d095e988'] },
               pool
             );
-            const guildAccountsIds = guildAccounts.map((a) => a.account_number);
-            if (guildAccountsIds.includes(DbCharge.account_number!)) {
+            const guildAccountsNumbers = guildAccounts.map(
+              (a) => a.account_number
+            );
+            if (guildAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
                 {
                   name: 'Uri',
@@ -288,8 +296,8 @@ export const resolvers: Resolvers = {
               { financialEntityIds: ['a1f66c23-cea3-48a8-9a4b-0b4a0422851a'] },
               pool
             );
-            const uriAccountsIds = uriAccounts.map((a) => a.account_number);
-            if (uriAccountsIds.includes(DbCharge.account_number!)) {
+            const uriAccountsNumbers = uriAccounts.map((a) => a.account_number);
+            if (uriAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
                 {
                   name: 'Uri',
