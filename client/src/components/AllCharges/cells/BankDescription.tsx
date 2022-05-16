@@ -1,5 +1,4 @@
 import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
 import gql from 'graphql-tag';
 import { BankDescriptionFieldsFragment } from '../../../__generated__/types';
 

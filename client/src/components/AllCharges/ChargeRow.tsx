@@ -1,5 +1,6 @@
 import gql from 'graphql-tag';
 import { CSSProperties, FC, useState } from 'react';
+import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
 import {
   ChargesFieldsFragment,
@@ -28,8 +29,9 @@ import {
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
-  fragment ChargesFields on FinancialEntity {
+  fragment chargesFields on FinancialEntity {
     ...vatFields
+    ...shareWithFields
     charges {
       id
       ...dateFields
@@ -38,9 +40,22 @@ gql`
       ...descriptionFields
       ...categoryFields
       ...accountFields
-      ...shareWithFields
       ...bankDescriptionFields
       ...ledgerRecordsFields
+      ...suggestedCharge
+    }
+  }
+`;
+
+gql`
+  fragment suggestedCharge on Charge {
+    description
+    transactions {
+      __typename
+      amount {
+        raw
+      }
+      referenceNumber
     }
   }
 `;
@@ -71,6 +86,14 @@ export const ChargeRow: FC<Props> = ({
   financialEntityName,
 }) => {
   const [hover, setHover] = useState(false);
+  const alternativeCharge =
+    !charge.counterparty.name ||
+    !charge.transactions[0].description.trim() ||
+    charge.tags.length === 0 ||
+    !charge.vat ||
+    charge.beneficiaries.length === 0
+      ? suggestedCharge(charge)
+      : undefined;
 
   return (
     <>
@@ -95,15 +118,28 @@ export const ChargeRow: FC<Props> = ({
               );
             }
             case 'Entity': {
-              return <Entity name={charge.counterparty.name} />;
+              return (
+                <Entity
+                  name={charge.counterparty.name}
+                  alternativeCharge={alternativeCharge}
+                />
+              );
             }
             case 'Description': {
               return (
-                <Description description={charge.transactions[0].description} />
+                <Description
+                  description={charge.transactions[0].description.trim()}
+                  alternativeCharge={alternativeCharge}
+                />
               );
             }
             case 'Category': {
-              return <Category tags={charge.tags} />;
+              return (
+                <Category
+                  tags={charge.tags}
+                  alternativeCharge={alternativeCharge}
+                />
+              );
             }
             case 'VAT': {
               return (
@@ -112,6 +148,7 @@ export const ChargeRow: FC<Props> = ({
                   financialEntityType={financialEntityType}
                   financialEntityName={financialEntityName}
                   amount={charge.transactions[0].amount.raw}
+                  alternativeCharge={alternativeCharge}
                 ></Vat>
               );
             }
@@ -119,7 +156,14 @@ export const ChargeRow: FC<Props> = ({
               return <Account account={charge.transactions[0].account} />;
             }
             case 'Share with': {
-              return <ShareWith beneficiaries={charge.beneficiaries} />;
+              return (
+                <ShareWith
+                  beneficiaries={charge.beneficiaries}
+                  financialEntityType={financialEntityType}
+                  financialEntityName={financialEntityName}
+                  alternativeCharge={alternativeCharge}
+                />
+              );
             }
             case 'Bank Description': {
               return <BankDescription description={charge.description} />;
