@@ -239,7 +239,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   console.timeEnd('callingDB');
 
-  var formatter = new Intl.NumberFormat('en-US', {
+  const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
   });
