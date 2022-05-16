@@ -9,12 +9,12 @@ export function getILSForDate(
   },
   date: any
 ) {
-  let amounts: any = {};
-  let amountToUse = transaction.tax_invoice_amount
+  const amounts: any = {};
+  const amountToUse = transaction.tax_invoice_amount
     ? transaction.tax_invoice_amount
     : transaction.event_amount;
   if (['USD', 'EUR', 'GBP'].includes(transaction.currency_code)) {
-    let currencyKey = transaction.currency_code.toLowerCase();
+    const currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
     amounts.vatAfterDiductionILS =
       transaction.vatAfterDiduction * date?.rows[0][currencyKey];

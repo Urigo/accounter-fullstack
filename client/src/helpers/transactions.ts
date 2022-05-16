@@ -7,7 +7,7 @@ import {
 } from './groups';
 
 export function suggestedTransaction(transaction: any) {
-  let suggestedTransaction: any = {};
+  const suggestedTransaction: any = {};
   if (transaction.detailed_bank_description == 'SLACK TAYJ1FSUA/DUBLIN') {
     suggestedTransaction.financialEntity = 'Slack';
     suggestedTransaction.userDescription = 'Slack';

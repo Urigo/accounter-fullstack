@@ -66,7 +66,7 @@ export function changeConfirmation(
 
 export function setSelected(elementToSelect: HTMLElement) {
   if (document.getElementsByClassName('selected').length) {
-    let currentSelectedElement = document.getElementsByClassName('selected')[0];
+    const currentSelectedElement = document.getElementsByClassName('selected')[0];
     currentSelectedElement.classList.remove('selected');
   }
   elementToSelect?.classList.add('selected');

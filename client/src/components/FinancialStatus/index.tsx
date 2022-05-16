@@ -12,7 +12,7 @@ import { VatTransactionsString } from './VatTransactionsString';
 import '../../styles/table.css';
 
 export const FinancialStatus: FC = () => {
-  let [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const month = searchParams.get('month');
   const year = searchParams.get('year');

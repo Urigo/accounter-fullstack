@@ -47,7 +47,7 @@ const ENTITIES_WITHOUT_ACCOUNTING = [
 ];
 
 async function getHashFinancialAccounts(transaction: any) {
-  let hashFinancialAccountsResult: any = await pool.query(`
+  const hashFinancialAccountsResult: any = await pool.query(`
       select hashavshevet_account_ils,
              hashavshevet_account_usd,
              hashavshevet_account_eur
@@ -93,70 +93,70 @@ async function getHashBusinessIndexes(transaction: any, owner: any) {
 }
 
 async function getVATIndexes(owner: any) {
-  let hashVATInputsIndexResult: any = await pool.query(`
+  const hashVATInputsIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_inputs';
     `);
-  let hashVATPropertyInputsIndexResult: any = await pool.query(`
+  const hashVATPropertyInputsIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Property_Inputs';
     `);
-  let hashVATOutputsIndexResult: any = await pool.query(`
+  const hashVATOutputsIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_outputs';
     `);
-  let hashVATIncomesMovementTypeIndexResult: any = await pool.query(`
+  const hashVATIncomesMovementTypeIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Incomes_Movement_Type';
     `);
-  let hashVATFreeIncomesMovementTypeIndexResult: any = await pool.query(`
+  const hashVATFreeIncomesMovementTypeIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Free_Incomes_Movement_Type';
     `);
-  let hashVATExpensesMovementTypeIndexResult: any = await pool.query(`
+  const hashVATExpensesMovementTypeIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Expenses_Movement_Type';
     `);
-  let hashVATPropertyExpensesMovementTypeIndexResult: any = await pool.query(`
+  const hashVATPropertyExpensesMovementTypeIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Property_Expenses_Movement_Type';
     `);
-  let hashVATIncomesIndexResult: any = await pool.query(`
+  const hashVATIncomesIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Incomes';
     `);
-  let hashVATFreeIncomesIndexResult: any = await pool.query(`
+  const hashVATFreeIncomesIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
         hash_owner = $$${owner}$$ and
         gov_entity = 'VAT_Free_Incomes';
     `);
-  let hashCurrencyRatesDifferencesIndexResult: any = await pool.query(`
+  const hashCurrencyRatesDifferencesIndexResult: any = await pool.query(`
       select hash_index
       from accounter_schema.hash_gov_indexes
       where
@@ -184,7 +184,7 @@ async function getVATIndexes(owner: any) {
 }
 
 function addTrueVATtoTransaction(transaction: any) {
-  let amountToUse = transaction.tax_invoice_amount
+  const amountToUse = transaction.tax_invoice_amount
     ? transaction.tax_invoice_amount
     : transaction.event_amount;
   transaction.vatAfterDiduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
@@ -218,11 +218,11 @@ async function getExchangeRates(currencyCode: any, date: Date) {
 }
 
 async function getTransactionExchangeRates(transaction: any) {
-  let debitExchangeRates = await getExchangeRates(
+  const debitExchangeRates = await getExchangeRates(
     transaction.currency_code,
     transaction.debit_date
   );
-  let invoiceExchangeRates = await getExchangeRates(
+  const invoiceExchangeRates = await getExchangeRates(
     transaction.currency_code,
     transaction.tax_invoice_date
   );
@@ -233,12 +233,12 @@ async function getTransactionExchangeRates(transaction: any) {
 }
 
 function getILSForDate(transaction: any, date: any) {
-  let amounts: any = {};
-  let amountToUse = transaction.tax_invoice_amount
+  const amounts: any = {};
+  const amountToUse = transaction.tax_invoice_amount
     ? transaction.tax_invoice_amount
     : transaction.event_amount;
   if (['USD', 'EUR', 'GBP'].includes(transaction.currency_code)) {
-    let currencyKey = transaction.currency_code.toLowerCase();
+    const currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
     amounts.vatAfterDiductionILS =
       transaction.vatAfterDiduction * date?.rows[0][currencyKey];
@@ -386,12 +386,12 @@ function hashAccounts(
 }
 
 function hashNumber(number: any): string | null {
-  let formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(2);
+  const formattedNumber = Math.abs(Number.parseFloat(number)).toFixed(2);
   return formattedNumber == '0.00' ? null : formattedNumber;
 }
 
 function hashNumberNoAbs(number: any): string | null {
-  let formattedNumber = Number.parseFloat(number).toFixed(2);
+  const formattedNumber = Number.parseFloat(number).toFixed(2);
   return formattedNumber == '0.00' ? null : formattedNumber;
 }
 
@@ -412,21 +412,21 @@ export const generateTaxMovement = async (transactionId: string) => {
 `);
   transaction = transaction.rows[0]; // Why numeric values are text?
 
-  let ownerResult: any = await pool.query(`
+  const ownerResult: any = await pool.query(`
   SELECT owner
   FROM accounter_schema.financial_accounts
   WHERE
       account_number = $$${transaction.account_number}$$
 `);
-  let owner = ownerResult.rows[0].owner;
+  const owner = ownerResult.rows[0].owner;
 
-  let financialAccounts = await getHashFinancialAccounts(transaction);
-  let hashBusinessIndexes = await getHashBusinessIndexes(transaction, owner);
-  let hashVATIndexes = await getVATIndexes(owner);
+  const financialAccounts = await getHashFinancialAccounts(transaction);
+  const hashBusinessIndexes = await getHashBusinessIndexes(transaction, owner);
+  const hashVATIndexes = await getVATIndexes(owner);
 
   let isracardHashIndexes;
   if (transaction.financial_entity == 'Isracard') {
-    let hashCreditcardIndexResult: any = await pool.query(`
+    const hashCreditcardIndexResult: any = await pool.query(`
     select hashavshevet_account_ils,
           hashavshevet_account_usd,
           hashavshevet_account_eur
@@ -456,8 +456,8 @@ export const generateTaxMovement = async (transactionId: string) => {
     }
   }
 
-  let entryForFinancialAccount: any = {};
-  let entryForAccounting: any = {};
+  const entryForFinancialAccount: any = {};
+  const entryForAccounting: any = {};
   // credit זכות
   // debit חובה
 
@@ -473,7 +473,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     ? hashBusinessIndexes?.auto_tax_category
     : transaction.tax_category;
 
-  let originalTransaction = { ...transaction };
+  const originalTransaction = { ...transaction };
 
   if (
     transaction.currency_code != 'ILS' &&
@@ -503,11 +503,11 @@ export const generateTaxMovement = async (transactionId: string) => {
 
   addTrueVATtoTransaction(transaction); // parseFloat
 
-  let transactionsExchnageRates = await getTransactionExchangeRates(
+  const transactionsExchnageRates = await getTransactionExchangeRates(
     transaction
   );
-  let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
-  let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+  const debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
+  const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
 
   //////  invoice date
 
@@ -638,7 +638,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     }
   }
 
-  let entryForAccountingValues = [
+  const entryForAccountingValues = [
     hashDateFormat(
       !ENTITIES_WITHOUT_INVOICE_DATE.includes(transaction.financial_entity) &&
         !TAX_CATEGORIES_WITHOUT_INVOICE_DATE.includes(transaction.tax_category)
@@ -728,7 +728,7 @@ export const generateTaxMovement = async (transactionId: string) => {
   let foreignBalance = null;
   let currency = hashCurrencyType(transaction.currency_code);
   if (transaction.financial_entity == 'Isracard') {
-    let originalInvoicedAmountAndCurrency: any = await pool.query(`
+    const originalInvoicedAmountAndCurrency: any = await pool.query(`
     select tax_invoice_amount, tax_invoice_currency
     from accounter_schema.all_transactions
     where
@@ -751,7 +751,7 @@ export const generateTaxMovement = async (transactionId: string) => {
       );
     }
   }
-  let entryForFinancialAccountValues = [
+  const entryForFinancialAccountValues = [
     hashDateFormat(transaction.event_date),
     hashAccounts(
       entryForFinancialAccount.debitAccount,
@@ -810,7 +810,7 @@ export const generateTaxMovement = async (transactionId: string) => {
   ];
 
   if (transaction.is_conversion) {
-    let conversionOtherSide: any = await pool.query(`
+    const conversionOtherSide: any = await pool.query(`
     select event_amount, currency_code
     from accounter_schema.all_transactions
     where
@@ -865,13 +865,13 @@ export const generateTaxMovement = async (transactionId: string) => {
     }
   }
 
-  let queryConfig = {
+  const queryConfig = {
     text: INSERT_MOVEMENT_QUERY,
     values: entryForAccountingValues,
   };
   if (!ENTITIES_WITHOUT_ACCOUNTING.includes(transaction.financial_entity)) {
     try {
-      let updateResult = await pool.query(queryConfig);
+      const updateResult = await pool.query(queryConfig);
       console.log(JSON.stringify(updateResult.rows[0]));
     } catch (error) {
       // TODO: Log important checks
@@ -882,7 +882,7 @@ export const generateTaxMovement = async (transactionId: string) => {
   queryConfig.values = entryForFinancialAccountValues;
 
   try {
-    let updateResult = await pool.query(queryConfig);
+    const updateResult = await pool.query(queryConfig);
     console.log(JSON.stringify(updateResult));
   } catch (error) {
     // TODO: Log important checks
@@ -914,7 +914,7 @@ export const generateTaxMovement = async (transactionId: string) => {
         transaction.bank_description
       );
     }
-    let entryForExchangeRatesDifferenceValues = [
+    const entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.event_date),
       hashVATIndexes.hashCurrencyRatesDifferencesIndex,
       hashNumber(
@@ -961,7 +961,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     queryConfig.values = entryForExchangeRatesDifferenceValues;
 
     try {
-      let updateResult = await pool.query(queryConfig);
+      const updateResult = await pool.query(queryConfig);
       console.log(JSON.stringify(updateResult));
     } catch (error) {
       // TODO: Log important checks
@@ -998,7 +998,7 @@ export const generateTaxMovement = async (transactionId: string) => {
         transaction.bank_description
       );
     }
-    let amount = hashNumberNoAbs(
+    const amount = hashNumberNoAbs(
       numberRounded(
         getILSForDate(transaction, debitExchangeRates).eventAmountILS
       ) -
@@ -1006,7 +1006,7 @@ export const generateTaxMovement = async (transactionId: string) => {
           getILSForDate(transaction, invoiceExchangeRates).eventAmountILS
         )
     );
-    let entryForExchangeRatesDifferenceValues = [
+    const entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.tax_invoice_date),
       credit,
       amount,
@@ -1047,7 +1047,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     queryConfig.values = entryForExchangeRatesDifferenceValues;
 
     try {
-      let updateResult = await pool.query(queryConfig);
+      const updateResult = await pool.query(queryConfig);
       console.log(JSON.stringify(updateResult));
     } catch (error) {
       // TODO: Log important checks

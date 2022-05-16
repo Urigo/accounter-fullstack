@@ -43,7 +43,7 @@ async function main() {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
       const query = url_parts.query;
-      let responseHTML = await financialStatus(query);
+      const responseHTML = await financialStatus(query);
       response.end(responseHTML);
     } else if (
       request.url == '/monthly-report' ||
@@ -53,7 +53,7 @@ async function main() {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
       const query = url_parts.query;
-      let responseHTML = await monthlyReport(query);
+      const responseHTML = await monthlyReport(query);
       response.end(responseHTML);
     } else if (
       request.url == '/reports-to-review' ||
@@ -118,12 +118,12 @@ async function main() {
       </style>
       <h1>Loading...</h1>
       `);
-      let responseHTML = await reportToReview(query);
+      const responseHTML = await reportToReview(query);
       response.end(responseHTML);
     } else if (request.url == '/private-charts') {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
-      let responseHTML = await topPrivateNotCategorized();
+      const responseHTML = await topPrivateNotCategorized();
       response.end(responseHTML);
     } else if (request.url == '/browser.js') {
       response.statusCode = 200;
@@ -161,7 +161,7 @@ async function main() {
         console.log(editPropertyQuery);
         if (data.newValue) {
           try {
-            let updateResult = await pool.query(editPropertyQuery);
+            const updateResult = await pool.query(editPropertyQuery);
             console.log(JSON.stringify(updateResult));
             response.end(JSON.stringify(updateResult));
           } catch (error) {
@@ -198,7 +198,7 @@ async function main() {
 
         console.log(submitReviewQuery);
         try {
-          let updateResult = await pool.query(submitReviewQuery);
+          const updateResult = await pool.query(submitReviewQuery);
           console.log(JSON.stringify(updateResult));
           response.end(JSON.stringify(updateResult));
         } catch (error) {
@@ -227,7 +227,7 @@ async function main() {
                   Movement for VAT
         */
 
-        let result = await createTaxEntriesForTransaction(data.transactionId);
+        const result = await createTaxEntriesForTransaction(data.transactionId);
 
         console.log(result);
 
@@ -263,7 +263,7 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        let result = await updateBankTransactionAttribute(
+        const result = await updateBankTransactionAttribute(
           data.transactionId,
           data.attribute,
           data.value
@@ -291,7 +291,7 @@ async function main() {
         `;
 
         try {
-          let updateResult = await pool.query(editPropertyQuery);
+          const updateResult = await pool.query(editPropertyQuery);
           console.log(JSON.stringify(updateResult));
           response.end(JSON.stringify(updateResult));
         } catch (error) {
@@ -310,12 +310,12 @@ async function main() {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
       const query = url_parts.query;
-      let responseHTML = await userTransactions(query);
+      const responseHTML = await userTransactions(query);
       response.end(responseHTML);
     } else if (request.url == '/all-users') {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
-      let responseHTML = await getAllUsers();
+      const responseHTML = await getAllUsers();
       response.end(responseHTML);
     } else {
       return response.end();

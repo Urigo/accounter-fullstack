@@ -55,7 +55,7 @@ export async function saveTransactionsToDB(
     if (accountType == 'isracard') {
       tableName = 'isracard_creditcard_transactions';
     }
-    let columnNamesResult = await pool.query(`
+    const columnNamesResult = await pool.query(`
       SELECT * 
       FROM information_schema.columns
       WHERE table_schema = 'accounter_schema'
@@ -105,7 +105,7 @@ export async function saveTransactionsToDB(
       accountType
     );
 
-    let additionalColumnsToExcludeFromTransactionComparison = [];
+    const additionalColumnsToExcludeFromTransactionComparison = [];
     additionalColumnsToExcludeFromTransactionComparison.push('cardIndex'); // If you get a new creditcard, all indexes will change and you could get duplicates
     if (oldContraAccountFieldNameLableAPI) {
       additionalColumnsToExcludeFromTransactionComparison.push(
@@ -120,7 +120,7 @@ export async function saveTransactionsToDB(
         'formattedValidityTime'
       );
     }
-    let whereClause = createWhereClause(
+    const whereClause = createWhereClause(
       transaction,
       columnNamesResult,
       `accounter_schema.` + tableName,
@@ -128,7 +128,7 @@ export async function saveTransactionsToDB(
     );
 
     try {
-      let res = await pool.query(whereClause);
+      const res = await pool.query(whereClause);
 
       // console.log('pg result - ', res.rowCount);
       if (res.rowCount > 0) {
@@ -151,13 +151,13 @@ export async function saveTransactionsToDB(
           .substring(0, lastIndexOfComma)
           .concat(text.substring(lastIndexOfComma + 1, text.length));
 
-        let arrayKeys = columnNames.keys();
+        const arrayKeys = columnNames.keys();
         let denseKeys = [...arrayKeys];
         denseKeys = denseKeys.map((x) => x + 1);
         const keysOfInputs = denseKeys.join(', $');
         text = text.concat(` VALUES($${keysOfInputs}) RETURNING *`);
 
-        let values = transactionValuesToArray(transaction, accountType);
+        const values = transactionValuesToArray(transaction, accountType);
 
         if (values.length != columnNames.length) {
           // TODO: Log important checks
@@ -210,7 +210,7 @@ export async function saveTransactionsToDB(
                 JSON.stringify(transaction)
               );
             } else {
-              let res = await pool.query(text, values);
+              const res = await pool.query(text, values);
               if (res.rows[0].event_amount) {
                 console.log(
                   `success in insert to ${accountType} - ${transaction.accountNumber} - ${res.rows[0].activity_description} - ${res.rows[0].event_amount} - ${res.rows[0].event_date}`
@@ -289,14 +289,14 @@ function findMissingTransactionKeys(
   accountType: string
 ) {
   const allKeys = Object.keys(transaction);
-  let fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
+  const fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
     camelCase(column.column_name)
   );
 
-  let InTransactionNotInDB = allKeys.filter(
+  const InTransactionNotInDB = allKeys.filter(
     (x) => !fixedExistingKeys.includes(x)
   );
-  let inDBNotInTransaction = fixedExistingKeys.filter(
+  const inDBNotInTransaction = fixedExistingKeys.filter(
     (x) => !allKeys.includes(x)
   );
 
@@ -338,10 +338,10 @@ function createWhereClause(
       );
   }
   for (const dBcolumn of checkingColumnNames.rows) {
-    let camelCaseColumnName = camelCase(dBcolumn.column_name);
+    const camelCaseColumnName = camelCase(dBcolumn.column_name);
     if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
       let actualCondition = '';
-      let isNotNull =
+      const isNotNull =
         typeof transaction[camelCaseColumnName] !== 'undefined' &&
         transaction[camelCaseColumnName] != null;
 
@@ -388,7 +388,7 @@ function createWhereClause(
         ) {
           actualCondition = `= ` + transaction[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
-          let firstKey = Object.keys(transaction[camelCaseColumnName])[0];
+          const firstKey = Object.keys(transaction[camelCaseColumnName])[0];
           actualCondition =
             `->> '` +
             firstKey +

@@ -9,7 +9,7 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
     from top_expenses_not_categorized($1);
   `;
 
-  let topPrivateNotCategorizedExpenses: any = await pool.query(
+  const topPrivateNotCategorizedExpenses: any = await pool.query(
     topPrivateExpensesNotCategorizedSQL,
     [`$$${startingDate}$$`]
   );
