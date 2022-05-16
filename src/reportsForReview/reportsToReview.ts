@@ -48,10 +48,10 @@ export const reportToReview = async (query: any): Promise<string> => {
       order by event_date desc;
     `),
   ]);
-  let lastInvoiceNumbers: any = results[0].value;
-  let reportToReview: any = {};
-  let allLedger: any = results[1].value;
-  let allTransactions: any = results[2].value;
+  const lastInvoiceNumbers: any = results[0].value;
+  const reportToReview: any = {};
+  const allLedger: any = results[1].value;
+  const allTransactions: any = results[2].value;
 
   allTransactions.rows = allTransactions.rows.map((transaction: any) => {
     transaction.תאריך_חשבונית = moment(transaction.event_date).format(
@@ -116,7 +116,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   let outcomeSum = 0;
   let VATincome = 0;
   let VAToutcome = 0;
-  for (let transaction of reportToReview.rows) {
+  for (const transaction of reportToReview.rows) {
     if (
       transaction.סכום_חובה_1 &&
       transaction.חשבון_חובה_1 != 'מעמחוז' &&
@@ -347,7 +347,7 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   console.timeEnd('renderReports');
 
-  let taxReportHTML = await createTaxEntriesForMonth(
+  const taxReportHTML = await createTaxEntriesForMonth(
     moment(reportMonthToReview, 'YYYY-MM-DD').toDate(),
     currrentCompany,
     pool

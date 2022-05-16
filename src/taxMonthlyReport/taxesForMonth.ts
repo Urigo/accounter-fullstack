@@ -144,26 +144,26 @@ export async function createTaxEntriesForMonth(
   businessName: String,
   pool: pg.Pool
 ) {
-  let businessIdByNameQuery = `
+  const businessIdByNameQuery = `
   (
     select id
     from accounter_schema.businesses
     where name = $$${businessName}$$
   )
   `;
-  let VATCadenceByNameResult: any = await pool.query(`
+  const VATCadenceByNameResult: any = await pool.query(`
     select vat_report_cadence
     from accounter_schema.businesses
     where name = $$${businessName}$$
   `);
-  let VATCadence = VATCadenceByNameResult.rows[0].vat_report_cadence;
-  let ownerResult: any = await pool.query(`
+  const VATCadence = VATCadenceByNameResult.rows[0].vat_report_cadence;
+  const ownerResult: any = await pool.query(`
     select owner
     from accounter_schema.financial_accounts
     where owner = ${businessIdByNameQuery}
   `);
-  let owner = ownerResult.rows[0].owner;
-  let hashVATIndexes = await getVATIndexes(owner);
+  const owner = ownerResult.rows[0].owner;
+  const hashVATIndexes = await getVATIndexes(owner);
 
   const getCurrentBusinessAccountsQuery = `
     (select account_number
@@ -171,7 +171,7 @@ export async function createTaxEntriesForMonth(
       where owner = ${businessIdByNameQuery})
   `;
 
-  let getAllIncomeTransactionsQuery = `
+  const getAllIncomeTransactionsQuery = `
       SELECT *
       FROM accounter_schema.all_transactions
       WHERE
@@ -186,7 +186,7 @@ export async function createTaxEntriesForMonth(
         order by event_date;	
     `;
 
-  let monthIncomeTransactions: any = await pool.query(
+  const monthIncomeTransactions: any = await pool.query(
     getAllIncomeTransactionsQuery
   );
 
@@ -194,17 +194,17 @@ export async function createTaxEntriesForMonth(
   let incomeSum = 0;
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
-  let advancePercentageRate = 8.2;
+  const advancePercentageRate = 8.2;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
     if (monthIncomeTransaction.tax_invoice_currency) {
-      let originalCurrency = monthIncomeTransaction.currency_code;
+      const originalCurrency = monthIncomeTransaction.currency_code;
       monthIncomeTransaction.currency_code =
         monthIncomeTransaction.tax_invoice_currency;
 
-      let transactionsExchnageRates = await getTransactionExchangeRates(
+      const transactionsExchnageRates = await getTransactionExchangeRates(
         monthIncomeTransaction
       );
-      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+      const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
 
       monthIncomeTransaction.event_amount =
         monthIncomeTransaction.tax_invoice_amount = getILSForDate(
@@ -220,7 +220,7 @@ export async function createTaxEntriesForMonth(
         ];
       monthIncomeTransaction.currency_code = originalCurrency;
     }
-    let isExcludedFromTaxReportQuery = `
+    const isExcludedFromTaxReportQuery = `
       select include_in_tax_report
       from accounter_schema.hash_business_indexes
       where business = (
@@ -229,7 +229,7 @@ export async function createTaxEntriesForMonth(
         where name = $$${monthIncomeTransaction.financial_entity}$$
       ) and hash_owner = ${businessIdByNameQuery};    
     `;
-    let isExcludedFromTaxReport: any = await pool.query(
+    const isExcludedFromTaxReport: any = await pool.query(
       isExcludedFromTaxReportQuery
     );
     if (
@@ -237,10 +237,10 @@ export async function createTaxEntriesForMonth(
       isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == null ||
       isExcludedFromTaxReport?.rows[0]?.include_in_tax_report == true
     ) {
-      let transactionsExchnageRates = await getTransactionExchangeRates(
+      const transactionsExchnageRates = await getTransactionExchangeRates(
         monthIncomeTransaction
       );
-      let hashBusinessIndexes = await getHashBusinessIndexes(
+      const hashBusinessIndexes = await getHashBusinessIndexes(
         { financial_entity: monthIncomeTransaction.financial_entity },
         owner
       );
@@ -249,8 +249,8 @@ export async function createTaxEntriesForMonth(
           ? hashBusinessIndexes?.auto_tax_category
           : monthIncomeTransaction.tax_category;
       addTrueVATtoTransaction(monthIncomeTransaction);
-      let debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
-      let invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
+      const debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
+      const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
       // console.log('Income Tax Transaction: ', {
       //   name: monthIncomeTransaction.financial_entity,
       //   invoiceDate: hashDateFormat(monthIncomeTransaction.tax_invoice_date),
@@ -375,7 +375,7 @@ export async function createTaxEntriesForMonth(
   // console.log('VAT free SUM ------ ', VATFreeIncomeSum);
   // console.log('VAT income SUM ------ ', VATIncomeSum);
 
-  let overallMonthTaxHTMLTemplate = `
+  const overallMonthTaxHTMLTemplate = `
   <table>
     <thead>
         <tr>
@@ -403,15 +403,15 @@ export async function createTaxEntriesForMonth(
   let monthVATReportHTMLTemplate = '';
   let leftMonthVATReportHTMLTemplate = '';
   let overallVATHTMLTemplate = '';
-  let transactionsForReport = [];
-  let leftTransactionsReport = [];
+  const transactionsForReport = [];
+  const leftTransactionsReport = [];
   for (const transactionType of Object.values(TransactionType)) {
     console.log(`VAT transactions - ${transactionType}`);
-    let monthIncomeVATTransactions: any = await pool.query(
+    const monthIncomeVATTransactions: any = await pool.query(
       getVATTransaction(month, transactionType, businessName, VATCadence)
         .transactionsByInvoiceDate
     );
-    let leftTransactions: any = await pool.query(
+    const leftTransactions: any = await pool.query(
       getVATTransaction(month, transactionType, businessName, VATCadence)
         .transactionsByEventDate
     );
@@ -424,10 +424,10 @@ export async function createTaxEntriesForMonth(
     let expensesVATSumWithoutRound = 0;
     let expensesWithVATExcludingVATSum = 0;
     let expensesWithoutVATVATSum = 0;
-    let sharedInvoiceIDs: any[] = [];
-    let changedVATTransactions = [];
+    const sharedInvoiceIDs: any[] = [];
+    const changedVATTransactions = [];
     for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
-      let referencedInvoice: any = await pool.query(`
+      const referencedInvoice: any = await pool.query(`
         select * from accounter_schema.taxes where
         id = (
           select tax_id from accounter_schema.taxes_transactions where
@@ -463,14 +463,14 @@ export async function createTaxEntriesForMonth(
             referencedInvoice.rows[0].tax_invoice_file;
         }
         if (monthIncomeVATTransaction.tax_invoice_currency) {
-          let originalCurrency = monthIncomeVATTransaction.currency_code;
+          const originalCurrency = monthIncomeVATTransaction.currency_code;
           monthIncomeVATTransaction.currency_code =
             monthIncomeVATTransaction.tax_invoice_currency;
 
-          let transactionsExchnageRates = await getTransactionExchangeRates(
+          const transactionsExchnageRates = await getTransactionExchangeRates(
             monthIncomeVATTransaction
           );
-          let invoiceExchangeRates =
+          const invoiceExchangeRates =
             transactionsExchnageRates.invoiceExchangeRates;
 
           monthIncomeVATTransaction.event_amount =
@@ -487,7 +487,7 @@ export async function createTaxEntriesForMonth(
             ];
           monthIncomeVATTransaction.currency_code = originalCurrency;
         }
-        let hashBusinessIndexes = await getHashBusinessIndexes(
+        const hashBusinessIndexes = await getHashBusinessIndexes(
           { financial_entity: monthIncomeVATTransaction.financial_entity },
           owner
         );
@@ -496,13 +496,13 @@ export async function createTaxEntriesForMonth(
             ? hashBusinessIndexes?.auto_tax_category
             : monthIncomeVATTransaction.tax_category;
         addTrueVATtoTransaction(monthIncomeVATTransaction);
-        let businessVATNumberQuery = `
+        const businessVATNumberQuery = `
         select vat_number
         from accounter_schema.businesses
         where
             name = $$${monthIncomeVATTransaction.financial_entity}$$;    
       `;
-        let financialEntityVATNumber: any = await pool.query(
+        const financialEntityVATNumber: any = await pool.query(
           businessVATNumberQuery
         );
         monthIncomeVATTransaction.vatNumber =
@@ -525,12 +525,12 @@ export async function createTaxEntriesForMonth(
         //   vatNumber: monthIncomeVATTransaction.vatNumber,
         // });
 
-        let transactionsExchnageRates = await getTransactionExchangeRates(
+        const transactionsExchnageRates = await getTransactionExchangeRates(
           monthIncomeVATTransaction
         );
-        let invoiceExchangeRates =
+        const invoiceExchangeRates =
           transactionsExchnageRates.invoiceExchangeRates;
-        let roundedVATToAdd = parseIntRound(
+        const roundedVATToAdd = parseIntRound(
           getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates)
             .vatAfterDiductionILS
         );
@@ -650,12 +650,12 @@ export async function createTaxEntriesForMonth(
 
     // console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
-      let hashBusinessIndexes = await getHashBusinessIndexes(
+      const hashBusinessIndexes = await getHashBusinessIndexes(
         { financial_entity: 'VAT' },
         owner
       );
 
-      let entryForMonthlyVAT = [
+      const entryForMonthlyVAT = [
         hashDateFormat(moment(month).endOf('month').toDate()),
         transactionType == TransactionType.Expenses
           ? hashAccounts(
@@ -756,7 +756,7 @@ export async function createTaxEntriesForMonth(
       // }
 
       if (expensesVATSumWithoutRound != expensesVATSum) {
-        let entryForMonthlyRoundVATDifference = [
+        const entryForMonthlyRoundVATDifference = [
           hashDateFormat(moment(month).endOf('month').toDate()),
           transactionType == TransactionType.Expenses
             ? hashVATIndexes.vatInputsIndex

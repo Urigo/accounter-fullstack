@@ -18,7 +18,7 @@ gql`
 `;
 
 export const AllCharges: FC = () => {
-  let [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
 
   // TODO: improve the ID logic

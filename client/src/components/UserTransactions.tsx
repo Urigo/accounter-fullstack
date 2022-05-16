@@ -111,7 +111,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
 };
 
 export const UserTransactions: FC = () => {
-  let [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
   const [inputValue, setInputValue] = useState<string>(
     searchParams.get('name') ?? ''

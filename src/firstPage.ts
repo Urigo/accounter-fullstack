@@ -227,15 +227,15 @@ export const financialStatus = async (query: any): Promise<string> => {
     `),
   ]);
 
-  let missingInvoiceDates: any = results[0].value;
-  let missingInvoiceNumbers: any = results[1].value;
-  let lastInvoiceNumbers: any = results[2].value;
+  const missingInvoiceDates: any = results[0].value;
+  const missingInvoiceNumbers: any = results[1].value;
+  const lastInvoiceNumbers: any = results[2].value;
   // let currentVATStatus: any = results[3].value;
-  let VATTransactions: any = results[3].value;
-  let allTransactions: any = results[4].value;
-  let missingInvoiceImages: any = results[5].value;
-  let profitTable: any = results[6].value;
-  let thisMonthPrivateExpensesTable: any = results[7].value;
+  const VATTransactions: any = results[3].value;
+  const allTransactions: any = results[4].value;
+  const missingInvoiceImages: any = results[5].value;
+  const profitTable: any = results[6].value;
+  const thisMonthPrivateExpensesTable: any = results[7].value;
 
   console.timeEnd('callingDB');
 

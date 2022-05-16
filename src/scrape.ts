@@ -12,7 +12,7 @@ import { getCurrencyRates } from './data/currency';
 import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
 
 function getTransactionsFromCards(CardsTransactionsListBean: any) {
-  let allData: any = [];
+  const allData: any = [];
   CardsTransactionsListBean.cardNumberList.forEach(
     (cardInformation: any, index: any) => {
       const txnGroups =
@@ -20,7 +20,7 @@ function getTransactionsFromCards(CardsTransactionsListBean: any) {
       if (txnGroups) {
         txnGroups.forEach((txnGroup: any) => {
           if (txnGroup.txnIsrael) {
-            let israelTransactions = txnGroup.txnIsrael.map(
+            const israelTransactions = txnGroup.txnIsrael.map(
               (transaction: any) => ({
                 ...transaction,
                 card: cardInformation.slice(cardInformation.length - 4),
@@ -29,7 +29,7 @@ function getTransactionsFromCards(CardsTransactionsListBean: any) {
             allData.push(...israelTransactions);
           }
           if (txnGroup.txnAbroad) {
-            let abroadTransactions = txnGroup.txnAbroad.map(
+            const abroadTransactions = txnGroup.txnAbroad.map(
               (transaction: any) => ({
                 ...transaction,
                 card: cardInformation.slice(cardInformation.length - 4),
@@ -51,7 +51,7 @@ async function getILSfromBankAndSave(
   account: any,
   pool: pg.Pool
 ) {
-  let ILSTransactions = await newScraperIstance.getILSTransactions(account);
+  const ILSTransactions = await newScraperIstance.getILSTransactions(account);
   console.log(
     `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
     ILSTransactions.isValid
@@ -118,7 +118,7 @@ async function getForeignTransactionsfromBankAndSave(
   account: any,
   pool: pg.Pool
 ) {
-  let foreignTransactions = await newScraperIstance.getForeignTransactions(
+  const foreignTransactions = await newScraperIstance.getForeignTransactions(
     account
   );
   console.log(
@@ -182,7 +182,7 @@ async function getForeignTransactionsfromBankAndSave(
 async function getBankData(pool: pg.Pool, scraper: any) {
   console.log('start getBankData');
   console.log('Bank Login');
-  let newPoalimInstance = await scraper.hapoalim(
+  const newPoalimInstance = await scraper.hapoalim(
     {
       userCode: process.env.USER_CODE,
       password: process.env.PASSWORD,
@@ -193,7 +193,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     }
   );
   console.log('getting accounts');
-  let accounts = await newPoalimInstance.getAccountsData();
+  const accounts = await newPoalimInstance.getAccountsData();
   console.log('finished getting accounts', accounts.isValid);
   if (!accounts.isValid) {
     console.log(`getAccountsData Poalim schema errors: `, accounts.errors);
@@ -205,14 +205,14 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     WHERE 
     `;
 
-    let columnNamesResult = await pool.query(`
+    const columnNamesResult = await pool.query(`
       SELECT * 
       FROM information_schema.columns
       WHERE table_schema = 'accounter_schema'
       AND table_name = '${tableName}';
     `);
 
-    let columnNamesToExcludeFromComparison = [
+    const columnNamesToExcludeFromComparison = [
       'privateBusiness',
       'owner',
       'hashavshevetAccountIls',
@@ -227,10 +227,10 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     }
 
     for (const dBcolumn of columnNamesResult.rows) {
-      let camelCaseColumnName = camelCase(dBcolumn.column_name);
+      const camelCaseColumnName = camelCase(dBcolumn.column_name);
       if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
         let actualCondition = '';
-        let isNotNull =
+        const isNotNull =
           typeof account[camelCaseColumnName] !== 'undefined' &&
           account[camelCaseColumnName] != null;
 
@@ -260,7 +260,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         ) {
           actualCondition = `= ` + account[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
-          let firstKey = Object.keys(account[camelCaseColumnName])[0];
+          const firstKey = Object.keys(account[camelCaseColumnName])[0];
           actualCondition =
             `->> '` +
             firstKey +
@@ -293,7 +293,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     whereClause = whereClause.substring(0, lastIndexOfAND);
 
     try {
-      let res = await pool.query(whereClause);
+      const res = await pool.query(whereClause);
 
       if (res.rowCount > 0) {
         // console.log('found');
@@ -316,13 +316,13 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           .substring(0, lastIndexOfComma)
           .concat(text.substring(lastIndexOfComma + 1, text.length));
 
-        let arrayKeys = columnNames.keys();
+        const arrayKeys = columnNames.keys();
         let denseKeys = [...arrayKeys];
         denseKeys = denseKeys.map((x) => x + 1);
         const keysOfInputs = denseKeys.join(', $');
         text = text.concat(` VALUES($${keysOfInputs}) RETURNING *`);
 
-        let values = [
+        const values = [
           account.accountNumber,
           'business',
           null,
@@ -345,7 +345,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           account.mymailEntitlementSwitch,
         ];
 
-        let res = await pool.query(text, values);
+        const res = await pool.query(text, values);
         console.log(res);
       }
     } catch (error) {
@@ -381,7 +381,7 @@ async function getDepositsAndSave(
   pool: pg.Pool
 ) {
   console.log('getting deposits');
-  let deposits = await newScraperIstance.getDeposits(account);
+  const deposits = await newScraperIstance.getDeposits(account);
   console.log(
     `finished getting deposits ${account.accountNumber}`,
     deposits.isValid
@@ -462,7 +462,7 @@ async function getCreditCardTransactionsAndSave(
     console.error(`Replace password for creditcard ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
-  let allData = getTransactionsFromCards(
+  const allData = getTransactionsFromCards(
     monthTransactions.data.CardsTransactionsListBean
   );
 
@@ -494,7 +494,7 @@ async function getCreditCardData(
 ) {
   console.log('start getCreditCardData');
   console.log('Creditcard Login');
-  let newIsracardInstance = await scraper.isracard(
+  const newIsracardInstance = await scraper.isracard(
     {
       ID: credentials.ID,
       password: credentials.password,
@@ -507,7 +507,7 @@ async function getCreditCardData(
 
   let monthToFetch = subYears(new Date(), 2);
   const allMonthsToFetch = [];
-  let lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
+  const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
 
   while (isBefore(monthToFetch, lastMonthToFetch)) {
     allMonthsToFetch.push(monthToFetch);
@@ -536,9 +536,9 @@ async function getCreditCardData(
   });
 
   console.log('Init scraper');
-  let newScraperIstance = await init();
-  let secondScraperIstance = await init();
-  let thirdScraperIstance = await init();
+  const newScraperIstance = await init();
+  const secondScraperIstance = await init();
+  const thirdScraperIstance = await init();
   console.log('After Init scraper');
   const results = await Promise.allSettled([
     getCreditCardData(pool, newScraperIstance, {

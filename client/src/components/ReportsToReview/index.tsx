@@ -5,7 +5,7 @@ import { LastInvoiceNumbers } from '../FinancialStatus/LastInvoiceNumbers';
 import { ReportToReview } from './ReportToReview';
 
 export const ReportsToReview: FC = () => {
-  let [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const month = searchParams.get('month');
   const year = searchParams.get('year');
