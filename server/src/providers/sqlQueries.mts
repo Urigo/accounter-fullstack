@@ -1,6 +1,7 @@
 import pgQuery from '@pgtyped/query';
 import {
-  IGetDocsByChargeIdQuery,
+    IGetChargesByIdsQuery,
+    IGetDocsByChargeIdQuery,
   IGetEmailDocsQuery,
   IGetLastInvoiceNumbersQuery,
 } from '../__generated__/sqlQueries.types.mjs';
@@ -30,3 +31,9 @@ export const getDocsByChargeId = sql<IGetDocsByChargeIdQuery>`
     FROM accounter_schema.email_invoices
     WHERE transaction_id in $$chargeIds
     ORDER BY email_received_date DESC;`;
+    
+// Replace with a wrapper with dateloader
+export const getChargesByIds = sql<IGetChargesByIdsQuery>`
+    SELECT *
+    FROM accounter_schema.all_transactions
+    WHERE id IN $$cahrgeIds;`;
