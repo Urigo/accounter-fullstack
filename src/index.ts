@@ -128,17 +128,17 @@ async function main() {
     } else if (request.url == '/browser.js') {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/javascript; charset=utf-8');
-      var readStream = createReadStream('dist/browser/browser.js', 'utf8');
+      const readStream = createReadStream('dist/browser/browser.js', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/browser.js.map') {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/octet-stream');
-      var readStream = createReadStream('dist/browser/browser.js.map', 'utf8');
+      const readStream = createReadStream('dist/browser/browser.js.map', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/src/browser/browser.ts') {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
-      var readStream = createReadStream('src/browser/browser.ts', 'utf8');
+      const readStream = createReadStream('src/browser/browser.ts', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/editProperty') {
       console.log('new edit');
@@ -221,9 +221,8 @@ async function main() {
         console.log('Data: ', data);
 
         /*
-        
                   Movement for the bank
-                  Movenent for the entity
+                  Movement for the entity
                   Movement for VAT
         */
 
