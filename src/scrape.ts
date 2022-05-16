@@ -514,7 +514,7 @@ async function getCreditCardData(
     monthToFetch = addMonths(monthToFetch, 1);
   }
 
-  const results = await Promise.allSettled(
+  await Promise.allSettled(
     allMonthsToFetch.map(async (currentMonthToFetch) => {
       await getCreditCardTransactionsAndSave(
         currentMonthToFetch,
@@ -536,22 +536,22 @@ async function getCreditCardData(
   });
 
   console.log('Init scraper');
-  const newScraperIstance = await init();
-  const secondScraperIstance = await init();
-  const thirdScraperIstance = await init();
+  const newScraperInstance = await init();
+  const secondScraperInstance = await init();
+  const thirdScraperInstance = await init();
   console.log('After Init scraper');
-  const results = await Promise.allSettled([
-    getCreditCardData(pool, newScraperIstance, {
+  await Promise.allSettled([
+    getCreditCardData(pool, newScraperInstance, {
       ID: process.env.ISRACARD_ID,
       password: process.env.ISRACARD_PASSWORD,
       card6Digits: process.env.ISRACARD_6_DIGITS,
     }),
-    getCreditCardData(pool, thirdScraperIstance, {
+    getCreditCardData(pool, thirdScraperInstance, {
       ID: process.env.DOTAN_ISRACARD_ID,
       password: process.env.DOTAN_ISRACARD_PASSWORD,
       card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS,
     }),
-    getBankData(pool, secondScraperIstance),
+    getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),
   ]);
   console.log('after all');

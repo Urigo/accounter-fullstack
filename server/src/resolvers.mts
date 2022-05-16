@@ -1,5 +1,4 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
-import currency from 'currency.js';
 import {
   getChargesByFinancialAccountIds,
   getChargesByFinancialEntityIds,
@@ -27,7 +26,7 @@ const commonFinancialEntityFields:
   | PersonalFinancialEntityResolvers = {
   id: (DbBusiness) => DbBusiness.id,
   accounts: async (DbBusiness) => {
-    // TODO: add funcionality for linkedEntities data
+    // TODO: add functionality for linkedEntities data
     const accounts = await getFinancialAccountsByFeIds.run(
       { financialEntityIds: [DbBusiness.id] },
       pool

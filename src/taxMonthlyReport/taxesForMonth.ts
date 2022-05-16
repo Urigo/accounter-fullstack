@@ -1,5 +1,4 @@
 import pg from 'pg';
-const { Pool } = pg;
 import moment from 'moment';
 import {
   addTrueVATtoTransaction,
@@ -790,10 +789,10 @@ export async function createTaxEntriesForMonth(
           owner,
         ];
 
-        queryConfig = {
-          text: insertMovementQuery,
-          values: entryForMonthlyRoundVATDifference,
-        };
+        // queryConfig = {
+        //   text: insertMovementQuery,
+        //   values: entryForMonthlyRoundVATDifference,
+        // };
 
         console.log(
           'entryForMonthlyRoundVATDifference',
