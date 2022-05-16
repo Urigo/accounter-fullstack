@@ -1,17 +1,17 @@
 {
+  "name": "accounter-monorepo",
   "type": "module",
+  "private": true,
+  "workspaces": [
+    "client",
+    "client-legacy",
+    "server",
+    "temp-server"
+  ],
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node dist/index.js",
-    "dev": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node --experimental-json-modules dist/index.js\"",
-    "scrape": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node --experimental-json-modules dist/scrape.js\"",
-    "get": "node --experimental-specifier-resolution=node dist/scrape.js",
     "build": "tsc",
     "format": "prettier \"**/*.ts\" --write",
-    "deploy": "git push heroku master",
-    "month": "node --experimental-specifier-resolution=node dist/taxMonthlyReport/taxesForMonth.js",
-    "sqlgen": "npx pgtyped -c pgTypedConfig.json",
     "react:dev": "cd client && yarn dev",
-    "react:install": "cd server && yarn install && cd ../temp-server && yarn install && cd ../client && yarn install && cd ../",
     "temp-server:dev": "cd temp-server && yarn dev",
     "server:dev": "cd server && yarn dev",
     "codegen": "graphql-codegen --config codegen.yml",

@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
-import { suggestedTransaction } from '../client/src/helpers/transactions';
+import { suggestedTransaction } from '../../client/src/helpers/transactions';
 import {
   entitiesWithoutInvoice,
   entitiesWithoutInvoiceNumuber,
@@ -9,7 +9,7 @@ import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
-} from '../client/src/helpers/groups';
+} from '../../client/src/helpers/groups';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
 
