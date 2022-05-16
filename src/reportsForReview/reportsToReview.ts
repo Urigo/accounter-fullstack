@@ -1,5 +1,4 @@
 import { pool } from '../index';
-import { readFileSync } from 'fs';
 import moment from 'moment';
 // import fetch from 'node-fetch';
 // import XML from 'pixl-xml';

@@ -247,7 +247,7 @@ export const useSql = () => {
     return (transactions ?? []) as LedgerEntity[];
   };
 
-  const onGenerateTaxMovement = (transactionId: string) => {
+  const onGenerateTaxMovement = (_transactionId: string) => {
     // TODO: do the heavy lifting of createTaxEntriesForTransaction func on server side
     return undefined;
   };

@@ -1,4 +1,3 @@
-import { result } from 'lodash';
 import { pool } from '..';
 
 export async function updateBankTransactionAttribute(
