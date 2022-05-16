@@ -167,8 +167,7 @@ export async function saveTransactionsToDB(
         try {
           if (transaction.transactionType == 'TODAY') {
             console.log('Today transaction - ', transaction);
-          } else {
-            if (
+          } else if (
               accountType == 'ils' &&
               moment(transaction.eventDate, 'YYYY-MM-DD').diff(
                 moment(),
@@ -234,7 +233,6 @@ export async function saveTransactionsToDB(
                 // console.log('saved', JSON.stringify(res));
               }
             }
-          }
           // console.log('nothing');
         } catch (error) {
           // TODO: Log important checks

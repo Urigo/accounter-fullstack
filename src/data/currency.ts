@@ -174,8 +174,7 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
             console.log('error in insert - ', error);
             // console.log('nothing');
           }
-        } else {
-          if (
+        } else if (
             parseFloat(currencyRates.dollarRate.toString()).toFixed(4) ==
               parseFloat(existingRate.rows[0].usd).toFixed(4) &&
             parseFloat(currencyRates.euroRate.toString()).toFixed(4) ==
@@ -188,7 +187,6 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
             console.log(existingRate.rows[0].eur);
             console.log(existingRate.rows[0].exchange_date);
           }
-        }
       } else {
         console.log(
           `no currency rates for ${format(currentDate, 'yyyy-MM-dd')}`
