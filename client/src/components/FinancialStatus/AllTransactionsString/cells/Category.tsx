@@ -10,9 +10,7 @@ type Props = {
 
 export const Category: FC<Props> = ({ transaction, style }) => {
   const isPersonalCategory = !!transaction.personal_category;
-  const cellText =
-    transaction.personal_category ??
-    suggestedTransaction(transaction)?.personalCategory;
+  const cellText = transaction.personal_category ?? suggestedTransaction(transaction)?.personalCategory;
 
   return (
     <td
@@ -23,17 +21,9 @@ export const Category: FC<Props> = ({ transaction, style }) => {
     >
       {cellText ?? 'undefined'}
       {!transaction.personal_category && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName="personal_category"
-          value={cellText}
-        />
+        <ConfirmButton transaction={transaction} propertyName="personal_category" value={cellText} />
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="personal_category"
-        promptText="New personal category:"
-      />
+      <UpdateButton transaction={transaction} propertyName="personal_category" promptText="New personal category:" />
     </td>
   );
 };

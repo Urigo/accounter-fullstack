@@ -26,10 +26,7 @@ root.render(
           <Route path="/monthly-report" element={<MonthlyReport />} />
           <Route path="/reports-to-review" element={<ReportsToReview />} />
           <Route path="/documents" element={<DocumentsReport />} />
-          <Route
-            path="/private-charts"
-            element={<TopPrivateNotCategorized />}
-          />
+          <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
           <Route path="/user-transactions" element={<UserTransactions />} />
           <Route path="/all-users" element={<AllUsers />} />
           <Route

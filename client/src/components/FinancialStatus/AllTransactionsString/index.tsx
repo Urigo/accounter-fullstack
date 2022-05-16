@@ -64,7 +64,7 @@ export const AllTransactionsString: FC = () => {
     <table>
       <thead>
         <tr>
-          {columns.map((key) => (
+          {columns.map(key => (
             <th>{key}</th>
           ))}
         </tr>
@@ -76,12 +76,7 @@ export const AllTransactionsString: FC = () => {
             columns={columns}
             index={i}
             key={row.id}
-            charge={
-              data?.financialEntity?.charges &&
-              data.financialEntity.charges.find(
-                (charge) => charge.id === row.id
-              )
-            }
+            charge={data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === row.id)}
           />
         ))}
       </tbody>

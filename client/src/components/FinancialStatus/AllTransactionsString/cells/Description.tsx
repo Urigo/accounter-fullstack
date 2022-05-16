@@ -10,9 +10,7 @@ type Props = {
 
 export const Description: FC<Props> = ({ transaction, style }) => {
   const isDescription = !!transaction.user_description;
-  const cellText =
-    transaction.user_description ??
-    suggestedTransaction(transaction)?.userDescription;
+  const cellText = transaction.user_description ?? suggestedTransaction(transaction)?.userDescription;
 
   return (
     <td
@@ -23,17 +21,9 @@ export const Description: FC<Props> = ({ transaction, style }) => {
     >
       {cellText ?? 'undefined'}
       {!transaction.user_description && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName="user_description"
-          value={cellText}
-        />
+        <ConfirmButton transaction={transaction} propertyName="user_description" value={cellText} />
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="user_description"
-        promptText="New user description:"
-      />
+      <UpdateButton transaction={transaction} propertyName="user_description" promptText="New user description:" />
     </td>
   );
 };

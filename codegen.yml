@@ -1,6 +1,6 @@
 overwrite: true
-schema: "./**/*.graphql"
-documents: "./client/src/**/*.tsx"
+schema: './**/*.graphql'
+documents: './client/src/**/*.tsx'
 generates:
   server/src/__generated__/types.mts:
     config:
@@ -22,15 +22,14 @@ generates:
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./sqlQueries.types.mjs#IGetEmailDocsResult
     plugins:
-      - "typescript"
-      - "typescript-resolvers"
+      - 'typescript'
+      - 'typescript-resolvers'
   client/src/__generated__/types.ts:
     config:
       fetcher:
         func: '../hooks/useGraphql#useGraphql'
         isReactHook: true
     plugins:
-      - "typescript"
-      - "typescript-operations"
-      - "typescript-react-query"
-  
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-query'

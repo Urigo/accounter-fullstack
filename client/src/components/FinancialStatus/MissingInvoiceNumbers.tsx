@@ -6,12 +6,7 @@ import type { MissingInvoice } from '../../models/types';
 const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
   return (
     <tr>
-      <td>
-        {new Date(data.event_date)
-          .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '')}
-      </td>
+      <td>{new Date(data.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
       <td>
         {data.event_amount}
         {currencyCodeToSymbol(data.currency_code)}
@@ -23,13 +18,9 @@ const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
   );
 };
 
-export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({
-  monthTaxReport,
-}) => {
+export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({ monthTaxReport }) => {
   const { getMissingInvoiceNumbers } = useSql();
-  const [missingInvoiceNumbers, setMissingInvoiceNumbers] = useState<
-    MissingInvoice[]
-  >([]);
+  const [missingInvoiceNumbers, setMissingInvoiceNumbers] = useState<MissingInvoice[]>([]);
 
   useEffect(() => {
     getMissingInvoiceNumbers(monthTaxReport).then(setMissingInvoiceNumbers);

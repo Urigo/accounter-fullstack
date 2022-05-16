@@ -41,7 +41,7 @@ export const MonthTax: FC<{
         </tr>
       </thead>
       <tbody>
-        {monthIncomeTransactions.map((row) => (
+        {monthIncomeTransactions.map(row => (
           <tr>
             <td>{row.financial_entity}</td>
             <td>{row.tax_invoice_number}</td>
@@ -51,27 +51,11 @@ export const MonthTax: FC<{
               {row.event_amount} ${row.currency_code}
             </td>
             <td>{row.vat}</td>
-            <td>
-              {stringNumberRounded(
-                getILSForDate(row, invoiceExchangeRates).vatAfterDiductionILS
-              )}
-            </td>
+            <td>{stringNumberRounded(getILSForDate(row, invoiceExchangeRates).vatAfterDiductionILS)}</td>
             <td>{row.amountBeforeVAT}</td>
-            <td>
-              {stringNumberRounded(
-                getILSForDate(row, invoiceExchangeRates).amountBeforeVATILS
-              )}
-            </td>
-            <td>
-              {stringNumberRounded(
-                getILSForDate(row, invoiceExchangeRates).eventAmountILS
-              )}
-            </td>
-            <td>
-              {stringNumberRounded(
-                getILSForDate(row, debitExchangeRates).eventAmountILS
-              )}
-            </td>
+            <td>{stringNumberRounded(getILSForDate(row, invoiceExchangeRates).amountBeforeVATILS)}</td>
+            <td>{stringNumberRounded(getILSForDate(row, invoiceExchangeRates).eventAmountILS)}</td>
+            <td>{stringNumberRounded(getILSForDate(row, debitExchangeRates).eventAmountILS)}</td>
             <td>
               <a href={row.proforma_invoice_file}>P</a>
             </td>

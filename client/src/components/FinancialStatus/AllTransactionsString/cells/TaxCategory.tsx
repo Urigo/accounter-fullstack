@@ -11,11 +11,7 @@ export const TaxCategory: FC<Props> = ({ transaction, style }) => {
   return (
     <td style={{ ...style }}>
       {transaction.tax_category ?? 'null'}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="tax_category"
-        promptText="New Tax category:"
-      />
+      <UpdateButton transaction={transaction} propertyName="tax_category" promptText="New Tax category:" />
     </td>
   );
 };

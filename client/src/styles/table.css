@@ -1,29 +1,35 @@
 table {
-border-collapse: collapse;
-background-color: #EEEEEE;
+  border-collapse: collapse;
+  background-color: #eeeeee;
 }
-th, td {
-border: 1px solid black;
+th,
+td {
+  border: 1px solid black;
 }
 th {
-font-size: 10px;
-background-color: #4F7849;
-color: white;
-position: sticky;
-top: 0;
-z-index: 2;
+  font-size: 10px;
+  background-color: #4f7849;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 td {
-text-align: center;
-font-size: 14px;
+  text-align: center;
+  font-size: 14px;
 }
-tr:hover {background-color: #f5f5f5;}
-tr:nth-child(even) {background-color: #CEE0CC;}
+tr:hover {
+  background-color: #f5f5f5;
+}
+tr:nth-child(even) {
+  background-color: #cee0cc;
+}
 
 table.taxes th {
-background-color: #93a191;
+  background-color: #93a191;
 }
 
-table.taxes th, td {
-border: 0.5px solid gray;
+table.taxes th,
+td {
+  border: 0.5px solid gray;
 }

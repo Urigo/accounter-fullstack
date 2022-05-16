@@ -147,18 +147,13 @@ export async function getVATIndexes(owner: any) {
     vatInputsIndex: hashVATInputsIndexResult.rows[0].hash_index,
     vatPropertyInputsIndex: hashVATPropertyInputsIndexResult.rows[0].hash_index,
     vatOutputsIndex: hashVATOutputsIndexResult.rows[0].hash_index,
-    vatIncomesMovementTypeIndex:
-      hashVATIncomesMovementTypeIndexResult.rows[0].hash_index,
-    vatFreeIncomesMovementTypeIndex:
-      hashVATFreeIncomesMovementTypeIndexResult.rows[0].hash_index,
+    vatIncomesMovementTypeIndex: hashVATIncomesMovementTypeIndexResult.rows[0].hash_index,
+    vatFreeIncomesMovementTypeIndex: hashVATFreeIncomesMovementTypeIndexResult.rows[0].hash_index,
     vatIncomesIndex: hashVATIncomesIndexResult.rows[0].hash_index,
     vatFreeIncomesIndex: hashVATFreeIncomesIndexResult.rows[0].hash_index,
-    vatExpensesMovementTypeIndex:
-      hashVATExpensesMovementTypeIndexResult.rows[0].hash_index,
-    vatExpensesPropertyMovementTypeIndex:
-      hashVATPropertyExpensesMovementTypeIndexResult.rows[0].hash_index,
-    hashCurrencyRatesDifferencesIndex:
-      hashCurrencyRatesDifferencesIndexResult.rows[0].hash_index,
+    vatExpensesMovementTypeIndex: hashVATExpensesMovementTypeIndexResult.rows[0].hash_index,
+    vatExpensesPropertyMovementTypeIndex: hashVATPropertyExpensesMovementTypeIndexResult.rows[0].hash_index,
+    hashCurrencyRatesDifferencesIndex: hashCurrencyRatesDifferencesIndexResult.rows[0].hash_index,
   };
 }
 
@@ -274,10 +269,10 @@ export function hashAccounts(
           return 'פקדון';
           // return '4668039';
         } else if (hashBusinessIndexes.hash_index) {
-            return hashBusinessIndexes.hash_index;
-          } else {
-            return accountType ? accountType.substring(0, 15).trimEnd() : null;
-          }
+          return hashBusinessIndexes.hash_index;
+        } else {
+          return accountType ? accountType.substring(0, 15).trimEnd() : null;
+        }
       }
       return accountType ? accountType.substring(0, 15).trimEnd() : null;
   }
@@ -328,18 +323,13 @@ export const insertMovementQuery = `insert into accounter_schema.ledger (
 
 export function getILSForDate(transaction: any, date: any) {
   const amounts: any = {};
-  const amountToUse = transaction.tax_invoice_amount
-    ? transaction.tax_invoice_amount
-    : transaction.event_amount;
+  const amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
   if (['USD', 'EUR', 'GBP'].includes(transaction.currency_code)) {
     const currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
-    amounts.vatAfterDiductionILS =
-      transaction.vatAfterDiduction * date?.rows[0][currencyKey];
-    amounts.amountBeforeVATILS =
-      transaction.amountBeforeVAT * date?.rows[0][currencyKey];
-    amounts.amountBeforeFullVATILS =
-      transaction.amountBeforeFullVAT * date?.rows[0][currencyKey];
+    amounts.vatAfterDiductionILS = transaction.vatAfterDiduction * date?.rows[0][currencyKey];
+    amounts.amountBeforeVATILS = transaction.amountBeforeVAT * date?.rows[0][currencyKey];
+    amounts.amountBeforeFullVATILS = transaction.amountBeforeFullVAT * date?.rows[0][currencyKey];
   } else if (transaction.currency_code == 'ILS') {
     amounts.eventAmountILS = amountToUse;
     amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;
@@ -372,14 +362,8 @@ async function getExchangeRates(currencyCode: any, date: Date) {
 }
 
 export async function getTransactionExchangeRates(transaction: any) {
-  const debitExchangeRates = await getExchangeRates(
-    transaction.currency_code,
-    transaction.debit_date
-  );
-  const invoiceExchangeRates = await getExchangeRates(
-    transaction.currency_code,
-    transaction.tax_invoice_date
-  );
+  const debitExchangeRates = await getExchangeRates(transaction.currency_code, transaction.debit_date);
+  const invoiceExchangeRates = await getExchangeRates(transaction.currency_code, transaction.tax_invoice_date);
   return {
     debitExchangeRates,
     invoiceExchangeRates,
@@ -421,16 +405,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     console.log('hashCreditcardIndexResult', hashCreditcardIndexResult.rows[0]);
     switch (transaction.currency_code) {
       case 'ILS':
-        isracardHashIndexes =
-          hashCreditcardIndexResult.rows[0].hashavshevet_account_ils;
+        isracardHashIndexes = hashCreditcardIndexResult.rows[0].hashavshevet_account_ils;
         break;
       case 'USD':
-        isracardHashIndexes =
-          hashCreditcardIndexResult.rows[0].hashavshevet_account_usd;
+        isracardHashIndexes = hashCreditcardIndexResult.rows[0].hashavshevet_account_usd;
         break;
       case 'EUR':
-        isracardHashIndexes =
-          hashCreditcardIndexResult.rows[0].hashavshevet_account_eur;
+        isracardHashIndexes = hashCreditcardIndexResult.rows[0].hashavshevet_account_eur;
         break;
       default:
         const errorMessage = `Unknown account type - ${transaction.currency_code}`;
@@ -486,9 +467,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 
   addTrueVATtoTransaction(transaction); // parseFloat
 
-  const transactionsExchnageRates = await getTransactionExchangeRates(
-    transaction
-  );
+  const transactionsExchnageRates = await getTransactionExchangeRates(transaction);
   const debitExchangeRates = transactionsExchnageRates.debitExchangeRates;
   const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
 
@@ -501,65 +480,48 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   entryForAccounting.creditAccount = transaction.tax_category;
   entryForAccounting.debitAccount = transaction.financial_entity;
 
-  entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount =
-    transaction.event_amount;
-  entryForAccounting.creditAmount = entryForAccounting.debitAmount =
-    transaction.tax_invoice_amount
-      ? transaction.tax_invoice_amount
-      : transaction.event_amount;
+  entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount = transaction.event_amount;
+  entryForAccounting.creditAmount = entryForAccounting.debitAmount = transaction.tax_invoice_amount
+    ? transaction.tax_invoice_amount
+    : transaction.event_amount;
 
-  entryForFinancialAccount.creditAmountILS =
-    entryForFinancialAccount.debitAmountILS = getILSForDate(
-      transaction,
-      debitExchangeRates
-    ).eventAmountILS;
-  entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS =
-    getILSForDate(
-      transaction,
-      transaction.account_type == 'creditcard'
-        ? debitExchangeRates
-        : invoiceExchangeRates
-    ).eventAmountILS;
+  entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS = getILSForDate(
+    transaction,
+    debitExchangeRates
+  ).eventAmountILS;
+  entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS = getILSForDate(
+    transaction,
+    transaction.account_type == 'creditcard' ? debitExchangeRates : invoiceExchangeRates
+  ).eventAmountILS;
 
   if (transaction.vatAfterDiduction && transaction.vatAfterDiduction != 0) {
-    entryForAccounting.secondAccountCreditAmount =
-      transaction.vatAfterDiduction;
+    entryForAccounting.secondAccountCreditAmount = transaction.vatAfterDiduction;
     entryForAccounting.secondAccountCreditAmountILS = getILSForDate(
       transaction,
       debitExchangeRates
     ).vatAfterDiductionILS;
     entryForAccounting.creditAmount = transaction.amountBeforeVAT;
-    entryForAccounting.creditAmountILS = getILSForDate(
-      transaction,
-      debitExchangeRates
-    ).amountBeforeVATILS;
-    entryForAccounting.secondAccountDebitAmount =
-      entryForAccounting.secondAccountDebitAmountILS = 0;
-    entryForAccounting.movementType =
-      hashVATIndexes.vatIncomesMovementTypeIndex;
+    entryForAccounting.creditAmountILS = getILSForDate(transaction, debitExchangeRates).amountBeforeVATILS;
+    entryForAccounting.secondAccountDebitAmount = entryForAccounting.secondAccountDebitAmountILS = 0;
+    entryForAccounting.movementType = hashVATIndexes.vatIncomesMovementTypeIndex;
     if (transaction.event_amount > 0) {
       entryForAccounting.creditAccount = hashVATIndexes.vatIncomesIndex;
     }
   } else if (transaction.tax_category != 'אוריח') {
-      entryForAccounting.movementType =
-        hashVATIndexes.vatFreeIncomesMovementTypeIndex;
+    entryForAccounting.movementType = hashVATIndexes.vatFreeIncomesMovementTypeIndex;
 
-      if (transaction.event_amount > 0) {
-        entryForAccounting.creditAccount = hashVATIndexes.vatFreeIncomesIndex;
-      }
+    if (transaction.event_amount > 0) {
+      entryForAccounting.creditAccount = hashVATIndexes.vatFreeIncomesIndex;
     }
+  }
 
   if (transaction.tax_invoice_currency) {
-    entryForFinancialAccount.creditAmountILS =
-      entryForFinancialAccount.debitAmountILS =
-        originalTransaction.event_amount;
+    entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
+      originalTransaction.event_amount;
   }
-  entryForAccounting.reference2 = entryForFinancialAccount.reference2 =
-    transaction.bank_reference;
-  entryForAccounting.reference1 = entryForFinancialAccount.reference1 =
-    transaction.tax_invoice_number;
-  entryForAccounting.description = entryForFinancialAccount.description =
-    transaction.user_description;
+  entryForAccounting.reference2 = entryForFinancialAccount.reference2 = transaction.bank_reference;
+  entryForAccounting.reference1 = entryForFinancialAccount.reference1 = transaction.tax_invoice_number;
+  entryForAccounting.description = entryForFinancialAccount.description = transaction.user_description;
 
   if (transaction.event_amount < 0) {
     function swap(obj: any, key1: any, key2: any) {
@@ -568,16 +530,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     swap(entryForAccounting, 'creditAccount', 'debitAccount');
     swap(entryForAccounting, 'creditAmount', 'debitAmount');
     swap(entryForAccounting, 'creditAmountILS', 'debitAmountILS');
-    swap(
-      entryForAccounting,
-      'secondAccountCreditAmount',
-      'secondAccountDebitAmount'
-    );
-    swap(
-      entryForAccounting,
-      'secondAccountCreditAmountILS',
-      'secondAccountDebitAmountILS'
-    );
+    swap(entryForAccounting, 'secondAccountCreditAmount', 'secondAccountDebitAmount');
+    swap(entryForAccounting, 'secondAccountCreditAmountILS', 'secondAccountDebitAmountILS');
     swap(entryForAccounting, 'reference1', 'reference2');
     swap(entryForFinancialAccount, 'creditAccount', 'debitAccount');
     swap(entryForFinancialAccount, 'creditAmount', 'debitAmount');
@@ -587,10 +541,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : transaction.is_property
-        ? (entryForAccounting.movementType =
-            hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
-        : (entryForAccounting.movementType =
-            hashVATIndexes.vatExpensesMovementTypeIndex);
+        ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
+        : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
@@ -639,9 +591,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.bank_description
     ),
     hashNumber(entryForAccounting.debitAmountILS),
-    transaction.currency_code != 'ILS'
-      ? hashNumber(entryForAccounting.debitAmount)
-      : null,
+    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.debitAmount) : null,
     hashCurrencyType(transaction.currency_code),
     hashAccounts(
       entryForAccounting.creditAccount,
@@ -653,40 +603,28 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.bank_description
     ),
     hashNumber(entryForAccounting.creditAmountILS),
-    transaction.currency_code != 'ILS'
-      ? hashNumber(entryForAccounting.creditAmount)
-      : null,
-    entryForAccounting.secondAccountDebitAmount &&
-    entryForAccounting.secondAccountDebitAmount != 0
+    transaction.currency_code != 'ILS' ? hashNumber(entryForAccounting.creditAmount) : null,
+    entryForAccounting.secondAccountDebitAmount && entryForAccounting.secondAccountDebitAmount != 0
       ? transaction.is_property
         ? hashVATIndexes.vatPropertyInputsIndex
         : hashVATIndexes.vatInputsIndex
       : null,
-    entryForAccounting.secondAccountDebitAmount
-      ? hashNumber(entryForAccounting.secondAccountDebitAmountILS)
-      : null,
-    entryForAccounting.secondAccountDebitAmount &&
-    transaction.currency_code != 'ILS'
+    entryForAccounting.secondAccountDebitAmount ? hashNumber(entryForAccounting.secondAccountDebitAmountILS) : null,
+    entryForAccounting.secondAccountDebitAmount && transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountDebitAmount)
       : null,
-    entryForAccounting.secondAccountCreditAmount &&
-    entryForAccounting.secondAccountCreditAmount != 0
+    entryForAccounting.secondAccountCreditAmount && entryForAccounting.secondAccountCreditAmount != 0
       ? hashVATIndexes.vatOutputsIndex
       : null,
     entryForAccounting.secondAccountCreditAmountILS
       ? hashNumber(entryForAccounting.secondAccountCreditAmountILS)
       : null,
-    entryForAccounting.secondAccountCreditAmount &&
-    transaction.currency_code != 'ILS'
+    entryForAccounting.secondAccountCreditAmount && transaction.currency_code != 'ILS'
       ? hashNumber(entryForAccounting.secondAccountCreditAmount)
       : null,
     entryForAccounting.description,
-    entryForAccounting.reference1
-      ? (entryForAccounting.reference1?.match(/\d+/g) || []).join('').substr(-9)
-      : null, // add check on the db for it
-    entryForAccounting.reference2
-      ? (entryForAccounting.reference2?.match(/\d+/g) || []).join('').substr(-9)
-      : null,
+    entryForAccounting.reference1 ? (entryForAccounting.reference1?.match(/\d+/g) || []).join('').substr(-9) : null, // add check on the db for it
+    entryForAccounting.reference2 ? (entryForAccounting.reference2?.match(/\d+/g) || []).join('').substr(-9) : null,
     entryForAccounting.movementType,
     hashDateFormat(
       transaction.account_type == 'creditcard'
@@ -714,9 +652,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       select tax_invoice_amount, tax_invoice_currency
       from accounter_schema.all_transactions
       where
-        debit_date = to_date('${moment(transaction.event_date).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD')
+        debit_date = to_date('${moment(transaction.event_date).format('YYYY-MM-DD')}', 'YYYY-MM-DD')
         and account_number = $$${transaction.bank_reference}$$
         and tax_invoice_currency is not null;  
   `);
@@ -725,12 +661,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       originalInvoicedAmountAndCurrency.rows &&
       originalInvoicedAmountAndCurrency.rows.length > 0
     ) {
-      foreignBalance = hashNumber(
-        originalInvoicedAmountAndCurrency.rows[0].tax_invoice_amount
-      );
-      currency = hashCurrencyType(
-        originalInvoicedAmountAndCurrency.rows[0].tax_invoice_currency
-      );
+      foreignBalance = hashNumber(originalInvoicedAmountAndCurrency.rows[0].tax_invoice_amount);
+      currency = hashCurrencyType(originalInvoicedAmountAndCurrency.rows[0].tax_invoice_currency);
     }
   }
   const entryForFinancialAccountValues = [
@@ -745,9 +677,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.bank_description
     ),
     hashNumber(entryForFinancialAccount.debitAmountILS),
-    transaction.currency_code != 'ILS'
-      ? hashNumber(entryForFinancialAccount.debitAmount)
-      : foreignBalance,
+    transaction.currency_code != 'ILS' ? hashNumber(entryForFinancialAccount.debitAmount) : foreignBalance,
     currency, // TODO: Check if it works for forgien creditcard in ILS
     hashAccounts(
       entryForFinancialAccount.creditAccount,
@@ -759,9 +689,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.bank_description
     ),
     hashNumber(entryForFinancialAccount.creditAmountILS),
-    transaction.currency_code != 'ILS'
-      ? hashNumber(entryForFinancialAccount.creditAmount)
-      : foreignBalance,
+    transaction.currency_code != 'ILS' ? hashNumber(entryForFinancialAccount.creditAmount) : foreignBalance,
     null, // Check for interest transactions (הכנרבמ)
     null,
     null,
@@ -770,19 +698,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     null,
     entryForFinancialAccount.description,
     entryForFinancialAccount.reference1
-      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
       : null, // add check on the db for it
     entryForFinancialAccount.reference2
-      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-          .join('')
-          .substr(-9)
+      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
       : null,
     null,
-    hashDateFormat(
-      transaction.debit_date ? transaction.debit_date : transaction.event_date
-    ),
+    hashDateFormat(transaction.debit_date ? transaction.debit_date : transaction.event_date),
     hashDateFormat(transaction.event_date),
     transaction.id,
     'generated_financial_account',
@@ -802,48 +724,27 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     console.log('conversation!  ', conversionOtherSide.rows);
 
     if (transaction.event_amount > 0 && transaction.currency_code != 'ILS') {
-      entryForFinancialAccountValues[2] = hashNumber(
-        conversionOtherSide.rows[0].event_amount
-      );
+      entryForFinancialAccountValues[2] = hashNumber(conversionOtherSide.rows[0].event_amount);
       entryForFinancialAccountValues[5] = null;
       entryForFinancialAccountValues[6] = null;
       entryForFinancialAccountValues[7] = null;
-    } else if (
-      transaction.event_amount < 0 &&
-      transaction.currency_code == 'ILS'
-    ) {
+    } else if (transaction.event_amount < 0 && transaction.currency_code == 'ILS') {
       entryForFinancialAccountValues[1] = null;
       entryForFinancialAccountValues[2] = null;
       entryForFinancialAccountValues[3] = null;
-      entryForFinancialAccountValues[4] = hashCurrencyType(
-        conversionOtherSide.rows[0].currency_code
-      );
-      entryForFinancialAccountValues[7] = hashNumber(
-        conversionOtherSide.rows[0].event_amount
-      );
-    } else if (
-      transaction.event_amount > 0 &&
-      transaction.currency_code == 'ILS'
-    ) {
-      entryForFinancialAccountValues[3] = hashNumber(
-        conversionOtherSide.rows[0].event_amount
-      );
-      entryForFinancialAccountValues[4] = hashCurrencyType(
-        conversionOtherSide.rows[0].currency_code
-      );
+      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
+      entryForFinancialAccountValues[7] = hashNumber(conversionOtherSide.rows[0].event_amount);
+    } else if (transaction.event_amount > 0 && transaction.currency_code == 'ILS') {
+      entryForFinancialAccountValues[3] = hashNumber(conversionOtherSide.rows[0].event_amount);
+      entryForFinancialAccountValues[4] = hashCurrencyType(conversionOtherSide.rows[0].currency_code);
       entryForFinancialAccountValues[5] = null;
       entryForFinancialAccountValues[6] = null;
       entryForFinancialAccountValues[7] = null;
-    } else if (
-      transaction.event_amount < 0 &&
-      transaction.currency_code != 'ILS'
-    ) {
+    } else if (transaction.event_amount < 0 && transaction.currency_code != 'ILS') {
       entryForFinancialAccountValues[1] = null;
       entryForFinancialAccountValues[2] = null;
       entryForFinancialAccountValues[3] = null;
-      entryForFinancialAccountValues[6] = hashNumber(
-        conversionOtherSide.rows[0].event_amount
-      );
+      entryForFinancialAccountValues[6] = hashNumber(conversionOtherSide.rows[0].event_amount);
     }
   }
 
@@ -899,17 +800,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
     const entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.event_date),
       hashVATIndexes.hashCurrencyRatesDifferencesIndex,
-      hashNumber(
-        entryForFinancialAccount.debitAmountILS -
-          entryForAccounting.debitAmountILS
-      ),
+      hashNumber(entryForFinancialAccount.debitAmountILS - entryForAccounting.debitAmountILS),
       null,
       hashCurrencyType('ILS'),
       credit,
-      hashNumber(
-        entryForFinancialAccount.debitAmountILS -
-          entryForAccounting.debitAmountILS
-      ),
+      hashNumber(entryForFinancialAccount.debitAmountILS - entryForAccounting.debitAmountILS),
       hashCurrencyType('ILS'),
       null, // Check for interest transactions (הכנרבמ)
       null,
@@ -919,19 +814,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       null,
       entryForFinancialAccount.description,
       entryForFinancialAccount.reference1
-        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
         : null, // add check on the db for it
       entryForFinancialAccount.reference2
-        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
         : null,
       null,
-      hashDateFormat(
-        transaction.debit_date ? transaction.debit_date : transaction.event_date
-      ),
+      hashDateFormat(transaction.debit_date ? transaction.debit_date : transaction.event_date),
       hashDateFormat(transaction.event_date),
       transaction.id,
       'generated_invoice_rates_change_invoice_currency',
@@ -947,10 +836,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       console.log(JSON.stringify(updateResult));
     } catch (error) {
       // TODO: Log important checks
-      console.log(
-        'error in insert entryForExchangeRatesDifferenceValues - ',
-        error
-      );
+      console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
     }
   } else if (
     getILSForDate(transaction, invoiceExchangeRates).eventAmountILS !=
@@ -981,12 +867,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       );
     }
     const amount = hashNumberNoAbs(
-      numberRounded(
-        getILSForDate(transaction, debitExchangeRates).eventAmountILS
-      ) -
-        numberRounded(
-          getILSForDate(transaction, invoiceExchangeRates).eventAmountILS
-        )
+      numberRounded(getILSForDate(transaction, debitExchangeRates).eventAmountILS) -
+        numberRounded(getILSForDate(transaction, invoiceExchangeRates).eventAmountILS)
     );
     const entryForExchangeRatesDifferenceValues = [
       hashDateFormat(transaction.tax_invoice_date),
@@ -1005,19 +887,13 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       null,
       entryForFinancialAccount.description,
       entryForFinancialAccount.reference1
-        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+        ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
         : null, // add check on the db for it
       entryForFinancialAccount.reference2
-        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || [])
-            .join('')
-            .substr(-9)
+        ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
         : null,
       null,
-      hashDateFormat(
-        transaction.debit_date ? transaction.debit_date : transaction.event_date
-      ),
+      hashDateFormat(transaction.debit_date ? transaction.debit_date : transaction.event_date),
       hashDateFormat(transaction.event_date),
       transaction.id,
       'generated_invoice_rates_change',
@@ -1033,10 +909,7 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       console.log(JSON.stringify(updateResult));
     } catch (error) {
       // TODO: Log important checks
-      console.log(
-        'error in insert entryForExchangeRatesDifferenceValues - ',
-        error
-      );
+      console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
     }
   }
 
@@ -1044,12 +917,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
 }
 
 export function addTrueVATtoTransaction(transaction: any) {
-  const amountToUse = transaction.tax_invoice_amount
-    ? transaction.tax_invoice_amount
-    : transaction.event_amount;
-  transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(
-    transaction.tax_category
-  )
+  const amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
+  transaction.vatAfterDiduction = !taxCategoriesWithNotFullVAT.includes(transaction.tax_category)
     ? parseFloat(transaction.vat)
     : (transaction.vat / 3) * 2;
   // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know

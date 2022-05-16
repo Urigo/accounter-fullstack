@@ -23,11 +23,7 @@ export const InvoiceFile: FC<Props> = ({ transaction, style }) => {
           yes
         </a>
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="tax_invoice_file"
-        promptText="New Invoice path:"
-      />
+      <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" />
     </td>
   );
 };

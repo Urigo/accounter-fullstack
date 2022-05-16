@@ -25,7 +25,7 @@ export const AllUsers: FC = () => {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {users.map(user => (
             <tr>
               <td>{user.username}</td>
             </tr>

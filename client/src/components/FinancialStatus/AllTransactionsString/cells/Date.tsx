@@ -12,9 +12,7 @@ export const Date: FC<Props> = ({ transaction, style }) => {
     <td style={{ ...style }}>
       {moment(transaction.event_date).format('DD/MM/YY')}
       {transaction.debit_date && (
-        <div style={{ fontSize: '12px', color: 'gray' }}>
-          {moment(transaction.debit_date).format('DD/MM/YY')}
-        </div>
+        <div style={{ fontSize: '12px', color: 'gray' }}>{moment(transaction.debit_date).format('DD/MM/YY')}</div>
       )}
     </td>
   );

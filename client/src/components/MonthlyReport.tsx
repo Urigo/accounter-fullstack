@@ -7,9 +7,7 @@ import type { MonthTaxReport } from '../models/types';
 export const MonthlyReport: FC = () => {
   const [searchParams] = useSearchParams();
   const { getMonthlyTaxesReport } = useSql();
-  const [monthlyTaxesReport, setMonthlyTaxesReport] = useState<
-    MonthTaxReport[]
-  >([]);
+  const [monthlyTaxesReport, setMonthlyTaxesReport] = useState<MonthTaxReport[]>([]);
 
   const month = searchParams.get('month');
   const year = searchParams.get('year');
@@ -54,7 +52,7 @@ export const MonthlyReport: FC = () => {
           </tr>
         </thead>
         <tbody>
-          {monthlyTaxesReport.map((row) => (
+          {monthlyTaxesReport.map(row => (
             <tr>
               <td>{row.תאריך_חשבונית}</td>
               <td>{row.חשבון_חובה_1}</td>

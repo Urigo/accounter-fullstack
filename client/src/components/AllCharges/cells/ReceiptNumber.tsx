@@ -11,9 +11,7 @@ type Props = {
 export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
   const indicator =
     isBusiness(transaction) &&
-    !entitiesWithoutInvoiceNumuber.includes(
-      transaction.financial_entity ?? ''
-    ) &&
+    !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity ?? '') &&
     !transaction.receipt_number &&
     !transaction.tax_invoice_number;
 
@@ -25,11 +23,7 @@ export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
       }}
     >
       {transaction.receipt_number ?? 'null'}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="receipt_number"
-        promptText="New Receipt Number:"
-      />
+      <UpdateButton transaction={transaction} propertyName="receipt_number" promptText="New Receipt Number:" />
     </td>
   );
 };

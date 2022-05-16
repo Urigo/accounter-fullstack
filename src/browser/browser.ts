@@ -4,51 +4,26 @@ export function printElement(clickedElement: HTMLElement, newValue: string) {
   const changeRequest = {
     newValue: newValue,
     propertyToChange: clickedElement!.parentElement!.getAttribute('class'),
-    id: clickedElement!.parentElement!.parentElement!.getAttribute(
-      'transaction_id'
-    ),
-    bank_reference:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'bank_reference'
-      ),
-    account_number:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'account_number'
-      ),
-    account_type:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'account_type'
-      ),
-    currency_code:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'currency_code'
-      ),
-    event_date:
-      clickedElement!.parentElement!.parentElement!.getAttribute('event_date'),
-    event_amount:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'event_amount'
-      ),
-    event_number:
-      clickedElement!.parentElement!.parentElement!.getAttribute(
-        'event_number'
-      ),
+    id: clickedElement!.parentElement!.parentElement!.getAttribute('transaction_id'),
+    bank_reference: clickedElement!.parentElement!.parentElement!.getAttribute('bank_reference'),
+    account_number: clickedElement!.parentElement!.parentElement!.getAttribute('account_number'),
+    account_type: clickedElement!.parentElement!.parentElement!.getAttribute('account_type'),
+    currency_code: clickedElement!.parentElement!.parentElement!.getAttribute('currency_code'),
+    event_date: clickedElement!.parentElement!.parentElement!.getAttribute('event_date'),
+    event_amount: clickedElement!.parentElement!.parentElement!.getAttribute('event_amount'),
+    event_number: clickedElement!.parentElement!.parentElement!.getAttribute('event_number'),
   };
   console.log(changeRequest);
 
   fetch('/editProperty', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then((response) => {
+  }).then(response => {
     console.log('Request complete! response:', response);
   });
 }
 
-export function changeConfirmation(
-  id: string,
-  checkbox: HTMLInputElement,
-  accountType: string
-) {
+export function changeConfirmation(id: string, checkbox: HTMLInputElement, accountType: string) {
   const changeRequest = {
     id,
     reviewed: checkbox.checked,
@@ -59,7 +34,7 @@ export function changeConfirmation(
   fetch('/reviewTransaction', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then((response) => {
+  }).then(response => {
     console.log('Review request complete! response:', response);
   });
 }
@@ -79,7 +54,7 @@ export function generateTaxMovements(transactionId: string) {
   fetch('/generateTaxMovements', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then((response) => {
+  }).then(response => {
     console.log('Request complete! response:', response);
   });
 }
@@ -91,7 +66,7 @@ export function deleteTaxMovements(transactionId: string) {
   fetch('/deleteTaxMovements', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then((response) => {
+  }).then(response => {
     console.log('Request complete! response:', response);
   });
 }
@@ -119,7 +94,7 @@ export function editTransactionAttribute(
   fetch('/editTransactionAttribute', {
     method: 'POST',
     body: JSON.stringify(changeRequest),
-  }).then((response) => {
+  }).then(response => {
     console.log('Request complete! response:', response);
   });
 }

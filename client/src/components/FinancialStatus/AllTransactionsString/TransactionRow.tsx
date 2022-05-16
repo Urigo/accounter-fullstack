@@ -41,32 +41,17 @@ type Props = {
   charge?: ChargesFragment['charges']['0'];
 };
 
-const rowStyle = ({
-  hover,
-  index,
-}: {
-  hover: boolean;
-  index: number;
-}): CSSProperties => ({
+const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const TransactionRow: FC<Props> = ({
-  transaction,
-  columns,
-  index,
-  charge,
-}) => {
+export const TransactionRow: FC<Props> = ({ transaction, columns, index, charge }) => {
   const [hover, setHover] = useState(false);
 
   return (
     <>
-      <tr
-        style={rowStyle({ hover, index })}
-        onPointerOver={() => setHover(true)}
-        onPointerOut={() => setHover(false)}
-      >
-        {columns.map((column) => {
+      <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+        {columns.map(column => {
           switch (column) {
             case 'Date': {
               return <Date transaction={transaction} />;
@@ -132,10 +117,9 @@ export const TransactionRow: FC<Props> = ({
       <tr>
         <td colSpan={columns.length}>
           {!charge && <p>No Data</p>}
-          {charge &&
-            (!charge.ledgerRecords || charge.ledgerRecords.length === 0) && (
-              <p>No ledger records for this charge</p>
-            )}
+          {charge && (!charge.ledgerRecords || charge.ledgerRecords.length === 0) && (
+            <p>No ledger records for this charge</p>
+          )}
           {charge?.ledgerRecords && charge.ledgerRecords.length > 0 && (
             <LedgerRecordsTable ledgerRecords={charge.ledgerRecords} />
           )}

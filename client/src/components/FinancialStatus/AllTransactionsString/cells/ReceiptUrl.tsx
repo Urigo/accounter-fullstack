@@ -9,10 +9,7 @@ type Props = {
 };
 
 export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
-  const indicator =
-    isBusiness(transaction) &&
-    !transaction.receipt_url &&
-    !transaction.tax_invoice_file;
+  const indicator = isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file;
 
   return (
     <td
@@ -26,11 +23,7 @@ export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
           yes
         </a>
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="receipt_url"
-        promptText="New Receipt url:"
-      />
+      <UpdateButton transaction={transaction} propertyName="receipt_url" promptText="New Receipt url:" />
     </td>
   );
 };

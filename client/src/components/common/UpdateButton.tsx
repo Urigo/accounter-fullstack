@@ -8,11 +8,7 @@ type Props = {
   promptText: string;
 };
 
-export const UpdateButton: React.FC<Props> = ({
-  transaction,
-  propertyName,
-  promptText,
-}) => {
+export const UpdateButton: React.FC<Props> = ({ transaction, propertyName, promptText }) => {
   const { editTransaction } = useSql();
 
   return (

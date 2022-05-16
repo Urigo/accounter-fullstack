@@ -5,9 +5,7 @@ import type { ThisMonthPrivateExpensesType } from '../../models/types';
 
 export const ThisMonthPrivateExpensesTable: FC = () => {
   const { getThisMonthPrivateExpenses } = useSql();
-  const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<
-    ThisMonthPrivateExpensesType[]
-  >([]);
+  const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<ThisMonthPrivateExpensesType[]>([]);
 
   useEffect(() => {
     getThisMonthPrivateExpenses().then(setThisMonthPrivateExpenses);

@@ -19,13 +19,8 @@ export const ReceiptDate: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.receipt_date &&
-        moment(transaction.receipt_date).format('DD/MM/YY')}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="receipt_date"
-        promptText="New Receipt Date:"
-      />
+      {transaction.receipt_date && moment(transaction.receipt_date).format('DD/MM/YY')}
+      <UpdateButton transaction={transaction} propertyName="receipt_date" promptText="New Receipt Date:" />
     </td>
   );
 };

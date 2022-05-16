@@ -9,10 +9,7 @@ type Props = {
 };
 
 export const ReceiptImg: FC<Props> = ({ transaction, style }) => {
-  const indicator =
-    isBusiness(transaction) &&
-    !transaction.receipt_image &&
-    !transaction.proforma_invoice_file;
+  const indicator = isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file;
 
   return (
     <td
@@ -26,11 +23,7 @@ export const ReceiptImg: FC<Props> = ({ transaction, style }) => {
           yes
         </a>
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="receipt_image"
-        promptText="New Receipt Photo:"
-      />
+      <UpdateButton transaction={transaction} propertyName="receipt_image" promptText="New Receipt Photo:" />
     </td>
   );
 };

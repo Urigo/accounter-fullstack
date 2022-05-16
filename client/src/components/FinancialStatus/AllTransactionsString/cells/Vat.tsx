@@ -19,9 +19,7 @@ export const Vat: FC<Props> = ({ transaction, style }) => {
       isBusiness(transaction) &&
       transaction.currency_code === 'ILS' &&
       !businessesWithoutVAT.includes(transaction.financial_entity || '') &&
-      !businessesWithoutTaxCategory.includes(
-        transaction.financial_entity ?? ''
-      )) ||
+      !businessesWithoutTaxCategory.includes(transaction.financial_entity ?? '')) ||
     (transaction.vat &&
       ((transaction.vat > 0 && Number(transaction.event_amount) < 0) ||
         (transaction.vat < 0 && Number(transaction.event_amount) > 0)));
@@ -36,18 +34,8 @@ export const Vat: FC<Props> = ({ transaction, style }) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {!transaction.vat && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName="vat"
-          value={cellText?.toString()}
-        />
-      )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="vat"
-        promptText="New VAT:"
-      />
+      {!transaction.vat && <ConfirmButton transaction={transaction} propertyName="vat" value={cellText?.toString()} />}
+      <UpdateButton transaction={transaction} propertyName="vat" promptText="New VAT:" />
     </td>
   );
 };

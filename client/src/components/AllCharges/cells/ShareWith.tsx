@@ -44,11 +44,9 @@ export const ShareWith: FC<Props> = ({
   const shareWithDotanFlag =
     !hasBeneficiariesd &&
     (!(financialEntityType === 'LtdFinancialEntity') ||
-      [
-        ...privateBusinessExpenses,
-        ...businessesNotToShare,
-        ...businessesWithoutTaxCategory,
-      ].includes(financialEntityName));
+      [...privateBusinessExpenses, ...businessesNotToShare, ...businessesWithoutTaxCategory].includes(
+        financialEntityName
+      ));
 
   return (
     <td
@@ -57,12 +55,8 @@ export const ShareWith: FC<Props> = ({
         ...style,
       }}
     >
-      {beneficiaries.map(
-        (beneficiary) =>
-          `${beneficiary.counterparty.name}: ${beneficiary.percentage}`
-      )}
-      {beneficiaries.length === 0 &&
-        alternativeCharge?.financialAccountsToBalance}
+      {beneficiaries.map(beneficiary => `${beneficiary.counterparty.name}: ${beneficiary.percentage}`)}
+      {beneficiaries.length === 0 && alternativeCharge?.financialAccountsToBalance}
       {/* {!hasBeneficiariesd && (
         <ConfirmButton
           transaction={transaction}

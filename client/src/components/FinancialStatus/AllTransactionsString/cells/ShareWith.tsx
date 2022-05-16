@@ -10,25 +10,18 @@ type Props = {
 
 export const ShareWith: FC<Props> = ({ transaction, style }) => {
   const cellText =
-    transaction.financial_accounts_to_balance ??
-    suggestedTransaction(transaction)?.financialAccountsToBalance;
+    transaction.financial_accounts_to_balance ?? suggestedTransaction(transaction)?.financialAccountsToBalance;
 
   return (
     <td
       style={{
-        ...(shareWithDotan(transaction)
-          ? { backgroundColor: 'rgb(236, 207, 57)' }
-          : {}),
+        ...(shareWithDotan(transaction) ? { backgroundColor: 'rgb(236, 207, 57)' } : {}),
         ...style,
       }}
     >
       {cellText ?? 'undefined'}
       {!transaction.financial_accounts_to_balance && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName="financial_accounts_to_balance"
-          value={cellText}
-        />
+        <ConfirmButton transaction={transaction} propertyName="financial_accounts_to_balance" value={cellText} />
       )}
       <UpdateButton
         transaction={transaction}

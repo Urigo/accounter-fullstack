@@ -3,10 +3,7 @@ import type { TransactionColumn } from '../../models/types';
 import { ChargeRow } from './ChargeRow';
 import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
-import {
-  ChargesFieldsFragment,
-  useFinancialEntityQuery,
-} from '../../__generated__/types';
+import { ChargesFieldsFragment, useFinancialEntityQuery } from '../../__generated__/types';
 import { businesses } from '../../helpers';
 
 gql`
@@ -60,7 +57,7 @@ export const AllCharges: FC = () => {
     <table>
       <thead>
         <tr>
-          {columns.map((key) => (
+          {columns.map(key => (
             <th>{key}</th>
           ))}
         </tr>
@@ -73,11 +70,7 @@ export const AllCharges: FC = () => {
             key={charge.id}
             charge={charge as ChargesFieldsFragment['charges']['0']}
             financialEntityType={data!.financialEntity.__typename}
-            financialEntityName={
-              'name' in data!.financialEntity
-                ? data!.financialEntity.name
-                : undefined
-            }
+            financialEntityName={'name' in data!.financialEntity ? data!.financialEntity.name : undefined}
           />
         ))}
       </tbody>

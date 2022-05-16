@@ -1,4 +1,4 @@
-import moment from "moment";
+import moment from 'moment';
 
 export const parseMonth = (month?: string): string | undefined => {
   if (!month) {

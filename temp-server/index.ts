@@ -11,15 +11,9 @@ const port = 4001;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    req.headers.origin ?? 'http://localhost:3000'
-  );
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? 'http://localhost:3000');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Access-Control-Allow-Headers'
-  );
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers');
   next();
 });
 
@@ -349,60 +343,54 @@ app.post('/getMonthlyTaxesReport', async (req: Request, res: Response) => {
   res.send(queryRes.rows);
 });
 
-app.post(
-  '/getTopPrivateNotCategorized',
-  async (req: Request, res: Response) => {
-    console.log('getTopPrivateNotCategorized request');
+app.post('/getTopPrivateNotCategorized', async (req: Request, res: Response) => {
+  console.log('getTopPrivateNotCategorized request');
 
-    const startingDate = req.body?.startingDate;
+  const startingDate = req.body?.startingDate;
 
-    // TODO: add format validation
-    if (!startingDate) {
-      throw new Error('startingDate is missing');
-    }
+  // TODO: add format validation
+  if (!startingDate) {
+    throw new Error('startingDate is missing');
+  }
 
-    const queryRes = await pool.query(
-      `
+  const queryRes = await pool.query(
+    `
       select *
       from top_expenses_not_categorized($1);
     `,
-      [`$$${startingDate}$$`]
-    );
+    [`$$${startingDate}$$`]
+  );
 
-    res.send(queryRes.rows);
+  res.send(queryRes.rows);
+});
+
+app.post('/updateBankTransactionAttribute', async (req: Request, res: Response) => {
+  console.log('updateBankTransactionAttribute request');
+
+  const { transactionId, attribute, value } = req.body;
+
+  // TODO: add format validation
+  if (!transactionId) {
+    throw new Error('transactionId is missing');
   }
-);
+  if (!attribute) {
+    throw new Error('attribute is missing');
+  }
+  if (!value) {
+    throw new Error('value is missing');
+  }
 
-app.post(
-  '/updateBankTransactionAttribute',
-  async (req: Request, res: Response) => {
-    console.log('updateBankTransactionAttribute request');
-
-    const { transactionId, attribute, value } = req.body;
-
-    // TODO: add format validation
-    if (!transactionId) {
-      throw new Error('transactionId is missing');
-    }
-    if (!attribute) {
-      throw new Error('attribute is missing');
-    }
-    if (!value) {
-      throw new Error('value is missing');
-    }
-
-    const queryRes = await pool.query(
-      `
+  const queryRes = await pool.query(
+    `
         update accounter_schema.ledger
         set ${attribute} = $1
         where id = $2;
       `,
-      [value, transactionId]
-    );
+    [value, transactionId]
+  );
 
-    res.send(queryRes.rows);
-  }
-);
+  res.send(queryRes.rows);
+});
 
 app.post('/editTransaction', async (req: Request, res: Response) => {
   const { id, propertyToChange, newValue } = req.body;
@@ -489,7 +477,7 @@ app.post('/getAllUsers', async (req: Request, res: Response) => {
   const query =
     ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
       .map(
-        (column) =>
+        column =>
           `select ${column} as userName from accounter_schema.ledger${
             currrentCompany ? ` where business = '${currrentCompany}'` : ''
           }`
