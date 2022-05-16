@@ -373,13 +373,11 @@ function hashAccounts(
         if (transactionDescription == 'הפקדה לפקדון') {
           return 'פקדון';
           // return '4668039';
-        } else {
-          if (hashBusinessIndexes.hash_index) {
+        } else if (hashBusinessIndexes.hash_index) {
             return hashBusinessIndexes.hash_index;
           } else {
             return accountType ? accountType.substring(0, 15).trimEnd() : null;
           }
-        }
       }
       return accountType ? accountType.substring(0, 15).trimEnd() : null;
   }
@@ -557,8 +555,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     if (transaction.event_amount > 0) {
       entryForAccounting.creditAccount = hashVATIndexes.vatIncomesIndex;
     }
-  } else {
-    if (transaction.tax_category != 'אוריח') {
+  } else if (transaction.tax_category != 'אוריח') {
       entryForAccounting.movementType =
         hashVATIndexes.vatFreeIncomesMovementTypeIndex;
 
@@ -566,7 +563,6 @@ export const generateTaxMovement = async (transactionId: string) => {
         entryForAccounting.creditAccount = hashVATIndexes.vatFreeIncomesIndex;
       }
     }
-  }
 
   if (transaction.tax_invoice_currency) {
     entryForFinancialAccount.creditAmountILS =
