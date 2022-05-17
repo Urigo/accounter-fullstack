@@ -1,16 +1,22 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
-import { getChargesByFinancialAccountNumbers, getChargesByFinancialEntityIds } from './providers/charges.mjs';
+import {
+  getChargesByFinancialAccountNumbers,
+  getChargesByFinancialEntityIds,
+  updateCharge,
+} from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
 import { getFinancialAccountsByAccountNumbers, getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
 import { getChargesByIds, getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
+import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
   CommonTransactionResolvers,
   ConversionTransactionResolvers,
   DocumentResolvers,
+  Currency,
   FeeTransactionResolvers,
   LtdFinancialEntityResolvers,
   PersonalFinancialEntityResolvers,
@@ -115,8 +121,129 @@ export const resolvers: Resolvers = {
       return dbDocs;
     },
   },
-
-
+  Mutation: {
+    updateCharge: async (_, { chargeId, fields }) => {
+      const adjustedFields: IUpdateChargeParams = {
+        accountNumber: null,
+        accountType: null,
+        bankDescription: null,
+        bankReference: null,
+        businessTrip: null,
+        contraCurrencyCode: null,
+        currencyCode: null,
+        currencyRate: null,
+        currentBalance: null,
+        debitDate: null,
+        detailedBankDescription: null,
+        eventAmount: null,
+        eventDate: null,
+        eventNumber: null,
+        financialAccountsToBalance: null,
+        financialEntity: fields.counterparty?.name ?? null,
+        hashavshevetId: null,
+        interest: null,
+        isConversion: null,
+        isProperty: fields.isProperty ?? null,
+        links: null,
+        originalId: null,
+        personalCategory: fields.tag ?? null,
+        proformaInvoiceFile: null,
+        receiptDate: null,
+        receiptImage: null,
+        receiptNumber: null,
+        receiptUrl: null,
+        reviewed: fields.accountantApproval?.approved ?? null,
+        taxCategory: null,
+        taxInvoiceAmount: null,
+        taxInvoiceCurrency: null,
+        taxInvoiceDate: null,
+        taxInvoiceFile: null,
+        taxInvoiceNumber: null,
+        userDescription: null,
+        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        vat:
+          (fields.vat?.currency && fields.vat.currency !== Currency.Nis
+            ? null
+            : fields.vat?.value) ?? null,
+        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        withholdingTax:
+          (fields.withholdingTax?.currency &&
+          fields.withholdingTax.currency !== Currency.Nis
+            ? null
+            : fields.withholdingTax?.value) ?? null,
+        chargeId,
+      };
+      try {
+        const res = await updateCharge.run({ ...adjustedFields }, pool);
+        return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    updateTransaction: async (_, { transactionId, fields }) => {
+      const adjustedFields: IUpdateChargeParams = {
+        accountNumber: null,
+        accountType: null,
+        bankDescription: null,
+        bankReference: fields.referenceNumber ?? null,
+        businessTrip: null,
+        contraCurrencyCode: null,
+        currencyCode: null,
+        currencyRate: null,
+        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        currentBalance:
+          (fields.balance?.currency && fields.balance.currency !== Currency.Nis
+            ? null
+            : fields.balance?.value?.toFixed(2)) ?? null,
+        debitDate: fields.effectiveDate ?? null,
+        detailedBankDescription: null,
+        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        eventAmount:
+          (fields.amount?.currency && fields.amount.currency !== Currency.Nis
+            ? null
+            : fields.amount?.value?.toFixed(2)) ?? null,
+        eventDate: null,
+        eventNumber: null,
+        financialAccountsToBalance: null,
+        financialEntity: null,
+        hashavshevetId: fields.hashavshevetId ?? null,
+        interest: null,
+        isConversion: null,
+        isProperty: null,
+        links: null,
+        originalId: null,
+        personalCategory: null,
+        proformaInvoiceFile: null,
+        receiptDate: null,
+        receiptImage: null,
+        receiptNumber: null,
+        receiptUrl: null,
+        reviewed: fields.accountantApproval?.approved ?? null,
+        taxCategory: null,
+        taxInvoiceAmount: null,
+        taxInvoiceCurrency: null,
+        taxInvoiceDate: null,
+        taxInvoiceFile: null,
+        taxInvoiceNumber: null,
+        userDescription: fields.userNote ?? null,
+        vat: null,
+        withholdingTax: null,
+        chargeId: transactionId,
+      };
+      try {
+        const res = await updateCharge.run({ ...adjustedFields }, pool);
+        return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+  },
   Invoice: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {

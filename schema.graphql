@@ -23,8 +23,9 @@ interface Document implements Linkable {
   image: URL!
   " link to original file gmail, pdf "
   file: URL
-  charge: Charge 
+  charge: Charge
 }
+
 " Represent financial amount "
 type FinancialAmount {
   " the raw amount, for example: 19.99 "
@@ -59,6 +60,67 @@ type Query {
   documents: [Document!]!
 }
 
+type Mutation {
+  updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
+  updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
+}
+
+input UpdateChargeInput {
+  # createdAt: Date!
+  # additionalDocument: [Linkable!]!
+  # ledgerRecords: [LedgerRecord!]!
+  # transactions: [Transaction!]!
+  counterparty: CounterpartyInput
+  description: String
+  tag: String
+  # beneficiaries: [BeneficiaryCounterparty!]!
+  vat: FinancialAmountInput
+  withholdingTax: FinancialAmountInput
+  # invoice: Invoice
+  accountantApproval: AccountantApprovalInput
+  isProperty: Boolean
+  # businessTrip: BusinessTrip
+}
+
+input UpdateTransactionInput {
+  referenceNumber: String
+  # createdAt: Date!
+  effectiveDate: Date
+  # direction: TransactionDirection
+  amount: FinancialAmountInput
+  # description: String // NOTE: which field should be updated? and should we update fields originated at bank/card info?
+  userNote: String
+  # account: FinancialAccount
+  balance: FinancialAmountInput
+  accountantApproval: AccountantApprovalInput
+  hashavshevetId: Int
+}
+
+input CounterpartyInput {
+  name: String!
+}
+
+input AccountantApprovalInput {
+  approved: Boolean!
+  remark: String
+}
+
+input FinancialAmountInput {
+  value: Float!
+  currency: Currency!
+}
+
+interface Error {
+  message: String!
+}
+
+type CommonError {
+  message: String!
+}
+
+union UpdateChargeResult = Charge | CommonError
+
+union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
 # Main Module
 " Financial entity, identifier by ID, can be a company or invdividual "
 type LtdFinancialEntity implements FinancialEntity {
@@ -189,7 +251,7 @@ type Unprocessed implements Document & Linkable {
   id: ID!
   image: URL!
   file: URL
-  charge: Charge 
+  charge: Charge
 }
 
 " invoice document "
@@ -198,7 +260,7 @@ type Invoice implements Document & Linkable {
   image: URL!
   file: URL
   vat: FinancialAmount
-  charge: Charge 
+  charge: Charge
 
   serialNumber: String!
   date: Date!
@@ -211,7 +273,7 @@ type Proforma implements Document & Linkable {
   image: URL!
   file: URL
   vat: FinancialAmount
-  charge: Charge 
+  charge: Charge
 
   serialNumber: String!
   date: Date!
@@ -225,7 +287,7 @@ type Receipt implements Document & Linkable {
   image: URL!
   " gmail, pdf "
   file: URL
-  charge: Charge 
+  charge: Charge
   vat: FinancialAmount
   invoice: Invoice
   serialNumber: String!
@@ -238,7 +300,7 @@ type InvoiceReceipt implements Document & Linkable {
   image: URL!
   file: URL
   vat: FinancialAmount
-  charge: Charge 
+  charge: Charge
 
   serialNumber: String!
   date: Date!
