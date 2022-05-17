@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import {
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
@@ -37,14 +37,14 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Vat: FC<Props> = ({
+export const Vat = ({
   financialEntityType,
   financialEntityName = '',
   vat,
   amount = 0,
   alternativeCharge,
   style,
-}) => {
+}: Props) => {
   const indicator =
     (!vat?.raw &&
       financialEntityType === 'LtdFinancialEntity' &&

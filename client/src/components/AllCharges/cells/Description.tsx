@@ -1,28 +1,24 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
 import type { SuggestedCharge } from '../../../helpers';
 
 gql`
   fragment descriptionFields on Charge {
     transactions {
-      description
+      userNote
     }
   }
 `;
 
 type Props = {
-  description: string;
+  userNote?: string;
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Description: FC<Props> = ({
-  description,
-  alternativeCharge,
-  style,
-}) => {
-  const isDescription = !(description === '');
-  const cellText = description ?? alternativeCharge?.userDescription;
+export const Description = ({ userNote, alternativeCharge, style }: Props) => {
+  const isDescription = userNote && userNote !== '';
+  const cellText = userNote ?? alternativeCharge?.userDescription;
 
   return (
     <td
