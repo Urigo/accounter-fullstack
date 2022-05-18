@@ -26,9 +26,10 @@ type Props = {
 };
 
 export const InvoiceNumber = ({ data, isBusiness, financialEntityName, style }: Props) => {
-  const {serialNumber} = data.invoice ?? {};
+  const { serialNumber } = data.invoice ?? {};
   const indicator =
-  isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && 
+    isBusiness &&
+    !entitiesWithoutInvoice.includes(financialEntityName) &&
     !entitiesWithoutInvoiceNumuber.includes(financialEntityName) &&
     !serialNumber;
 

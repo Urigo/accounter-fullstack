@@ -34,11 +34,13 @@ type Props = {
 };
 
 export const ReceiptNumber = ({ data, isBusiness, financialEntityName, style }: Props) => {
-  const {serialNumber} = data.receipt ?? {};
+  const { serialNumber } = data.receipt ?? {};
   const indicator =
-  isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && 
+    isBusiness &&
+    !entitiesWithoutInvoice.includes(financialEntityName) &&
     !entitiesWithoutInvoiceNumuber.includes(financialEntityName) &&
-    !serialNumber && data.invoice?.serialNumber;
+    !serialNumber &&
+    data.invoice?.serialNumber;
 
   return (
     <td

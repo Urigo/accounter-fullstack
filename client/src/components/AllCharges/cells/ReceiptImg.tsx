@@ -29,7 +29,8 @@ type Props = {
 
 export const ReceiptImg = ({ data, isBusiness, financialEntityName, style }: Props) => {
   const image = data.invoice?.image;
-  const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !image && !data.invoice?.image;
+  const indicator =
+    isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !image && !data.invoice?.image;
 
   return (
     <td

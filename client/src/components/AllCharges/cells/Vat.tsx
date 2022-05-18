@@ -1,5 +1,10 @@
 import { CSSProperties } from 'react';
-import { businessesWithoutTaxCategory, businessesWithoutVAT, entitiesWithoutInvoice, SuggestedCharge } from '../../../helpers';
+import {
+  businessesWithoutTaxCategory,
+  businessesWithoutVAT,
+  entitiesWithoutInvoice,
+  SuggestedCharge,
+} from '../../../helpers';
 import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
@@ -33,17 +38,11 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Vat = ({
-  isBusiness,
-  financialEntityName = '',
-  vat,
-  amount = 0,
-  alternativeCharge,
-  style,
-}: Props) => {
+export const Vat = ({ isBusiness, financialEntityName = '', vat, amount = 0, alternativeCharge, style }: Props) => {
   const indicator =
     (!vat?.raw &&
-      isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) &&
+      isBusiness &&
+      !entitiesWithoutInvoice.includes(financialEntityName) &&
       (!vat || vat.currency === Currency.Nis) &&
       !businessesWithoutVAT.includes(financialEntityName) &&
       !businessesWithoutTaxCategory.includes(financialEntityName)) ||

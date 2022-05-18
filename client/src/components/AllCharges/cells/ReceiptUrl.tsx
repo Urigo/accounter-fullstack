@@ -22,7 +22,7 @@ type Props = {
 };
 
 export const ReceiptUrl = ({ data, isBusiness, financialEntityName, style }: Props) => {
-  const {file} = data.receipt ?? {};
+  const { file } = data.receipt ?? {};
   const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !file && !data.invoice?.file;
 
   return (
