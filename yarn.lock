@@ -3920,16 +3920,16 @@ mkdirp@^1.0.4:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-modern-poalim-scraper@0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.3.2.tgz#c2da8d1b848c6267de9003fa4df52c9e9b6a7815"
-  integrity sha512-t/Cv8Nra8F8TIwownLu1XbaJ2wMhii02vakRwLW6X9a+oiVWdWcQFz9XYTdXdyvfl7ygXXXeyB8A7MFAosscOg==
+modern-poalim-scraper@0.3.3:
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.3.3.tgz#9f5a37c29a116436b1bdaa779590c7ba904048a7"
+  integrity sha512-AUvOFpQd4xXia2lc/sQCa019bj89PmCftHExwyKtxjfSkfs588ZXkNXWqzBXqoULm38Cou/m1UJafNFcSaSjPg==
   dependencies:
     ajv "8.11.0"
     ajv-formats "^2.1.1"
     inquirer "8.2.4"
     node-fetch "3.2.4"
-    puppeteer "14.0.0"
+    puppeteer "14.1.0"
     uuid "8.3.2"
 
 moment@2.29.3:
@@ -4531,10 +4531,10 @@ pupa@^2.1.1:
   dependencies:
     escape-goat "^2.0.0"
 
-puppeteer@14.0.0:
-  version "14.0.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.0.0.tgz#829e97b70fa81746bb88ec2d72f11a7429cc84ab"
-  integrity sha512-Aj/cySGBMWpUYEWV0YOcwyhq5lOxuuiGScgdj/OvslAm/ydoywiI8OzAIXT4HzKmNTmzm/fKKHHtcsQa/fFgdw==
+puppeteer@14.1.0:
+  version "14.1.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.1.0.tgz#319560e20ff451890158d7146c79ab589c6e7031"
+  integrity sha512-T3eB4f6k9HVttYvyy8drGIKb04M+vxhepqM7qqcVCBTNT3T6M9cUaJT4k7P+a6wSonObJSJUP98JkPDQG+3fJw==
   dependencies:
     cross-fetch "3.1.5"
     debug "4.3.4"
