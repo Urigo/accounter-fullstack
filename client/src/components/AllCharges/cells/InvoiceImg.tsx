@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import gql from 'graphql-tag';
 import { InvoiceImageFieldsFragment } from '../../../__generated__/types';
@@ -21,7 +21,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const InvoiceImg: FC<Props> = ({ data, isBusiness, financialEntityName, style }) => {
+export const InvoiceImg = ({ data, isBusiness, financialEntityName, style }: Props) => {
   const image = data.invoice?.image;
   const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !image;
 

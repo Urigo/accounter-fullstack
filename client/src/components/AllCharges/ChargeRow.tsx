@@ -11,6 +11,7 @@ import {
   Date,
   Description,
   Entity,
+  InvoiceDate,
   InvoiceImg,
   ShareWith,
   Vat,
@@ -33,6 +34,7 @@ gql`
       ...ledgerRecordsFields
       ...suggestedCharge
       ...invoiceImageFields
+      ...invoiceDateFields
     }
   }
 `;
@@ -131,9 +133,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Invoice Img': {
               return <InvoiceImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             }
-            // case 'Invoice Date': {
-            //   return <InvoiceDate charge={charge} />;
-            // }
+            case 'Invoice Date': {
+              return <InvoiceDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Invoice Number': {
             //   return <InvoiceNumber charge={charge} />;
             // }
