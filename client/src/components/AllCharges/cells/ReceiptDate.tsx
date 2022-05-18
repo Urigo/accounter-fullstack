@@ -1,16 +1,34 @@
 import moment from 'moment';
-import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { UpdateButton } from '../../common';
-import { isBusiness } from '../../../helpers';
+import { CSSProperties } from 'react';
+import { entitiesWithoutInvoice } from '../../../helpers';
+import gql from 'graphql-tag';
+import { ReceiptDateFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment receiptDateFields on Charge {
+    receipt {
+      ... on Receipt {
+        date
+        id
+      }
+      ... on InvoiceReceipt {
+        date
+        id
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  data: ReceiptDateFieldsFragment;
+  isBusiness: boolean;
+  financialEntityName: string;
   style?: CSSProperties;
 };
 
-export const ReceiptDate: FC<Props> = ({ transaction, style }) => {
-  const indicator = isBusiness(transaction) && !transaction.receipt_date;
+export const ReceiptDate = ({ data, isBusiness, financialEntityName, style }: Props) => {
+  const date = data.receipt?.date as Date | undefined;
+  const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !date;
 
   return (
     <td
@@ -19,8 +37,9 @@ export const ReceiptDate: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.receipt_date && moment(transaction.receipt_date).format('DD/MM/YY')}
-      <UpdateButton transaction={transaction} propertyName="receipt_date" promptText="New Receipt Date:" />
+      {date && moment(date).format('DD/MM/YY')}
+      {/* TODO: create update document hook */}
+      {/* <UpdateButton transaction={transaction} propertyName="receipt_date" promptText="New Receipt Date:" /> */}
     </td>
   );
 };
