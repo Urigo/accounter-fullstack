@@ -3,7 +3,18 @@ import { CSSProperties, useState } from 'react';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
 import { ChargesFieldsFragment, VatFieldsFragment } from '../../__generated__/types';
-import { Account, Amount, BankDescription, Category, Date, Description, Entity, ShareWith, Vat } from './cells';
+import {
+  Account,
+  Amount,
+  BankDescription,
+  Category,
+  Date,
+  Description,
+  Entity,
+  InvoiceImg,
+  ShareWith,
+  Vat,
+} from './cells';
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
@@ -21,6 +32,7 @@ gql`
       ...bankDescriptionFields
       ...ledgerRecordsFields
       ...suggestedCharge
+      ...invoiceImageFields
     }
   }
 `;
@@ -51,7 +63,7 @@ const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSPrope
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName }: Props) => {
+export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName = '' }: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
     !charge.counterparty.name ||
@@ -61,6 +73,8 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
     charge.beneficiaries.length === 0
       ? suggestedCharge(charge)
       : undefined;
+
+  const isBusiness = financialEntityType === 'LtdFinancialEntity';
 
   return (
     <>
@@ -114,9 +128,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Bank Description': {
               return <BankDescription description={charge.transactions[0].description} />;
             }
-            // case 'Invoice Img': {
-            //   return <InvoiceImg charge={charge} />;
-            // }
+            case 'Invoice Img': {
+              return <InvoiceImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Invoice Date': {
             //   return <InvoiceDate charge={charge} />;
             // }
