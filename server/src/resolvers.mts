@@ -133,12 +133,11 @@ export const resolvers: Resolvers = {
       ),
     vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
-
   InvoiceReceipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
       return (
-        documentRoot.payper_document_type == 'חשבונית מס קבלה'
+        documentRoot.payper_document_type == 'חשבונית'
       );
     },
     serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',

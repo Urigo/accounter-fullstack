@@ -231,20 +231,20 @@ type Receipt implements Document & Linkable {
   serialNumber: String!
   date: Date!
 }
+
 " Invoice receipt document - חשבונית מס קבלה "
 type InvoiceReceipt implements Document & Linkable {
   id: ID!
-  " previewable image "
   image: URL!
-  " gmail, pdf "
   file: URL
+  vat: FinancialAmount
   charge: Charge 
 
-  vat: FinancialAmount
-  invoice: Invoice
   serialNumber: String!
   date: Date!
+  amount: FinancialAmount
 }
+
 " Represent a general transaction object "
 interface Transaction {
   id: ID!
