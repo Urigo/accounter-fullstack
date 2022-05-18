@@ -73,7 +73,7 @@ input UpdateChargeInput {
   counterparty: CounterpartyInput
   description: String
   tag: String
-  # beneficiaries: [BeneficiaryCounterparty!]!
+  beneficiaries: String
   vat: FinancialAmountInput
   withholdingTax: FinancialAmountInput
   # invoice: Invoice
@@ -121,6 +121,7 @@ type CommonError {
 union UpdateChargeResult = Charge | CommonError
 
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
+
 # Main Module
 " Financial entity, identifier by ID, can be a company or invdividual "
 type LtdFinancialEntity implements FinancialEntity {
@@ -194,11 +195,13 @@ type Charge {
   " a list of beneficiaries and their part in the charge "
   beneficiaries: [BeneficiaryCounterparty!]!
 }
+
 " defines a link between a counterparty and their part in the charge "
 type BeneficiaryCounterparty {
   counterparty: Counterparty!
   percentage: Percentage
 }
+
 # Taxes Module
 extend type Charge {
   " calculated field based on the actual ledger records, optional because not all charges has VAT "
@@ -212,30 +215,37 @@ extend type Charge {
   " פחת, ציוד  "
   property: Boolean
 }
+
 extend type LedgerRecord {
   accountantApproval: AccountantApproval!
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmount!
 }
+
 extend interface Transaction {
   accountantApproval: AccountantApproval!
 }
+
 type AccountantApproval {
   approved: Boolean!
   remark: String
 }
+
 # Hashavshevet Module
 extend type LedgerRecord {
   hashavshevetId: String
 }
+
 extend interface Transaction {
   hashavshevetId: String
 }
+
 # Business Trip Module
 extend type Charge {
   " should be later in busines trip module? "
   businessTrip: BusinessTrip
 }
+
 extend input ChargeFilter {
   " filter by business trip (should be later in busines trip module?) "
   businessTrip: ID
@@ -329,6 +339,7 @@ interface Transaction {
   " effective bank / card balance, after the transaction "
   balance: FinancialAmount!
 }
+
 " temp type until DB  supports transactions differenciation"
 type CommonTransaction implements Transaction {
   id: ID!
@@ -344,6 +355,7 @@ type CommonTransaction implements Transaction {
   accountantApproval: AccountantApproval!
   hashavshevetId: String
 }
+
 " העברה "
 type WireTransaction implements Transaction {
   id: ID!
@@ -359,6 +371,7 @@ type WireTransaction implements Transaction {
   hashavshevetId: String
   balance: FinancialAmount!
 }
+
 " עמלה "
 type FeeTransaction implements Transaction {
   id: ID!
@@ -374,6 +387,7 @@ type FeeTransaction implements Transaction {
   hashavshevetId: String
   balance: FinancialAmount!
 }
+
 " המרה "
 type ConversionTransaction implements Transaction {
   id: ID!
@@ -395,6 +409,7 @@ type ConversionTransaction implements Transaction {
   " בנק ישראל "
   officialRate: Rate
 }
+
 type LedgerRecord {
   id: ID!
   creditAccount: Counterparty
@@ -403,14 +418,17 @@ type LedgerRecord {
   date: Date!
   description: String!
 }
+
 type NamedCounterparty implements Counterparty {
   name: String!
 }
+
 " Represent something external that we scrape, like bank or card "
 interface FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
 }
+
 type BankFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
@@ -429,6 +447,7 @@ type BankFinancialAccount implements FinancialAccount {
   " the name of the bank account"
   name: String
 }
+
 type CardFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!

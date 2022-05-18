@@ -138,21 +138,21 @@ export const resolvers: Resolvers = {
         eventAmount: null,
         eventDate: null,
         eventNumber: null,
-        financialAccountsToBalance: null,
-        financialEntity: fields.counterparty?.name ?? null,
+        financialAccountsToBalance: fields.beneficiaries,
+        financialEntity: fields.counterparty?.name,
         hashavshevetId: null,
         interest: null,
         isConversion: null,
-        isProperty: fields.isProperty ?? null,
+        isProperty: fields.isProperty,
         links: null,
         originalId: null,
-        personalCategory: fields.tag ?? null,
+        personalCategory: fields.tag,
         proformaInvoiceFile: null,
         receiptDate: null,
         receiptImage: null,
         receiptNumber: null,
         receiptUrl: null,
-        reviewed: fields.accountantApproval?.approved ?? null,
+        reviewed: fields.accountantApproval?.approved,
         taxCategory: null,
         taxInvoiceAmount: null,
         taxInvoiceCurrency: null,
@@ -162,15 +162,15 @@ export const resolvers: Resolvers = {
         userDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         vat:
-          (fields.vat?.currency && fields.vat.currency !== Currency.Nis
+          fields.vat?.currency && fields.vat.currency !== Currency.Nis
             ? null
-            : fields.vat?.value) ?? null,
+            : fields.vat?.value,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         withholdingTax:
-          (fields.withholdingTax?.currency &&
+          fields.withholdingTax?.currency &&
           fields.withholdingTax.currency !== Currency.Nis
             ? null
-            : fields.withholdingTax?.value) ?? null,
+            : fields.withholdingTax?.value,
         chargeId,
       };
       try {
@@ -188,28 +188,28 @@ export const resolvers: Resolvers = {
         accountNumber: null,
         accountType: null,
         bankDescription: null,
-        bankReference: fields.referenceNumber ?? null,
+        bankReference: fields.referenceNumber,
         businessTrip: null,
         contraCurrencyCode: null,
         currencyCode: null,
         currencyRate: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         currentBalance:
-          (fields.balance?.currency && fields.balance.currency !== Currency.Nis
+          fields.balance?.currency && fields.balance.currency !== Currency.Nis
             ? null
-            : fields.balance?.value?.toFixed(2)) ?? null,
-        debitDate: fields.effectiveDate ?? null,
+            : fields.balance?.value?.toFixed(2),
+        debitDate: fields.effectiveDate,
         detailedBankDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         eventAmount:
-          (fields.amount?.currency && fields.amount.currency !== Currency.Nis
+          fields.amount?.currency && fields.amount.currency !== Currency.Nis
             ? null
-            : fields.amount?.value?.toFixed(2)) ?? null,
+            : fields.amount?.value?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
         financialEntity: null,
-        hashavshevetId: fields.hashavshevetId ?? null,
+        hashavshevetId: fields.hashavshevetId,
         interest: null,
         isConversion: null,
         isProperty: null,
@@ -221,14 +221,14 @@ export const resolvers: Resolvers = {
         receiptImage: null,
         receiptNumber: null,
         receiptUrl: null,
-        reviewed: fields.accountantApproval?.approved ?? null,
+        reviewed: fields.accountantApproval?.approved,
         taxCategory: null,
         taxInvoiceAmount: null,
         taxInvoiceCurrency: null,
         taxInvoiceDate: null,
         taxInvoiceFile: null,
         taxInvoiceNumber: null,
-        userDescription: fields.userNote ?? null,
+        userDescription: fields.userNote,
         vat: null,
         withholdingTax: null,
         chargeId: transactionId,
@@ -316,7 +316,7 @@ export const resolvers: Resolvers = {
     name: DbBusiness => DbBusiness.hebrew_name ?? DbBusiness.name,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
 
-    englishName: DbBusiness => DbBusiness.name ?? null,
+    englishName: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email,
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,

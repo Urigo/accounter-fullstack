@@ -1,22 +1,39 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
+import { useUpdateCharge } from '../../../hooks/useUdateCharge';
+import { CategoryFieldsFragment } from '../../../__generated__/types';
 
 gql`
   fragment categoryFields on Charge {
+    id
     tags
   }
 `;
 
 type Props = {
-  tags: string[];
+  data: CategoryFieldsFragment;
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Category = ({ tags, alternativeCharge, style }: Props) => {
+export const Category = ({ data, alternativeCharge, style }: Props) => {
+  const { tags, id: chargeId } = data;
   const isPersonalCategory = tags.length > 0;
   const cellText = tags.join(', ') ?? alternativeCharge?.personalCategory;
+
+  const { mutate, isLoading } = useUpdateCharge();
+
+  const updateTag = useCallback(
+    (value?: string) => {
+      mutate({
+        chargeId,
+        fields: { tag: value },
+      });
+    },
+    [chargeId, mutate]
+  );
 
   return (
     <td
@@ -26,18 +43,16 @@ export const Category = ({ tags, alternativeCharge, style }: Props) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {/* {!transaction.personal_category && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName={'personal_category'}
-          value={cellText}
+      {!isPersonalCategory && alternativeCharge?.personalCategory && (
+        <ConfirmMiniButton
+          onClick={() => updateTag(alternativeCharge.personalCategory)}
+          disabled={isLoading}
         />
-      )} */}
-      {/* <UpdateButton
-        transaction={transaction}
-        propertyName={'personal_category'}
-        promptText="New personal category:"
-      /> */}
+      )}
+      <EditMiniButton
+        onClick={() => updateTag(prompt('Enter new category') ?? undefined)}
+        disabled={isLoading}
+      />
     </td>
   );
 };
