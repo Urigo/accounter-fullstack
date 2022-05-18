@@ -32,192 +32,192 @@ export const updateCharge = sql<IUpdateChargeQuery>`
   SET
   tax_invoice_date = COALESCE(
     $taxInvoiceDate,
-    (SELECT tax_invoice_date FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_invoice_date,
     NULL
   ),
   tax_category = COALESCE(
     $taxCategory,
-    (SELECT tax_category FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_category,
     NULL
   ),
   currency_code = COALESCE(
     $currencyCode,
-    (SELECT currency_code FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    currency_code,
     NULL
   ),
   event_date = COALESCE(
     $eventDate,
-    (SELECT event_date FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    event_date,
     NULL
   ),
   debit_date = COALESCE(
     $debitDate,
-    (SELECT debit_date FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    debit_date,
     NULL
   ),
   event_amount = COALESCE(
     $eventAmount,
-    (SELECT event_amount FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    event_amount,
     NULL
   ),
   financial_entity = COALESCE(
     $financialEntity,
-    (SELECT financial_entity FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    financial_entity,
     NULL
   ),
   vat = COALESCE(
     $vat,
-    (SELECT vat FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    vat,
     NULL
   ),
   user_description = COALESCE(
     $userDescription,
-    (SELECT user_description FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    user_description,
     NULL
   ),
   tax_invoice_number = COALESCE(
     $taxInvoiceNumber,
-    (SELECT tax_invoice_number FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_invoice_number,
     NULL
   ),
   tax_invoice_amount = COALESCE(
     $taxInvoiceAmount,
-    (SELECT tax_invoice_amount FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_invoice_amount,
     NULL
   ),
   receipt_number = COALESCE(
     $receiptNumber,
-    (SELECT receipt_number FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    receipt_number,
     NULL
   ),
   business_trip = COALESCE(
     $businessTrip,
-    (SELECT business_trip FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    business_trip,
     NULL
   ),
   personal_category = COALESCE(
     $personalCategory,
-    (SELECT personal_category FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    personal_category,
     NULL
   ),
   financial_accounts_to_balance = COALESCE(
     $financialAccountsToBalance,
-    (SELECT financial_accounts_to_balance FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    financial_accounts_to_balance,
     NULL
   ),
   bank_reference = COALESCE(
     $bankReference,
-    (SELECT bank_reference FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    bank_reference,
     NULL
   ),
   event_number = COALESCE(
     $eventNumber,
-    (SELECT event_number FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    event_number,
     NULL
   ),
   account_number = COALESCE(
     $accountNumber,
-    (SELECT account_number FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    account_number,
     NULL
   ),
   account_type = COALESCE(
     $accountType,
-    (SELECT account_type FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    account_type,
     NULL
   ),
   is_conversion = COALESCE(
     $isConversion,
-    (SELECT is_conversion FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    is_conversion,
     NULL
   ),
   currency_rate = COALESCE(
     $currencyRate,
-    (SELECT currency_rate FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    currency_rate,
     NULL
   ),
   contra_currency_code = COALESCE(
     $contraCurrencyCode,
-    (SELECT contra_currency_code FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    contra_currency_code,
     NULL
   ),
   bank_description = COALESCE(
     $bankDescription,
-    (SELECT bank_description FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    bank_description,
     NULL
   ),
   withholding_tax = COALESCE(
     $withholdingTax,
-    (SELECT withholding_tax FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    withholding_tax,
     NULL
   ),
   interest = COALESCE(
     $interest,
-    (SELECT interest FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    interest,
     NULL
   ),
   proforma_invoice_file = COALESCE(
     $proformaInvoiceFile,
-    (SELECT proforma_invoice_file FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    proforma_invoice_file,
     NULL
   ),
   original_id = COALESCE(
     $originalId,
-    (SELECT original_id FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    original_id,
     NULL
   ),
   reviewed = COALESCE(
     $reviewed,
-    (SELECT reviewed FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    reviewed,
     NULL
   ),
   hashavshevet_id = COALESCE(
     $hashavshevetId,
-    (SELECT hashavshevet_id FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    hashavshevet_id,
     NULL
   ),
   current_balance = COALESCE(
     $currentBalance,
-    (SELECT current_balance FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    current_balance,
     NULL
   ),
   tax_invoice_file = COALESCE(
     $taxInvoiceFile,
-    (SELECT tax_invoice_file FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_invoice_file,
     NULL
   ),
   detailed_bank_description = COALESCE(
     $detailedBankDescription,
-    (SELECT detailed_bank_description FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    detailed_bank_description,
     NULL
   ),
   links = COALESCE(
     $links,
-    (SELECT links FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    links,
     NULL
   ),
   receipt_date = COALESCE(
     $receiptDate,
-    (SELECT receipt_date FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    receipt_date,
     NULL
   ),
   receipt_url = COALESCE(
     $receiptUrl,
-    (SELECT receipt_url FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    receipt_url,
     NULL
   ),
   receipt_image = COALESCE(
     $receiptImage,
-    (SELECT receipt_image FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    receipt_image,
     NULL
   ),
   is_property = COALESCE(
     $isProperty,
-    (SELECT is_property FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    is_property,
     NULL
   ),
   tax_invoice_currency = COALESCE(
     $taxInvoiceCurrency,
-    (SELECT tax_invoice_currency FROM accounter_schema.all_transactions WHERE id = $chargeId),
+    tax_invoice_currency,
     NULL
   )
   WHERE
