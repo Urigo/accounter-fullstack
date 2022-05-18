@@ -2,13 +2,14 @@ import { formatFinancialAmount } from './helpers/amount.mjs';
 import {
   getChargesByFinancialAccountNumbers,
   getChargesByFinancialEntityIds,
+  getChargesByIds,
   updateCharge,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
+import { getDocsByChargeId, getEmailDocs } from './providers/documents.mjs';
 import { getFinancialAccountsByAccountNumbers, getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
-import { getChargesByIds, getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   BankFinancialAccountResolvers,
