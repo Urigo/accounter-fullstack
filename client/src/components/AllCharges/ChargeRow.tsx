@@ -12,6 +12,7 @@ import {
   Description,
   Entity,
   InvoiceDate,
+  InvoiceFile,
   InvoiceImg,
   InvoiceNumber,
   ShareWith,
@@ -37,6 +38,7 @@ gql`
       ...invoiceImageFields
       ...invoiceDateFields
       ...invoiceNumberFields
+      ...invoiceFileFields
     }
   }
 `;
@@ -141,9 +143,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Invoice Number': {
               return <InvoiceNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             }
-            // case 'Invoice File': {
-            //   return <InvoiceFile charge={charge} />;
-            // }
+            case 'Invoice File': {
+              return <InvoiceFile data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Receipt Image': {
             //   return <ReceiptImg charge={charge} />;
             // }

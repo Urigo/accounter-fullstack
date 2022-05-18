@@ -1,15 +1,29 @@
-import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { UpdateButton } from '../../common';
-import { isBusiness } from '../../../helpers';
+import { CSSProperties } from 'react';
+import { entitiesWithoutInvoice } from '../../../helpers';
+import gql from 'graphql-tag';
+import { InvoiceFileFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment invoiceFileFields on Charge {
+    invoice {
+      ... on Document {
+        file
+        id
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  data: InvoiceFileFieldsFragment;
+  isBusiness: boolean;
+  financialEntityName: string;
   style?: CSSProperties;
 };
 
-export const InvoiceFile: FC<Props> = ({ transaction, style }) => {
-  const indicator = isBusiness(transaction) && !transaction.tax_invoice_file;
+export const InvoiceFile = ({ data, isBusiness, financialEntityName, style }: Props) => {
+  const {file} = data.invoice ?? {};
+  const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !file;
 
   return (
     <td
@@ -18,12 +32,13 @@ export const InvoiceFile: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.tax_invoice_file && (
-        <a href={transaction.tax_invoice_file} target="_blank">
+      {file && (
+        <a href={file} rel="noreferrer" target="_blank">
           yes
         </a>
       )}
-      <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" />
+      {/* TODO: create update document hook */}
+      {/* <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" /> */}
     </td>
   );
 };
