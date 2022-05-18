@@ -3,9 +3,16 @@ import {
   IGetChargesByFinancialAccountNumbersQuery,
   IGetChargesByFinancialEntityIdsQuery,
   IUpdateChargeQuery,
+  IGetChargesByIdsQuery,
 } from '../__generated__/charges.types.mjs';
 
 const { sql } = pgQuery;
+
+// Replace with a wrapper with dateloader
+export const getChargesByIds = sql<IGetChargesByIdsQuery>`
+    SELECT *
+    FROM accounter_schema.all_transactions
+    WHERE id IN $$cahrgeIds;`;
 
 export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
     SELECT *
