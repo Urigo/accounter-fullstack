@@ -18,6 +18,7 @@ import {
   ReceiptDate,
   ReceiptImg,
   ReceiptNumber,
+  ReceiptUrl,
   ShareWith,
   Vat,
 } from './cells';
@@ -45,6 +46,7 @@ gql`
       ...receiptImageFields
       ...receiptDateFields
       ...receiptNumberFields
+      ...receiptUrlFields
     }
   }
 `;
@@ -161,9 +163,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Receipt Number': {
               return <ReceiptNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             }
-            // case 'Receipt URL': {
-            //   return <ReceiptUrl charge={charge} />;
-            // }
+            case 'Receipt URL': {
+              return <ReceiptUrl data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Links': {
             //   return <Links charge={charge} />;
             // }
