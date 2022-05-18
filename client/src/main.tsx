@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AllCharges } from './components/AllCharges';
 import { AllUsers } from './components/AllUsers';
-import { DocumentsReport } from './components/docs';
+import { DocumentsReport } from './components/Documents';
 import { FinancialStatus } from './components/FinancialStatus';
 import { MonthlyReport } from './components/MonthlyReport';
 import { ReportsToReview } from './components/ReportsToReview';

@@ -4,12 +4,13 @@ import { pool } from './providers/db.mjs';
 import { getFinancialAccountsByAccountNumbers, getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
-import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
+import { getChargesByIds, getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
   CommonTransactionResolvers,
   ConversionTransactionResolvers,
+  DocumentResolvers,
   FeeTransactionResolvers,
   LtdFinancialEntityResolvers,
   PersonalFinancialEntityResolvers,
@@ -53,6 +54,22 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
     return charges;
   },
 };
+
+const commonDocumentsFields: DocumentResolvers = {
+  id: (documentRoot) => documentRoot.id,
+  charge: async (documentRoot) => {
+    const charges = await getChargesByIds.run(
+      {
+        cahrgeIds: [documentRoot.transaction_id],
+      },
+      pool
+    );
+    return charges[0];
+  },
+  image: (documentRoot) => documentRoot.image_url,
+  file: (documentRoot) =>
+    `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
+}
 
 const commonTransactionFields:
   | ConversionTransactionResolvers
@@ -98,50 +115,74 @@ export const resolvers: Resolvers = {
       return dbDocs;
     },
   },
+
+
   Invoice: {
+    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'חשבונית מס קבלה' || documentRoot.payper_document_type == 'חשבונית';
+      return (
+        documentRoot.payper_document_type == 'חשבונית'
+      );
     },
-    id: documentRoot => documentRoot.id,
-    image: documentRoot => documentRoot.image_url,
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    file: documentRoot => `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
-    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    amount: (documentRoot) =>
+      formatFinancialAmount(
+        documentRoot.payper_total_for_payment,
+        documentRoot.payper_currency_symbol
+      ),
+    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
+
+  InvoiceReceipt: {
+    ...commonDocumentsFields,
+    __isTypeOf(documentRoot) {
+      return (
+        documentRoot.payper_document_type == 'חשבונית מס קבלה'
+      );
+    },
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    amount: (documentRoot) =>
+      formatFinancialAmount(
+        documentRoot.payper_total_for_payment,
+        documentRoot.payper_currency_symbol
+      ),
+    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+  },
+
   Proforma: {
+    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'חשבונית מס';
     },
-    id: documentRoot => documentRoot.id,
-    image: documentRoot => documentRoot.image_url,
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    amount: (documentRoot) =>
+      formatFinancialAmount(
+        documentRoot.payper_total_for_payment,
+        documentRoot.payper_currency_symbol
+      ),
+    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
+
   Unprocessed: {
+    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == null;
     },
-    id: documentRoot => documentRoot.id,
-    image: documentRoot => documentRoot.image_url,
-    file: documentRoot => documentRoot.file_hash ?? '',
   },
+
   Receipt: {
+    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'קבלה';
     },
-    id: documentRoot => documentRoot.id,
-    image: documentRoot => documentRoot.image_url,
-    file: documentRoot => documentRoot.file_hash ?? '',
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
+    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
+    date: (documentRoot) => documentRoot.payper_document_date,
+    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
+
   LtdFinancialEntity: {
     __isTypeOf: () => true,
     ...commonFinancialEntityFields,
@@ -180,9 +221,9 @@ export const resolvers: Resolvers = {
     fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
   Charge: {
-    id: DbCharge => DbCharge.id!,
-    createdAt: () => null, // TODO: missing in DB
-    additionalDocument: DbCharge => {
+    id: (DbCharge) => DbCharge.id!,
+    createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
+    additionalDocument: (DbCharge) => {
       const docs = getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
       return docs;
     },

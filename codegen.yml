@@ -4,6 +4,7 @@ documents: './client/src/**/*.tsx'
 generates:
   server/src/__generated__/types.mts:
     config:
+      optionalResolveType: true
       mappers:
         LtdFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
         PersonalFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
@@ -15,6 +16,7 @@ generates:
         Invoice: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Proforma: ./sqlQueries.types.mjs#IGetEmailDocsResult
         Receipt: ./sqlQueries.types.mjs#IGetEmailDocsResult
+        InvoiceReceipt: ./sqlQueries.types.mjs#IGetEmailDocsResult
         WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult

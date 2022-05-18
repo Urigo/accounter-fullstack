@@ -23,9 +23,8 @@ interface Document implements Linkable {
   image: URL!
   " link to original file gmail, pdf "
   file: URL
-  # relatedTransactions: [Transaction!]!
+  charge: Charge 
 }
-
 " Represent financial amount "
 type FinancialAmount {
   " the raw amount, for example: 19.99 "
@@ -133,13 +132,11 @@ type Charge {
   " a list of beneficiaries and their part in the charge "
   beneficiaries: [BeneficiaryCounterparty!]!
 }
-
 " defines a link between a counterparty and their part in the charge "
 type BeneficiaryCounterparty {
   counterparty: Counterparty!
   percentage: Percentage
 }
-
 # Taxes Module
 extend type Charge {
   " calculated field based on the actual ledger records, optional because not all charges has VAT "
@@ -153,37 +150,30 @@ extend type Charge {
   " פחת, ציוד  "
   property: Boolean
 }
-
 extend type LedgerRecord {
   accountantApproval: AccountantApproval!
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmount!
 }
-
 extend interface Transaction {
   accountantApproval: AccountantApproval!
 }
-
 type AccountantApproval {
   approved: Boolean!
   remark: String
 }
-
 # Hashavshevet Module
 extend type LedgerRecord {
   hashavshevetId: String
 }
-
 extend interface Transaction {
   hashavshevetId: String
 }
-
 # Business Trip Module
 extend type Charge {
   " should be later in busines trip module? "
   businessTrip: BusinessTrip
 }
-
 extend input ChargeFilter {
   " filter by business trip (should be later in busines trip module?) "
   businessTrip: ID
@@ -199,6 +189,7 @@ type Unprocessed implements Document & Linkable {
   id: ID!
   image: URL!
   file: URL
+  charge: Charge 
 }
 
 " invoice document "
@@ -207,6 +198,7 @@ type Invoice implements Document & Linkable {
   image: URL!
   file: URL
   vat: FinancialAmount
+  charge: Charge 
 
   serialNumber: String!
   date: Date!
@@ -219,6 +211,7 @@ type Proforma implements Document & Linkable {
   image: URL!
   file: URL
   vat: FinancialAmount
+  charge: Charge 
 
   serialNumber: String!
   date: Date!
@@ -233,12 +226,24 @@ type Receipt implements Document & Linkable {
   " gmail, pdf "
   file: URL
   vat: FinancialAmount
-
   invoice: Invoice
   serialNumber: String!
   date: Date!
 }
+" Invoice receipt document - חשבונית מס קבלה "
+type InvoiceReceipt implements Document & Linkable {
+  id: ID!
+  " previewable image "
+  image: URL!
+  " gmail, pdf "
+  file: URL
+  charge: Charge 
 
+  vat: FinancialAmount
+  invoice: Invoice
+  serialNumber: String!
+  date: Date!
+}
 " Represent a general transaction object "
 interface Transaction {
   id: ID!
@@ -261,7 +266,6 @@ interface Transaction {
   " effective bank / card balance, after the transaction "
   balance: FinancialAmount!
 }
-
 " temp type until DB  supports transactions differenciation"
 type CommonTransaction implements Transaction {
   id: ID!
@@ -277,7 +281,6 @@ type CommonTransaction implements Transaction {
   accountantApproval: AccountantApproval!
   hashavshevetId: String
 }
-
 " העברה "
 type WireTransaction implements Transaction {
   id: ID!
@@ -293,7 +296,6 @@ type WireTransaction implements Transaction {
   hashavshevetId: String
   balance: FinancialAmount!
 }
-
 " עמלה "
 type FeeTransaction implements Transaction {
   id: ID!
@@ -309,7 +311,6 @@ type FeeTransaction implements Transaction {
   hashavshevetId: String
   balance: FinancialAmount!
 }
-
 " המרה "
 type ConversionTransaction implements Transaction {
   id: ID!
@@ -324,7 +325,6 @@ type ConversionTransaction implements Transaction {
   accountantApproval: AccountantApproval!
   hashavshevetId: String
   balance: FinancialAmount!
-
   from: Currency!
   to: Currency!
   " המרה של הבנק "
@@ -332,7 +332,6 @@ type ConversionTransaction implements Transaction {
   " בנק ישראל "
   officialRate: Rate
 }
-
 type LedgerRecord {
   id: ID!
   creditAccount: Counterparty
@@ -341,45 +340,35 @@ type LedgerRecord {
   date: Date!
   description: String!
 }
-
 type NamedCounterparty implements Counterparty {
   name: String!
 }
-
 " Represent something external that we scrape, like bank or card "
 interface FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
 }
-
 type BankFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
-
   " the external identifier of the bank account "
   accountNumber: String!
   bankNumber: String!
   branchNumber: String!
   " calculate based on bank+branch "
   routingNumber: String!
-
   " the external identifier of the bank account "
   iban: IBAN!
-
   " swift "
   swift: String!
-
   " country "
   country: String!
-
   " the name of the bank account"
   name: String
 }
-
 type CardFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
-
   " the external identifier of the card "
   number: String!
   fourDigits: String!
