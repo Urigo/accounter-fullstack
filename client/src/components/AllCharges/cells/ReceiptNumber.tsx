@@ -1,19 +1,44 @@
-import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { UpdateButton } from '../../common';
-import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../helpers';
+import { CSSProperties } from 'react';
+import { entitiesWithoutInvoice, entitiesWithoutInvoiceNumuber } from '../../../helpers';
+import gql from 'graphql-tag';
+import { ReceiptNumberFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment receiptNumberFields on Charge {
+    receipt {
+      ... on Receipt {
+        serialNumber
+        id
+      }
+      ... on InvoiceReceipt {
+        serialNumber
+        id
+      }
+    }
+    invoice {
+      ... on Invoice {
+        serialNumber
+      }
+      ... on InvoiceReceipt {
+        serialNumber
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  data: ReceiptNumberFieldsFragment;
+  isBusiness: boolean;
+  financialEntityName: string;
   style?: CSSProperties;
 };
 
-export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
+export const ReceiptNumber = ({ data, isBusiness, financialEntityName, style }: Props) => {
+  const {serialNumber} = data.receipt ?? {};
   const indicator =
-    isBusiness(transaction) &&
-    !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity ?? '') &&
-    !transaction.receipt_number &&
-    !transaction.tax_invoice_number;
+  isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && 
+    !entitiesWithoutInvoiceNumuber.includes(financialEntityName) &&
+    !serialNumber && data.invoice?.serialNumber;
 
   return (
     <td
@@ -22,8 +47,9 @@ export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.receipt_number ?? 'null'}
-      <UpdateButton transaction={transaction} propertyName="receipt_number" promptText="New Receipt Number:" />
+      {serialNumber ?? 'null'}
+      {/* TODO: create update document hook */}
+      {/* <UpdateButton transaction={transaction} propertyName="receipt_number" promptText="New Receipt Number:" /> */}
     </td>
   );
 };
