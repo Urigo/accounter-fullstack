@@ -1,14 +1,9 @@
-import { Table, Image, SimpleGrid, Loader } from '@mantine/core';
+import { Table, Image, Loader } from '@mantine/core';
 import gql from 'graphql-tag';
 import { FC, useState } from 'react';
-import {
-  ChargeFieldsFragment,
-  ChargeFieldsFragmentDoc,
-  ChargesFieldsFragment,
-  useDocumentsQuery,
-} from '../../__generated__/types';
 import { PopUpModal } from '../common/Modal';
 import { RegularButton } from '../common/Button';
+import { useDocumentsQuery } from '../../__generated__/types';
 
 gql`
   fragment UnprocessedFields on Unprocessed {

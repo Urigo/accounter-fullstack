@@ -225,6 +225,7 @@ type Receipt implements Document & Linkable {
   image: URL!
   " gmail, pdf "
   file: URL
+  charge: Charge 
   vat: FinancialAmount
   invoice: Invoice
   serialNumber: String!
