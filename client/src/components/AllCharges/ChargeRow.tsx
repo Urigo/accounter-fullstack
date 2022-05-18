@@ -2,21 +2,8 @@ import gql from 'graphql-tag';
 import { CSSProperties, useState } from 'react';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
-import {
-  ChargesFieldsFragment,
-  VatFieldsFragment,
-} from '../../__generated__/types';
-import {
-  Account,
-  Amount,
-  BankDescription,
-  Category,
-  Date,
-  Description,
-  Entity,
-  ShareWith,
-  Vat,
-} from './cells';
+import { ChargesFieldsFragment, VatFieldsFragment } from '../../__generated__/types';
+import { Account, Amount, BankDescription, Category, Date, Description, Entity, ShareWith, Vat } from './cells';
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
@@ -60,23 +47,11 @@ type Props = {
   financialEntityName?: string;
 };
 
-const rowStyle = ({
-  hover,
-  index,
-}: {
-  hover: boolean;
-  index: number;
-}): CSSProperties => ({
+const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow = ({
-  columns,
-  index,
-  charge,
-  financialEntityType,
-  financialEntityName,
-}: Props) => {
+export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName }: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
     !charge.counterparty.name ||
@@ -89,12 +64,8 @@ export const ChargeRow = ({
 
   return (
     <>
-      <tr
-        style={rowStyle({ hover, index })}
-        onPointerOver={() => setHover(true)}
-        onPointerOut={() => setHover(false)}
-      >
-        {columns.map((column) => {
+      <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+        {columns.map(column => {
           switch (column) {
             case 'Date': {
               return (
@@ -105,33 +76,18 @@ export const ChargeRow = ({
               );
             }
             case 'Amount': {
-              return (
-                <Amount amount={charge.transactions[0].amount.formatted} />
-              );
+              return <Amount amount={charge.transactions[0].amount.formatted} />;
             }
             case 'Entity': {
-              return (
-                <Entity
-                  name={charge.counterparty.name}
-                  alternativeCharge={alternativeCharge}
-                />
-              );
+              return <Entity name={charge.counterparty.name} alternativeCharge={alternativeCharge} />;
             }
             case 'Description': {
               return (
-                <Description
-                  userNote={charge.transactions[0].userNote?.trim()}
-                  alternativeCharge={alternativeCharge}
-                />
+                <Description userNote={charge.transactions[0].userNote?.trim()} alternativeCharge={alternativeCharge} />
               );
             }
             case 'Category': {
-              return (
-                <Category
-                  tags={charge.tags}
-                  alternativeCharge={alternativeCharge}
-                />
-              );
+              return <Category tags={charge.tags} alternativeCharge={alternativeCharge} />;
             }
             case 'VAT': {
               return (
@@ -158,11 +114,7 @@ export const ChargeRow = ({
               );
             }
             case 'Bank Description': {
-              return (
-                <BankDescription
-                  description={charge.transactions[0].description}
-                />
-              );
+              return <BankDescription description={charge.transactions[0].description} />;
             }
             // case 'Invoice Img': {
             //   return <InvoiceImg charge={charge} />;

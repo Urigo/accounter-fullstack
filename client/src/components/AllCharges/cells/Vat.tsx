@@ -1,9 +1,5 @@
 import { CSSProperties } from 'react';
-import {
-  businessesWithoutTaxCategory,
-  businessesWithoutVAT,
-  SuggestedCharge,
-} from '../../../helpers';
+import { businessesWithoutTaxCategory, businessesWithoutVAT, SuggestedCharge } from '../../../helpers';
 import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
