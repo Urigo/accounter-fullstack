@@ -137,7 +137,7 @@ export const resolvers: Resolvers = {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
       return (
-        documentRoot.payper_document_type == 'חשבונית'
+        documentRoot.payper_document_type == 'חשבונית מס קבלה'
       );
     },
     serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
