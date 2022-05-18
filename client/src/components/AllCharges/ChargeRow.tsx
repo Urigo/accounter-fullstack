@@ -13,6 +13,7 @@ import {
   Entity,
   InvoiceDate,
   InvoiceImg,
+  InvoiceNumber,
   ShareWith,
   Vat,
 } from './cells';
@@ -35,6 +36,7 @@ gql`
       ...suggestedCharge
       ...invoiceImageFields
       ...invoiceDateFields
+      ...invoiceNumberFields
     }
   }
 `;
@@ -136,9 +138,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Invoice Date': {
               return <InvoiceDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             }
-            // case 'Invoice Number': {
-            //   return <InvoiceNumber charge={charge} />;
-            // }
+            case 'Invoice Number': {
+              return <InvoiceNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Invoice File': {
             //   return <InvoiceFile charge={charge} />;
             // }
