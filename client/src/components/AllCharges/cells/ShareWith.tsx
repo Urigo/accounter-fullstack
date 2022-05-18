@@ -61,11 +61,9 @@ export const ShareWith: FC<Props> = ({
   const shareWithDotanFlag =
     !hasBeneficiariesd &&
     (financialEntityType !== 'LtdFinancialEntity' ||
-      [
-        ...privateBusinessExpenses,
-        ...businessesNotToShare,
-        ...businessesWithoutTaxCategory,
-      ].includes(financialEntityName));
+      [...privateBusinessExpenses, ...businessesNotToShare, ...businessesWithoutTaxCategory].includes(
+        financialEntityName
+      ));
 
   return (
     <td
@@ -74,25 +72,16 @@ export const ShareWith: FC<Props> = ({
         ...style,
       }}
     >
-      {beneficiaries.map(
-        (beneficiary) =>
-          `${beneficiary.counterparty.name}: ${beneficiary.percentage}`
-      )}
+      {beneficiaries.map(beneficiary => `${beneficiary.counterparty.name}: ${beneficiary.percentage}`)}
       {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance}
       {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance && (
         <ConfirmMiniButton
-          onClick={() =>
-            updateTag(alternativeCharge.financialAccountsToBalance)
-          }
+          onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
           disabled={isLoading}
         />
       )}
       <EditMiniButton
-        onClick={() =>
-          updateTag(
-            prompt('New Account to share (use old string method):') ?? undefined
-          )
-        }
+        onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
         disabled={isLoading}
       />
     </td>

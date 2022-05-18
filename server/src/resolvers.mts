@@ -62,8 +62,8 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
 };
 
 const commonDocumentsFields: DocumentResolvers = {
-  id: (documentRoot) => documentRoot.id,
-  charge: async (documentRoot) => {
+  id: documentRoot => documentRoot.id,
+  charge: async documentRoot => {
     const charges = await getChargesByIds.run(
       {
         cahrgeIds: [documentRoot.transaction_id],
@@ -72,10 +72,9 @@ const commonDocumentsFields: DocumentResolvers = {
     );
     return charges[0];
   },
-  image: (documentRoot) => documentRoot.image_url,
-  file: (documentRoot) =>
-    `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
-}
+  image: documentRoot => documentRoot.image_url,
+  file: documentRoot => `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
+};
 
 const commonTransactionFields:
   | ConversionTransactionResolvers
@@ -161,14 +160,10 @@ export const resolvers: Resolvers = {
         taxInvoiceNumber: null,
         userDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
-        vat:
-          fields.vat?.currency && fields.vat.currency !== Currency.Nis
-            ? null
-            : fields.vat?.value,
+        vat: fields.vat?.currency && fields.vat.currency !== Currency.Nis ? null : fields.vat?.value,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         withholdingTax:
-          fields.withholdingTax?.currency &&
-          fields.withholdingTax.currency !== Currency.Nis
+          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Nis
             ? null
             : fields.withholdingTax?.value,
         chargeId,
@@ -202,9 +197,7 @@ export const resolvers: Resolvers = {
         detailedBankDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Nis
-            ? null
-            : fields.amount?.value?.toFixed(2),
+          fields.amount?.currency && fields.amount.currency !== Currency.Nis ? null : fields.amount?.value?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
@@ -247,34 +240,26 @@ export const resolvers: Resolvers = {
   Invoice: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return (
-        documentRoot.payper_document_type == 'חשבונית'
-      );
+      return documentRoot.payper_document_type == 'חשבונית';
     },
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    amount: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_total_for_payment,
-        documentRoot.payper_currency_symbol
-      ),
-    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
+    vat: documentRoot =>
+      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
   InvoiceReceipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return (
-        documentRoot.payper_document_type == 'חשבונית מס קבלה'
-      );
+      return documentRoot.payper_document_type == 'חשבונית מס קבלה';
     },
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    amount: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_total_for_payment,
-        documentRoot.payper_currency_symbol
-      ),
-    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
+    vat: documentRoot =>
+      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
 
   Proforma: {
@@ -282,14 +267,12 @@ export const resolvers: Resolvers = {
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'חשבונית מס';
     },
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    amount: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_total_for_payment,
-        documentRoot.payper_currency_symbol
-      ),
-    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
+    vat: documentRoot =>
+      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
 
   Unprocessed: {
@@ -304,9 +287,10 @@ export const resolvers: Resolvers = {
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'קבלה';
     },
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    vat: (documentRoot) => documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    vat: documentRoot =>
+      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
 
   LtdFinancialEntity: {
@@ -347,9 +331,9 @@ export const resolvers: Resolvers = {
     fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
   Charge: {
-    id: (DbCharge) => DbCharge.id!,
+    id: DbCharge => DbCharge.id!,
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
-    additionalDocument: (DbCharge) => {
+    additionalDocument: DbCharge => {
       const docs = getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
       return docs;
     },

@@ -46,15 +46,10 @@ export const Description = ({ data, alternativeCharge, style }: Props) => {
     >
       {cellText ?? 'undefined'}
       {!isDescription && alternativeCharge?.userDescription && (
-        <ConfirmMiniButton
-          onClick={() => updateUserNote(alternativeCharge.userDescription)}
-          disabled={isLoading}
-        />
+        <ConfirmMiniButton onClick={() => updateUserNote(alternativeCharge.userDescription)} disabled={isLoading} />
       )}
       <EditMiniButton
-        onClick={() =>
-          updateUserNote(prompt('New user description:') ?? undefined)
-        }
+        onClick={() => updateUserNote(prompt('New user description:') ?? undefined)}
         disabled={isLoading}
       />
     </td>

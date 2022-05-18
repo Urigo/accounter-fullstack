@@ -44,15 +44,9 @@ export const Category = ({ data, alternativeCharge, style }: Props) => {
     >
       {cellText ?? 'undefined'}
       {!isPersonalCategory && alternativeCharge?.personalCategory && (
-        <ConfirmMiniButton
-          onClick={() => updateTag(alternativeCharge.personalCategory)}
-          disabled={isLoading}
-        />
+        <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.personalCategory)} disabled={isLoading} />
       )}
-      <EditMiniButton
-        onClick={() => updateTag(prompt('Enter new category') ?? undefined)}
-        disabled={isLoading}
-      />
+      <EditMiniButton onClick={() => updateTag(prompt('Enter new category') ?? undefined)} disabled={isLoading} />
     </td>
   );
 };

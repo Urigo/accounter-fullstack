@@ -79,22 +79,13 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return <Amount amount={charge.transactions[0].amount.formatted} />;
             }
             case 'Entity': {
-              return (
-                <Entity data={charge} alternativeCharge={alternativeCharge} />
-              );
+              return <Entity data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'Description': {
-              return (
-                <Description
-                  data={charge.transactions[0]}
-                  alternativeCharge={alternativeCharge}
-                />
-              );
+              return <Description data={charge.transactions[0]} alternativeCharge={alternativeCharge} />;
             }
             case 'Category': {
-              return (
-                <Category data={charge} alternativeCharge={alternativeCharge} />
-              );
+              return <Category data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'VAT': {
               return (

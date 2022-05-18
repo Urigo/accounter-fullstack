@@ -55,15 +55,9 @@ export const Entity = ({ data, alternativeCharge, style }: Props) => {
     >
       {cellText ?? 'undefined'}
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
-        <ConfirmMiniButton
-          onClick={() => updateTag(alternativeCharge.financialEntity)}
-          disabled={isLoading}
-        />
+        <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
       )}
-      <EditMiniButton
-        onClick={() => updateTag(prompt('New financial entity:') ?? undefined)}
-        disabled={isLoading}
-      />
+      <EditMiniButton onClick={() => updateTag(prompt('New financial entity:') ?? undefined)} disabled={isLoading} />
     </td>
   );
 };
