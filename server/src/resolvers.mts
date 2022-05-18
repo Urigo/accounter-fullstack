@@ -241,7 +241,7 @@ export const resolvers: Resolvers = {
   Invoice: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'חשבונית';
+      return documentRoot.payper_document_type == 'חשבונית מס';
     },
     serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
     date: documentRoot => documentRoot.payper_document_date,
@@ -265,9 +265,7 @@ export const resolvers: Resolvers = {
 
   Proforma: {
     ...commonDocumentsFields,
-    __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'חשבונית מס';
-    },
+    __isTypeOf: () => false,
     serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
     date: documentRoot => documentRoot.payper_document_date,
     amount: documentRoot =>
@@ -290,6 +288,8 @@ export const resolvers: Resolvers = {
     },
     serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
     date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
     vat: documentRoot =>
       documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
   },
@@ -334,9 +334,9 @@ export const resolvers: Resolvers = {
   Charge: {
     id: DbCharge => DbCharge.id!,
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
-    additionalDocument: DbCharge => {
-      const docs = getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
-      return docs;
+    additionalDocument: async DbCharge => {
+      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      return docs.filter(d => !d.duplication_of);
     },
     ledgerRecords: async DbCharge => {
       const records = await getLedgerRecordsByChargeIds.run({ chargeIds: [DbCharge.id] }, pool);
@@ -414,22 +414,26 @@ export const resolvers: Resolvers = {
     },
     vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null),
     withholdingTax: DbCharge => formatFinancialAmount(DbCharge.withholding_tax),
-    invoice: async (DbCharge) => {
+    invoice: async DbCharge => {
       const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
-      const invoices = docs.filter(d => ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? ''));
-      if (invoices.length === 0 ) {
-        return null
+      const invoices = docs.filter(
+        d => !d.duplication_of && ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
+      );
+      if (invoices.length === 0) {
+        return null;
       }
       if (invoices.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
       }
       return invoices[0];
     },
-    receipt: async (DbCharge) => {
+    receipt: async DbCharge => {
       const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
-      const receipts = docs.filter(d => ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? ''));
-      if (receipts.length === 0 ) {
-        return null
+      const receipts = docs.filter(
+        d => !d.duplication_of && ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
+      );
+      if (receipts.length === 0) {
+        return null;
       }
       if (receipts.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
