@@ -1,7 +1,5 @@
-node_modules
-yarn.lock
-.idea
-dist
+node_modules/
+.idea/
+dist/
 .env
-.package-lock.json
-**/__generated__
+**/__generated__/

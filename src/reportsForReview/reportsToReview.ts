@@ -53,12 +53,8 @@ export const reportToReview = async (query: any): Promise<string> => {
   const allTransactions: any = results[2].value;
 
   allTransactions.rows = allTransactions.rows.map((transaction: any) => {
-    transaction.תאריך_חשבונית = moment(transaction.event_date).format(
-      'DD/MM/YYYY'
-    );
-    transaction.חשבון_חובה_1 = transaction.account_type
-      ? transaction.account_type
-      : '';
+    transaction.תאריך_חשבונית = moment(transaction.event_date).format('DD/MM/YYYY');
+    transaction.חשבון_חובה_1 = transaction.account_type ? transaction.account_type : '';
     transaction.סכום_חובה_1 = `${transaction.event_amount} ${transaction.currency_code}`;
     transaction.מטח_סכום_חובה_1 = transaction.bank_description;
     transaction.מטבע = '';
@@ -74,9 +70,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     transaction.מטח_סכום_זכות_2 = transaction.id;
     transaction.פרטים = '0';
     transaction.אסמכתא_1 = transaction.bank_reference;
-    transaction.אסמכתא_2 = moment(transaction.tax_invoice_date).format(
-      'DD/MM/YYYY'
-    );
+    transaction.אסמכתא_2 = moment(transaction.tax_invoice_date).format('DD/MM/YYYY');
     transaction.סוג_תנועה = transaction.vat;
     transaction.תאריך_ערך = moment(transaction.debit_date).format('DD/MM/YYYY');
     transaction.תאריך_3 = moment(transaction.event_date).format('DD/MM/YY');
@@ -95,12 +89,12 @@ export const reportToReview = async (query: any): Promise<string> => {
     } else if (date1 < date2) {
       return 1;
     } else if (a.original_id > b.original_id) {
-        return -1;
-      } else if (a.original_id < b.original_id) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return -1;
+    } else if (a.original_id < b.original_id) {
+      return 1;
+    } else {
+      return 0;
+    }
   });
   // console.log(JSON.stringify(reportToReview.rows));
 
@@ -157,19 +151,14 @@ export const reportToReview = async (query: any): Promise<string> => {
 
     const generateTaxFunctionCall = `onClick='generateTaxMovements("${transaction.id}");'`;
     const sendToHashavshevetFunctionCall = `onClick='sendToHashavshevet("${transaction.id}");'`;
-    const generateGoToUserTransactionsFunctionCall = (
-      userName?: string | null
-    ) => {
+    const generateGoToUserTransactionsFunctionCall = (userName?: string | null) => {
       if (!userName) {
         return '';
       }
       return `<a href='/user-transactions?name=${userName}'>${userName}</a>`;
     };
     const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
-    const addHoverEditButton = (
-      attribute: string,
-      viewableHtml?: string
-    ): string => {
+    const addHoverEditButton = (attribute: string, viewableHtml?: string): string => {
       const elementId = `${attribute}-${transaction.id}`;
       const content = viewableHtml || transaction[attribute] || '';
       return content;
@@ -186,9 +175,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       </div>`;
     };
     const missingHashavshevetSync =
-      (movementOrBank &&
-        !transaction.hashavshevet_id &&
-        transaction.חשבון_חובה_1 != 'כא') ||
+      (movementOrBank && !transaction.hashavshevet_id && transaction.חשבון_חובה_1 != 'כא') ||
       (!movementOrBank && !transaction.hashavshevet_id);
 
     // let url = `https://www.boi.org.il/currency.xml?rdate=${valueDate.format(
@@ -217,9 +204,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     // })();
 
     reportToReviewHTMLTemplate = reportToReviewHTMLTemplate.concat(`
-      <tr ${
-        movementOrBank ? 'class="bank-transaction"' : ''
-      } onClick='setSelected(this);'>
+      <tr ${movementOrBank ? 'class="bank-transaction"' : ''} onClick='setSelected(this);'>
         <td>${counter++}</td>
         <td>
           <input onchange="changeConfirmation('${transaction.id}', this${
@@ -229,9 +214,7 @@ export const reportToReview = async (query: any): Promise<string> => {
         </td>
         <td class="invoiceDate">
           ${addHoverEditButton('תאריך_חשבונית')}
-          <img download class="invoiceImage" src="${
-            transaction.proforma_invoice_file
-          }">
+          <img download class="invoiceImage" src="${transaction.proforma_invoice_file}">
         </td>
         <td>${addHoverEditButton(
           'חשבון_חובה_1',
@@ -268,24 +251,12 @@ export const reportToReview = async (query: any): Promise<string> => {
           </div>
         </td>
         <td>${addHoverEditButton('תאריך_3')}</td>
-        <td ${
-          missingHashavshevetSync
-            ? 'style="background-color: rgb(255,0,0);"'
-            : ''
-        }>
+        <td ${missingHashavshevetSync ? 'style="background-color: rgb(255,0,0);"' : ''}>
           ${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button type="button"
-          ${
-            movementOrBank
-              ? generateTaxFunctionCall
-              : sendToHashavshevetFunctionCall
-          }>e
+          ${movementOrBank ? generateTaxFunctionCall : sendToHashavshevetFunctionCall}>e
         </button>
-        ${
-          movementOrBank
-            ? ''
-            : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`
-        }
+        ${movementOrBank ? '' : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`}
         </td>
       </tr>
       `);

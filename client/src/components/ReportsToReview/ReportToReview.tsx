@@ -16,12 +16,7 @@ const EditElement: FC<{
 
   return (
     <div className="editor">
-      <input
-        type="text"
-        defaultValue={defaultValue}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
+      <input type="text" defaultValue={defaultValue} value={value} onChange={e => setValue(e.target.value)} />
       <br />
       <button
         onClick={() =>
@@ -44,22 +39,16 @@ const TransactionRow: FC<{
   setSelected: (id: string) => void;
   isSelected: boolean;
 }> = ({ transaction, index, setSelected, isSelected }) => {
-  const { generateTaxMovement, deleteTaxMovement, reviewTransaction } =
-    useSql();
+  const { generateTaxMovement, deleteTaxMovement, reviewTransaction } = useSql();
 
-  const generateGoToUserTransactionsFunctionCall = (
-    userName?: string | null
-  ) => {
+  const generateGoToUserTransactionsFunctionCall = (userName?: string | null) => {
     if (!userName) {
       return;
     }
     return <a href={`/user-transactions?name=${userName}`}>{userName}</a>;
   };
   const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
-  const addHoverEditButton = (
-    attribute: keyof LedgerEntity,
-    viewableHtml?: JSX.Element
-  ) => {
+  const addHoverEditButton = (attribute: keyof LedgerEntity, viewableHtml?: JSX.Element) => {
     const content = viewableHtml || (transaction[attribute] as string) || '';
 
     if (movementOrBank) {
@@ -67,19 +56,13 @@ const TransactionRow: FC<{
     }
 
     return (
-      <HoverHandler
-        hoverElement={
-          <EditElement transaction={transaction} attribute={attribute} />
-        }
-      >
+      <HoverHandler hoverElement={<EditElement transaction={transaction} attribute={attribute} />}>
         {content}
       </HoverHandler>
     );
   };
   const missingHashavshevetSync =
-    (movementOrBank &&
-      !transaction.hashavshevet_id &&
-      transaction.חשבון_חובה_1 != 'כא') ||
+    (movementOrBank && !transaction.hashavshevet_id && transaction.חשבון_חובה_1 != 'כא') ||
     (!movementOrBank && !transaction.hashavshevet_id);
 
   return (
@@ -91,12 +74,10 @@ const TransactionRow: FC<{
       <td>{index}</td>
       <td>
         <input
-          onChange={(e) => {
+          onChange={e => {
             reviewTransaction({
               id: transaction.id,
-              accountType: movementOrBank
-                ? transaction.חשבון_חובה_1
-                : undefined,
+              accountType: movementOrBank ? transaction.חשבון_חובה_1 : undefined,
               reviewed: e.target.checked,
             });
           }}
@@ -109,37 +90,17 @@ const TransactionRow: FC<{
         {addHoverEditButton('תאריך_חשבונית')}
         <img className="invoiceImage" src={transaction.proforma_invoice_file} />
       </td>
-      <td>
-        {addHoverEditButton(
-          'חשבון_חובה_1',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1)
-        )}
-      </td>
+      <td>{addHoverEditButton('חשבון_חובה_1', generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1))}</td>
       <td>{addHoverEditButton('סכום_חובה_1')}</td>
       <td>{addHoverEditButton('מטח_סכום_חובה_1')}</td>
       <td>{addHoverEditButton('מטבע')}</td>
-      <td>
-        {addHoverEditButton(
-          'חשבון_זכות_1',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1)
-        )}
-      </td>
+      <td>{addHoverEditButton('חשבון_זכות_1', generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1))}</td>
       <td>{addHoverEditButton('סכום_זכות_1')}</td>
       <td>{addHoverEditButton('מטח_סכום_זכות_1')}</td>
-      <td>
-        {addHoverEditButton(
-          'חשבון_חובה_2',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2)
-        )}
-      </td>
+      <td>{addHoverEditButton('חשבון_חובה_2', generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2))}</td>
       <td>{addHoverEditButton('סכום_חובה_2')}</td>
       <td>{addHoverEditButton('מטח_סכום_חובה_2')}</td>
-      <td>
-        {addHoverEditButton(
-          'חשבון_זכות_2',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2)
-        )}
-      </td>
+      <td>{addHoverEditButton('חשבון_זכות_2', generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2))}</td>
       <td>{addHoverEditButton('סכום_זכות_2')}</td>
       <td>{addHoverEditButton('מטח_סכום_זכות_2')}</td>
       <td>{addHoverEditButton('פרטים')}</td>
@@ -148,13 +109,7 @@ const TransactionRow: FC<{
       <td>{addHoverEditButton('סוג_תנועה')}</td>
       <td className="valueDate">{addHoverEditButton('תאריך_ערך')}</td>
       <td>{addHoverEditButton('תאריך_3')}</td>
-      <td
-        style={
-          missingHashavshevetSync
-            ? { backgroundColor: 'rgb(255,0,0)' }
-            : undefined
-        }
-      >
+      <td style={missingHashavshevetSync ? { backgroundColor: 'rgb(255,0,0)' } : undefined}>
         {transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button
           type="button"
@@ -170,10 +125,7 @@ const TransactionRow: FC<{
           e
         </button>
         {movementOrBank && (
-          <button
-            type="button"
-            onClick={() => deleteTaxMovement(transaction.id)}
-          >
+          <button type="button" onClick={() => deleteTaxMovement(transaction.id)}>
             D
           </button>
         )}
@@ -191,9 +143,7 @@ export const ReportToReview: FC<{
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
 
   useEffect(() => {
-    getReportToReview(currrentCompany, reportMonthToReview).then(
-      setTransactions
-    );
+    getReportToReview(currrentCompany, reportMonthToReview).then(setTransactions);
   }, []);
 
   const [incomeSum, outcomeSum, VATincome, VAToutcome] = transactions.reduce(

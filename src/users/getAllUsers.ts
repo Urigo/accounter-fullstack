@@ -13,7 +13,7 @@ export const getAllUsers = async (): Promise<string> => {
   const query =
     ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
       .map(
-        (column) =>
+        column =>
           `select ${column} as userName from accounter_schema.ledger${
             currrentCompany ? ` where business = '${currrentCompany}'` : ''
           }`

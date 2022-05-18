@@ -21,9 +21,7 @@ interface ModifiedTransaction {
   balanceNis: number;
 }
 
-const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
-  transactions,
-}) => {
+const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transactions }) => {
   const [balanceForeign, setBalanceForeign] = useState(0);
   const [balanceNis, setBalanceNis] = useState(0);
 
@@ -66,41 +64,29 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
           <td></td>
           <td>0.00</td>
         </tr>
-        {transactions.map((transaction) => {
-          transaction.balanceForeign =
-            balanceForeign + transaction.direction * transaction.amountForeign;
-          setBalanceForeign((current) => current + transaction.balanceForeign);
+        {transactions.map(transaction => {
+          transaction.balanceForeign = balanceForeign + transaction.direction * transaction.amountForeign;
+          setBalanceForeign(current => current + transaction.balanceForeign);
 
-          transaction.balanceNis =
-            balanceNis + transaction.direction * transaction.amountNis;
-          setBalanceNis((current) => current + transaction.balanceNis);
+          transaction.balanceNis = balanceNis + transaction.direction * transaction.amountNis;
+          setBalanceNis(current => current + transaction.balanceNis);
           return (
             <tr>
               <td>{transaction.counterAccount}</td>
               <td>{transaction.hashavshevet_id ?? ''}</td>
               <td>{transaction.תאריך_3 ?? ''}</td>
               <td>{transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
-              <td>
-                {transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}
-              </td>
+              <td>{transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}</td>
               <td>{transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
               <td>{transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
               <td>{transaction.פרטים === '0' ? '' : transaction.פרטים}</td>
               <td>{transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
               <td>{transaction.מטבע ? transaction.מטבע : ''}</td>
-              <td>
-                {transaction.direction === -1 ? transaction.amountForeign : ''}
-              </td>
-              <td>
-                {transaction.direction === 1 ? transaction.amountForeign : ''}
-              </td>
+              <td>{transaction.direction === -1 ? transaction.amountForeign : ''}</td>
+              <td>{transaction.direction === 1 ? transaction.amountForeign : ''}</td>
               <td>{transaction.balanceForeign.toFixed(2)}</td>
-              <td>
-                {transaction.direction === -1 ? transaction.amountNis : ''}
-              </td>
-              <td>
-                {transaction.direction === 1 ? transaction.amountNis : ''}
-              </td>
+              <td>{transaction.direction === -1 ? transaction.amountNis : ''}</td>
+              <td>{transaction.direction === 1 ? transaction.amountNis : ''}</td>
               <td>{transaction.balanceNis.toFixed(2)}</td>
             </tr>
           );
@@ -113,9 +99,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({
 export const UserTransactions: FC = () => {
   const [searchParams] = useSearchParams();
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
-  const [inputValue, setInputValue] = useState<string>(
-    searchParams.get('name') ?? ''
-  );
+  const [inputValue, setInputValue] = useState<string>(searchParams.get('name') ?? '');
   const [username, setUsername] = useState<string>(inputValue);
   const { getUserTransactions } = useSql();
   let balanceForeign: number = 0;
@@ -125,46 +109,27 @@ export const UserTransactions: FC = () => {
   let sumNisDebit: number = 0;
   let sumNisCredit: number = 0;
 
-  function modifyLedgerTransaction(
-    modifiedArray: ModifiedTransaction[],
-    transaction: LedgerEntity
-  ) {
+  function modifyLedgerTransaction(modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) {
     let direction: 1 | -1 = 1;
     let amountNis: number = 0;
     let amountForeign: number = 0;
     let counterAccount: string = '';
     if (transaction.חשבון_זכות_1 === username) {
       direction = 1;
-      amountNis = transaction.סכום_זכות_1
-        ? (amountNis = Number(transaction.סכום_זכות_1))
-        : 0;
-      amountForeign = transaction.מטח_סכום_זכות_1
-        ? Number(transaction.מטח_סכום_זכות_1)
-        : 0;
+      amountNis = transaction.סכום_זכות_1 ? (amountNis = Number(transaction.סכום_זכות_1)) : 0;
+      amountForeign = transaction.מטח_סכום_זכות_1 ? Number(transaction.מטח_סכום_זכות_1) : 0;
     } else if (transaction.חשבון_זכות_2 === username) {
       direction = 1;
-      amountNis = transaction.סכום_זכות_2
-        ? (amountNis = Number(transaction.סכום_זכות_2))
-        : 0;
-      amountForeign = transaction.מטח_סכום_זכות_2
-        ? Number(transaction.מטח_סכום_זכות_2)
-        : 0;
+      amountNis = transaction.סכום_זכות_2 ? (amountNis = Number(transaction.סכום_זכות_2)) : 0;
+      amountForeign = transaction.מטח_סכום_זכות_2 ? Number(transaction.מטח_סכום_זכות_2) : 0;
     } else if (transaction.חשבון_חובה_1 === username) {
       direction = -1;
-      amountNis = transaction.סכום_חובה_1
-        ? (amountNis = Number(transaction.סכום_חובה_1))
-        : 0;
-      amountForeign = transaction.מטח_סכום_חובה_1
-        ? Number(transaction.מטח_סכום_חובה_1)
-        : 0;
+      amountNis = transaction.סכום_חובה_1 ? (amountNis = Number(transaction.סכום_חובה_1)) : 0;
+      amountForeign = transaction.מטח_סכום_חובה_1 ? Number(transaction.מטח_סכום_חובה_1) : 0;
     } else if (transaction.חשבון_חובה_2 === username) {
       direction = -1;
-      amountNis = transaction.סכום_חובה_2
-        ? (amountNis = Number(transaction.סכום_חובה_2))
-        : 0;
-      amountForeign = transaction.מטח_סכום_חובה_2
-        ? Number(transaction.מטח_סכום_חובה_2)
-        : 0;
+      amountNis = transaction.סכום_חובה_2 ? (amountNis = Number(transaction.סכום_חובה_2)) : 0;
+      amountForeign = transaction.מטח_סכום_חובה_2 ? Number(transaction.מטח_סכום_חובה_2) : 0;
     } else {
       return modifiedArray;
     }
@@ -202,7 +167,7 @@ export const UserTransactions: FC = () => {
     return modifiedArray;
   }
 
-  const onUsernameChanged: FormEventHandler<HTMLFormElement> = (event) => {
+  const onUsernameChanged: FormEventHandler<HTMLFormElement> = event => {
     setUsername(inputValue);
     if (!inputValue || inputValue === '') {
       setTransactions([]);
@@ -229,11 +194,7 @@ export const UserTransactions: FC = () => {
       <form onSubmit={onUsernameChanged}>
         <label>
           User Name:
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-          />
+          <input type="text" value={inputValue} onChange={event => setInputValue(event.target.value)} />
         </label>
         <input type="submit" value="Search" />
       </form>

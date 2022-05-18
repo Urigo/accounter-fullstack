@@ -12,11 +12,7 @@ export const Links: FC<Props> = ({ transaction, style }) => {
   return (
     <td style={{ ...style }}>
       {transaction.links && 'yes'}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="links"
-        promptText="New links:"
-      />
+      <UpdateButton transaction={transaction} propertyName="links" promptText="New links:" />
       <button type="button" onClick={() => writeToClipboard(transaction.links)}>
         &#9986;
       </button>

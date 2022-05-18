@@ -1,0 +1,37 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  prettier-check:
+    name: 🧹 Prettier Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Master
+        uses: actions/checkout@v3
+
+      - name: Use Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache Yarn
+        uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{steps.yarn-cache-dir-path.outputs.dir}}
+          key: ${{runner.os}}-18-yarn-${{hashFiles('yarn.lock')}}
+          restore-keys: |
+            ${{runner.os}}-18-yarn-
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Prettier Check
+        run: yarn prettier:check

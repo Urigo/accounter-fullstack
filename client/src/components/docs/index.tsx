@@ -74,7 +74,7 @@ gql`
 
 export const DocumentsReport: FC = () => {
   const { data, isError, error } = useDocumentsQuery();
-  const rows = data?.documents.map((doc) => {
+  const rows = data?.documents.map(doc => {
     switch (doc.__typename) {
       case 'Unprocessed':
         return (
@@ -83,9 +83,7 @@ export const DocumentsReport: FC = () => {
             <td>
               <PopUpModal
                 modalSize="45%"
-                ButtonDisplay={
-                  <Image width={80} height={80} src={doc.image} alt="image" />
-                }
+                ButtonDisplay={<Image width={80} height={80} src={doc.image} alt="image" />}
                 content={<Image src={doc.image} alt="image" />}
               />
             </td>
@@ -99,9 +97,7 @@ export const DocumentsReport: FC = () => {
             <td>
               <PopUpModal
                 modalSize="45%"
-                ButtonDisplay={
-                  <Image width={80} height={80} src={doc.image} alt="image" />
-                }
+                ButtonDisplay={<Image width={80} height={80} src={doc.image} alt="image" />}
                 content={<Image src={doc.image} alt="image" />}
               />
             </td>
@@ -116,51 +112,47 @@ export const DocumentsReport: FC = () => {
             <td>{doc.amount?.raw}</td>
           </tr>
         );
-        case 'Proforma':
-          return (
-            <tr key={doc.id}>
-              <td>{doc.__typename}</td>
-              <td>
-                <PopUpModal
-                  modalSize="45%"
-                  ButtonDisplay={
-                    <Image width={80} height={80} src={doc.image} alt="image" />
-                  }
-                  content={<Image src={doc.image} alt="image" />}
-                />
-              </td>
-              <td>{doc.file}</td>
-              <td>{doc.date}</td>
-              <td>{doc.serialNumber}</td>
-              <td>{doc.vat?.currency}</td>
-              <td>{doc.vat?.formatted}</td>
-              <td>{doc.vat?.raw}</td>
-              <td>{doc.amount?.currency}</td>
-              <td>{doc.amount?.formatted}</td>
-              <td>{doc.amount?.raw}</td>
-            </tr>
-          );
-          case 'Receipt':
-            return (
-              <tr key={doc.id}>
-                <td>{doc.__typename}</td>
-                <td>
-                  <PopUpModal
-                    modalSize="45%"
-                    ButtonDisplay={
-                      <Image width={80} height={80} src={doc.image} alt="image" />
-                    }
-                    content={<Image src={doc.image} alt="image" />}
-                  />
-                </td>
-                <td>{doc.file}</td>
-                <td>{doc.date}</td>
-                <td>{doc.serialNumber}</td>
-                <td>{doc.vat?.currency}</td>
-                <td>{doc.vat?.formatted}</td>
-                <td>{doc.vat?.raw}</td>
-              </tr>
-            );
+      case 'Proforma':
+        return (
+          <tr key={doc.id}>
+            <td>{doc.__typename}</td>
+            <td>
+              <PopUpModal
+                modalSize="45%"
+                ButtonDisplay={<Image width={80} height={80} src={doc.image} alt="image" />}
+                content={<Image src={doc.image} alt="image" />}
+              />
+            </td>
+            <td>{doc.file}</td>
+            <td>{doc.date}</td>
+            <td>{doc.serialNumber}</td>
+            <td>{doc.vat?.currency}</td>
+            <td>{doc.vat?.formatted}</td>
+            <td>{doc.vat?.raw}</td>
+            <td>{doc.amount?.currency}</td>
+            <td>{doc.amount?.formatted}</td>
+            <td>{doc.amount?.raw}</td>
+          </tr>
+        );
+      case 'Receipt':
+        return (
+          <tr key={doc.id}>
+            <td>{doc.__typename}</td>
+            <td>
+              <PopUpModal
+                modalSize="45%"
+                ButtonDisplay={<Image width={80} height={80} src={doc.image} alt="image" />}
+                content={<Image src={doc.image} alt="image" />}
+              />
+            </td>
+            <td>{doc.file}</td>
+            <td>{doc.date}</td>
+            <td>{doc.serialNumber}</td>
+            <td>{doc.vat?.currency}</td>
+            <td>{doc.vat?.formatted}</td>
+            <td>{doc.vat?.raw}</td>
+          </tr>
+        );
     }
   });
   return (

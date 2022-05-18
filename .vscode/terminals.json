@@ -1,27 +1,26 @@
 {
-    "autorun": false,
-    "terminals": [
-      {
-        "name": "app:dev",
-        "description": "Run App",
-        "open": true,
-        "cwd": "client",
-        "command": "nvm use 18.1.0 && yarn dev"
-      },
-      {
-        "name": "server:dev",
-        "description": "Run server",
-        "open": true,
-        "cwd": "server",
-        "command": "nvm use 18.1.0 && yarn dev"
-      },
-      {
-        "name": "temp-server:dev",
-        "description": "Run temp-server",
-        "open": true,
-        "cwd": "temp-server",
-        "command": "nvm use 18.1.0 && yarn dev"
-      }
-    ]
-  }
-  
+  "autorun": false,
+  "terminals": [
+    {
+      "name": "app:dev",
+      "description": "Run App",
+      "open": true,
+      "cwd": "client",
+      "command": "nvm use 18.1.0 && yarn dev"
+    },
+    {
+      "name": "server:dev",
+      "description": "Run server",
+      "open": true,
+      "cwd": "server",
+      "command": "nvm use 18.1.0 && yarn dev"
+    },
+    {
+      "name": "temp-server:dev",
+      "description": "Run temp-server",
+      "open": true,
+      "cwd": "temp-server",
+      "command": "nvm use 18.1.0 && yarn dev"
+    }
+  ]
+}

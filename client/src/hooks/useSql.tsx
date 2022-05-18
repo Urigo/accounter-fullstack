@@ -15,70 +15,55 @@ const serverUrl = 'http://localhost:4001';
 
 export const useSql = () => {
   const onGetLastInvoiceNumbers = async () => {
-    const lastInvoiceNumbers = await fetch(
-      `${serverUrl}/getLastInvoiceNumbers`
-    ).then((res) => res.json());
+    const lastInvoiceNumbers = await fetch(`${serverUrl}/getLastInvoiceNumbers`).then(res => res.json());
 
     return (lastInvoiceNumbers ?? []) as LastInvoiceNumber[];
   };
 
   const onGetMissingInvoiceDates = async (monthTaxReport: string) => {
-    const missingInvoiceDates = await fetch(
-      `${serverUrl}/getMissingInvoiceDates`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ monthTaxReport }),
-      }
-    ).then((res) => res.json());
+    const missingInvoiceDates = await fetch(`${serverUrl}/getMissingInvoiceDates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ monthTaxReport }),
+    }).then(res => res.json());
 
     return (missingInvoiceDates ?? []) as MissingInvoice[];
   };
 
   const onGetMissingInvoiceImages = async (monthTaxReport: string) => {
-    const missingInvoiceImages = await fetch(
-      `${serverUrl}/getMissingInvoiceImages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ monthTaxReport }),
-      }
-    ).then((res) => res.json());
+    const missingInvoiceImages = await fetch(`${serverUrl}/getMissingInvoiceImages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ monthTaxReport }),
+    }).then(res => res.json());
 
     return (missingInvoiceImages ?? []) as MissingInvoice[];
   };
 
   const onGetMissingInvoiceNumbers = async (monthTaxReport: string) => {
-    const missingInvoiceNumbers = await fetch(
-      `${serverUrl}/getMissingInvoiceNumbers`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ monthTaxReport }),
-      }
-    ).then((res) => res.json());
+    const missingInvoiceNumbers = await fetch(`${serverUrl}/getMissingInvoiceNumbers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ monthTaxReport }),
+    }).then(res => res.json());
 
     return (missingInvoiceNumbers ?? []) as MissingInvoice[];
   };
 
   const onGetProfitTable = async () => {
-    const profitRows = await fetch(`${serverUrl}/getProfitTable`).then((res) =>
-      res.json()
-    );
+    const profitRows = await fetch(`${serverUrl}/getProfitTable`).then(res => res.json());
 
     return (profitRows ?? []) as ProfitRowType[];
   };
 
   const onGetThisMonthPrivateExpenses = async () => {
-    const thisMonthPrivateExpenses = await fetch(
-      `${serverUrl}/getThisMonthPrivateExpenses`
-    ).then((res) => res.json());
+    const thisMonthPrivateExpenses = await fetch(`${serverUrl}/getThisMonthPrivateExpenses`).then(res => res.json());
 
     return (thisMonthPrivateExpenses ?? []) as ThisMonthPrivateExpensesType[];
   };
@@ -90,7 +75,7 @@ export const useSql = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ monthTaxReport }),
-    }).then((res) => res.json());
+    }).then(res => res.json());
 
     return (vatTransactions ?? []) as VatTransaction[];
   };
@@ -102,67 +87,48 @@ export const useSql = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ financialEntity }),
-    }).then(
-      (res) => res.json()
-    );
+    }).then(res => res.json());
 
     return (allTransactions ?? []) as TransactionType[];
   };
 
   const onGetMonthlyTaxesReport = async (monthTaxReport: string) => {
-    const monthlyTaxesReport = await fetch(
-      `${serverUrl}/getMonthlyTaxesReport`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ monthTaxReport }),
-      }
-    ).then((res) => res.json());
+    const monthlyTaxesReport = await fetch(`${serverUrl}/getMonthlyTaxesReport`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ monthTaxReport }),
+    }).then(res => res.json());
 
     return (monthlyTaxesReport ?? []) as MonthTaxReport[];
   };
 
-  const onGetTopPrivateNotCategorized = async (
-    startingDate: string = '2020-01-01'
-  ) => {
-    const topPrivateNotCategorizedExpenses = await fetch(
-      `${serverUrl}/getTopPrivateNotCategorized`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ startingDate }),
-      }
-    ).then((res) => res.json());
+  const onGetTopPrivateNotCategorized = async (startingDate: string = '2020-01-01') => {
+    const topPrivateNotCategorizedExpenses = await fetch(`${serverUrl}/getTopPrivateNotCategorized`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ startingDate }),
+    }).then(res => res.json());
 
-    return (topPrivateNotCategorizedExpenses ??
-      []) as TopPrivateNotCategorizedExpense[];
+    return (topPrivateNotCategorizedExpenses ?? []) as TopPrivateNotCategorizedExpense[];
   };
 
-  const onUpdateBankTransactionAttribute = async (data: {
-    transactionId: string;
-    attribute: string;
-    value: any;
-  }) => {
+  const onUpdateBankTransactionAttribute = async (data: { transactionId: string; attribute: string; value: any }) => {
     const result = await fetch(`${serverUrl}/updateBankTransactionAttribute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ ...data }),
-    }).then((res) => res.json());
+    }).then(res => res.json());
 
     return result;
   };
 
-  const onEditTransactionProperty = async (data: {
-    propertyToChange: string;
-    newValue: any;
-    id: string;
-  }) => {
+  const onEditTransactionProperty = async (data: { propertyToChange: string; newValue: any; id: string }) => {
     if (data.newValue) {
       try {
         const result = await fetch(`${serverUrl}/editTransaction`, {
@@ -171,7 +137,7 @@ export const useSql = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ ...data }),
-        }).then((res) => res.json());
+        }).then(res => res.json());
 
         return result;
       } catch (error) {
@@ -190,7 +156,7 @@ export const useSql = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ transactionId }),
-      }).then((res) => res.json());
+      }).then(res => res.json());
 
       return result;
     } catch (error) {
@@ -199,11 +165,7 @@ export const useSql = () => {
     }
   };
 
-  const onReviewTransaction = async (data: {
-    reviewed: boolean;
-    id: string;
-    accountType?: string;
-  }) => {
+  const onReviewTransaction = async (data: { reviewed: boolean; id: string; accountType?: string }) => {
     try {
       const result = await fetch(`${serverUrl}/reviewTransaction`, {
         method: 'POST',
@@ -211,7 +173,7 @@ export const useSql = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ ...data }),
-      }).then((res) => res.json());
+      }).then(res => res.json());
 
       return result;
     } catch (error) {
@@ -227,7 +189,7 @@ export const useSql = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ currrentCompany }),
-    }).then((res) => res.json());
+    }).then(res => res.json());
 
     return (result ?? []) as { username: string }[];
   };
@@ -242,7 +204,7 @@ export const useSql = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ userName, companyId }),
-    }).then((res) => res.json());
+    }).then(res => res.json());
 
     return (transactions ?? []) as LedgerEntity[];
   };
@@ -262,54 +224,33 @@ export const useSql = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ company, reportMonthToReview }),
-    }).then((res) => res.json());
+    }).then(res => res.json());
 
     return (transactions ?? []) as LedgerEntity[];
   };
 
   return {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
-    getMissingInvoiceDates: (monthTaxReport: string) =>
-      onGetMissingInvoiceDates(monthTaxReport),
-    getMissingInvoiceImages: (monthTaxReport: string) =>
-      onGetMissingInvoiceImages(monthTaxReport),
-    getMissingInvoiceNumbers: (monthTaxReport: string) =>
-      onGetMissingInvoiceNumbers(monthTaxReport),
+    getMissingInvoiceDates: (monthTaxReport: string) => onGetMissingInvoiceDates(monthTaxReport),
+    getMissingInvoiceImages: (monthTaxReport: string) => onGetMissingInvoiceImages(monthTaxReport),
+    getMissingInvoiceNumbers: (monthTaxReport: string) => onGetMissingInvoiceNumbers(monthTaxReport),
     getProfitTable: () => onGetProfitTable(),
     getThisMonthPrivateExpenses: () => onGetThisMonthPrivateExpenses(),
-    getVatTransactions: (monthTaxReport: string) =>
-      onGetVatTransactions(monthTaxReport),
+    getVatTransactions: (monthTaxReport: string) => onGetVatTransactions(monthTaxReport),
     getAllTransactions: (financialEntity: string | null) => onGetAllTransactions(financialEntity),
-    getMonthlyTaxesReport: (monthTaxReport: string) =>
-      onGetMonthlyTaxesReport(monthTaxReport),
-    getTopPrivateNotCategorized: (startingDate?: string) =>
-      onGetTopPrivateNotCategorized(startingDate),
-    updateBankTransactionAttribute: (data: {
-      transactionId: string;
-      attribute: string;
-      value: any;
-    }) => onUpdateBankTransactionAttribute(data),
-    editTransaction: (data: {
-      propertyToChange: string;
-      newValue: any;
-      id: string;
-    }) => onEditTransactionProperty(data),
+    getMonthlyTaxesReport: (monthTaxReport: string) => onGetMonthlyTaxesReport(monthTaxReport),
+    getTopPrivateNotCategorized: (startingDate?: string) => onGetTopPrivateNotCategorized(startingDate),
+    updateBankTransactionAttribute: (data: { transactionId: string; attribute: string; value: any }) =>
+      onUpdateBankTransactionAttribute(data),
+    editTransaction: (data: { propertyToChange: string; newValue: any; id: string }) => onEditTransactionProperty(data),
     deleteTaxMovement: (transactionId: string) => {
       onDeleteTaxMovement(transactionId);
     },
-    reviewTransaction: (data: {
-      reviewed: boolean;
-      id: string;
-      accountType?: string;
-    }) => onReviewTransaction(data),
+    reviewTransaction: (data: { reviewed: boolean; id: string; accountType?: string }) => onReviewTransaction(data),
     getAllUsers: (companyId?: string) => onGetAllUsers(companyId),
-    getUserTransactions: (userName: string, companyId?: string) =>
-      onGetUserTransactions(userName, companyId),
-    generateTaxMovement: (transactionId: string) =>
-      onGenerateTaxMovement(transactionId),
-    getReportToReview: (
-      currentCompany?: string,
-      reportMonthToReview?: string
-    ) => onGetReportToReview(currentCompany, reportMonthToReview),
+    getUserTransactions: (userName: string, companyId?: string) => onGetUserTransactions(userName, companyId),
+    generateTaxMovement: (transactionId: string) => onGenerateTaxMovement(transactionId),
+    getReportToReview: (currentCompany?: string, reportMonthToReview?: string) =>
+      onGetReportToReview(currentCompany, reportMonthToReview),
   };
 };

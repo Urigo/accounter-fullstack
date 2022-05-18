@@ -1,28 +1,17 @@
-import {
-  FinancialAmount,
-  SuggestedChargeFragment,
-} from '../__generated__/types';
+import { FinancialAmount, SuggestedChargeFragment } from '../__generated__/types';
 import { formatFinancialAmount } from './vat';
 
 export interface SuggestedCharge {
   financialEntity: string;
   userDescription?: string;
-  financialAccountsToBalance?:
-    | 'no'
-    | ' '
-    | 'dotan'
-    | 'uri'
-    | 'training_fund'
-    | 'pension';
+  financialAccountsToBalance?: 'no' | ' ' | 'dotan' | 'uri' | 'training_fund' | 'pension';
   personalCategory: string;
   vat?: FinancialAmount;
   taxCategory?: string;
 }
 
 // TODO: move logic to server?
-export function suggestedCharge(
-  charge: SuggestedChargeFragment
-): SuggestedCharge {
+export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharge {
   const transactionDescription = charge.transactions?.[0]?.description;
   if (transactionDescription?.includes('SLACK TAYJ1FSUA/DUBLIN')) {
     return {
@@ -61,10 +50,7 @@ export function suggestedCharge(
       personalCategory: 'food',
     };
   }
-  if (
-    transactionDescription?.includes('אי אם פי אם') ||
-    transactionDescription?.includes('איי.אם.פי.אם')
-  ) {
+  if (transactionDescription?.includes('אי אם פי אם') || transactionDescription?.includes('איי.אם.פי.אם')) {
     return {
       financialEntity: 'AmPm',
       userDescription: 'Groceries',
@@ -97,17 +83,13 @@ export function suggestedCharge(
       userDescription: 'Green Invoice Monthly Charge',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (
     transactionDescription?.includes(`ע' העברת מט"ח`) ||
-    (transactionDescription?.includes(`העברת מט"ח`) &&
-      Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
-    (transactionDescription?.includes('מטח') &&
-      Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
+    (transactionDescription?.includes(`העברת מט"ח`) && Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
+    (transactionDescription?.includes('מטח') && Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
     transactionDescription?.includes('F.C.COM') ||
     transactionDescription?.includes('ע.מפעולות-ישיר') ||
     transactionDescription?.includes('ריבית חובה') ||
@@ -216,10 +198,7 @@ export function suggestedCharge(
       vat: formatFinancialAmount(0),
     };
   }
-  if (
-    transactionDescription?.includes('הוט נט שרותי אינטרנט') ||
-    transactionDescription?.includes('HOT')
-  ) {
+  if (transactionDescription?.includes('הוט נט שרותי אינטרנט') || transactionDescription?.includes('HOT')) {
     return {
       financialEntity: 'HOT',
       userDescription: `Internet Provider`,
@@ -233,10 +212,7 @@ export function suggestedCharge(
       personalCategory: 'computer',
     };
   }
-  if (
-    transactionDescription?.includes('יורוקארד') ||
-    transactionDescription?.includes('ISRACARD')
-  ) {
+  if (transactionDescription?.includes('יורוקארד') || transactionDescription?.includes('ISRACARD')) {
     return {
       financialEntity: 'Isracard',
       userDescription: 'Creditcard charge',
@@ -266,9 +242,7 @@ export function suggestedCharge(
       taxCategory: 'פלאפון',
       financialAccountsToBalance: ' ',
       personalCategory: 'communications',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('GITHUB')) {
@@ -377,10 +351,7 @@ export function suggestedCharge(
   if (transactionDescription?.includes('חברת פרטנר תקשורת בע')) {
     return { financialEntity: 'Partner', personalCategory: 'family' };
   }
-  if (
-    transactionDescription?.includes('העברה מחו"ל') &&
-    transactionDescription?.includes('SDI PROCUREMEN')
-  ) {
+  if (transactionDescription?.includes('העברה מחו"ל') && transactionDescription?.includes('SDI PROCUREMEN')) {
     return {
       financialEntity: 'sdi procurement solutions',
       taxCategory: 'הכנפט1',
@@ -396,10 +367,7 @@ export function suggestedCharge(
       personalCategory: 'love',
     };
   }
-  if (
-    transactionDescription?.includes('MOUNTAIN V') ||
-    transactionDescription?.includes('STORA')
-  ) {
+  if (transactionDescription?.includes('MOUNTAIN V') || transactionDescription?.includes('STORA')) {
     return {
       financialEntity: 'Google Storage',
       userDescription: 'Google Storage',
@@ -425,9 +393,7 @@ export function suggestedCharge(
       userDescription: 'Taxi',
       financialAccountsToBalance: ' ',
       personalCategory: 'transportation',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('סונול')) {
@@ -519,9 +485,7 @@ export function suggestedCharge(
       financialEntity: 'JustLance LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('LANCE GLOBAL')) {
@@ -590,20 +554,14 @@ export function suggestedCharge(
       personalCategory: 'family',
     };
   }
-  if (
-    transactionDescription?.includes('הלמן-אלדובי') &&
-    transactionDescription?.includes('השתלמות')
-  ) {
+  if (transactionDescription?.includes('הלמן-אלדובי') && transactionDescription?.includes('השתלמות')) {
     return {
       financialEntity: 'Halman Aldubi Training Fund',
       financialAccountsToBalance: 'training_fund',
       personalCategory: 'investments',
     };
   }
-  if (
-    transactionDescription?.includes('הלמן-אלדובי') &&
-    transactionDescription?.includes('קרן')
-  ) {
+  if (transactionDescription?.includes('הלמן-אלדובי') && transactionDescription?.includes('קרן')) {
     return {
       financialEntity: 'Halman Aldubi Pension',
       financialAccountsToBalance: 'pension',
@@ -616,15 +574,12 @@ export function suggestedCharge(
       userDescription: 'Invoice Management Software',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (
     transactionDescription?.includes('העברת מט"ח') &&
-    (transactionDescription?.includes('fbv') ||
-      transactionDescription?.includes('fv'))
+    (transactionDescription?.includes('fbv') || transactionDescription?.includes('fv'))
   ) {
     return {
       financialEntity: 'Kamil Kisiela',
@@ -652,9 +607,7 @@ export function suggestedCharge(
       financialEntity: 'Steinbock Software LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('מס הכנסה')) {
@@ -663,9 +616,7 @@ export function suggestedCharge(
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       financialEntity: flag ? 'Tax Deductions' : 'Tax',
-      userDescription: flag
-        ? 'Tax for employees for March-April 2021'
-        : 'Advance Tax for April 2021',
+      userDescription: flag ? 'Tax for employees for March-April 2021' : 'Advance Tax for April 2021',
     };
   }
   if (transactionDescription?.includes('גורניצקי')) {
@@ -676,10 +627,7 @@ export function suggestedCharge(
       financialAccountsToBalance: 'no',
     };
   }
-  if (
-    transactionDescription?.includes('המכס ומעמ-גביי תשלום') ||
-    transactionDescription?.includes('CUSTOM + V.A.T')
-  ) {
+  if (transactionDescription?.includes('המכס ומעמ-גביי תשלום') || transactionDescription?.includes('CUSTOM + V.A.T')) {
     return {
       financialEntity: 'VAT',
       userDescription: 'VAT for March-April 2021',
@@ -694,9 +642,7 @@ export function suggestedCharge(
       personalCategory: 'learn',
       financialAccountsToBalance: ' ',
       taxCategory: 'יעוץ',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('HEROKU')) {
@@ -733,9 +679,7 @@ export function suggestedCharge(
   }
   if (transactionDescription?.includes('חניון')) {
     return {
-      financialEntity: transactionDescription?.includes('אחוזות החוף')
-        ? 'Ahuzot'
-        : 'Parking',
+      financialEntity: transactionDescription?.includes('אחוזות החוף') ? 'Ahuzot' : 'Parking',
       userDescription: 'Parking',
       personalCategory: 'transportation',
     };
@@ -754,24 +698,17 @@ export function suggestedCharge(
       userDescription: 'Accounting app',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
-  if (
-    transactionDescription?.includes('יהל-מור') ||
-    transactionDescription?.includes('רווה רביד')
-  ) {
+  if (transactionDescription?.includes('יהל-מור') || transactionDescription?.includes('רווה רביד')) {
     return {
       financialEntity: 'Raveh Ravid & Co',
       userDescription: 'Accountancy with Narkis',
       personalCategory: 'business',
       taxCategory: 'הנחש',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('GODADDY')) {
@@ -794,8 +731,7 @@ export function suggestedCharge(
   if (transactionDescription?.includes('OUTREACH')) {
     return {
       financialEntity: 'Outreach Corporation',
-      userDescription:
-        'Apollo GraphQL server (aka Giraffe) improvements in Outreach - 1st month',
+      userDescription: 'Apollo GraphQL server (aka Giraffe) improvements in Outreach - 1st month',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
     };
@@ -821,9 +757,7 @@ export function suggestedCharge(
       financialEntity: 'Idan Am-Shalem',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('מועדון הבלוק')) {
@@ -963,10 +897,7 @@ export function suggestedCharge(
       financialAccountsToBalance: 'no',
     };
   }
-  if (
-    transactionDescription?.includes('GSUITE') ||
-    transactionDescription?.includes('GOOGLE CLOUD')
-  ) {
+  if (transactionDescription?.includes('GSUITE') || transactionDescription?.includes('GOOGLE CLOUD')) {
     return {
       financialEntity: 'Google Ireland Limited',
       userDescription: 'G Suite for The Guild',
@@ -981,9 +912,7 @@ export function suggestedCharge(
       personalCategory: 'transportation',
       financialAccountsToBalance: ' ',
       taxCategory: 'נסע',
-      vat: formatFinancialAmount(
-        (charge.transactions[0]?.amount.raw / 117) * 17
-      ),
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('קיוסק קקל')) {
@@ -1039,8 +968,7 @@ export function suggestedCharge(
     };
   }
   return {
-    financialEntity:
-      transactionDescription?.replaceAll(`"`, '').replaceAll(`'`, '') ?? '',
+    financialEntity: transactionDescription?.replaceAll(`"`, '').replaceAll(`'`, '') ?? '',
     userDescription: 'Food',
     personalCategory: 'food',
   };

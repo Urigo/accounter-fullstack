@@ -108,10 +108,7 @@ export function getLastInvoiceNumbers(lastInvoiceNumbers: any) {
       lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
         <tr>
           <td>${transaction.tax_invoice_number}</td>
-          <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
+          <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.event_amount}</td>
@@ -282,8 +279,7 @@ export const financialStatus = async (query: any): Promise<string> => {
   let thisMonthPrivateExpensesTableHTMLTemplate = '';
   if (thisMonthPrivateExpensesTable?.rows) {
     for (const expenseCategory of thisMonthPrivateExpensesTable?.rows) {
-      thisMonthPrivateExpensesTableHTMLTemplate =
-        thisMonthPrivateExpensesTableHTMLTemplate.concat(`
+      thisMonthPrivateExpensesTableHTMLTemplate = thisMonthPrivateExpensesTableHTMLTemplate.concat(`
         <tr>
             <td>${expenseCategory.personal_category}</td>
             <td>${formatter.format(expenseCategory.overall_sum)}</td>
@@ -310,13 +306,8 @@ export const financialStatus = async (query: any): Promise<string> => {
     for (const transaction of missingInvoiceDates?.rows) {
       missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
         <tr>
-          <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
-          <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+          <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -344,16 +335,10 @@ export const financialStatus = async (query: any): Promise<string> => {
   let missingInvoiceNumbersHTMLTemplate = '';
   if (missingInvoiceNumbers?.rows) {
     for (const transaction of missingInvoiceNumbers?.rows) {
-      missingInvoiceNumbersHTMLTemplate =
-        missingInvoiceNumbersHTMLTemplate.concat(`
+      missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
         <tr>
-          <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
-          <td>${transaction.event_amount}${currencyCodeToSymbol(
-          transaction.currency_code
-        )}</td>
+          <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
           <td>${transaction.tax_invoice_number}</td>
@@ -381,16 +366,10 @@ export const financialStatus = async (query: any): Promise<string> => {
   let missingInvoiceImagesHTMLTemplate = '';
   if (missingInvoiceImages?.rows) {
     for (const transaction of missingInvoiceImages?.rows) {
-      missingInvoiceImagesHTMLTemplate =
-        missingInvoiceImagesHTMLTemplate.concat(`
+      missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
-            <td>${transaction.event_date
-              .toISOString()
-              .replace(/T/, ' ')
-              .replace(/\..+/, '')}</td>
-            <td>${transaction.event_amount}${currencyCodeToSymbol(
-          transaction.currency_code
-        )}</td>
+            <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+            <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
             <td>${transaction.financial_entity}</td>
             <td>${transaction.user_description}</td>
             <td>${transaction.tax_invoice_number}</td>
@@ -422,10 +401,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         <tr>
           <td>${transaction.overall_vat_status}</td>
           <td>${transaction.vat}</td>
-          <td>${transaction.event_date
-            .toISOString()
-            .replace(/T/, ' ')
-            .replace(/\..+/, '')}</td>
+          <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
           <td>${transaction.event_amount}</td>
           <td>${transaction.financial_entity}</td>
           <td>${transaction.user_description}</td>
@@ -459,10 +435,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             account_number=${transaction.account_number}
             account_type=${transaction.account_type}
             currency_code=${transaction.currency_code}
-            event_date=${transaction.event_date
-              .toISOString()
-              .replace(/T/, ' ')
-              .replace(/\..+/, '')}
+            event_date=${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}
             event_amount=${transaction.event_amount}
             event_number=${transaction.event_number}
             transaction_id=${transaction.id}>
@@ -476,43 +449,31 @@ export const financialStatus = async (query: any): Promise<string> => {
                 : ''
             }
           </td>
-          <td>${transaction.event_amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+          <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
           <td class="financial_entity" ${
-            transaction.financial_entity
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
+            transaction.financial_entity ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
         transaction.financial_entity
           ? transaction.financial_entity
-          : `${
-              suggestedTransaction(transaction)?.financialEntity
-            } <button type="button" onClick='printElement(this, "${
+          : `${suggestedTransaction(transaction)?.financialEntity} <button type="button" onClick='printElement(this, "${
               suggestedTransaction(transaction)?.financialEntity
             }");'>V</button>`
       }
             <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
           <td class="user_description" ${
-            transaction.user_description
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
+            transaction.user_description ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
         transaction.user_description
           ? transaction.user_description
-          : `${
-              suggestedTransaction(transaction)?.userDescription
-            } <button type="button" onClick='printElement(this, "${
+          : `${suggestedTransaction(transaction)?.userDescription} <button type="button" onClick='printElement(this, "${
               suggestedTransaction(transaction)?.userDescription
             }");'>V</button>`
       }
             <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
           <td class="personal_category" ${
-            transaction.personal_category
-              ? ''
-              : 'style="background-color: rgb(236, 207, 57);"'
+            transaction.personal_category ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
         transaction.personal_category
           ? transaction.personal_category
@@ -528,9 +489,7 @@ export const financialStatus = async (query: any): Promise<string> => {
             (!transaction.vat &&
               isBusiness(transaction) &&
               !businessesWithoutVAT.includes(transaction.financial_entity) &&
-              !businessesWithoutTaxCategory.includes(
-                transaction.financial_entity
-              ) &&
+              !businessesWithoutTaxCategory.includes(transaction.financial_entity) &&
               transaction.currency_code == 'ILS') ||
             (transaction.vat > 0 && transaction.event_amount < 0) ||
             (transaction.vat < 0 && transaction.event_amount > 0)
@@ -540,9 +499,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           ${
             transaction.vat || transaction.vat == 0
               ? transaction.vat
-              : `${
-                  suggestedTransaction(transaction)?.vat
-                } <button type="button" onClick='printElement(this, "${
+              : `${suggestedTransaction(transaction)?.vat} <button type="button" onClick='printElement(this, "${
                   suggestedTransaction(transaction)?.vat
                 }");'>V</button>`
           }
@@ -550,9 +507,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
           <td class="financial_accounts_to_balance" ${
-            shareWithDotan(transaction)
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
+            shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''
           }>${
         transaction.financial_accounts_to_balance
           ? transaction.financial_accounts_to_balance
@@ -584,18 +539,12 @@ export const financialStatus = async (query: any): Promise<string> => {
             isBusiness(transaction) && !transaction.tax_invoice_date
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${
-        transaction.tax_invoice_date
-          ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
-          : ''
-      }
+          }>${transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_number" ${
             isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(
-              transaction.financial_entity
-            ) &&
+            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
             !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
@@ -608,46 +557,28 @@ export const financialStatus = async (query: any): Promise<string> => {
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${
-              transaction.tax_invoice_file
-                ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>`
-                : ''
-            }
+            ${transaction.tax_invoice_file ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
 
           <td class="receipt_image" ${
-            isBusiness(transaction) &&
-            !transaction.receipt_image &&
-            !transaction.proforma_invoice_file
+            isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${
-              transaction.receipt_image
-                ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>`
-                : ''
-            }
+            ${transaction.receipt_image ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
           <td class="receipt_date" ${
-            isBusiness(transaction) &&
-            !transaction.receipt_date &&
-            !transaction.tax_invoice_date
+            isBusiness(transaction) && !transaction.receipt_date && !transaction.tax_invoice_date
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${
-        transaction.receipt_date
-          ? moment(transaction.receipt_date).format('DD/MM/YY')
-          : ''
-      }
+          }>${transaction.receipt_date ? moment(transaction.receipt_date).format('DD/MM/YY') : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
           <td class="receipt_number" ${
             isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(
-              transaction.financial_entity
-            ) &&
+            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
             !transaction.receipt_number &&
             !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'
@@ -657,17 +588,11 @@ export const financialStatus = async (query: any): Promise<string> => {
             <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
           <td class="receipt_url" ${
-            isBusiness(transaction) &&
-            !transaction.receipt_url &&
-            !transaction.tax_invoice_file
+            isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${
-              transaction.receipt_url
-                ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>`
-                : ''
-            }
+            ${transaction.receipt_url ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
           
@@ -675,9 +600,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="links">
             ${transaction.links ? 'yes' : ''}
             <button type="button" onClick='printElement(this, prompt("New links:"));'>&#x270f;</button>
-            <button type="button" onClick='updateClipboard("${
-              transaction.links
-            }");'>&#9986;</button>
+            <button type="button" onClick='updateClipboard("${transaction.links}");'>&#9986;</button>
           </td>          
         </tr>
         <!--

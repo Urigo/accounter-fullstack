@@ -1,13 +1,7 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
-import {
-  getChargesByFinancialAccountNumbers,
-  getChargesByFinancialEntityIds,
-} from './providers/charges.mjs';
+import { getChargesByFinancialAccountNumbers, getChargesByFinancialEntityIds } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import {
-  getFinancialAccountsByAccountNumbers,
-  getFinancialAccountsByFeIds,
-} from './providers/financialAccounts.mjs';
+import { getFinancialAccountsByAccountNumbers, getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
 import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
 import { getDocsByChargeId, getEmailDocs } from './providers/sqlQueries.mjs';
@@ -24,16 +18,11 @@ import {
   WireTransactionResolvers,
 } from './__generated__/types.mjs';
 
-const commonFinancialEntityFields:
-  | LtdFinancialEntityResolvers
-  | PersonalFinancialEntityResolvers = {
-  id: (DbBusiness) => DbBusiness.id,
-  accounts: async (DbBusiness) => {
+const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
+  id: DbBusiness => DbBusiness.id,
+  accounts: async DbBusiness => {
     // TODO: add functionality for linkedEntities data
-    const accounts = await getFinancialAccountsByFeIds.run(
-      { financialEntityIds: [DbBusiness.id] },
-      pool
-    );
+    const accounts = await getFinancialAccountsByFeIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
     return accounts;
   },
   charges: async (DbBusiness, { filter }) => {
@@ -50,10 +39,8 @@ const commonFinancialEntityFields:
   linkedEntities: () => [], // TODO: implement
 };
 
-const commonFinancialAccountFields:
-  | CardFinancialAccountResolvers
-  | BankFinancialAccountResolvers = {
-  id: (DbAccount) => DbAccount.id,
+const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
+  id: DbAccount => DbAccount.id,
   charges: async (DbAccount, { filter }) => {
     const charges = await getChargesByFinancialAccountNumbers.run(
       {
@@ -72,24 +59,19 @@ const commonTransactionFields:
   | FeeTransactionResolvers
   | WireTransactionResolvers
   | CommonTransactionResolvers = {
-  id: (DbTransaction) => DbTransaction.id!,
-  referenceNumber: (DbTransaction) => DbTransaction.bank_reference ?? 'Missing',
-  createdAt: (DbTransaction) => DbTransaction.event_date,
-  effectiveDate: (DbTransaction) => DbTransaction.debit_date,
-  direction: (DbTransaction) =>
-    parseFloat(DbTransaction.event_amount!) > 0
-      ? TransactionDirection.Credit
-      : TransactionDirection.Debit,
-  amount: (DbTransaction) => formatFinancialAmount(DbTransaction.event_amount),
-  description: (DbTransaction) =>
-    `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
-  userNote: (DbTransaction) => DbTransaction.user_description,
-  account: async (DbTransaction) => {
+  id: DbTransaction => DbTransaction.id!,
+  referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
+  createdAt: DbTransaction => DbTransaction.event_date,
+  effectiveDate: DbTransaction => DbTransaction.debit_date,
+  direction: DbTransaction =>
+    parseFloat(DbTransaction.event_amount!) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
+  amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount),
+  description: DbTransaction => `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
+  userNote: DbTransaction => DbTransaction.user_description,
+  account: async DbTransaction => {
     // TODO: enhance logic to be based on ID instead of account_number
     if (!DbTransaction.account_number) {
-      throw new Error(
-        `Transaction ID="${DbTransaction.id}" is missing account_number`
-      );
+      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
     const accounts = await getFinancialAccountsByAccountNumbers.run(
       { accountNumbers: [DbTransaction.account_number] },
@@ -97,14 +79,12 @@ const commonTransactionFields:
     );
     return accounts[0];
   },
-  balance: (DbTransaction) =>
-    formatFinancialAmount(DbTransaction.current_balance),
-  accountantApproval: (DbTransaction) => ({
+  balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
+  accountantApproval: DbTransaction => ({
     approved: DbTransaction.reviewed ?? false,
     remark: 'Missing', // TODO: missing in DB
   }),
-  hashavshevetId: (DbTransaction) =>
-    DbTransaction.hashavshevet_id?.toString() ?? '',
+  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id?.toString() ?? '',
 };
 
 export const resolvers: Resolvers = {
@@ -120,128 +100,101 @@ export const resolvers: Resolvers = {
   },
   Invoice: {
     __isTypeOf(documentRoot) {
-      return (
-        documentRoot.payper_document_type == 'חשבונית מס קבלה' ||
-        documentRoot.payper_document_type == 'חשבונית'
-      );
+      return documentRoot.payper_document_type == 'חשבונית מס קבלה' || documentRoot.payper_document_type == 'חשבונית';
     },
-    id: (documentRoot) => documentRoot.id,
-    image: (documentRoot) => documentRoot.image_url,
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    amount: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_total_for_payment,
-        documentRoot.payper_currency_symbol
-      ),
-    file: (documentRoot) =>
-      `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
-    vat: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_vat_paytment,
-        documentRoot.payper_currency_symbol
-      ),
+    id: documentRoot => documentRoot.id,
+    image: documentRoot => documentRoot.image_url,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
+    file: documentRoot => `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
+    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
   },
   Proforma: {
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'חשבונית מס';
     },
-    id: (documentRoot) => documentRoot.id,
-    image: (documentRoot) => documentRoot.image_url,
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    amount: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_total_for_payment,
-        documentRoot.payper_currency_symbol
-      ),
-    vat: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_vat_paytment,
-        documentRoot.payper_currency_symbol
-      ),
+    id: documentRoot => documentRoot.id,
+    image: documentRoot => documentRoot.image_url,
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    amount: documentRoot =>
+      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
+    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
   },
   Unprocessed: {
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == null;
     },
-    id: (documentRoot) => documentRoot.id,
-    image: (documentRoot) => documentRoot.image_url,
-    file: (documentRoot) => documentRoot.file_hash ?? '',
+    id: documentRoot => documentRoot.id,
+    image: documentRoot => documentRoot.image_url,
+    file: documentRoot => documentRoot.file_hash ?? '',
   },
   Receipt: {
     __isTypeOf(documentRoot) {
       return documentRoot.payper_document_type == 'קבלה';
     },
-    id: (documentRoot) => documentRoot.id,
-    image: (documentRoot) => documentRoot.image_url,
-    file: (documentRoot) => documentRoot.file_hash ?? '',
-    serialNumber: (documentRoot) => documentRoot.payper_document_id ?? '',
-    date: (documentRoot) => documentRoot.payper_document_date,
-    vat: (documentRoot) =>
-      formatFinancialAmount(
-        documentRoot.payper_vat_paytment,
-        documentRoot.payper_currency_symbol
-      ),
+    id: documentRoot => documentRoot.id,
+    image: documentRoot => documentRoot.image_url,
+    file: documentRoot => documentRoot.file_hash ?? '',
+    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
+    date: documentRoot => documentRoot.payper_document_date,
+    vat: documentRoot => formatFinancialAmount(documentRoot.payper_vat_paytment, documentRoot.payper_currency_symbol),
   },
   LtdFinancialEntity: {
     __isTypeOf: () => true,
     ...commonFinancialEntityFields,
-    govermentId: (DbBusiness) => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
-    name: (DbBusiness) => DbBusiness.hebrew_name ?? DbBusiness.name,
-    address: (DbBusiness) =>
-      DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
+    govermentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
+    name: DbBusiness => DbBusiness.hebrew_name ?? DbBusiness.name,
+    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
 
-    englishName: (DbBusiness) => DbBusiness.name ?? null,
-    email: (DbBusiness) => DbBusiness.email,
-    website: (DbBusiness) => DbBusiness.website,
-    phoneNumber: (DbBusiness) => DbBusiness.phone_number,
+    englishName: DbBusiness => DbBusiness.name ?? null,
+    email: DbBusiness => DbBusiness.email,
+    website: DbBusiness => DbBusiness.website,
+    phoneNumber: DbBusiness => DbBusiness.phone_number,
   },
   PersonalFinancialEntity: {
     __isTypeOf: () => false,
     ...commonFinancialEntityFields,
-    name: (DbBusiness) => DbBusiness.name,
-    email: (DbBusiness) => DbBusiness.email ?? '', // TODO: remove alternative ''
+    name: DbBusiness => DbBusiness.name,
+    email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
     documents: () => [], // TODO: implement
   },
   BankFinancialAccount: {
-    __isTypeOf: (DbAccount) => !!DbAccount.bank_number,
+    __isTypeOf: DbAccount => !!DbAccount.bank_number,
     ...commonFinancialAccountFields,
-    accountNumber: (DbAccount) => DbAccount.account_number.toString(),
-    bankNumber: (DbAccount) => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
-    branchNumber: (DbAccount) => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
+    accountNumber: DbAccount => DbAccount.account_number.toString(),
+    bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
+    branchNumber: DbAccount => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
     routingNumber: () => '', // TODO: implement
     iban: () => '', // TODO: missing in DB
     swift: () => '', // TODO: missing in DB
     country: () => '', // TODO: missing in DB
-    name: (DbAccount) => DbAccount.account_number.toString(),
+    name: DbAccount => DbAccount.account_number.toString(),
   },
   CardFinancialAccount: {
-    __isTypeOf: (DbAccount) => !DbAccount.bank_number,
+    __isTypeOf: DbAccount => !DbAccount.bank_number,
     ...commonFinancialAccountFields,
-    number: (DbAccount) => DbAccount.account_number.toString(),
-    fourDigits: (DbAccount) => DbAccount.account_number.toString(),
+    number: DbAccount => DbAccount.account_number.toString(),
+    fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
   Charge: {
-    id: (DbCharge) => DbCharge.id!,
+    id: DbCharge => DbCharge.id!,
     createdAt: () => null, // TODO: missing in DB
-    additionalDocument: (DbCharge) => {
+    additionalDocument: DbCharge => {
       const docs = getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
       return docs;
     },
-    ledgerRecords: async (DbCharge) => {
-      const records = await getLedgerRecordsByChargeIds.run(
-        { chargeIds: [DbCharge.id] },
-        pool
-      );
+    ledgerRecords: async DbCharge => {
+      const records = await getLedgerRecordsByChargeIds.run({ chargeIds: [DbCharge.id] }, pool);
       return records;
     },
-    transactions: (DbCharge) => [DbCharge],
-    counterparty: (DbCharge) => DbCharge.financial_entity ?? '',
+    transactions: DbCharge => [DbCharge],
+    counterparty: DbCharge => DbCharge.financial_entity ?? '',
     description: () => 'Missing', // TODO: implement
-    tags: (DbCharge) =>
-      DbCharge.personal_category ? [DbCharge.personal_category] : [],
-    beneficiaries: async (DbCharge) => {
+    tags: DbCharge => (DbCharge.personal_category ? [DbCharge.personal_category] : []),
+    beneficiaries: async DbCharge => {
       switch (DbCharge.financial_accounts_to_balance) {
         case 'no':
           return [
@@ -275,9 +228,7 @@ export const resolvers: Resolvers = {
               { financialEntityIds: ['6a20aa69-57ff-446e-8d6a-1e96d095e988'] },
               pool
             );
-            const guildAccountsNumbers = guildAccounts.map(
-              (a) => a.account_number
-            );
+            const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
                 {
@@ -296,7 +247,7 @@ export const resolvers: Resolvers = {
               { financialEntityIds: ['a1f66c23-cea3-48a8-9a4b-0b4a0422851a'] },
               pool
             );
-            const uriAccountsNumbers = uriAccounts.map((a) => a.account_number);
+            const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
                 {
@@ -309,45 +260,38 @@ export const resolvers: Resolvers = {
           return [];
       }
     },
-    vat: (DbCharge) =>
-      DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null,
-    withholdingTax: (DbCharge) =>
-      formatFinancialAmount(DbCharge.withholding_tax),
+    vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null),
+    withholdingTax: DbCharge => formatFinancialAmount(DbCharge.withholding_tax),
     invoice: () => null, // TODO: implement
-    accountantApproval: (DbCharge) => ({
+    accountantApproval: DbCharge => ({
       approved: DbCharge.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
-    property: (DbCharge) => DbCharge.is_property,
+    property: DbCharge => DbCharge.is_property,
   },
   LedgerRecord: {
-    id: (DbLedgerRecord) => DbLedgerRecord.id,
-    creditAccount: (DbLedgerRecord) => DbLedgerRecord.חשבון_זכות_1 ?? '',
-    debitAccount: (DbLedgerRecord) => DbLedgerRecord.חשבון_חובה_1 ?? '',
-    originalAmount: (DbLedgerRecord) =>
-      formatFinancialAmount(
-        DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1,
-        DbLedgerRecord.מטבע
-      ),
-    date: (DbLedgerRecord) => DbLedgerRecord.תאריך_חשבונית,
+    id: DbLedgerRecord => DbLedgerRecord.id,
+    creditAccount: DbLedgerRecord => DbLedgerRecord.חשבון_זכות_1 ?? '',
+    debitAccount: DbLedgerRecord => DbLedgerRecord.חשבון_חובה_1 ?? '',
+    originalAmount: DbLedgerRecord =>
+      formatFinancialAmount(DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1, DbLedgerRecord.מטבע),
+    date: DbLedgerRecord => DbLedgerRecord.תאריך_חשבונית,
     description: () => 'Missing', // TODO: missing in DB
-    accountantApproval: (DbLedgerRecord) => ({
+    accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
-    localCurrencyAmount: (DbLedgerRecord) =>
-      formatFinancialAmount(DbLedgerRecord.סכום_חובה_1, null),
-    hashavshevetId: (DbLedgerRecord) =>
-      DbLedgerRecord.hashavshevet_id?.toString() ?? null,
+    localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.סכום_חובה_1, null),
+    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
   },
   NamedCounterparty: {
     __isTypeOf: () => true,
-    name: (parent) => parent,
+    name: parent => parent,
   },
   BeneficiaryCounterparty: {
     __isTypeOf: () => true,
-    counterparty: (parent) => parent.name,
-    percentage: (parent) => parent.percentage,
+    counterparty: parent => parent.name,
+    percentage: parent => parent.percentage,
   },
   // WireTransaction: {
   //   ...commonTransactionFields,

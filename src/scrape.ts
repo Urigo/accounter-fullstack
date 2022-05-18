@@ -13,44 +13,33 @@ import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO:
 
 function getTransactionsFromCards(CardsTransactionsListBean: any) {
   const allData: any = [];
-  CardsTransactionsListBean.cardNumberList.forEach(
-    (cardInformation: any, index: any) => {
-      const txnGroups =
-        CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
-      if (txnGroups) {
-        txnGroups.forEach((txnGroup: any) => {
-          if (txnGroup.txnIsrael) {
-            const israelTransactions = txnGroup.txnIsrael.map(
-              (transaction: any) => ({
-                ...transaction,
-                card: cardInformation.slice(cardInformation.length - 4),
-              })
-            );
-            allData.push(...israelTransactions);
-          }
-          if (txnGroup.txnAbroad) {
-            const abroadTransactions = txnGroup.txnAbroad.map(
-              (transaction: any) => ({
-                ...transaction,
-                card: cardInformation.slice(cardInformation.length - 4),
-              })
-            );
-            allData.push(...abroadTransactions);
-          }
-        });
-      }
+  CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: any) => {
+    const txnGroups = CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
+    if (txnGroups) {
+      txnGroups.forEach((txnGroup: any) => {
+        if (txnGroup.txnIsrael) {
+          const israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
+            ...transaction,
+            card: cardInformation.slice(cardInformation.length - 4),
+          }));
+          allData.push(...israelTransactions);
+        }
+        if (txnGroup.txnAbroad) {
+          const abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
+            ...transaction,
+            card: cardInformation.slice(cardInformation.length - 4),
+          }));
+          allData.push(...abroadTransactions);
+        }
+      });
     }
-  );
+  });
 
   return allData;
 }
 
 // TODO: Remove all any
-async function getILSfromBankAndSave(
-  newScraperIstance: any,
-  account: any,
-  pool: pg.Pool
-) {
+async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   const ILSTransactions = await newScraperIstance.getILSTransactions(account);
   console.log(
     `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
@@ -58,9 +47,7 @@ async function getILSfromBankAndSave(
   );
   if (!ILSTransactions.isValid) {
     console.log(
-      `newScraperIstance.getILSTransactions ${JSON.stringify(
-        account.accountNumber
-      )} schema error: `,
+      `newScraperIstance.getILSTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
       ILSTransactions.errors
     );
   }
@@ -83,10 +70,8 @@ async function getILSfromBankAndSave(
       ILSTransactions.data.transactions,
       'ils',
       {
-        accountNumber:
-          ILSTransactions.data.retrievalTransactionData.accountNumber,
-        branchNumber:
-          ILSTransactions.data.retrievalTransactionData.branchNumber,
+        accountNumber: ILSTransactions.data.retrievalTransactionData.accountNumber,
+        branchNumber: ILSTransactions.data.retrievalTransactionData.branchNumber,
         bankNumber: ILSTransactions.data.retrievalTransactionData.bankNumber,
       },
       pool
@@ -96,11 +81,7 @@ async function getILSfromBankAndSave(
     );
 
     const date = new Date();
-    const dateString = new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    )
-      .toISOString()
-      .split('T')[0];
+    const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
     fs.writeFile(
       `../archived_data/POALIM_original_checking_bank_dump_${dateString}_${account.accountNumber}.json`,
@@ -113,69 +94,53 @@ async function getILSfromBankAndSave(
   }
 }
 
-async function getForeignTransactionsfromBankAndSave(
-  newScraperIstance: any,
-  account: any,
-  pool: pg.Pool
-) {
-  const foreignTransactions = await newScraperIstance.getForeignTransactions(
-    account
-  );
-  console.log(
-    `finished getting foreignTransactions ${account.accountNumber}`,
-    foreignTransactions.isValid
-  );
+async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+  const foreignTransactions = await newScraperIstance.getForeignTransactions(account);
+  console.log(`finished getting foreignTransactions ${account.accountNumber}`, foreignTransactions.isValid);
   if (!foreignTransactions.isValid) {
     console.log(
-      `getForeignTransactions ${JSON.stringify(
-        account.accountNumber
-      )} schema error: `,
+      `getForeignTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
       foreignTransactions.errors
     );
   }
 
   await Promise.all(
-    foreignTransactions.data.balancesAndLimitsDataList.map(
-      async (foreignAccountsArray: any) => {
-        let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
-        switch (foreignAccountsArray.currencyCode) {
-          case 19:
-            accountCurrency = 'usd';
-            break;
-          case 100:
-            accountCurrency = 'eur';
-            break;
-          case 27:
-            accountCurrency = 'gbp';
-            break;
-          default:
-            // TODO: Log important checks
-            console.error(
-              'New account currency - ',
-              foreignAccountsArray.currencyCode
-            );
-            break;
-        }
-        if (accountCurrency) {
-          console.log(
-            `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
-          );
-          await saveTransactionsToDB(
-            foreignAccountsArray.transactions,
-            accountCurrency,
-            {
-              accountNumber: foreignAccountsArray.accountNumber,
-              branchNumber: foreignAccountsArray.branchNumber,
-              bankNumber: foreignAccountsArray.bankNumber,
-            },
-            pool
-          );
-          console.log(
-            `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
-          );
-        }
+    foreignTransactions.data.balancesAndLimitsDataList.map(async (foreignAccountsArray: any) => {
+      let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
+      switch (foreignAccountsArray.currencyCode) {
+        case 19:
+          accountCurrency = 'usd';
+          break;
+        case 100:
+          accountCurrency = 'eur';
+          break;
+        case 27:
+          accountCurrency = 'gbp';
+          break;
+        default:
+          // TODO: Log important checks
+          console.error('New account currency - ', foreignAccountsArray.currencyCode);
+          break;
       }
-    )
+      if (accountCurrency) {
+        console.log(
+          `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+        );
+        await saveTransactionsToDB(
+          foreignAccountsArray.transactions,
+          accountCurrency,
+          {
+            accountNumber: foreignAccountsArray.accountNumber,
+            branchNumber: foreignAccountsArray.branchNumber,
+            bankNumber: foreignAccountsArray.bankNumber,
+          },
+          pool
+        );
+        console.log(
+          `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+        );
+      }
+    })
   );
 }
 
@@ -230,9 +195,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       const camelCaseColumnName = camelCase(dBcolumn.column_name);
       if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
         let actualCondition = '';
-        const isNotNull =
-          typeof account[camelCaseColumnName] !== 'undefined' &&
-          account[camelCaseColumnName] != null;
+        const isNotNull = typeof account[camelCaseColumnName] !== 'undefined' && account[camelCaseColumnName] != null;
 
         whereClause = whereClause.concat('  ' + dBcolumn.column_name);
 
@@ -244,10 +207,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           if (isNotNull && camelCaseColumnName != 'beneficiaryDetailsData') {
             actualCondition = `= $$` + account[camelCaseColumnName] + `$$`;
           }
-        } else if (
-          dBcolumn.data_type == 'date' ||
-          dBcolumn.data_type == 'bit'
-        ) {
+        } else if (dBcolumn.data_type == 'date' || dBcolumn.data_type == 'bit') {
           actualCondition = `= '` + account[camelCaseColumnName] + `'`;
           // if (dBcolumn.data_type == 'bit') {
           //   console.log('bit - ', actualCondition);
@@ -261,25 +221,15 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           actualCondition = `= ` + account[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
           const firstKey = Object.keys(account[camelCaseColumnName])[0];
-          actualCondition =
-            `->> '` +
-            firstKey +
-            `' = '` +
-            account[camelCaseColumnName][firstKey] +
-            `'`;
+          actualCondition = `->> '` + firstKey + `' = '` + account[camelCaseColumnName][firstKey] + `'`;
           if (Object.keys(account[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
-            console.log(
-              'more keys in json!',
-              Object.keys(account[camelCaseColumnName])
-            );
+            console.log('more keys in json!', Object.keys(account[camelCaseColumnName]));
           }
         } else if (!isNotNull && dBcolumn.data_type == 'json') {
         } else {
           // TODO: Log important checks
-          console.log(
-            'unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName
-          );
+          console.log('unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName);
         }
 
         whereClause = whereClause.concat(
@@ -300,25 +250,19 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       } else {
         console.log('Account not found!!');
 
-        let columnNames = columnNamesResult.rows.map(
-          (column: any) => column.column_name
-        );
+        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
 
-        columnNames = columnNames.filter(
-          (columnName: string) => columnName != 'id'
-        );
+        columnNames = columnNames.filter((columnName: string) => columnName != 'id');
         let text = `INSERT INTO accounter_schema.${tableName}
         (
           ${columnNames.map((x: any) => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
-        text = text
-          .substring(0, lastIndexOfComma)
-          .concat(text.substring(lastIndexOfComma + 1, text.length));
+        text = text.substring(0, lastIndexOfComma).concat(text.substring(lastIndexOfComma + 1, text.length));
 
         const arrayKeys = columnNames.keys();
         let denseKeys = [...arrayKeys];
-        denseKeys = denseKeys.map((x) => x + 1);
+        denseKeys = denseKeys.map(x => x + 1);
         const keysOfInputs = denseKeys.join(', $');
         text = text.concat(` VALUES($${keysOfInputs}) RETURNING *`);
 
@@ -355,19 +299,13 @@ async function getBankData(pool: pg.Pool, scraper: any) {
 
   await Promise.all(
     accounts.data.map(async (account: any) => {
-      console.log(
-        `Getting ILS, Foreign and deposits for ${account.accountNumber}`
-      );
+      console.log(`Getting ILS, Foreign and deposits for ${account.accountNumber}`);
       const results = await Promise.allSettled([
         getILSfromBankAndSave(newPoalimInstance, account, pool),
         getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool),
         getDepositsAndSave(newPoalimInstance, account, pool),
       ]);
-      console.log(
-        `got and saved ILS and Foreign for ${
-          account.accountNumber
-        } - ${JSON.stringify(results)}`
-      );
+      console.log(`got and saved ILS and Foreign for ${account.accountNumber} - ${JSON.stringify(results)}`);
     })
   );
   console.log('finish iterating over bank accounts');
@@ -375,29 +313,15 @@ async function getBankData(pool: pg.Pool, scraper: any) {
   // console.log('closed');
 }
 
-async function getDepositsAndSave(
-  newScraperIstance: any,
-  account: any,
-  pool: pg.Pool
-) {
+async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   console.log('getting deposits');
   const deposits = await newScraperIstance.getDeposits(account);
-  console.log(
-    `finished getting deposits ${account.accountNumber}`,
-    deposits.isValid
-  );
+  console.log(`finished getting deposits ${account.accountNumber}`, deposits.isValid);
   if (!deposits.isValid) {
-    console.log(
-      `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
-      deposits.errors
-    );
+    console.log(`getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `, deposits.errors);
   }
 
-  if (
-    account.accountNumber != 410915 &&
-    account.accountNumber != 61066 &&
-    account.accountNumber != 466803
-  ) {
+  if (account.accountNumber != 410915 && account.accountNumber != 61066 && account.accountNumber != 466803) {
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
   } else {
     console.log(`Saving deposits for ${account.accountNumber}`);
@@ -416,8 +340,7 @@ async function getDepositsAndSave(
         for (const key of internalArrayKeys) {
           let pascalKey = camelCase(key);
           pascalKey = upperFirst(pascalKey);
-          deposits.data.list[0][`data0${pascalKey}`] =
-            deposits.data.list[0].data[0][key];
+          deposits.data.list[0][`data0${pascalKey}`] = deposits.data.list[0].data[0][key];
         }
         delete deposits.data.list[0].data;
 
@@ -437,24 +360,13 @@ async function getDepositsAndSave(
   }
 }
 
-async function getCreditCardTransactionsAndSave(
-  month: Date,
-  pool: pg.Pool,
-  newIsracardInstance: any,
-  id: any
-) {
-  console.log(
-    `Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`
-  );
-  const monthTransactions = await newIsracardInstance.getMonthTransactions(
-    month
-  );
+async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newIsracardInstance: any, id: any) {
+  console.log(`Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  const monthTransactions = await newIsracardInstance.getMonthTransactions(month);
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
     console.log(
-      `newIsracardInstance.getMonthTransactions ${JSON.stringify(
-        id
-      )} schema error: `,
+      `newIsracardInstance.getMonthTransactions ${JSON.stringify(id)} schema error: `,
       monthTransactions.errors
     );
   }
@@ -462,9 +374,7 @@ async function getCreditCardTransactionsAndSave(
     console.error(`Replace password for creditcard ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
-  const allData = getTransactionsFromCards(
-    monthTransactions.data.CardsTransactionsListBean
-  );
+  const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
   const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
@@ -472,26 +382,13 @@ async function getCreditCardTransactionsAndSave(
   );
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
-    console.log(
-      `saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`
-    );
-    await saveTransactionsToDB(
-      onlyWantedCreditCardsTransactions,
-      'isracard',
-      null,
-      pool
-    );
-    console.log(
-      `finished saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`
-    );
+    console.log(`saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    await saveTransactionsToDB(onlyWantedCreditCardsTransactions, 'isracard', null, pool);
+    console.log(`finished saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   }
 }
 
-async function getCreditCardData(
-  pool: pg.Pool,
-  scraper: any,
-  credentials: any
-) {
+async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) {
   console.log('start getCreditCardData');
   console.log('Creditcard Login');
   const newIsracardInstance = await scraper.isracard(
@@ -515,13 +412,8 @@ async function getCreditCardData(
   }
 
   await Promise.allSettled(
-    allMonthsToFetch.map(async (currentMonthToFetch) => {
-      await getCreditCardTransactionsAndSave(
-        currentMonthToFetch,
-        pool,
-        newIsracardInstance,
-        credentials.ID
-      );
+    allMonthsToFetch.map(async currentMonthToFetch => {
+      await getCreditCardTransactionsAndSave(currentMonthToFetch, pool, newIsracardInstance, credentials.ID);
     })
   );
   console.log(`after all creditcard months - ${credentials.ID}`);

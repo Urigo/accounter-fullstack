@@ -23,9 +23,7 @@ export const Date: FC<Props> = ({ createdAt, effectiveDate, style }) => {
     <td style={{ ...style }}>
       {moment(createdAt).format('DD/MM/YY')}
       {effectiveDate && (
-        <div style={{ fontSize: '12px', color: 'gray' }}>
-          {moment(effectiveDate).format('DD/MM/YY')}
-        </div>
+        <div style={{ fontSize: '12px', color: 'gray' }}>{moment(effectiveDate).format('DD/MM/YY')}</div>
       )}
     </td>
   );

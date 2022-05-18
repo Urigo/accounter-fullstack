@@ -1,23 +1,23 @@
 {
-    "transforms": [
-      {
-        "mode": "sql",
-        "include": "**/*.sql",
-        "emitTemplate": "src/__generated__/{{name}}.types.mts"
-      },
-      {
-        "mode": "ts",
-        "include": "**/providers/**/*.mts",
-        "emitTemplate": "src/__generated__/{{name}}.types.mts"
-      }
-    ],
-    "srcDir": "./src/",
-    "failOnError": true,
-    "camelCaseColumnNames": false,
-    "dbUrl": "url.com",
-    "db": {
-      "ssl": {
-        "rejectUnauthorized": false
-      }
+  "transforms": [
+    {
+      "mode": "sql",
+      "include": "**/*.sql",
+      "emitTemplate": "src/__generated__/{{name}}.types.mts"
+    },
+    {
+      "mode": "ts",
+      "include": "**/providers/**/*.mts",
+      "emitTemplate": "src/__generated__/{{name}}.types.mts"
+    }
+  ],
+  "srcDir": "./src/",
+  "failOnError": true,
+  "camelCaseColumnNames": false,
+  "dbUrl": "url.com",
+  "db": {
+    "ssl": {
+      "rejectUnauthorized": false
     }
   }
+}

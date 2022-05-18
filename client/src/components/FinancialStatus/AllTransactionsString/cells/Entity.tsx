@@ -10,9 +10,7 @@ type Props = {
 
 export const Entity: FC<Props> = ({ transaction, style }) => {
   const isFinancialEntity = !!transaction.financial_entity;
-  const cellText =
-    transaction.financial_entity ??
-    suggestedTransaction(transaction)?.financialEntity;
+  const cellText = transaction.financial_entity ?? suggestedTransaction(transaction)?.financialEntity;
 
   return (
     <td
@@ -23,17 +21,9 @@ export const Entity: FC<Props> = ({ transaction, style }) => {
     >
       {cellText ?? 'undefined'}
       {!transaction.financial_entity && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName="financial_entity"
-          value={cellText}
-        />
+        <ConfirmButton transaction={transaction} propertyName="financial_entity" value={cellText} />
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="financial_entity"
-        promptText="New financial entity:"
-      />
+      <UpdateButton transaction={transaction} propertyName="financial_entity" promptText="New financial entity:" />
     </td>
   );
 };

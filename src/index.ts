@@ -35,20 +35,14 @@ export const pool = new Pool({
 async function main() {
   const server = createServer(async function (request, response) {
     console.log(`new request ${request.url}`);
-    if (
-      request.url == '/' ||
-      (request.url && request.url.startsWith('/?month='))
-    ) {
+    if (request.url == '/' || (request.url && request.url.startsWith('/?month='))) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
       const query = url_parts.query;
       const responseHTML = await financialStatus(query);
       response.end(responseHTML);
-    } else if (
-      request.url == '/monthly-report' ||
-      (request.url && request.url.startsWith('/monthly-report?month='))
-    ) {
+    } else if (request.url == '/monthly-report' || (request.url && request.url.startsWith('/monthly-report?month='))) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
@@ -145,7 +139,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('data', chunk => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
@@ -178,7 +172,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('data', chunk => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
@@ -214,7 +208,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('data', chunk => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
@@ -256,17 +250,13 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('data', chunk => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        const result = await updateBankTransactionAttribute(
-          data.transactionId,
-          data.attribute,
-          data.value
-        );
+        const result = await updateBankTransactionAttribute(data.transactionId, data.attribute, data.value);
 
         console.log(result);
 
@@ -277,7 +267,7 @@ async function main() {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/x-typescript');
       const chunks: Array<Uint8Array> = [];
-      request.on('data', (chunk) => chunks.push(chunk));
+      request.on('data', chunk => chunks.push(chunk));
       request.on('end', async () => {
         const bufferData = Buffer.concat(chunks);
         const data = JSON.parse(bufferData.toString());
@@ -301,10 +291,7 @@ async function main() {
           // console.log('nothing');
         }
       });
-    } else if (
-      request.url == '/user-transactions' ||
-      (request.url && request.url.startsWith('/user-transactions?'))
-    ) {
+    } else if (request.url == '/user-transactions' || (request.url && request.url.startsWith('/user-transactions?'))) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
@@ -327,7 +314,7 @@ async function main() {
   });
 }
 
-main().catch((e) => console.error(e));
+main().catch(e => console.error(e));
 
 // TODO: Teach about HTML query selectors
 // TODO: Teach about plain Node server without frameworks

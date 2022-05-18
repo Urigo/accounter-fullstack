@@ -22,7 +22,7 @@ export const LedgerRecordsTable: FC<Props> = ({ ledgerRecords }) => {
         </tr>
       </thead>
       <tbody>
-        {ledgerRecords.map((r) => (
+        {ledgerRecords.map(r => (
           <LedgerRecordRow ledgerRecord={r} />
         ))}
       </tbody>

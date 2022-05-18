@@ -9,8 +9,7 @@ type Props = {
 };
 
 export const InvoiceImg: FC<Props> = ({ transaction, style }) => {
-  const indicator =
-    isBusiness(transaction) && !transaction.proforma_invoice_file;
+  const indicator = isBusiness(transaction) && !transaction.proforma_invoice_file;
 
   return (
     <td
@@ -24,11 +23,7 @@ export const InvoiceImg: FC<Props> = ({ transaction, style }) => {
           yes
         </a>
       )}
-      <UpdateButton
-        transaction={transaction}
-        propertyName="proforma_invoice_file"
-        promptText="New Invoice Photo:"
-      />
+      <UpdateButton transaction={transaction} propertyName="proforma_invoice_file" promptText="New Invoice Photo:" />
     </td>
   );
 };

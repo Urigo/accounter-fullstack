@@ -9,22 +9,18 @@ export const topPrivateNotCategorized = async (): Promise<string> => {
     from top_expenses_not_categorized($1);
   `;
 
-  const topPrivateNotCategorizedExpenses: any = await pool.query(
-    topPrivateExpensesNotCategorizedSQL,
-    [`$$${startingDate}$$`]
-  );
+  const topPrivateNotCategorizedExpenses: any = await pool.query(topPrivateExpensesNotCategorizedSQL, [
+    `$$${startingDate}$$`,
+  ]);
 
   if (!topPrivateNotCategorizedExpenses) {
     return '';
   }
   let topPrivateExpensesNotCategorizedHTMLTemplate = '';
   for (const transaction of topPrivateNotCategorizedExpenses) {
-    topPrivateExpensesNotCategorizedHTMLTemplate =
-      topPrivateExpensesNotCategorizedHTMLTemplate.concat(`
+    topPrivateExpensesNotCategorizedHTMLTemplate = topPrivateExpensesNotCategorizedHTMLTemplate.concat(`
       <tr>
-        <td>${transaction.amount}${currencyCodeToSymbol(
-        transaction.currency_code
-      )}</td>
+        <td>${transaction.amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
         <td>${transaction.bank_description}</td>
         <td>${new Intl.DateTimeFormat('en-US', {
           month: 'short',

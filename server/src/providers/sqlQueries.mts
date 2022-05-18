@@ -1,6 +1,6 @@
 import pgQuery from '@pgtyped/query';
 import {
-    IGetDocsByChargeIdQuery,
+  IGetDocsByChargeIdQuery,
   IGetEmailDocsQuery,
   IGetLastInvoiceNumbersQuery,
 } from '../__generated__/sqlQueries.types.mjs';
@@ -30,4 +30,3 @@ export const getDocsByChargeId = sql<IGetDocsByChargeIdQuery>`
     FROM accounter_schema.email_invoices
     WHERE transaction_id in $$chargeIds
     ORDER BY email_received_date DESC;`;
-

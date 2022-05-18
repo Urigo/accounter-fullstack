@@ -8,11 +8,7 @@ type Props = {
   value?: string;
 };
 
-export const ConfirmButton: React.FC<Props> = ({
-  transaction,
-  propertyName,
-  value,
-}) => {
+export const ConfirmButton: React.FC<Props> = ({ transaction, propertyName, value }) => {
   const updateToNew = () => {
     const { editTransaction } = useSql();
     if (!value) {

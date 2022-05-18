@@ -31,10 +31,7 @@ export const Account: FC<Props> = ({ account, style }) => {
       : account.__typename === 'CardFinancialAccount'
       ? 'Card'
       : undefined;
-  const accountNumber =
-    account.__typename === 'BankFinancialAccount'
-      ? account.accountNumber
-      : account.fourDigits;
+  const accountNumber = account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
   return (
     <td style={{ ...style }}>
       {accountNumber}

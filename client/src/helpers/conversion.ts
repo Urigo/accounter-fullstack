@@ -10,18 +10,13 @@ export function getILSForDate(
   date: any
 ) {
   const amounts: any = {};
-  const amountToUse = transaction.tax_invoice_amount
-    ? transaction.tax_invoice_amount
-    : transaction.event_amount;
+  const amountToUse = transaction.tax_invoice_amount ? transaction.tax_invoice_amount : transaction.event_amount;
   if (['USD', 'EUR', 'GBP'].includes(transaction.currency_code)) {
     const currencyKey = transaction.currency_code.toLowerCase();
     amounts.eventAmountILS = amountToUse * date?.rows[0][currencyKey];
-    amounts.vatAfterDiductionILS =
-      transaction.vatAfterDiduction * date?.rows[0][currencyKey];
-    amounts.amountBeforeVATILS =
-      transaction.amountBeforeVAT * date?.rows[0][currencyKey];
-    amounts.amountBeforeFullVATILS =
-      transaction.amountBeforeFullVAT * date?.rows[0][currencyKey];
+    amounts.vatAfterDiductionILS = transaction.vatAfterDiduction * date?.rows[0][currencyKey];
+    amounts.amountBeforeVATILS = transaction.amountBeforeVAT * date?.rows[0][currencyKey];
+    amounts.amountBeforeFullVATILS = transaction.amountBeforeFullVAT * date?.rows[0][currencyKey];
   } else if (transaction.currency_code == 'ILS') {
     amounts.eventAmountILS = amountToUse;
     amounts.vatAfterDiductionILS = transaction.vatAfterDiduction;

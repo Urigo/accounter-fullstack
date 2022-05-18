@@ -35,10 +35,7 @@ export type LedgerEntity = {
   hashavshevet_id: string;
 };
 
-export const userTransactions = async (query: {
-  id?: string;
-  name?: string;
-}): Promise<string> => {
+export const userTransactions = async (query: { id?: string; name?: string }): Promise<string> => {
   let userName: string;
   if (query.id) {
     // TODO: handle ID input
@@ -77,36 +74,20 @@ export const userTransactions = async (query: {
       let counterAccount: string = '';
       if (transaction.חשבון_זכות_1 === userName) {
         direction = 1;
-        amountNis = transaction.סכום_זכות_1
-          ? (amountNis = Number(transaction.סכום_זכות_1))
-          : 0;
-        amountForeign = transaction.מטח_סכום_זכות_1
-          ? Number(transaction.מטח_סכום_זכות_1)
-          : 0;
+        amountNis = transaction.סכום_זכות_1 ? (amountNis = Number(transaction.סכום_זכות_1)) : 0;
+        amountForeign = transaction.מטח_סכום_זכות_1 ? Number(transaction.מטח_סכום_זכות_1) : 0;
       } else if (transaction.חשבון_זכות_2 === userName) {
         direction = 1;
-        amountNis = transaction.סכום_זכות_2
-          ? (amountNis = Number(transaction.סכום_זכות_2))
-          : 0;
-        amountForeign = transaction.מטח_סכום_זכות_2
-          ? Number(transaction.מטח_סכום_זכות_2)
-          : 0;
+        amountNis = transaction.סכום_זכות_2 ? (amountNis = Number(transaction.סכום_זכות_2)) : 0;
+        amountForeign = transaction.מטח_סכום_זכות_2 ? Number(transaction.מטח_סכום_זכות_2) : 0;
       } else if (transaction.חשבון_חובה_1 === userName) {
         direction = -1;
-        amountNis = transaction.סכום_חובה_1
-          ? (amountNis = Number(transaction.סכום_חובה_1))
-          : 0;
-        amountForeign = transaction.מטח_סכום_חובה_1
-          ? Number(transaction.מטח_סכום_חובה_1)
-          : 0;
+        amountNis = transaction.סכום_חובה_1 ? (amountNis = Number(transaction.סכום_חובה_1)) : 0;
+        amountForeign = transaction.מטח_סכום_חובה_1 ? Number(transaction.מטח_סכום_חובה_1) : 0;
       } else if (transaction.חשבון_חובה_2 === userName) {
         direction = -1;
-        amountNis = transaction.סכום_חובה_2
-          ? (amountNis = Number(transaction.סכום_חובה_2))
-          : 0;
-        amountForeign = transaction.מטח_סכום_חובה_2
-          ? Number(transaction.מטח_סכום_חובה_2)
-          : 0;
+        amountNis = transaction.סכום_חובה_2 ? (amountNis = Number(transaction.סכום_חובה_2)) : 0;
+        amountForeign = transaction.מטח_סכום_חובה_2 ? Number(transaction.מטח_סכום_חובה_2) : 0;
       } else {
         continue;
       }
@@ -127,9 +108,7 @@ export const userTransactions = async (query: {
       tableBody = tableBody.concat(`
         <tr>
           <td>${counterAccount}</td>
-          <td>${
-            transaction.hashavshevet_id ? transaction.hashavshevet_id : ''
-          }</td>
+          <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}</td>
           <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
           <td>${transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
           <td>${transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}</td>

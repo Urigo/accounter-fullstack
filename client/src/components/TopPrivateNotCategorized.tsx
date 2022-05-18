@@ -5,10 +5,9 @@ import type { TopPrivateNotCategorizedExpense } from '../models/types';
 
 export const TopPrivateNotCategorized: FC = () => {
   const { getTopPrivateNotCategorized } = useSql();
-  const [
-    topPrivateNotCategorizedExpenses,
-    setTopPrivateNotCategorizedExpenses,
-  ] = useState<TopPrivateNotCategorizedExpense[]>([]);
+  const [topPrivateNotCategorizedExpenses, setTopPrivateNotCategorizedExpenses] = useState<
+    TopPrivateNotCategorizedExpense[]
+  >([]);
 
   useEffect(() => {
     getTopPrivateNotCategorized().then(setTopPrivateNotCategorizedExpenses);
@@ -27,7 +26,7 @@ export const TopPrivateNotCategorized: FC = () => {
           </tr>
         </thead>
         <tbody>
-          {topPrivateNotCategorizedExpenses.map((row) => (
+          {topPrivateNotCategorizedExpenses.map(row => (
             <tr>
               <td>
                 {row.amount}
