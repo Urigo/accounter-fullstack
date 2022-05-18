@@ -111,7 +111,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return (
                 <Vat
                   vat={charge.vat}
-                  financialEntityType={financialEntityType}
+                  isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
                   amount={charge.transactions[0].amount.raw}
                   alternativeCharge={alternativeCharge}
@@ -125,7 +125,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return (
                 <ShareWith
                   data={charge}
-                  financialEntityType={financialEntityType}
+                  isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
                   alternativeCharge={alternativeCharge}
                 />
