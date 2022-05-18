@@ -15,6 +15,8 @@ import {
   InvoiceFile,
   InvoiceImg,
   InvoiceNumber,
+  // ReceiptDate,
+  ReceiptImg,
   ShareWith,
   Vat,
 } from './cells';
@@ -39,6 +41,8 @@ gql`
       ...invoiceDateFields
       ...invoiceNumberFields
       ...invoiceFileFields
+      ...receiptImageFields
+      # ...receiptDateFields
     }
   }
 `;
@@ -146,11 +150,11 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Invoice File': {
               return <InvoiceFile data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             }
-            // case 'Receipt Image': {
-            //   return <ReceiptImg charge={charge} />;
-            // }
+            case 'Receipt Image': {
+              return <ReceiptImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Receipt Date': {
-            //   return <ReceiptDate charge={charge} />;
+            //   return <ReceiptDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
             // }
             // case 'Receipt Number': {
             //   return <ReceiptNumber charge={charge} />;

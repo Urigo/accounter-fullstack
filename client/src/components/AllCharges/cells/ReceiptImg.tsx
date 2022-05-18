@@ -1,15 +1,35 @@
-import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
+import { CSSProperties } from 'react';
 import { UpdateButton } from '../../common';
-import { isBusiness } from '../../../helpers';
+import { entitiesWithoutInvoice } from '../../../helpers';
+import gql from 'graphql-tag';
+import { ReceiptImageFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment receiptImageFields on Charge {
+    receipt {
+      ... on Document {
+        id
+        image
+      }
+    }
+    invoice {
+      ... on Document {
+        image
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  data: ReceiptImageFieldsFragment;
+  isBusiness: boolean;
+  financialEntityName: string;
   style?: CSSProperties;
 };
 
-export const ReceiptImg: FC<Props> = ({ transaction, style }) => {
-  const indicator = isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file;
+export const ReceiptImg = ({ data, isBusiness, financialEntityName, style }: Props) => {
+  const image = data.invoice?.image;
+  const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !image && !data.invoice?.image;
 
   return (
     <td
@@ -18,12 +38,13 @@ export const ReceiptImg: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.receipt_image && (
-        <a href={transaction.receipt_image} target="_blank">
+      {image && (
+        <a href={image} rel="noreferrer" target="_blank">
           yes
         </a>
       )}
-      <UpdateButton transaction={transaction} propertyName="receipt_image" promptText="New Receipt Photo:" />
+      {/* TODO: create update document hook */}
+      {/* <UpdateButton transaction={transaction} propertyName="receipt_image" promptText="New Receipt Photo:" /> */}
     </td>
   );
 };
