@@ -209,6 +209,8 @@ extend type Charge {
   withholdingTax: FinancialAmount
   " linked invoice document "
   invoice: Invoice
+  " linked receipt document "
+  receipt: Receipt
   " calculated based on ledger record and transaction approvals "
   accountantApproval: AccountantApproval!
   " פחת, ציוד  "

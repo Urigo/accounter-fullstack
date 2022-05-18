@@ -414,7 +414,28 @@ export const resolvers: Resolvers = {
     },
     vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null),
     withholdingTax: DbCharge => formatFinancialAmount(DbCharge.withholding_tax),
-    invoice: () => null, // TODO: implement
+    invoice: async (DbCharge) => {
+      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      const invoices = docs.filter(d => ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? ''));
+      if (invoices.length === 0 ) {
+        return null
+      }
+      if (invoices.length > 1) {
+        console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
+      }
+      return invoices[0];
+    },
+    receipt: async (DbCharge) => {
+      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      const receipts = docs.filter(d => ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? ''));
+      if (receipts.length === 0 ) {
+        return null
+      }
+      if (receipts.length > 1) {
+        console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
+      }
+      return receipts[0];
+    },
     accountantApproval: DbCharge => ({
       approved: DbCharge.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
