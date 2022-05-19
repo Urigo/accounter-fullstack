@@ -37,13 +37,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({
-  data,
-  isBusiness,
-  financialEntityName = '',
-  alternativeCharge,
-  style,
-}) => {
+export const ShareWith: FC<Props> = ({ data, isBusiness, financialEntityName = '', alternativeCharge, style }) => {
   const { beneficiaries, id: chargeId } = data;
 
   const { mutate, isLoading } = useUpdateCharge();
