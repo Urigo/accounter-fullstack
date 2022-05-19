@@ -1,38 +1,26 @@
 import pgQuery from '@pgtyped/query';
+import DataLoader from 'dataloader';
+import { pool } from '../providers/db.mjs';
 import {
   IGetLedgerRecordsByChargeIdsQuery,
-  IGetLedgerRecordsByFinancialAccountNumbersQuery,
-  IGetLedgerRecordsByFinancialEntityIdsQuery,
 } from '../__generated__/ledgerRecords.types.mjs';
 
 const { sql } = pgQuery;
 
-export const getLedgerRecordsByChargeIds = sql<IGetLedgerRecordsByChargeIdsQuery>`
+const getLedgerRecordsByChargeIds = sql<IGetLedgerRecordsByChargeIdsQuery>`
     SELECT *
     FROM accounter_schema.ledger
     WHERE original_id IN $$chargeIds;`;
 
-export const getLedgerRecordsByFinancialAccountNumbers = sql<IGetLedgerRecordsByFinancialAccountNumbersQuery>`
-    SELECT *
-    FROM accounter_schema.ledger
-    WHERE original_id IN (
-        SELECT id
-        FROM accounter_schema.all_transactions
-        WHERE account_number IN $$financialAccountNumbers
-    );`;
+async function batchLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
+  const ledgerRecords = await getLedgerRecordsByChargeIds.run(
+    {
+        chargeIds,
+    },
+    pool
+  );
+  return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
+}
 
-export const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`
-    SELECT *
-    FROM accounter_schema.ledger
-    WHERE original_id IN (SELECT id
-        FROM accounter_schema.financial_accounts
-        WHERE owner IN (
-            SELECT id
-            FROM accounter_schema.all_transactions
-            WHERE account_number IN (
-                SELECT account_number
-                FROM accounter_schema.financial_accounts
-                WHERE owner IN $$financialEntityIds
-            )
-        )
-    );`;
+export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds);
+

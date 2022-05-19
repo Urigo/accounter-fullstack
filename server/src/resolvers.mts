@@ -1,15 +1,17 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
 import {
+  getChargeByFinancialAccountNumberLoader,
+  getChargeByFinancialEntityIdLoader,
+  getChargeByIdLoader,
   getChargesByFinancialAccountNumbers,
   getChargesByFinancialEntityIds,
-  getChargesByIds,
   updateCharge,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import { getDocsByChargeId, getEmailDocs } from './providers/documents.mjs';
-import { getFinancialAccountsByAccountNumbers, getFinancialAccountsByFeIds } from './providers/financialAccounts.mjs';
-import { getFinancialEntitiesByIds } from './providers/financialEntities.mjs';
-import { getLedgerRecordsByChargeIds } from './providers/ledgerRecords.mjs';
+import { getDocsByChargeIdLoader, getEmailDocs } from './providers/documents.mjs';
+import { getFinancialAccountByAccountNumberLoader, getFinancialAccountsByFinancialEntityIdLoader } from './providers/financialAccounts.mjs';
+import { getFinancialEntitieByIdLoader } from './providers/financialEntities.mjs';
+import { getLedgerRecordsByChargeIdLoader } from './providers/ledgerRecords.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   BankFinancialAccountResolvers,
@@ -30,10 +32,14 @@ const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinanci
   id: DbBusiness => DbBusiness.id,
   accounts: async DbBusiness => {
     // TODO: add functionality for linkedEntities data
-    const accounts = await getFinancialAccountsByFeIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
+    const accounts = await getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
     return accounts;
   },
   charges: async (DbBusiness, { filter }) => {
+    if (!filter || Object.keys(filter).length === 0) {
+      const charges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
+      return charges;
+    }
     const charges = await getChargesByFinancialEntityIds.run(
       {
         financialEntityIds: [DbBusiness.id],
@@ -50,6 +56,10 @@ const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinanci
 const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
   id: DbAccount => DbAccount.id,
   charges: async (DbAccount, { filter }) => {
+    if (!filter || Object.keys(filter).length === 0) {
+      const charges = await getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
+      return charges;
+    }
     const charges = await getChargesByFinancialAccountNumbers.run(
       {
         financialAccountNumbers: [DbAccount.account_number],
@@ -65,13 +75,11 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
 const commonDocumentsFields: DocumentResolvers = {
   id: documentRoot => documentRoot.id,
   charge: async documentRoot => {
-    const charges = await getChargesByIds.run(
-      {
-        cahrgeIds: [documentRoot.transaction_id],
-      },
-      pool
-    );
-    return charges[0];
+    if (!documentRoot.transaction_id) {
+      return null;
+    }
+    const charge = await getChargeByIdLoader.load(documentRoot.transaction_id);
+    return charge ?? null;
   },
   image: documentRoot => documentRoot.image_url,
   file: documentRoot => `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
@@ -96,11 +104,11 @@ const commonTransactionFields:
     if (!DbTransaction.account_number) {
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
-    const accounts = await getFinancialAccountsByAccountNumbers.run(
-      { accountNumbers: [DbTransaction.account_number] },
-      pool
-    );
-    return accounts[0];
+    const account = await getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
+    if  (!account) {
+      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
+    }
+    return account;
   },
   balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
   accountantApproval: DbTransaction => ({
@@ -113,8 +121,11 @@ const commonTransactionFields:
 export const resolvers: Resolvers = {
   Query: {
     financialEntity: async (_, { id }) => {
-      const dbFe = await getFinancialEntitiesByIds.run({ ids: [id] }, pool);
-      return dbFe[0];
+      const dbFe = await getFinancialEntitieByIdLoader.load(id);
+      if (!dbFe) {
+        throw new Error(`Financial entity ID="${id}" not found`);
+      }
+      return dbFe;
     },
     documents: async () => {
       const dbDocs = await getEmailDocs.run(void 0, pool);
@@ -170,6 +181,7 @@ export const resolvers: Resolvers = {
         chargeId,
       };
       try {
+        getChargeByIdLoader.clear(chargeId);
         const res = await updateCharge.run({ ...adjustedFields }, pool);
         return res[0];
       } catch (e) {
@@ -228,6 +240,7 @@ export const resolvers: Resolvers = {
         chargeId: transactionId,
       };
       try {
+        getChargeByIdLoader.clear(transactionId);
         const res = await updateCharge.run({ ...adjustedFields }, pool);
         return res[0];
       } catch (e) {
@@ -335,11 +348,17 @@ export const resolvers: Resolvers = {
     id: DbCharge => DbCharge.id!,
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocument: async DbCharge => {
-      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      if (!DbCharge.id) {
+        return [];
+      }
+      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
       return docs.filter(d => !d.duplication_of);
     },
     ledgerRecords: async DbCharge => {
-      const records = await getLedgerRecordsByChargeIds.run({ chargeIds: [DbCharge.id] }, pool);
+      if (!DbCharge.id) {
+        return [];
+      }
+      const records = await getLedgerRecordsByChargeIdLoader.load(DbCharge.id);
       return records;
     },
     transactions: DbCharge => [DbCharge],
@@ -376,10 +395,7 @@ export const resolvers: Resolvers = {
         default:
           {
             // case Guild account
-            const guildAccounts = await getFinancialAccountsByFeIds.run(
-              { financialEntityIds: ['6a20aa69-57ff-446e-8d6a-1e96d095e988'] },
-              pool
-            );
+            const guildAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load('6a20aa69-57ff-446e-8d6a-1e96d095e988');
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
@@ -395,10 +411,7 @@ export const resolvers: Resolvers = {
             }
 
             // case UriLTD account
-            const uriAccounts = await getFinancialAccountsByFeIds.run(
-              { financialEntityIds: ['a1f66c23-cea3-48a8-9a4b-0b4a0422851a'] },
-              pool
-            );
+            const uriAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load('a1f66c23-cea3-48a8-9a4b-0b4a0422851a');
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
@@ -415,7 +428,10 @@ export const resolvers: Resolvers = {
     vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null),
     withholdingTax: DbCharge => formatFinancialAmount(DbCharge.withholding_tax),
     invoice: async DbCharge => {
-      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      if (!DbCharge.id) {
+        return null;
+      }
+      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
       const invoices = docs.filter(
         d => !d.duplication_of && ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
       );
@@ -428,7 +444,10 @@ export const resolvers: Resolvers = {
       return invoices[0];
     },
     receipt: async DbCharge => {
-      const docs = await getDocsByChargeId.run({ chargeIds: [DbCharge.id] }, pool);
+      if (!DbCharge.id) {
+        return null;
+      }
+      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
       const receipts = docs.filter(
         d => !d.duplication_of && ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
       );

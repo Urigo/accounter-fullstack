@@ -8,10 +8,10 @@ generates:
       mappers:
         LtdFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
         PersonalFinancialEntity: ./financialEntities.types.mjs#IGetFinancialEntitiesByIdsResult
-        BankFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
-        CardFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFeIdsResult
+        BankFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
+        CardFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
         Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByFinancialAccountNumbersResult
+        LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByChargeIdsResult
         NamedCounterparty: string
         Invoice: ./documents.types.mjs#IGetEmailDocsResult
         Proforma: ./documents.types.mjs#IGetEmailDocsResult
