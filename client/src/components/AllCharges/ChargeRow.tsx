@@ -79,15 +79,13 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return <Amount amount={charge.transactions[0].amount.formatted} />;
             }
             case 'Entity': {
-              return <Entity name={charge.counterparty.name} alternativeCharge={alternativeCharge} />;
+              return <Entity data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'Description': {
-              return (
-                <Description userNote={charge.transactions[0].userNote?.trim()} alternativeCharge={alternativeCharge} />
-              );
+              return <Description data={charge.transactions[0]} alternativeCharge={alternativeCharge} />;
             }
             case 'Category': {
-              return <Category tags={charge.tags} alternativeCharge={alternativeCharge} />;
+              return <Category data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'VAT': {
               return (
@@ -106,7 +104,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Share with': {
               return (
                 <ShareWith
-                  beneficiaries={charge.beneficiaries}
+                  data={charge}
                   financialEntityType={financialEntityType}
                   financialEntityName={financialEntityName}
                   alternativeCharge={alternativeCharge}

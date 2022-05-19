@@ -1,24 +1,41 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
+import { DescriptionFieldsFragment } from '../../../__generated__/types';
+import { useUpdateTransaction } from '../../../hooks/useUdateTransaction';
 
 gql`
   fragment descriptionFields on Charge {
     transactions {
+      id
       userNote
     }
   }
 `;
 
 type Props = {
-  userNote?: string;
+  data: DescriptionFieldsFragment['transactions'][0];
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Description = ({ userNote, alternativeCharge, style }: Props) => {
-  const isDescription = userNote && userNote !== '';
-  const cellText = userNote ?? alternativeCharge?.userDescription;
+export const Description = ({ data, alternativeCharge, style }: Props) => {
+  const { userNote, id: transactionId } = data;
+  const isDescription = userNote && userNote.trim() !== '';
+  const cellText = userNote?.trim() ?? alternativeCharge?.userDescription;
+
+  const { mutate, isLoading } = useUpdateTransaction();
+
+  const updateUserNote = useCallback(
+    (value?: string) => {
+      mutate({
+        transactionId,
+        fields: { userNote: value },
+      });
+    },
+    [transactionId, mutate]
+  );
 
   return (
     <td
@@ -28,18 +45,13 @@ export const Description = ({ userNote, alternativeCharge, style }: Props) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {/* {!transaction.user_description && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName={'user_description'}
-          value={cellText}
-        />
-      )} */}
-      {/* <UpdateButton
-        transaction={transaction}
-        propertyName={'user_description'}
-        promptText="New user description:"
-      /> */}
+      {!isDescription && alternativeCharge?.userDescription && (
+        <ConfirmMiniButton onClick={() => updateUserNote(alternativeCharge.userDescription)} disabled={isLoading} />
+      )}
+      <EditMiniButton
+        onClick={() => updateUserNote(prompt('New user description:') ?? undefined)}
+        disabled={isLoading}
+      />
     </td>
   );
 };

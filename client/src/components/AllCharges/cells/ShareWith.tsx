@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties, FC, useCallback } from 'react';
 import gql from 'graphql-tag';
 import { ShareWithFieldsFragment } from '../../../__generated__/types';
 import {
@@ -7,6 +7,8 @@ import {
   privateBusinessExpenses,
   SuggestedCharge,
 } from '../../../helpers';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 
 gql`
   fragment shareWithFields on FinancialEntity {
@@ -15,6 +17,7 @@ gql`
       name
     }
     charges {
+      id
       beneficiaries {
         counterparty {
           name
@@ -26,7 +29,7 @@ gql`
 `;
 
 type Props = {
-  beneficiaries: ShareWithFieldsFragment['charges'][0]['beneficiaries'];
+  data: ShareWithFieldsFragment['charges'][0];
   financialEntityType: ShareWithFieldsFragment['__typename'];
   financialEntityName?: string;
   alternativeCharge?: SuggestedCharge;
@@ -34,16 +37,30 @@ type Props = {
 };
 
 export const ShareWith: FC<Props> = ({
-  beneficiaries,
-  financialEntityType,
+  data,
   financialEntityName = '',
+  financialEntityType,
   alternativeCharge,
   style,
 }) => {
+  const { beneficiaries, id: chargeId } = data;
+
+  const { mutate, isLoading } = useUpdateCharge();
+
+  const updateTag = useCallback(
+    (value?: string) => {
+      mutate({
+        chargeId,
+        fields: { beneficiaries: value },
+      });
+    },
+    [chargeId, mutate]
+  );
+
   const hasBeneficiariesd = beneficiaries.length > 0;
   const shareWithDotanFlag =
     !hasBeneficiariesd &&
-    (!(financialEntityType === 'LtdFinancialEntity') ||
+    (financialEntityType !== 'LtdFinancialEntity' ||
       [...privateBusinessExpenses, ...businessesNotToShare, ...businessesWithoutTaxCategory].includes(
         financialEntityName
       ));
@@ -56,19 +73,17 @@ export const ShareWith: FC<Props> = ({
       }}
     >
       {beneficiaries.map(beneficiary => `${beneficiary.counterparty.name}: ${beneficiary.percentage}`)}
-      {beneficiaries.length === 0 && alternativeCharge?.financialAccountsToBalance}
-      {/* {!hasBeneficiariesd && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName={'financial_accounts_to_balance'}
-          value={alternativeCharge?.financialAccountsToBalance}
+      {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance}
+      {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance && (
+        <ConfirmMiniButton
+          onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
+          disabled={isLoading}
         />
-      )} */}
-      {/* <UpdateButton
-        transaction={transaction}
-        propertyName={'financial_accounts_to_balance'}
-        promptText="New Account to share:"
-      /> */}
+      )}
+      <EditMiniButton
+        onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
+        disabled={isLoading}
+      />
     </td>
   );
 };

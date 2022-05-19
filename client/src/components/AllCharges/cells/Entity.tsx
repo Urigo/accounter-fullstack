@@ -1,9 +1,13 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties, FC, useCallback } from 'react';
 import gql from 'graphql-tag';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
+import { useUpdateCharge } from '../../../hooks/useUdateCharge';
+import { EntityFieldsFragment } from '../../../__generated__/types';
 
 gql`
   fragment entityFields on Charge {
+    id
     counterparty {
       name
     }
@@ -11,14 +15,36 @@ gql`
 `;
 
 type Props = {
-  name: string;
+  data: EntityFieldsFragment;
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Entity: FC<Props> = ({ name, alternativeCharge, style }) => {
-  const isFinancialEntity = !(name === '');
+export const Entity = ({ data, alternativeCharge, style }: Props) => {
+  const {
+    counterparty: { name },
+    id: chargeId,
+  } = data;
+  const isFinancialEntity = name !== '';
   const cellText = name ?? alternativeCharge?.financialEntity;
+
+  const { mutate, isLoading } = useUpdateCharge();
+
+  const updateTag = useCallback(
+    (value?: string) => {
+      mutate({
+        chargeId,
+        fields: {
+          counterparty: value
+            ? {
+                name: value,
+              }
+            : undefined,
+        },
+      });
+    },
+    [chargeId, mutate]
+  );
 
   return (
     <td
@@ -28,18 +54,10 @@ export const Entity: FC<Props> = ({ name, alternativeCharge, style }) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {/* {!isFinancialEntity && (
-        <ConfirmButton
-          transaction={transaction}
-          propertyName={'financial_entity'}
-          value={cellText}
-        />
-      )} */}
-      {/* <UpdateButton
-        transaction={transaction}
-        propertyName={'financial_entity'}
-        promptText="New financial entity:"
-      /> */}
+      {!isFinancialEntity && alternativeCharge?.financialEntity && (
+        <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
+      )}
+      <EditMiniButton onClick={() => updateTag(prompt('New financial entity:') ?? undefined)} disabled={isLoading} />
     </td>
   );
 };

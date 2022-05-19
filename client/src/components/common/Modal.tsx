@@ -12,13 +12,7 @@ export interface ModalProps {
   onClickInsideButton?: any;
 }
 
-export const PopUpModal: FC<PropsWithChildren<ModalProps>> = ({
-  content,
-  title,
-  opened,
-  onClose,
-  modalSize,
-}) => {
+export const PopUpModal: FC<PropsWithChildren<ModalProps>> = ({ content, title, opened, onClose, modalSize }) => {
   return (
     <>
       <Modal size={modalSize} opened={opened} onClose={onClose} title={title}>

@@ -118,7 +118,7 @@ export const DocumentsReport: FC = () => {
   const { data, isLoading } = useDocumentsQuery();
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 
-  const rows = data?.documents.map((doc) => {
+  const rows = data?.documents.map(doc => {
     switch (doc.__typename) {
       case 'Unprocessed':
         return (
