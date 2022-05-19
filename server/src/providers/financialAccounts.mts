@@ -20,7 +20,7 @@ async function batchFinancialAccountsByFinancialEntityIds(financialEntityIds: re
     },
     pool
   );
-  return financialEntityIds.map(financialEntityId => accounts.filter(charge => charge.owner === financialEntityId))
+  return financialEntityIds.map(financialEntityId => accounts.filter(charge => charge.owner === financialEntityId));
 }
 
 export const getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(batchFinancialAccountsByFinancialEntityIds);
@@ -37,7 +37,7 @@ async function batchFinancialAccountsByAccountNumbers(accountNumbers: readonly n
     },
     pool
   );
-  return accountNumbers.map(accountNumber => accounts.find(charge => charge.account_number === accountNumber))
+  return accountNumbers.map(accountNumber => accounts.find(charge => charge.account_number === accountNumber));
 }
 
 export const getFinancialAccountByAccountNumberLoader = new DataLoader(batchFinancialAccountsByAccountNumbers);

@@ -44,7 +44,9 @@ async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: re
     },
     pool
   );
-  return financialAccountNumbers.map(accountNumber => charges.filter(charge => charge.account_number === accountNumber));
+  return financialAccountNumbers.map(accountNumber =>
+    charges.filter(charge => charge.account_number === accountNumber)
+  );
 }
 
 export const getChargeByFinancialAccountNumberLoader = new DataLoader(batchChargesByFinancialAccountNumbers);

@@ -17,9 +17,9 @@ const getDocsByChargeId = sql<IGetDocsByChargeIdQuery>`
     ORDER BY email_received_date DESC;`;
 
 async function batchDocsByChargeIds(chargeIds: readonly string[]) {
-    const docs = await getDocsByChargeId.run({ chargeIds }, pool);
-    
-    return chargeIds.map(id => docs.filter(doc => doc.transaction_id === id));
-  }
-  
-  export const getDocsByChargeIdLoader = new DataLoader(batchDocsByChargeIds);
+  const docs = await getDocsByChargeId.run({ chargeIds }, pool);
+
+  return chargeIds.map(id => docs.filter(doc => doc.transaction_id === id));
+}
+
+export const getDocsByChargeIdLoader = new DataLoader(batchDocsByChargeIds);

@@ -9,7 +9,10 @@ import {
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
 import { getDocsByChargeIdLoader, getEmailDocs } from './providers/documents.mjs';
-import { getFinancialAccountByAccountNumberLoader, getFinancialAccountsByFinancialEntityIdLoader } from './providers/financialAccounts.mjs';
+import {
+  getFinancialAccountByAccountNumberLoader,
+  getFinancialAccountsByFinancialEntityIdLoader,
+} from './providers/financialAccounts.mjs';
 import { getFinancialEntitieByIdLoader } from './providers/financialEntities.mjs';
 import { getLedgerRecordsByChargeIdLoader } from './providers/ledgerRecords.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
@@ -105,7 +108,7 @@ const commonTransactionFields:
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
     const account = await getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
-    if  (!account) {
+    if (!account) {
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
     return account;
@@ -395,7 +398,9 @@ export const resolvers: Resolvers = {
         default:
           {
             // case Guild account
-            const guildAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load('6a20aa69-57ff-446e-8d6a-1e96d095e988');
+            const guildAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
+              '6a20aa69-57ff-446e-8d6a-1e96d095e988'
+            );
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
@@ -411,7 +416,9 @@ export const resolvers: Resolvers = {
             }
 
             // case UriLTD account
-            const uriAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load('a1f66c23-cea3-48a8-9a4b-0b4a0422851a');
+            const uriAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
+              'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
+            );
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number!)) {
               return [
