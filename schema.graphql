@@ -180,7 +180,7 @@ type Charge {
   " when the initial charge was created from the first event we found "
   createdAt: Date!
   " additional documents attached to the charge "
-  additionalDocument: [Linkable!]!
+  additionalDocument: [Document!]!
   " ledger records linked to the charge "
   ledgerRecords: [LedgerRecord!]!
   " list of financial/bank transactions linked to the charge "
@@ -201,6 +201,10 @@ type BeneficiaryCounterparty {
   percentage: Percentage
 }
 
+union BroadInvoice = Invoice | InvoiceReceipt
+
+union BroadReceipt = Receipt | InvoiceReceipt
+
 # Taxes Module
 extend type Charge {
   " calculated field based on the actual ledger records, optional because not all charges has VAT "
@@ -208,7 +212,9 @@ extend type Charge {
   " withholding tax "
   withholdingTax: FinancialAmount
   " linked invoice document "
-  invoice: Invoice
+  invoice: BroadInvoice
+  " linked receipt document "
+  receipt: BroadReceipt
   " calculated based on ledger record and transaction approvals "
   accountantApproval: AccountantApproval!
   " פחת, ציוד  "
@@ -301,6 +307,7 @@ type Receipt implements Document & Linkable {
   invoice: Invoice
   serialNumber: String!
   date: Date!
+  amount: FinancialAmount
 }
 
 " Invoice receipt document - חשבונית מס קבלה "

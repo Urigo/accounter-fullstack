@@ -1,5 +1,10 @@
 import { CSSProperties } from 'react';
-import { businessesWithoutTaxCategory, businessesWithoutVAT, SuggestedCharge } from '../../../helpers';
+import {
+  businessesWithoutTaxCategory,
+  businessesWithoutVAT,
+  entitiesWithoutInvoice,
+  SuggestedCharge,
+} from '../../../helpers';
 import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
@@ -25,7 +30,7 @@ gql`
 `;
 
 type Props = {
-  financialEntityType: VatFieldsFragment['__typename'];
+  isBusiness: boolean;
   financialEntityName?: string;
   vat: VatFieldsFragment['charges'][0]['vat'];
   amount?: VatFieldsFragment['charges'][0]['transactions'][0]['amount']['raw'];
@@ -33,17 +38,11 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Vat = ({
-  financialEntityType,
-  financialEntityName = '',
-  vat,
-  amount = 0,
-  alternativeCharge,
-  style,
-}: Props) => {
+export const Vat = ({ isBusiness, financialEntityName = '', vat, amount = 0, alternativeCharge, style }: Props) => {
   const indicator =
     (!vat?.raw &&
-      financialEntityType === 'LtdFinancialEntity' &&
+      isBusiness &&
+      !entitiesWithoutInvoice.includes(financialEntityName) &&
       (!vat || vat.currency === Currency.Nis) &&
       !businessesWithoutVAT.includes(financialEntityName) &&
       !businessesWithoutTaxCategory.includes(financialEntityName)) ||

@@ -4,6 +4,7 @@ import { ShareWithFieldsFragment } from '../../../__generated__/types';
 import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
+  entitiesWithoutInvoice,
   privateBusinessExpenses,
   SuggestedCharge,
 } from '../../../helpers';
@@ -30,19 +31,13 @@ gql`
 
 type Props = {
   data: ShareWithFieldsFragment['charges'][0];
-  financialEntityType: ShareWithFieldsFragment['__typename'];
+  isBusiness: boolean;
   financialEntityName?: string;
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({
-  data,
-  financialEntityName = '',
-  financialEntityType,
-  alternativeCharge,
-  style,
-}) => {
+export const ShareWith: FC<Props> = ({ data, isBusiness, financialEntityName = '', alternativeCharge, style }) => {
   const { beneficiaries, id: chargeId } = data;
 
   const { mutate, isLoading } = useUpdateCharge();
@@ -60,7 +55,7 @@ export const ShareWith: FC<Props> = ({
   const hasBeneficiariesd = beneficiaries.length > 0;
   const shareWithDotanFlag =
     !hasBeneficiariesd &&
-    (financialEntityType !== 'LtdFinancialEntity' ||
+    (!(isBusiness && !entitiesWithoutInvoice.includes(financialEntityName)) ||
       [...privateBusinessExpenses, ...businessesNotToShare, ...businessesWithoutTaxCategory].includes(
         financialEntityName
       ));

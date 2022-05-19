@@ -3,7 +3,25 @@ import { CSSProperties, useState } from 'react';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
 import { ChargesFieldsFragment, VatFieldsFragment } from '../../__generated__/types';
-import { Account, Amount, BankDescription, Category, Date, Description, Entity, ShareWith, Vat } from './cells';
+import {
+  Account,
+  Amount,
+  BankDescription,
+  Category,
+  Date,
+  Description,
+  Entity,
+  InvoiceDate,
+  InvoiceFile,
+  InvoiceImg,
+  InvoiceNumber,
+  ReceiptDate,
+  ReceiptImg,
+  ReceiptNumber,
+  ReceiptUrl,
+  ShareWith,
+  Vat,
+} from './cells';
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
@@ -21,6 +39,14 @@ gql`
       ...bankDescriptionFields
       ...ledgerRecordsFields
       ...suggestedCharge
+      ...invoiceImageFields
+      ...invoiceDateFields
+      ...invoiceNumberFields
+      ...invoiceFileFields
+      ...receiptImageFields
+      ...receiptDateFields
+      ...receiptNumberFields
+      ...receiptUrlFields
     }
   }
 `;
@@ -51,7 +77,7 @@ const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSPrope
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName }: Props) => {
+export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName = '' }: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
     !charge.counterparty.name ||
@@ -61,6 +87,8 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
     charge.beneficiaries.length === 0
       ? suggestedCharge(charge)
       : undefined;
+
+  const isBusiness = financialEntityType === 'LtdFinancialEntity';
 
   return (
     <>
@@ -91,7 +119,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return (
                 <Vat
                   vat={charge.vat}
-                  financialEntityType={financialEntityType}
+                  isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
                   amount={charge.transactions[0].amount.raw}
                   alternativeCharge={alternativeCharge}
@@ -105,7 +133,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               return (
                 <ShareWith
                   data={charge}
-                  financialEntityType={financialEntityType}
+                  isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
                   alternativeCharge={alternativeCharge}
                 />
@@ -114,30 +142,30 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
             case 'Bank Description': {
               return <BankDescription description={charge.transactions[0].description} />;
             }
-            // case 'Invoice Img': {
-            //   return <InvoiceImg charge={charge} />;
-            // }
-            // case 'Invoice Date': {
-            //   return <InvoiceDate charge={charge} />;
-            // }
-            // case 'Invoice Number': {
-            //   return <InvoiceNumber charge={charge} />;
-            // }
-            // case 'Invoice File': {
-            //   return <InvoiceFile charge={charge} />;
-            // }
-            // case 'Receipt Image': {
-            //   return <ReceiptImg charge={charge} />;
-            // }
-            // case 'Receipt Date': {
-            //   return <ReceiptDate charge={charge} />;
-            // }
-            // case 'Receipt Number': {
-            //   return <ReceiptNumber charge={charge} />;
-            // }
-            // case 'Receipt URL': {
-            //   return <ReceiptUrl charge={charge} />;
-            // }
+            case 'Invoice Img': {
+              return <InvoiceImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Invoice Date': {
+              return <InvoiceDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Invoice Number': {
+              return <InvoiceNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Invoice File': {
+              return <InvoiceFile data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Receipt Image': {
+              return <ReceiptImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Receipt Date': {
+              return <ReceiptDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Receipt Number': {
+              return <ReceiptNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
+            case 'Receipt URL': {
+              return <ReceiptUrl data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+            }
             // case 'Links': {
             //   return <Links charge={charge} />;
             // }

@@ -1,15 +1,29 @@
-import { CSSProperties, FC } from 'react';
-import type { TransactionType } from '../../../models/types';
-import { UpdateButton } from '../../common';
-import { isBusiness } from '../../../helpers';
+import { CSSProperties } from 'react';
+import { entitiesWithoutInvoice } from '../../../helpers';
+import gql from 'graphql-tag';
+import { ReceiptUrlFieldsFragment } from '../../../__generated__/types';
+
+gql`
+  fragment receiptUrlFields on Charge {
+    receipt {
+      ... on Document {
+        file
+        id
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionType;
+  data: ReceiptUrlFieldsFragment;
+  isBusiness: boolean;
+  financialEntityName: string;
   style?: CSSProperties;
 };
 
-export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
-  const indicator = isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file;
+export const ReceiptUrl = ({ data, isBusiness, financialEntityName, style }: Props) => {
+  const { file } = data.receipt ?? {};
+  const indicator = isBusiness && !entitiesWithoutInvoice.includes(financialEntityName) && !file && !data.invoice?.file;
 
   return (
     <td
@@ -18,12 +32,13 @@ export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
         ...style,
       }}
     >
-      {transaction.receipt_url && (
-        <a href={transaction.receipt_url} target="_blank">
+      {file && (
+        <a href={file} rel="noreferrer" target="_blank">
           yes
         </a>
       )}
-      <UpdateButton transaction={transaction} propertyName="receipt_url" promptText="New Receipt url:" />
+      {/* TODO: create update document hook */}
+      {/* <UpdateButton transaction={transaction} propertyName="receipt_url" promptText="New Receipt url:" /> */}
     </td>
   );
 };

@@ -1,10 +1,5 @@
 import pgQuery from '@pgtyped/query';
-import {
-  IGetChargesByIdsQuery,
-  IGetDocsByChargeIdQuery,
-  IGetEmailDocsQuery,
-  IGetLastInvoiceNumbersQuery,
-} from '../__generated__/sqlQueries.types.mjs';
+import { IGetLastInvoiceNumbersQuery } from '../__generated__/sqlQueries.types.mjs';
 
 const { sql } = pgQuery;
 
@@ -20,20 +15,3 @@ export const getLastInvoiceNumbers = sql<IGetLastInvoiceNumbersQuery>`
     event_amount > 0 AND
     (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
     ORDER BY event_date DESC;`;
-
-export const getEmailDocs = sql<IGetEmailDocsQuery>`
-    SELECT *
-    FROM accounter_schema.email_invoices
-    ORDER BY email_received_date DESC;`;
-
-export const getDocsByChargeId = sql<IGetDocsByChargeIdQuery>`
-    SELECT *
-    FROM accounter_schema.email_invoices
-    WHERE transaction_id in $$chargeIds
-    ORDER BY email_received_date DESC;`;
-
-// Replace with a wrapper with dateloader
-export const getChargesByIds = sql<IGetChargesByIdsQuery>`
-    SELECT *
-    FROM accounter_schema.all_transactions
-    WHERE id IN $$cahrgeIds;`;
