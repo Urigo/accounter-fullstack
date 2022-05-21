@@ -122,12 +122,12 @@ async function main() {
     } else if (request.url == '/browser.js') {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/javascript; charset=utf-8');
-      const readStream = createReadStream('dist/browser/browser.js', 'utf8');
+      const readStream = createReadStream('dist/src/browser/browser.js', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/browser.js.map') {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/octet-stream');
-      const readStream = createReadStream('dist/browser/browser.js.map', 'utf8');
+      const readStream = createReadStream('dist/src/browser/browser.js.map', 'utf8');
       readStream.pipe(response);
     } else if (request.url == '/src/browser/browser.ts') {
       response.statusCode = 200;
