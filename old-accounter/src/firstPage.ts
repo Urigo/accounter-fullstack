@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { pool } from './index';
 import moment from 'moment';
-import { suggestedTransaction } from '../client/src/helpers/transactions';
+import { suggestedTransaction } from '../../client/src/helpers/transactions';
 import {
   entitiesWithoutInvoice,
   entitiesWithoutInvoiceNumuber,
@@ -9,7 +9,7 @@ import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
-} from '../client/src/helpers/groups';
+} from '../../client/src/helpers/groups';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
 
@@ -441,157 +441,130 @@ export const financialStatus = async (query: any): Promise<string> => {
             transaction_id=${transaction.id}>
           <td>
             ${moment(transaction.event_date).format('DD/MM/YY')}
-            ${
-              transaction.debit_date
-                ? `<div style="font-size: 12px; color: gray;">` +
-                  moment(transaction.debit_date).format('DD/MM/YY') +
-                  `</div>`
-                : ''
-            }
+            ${transaction.debit_date
+          ? `<div style="font-size: 12px; color: gray;">` +
+          moment(transaction.debit_date).format('DD/MM/YY') +
+          `</div>`
+          : ''
+        }
           </td>
           <td>${transaction.event_amount}${currencyCodeToSymbol(transaction.currency_code)}</td>
-          <td class="financial_entity" ${
-            transaction.financial_entity ? '' : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.financial_entity
+          <td class="financial_entity" ${transaction.financial_entity ? '' : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.financial_entity
           ? transaction.financial_entity
-          : `${suggestedTransaction(transaction)?.financialEntity} <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialEntity
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.financialEntity} <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialEntity
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
-          <td class="user_description" ${
-            transaction.user_description ? '' : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.user_description
+          <td class="user_description" ${transaction.user_description ? '' : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.user_description
           ? transaction.user_description
-          : `${suggestedTransaction(transaction)?.userDescription} <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.userDescription
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.userDescription} <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.userDescription
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
-          <td class="personal_category" ${
-            transaction.personal_category ? '' : 'style="background-color: rgb(236, 207, 57);"'
-          }>${
-        transaction.personal_category
+          <td class="personal_category" ${transaction.personal_category ? '' : 'style="background-color: rgb(236, 207, 57);"'
+        }>${transaction.personal_category
           ? transaction.personal_category
-          : `${
-              suggestedTransaction(transaction)?.personalCategory
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.personalCategory
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.personalCategory
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.personalCategory
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'>&#x270f;</button>
           </td>
-          <td class="vat"  ${
-            (!transaction.vat &&
-              isBusiness(transaction) &&
-              !businessesWithoutVAT.includes(transaction.financial_entity) &&
-              !businessesWithoutTaxCategory.includes(transaction.financial_entity) &&
-              transaction.currency_code == 'ILS') ||
-            (transaction.vat > 0 && transaction.event_amount < 0) ||
-            (transaction.vat < 0 && transaction.event_amount > 0)
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
-          ${
-            transaction.vat || transaction.vat == 0
-              ? transaction.vat
-              : `${suggestedTransaction(transaction)?.vat} <button type="button" onClick='printElement(this, "${
-                  suggestedTransaction(transaction)?.vat
-                }");'>V</button>`
-          }
+          <td class="vat"  ${(!transaction.vat &&
+          isBusiness(transaction) &&
+          !businessesWithoutVAT.includes(transaction.financial_entity) &&
+          !businessesWithoutTaxCategory.includes(transaction.financial_entity) &&
+          transaction.currency_code == 'ILS') ||
+          (transaction.vat > 0 && transaction.event_amount < 0) ||
+          (transaction.vat < 0 && transaction.event_amount > 0)
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
+          ${transaction.vat || transaction.vat == 0
+          ? transaction.vat
+          : `${suggestedTransaction(transaction)?.vat} <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.vat
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
           <td>${transaction.account_number}${transaction.account_type}</td>
-          <td class="financial_accounts_to_balance" ${
-            shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''
-          }>${
-        transaction.financial_accounts_to_balance
+          <td class="financial_accounts_to_balance" ${shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''
+        }>${transaction.financial_accounts_to_balance
           ? transaction.financial_accounts_to_balance
-          : `${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            }");'>V</button>`
-      }
+          : `${suggestedTransaction(transaction)?.financialAccountsToBalance
+          } <button type="button" onClick='printElement(this, "${suggestedTransaction(transaction)?.financialAccountsToBalance
+          }");'>V</button>`
+        }
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'>&#x270f;</button>
           </td>
           <td class="tax_category">${transaction.tax_category}
             <button type="button" onClick='printElement(this, prompt("New Tax category:"));'>&#x270f;</button>
           </td>
           <td>${transaction.detailed_bank_description}</td>
-          <td class="proforma_invoice_file" ${
-            isBusiness(transaction) && !transaction.proforma_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
-            ${
-              transaction.proforma_invoice_file
-                ? `<a href="${transaction.proforma_invoice_file}" target="_blank">yes</a>`
-                : ''
-            }
+          <td class="proforma_invoice_file" ${isBusiness(transaction) && !transaction.proforma_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
+            ${transaction.proforma_invoice_file
+          ? `<a href="${transaction.proforma_invoice_file}" target="_blank">yes</a>`
+          : ''
+        }
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_date" ${
-            isBusiness(transaction) && !transaction.tax_invoice_date
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''}
+          <td class="tax_invoice_date" ${isBusiness(transaction) && !transaction.tax_invoice_date
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>${transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_number" ${
-            isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
-            !transaction.tax_invoice_number
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="tax_invoice_number" ${isBusiness(transaction) &&
+          !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
+          !transaction.tax_invoice_number
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.tax_invoice_number}
             <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
-          <td class="tax_invoice_file" ${
-            isBusiness(transaction) && !transaction.tax_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="tax_invoice_file" ${isBusiness(transaction) && !transaction.tax_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.tax_invoice_file ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
 
-          <td class="receipt_image" ${
-            isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="receipt_image" ${isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.receipt_image ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
-          <td class="receipt_date" ${
-            isBusiness(transaction) && !transaction.receipt_date && !transaction.tax_invoice_date
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>${transaction.receipt_date ? moment(transaction.receipt_date).format('DD/MM/YY') : ''}
+          <td class="receipt_date" ${isBusiness(transaction) && !transaction.receipt_date && !transaction.tax_invoice_date
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>${transaction.receipt_date ? moment(transaction.receipt_date).format('DD/MM/YY') : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
-          <td class="receipt_number" ${
-            isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
-            !transaction.receipt_number &&
-            !transaction.tax_invoice_number
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="receipt_number" ${isBusiness(transaction) &&
+          !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
+          !transaction.receipt_number &&
+          !transaction.tax_invoice_number
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.receipt_number}
             <button type="button" onClick='printElement(this, prompt("New Invoice Number:"));'>&#x270f;</button>
           </td>
-          <td class="receipt_url" ${
-            isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file
-              ? 'style="background-color: rgb(236, 207, 57);"'
-              : ''
-          }>
+          <td class="receipt_url" ${isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file
+          ? 'style="background-color: rgb(236, 207, 57);"'
+          : ''
+        }>
             ${transaction.receipt_url ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>` : ''}
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
