@@ -25,7 +25,7 @@ async function batchChargesByIds(ids: readonly string[]) {
   return ids.map(id => charges.find(charge => charge.id === id));
 }
 
-export const getChargeByIdLoader = new DataLoader(batchChargesByIds);
+export const getChargeByIdLoader = new DataLoader(batchChargesByIds, { cache: false });
 
 export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
     SELECT *
@@ -49,7 +49,9 @@ async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: re
   );
 }
 
-export const getChargeByFinancialAccountNumberLoader = new DataLoader(batchChargesByFinancialAccountNumbers);
+export const getChargeByFinancialAccountNumberLoader = new DataLoader(batchChargesByFinancialAccountNumbers, {
+  cache: false,
+});
 
 export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT at.*, fa.owner as financial_entity_id
@@ -73,7 +75,7 @@ async function batchChargesByFinancialEntityIds(financialEntityIds: readonly str
   return financialEntityIds.map(id => charges.filter(charge => charge.financial_entity_id === id));
 }
 
-export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds);
+export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds, { cache: false });
 
 export const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.all_transactions

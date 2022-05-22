@@ -22,4 +22,4 @@ async function batchDocsByChargeIds(chargeIds: readonly string[]) {
   return chargeIds.map(id => docs.filter(doc => doc.transaction_id === id));
 }
 
-export const getDocsByChargeIdLoader = new DataLoader(batchDocsByChargeIds);
+export const getDocsByChargeIdLoader = new DataLoader(batchDocsByChargeIds, { cache: false });
