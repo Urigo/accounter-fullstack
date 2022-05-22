@@ -22,7 +22,7 @@
 //   return undefined;
 // }
 
-// export const useFinancialStatus = () => {
+export const useFinancialStatus = () => {
 //   const { pool } = usePool();
 
 //   const onGetFinancialStatus = async (monthTaxReport: string) => {
@@ -122,4 +122,4 @@
 //       return await onGetFinancialStatus(monthTaxReport);
 //     },
 //   };
-// };
+};
