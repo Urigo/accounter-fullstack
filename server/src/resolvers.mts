@@ -365,7 +365,7 @@ export const resolvers: Resolvers = {
       return records;
     },
     transactions: DbCharge => [DbCharge],
-    counterparty: DbCharge => DbCharge.financial_entity ?? '',
+    counterparty: DbCharge => DbCharge.financial_entity,
     description: () => 'Missing', // TODO: implement
     tags: DbCharge => (DbCharge.personal_category ? [DbCharge.personal_category] : []),
     beneficiaries: async DbCharge => {
@@ -474,8 +474,8 @@ export const resolvers: Resolvers = {
   },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
-    creditAccount: DbLedgerRecord => DbLedgerRecord.חשבון_זכות_1 ?? '',
-    debitAccount: DbLedgerRecord => DbLedgerRecord.חשבון_חובה_1 ?? '',
+    creditAccount: DbLedgerRecord => DbLedgerRecord.חשבון_זכות_1,
+    debitAccount: DbLedgerRecord => DbLedgerRecord.חשבון_חובה_1,
     originalAmount: DbLedgerRecord =>
       formatFinancialAmount(DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1, DbLedgerRecord.מטבע),
     date: DbLedgerRecord => DbLedgerRecord.תאריך_חשבונית,
@@ -488,8 +488,8 @@ export const resolvers: Resolvers = {
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
   },
   NamedCounterparty: {
-    __isTypeOf: () => true,
-    name: parent => parent,
+    __isTypeOf: (parent) => !!parent,
+    name: parent => parent!,
   },
   BeneficiaryCounterparty: {
     __isTypeOf: () => true,
