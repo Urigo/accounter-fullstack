@@ -80,7 +80,7 @@ const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSPrope
 export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName = '' }: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
-    !charge.counterparty.name ||
+    !charge.counterparty?.name ||
     !charge.transactions[0].userNote?.trim() ||
     charge.tags.length === 0 ||
     !charge.vat ||
