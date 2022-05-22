@@ -6,7 +6,7 @@ import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 import { CategoryFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment categoryFields on Charge {
+  fragment CategoryFields on Charge {
     id
     tags
   }

@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { BankDescriptionFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment bankDescriptionFields on Charge {
+  fragment BankDescriptionFields on Charge {
     transactions {
       description
     }

@@ -5,7 +5,7 @@ import gql from 'graphql-tag';
 import { InvoiceDateFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment invoiceDateFields on Charge {
+  fragment InvoiceDateFields on Charge {
     invoice {
       ... on Invoice {
         date

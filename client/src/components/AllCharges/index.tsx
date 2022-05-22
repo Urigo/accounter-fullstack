@@ -9,7 +9,7 @@ import { businesses } from '../../helpers';
 gql`
   query FinancialEntity($financialEntityId: ID!) {
     financialEntity(id: $financialEntityId) {
-      ...chargesFields
+      ...ChargesFields
     }
   }
 `;

@@ -9,7 +9,7 @@ import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment vatFields on FinancialEntity {
+  fragment VatFields on FinancialEntity {
     __typename
     ... on LtdFinancialEntity {
       name

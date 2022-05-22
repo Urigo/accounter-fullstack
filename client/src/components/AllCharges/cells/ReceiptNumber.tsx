@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { ReceiptNumberFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment receiptNumberFields on Charge {
+  fragment ReceiptNumberFields on Charge {
     receipt {
       ... on Receipt {
         serialNumber

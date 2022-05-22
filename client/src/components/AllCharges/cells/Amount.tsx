@@ -2,7 +2,7 @@ import { CSSProperties, FC } from 'react';
 import gql from 'graphql-tag';
 
 gql`
-  fragment amountFields on Charge {
+  fragment AmountFields on Charge {
     transactions {
       amount {
         formatted

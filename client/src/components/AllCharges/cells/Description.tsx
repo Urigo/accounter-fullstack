@@ -6,7 +6,7 @@ import { DescriptionFieldsFragment } from '../../../__generated__/types';
 import { useUpdateTransaction } from '../../../hooks/useUdateTransaction';
 
 gql`
-  fragment descriptionFields on Charge {
+  fragment DescriptionFields on Charge {
     transactions {
       id
       userNote

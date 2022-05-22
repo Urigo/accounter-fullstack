@@ -29,7 +29,7 @@ gql`
   fragment Charges on FinancialEntity {
     charges {
       id
-      ...ledgerRecords
+      ...LedgerRecords
     }
   }
 `;

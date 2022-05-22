@@ -114,7 +114,11 @@ interface Error {
   message: String!
 }
 
-type CommonError {
+interface Error {
+  message: String!
+}
+
+type CommonError implements Error {
   message: String!
 }
 

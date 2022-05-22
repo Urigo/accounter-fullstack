@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { InvoiceImageFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment invoiceImageFields on Charge {
+  fragment InvoiceImageFields on Charge {
     invoice {
       ... on Document {
         id
