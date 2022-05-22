@@ -21,26 +21,26 @@ export const monthlyReport = async (query: any): Promise<string> => {
   for (const transaction of monthlyTaxesReport) {
     monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
       <tr>
-        <td>${transaction.תאריך_חשבונית}</td>
-        <td>${transaction.חשבון_חובה_1}</td>
-        <td>${transaction.סכום_חובה_1}</td>
-        <td>${transaction.מטח_סכום_חובה_1}</td>
-        <td>${transaction.מטבע}</td>
-        <td>${transaction.חשבון_זכות_1}</td>
-        <td>${transaction.סכום_זכות_1}</td>
-        <td>${transaction.מטח_סכום_זכות_1}</td>
-        <td>${transaction.חשבון_חובה_2}</td>
-        <td>${transaction.סכום_חובה_2}</td>
-        <td>${transaction.מטח_סכום_חובה_2}</td>
-        <td>${transaction.חשבון_זכות_2}</td>
-        <td>${transaction.סכום_זכות_2}</td>
-        <td>${transaction.מטח_סכום_זכות_2}</td>
-        <td>${transaction.פרטים}</td>
-        <td>${transaction.אסמכתא_1}</td>
-        <td>${transaction.אסמכתא_2}</td>
-        <td>${transaction.סוג_תנועה}</td>
-        <td>${transaction.תאריך_ערך}</td>
-        <td>${transaction.תאריך_3}</td>
+        <td>${transaction.invoice_date}</td>
+        <td>${transaction.debit_account_1}</td>
+        <td>${transaction.debit_amount_1}</td>
+        <td>${transaction.foreign_debit_amount_1}</td>
+        <td>${transaction.currency}</td>
+        <td>${transaction.credit_account_1}</td>
+        <td>${transaction.credit_amount_1}</td>
+        <td>${transaction.foreign_credit_amount_1}</td>
+        <td>${transaction.debit_account_2}</td>
+        <td>${transaction.debit_amount_2}</td>
+        <td>${transaction.foreign_debit_amount_2}</td>
+        <td>${transaction.credit_account_2}</td>
+        <td>${transaction.credit_amount_2}</td>
+        <td>${transaction.foreign_credit_amount_2}</td>
+        <td>${transaction.details}</td>
+        <td>${transaction.reference_1}</td>
+        <td>${transaction.reference_2}</td>
+        <td>${transaction.movement_type}</td>
+        <td>${transaction.value_date}</td>
+        <td>${transaction.date_3}</td>
       </tr>
       `);
   }
@@ -48,26 +48,26 @@ export const monthlyReport = async (query: any): Promise<string> => {
       <table>
         <thead>
             <tr>
-                <th>תאריך_חשבונית</th>
-                <th>חשבון_חובה_1</th>
-                <th>סכום_חובה_1</th>
-                <th>מטח_סכום_חובה_1</th>
-                <th>מטבע</th>
-                <th>חשבון_זכות_1</th>
-                <th>סכום_זכות_1</th>
-                <th>מטח_סכום_זכות_1</th>
-                <th>חשבון_חובה_2</th>
-                <th>סכום_חובה_2</th>
-                <th>מטח_סכום_חובה_2</th>
-                <th>חשבון_זכות_2</th>
-                <th>סכום_זכות_2</th>
-                <th>מטח_סכום_זכות_2</th>
-                <th>פרטים</th>
-                <th>אסמכתא_1</th>
-                <th>אסמכתא_2</th>
-                <th>סוג_תנועה</th>
-                <th>תאריך_ערך</th>
-                <th>תאריך_3</th>
+                <th>invoice_date</th>
+                <th>debit_account_1</th>
+                <th>debit_amount_1</th>
+                <th>foreign_debit_amount_1</th>
+                <th>currency</th>
+                <th>credit_account_1</th>
+                <th>credit_amount_1</th>
+                <th>foreign_credit_amount_1</th>
+                <th>debit_account_2</th>
+                <th>debit_amount_2</th>
+                <th>foreign_debit_amount_2</th>
+                <th>credit_account_2</th>
+                <th>credit_amount_2</th>
+                <th>foreign_credit_amount_2</th>
+                <th>details</th>
+                <th>reference_1</th>
+                <th>reference_2</th>
+                <th>movement_type</th>
+                <th>value_date</th>
+                <th>date_3</th>
             </tr>
         </thead>
         <tbody>

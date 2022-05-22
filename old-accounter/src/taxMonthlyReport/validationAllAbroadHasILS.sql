@@ -5,23 +5,23 @@ FROM
 WHERE
   (
     (
-      מטח_סכום_חובה_1 IS NOT NULL
-      AND מטח_סכום_חובה_1 <> ''
-      AND סכום_חובה_1 IS NULL
+      foreign_debit_amount_1 IS NOT NULL
+      AND foreign_debit_amount_1 <> ''
+      AND debit_amount_1 IS NULL
     )
     OR (
-      מטח_סכום_חובה_2 IS NOT NULL
-      AND מטח_סכום_חובה_2 <> ''
-      AND סכום_חובה_2 IS NULL
+      foreign_debit_amount_2 IS NOT NULL
+      AND foreign_debit_amount_2 <> ''
+      AND debit_amount_2 IS NULL
     )
     OR (
-      מטח_סכום_זכות_1 IS NOT NULL
-      AND מטח_סכום_זכות_1 <> ''
-      AND סכום_זכות_1 IS NULL
+      foreign_credit_amount_1 IS NOT NULL
+      AND foreign_credit_amount_1 <> ''
+      AND credit_amount_1 IS NULL
     )
     OR (
-      מטח_סכום_זכות_2 IS NOT NULL
-      AND מטח_סכום_זכות_2 <> ''
-      AND סכום_זכות_2 IS NULL
+      foreign_credit_amount_2 IS NOT NULL
+      AND foreign_credit_amount_2 <> ''
+      AND credit_amount_2 IS NULL
     )
   );

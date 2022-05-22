@@ -102,26 +102,26 @@ export interface VatTransaction {
 }
 
 export interface MonthTaxReport {
-  תאריך_חשבונית: string;
-  חשבון_חובה_1: string;
-  סכום_חובה_1: string;
-  מטח_סכום_חובה_1: string;
-  מטבע: string;
-  חשבון_זכות_1: string;
-  סכום_זכות_1: string;
-  מטח_סכום_זכות_1: string;
-  חשבון_חובה_2: string;
-  סכום_חובה_2: string;
-  מטח_סכום_חובה_2: string;
-  חשבון_זכות_2: string;
-  סכום_זכות_2: string;
-  מטח_סכום_זכות_2: string;
-  פרטים: string;
-  אסמכתא_1: string;
-  אסמכתא_2: string;
-  סוג_תנועה: string;
-  תאריך_ערך: string;
-  תאריך_3: string;
+  invoice_date: string;
+  debit_account_1: string;
+  debit_amount_1: string;
+  foreign_debit_amount_1: string;
+  currency: string;
+  credit_account_1: string;
+  credit_amount_1: string;
+  foreign_credit_amount_1: string;
+  debit_account_2: string;
+  debit_amount_2: string;
+  foreign_debit_amount_2: string;
+  credit_account_2: string;
+  credit_amount_2: string;
+  foreign_credit_amount_2: string;
+  details: string;
+  reference_1: string;
+  reference_2: string;
+  movement_type: string;
+  value_date: string;
+  date_3: string;
 }
 
 export interface TopPrivateNotCategorizedExpense {
@@ -133,26 +133,26 @@ export interface TopPrivateNotCategorizedExpense {
 }
 
 export type LedgerEntity = {
-  תאריך_חשבונית: string;
-  חשבון_חובה_1: string;
-  סכום_חובה_1: string;
-  מטח_סכום_חובה_1: string;
-  מטבע: string;
-  חשבון_זכות_1: string;
-  סכום_זכות_1: string;
-  מטח_סכום_זכות_1: string;
-  חשבון_חובה_2: string;
-  סכום_חובה_2: string;
-  מטח_סכום_חובה_2: string;
-  חשבון_זכות_2: string;
-  סכום_זכות_2: string;
-  מטח_סכום_זכות_2: string;
-  פרטים: string;
-  אסמכתא_1: string;
-  אסמכתא_2: string;
-  סוג_תנועה: string;
-  תאריך_ערך: string;
-  תאריך_3: string;
+  invoice_date: string;
+  debit_account_1: string;
+  debit_amount_1: string;
+  foreign_debit_amount_1: string;
+  currency: string;
+  credit_account_1: string;
+  credit_amount_1: string;
+  foreign_credit_amount_1: string;
+  debit_account_2: string;
+  debit_amount_2: string;
+  foreign_debit_amount_2: string;
+  credit_account_2: string;
+  credit_amount_2: string;
+  foreign_credit_amount_2: string;
+  details: string;
+  reference_1: string;
+  reference_2: string;
+  movement_type: string;
+  value_date: string;
+  date_3: string;
   original_id: string;
   origin: string;
   proforma_invoice_file: string;

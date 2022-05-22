@@ -2,16 +2,16 @@ SELECT
   SUM(
     (
       CASE
-        WHEN סכום_זכות_2 = '' THEN '0'
-        ELSE סכום_זכות_2
+        WHEN credit_amount_2 = '' THEN '0'
+        ELSE credit_amount_2
       END
     ) :: NUMERIC
   ),
   SUM(
     (
       CASE
-        WHEN סכום_חובה_2 = '' THEN '0'
-        ELSE סכום_חובה_2
+        WHEN debit_amount_2 = '' THEN '0'
+        ELSE debit_amount_2
       END
     ) :: NUMERIC
   )

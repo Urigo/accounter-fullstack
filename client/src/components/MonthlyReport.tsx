@@ -29,51 +29,51 @@ export const MonthlyReport: FC = () => {
       <table>
         <thead>
           <tr>
-            <th>תאריך_חשבונית</th>
-            <th>חשבון_חובה_1</th>
-            <th>סכום_חובה_1</th>
-            <th>מטח_סכום_חובה_1</th>
-            <th>מטבע</th>
-            <th>חשבון_זכות_1</th>
-            <th>סכום_זכות_1</th>
-            <th>מטח_סכום_זכות_1</th>
-            <th>חשבון_חובה_2</th>
-            <th>סכום_חובה_2</th>
-            <th>מטח_סכום_חובה_2</th>
-            <th>חשבון_זכות_2</th>
-            <th>סכום_זכות_2</th>
-            <th>מטח_סכום_זכות_2</th>
-            <th>פרטים</th>
-            <th>אסמכתא_1</th>
-            <th>אסמכתא_2</th>
-            <th>סוג_תנועה</th>
-            <th>תאריך_ערך</th>
-            <th>תאריך_3</th>
+            <th>invoice_date</th>
+            <th>debit_account_1</th>
+            <th>debit_amount_1</th>
+            <th>foreign_debit_amount_1</th>
+            <th>currency</th>
+            <th>credit_account_1</th>
+            <th>credit_amount_1</th>
+            <th>foreign_credit_amount_1</th>
+            <th>debit_account_2</th>
+            <th>debit_amount_2</th>
+            <th>foreign_debit_amount_2</th>
+            <th>credit_account_2</th>
+            <th>credit_amount_2</th>
+            <th>foreign_credit_amount_2</th>
+            <th>details</th>
+            <th>reference_1</th>
+            <th>reference_2</th>
+            <th>movement_type</th>
+            <th>value_date</th>
+            <th>date_3</th>
           </tr>
         </thead>
         <tbody>
           {monthlyTaxesReport.map(row => (
             <tr>
-              <td>{row.תאריך_חשבונית}</td>
-              <td>{row.חשבון_חובה_1}</td>
-              <td>{row.סכום_חובה_1}</td>
-              <td>{row.מטח_סכום_חובה_1}</td>
-              <td>{row.מטבע}</td>
-              <td>{row.חשבון_זכות_1}</td>
-              <td>{row.סכום_זכות_1}</td>
-              <td>{row.מטח_סכום_זכות_1}</td>
-              <td>{row.חשבון_חובה_2}</td>
-              <td>{row.סכום_חובה_2}</td>
-              <td>{row.מטח_סכום_חובה_2}</td>
-              <td>{row.חשבון_זכות_2}</td>
-              <td>{row.סכום_זכות_2}</td>
-              <td>{row.מטח_סכום_זכות_2}</td>
-              <td>{row.פרטים}</td>
-              <td>{row.אסמכתא_1}</td>
-              <td>{row.אסמכתא_2}</td>
-              <td>{row.סוג_תנועה}</td>
-              <td>{row.תאריך_ערך}</td>
-              <td>{row.תאריך_3}</td>
+              <td>{row.invoice_date}</td>
+              <td>{row.debit_account_1}</td>
+              <td>{row.debit_amount_1}</td>
+              <td>{row.foreign_debit_amount_1}</td>
+              <td>{row.currency}</td>
+              <td>{row.credit_account_1}</td>
+              <td>{row.credit_amount_1}</td>
+              <td>{row.foreign_credit_amount_1}</td>
+              <td>{row.debit_account_2}</td>
+              <td>{row.debit_amount_2}</td>
+              <td>{row.foreign_debit_amount_2}</td>
+              <td>{row.credit_account_2}</td>
+              <td>{row.credit_amount_2}</td>
+              <td>{row.foreign_credit_amount_2}</td>
+              <td>{row.details}</td>
+              <td>{row.reference_1}</td>
+              <td>{row.reference_2}</td>
+              <td>{row.movement_type}</td>
+              <td>{row.value_date}</td>
+              <td>{row.date_3}</td>
             </tr>
           ))}
         </tbody>

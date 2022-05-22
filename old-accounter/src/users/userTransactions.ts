@@ -7,26 +7,26 @@ export const businesses = {
 };
 
 export type LedgerEntity = {
-  תאריך_חשבונית: string;
-  חשבון_חובה_1: string;
-  סכום_חובה_1: string;
-  מטח_סכום_חובה_1: string;
-  מטבע: string;
-  חשבון_זכות_1: string;
-  סכום_זכות_1: string;
-  מטח_סכום_זכות_1: string;
-  חשבון_חובה_2: string;
-  סכום_חובה_2: string;
-  מטח_סכום_חובה_2: string;
-  חשבון_זכות_2: string;
-  סכום_זכות_2: string;
-  מטח_סכום_זכות_2: string;
-  פרטים: string;
-  אסמכתא_1: string;
-  אסמכתא_2: string;
-  סוג_תנועה: string;
-  תאריך_ערך: string;
-  תאריך_3: string;
+  invoice_date: string;
+  debit_account_1: string;
+  debit_amount_1: string;
+  foreign_debit_amount_1: string;
+  currency: string;
+  credit_account_1: string;
+  credit_amount_1: string;
+  foreign_credit_amount_1: string;
+  debit_account_2: string;
+  debit_amount_2: string;
+  foreign_debit_amount_2: string;
+  credit_account_2: string;
+  credit_amount_2: string;
+  foreign_credit_amount_2: string;
+  details: string;
+  reference_1: string;
+  reference_2: string;
+  movement_type: string;
+  value_date: string;
+  date_3: string;
   original_id: string;
   origin: string;
   proforma_invoice_file: string;
@@ -52,8 +52,8 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
     `
       select *
       from accounter_schema.ledger
-      where business = '${currrentCompany}' and '${userName}' in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
-      order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
+      where business = '${currrentCompany}' and '${userName}' in (debit_account_1, debit_account_2, credit_account_1, credit_account_2)
+      order by to_date(date_3, 'DD/MM/YYYY') asc, original_id, details, debit_account_1, id;
       `
   );
 
@@ -72,32 +72,32 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
       let amountNis: number = 0;
       let amountForeign: number = 0;
       let counterAccount: string = '';
-      if (transaction.חשבון_זכות_1 === userName) {
+      if (transaction.credit_account_1 === userName) {
         direction = 1;
-        amountNis = transaction.סכום_זכות_1 ? (amountNis = Number(transaction.סכום_זכות_1)) : 0;
-        amountForeign = transaction.מטח_סכום_זכות_1 ? Number(transaction.מטח_סכום_זכות_1) : 0;
-      } else if (transaction.חשבון_זכות_2 === userName) {
+        amountNis = transaction.credit_amount_1 ? (amountNis = Number(transaction.credit_amount_1)) : 0;
+        amountForeign = transaction.foreign_credit_amount_1 ? Number(transaction.foreign_credit_amount_1) : 0;
+      } else if (transaction.credit_account_2 === userName) {
         direction = 1;
-        amountNis = transaction.סכום_זכות_2 ? (amountNis = Number(transaction.סכום_זכות_2)) : 0;
-        amountForeign = transaction.מטח_סכום_זכות_2 ? Number(transaction.מטח_סכום_זכות_2) : 0;
-      } else if (transaction.חשבון_חובה_1 === userName) {
+        amountNis = transaction.credit_amount_2 ? (amountNis = Number(transaction.credit_amount_2)) : 0;
+        amountForeign = transaction.foreign_credit_amount_2 ? Number(transaction.foreign_credit_amount_2) : 0;
+      } else if (transaction.debit_account_1 === userName) {
         direction = -1;
-        amountNis = transaction.סכום_חובה_1 ? (amountNis = Number(transaction.סכום_חובה_1)) : 0;
-        amountForeign = transaction.מטח_סכום_חובה_1 ? Number(transaction.מטח_סכום_חובה_1) : 0;
-      } else if (transaction.חשבון_חובה_2 === userName) {
+        amountNis = transaction.debit_amount_1 ? (amountNis = Number(transaction.debit_amount_1)) : 0;
+        amountForeign = transaction.foreign_debit_amount_1 ? Number(transaction.foreign_debit_amount_1) : 0;
+      } else if (transaction.debit_account_2 === userName) {
         direction = -1;
-        amountNis = transaction.סכום_חובה_2 ? (amountNis = Number(transaction.סכום_חובה_2)) : 0;
-        amountForeign = transaction.מטח_סכום_חובה_2 ? Number(transaction.מטח_סכום_חובה_2) : 0;
+        amountNis = transaction.debit_amount_2 ? (amountNis = Number(transaction.debit_amount_2)) : 0;
+        amountForeign = transaction.foreign_debit_amount_2 ? Number(transaction.foreign_debit_amount_2) : 0;
       } else {
         continue;
       }
 
       if (direction === 1) {
-        counterAccount = transaction.חשבון_חובה_1;
+        counterAccount = transaction.debit_account_1;
         sumForeignCredit += amountForeign;
         sumNisCredit += amountNis;
       } else if (direction === -1) {
-        counterAccount = transaction.חשבון_זכות_1;
+        counterAccount = transaction.credit_account_1;
         sumForeignDebit += amountForeign;
         sumNisDebit += amountNis;
       }
@@ -109,14 +109,14 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
         <tr>
           <td>${counterAccount}</td>
           <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}</td>
-          <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
-          <td>${transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
-          <td>${transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}</td>
-          <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
-          <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
-          <td>${transaction.פרטים === '0' ? '' : transaction.פרטים}</td>
-          <td>${transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
-          <td>${transaction.מטבע ? transaction.מטבע : ''}</td>
+          <td>${transaction.date_3 ? transaction.date_3 : ''}</td>
+          <td>${transaction.value_date ? transaction.value_date : ''}</td>
+          <td>${transaction.invoice_date ? transaction.invoice_date : ''}</td>
+          <td>${transaction.reference_1 ? transaction.reference_1 : ''}</td>
+          <td>${transaction.reference_2 ? transaction.reference_2 : ''}</td>
+          <td>${transaction.details === '0' ? '' : transaction.details}</td>
+          <td>${transaction.movement_type ? transaction.movement_type : ''}</td>
+          <td>${transaction.currency ? transaction.currency : ''}</td>
           <td>${direction === -1 ? amountForeign : ''}</td>
           <td>${direction === 1 ? amountForeign : ''}</td>
           <td>${balanceForeign.toFixed(2)}</td>
@@ -133,14 +133,14 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
               <tr>
                 <th>ח"ן</th>
                 <th>חשבשבת#</th>
-                <th>תאריך_3</th>
+                <th>date_3</th>
                 <th>תאריך_ ערך</th>
-                <th>תאריך_חשבונית</th>
-                <th>אסמכתא_1</th>
-                <th>אסמכתא_2</th>
-                <th>פרטים</th>
-                <th>סוג_תנועה</th>
-                <th>מטבע</th>
+                <th>invoice_date</th>
+                <th>reference_1</th>
+                <th>reference_2</th>
+                <th>details</th>
+                <th>movement_type</th>
+                <th>currency</th>
                 <th colspan="2">חובה/זכות (מט"ח)</th>
                 <th>יתרה (מט"ח)</th>
                 <th colspan="2">חובה/זכות (שקל)</th>

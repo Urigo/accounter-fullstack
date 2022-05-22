@@ -186,8 +186,8 @@ FROM
   accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 WHERE
   hashavshevet_id IS NULL
-  AND to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
+  AND to_date(date_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
 ORDER BY
-  (to_date(תאריך_3, 'DD/MM/YYYY')),
+  (to_date(date_3, 'DD/MM/YYYY')),
   original_id,
-  תאריך_חשבונית;
+  invoice_date;

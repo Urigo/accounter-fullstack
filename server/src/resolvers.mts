@@ -474,17 +474,20 @@ export const resolvers: Resolvers = {
   },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
-    creditAccount: DbLedgerRecord => DbLedgerRecord.חשבון_זכות_1,
-    debitAccount: DbLedgerRecord => DbLedgerRecord.חשבון_חובה_1,
+    creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_1,
+    debitAccount: DbLedgerRecord => DbLedgerRecord.debit_account_1,
     originalAmount: DbLedgerRecord =>
-      formatFinancialAmount(DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1, DbLedgerRecord.מטבע),
-    date: DbLedgerRecord => DbLedgerRecord.תאריך_חשבונית,
+      formatFinancialAmount(
+        DbLedgerRecord.foreign_debit_amount_1 ?? DbLedgerRecord.debit_amount_1,
+        DbLedgerRecord.currency
+      ),
+    date: DbLedgerRecord => DbLedgerRecord.invoice_date,
     description: () => 'Missing', // TODO: missing in DB
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
-    localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.סכום_חובה_1, null),
+    localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
   },
   NamedCounterparty: {

@@ -475,7 +475,7 @@ app.post('/getAllUsers', async (req: Request, res: Response) => {
   const currrentCompany = req.body?.currrentCompany;
 
   const query =
-    ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
+    ['debit_account_1', 'debit_account_2', 'credit_account_1', 'credit_account_2']
       .map(
         column =>
           `select ${column} as userName from accounter_schema.ledger${
@@ -506,8 +506,8 @@ app.post('/getUserTransactions', async (req: Request, res: Response) => {
     `
       select *
       from accounter_schema.ledger
-      where business = '${companyId}' and $1 in (חשבון_חובה_1, חשבון_חובה_2, חשבון_זכות_1, חשבון_זכות_2)
-      order by to_date(תאריך_3, 'DD/MM/YYYY') asc, original_id, פרטים, חשבון_חובה_1, id;
+      where business = '${companyId}' and $1 in (debit_account_1, debit_account_2, credit_account_1, credit_account_2)
+      order by to_date(date_3, 'DD/MM/YYYY') asc, original_id, details, debit_account_1, id;
     `,
     [`$$${userName}$$`]
   );
@@ -546,7 +546,7 @@ app.post('/getReportToReview', async (req: Request, res: Response) => {
     `
       select *
       from get_unified_tax_report_of_month($1, '2020-01-01', $2)
-      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+      order by to_date(date_3, 'DD/MM/YYYY') desc, original_id, details, debit_account_1, id;
     `,
     [`$$${company}$$`, `$$${reportMonthToReview}$$`]
   );
