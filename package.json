@@ -10,23 +10,19 @@
   "type": "module",
   "scripts": {
     "start": "yarn --cwd old-accounter start",
-
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
     "client:build": "yarn --cwd client build",
     "server:build": "yarn --cwd server build",
     "temp-server:build": "yarn --cwd temp-server build",
     "old-accounter:build": "yarn --cwd old-accounter build",
-
     "dev": "yarn --cwd old-accounter dev",
     "client:dev": "yarn --cwd client dev",
     "server:dev": "yarn --cwd server dev",
     "temp-server:dev": "yarn --cwd temp-server dev",
     "old-accounterdev": "yarn --cwd old-accounter dev",
-
     "scrape": "yarn --cwd old-accounter scrape",
     "month": "yarn --cwd old-accounter month",
     "get": "yarn --cwd old-accounter get",
-
     "deploy": "git push heroku master",
     "lint": "eslint --ignore-path .gitignore .",
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",
