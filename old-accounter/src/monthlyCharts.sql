@@ -1,130 +1,232 @@
-with all_exchange_dates as (
-    select dt AS     exchange_date,
-           (select t1.eur
-            from accounter_schema.exchange_rates t1
-            where date_trunc('day', t1.exchange_date)::date <= times_table.dt
-            order by t1.exchange_date desc
-            limit 1) eur_rate,
-           (select t1.usd
-            from accounter_schema.exchange_rates t1
-            where date_trunc('day', t1.exchange_date)::date <= times_table.dt
-            order by t1.exchange_date desc
-            limit 1) usd_rate,
-           (select t1.gbp
-            from accounter_schema.exchange_rates t1
-            where date_trunc('day', t1.exchange_date)::date <= times_table.dt
-            order by t1.exchange_date desc
-            limit 1) gbp_rate            
-    from times_table
-    order by dt
-), formatted_merged_tables as (
-         SELECT *,
-                (CASE
-                     WHEN currency_code = 'ILS' THEN (event_amount - COALESCE(vat, 0)) / (
-                         select all_exchange_dates.usd_rate
-                         from all_exchange_dates
-                         where all_exchange_dates.exchange_date <= debit_date::text::date
-                         order by all_exchange_dates.exchange_date desc
-                         limit 1
-                     )
-                     WHEN currency_code = 'EUR' THEN (event_amount - COALESCE(vat, 0)) * (
-                             (
-                                 select all_exchange_dates.eur_rate
-                                 from all_exchange_dates
-                                 where all_exchange_dates.exchange_date <= debit_date::text::date
-                                 order by all_exchange_dates.exchange_date desc
-                                 limit 1
-                             ) / (
-                                 select all_exchange_dates.usd_rate
-                                 from all_exchange_dates
-                                 where all_exchange_dates.exchange_date <= debit_date::text::date
-                                 order by all_exchange_dates.exchange_date desc
-                                 limit 1
-                             )
-                         )
-                    WHEN currency_code = 'GBP' THEN (event_amount - COALESCE(vat, 0)) * (
-                            (
-                                select all_exchange_dates.gbp_rate
-                                from all_exchange_dates
-                                where all_exchange_dates.exchange_date <= debit_date::text::date
-                                order by all_exchange_dates.exchange_date desc
-                                limit 1
-                            ) / (
-                                select all_exchange_dates.usd_rate
-                                from all_exchange_dates
-                                where all_exchange_dates.exchange_date <= debit_date::text::date
-                                order by all_exchange_dates.exchange_date desc
-                                limit 1
-                            )
-                        )                         
-                     WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
-                     ELSE -99999999999
-                    END
-                    ) as event_amount_in_usd_with_vat_if_exists
-         FROM accounter_schema.all_transactions
-     ),
- transactions_exclude as (
-     select *
-     from formatted_merged_tables
-      where 
-        personal_category <> 'conversion'
-        and personal_category <> 'investments'
-        and financial_entity <> 'Isracard'
-        and financial_entity <> 'Tax'
-        and financial_entity <> 'VAT'
-        and financial_entity <> 'Tax Shuma'
-        and financial_entity <> 'Tax Corona Grant'
-        and financial_entity <> 'Uri Goldshtein'
-        and financial_entity <> 'Uri Goldshtein Hoz'
-        and financial_entity <> 'Social Security Deductions'
-        and financial_entity <> 'Tax Deductions'
-        and financial_entity <> 'Dotan Simha'
- ),
- business_accounts as (
-     select account_number
-     from accounter_schema.financial_accounts
-     where private_business = 'business'
-     -- where owner = '6a20aa69-57ff-446e-8d6a-1e96d095e988'
- )
-select
-    --  month
-    to_char(event_date, 'YYYY/mm') as date,
-    --  year
-    -- to_char(event_date, 'YYYY') as date,
-    sum(
-            case
-                when (event_amount > 0 and personal_category = 'business' and
-                      account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists
-                else 0 end
-        )::float4                  as business_income,
-    sum(
-            case
-                when (event_amount < 0 and personal_category = 'business' and
-                      account_number in (select * from business_accounts)) then event_amount_in_usd_with_vat_if_exists
-                else 0 end
-        )::float4                  as business_expenses,
-    sum(case
-            when (personal_category = 'business' and account_number in (select * from business_accounts))
-                then event_amount_in_usd_with_vat_if_exists
-            else 0 end)::float4    as overall_business_profit,
-    sum(case
-            when (personal_category = 'business' and account_number in (select * from business_accounts))
-                then event_amount_in_usd_with_vat_if_exists / 2
-            else 0 end)::float4    as business_profit_share,
-
-    sum(
-            case
-                when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd_with_vat_if_exists
-                else 0 end
-        )::float4                  as private_expenses,
-    sum(case
-            when personal_category <> 'business' then event_amount_in_usd_with_vat_if_exists
-            else 0 end)::float4    as overall_private
-from transactions_exclude
-     -- where
-     --     account_number in (select account_number
-     --                        from accounter_schema.financial_accounts accounts
-     --                        where accounts.private_business = 'business')
-where event_date::text::date >= '2020-10-01'::text::date
-group by date
-order by date;
+WITH all_exchange_dates AS (
+  SELECT
+    dt AS exchange_date,
+    (
+      SELECT
+        t1.eur
+      FROM
+        accounter_schema.exchange_rates t1
+      WHERE
+        date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+      ORDER BY
+        t1.exchange_date DESC
+      LIMIT
+        1
+    ) eur_rate, (
+      SELECT
+        t1.usd
+      FROM
+        accounter_schema.exchange_rates t1
+      WHERE
+        date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+      ORDER BY
+        t1.exchange_date DESC
+      LIMIT
+        1
+    ) usd_rate, (
+      SELECT
+        t1.gbp
+      FROM
+        accounter_schema.exchange_rates t1
+      WHERE
+        date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+      ORDER BY
+        t1.exchange_date DESC
+      LIMIT
+        1
+    ) gbp_rate
+  FROM
+    times_table
+  ORDER BY
+    dt
+),
+formatted_merged_tables AS (
+  SELECT
+    *,
+    (
+      CASE
+        WHEN currency_code = 'ILS' THEN (event_amount - COALESCE(vat, 0)) / (
+          SELECT
+            all_exchange_dates.usd_rate
+          FROM
+            all_exchange_dates
+          WHERE
+            all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+          ORDER BY
+            all_exchange_dates.exchange_date DESC
+          LIMIT
+            1
+        )
+        WHEN currency_code = 'EUR' THEN (event_amount - COALESCE(vat, 0)) * (
+          (
+            SELECT
+              all_exchange_dates.eur_rate
+            FROM
+              all_exchange_dates
+            WHERE
+              all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+            ORDER BY
+              all_exchange_dates.exchange_date DESC
+            LIMIT
+              1
+          ) / (
+            SELECT
+              all_exchange_dates.usd_rate
+            FROM
+              all_exchange_dates
+            WHERE
+              all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+            ORDER BY
+              all_exchange_dates.exchange_date DESC
+            LIMIT
+              1
+          )
+        )
+        WHEN currency_code = 'GBP' THEN (event_amount - COALESCE(vat, 0)) * (
+          (
+            SELECT
+              all_exchange_dates.gbp_rate
+            FROM
+              all_exchange_dates
+            WHERE
+              all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+            ORDER BY
+              all_exchange_dates.exchange_date DESC
+            LIMIT
+              1
+          ) / (
+            SELECT
+              all_exchange_dates.usd_rate
+            FROM
+              all_exchange_dates
+            WHERE
+              all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+            ORDER BY
+              all_exchange_dates.exchange_date DESC
+            LIMIT
+              1
+          )
+        )
+        WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
+        ELSE -99999999999
+      END
+    ) AS event_amount_in_usd_with_vat_if_exists
+  FROM
+    accounter_schema.all_transactions
+),
+transactions_exclude AS (
+  SELECT
+    *
+  FROM
+    formatted_merged_tables
+  WHERE
+    personal_category <> 'conversion'
+    AND personal_category <> 'investments'
+    AND financial_entity <> 'Isracard'
+    AND financial_entity <> 'Tax'
+    AND financial_entity <> 'VAT'
+    AND financial_entity <> 'Tax Shuma'
+    AND financial_entity <> 'Tax Corona Grant'
+    AND financial_entity <> 'Uri Goldshtein'
+    AND financial_entity <> 'Uri Goldshtein Hoz'
+    AND financial_entity <> 'Social Security Deductions'
+    AND financial_entity <> 'Tax Deductions'
+    AND financial_entity <> 'Dotan Simha'
+),
+business_accounts AS (
+  SELECT
+    account_number
+  FROM
+    accounter_schema.financial_accounts
+  WHERE
+    private_business = 'business' -- where owner = '6a20aa69-57ff-446e-8d6a-1e96d095e988'
+)
+SELECT
+  --  month
+  to_char(event_date, 'YYYY/mm') AS date,
+  --  year
+  -- to_char(event_date, 'YYYY') as date,
+  sum(
+    CASE
+      WHEN (
+        event_amount > 0
+        AND personal_category = 'business'
+        AND account_number IN (
+          SELECT
+            *
+          FROM
+            business_accounts
+        )
+      ) THEN event_amount_in_usd_with_vat_if_exists
+      ELSE 0
+    END
+  ) :: float4 AS business_income,
+  sum(
+    CASE
+      WHEN (
+        event_amount < 0
+        AND personal_category = 'business'
+        AND account_number IN (
+          SELECT
+            *
+          FROM
+            business_accounts
+        )
+      ) THEN event_amount_in_usd_with_vat_if_exists
+      ELSE 0
+    END
+  ) :: float4 AS business_expenses,
+  sum(
+    CASE
+      WHEN (
+        personal_category = 'business'
+        AND account_number IN (
+          SELECT
+            *
+          FROM
+            business_accounts
+        )
+      ) THEN event_amount_in_usd_with_vat_if_exists
+      ELSE 0
+    END
+  ) :: float4 AS overall_business_profit,
+  sum(
+    CASE
+      WHEN (
+        personal_category = 'business'
+        AND account_number IN (
+          SELECT
+            *
+          FROM
+            business_accounts
+        )
+      ) THEN event_amount_in_usd_with_vat_if_exists / 2
+      ELSE 0
+    END
+  ) :: float4 AS business_profit_share,
+  sum(
+    CASE
+      WHEN (
+        event_amount < 0
+        AND personal_category <> 'business'
+      ) THEN event_amount_in_usd_with_vat_if_exists
+      ELSE 0
+    END
+  ) :: float4 AS private_expenses,
+  sum(
+    CASE
+      WHEN personal_category <> 'business' THEN event_amount_in_usd_with_vat_if_exists
+      ELSE 0
+    END
+  ) :: float4 AS overall_private
+FROM
+  transactions_exclude -- where
+  --     account_number in (select account_number
+  --                        from accounter_schema.financial_accounts accounts
+  --                        where accounts.private_business = 'business')
+WHERE
+  event_date :: TEXT :: date >= '2020-10-01' :: TEXT :: date
+GROUP BY
+  date
+ORDER BY
+  date;

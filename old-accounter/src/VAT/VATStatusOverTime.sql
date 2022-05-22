@@ -1,16 +1,16 @@
-SELECT * FROM current_vat_transactions_status();
+SELECT
+  *
+FROM
+  current_vat_transactions_status();
 
-create or replace function current_vat_transactions_status()
-RETURNS TABLE
-(
-    event_date date,
-    event_amount numeric(9,2),
-    bank_reference integer,
-    account_number integer,
-    sum_vat numeric(9,2)
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION current_vat_transactions_status() RETURNS TABLE (
+  event_date date,
+  event_amount NUMERIC(9, 2),
+  bank_reference INTEGER,
+  account_number INTEGER,
+  sum_vat NUMERIC(9, 2)
+) LANGUAGE SQL AS $$
 
 
 SELECT

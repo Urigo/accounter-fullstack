@@ -1,224 +1,269 @@
 -- Budapest 04/2019
-select *
-from trip_report(
-        '2019-05-20',
-        'נסעחול16',
-        false,
-        ('2019-05-20'::date - '2019-04-30'::date + 1) +
-        ('2019-06-01'::date - '2019-05-29'::date + 1) +
-        ('2019-06-13'::date - '2019-06-04'::date + 1) +
-        ('2019-07-04'::date - '2019-06-28'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-05-20',
+    'נסעחול16',
+    FALSE,
+    ('2019-05-20' :: date - '2019-04-30' :: date + 1) + ('2019-06-01' :: date - '2019-05-29' :: date + 1) + ('2019-06-13' :: date - '2019-06-04' :: date + 1) + ('2019-07-04' :: date - '2019-06-28' :: date + 1),
+    0
+  );
 
 -- Amsterdam 08/2019
-select *
-from trip_report(
-        '2019-05-20',
-        'נסעחול23',
-        true,
-        0,
-        ('2019-08-14'::date - '2019-08-09'::date + 1) +
-        ('2019-09-09'::date - '2019-08-17'::date + 1)
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-05-20',
+    'נסעחול23',
+    TRUE,
+    0,
+    ('2019-08-14' :: date - '2019-08-09' :: date + 1) + ('2019-09-09' :: date - '2019-08-17' :: date + 1)
+  );
 
 -- Amsterdam 09/2019
-select *
-from trip_report(
-        '2019-10-15',
-        'נסעחול25',
-        true,
-        ('2019-10-01'::date - '2019-09-21'::date + 1) +
-        ('2019-10-15'::date - '2019-10-04'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-10-15',
+    'נסעחול25',
+    TRUE,
+    ('2019-10-01' :: date - '2019-09-21' :: date + 1) + ('2019-10-15' :: date - '2019-10-04' :: date + 1),
+    0
+  );
 
 -- Copenhagen 10/2019
-select *
-from trip_report(
-        '2019-10-03',
-        'נסעחול26',
-        true,
-        ('2019-10-03'::date - '2019-10-02'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-10-03',
+    'נסעחול26',
+    TRUE,
+    ('2019-10-03' :: date - '2019-10-02' :: date + 1),
+    0
+  );
 
 -- Amsterdam 11/2019
-select *
-from trip_report(
-        '2019-11-21',
-        'נסעחול27',
-        true,
-        ('2019-11-21'::date - '2019-10-31'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-11-21',
+    'נסעחול27',
+    TRUE,
+    ('2019-11-21' :: date - '2019-10-31' :: date + 1),
+    0
+  );
 
 -- '2019-11-22'::date - '2019-12-04'::date, China 11/2019 28
 -- '2019-12-05'::date - ''::date, Japan 11/2019 28
-select *
-from trip_report(
-        '2019-12-09',
-        'נסעחול28',
-        false,
-        1,
-        ('2019-12-04'::date - '2019-11-22'::date + 1) - 1
-    );
-select *
-from trip_report(
-        '2019-12-09',
-        'נסעחול28',
-        true,
-        0,
-        ('2019-12-09'::date - '2019-12-05'::date + 1)
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-12-09',
+    'נסעחול28',
+    FALSE,
+    1,
+    ('2019-12-04' :: date - '2019-11-22' :: date + 1) - 1
+  );
+
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-12-09',
+    'נסעחול28',
+    TRUE,
+    0,
+    ('2019-12-09' :: date - '2019-12-05' :: date + 1)
+  );
 
 -- Copenhagen 12/2019
-select *
-from trip_report(
-        '2019-12-14',
-        'נסעחול29',
-        true,
-        ('2019-12-14'::date - '2019-12-10'::date + 1),
-        0
-    );
-
+SELECT
+  *
+FROM
+  trip_report(
+    '2019-12-14',
+    'נסעחול29',
+    TRUE,
+    ('2019-12-14' :: date - '2019-12-10' :: date + 1),
+    0
+  );
 
 -- Amsterdam 12/2019
-select *
-from trip_report(
-        '2020-01-16',
-        'נסעחול30',
-        true,
-        ('2020-01-16'::date - '2019-12-15'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2020-01-16',
+    'נסעחול30',
+    TRUE,
+    ('2020-01-16' :: date - '2019-12-15' :: date + 1),
+    0
+  );
 
 -- Copenhagen 02/2020
-select *
-from trip_report(
-        '2020-02-21',
-        'נסעחול32',
-        true,
-        ('2020-02-21'::date - '2020-02-18'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2020-02-21',
+    'נסעחול32',
+    TRUE,
+    ('2020-02-21' :: date - '2020-02-18' :: date + 1),
+    0
+  );
 
 -- France 03/2020
-select *
-from trip_report(
-        '2020-03-06',
-        'נסעחול33',
-        true,
-        ('2020-03-06'::date - '2020-03-04'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2020-03-06',
+    'נסעחול33',
+    TRUE,
+    ('2020-03-06' :: date - '2020-03-04' :: date + 1),
+    0
+  );
 
 -- Amsterdam 01/2020
-select *
-from trip_report(
-        '2020-06-20',
-        'נסעחול31',
-        true,
-        ('2020-02-17'::date - '2020-02-07'::date + 1) +
-        ('2020-03-03'::date - '2020-02-22'::date + 1) + ('2020-06-20'::date - '2020-03-07'::date + 1),
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report(
+    '2020-06-20',
+    'נסעחול31',
+    TRUE,
+    ('2020-02-17' :: date - '2020-02-07' :: date + 1) + ('2020-03-03' :: date - '2020-02-22' :: date + 1) + ('2020-06-20' :: date - '2020-03-07' :: date + 1),
+    0
+  );
 
 -- NYC Cancelled
-select *
-from trip_report(
-        '2020-03-02',
-        'נסעחול34',
-        true,
-        0,
-        0
-    );
+SELECT
+  *
+FROM
+  trip_report('2020-03-02', 'נסעחול34', TRUE, 0, 0);
 
+SELECT
+  *,
+  gen_random_uuid() AS id,
+  (
+    SELECT
+      t1.reviewed
+    FROM
+      accounter_schema.saved_tax_reports_2020_03_04 t1
+    WHERE
+      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
+      AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
+      AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
+      AND COALESCE(t1.מטבע, '') = COALESCE(t2.מטבע, '')
+      AND COALESCE(t1.חשבון_זכות_1, '') = COALESCE(t2.חשבון_זכות_1, '')
+      AND COALESCE(t1.סכום_זכות_1, '') = COALESCE(t2.סכום_זכות_1, '')
+      AND COALESCE(t1.מטח_סכום_זכות_1, '') = COALESCE(t2.מטח_סכום_זכות_1, '')
+      AND COALESCE(t1.חשבון_חובה_2, '') = COALESCE(t2.חשבון_חובה_2, '')
+      AND COALESCE(t1.סכום_חובה_2, '') = COALESCE(t2.סכום_חובה_2, '')
+      AND COALESCE(t1.מטח_סכום_חובה_2, '') = COALESCE(t2.מטח_סכום_חובה_2, '')
+      AND COALESCE(t1.חשבון_זכות_2, '') = COALESCE(t2.חשבון_זכות_2, '')
+      AND COALESCE(t1.סכום_זכות_2, '') = COALESCE(t2.סכום_זכות_2, '')
+      AND COALESCE(t1.מטח_סכום_זכות_2, '') = COALESCE(t2.מטח_סכום_זכות_2, '')
+      AND COALESCE(t1.פרטים, '') = COALESCE(t2.פרטים, '')
+      AND COALESCE(t1.אסמכתא_1, 0) = COALESCE(t2.אסמכתא_1, 0)
+      AND COALESCE(t1.אסמכתא_2, '') = COALESCE(t2.אסמכתא_2, '')
+      AND COALESCE(t1.סוג_תנועה, '') = COALESCE(t2.סוג_תנועה, '')
+      AND COALESCE(t1.תאריך_ערך, '') = COALESCE(t2.תאריך_ערך, '')
+      AND COALESCE(t1.תאריך_3, '') = COALESCE(t2.תאריך_3, '')
+  ) AS reviewed INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_3
+FROM
+  (
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-03-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-04-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        trip_report(
+          '2020-02-21',
+          'נסעחול33',
+          TRUE,
+          ('2020-03-06' :: date - '2020-03-04' :: date + 1),
+          0
+        )
+    )
+  ) t2
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id;
 
-select
-       *,
-       gen_random_uuid() as id,
-       (
-           select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03_04 t1
-           where
-                coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
-                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
-                coalesce(t1.סכום_חובה_1, '' )= coalesce(t2.סכום_חובה_1, '') and
-                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
-                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
-                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
-                coalesce(t1.סכום_זכות_1, '' )= coalesce(t2.סכום_זכות_1, '') and
-                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
-                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
-                coalesce(t1.סכום_חובה_2, '') = coalesce(t2.סכום_חובה_2, '') and
-                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
-                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
-                coalesce(t1.סכום_זכות_2, '') = coalesce(t2.סכום_זכות_2, '') and
-                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
-                coalesce(t1.פרטים, '') = coalesce(t2.פרטים, '') and
-                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
-                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
-                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '') and
-                coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
-                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
-       ) as reviewed
-into table accounter_schema.saved_tax_reports_2020_03_04_3
-from (
-        (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-          union all
-        (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-          union all
-        (select * from trip_report('2020-02-21','נסעחול33',true,('2020-03-06'::date - '2020-03-04'::date + 1),0))
-    ) t2
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+SELECT
+  user_description,
+  bank_description,
+  business_trip,
+  event_date
+FROM
+  formatted_merged_tables
+WHERE
+  tax_category = 'נסעחול28'
+ORDER BY
+  event_date;
 
-
-select user_description,
-       bank_description,
-       business_trip,
-       event_date
-from formatted_merged_tables
-where tax_category = 'נסעחול28'
-order by event_date;
-
-drop function trip_report;
+DROP FUNCTION trip_report;
 
 -- TODO: Send year as a parameter and adjust to it
-CREATE OR REPLACE FUNCTION trip_report(last_date_input varchar,
-                                       trip_name varchar,
-                                       is_higher_country boolean,
-                                       number_of_days_with_sleep_input float,
-                                       number_of_days_without_sleep_input float default 0)
-    RETURNS TABLE
-            (
-                תאריך_חשבונית   varchar,
-                חשבון_חובה_1    varchar,
-                סכום_חובה_1     varchar,
-                מטח_סכום_חובה_1 varchar,
-                מטבע            varchar,
-                חשבון_זכות_1    varchar,
-                סכום_זכות_1     varchar,
-                מטח_סכום_זכות_1 varchar,
-                חשבון_חובה_2    varchar,
-                סכום_חובה_2     varchar,
-                מטח_סכום_חובה_2 varchar,
-                חשבון_זכות_2    varchar,
-                סכום_זכות_2     varchar,
-                מטח_סכום_זכות_2 varchar,
-                פרטים           varchar,
-                אסמכתא_1        bigint,
-                אסמכתא_2        varchar,
-                סוג_תנועה       varchar,
-                תאריך_ערך       varchar,
-                תאריך_3         varchar,
-                original_id    uuid,
-                origin         text,
-                invoice_image  text
-            )
-    LANGUAGE SQL
-AS
-$$
+CREATE
+OR REPLACE FUNCTION trip_report(
+  last_date_input VARCHAR,
+  trip_name VARCHAR,
+  is_higher_country BOOLEAN,
+  number_of_days_with_sleep_input FLOAT,
+  number_of_days_without_sleep_input FLOAT DEFAULT 0
+) RETURNS TABLE (
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  invoice_image TEXT
+) LANGUAGE SQL AS $$
 
 with last_day as (
     select last_date_input::date as date

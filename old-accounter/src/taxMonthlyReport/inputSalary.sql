@@ -1,50 +1,66 @@
-select *
-into table accounter_schema.narkis_review
-from get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+SELECT
+  * INTO TABLE accounter_schema.narkis_review
+FROM
+  get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id,
+  פרטים,
+  חשבון_חובה_1,
+  id;
 
-select *
-from accounter_schema.narkis_review;
+SELECT
+  *
+FROM
+  accounter_schema.narkis_review;
 
-  select *
-  from get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
-  order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1, id;
+SELECT
+  *
+FROM
+  get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id,
+  פרטים,
+  חשבון_חובה_1,
+  id;
 
+SELECT
+  *
+FROM
+  input_salary('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
 
-select * from input_salary('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
+DROP FUNCTION report_to_hashavshevet_by_month(salary_transaction uuid);
 
-drop function report_to_hashavshevet_by_month(salary_transaction uuid);
-CREATE OR REPLACE FUNCTION input_salary(salary_transaction_id uuid)
-RETURNS TABLE(
-       תאריך_חשבונית varchar,
-       חשבון_חובה_1 varchar,
-       סכום_חובה_1 varchar,
-       מטח_סכום_חובה_1 varchar,
-       מטבע varchar,
-       חשבון_זכות_1 varchar,
-       סכום_זכות_1 varchar,
-       מטח_סכום_זכות_1 varchar,
-       חשבון_חובה_2 varchar,
-       סכום_חובה_2 varchar,
-       מטח_סכום_חובה_2 varchar,
-       חשבון_זכות_2 varchar,
-       סכום_זכות_2 varchar,
-       מטח_סכום_זכות_2 varchar,
-       פרטים varchar,
-       אסמכתא_1 bigint,
-       אסמכתא_2 varchar,
-       סוג_תנועה varchar,
-       תאריך_ערך varchar,
-       תאריך_3 varchar,
-       original_id uuid,
-       origin text,
-       proforma_invoice_file text,
-       id uuid,
-       reviewed boolean,
-       hashavshevet_id int
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION input_salary(salary_transaction_id uuid) RETURNS TABLE(
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  proforma_invoice_file TEXT,
+  id uuid,
+  reviewed BOOLEAN,
+  hashavshevet_id INT
+) LANGUAGE SQL AS $$
 
 with salary_transaction as (
     select *,

@@ -1,14 +1,14 @@
-select * from all_vat_transactions();
+SELECT
+  *
+FROM
+  all_vat_transactions();
 
-create or replace function all_vat_transactions()
-returns table
-(
-    vat numeric(9,2),
-    user_description varchar,
-    event_date date
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION all_vat_transactions() RETURNS TABLE (
+  vat NUMERIC(9, 2),
+  user_description VARCHAR,
+  event_date date
+) LANGUAGE SQL AS $$
 
 
 SELECT

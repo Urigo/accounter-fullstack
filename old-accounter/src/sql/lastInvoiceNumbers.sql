@@ -1,3 +1,6 @@
-select *
-from acending_invoice_numbers()
-limit 6;
+SELECT
+  *
+FROM
+  acending_invoice_numbers()
+LIMIT
+  6;

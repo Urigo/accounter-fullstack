@@ -1,136 +1,221 @@
-select *
-    from accounter_schema.ledger
-    where
-          hashavshevet_id is null
-          and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('30/04/2021', 'DD/MM/YYYY')
-          and business = 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
-    order by (to_date(תאריך_3, 'DD/MM/YYYY')), original_id, תאריך_חשבונית;
+SELECT
+  *
+FROM
+  accounter_schema.ledger
+WHERE
+  hashavshevet_id IS NULL
+  AND to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('30/04/2021', 'DD/MM/YYYY')
+  AND business = 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
+ORDER BY
+  (to_date(תאריך_3, 'DD/MM/YYYY')),
+  original_id,
+  תאריך_חשבונית;
 
+SELECT
+  hash_index,
+  auto_tax_category
+FROM
+  accounter_schema.hash_business_indexes
+WHERE
+  business = $$5b7b0977-2c6f-4b26-93d9-d90c1698edcc$$
+  AND hash_owner = $$6a20aa69-57ff-446e-8d6a-1e96d095e988$$;
 
-select hash_index, auto_tax_category
-     from accounter_schema.hash_business_indexes
-     where
-       business = $$5b7b0977-2c6f-4b26-93d9-d90c1698edcc$$ and
-       hash_owner = $$6a20aa69-57ff-446e-8d6a-1e96d095e988$$;
+SELECT
+  hashavshevet.*
+FROM
+  accounter_schema.ledger hashavshevet
+WHERE
+  origin = 'manual_salary'
+  AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01' :: date);
 
-select hashavshevet.*
-from accounter_schema.ledger hashavshevet
-where
-    origin = 'manual_salary'
-    and to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date)
-;
+UPDATE
+  accounter_schema.isracard_creditcard_transactions
+SET
+  full_purchase_date_outbound = to_char(
+    to_date(full_purchase_date_outbound, 'YYYY-MM-DD'),
+    'DD/MM/YYYY'
+  )
+WHERE
+  full_purchase_date_outbound IS NOT NULL;
 
+UPDATE
+  accounter_schema.isracard_creditcard_transactions
+SET
+  full_purchase_date = to_char(
+    to_date(full_purchase_date, 'YYYY-MM-DD'),
+    'DD/MM/YYYY'
+  )
+WHERE
+  full_purchase_date IS NOT NULL;
 
-update accounter_schema.isracard_creditcard_transactions
-set full_purchase_date_outbound = to_char(to_date(full_purchase_date_outbound, 'YYYY-MM-DD'), 'DD/MM/YYYY')
-where full_purchase_date_outbound is not null;
+UPDATE
+  accounter_schema.isracard_creditcard_transactions
+SET
+  full_payment_date = to_char(
+    to_date(full_payment_date, 'YYYY-MM-DD'),
+    'DD/MM/YYYY'
+  )
+WHERE
+  full_payment_date IS NOT NULL;
 
+SELECT
+  count(*)
+FROM
+  accounter_schema.poalim_ils_account_transactions
+WHERE
+  poalim_ils_account_transactions.hashavshevet_id IS NOT NULL;
 
-update accounter_schema.isracard_creditcard_transactions
-set full_purchase_date = to_char(to_date(full_purchase_date, 'YYYY-MM-DD'), 'DD/MM/YYYY')
-where full_purchase_date is not null;
+SELECT
+  count(*)
+FROM
+  accounter_schema.all_transactions
+WHERE
+  all_transactions.hashavshevet_id IS NOT NULL
+  AND account_type = 'checking_ils';
 
-update accounter_schema.isracard_creditcard_transactions
-set full_payment_date = to_char(to_date(full_payment_date, 'YYYY-MM-DD'), 'DD/MM/YYYY')
-where full_payment_date is not null;
+SELECT
+  to_char(
+    to_date(full_purchase_date_outbound, 'YYYY-MM-DD'),
+    'DD/MM/YYYY'
+  )
+FROM
+  accounter_schema.isracard_creditcard_transactions
+WHERE
+  full_purchase_date_outbound IS NOT NULL
+ORDER BY
+  full_purchase_date_outbound :: date;
 
+SELECT
+  hashavshevet.*
+FROM
+  accounter_schema.ledger hashavshevet
+  LEFT JOIN formatted_merged_tables bank ON hashavshevet.original_id = bank.id
+WHERE
+  (
+    hashavshevet.original_id IS NULL
+    AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01' :: date)
+    AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (
+      date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+    ) :: date
+  )
+  OR (
+    bank.business_trip IS NULL
+    AND (
+      bank.account_number = 2733
+      OR bank.account_number = 61066
+    )
+    AND (
+      (
+        (
+          bank.financial_entity != 'Isracard'
+          OR bank.financial_entity IS NULL
+        )
+        AND bank.account_type != 'creditcard'
+        AND bank.event_date :: TEXT :: date >= date_trunc('month', '2020-09-01' :: date)
+        AND bank.event_date :: TEXT :: date <= (
+          date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+        ) :: date
+        OR bank.event_date IS NULL
+      )
+      OR (
+        (
+          bank.account_type = 'creditcard'
+          OR bank.financial_entity = 'Isracard'
+        )
+        AND (
+          bank.debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-09-01') :: date
+          AND bank.debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-09-01') :: date
+          OR (
+            bank.debit_date IS NULL
+            AND bank.event_date :: TEXT :: date >= date_trunc('month', '2020-09-01' :: date)
+            AND bank.event_date :: TEXT :: date <= (
+              date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+            ) :: date
+          )
+        )
+      )
+    )
+  )
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id,
+  פרטים,
+  חשבון_חובה_1;
 
-select count(*)
-from accounter_schema.poalim_ils_account_transactions
-where poalim_ils_account_transactions.hashavshevet_id is not null;
+SELECT
+  gen_random_uuid();
 
-select count(*)
-from accounter_schema.all_transactions
-where all_transactions.hashavshevet_id is not null
-and account_type = 'checking_ils';
+SELECT
+  gen_random_uuid();
 
-select to_char(to_date(full_purchase_date_outbound, 'YYYY-MM-DD'), 'DD/MM/YYYY')
-from accounter_schema.isracard_creditcard_transactions
-where full_purchase_date_outbound is not null
-order by full_purchase_date_outbound::date;
+SELECT
+  gen_random_uuid();
 
+SELECT
+  gen_random_uuid();
 
+SELECT
+  gen_random_uuid();
 
+SELECT
+  gen_random_uuid();
 
+SELECT
+  gen_random_uuid();
 
+UPDATE
+  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+SET
+  id = gen_random_uuid()
+WHERE
+  id IS NULL;
 
-select hashavshevet.*
-from accounter_schema.ledger hashavshevet
-left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
-where
-    (hashavshevet.original_id is null and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01'::date) and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month','2020-09-01'::date) + interval '1 month' - interval '1 day')::date
-    ) or (
-    bank.business_trip is null and
-    (bank.account_number = 2733 OR bank.account_number = 61066) AND
-        (((bank.financial_entity != 'Isracard' OR bank.financial_entity IS NULL) AND
-            bank.account_type != 'creditcard' AND
-            bank.event_date::text::date >= date_trunc('month', '2020-09-01'::date) AND
-            bank.event_date::text::date <= (date_trunc('month', '2020-09-01'::date) + interval '1 month' - interval '1 day')::date OR
-            bank.event_date IS NULL)
-        OR (
-            (bank.account_type = 'creditcard' OR bank.financial_entity = 'Isracard') AND
-             (
-                   bank.debit_date::text::date <= get_creditcard_charge_date('2020-09-01')::date AND bank.debit_date::text::date > get_creditcard_charge_date_former_month('2020-09-01')::date OR
-                   (bank.debit_date IS NULL AND bank.event_date::text::date >= date_trunc('month', '2020-09-01'::date) AND
-                    bank.event_date::text::date <= (date_trunc('month', '2020-09-01'::date) + interval '1 month' - interval '1 day')::date)
-             ))))
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבון_חובה_1;
+SELECT
+  *
+FROM
+  report_to_hashavshevet_by_month('2020-09-01');
 
-select gen_random_uuid();
-select gen_random_uuid();
-select gen_random_uuid();
-select gen_random_uuid();
-select gen_random_uuid();
-select gen_random_uuid();
-select gen_random_uuid();
+SELECT
+  *
+FROM
+  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+WHERE
+  hashavshevet_id IS NULL
+  AND to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
+ORDER BY
+  (to_date(תאריך_3, 'DD/MM/YYYY'));
 
-update accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-SET id = gen_random_uuid()
-where id is null;
+DROP FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR);
 
-select * from report_to_hashavshevet_by_month('2020-09-01');
-
-select *
-from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-where
-      hashavshevet_id is null
-      and to_date(תאריך_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
-order by (to_date(תאריך_3, 'DD/MM/YYYY'));
-
-drop function report_to_hashavshevet_by_month(month_report varchar);
-CREATE OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report varchar)
-RETURNS TABLE(
-       תאריך_חשבונית varchar,
-       חשבון_חובה_1 varchar,
-       סכום_חובה_1 varchar,
-       מטח_סכום_חובה_1 varchar,
-       מטבע varchar,
-       חשבון_זכות_1 varchar,
-       סכום_זכות_1 varchar,
-       מטח_סכום_זכות_1 varchar,
-       חשבון_חובה_2 varchar,
-       סכום_חובה_2 varchar,
-       מטח_סכום_חובה_2 varchar,
-       חשבון_זכות_2 varchar,
-       סכום_זכות_2 varchar,
-       מטח_סכום_זכות_2 varchar,
-       פרטים varchar,
-       אסמכתא_1 bigint,
-       אסמכתא_2 varchar,
-       סוג_תנועה varchar,
-       תאריך_ערך varchar,
-       תאריך_3 varchar,
-       original_id uuid,
-       origin text,
-       proforma_invoice_file text,
-       id uuid,
-       reviewed boolean,
-       hashavshevet_id int
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR) RETURNS TABLE(
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  proforma_invoice_file TEXT,
+  id uuid,
+  reviewed BOOLEAN,
+  hashavshevet_id INT
+) LANGUAGE SQL AS $$
 
 select hashavshevet.*
 from accounter_schema.ledger hashavshevet
@@ -158,43 +243,56 @@ order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id, פרטים, חשבו�
 
 $$;
 
-select *
-      from get_unified_tax_report_of_month('Software Products Guilda Ltd.', '2020-01-01', '2021-05-01')
-      order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+SELECT
+  *
+FROM
+  get_unified_tax_report_of_month(
+    'Software Products Guilda Ltd.',
+    '2020-01-01',
+    '2021-05-01'
+  )
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY') DESC,
+  original_id,
+  פרטים,
+  חשבון_חובה_1,
+  id;
 
-drop function get_unified_tax_report_of_month;
+DROP FUNCTION get_unified_tax_report_of_month;
 
-CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month(business_name text, month_start varchar, month_end varchar)
-RETURNS TABLE(
-       תאריך_חשבונית varchar,
-       חשבון_חובה_1 varchar,
-       סכום_חובה_1 varchar,
-       מטח_סכום_חובה_1 varchar,
-       מטבע varchar,
-       חשבון_זכות_1 varchar,
-       סכום_זכות_1 varchar,
-       מטח_סכום_זכות_1 varchar,
-       חשבון_חובה_2 varchar,
-       סכום_חובה_2 varchar,
-       מטח_סכום_חובה_2 varchar,
-       חשבון_זכות_2 varchar,
-       סכום_זכות_2 varchar,
-       מטח_סכום_זכות_2 varchar,
-       פרטים varchar,
-       אסמכתא_1 bigint,
-       אסמכתא_2 varchar,
-       סוג_תנועה varchar,
-       תאריך_ערך varchar,
-       תאריך_3 varchar,
-       original_id uuid,
-       origin text,
-       proforma_invoice_file text,
-       id uuid,
-       reviewed boolean,
-       hashavshevet_id int
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION get_unified_tax_report_of_month(
+  business_name TEXT,
+  month_start VARCHAR,
+  month_end VARCHAR
+) RETURNS TABLE(
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  proforma_invoice_file TEXT,
+  id uuid,
+  reviewed BOOLEAN,
+  hashavshevet_id INT
+) LANGUAGE SQL AS $$
 
 
 (
@@ -315,196 +413,339 @@ where owner = (
 
 $$;
 
-select account_number
-from accounter_schema.financial_accounts
-where owner = (
-    select id
-    from accounter_schema.businesses
-    where name = 'Uri Goldshtein LTD'
-);
--- Merge and insert new transactions into existing table
-select
-       *,
-       gen_random_uuid() as id,
-       (
-           select t1.reviewed
-           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
-           where
-                coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
-                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
-                coalesce(t1.סכום_חובה_1, '' )= coalesce(t2.סכום_חובה_1, '') and
-                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
-                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
-                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
-                coalesce(t1.סכום_זכות_1, '' )= coalesce(t2.סכום_זכות_1, '') and
-                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
-                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
-                coalesce(t1.סכום_חובה_2, '') = coalesce(t2.סכום_חובה_2, '') and
-                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
-                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
-                coalesce(t1.סכום_זכות_2, '') = coalesce(t2.סכום_זכות_2, '') and
-                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
-                coalesce(t1.פרטים, '') = coalesce(t2.פרטים, '') and
-                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
-                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
-                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '') and
-                coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
-                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
-       ) as reviewed,
-       (
-           select t1.hashavshevet_id
-           from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
-           where
-                coalesce(t1.תאריך_חשבונית, '') = coalesce(t2.תאריך_חשבונית, '') and
-                coalesce(t1.חשבון_חובה_1, '') = coalesce(t2.חשבון_חובה_1, '') and
-                coalesce(t1.סכום_חובה_1, '' )= coalesce(t2.סכום_חובה_1, '') and
-                coalesce(t1.מטח_סכום_חובה_1, '') = coalesce(t2.מטח_סכום_חובה_1, '') and
-                coalesce(t1.מטבע, '') = coalesce(t2.מטבע, '') and
-                coalesce(t1.חשבון_זכות_1, '') = coalesce(t2.חשבון_זכות_1, '') and
-                coalesce(t1.סכום_זכות_1, '' )= coalesce(t2.סכום_זכות_1, '') and
-                coalesce(t1.מטח_סכום_זכות_1, '' )= coalesce(t2.מטח_סכום_זכות_1, '') and
-                coalesce(t1.חשבון_חובה_2, '' )= coalesce(t2.חשבון_חובה_2, '') and
-                coalesce(t1.סכום_חובה_2, '') = coalesce(t2.סכום_חובה_2, '') and
-                coalesce(t1.מטח_סכום_חובה_2, '') = coalesce(t2.מטח_סכום_חובה_2, '') and
-                coalesce(t1.חשבון_זכות_2, '') = coalesce(t2.חשבון_זכות_2, '') and
-                coalesce(t1.סכום_זכות_2, '') = coalesce(t2.סכום_זכות_2, '') and
-                coalesce(t1.מטח_סכום_זכות_2, '') = coalesce(t2.מטח_סכום_זכות_2, '') and
-                coalesce(t1.פרטים, '') = coalesce(t2.פרטים, '') and
-                coalesce(t1.אסמכתא_1, 0) = coalesce(t2.אסמכתא_1, 0) and
-                coalesce(t1.אסמכתא_2, '') = coalesce(t2.אסמכתא_2, '') and
-                coalesce(t1.סוג_תנועה, '') = coalesce(t2.סוג_תנועה, '') and
-                coalesce(t1.תאריך_ערך, '') = coalesce(t2.תאריך_ערך, '') and
-                coalesce(t1.תאריך_3, '') = coalesce(t2.תאריך_3, '')
-       ) as hashavshevet_id
-into table accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-from (
-    (select * from get_tax_report_of_month('2020-03-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-04-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-05-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-06-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-07-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-08-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from get_tax_report_of_month('2020-09-01') order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id)
-      union all
-    (select * from trip_report('2020-06-20','נסעחול31',true,('2020-02-17'::date - '2020-02-07'::date + 1) + ('2020-03-03'::date - '2020-02-22'::date + 1) + ('2020-06-20'::date - '2020-03-07'::date + 1),0))
-      union all
-    (select תאריך_חשבונית, חשבון_חובה_1, סכום_חובה_1, מטח_סכום_חובה_1, מטבע, חשבון_זכות_1, סכום_זכות_1, מטח_סכום_זכות_1, חשבון_חובה_2, סכום_חובה_2, מטח_סכום_חובה_2, חשבון_זכות_2, סכום_זכות_2, מטח_סכום_זכות_2, פרטים, אסמכתא_1, אסמכתא_2, סוג_תנועה, תאריך_ערך, תאריך_3, original_id, origin, proforma_invoice_file
-     from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 where origin = 'manual_salary')
-    ) t2
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
+SELECT
+  account_number
+FROM
+  accounter_schema.financial_accounts
+WHERE
+  OWNER = (
+    SELECT
+      id
+    FROM
+      accounter_schema.businesses
+    WHERE
+      NAME = 'Uri Goldshtein LTD'
+  );
 
+-- Merge and insert new transactions into existing table
+SELECT
+  *,
+  gen_random_uuid() AS id,
+  (
+    SELECT
+      t1.reviewed
+    FROM
+      accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
+    WHERE
+      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
+      AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
+      AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
+      AND COALESCE(t1.מטבע, '') = COALESCE(t2.מטבע, '')
+      AND COALESCE(t1.חשבון_זכות_1, '') = COALESCE(t2.חשבון_זכות_1, '')
+      AND COALESCE(t1.סכום_זכות_1, '') = COALESCE(t2.סכום_זכות_1, '')
+      AND COALESCE(t1.מטח_סכום_זכות_1, '') = COALESCE(t2.מטח_סכום_זכות_1, '')
+      AND COALESCE(t1.חשבון_חובה_2, '') = COALESCE(t2.חשבון_חובה_2, '')
+      AND COALESCE(t1.סכום_חובה_2, '') = COALESCE(t2.סכום_חובה_2, '')
+      AND COALESCE(t1.מטח_סכום_חובה_2, '') = COALESCE(t2.מטח_סכום_חובה_2, '')
+      AND COALESCE(t1.חשבון_זכות_2, '') = COALESCE(t2.חשבון_זכות_2, '')
+      AND COALESCE(t1.סכום_זכות_2, '') = COALESCE(t2.סכום_זכות_2, '')
+      AND COALESCE(t1.מטח_סכום_זכות_2, '') = COALESCE(t2.מטח_סכום_זכות_2, '')
+      AND COALESCE(t1.פרטים, '') = COALESCE(t2.פרטים, '')
+      AND COALESCE(t1.אסמכתא_1, 0) = COALESCE(t2.אסמכתא_1, 0)
+      AND COALESCE(t1.אסמכתא_2, '') = COALESCE(t2.אסמכתא_2, '')
+      AND COALESCE(t1.סוג_תנועה, '') = COALESCE(t2.סוג_תנועה, '')
+      AND COALESCE(t1.תאריך_ערך, '') = COALESCE(t2.תאריך_ערך, '')
+      AND COALESCE(t1.תאריך_3, '') = COALESCE(t2.תאריך_3, '')
+  ) AS reviewed,
+  (
+    SELECT
+      t1.hashavshevet_id
+    FROM
+      accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
+    WHERE
+      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
+      AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
+      AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
+      AND COALESCE(t1.מטבע, '') = COALESCE(t2.מטבע, '')
+      AND COALESCE(t1.חשבון_זכות_1, '') = COALESCE(t2.חשבון_זכות_1, '')
+      AND COALESCE(t1.סכום_זכות_1, '') = COALESCE(t2.סכום_זכות_1, '')
+      AND COALESCE(t1.מטח_סכום_זכות_1, '') = COALESCE(t2.מטח_סכום_זכות_1, '')
+      AND COALESCE(t1.חשבון_חובה_2, '') = COALESCE(t2.חשבון_חובה_2, '')
+      AND COALESCE(t1.סכום_חובה_2, '') = COALESCE(t2.סכום_חובה_2, '')
+      AND COALESCE(t1.מטח_סכום_חובה_2, '') = COALESCE(t2.מטח_סכום_חובה_2, '')
+      AND COALESCE(t1.חשבון_זכות_2, '') = COALESCE(t2.חשבון_זכות_2, '')
+      AND COALESCE(t1.סכום_זכות_2, '') = COALESCE(t2.סכום_זכות_2, '')
+      AND COALESCE(t1.מטח_סכום_זכות_2, '') = COALESCE(t2.מטח_סכום_זכות_2, '')
+      AND COALESCE(t1.פרטים, '') = COALESCE(t2.פרטים, '')
+      AND COALESCE(t1.אסמכתא_1, 0) = COALESCE(t2.אסמכתא_1, 0)
+      AND COALESCE(t1.אסמכתא_2, '') = COALESCE(t2.אסמכתא_2, '')
+      AND COALESCE(t1.סוג_תנועה, '') = COALESCE(t2.סוג_תנועה, '')
+      AND COALESCE(t1.תאריך_ערך, '') = COALESCE(t2.תאריך_ערך, '')
+      AND COALESCE(t1.תאריך_3, '') = COALESCE(t2.תאריך_3, '')
+  ) AS hashavshevet_id INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+FROM
+  (
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-03-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-04-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-05-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-06-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-07-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-08-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        get_tax_report_of_month('2020-09-01')
+      ORDER BY
+        to_date(תאריך_3, 'DD/MM/YYYY'),
+        original_id
+    )
+    UNION ALL
+    (
+      SELECT
+        *
+      FROM
+        trip_report(
+          '2020-06-20',
+          'נסעחול31',
+          TRUE,
+          ('2020-02-17' :: date - '2020-02-07' :: date + 1) + ('2020-03-03' :: date - '2020-02-22' :: date + 1) + ('2020-06-20' :: date - '2020-03-07' :: date + 1),
+          0
+        )
+    )
+    UNION ALL
+    (
+      SELECT
+        תאריך_חשבונית,
+        חשבון_חובה_1,
+        סכום_חובה_1,
+        מטח_סכום_חובה_1,
+        מטבע,
+        חשבון_זכות_1,
+        סכום_זכות_1,
+        מטח_סכום_זכות_1,
+        חשבון_חובה_2,
+        סכום_חובה_2,
+        מטח_סכום_חובה_2,
+        חשבון_זכות_2,
+        סכום_זכות_2,
+        מטח_סכום_זכות_2,
+        פרטים,
+        אסמכתא_1,
+        אסמכתא_2,
+        סוג_תנועה,
+        תאריך_ערך,
+        תאריך_3,
+        original_id,
+        origin,
+        proforma_invoice_file
+      FROM
+        accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08
+      WHERE
+        origin = 'manual_salary'
+    )
+  ) t2
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id;
 
 -- TODO: Reuse logic of getting business month from the initial query
 -- TODO: Reuse logic of what is deductible
 WITH this_month_business AS (
-SELECT *
-FROM formatted_merged_tables
+  SELECT
+    *
+  FROM
+    formatted_merged_tables
+  WHERE
+    business_trip IS NULL
+    AND (
+      account_number = 2733
+      OR account_number = 61066
+    )
+    AND (
+      (
+        (
+          financial_entity != 'Isracard'
+          OR financial_entity IS NULL
+        )
+        AND account_type != 'creditcard'
+        AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
+        AND event_date :: TEXT :: date <= (
+          date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+        ) :: date
+        OR event_date IS NULL
+      )
+      OR (
+        (
+          account_type = 'creditcard'
+          OR financial_entity = 'Isracard'
+        )
+        AND (
+          debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-08-01') :: date
+          AND debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-08-01') :: date
+          OR (
+            debit_date IS NULL
+            AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
+            AND event_date :: TEXT :: date <= (
+              date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+            ) :: date
+          )
+        )
+      )
+    )
+)
+SELECT
+  (
+    (
+      sum(
+        formatted_invoice_amount_in_ils_with_vat_if_exists :: FLOAT
+      ) / 100
+    ) * 3.5
+  ) :: INT advance,
+  (
+    sum(
+      formatted_invoice_amount_in_ils_with_vat_if_exists :: FLOAT
+    )
+  ) :: INT total
+FROM
+  this_month_business
 WHERE
-    business_trip IS NULL AND
-    (account_number = 2733 OR account_number = 61066) AND
-        (((financial_entity != 'Isracard' OR financial_entity IS NULL) AND
-            account_type != 'creditcard' AND
-            event_date::text::date >= date_trunc('month', '2020-08-01'::date) AND
-            event_date::text::date <= (date_trunc('month','2020-08-01'::date) + interval '1 month' - interval '1 day')::date OR
-            event_date IS NULL)
-        OR (
-            (account_type = 'creditcard' OR financial_entity = 'Isracard') AND
-             (
-                   debit_date::text::date <= get_creditcard_charge_date('2020-08-01')::date AND debit_date::text::date > get_creditcard_charge_date_former_month('2020-08-01')::date OR
-                   (debit_date IS NULL AND event_date::text::date >= date_trunc('month', '2020-08-01'::date) AND
-                    event_date::text::date <= (date_trunc('month', '2020-08-01'::date) + interval '1 month' - interval '1 day')::date)
-             )))
-)
-select ((sum(formatted_invoice_amount_in_ils_with_vat_if_exists::float)/100)*3.5)::int advance,
-       (sum(formatted_invoice_amount_in_ils_with_vat_if_exists::float))::int total
-from this_month_business
-where event_amount > 0 and
-      financial_entity != 'Isracard' AND
-      financial_entity != 'Tax' AND
-      financial_entity != 'VAT' AND
-      financial_entity != 'Uri Goldshtein Employee Tax Withholding' AND
-      financial_entity != 'Uri Goldshtein' AND
-      financial_entity != 'Uri Goldshtein Employee Social Security' AND
-      financial_entity != 'Tax Corona Grant' AND
-      financial_entity != 'Uri Goldshtein Hoz' AND
-      financial_entity != 'VAT interest refund' AND
-      financial_entity != 'Tax Shuma' AND
-      is_conversion <> TRUE;
+  event_amount > 0
+  AND financial_entity != 'Isracard'
+  AND financial_entity != 'Tax'
+  AND financial_entity != 'VAT'
+  AND financial_entity != 'Uri Goldshtein Employee Tax Withholding'
+  AND financial_entity != 'Uri Goldshtein'
+  AND financial_entity != 'Uri Goldshtein Employee Social Security'
+  AND financial_entity != 'Tax Corona Grant'
+  AND financial_entity != 'Uri Goldshtein Hoz'
+  AND financial_entity != 'VAT interest refund'
+  AND financial_entity != 'Tax Shuma'
+  AND is_conversion <> TRUE;
 
-insert into accounter_schema.ledger
-(
-       תאריך_חשבונית,
-       חשבון_חובה_1,
-       סכום_חובה_1,
-       מטח_סכום_חובה_1,
-       מטבע,
-       חשבון_זכות_1,
-       סכום_זכות_1,
-       מטח_סכום_זכות_1,
-       חשבון_חובה_2,
-       סכום_חובה_2,
-       מטח_סכום_חובה_2,
-       חשבון_זכות_2,
-       סכום_זכות_2,
-       מטח_סכום_זכות_2,
-       פרטים,
-       אסמכתא_1,
-       אסמכתא_2,
-       סוג_תנועה,
-       תאריך_ערך,
-       תאריך_3,
-       original_id,
-       origin,
-       proforma_invoice_file,
-       id
-)
-select *, gen_random_uuid()
--- into table accounter_schema.saved_tax_reports_2020_03_04
-from get_tax_report_of_month('2020-12-01')
--- order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id
+INSERT INTO
+  accounter_schema.ledger (
+    תאריך_חשבונית,
+    חשבון_חובה_1,
+    סכום_חובה_1,
+    מטח_סכום_חובה_1,
+    מטבע,
+    חשבון_זכות_1,
+    סכום_זכות_1,
+    מטח_סכום_זכות_1,
+    חשבון_חובה_2,
+    סכום_חובה_2,
+    מטח_סכום_חובה_2,
+    חשבון_זכות_2,
+    סכום_זכות_2,
+    מטח_סכום_זכות_2,
+    פרטים,
+    אסמכתא_1,
+    אסמכתא_2,
+    סוג_תנועה,
+    תאריך_ערך,
+    תאריך_3,
+    original_id,
+    origin,
+    proforma_invoice_file,
+    id
+  )
+SELECT
+  *,
+  gen_random_uuid() -- into table accounter_schema.saved_tax_reports_2020_03_04
+FROM
+  get_tax_report_of_month('2020-12-01') -- order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id
 ;
 
+SELECT
+  *
+FROM
+  get_tax_report_of_month('2020-12-01');
 
+DROP FUNCTION get_tax_report_of_month(month_input VARCHAR);
 
-select *
-from get_tax_report_of_month('2020-12-01');
-
-drop function get_tax_report_of_month(month_input varchar);
-
-create or replace function get_tax_report_of_month(month_input varchar)
-returns table(
-       תאריך_חשבונית varchar,
-       חשבון_חובה_1 varchar,
-       סכום_חובה_1 varchar,
-       מטח_סכום_חובה_1 varchar,
-       מטבע varchar,
-       חשבון_זכות_1 varchar,
-       סכום_זכות_1 varchar,
-       מטח_סכום_זכות_1 varchar,
-       חשבון_חובה_2 varchar,
-       סכום_חובה_2 varchar,
-       מטח_סכום_חובה_2 varchar,
-       חשבון_זכות_2 varchar,
-       סכום_זכות_2 varchar,
-       מטח_סכום_זכות_2 varchar,
-       פרטים varchar,
-       אסמכתא_1 bigint,
-       אסמכתא_2 varchar,
-       סוג_תנועה varchar,
-       תאריך_ערך varchar,
-       תאריך_3 varchar,
-       original_id uuid,
-       origin text,
-       proforma_invoice_file text
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION get_tax_report_of_month(month_input VARCHAR) RETURNS TABLE(
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  proforma_invoice_file TEXT
+) LANGUAGE SQL AS $$
 
 
 
@@ -1145,10 +1386,14 @@ ORDER BY to_date(תאריך_חשבונית, 'DD/MM/YYYY'), אסמכתא_1 desc, 
 
 $$;
 
-
-select *
-    from accounter_schema.ledger
-    where
-          hashavshevet_id is null
-          and to_date(תאריך_3, 'DD/MM/YYYY') > to_date('30/11/2020', 'DD/MM/YYYY')
-    order by (to_date(תאריך_3, 'DD/MM/YYYY')), original_id, תאריך_חשבונית;
+SELECT
+  *
+FROM
+  accounter_schema.ledger
+WHERE
+  hashavshevet_id IS NULL
+  AND to_date(תאריך_3, 'DD/MM/YYYY') > to_date('30/11/2020', 'DD/MM/YYYY')
+ORDER BY
+  (to_date(תאריך_3, 'DD/MM/YYYY')),
+  original_id,
+  תאריך_חשבונית;

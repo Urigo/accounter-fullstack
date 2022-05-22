@@ -1,65 +1,79 @@
 uuid_generate_v4();
 
+SELECT
+  usd,
+  eur
+FROM
+  accounter_schema.exchange_rates
+WHERE
+  exchange_date = to_date(תאריך_3, 'YYYY-MM-DD');
 
+SELECT
+  *
+FROM
+  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+WHERE
+  original_id IS NOT NULL;
 
+SELECT
+  *
+FROM
+  accounter_schema.all_transactions
+WHERE
+  original_id = $$2c384a0f-57b0-454a-a052-1e30cac638d2$$;
 
-select usd, eur
-      from accounter_schema.exchange_rates
-      where exchange_date = to_date(תאריך_3, 'YYYY-MM-DD');
+CREATE TABLE accounter_schema.ledger AS
+SELECT
+  *
+FROM
+  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id;
 
+INSERT INTO
+  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+SELECT
+  *
+FROM
+  get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade') RETURNING *;
 
-select * from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-where original_id is not null;
+SELECT
+  * INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+FROM
+  get_tax_report_of_transaction('21b53e78-ef11-4edc-8a68-1e2357d90ca8')
+ORDER BY
+  to_date(תאריך_3, 'DD/MM/YYYY'),
+  original_id;
 
-select * from accounter_schema.all_transactions
-where original_id = $$2c384a0f-57b0-454a-a052-1e30cac638d2$$;
+DROP FUNCTION get_tax_report_of_transaction(transaction_id uuid);
 
-
-create table accounter_schema.ledger as
-select * from accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
-
-
-insert into accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-select * from get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade')
-returning *;
-
-
-select *
-into table accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
-from get_tax_report_of_transaction('21b53e78-ef11-4edc-8a68-1e2357d90ca8')
-order by to_date(תאריך_3, 'DD/MM/YYYY'), original_id;
-
-drop function get_tax_report_of_transaction(transaction_id uuid);
-
-create or replace function get_tax_report_of_transaction(transaction_id uuid)
-returns table(
-       תאריך_חשבונית varchar,
-       חשבון_חובה_1 varchar,
-       סכום_חובה_1 varchar,
-       מטח_סכום_חובה_1 varchar,
-       מטבע varchar,
-       חשבון_זכות_1 varchar,
-       סכום_זכות_1 varchar,
-       מטח_סכום_זכות_1 varchar,
-       חשבון_חובה_2 varchar,
-       סכום_חובה_2 varchar,
-       מטח_סכום_חובה_2 varchar,
-       חשבון_זכות_2 varchar,
-       סכום_זכות_2 varchar,
-       מטח_סכום_זכות_2 varchar,
-       פרטים varchar,
-       אסמכתא_1 bigint,
-       אסמכתא_2 varchar,
-       סוג_תנועה varchar,
-       תאריך_ערך varchar,
-       תאריך_3 varchar,
-       original_id uuid,
-       origin text,
-       proforma_invoice_file text
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION get_tax_report_of_transaction(transaction_id uuid) RETURNS TABLE(
+  תאריך_חשבונית VARCHAR,
+  חשבון_חובה_1 VARCHAR,
+  סכום_חובה_1 VARCHAR,
+  מטח_סכום_חובה_1 VARCHAR,
+  מטבע VARCHAR,
+  חשבון_זכות_1 VARCHAR,
+  סכום_זכות_1 VARCHAR,
+  מטח_סכום_זכות_1 VARCHAR,
+  חשבון_חובה_2 VARCHAR,
+  סכום_חובה_2 VARCHAR,
+  מטח_סכום_חובה_2 VARCHAR,
+  חשבון_זכות_2 VARCHAR,
+  סכום_זכות_2 VARCHAR,
+  מטח_סכום_זכות_2 VARCHAR,
+  פרטים VARCHAR,
+  אסמכתא_1 BIGINT,
+  אסמכתא_2 VARCHAR,
+  סוג_תנועה VARCHAR,
+  תאריך_ערך VARCHAR,
+  תאריך_3 VARCHAR,
+  original_id uuid,
+  origin TEXT,
+  proforma_invoice_file TEXT
+) LANGUAGE SQL AS $$
 
 
 
