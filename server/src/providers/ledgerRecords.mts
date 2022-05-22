@@ -1,7 +1,11 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 import { pool } from '../providers/db.mjs';
-import { IGetLedgerRecordsByChargeIdsQuery, IGetLedgerRecordsByFinancialEntityIdsQuery } from '../__generated__/ledgerRecords.types.mjs';
+import {
+  IGetLedgerRecordsByChargeIdsQuery,
+  IGetLedgerRecordsByFinancialEntityIdsQuery,
+  IInsertLedgerRecordsQuery,
+} from '../__generated__/ledgerRecords.types.mjs';
 
 const { sql } = pgQuery;
 
@@ -38,7 +42,7 @@ export const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinan
         )
     );`;
 
-export const insertLedgerRecord = sql<IInsertLedgerRecordQuery>`
+export const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     INSERT INTO accounter_schema.ledger (
         invoice_date,
         debit_account_1,
@@ -65,5 +69,29 @@ export const insertLedgerRecord = sql<IInsertLedgerRecordQuery>`
         proforma_invoice_file,
         id,
         business)
-    VALUES $ledgerRecord
+    VALUES $$ledgerRecord(invoiceDate,
+        debitAccount1,
+        debitAmount1,
+        foreignDebitAmount1,
+        currency,
+        creditAccount1,
+        creditAmount1,
+        foreignCreditAmount1,
+        debitAccount2 ,
+        debitAmount2 ,
+        foreignDebitAmount2 ,
+        creditAccount2,
+        creditAmount2,
+        foreignCreditAmount2,
+        details,
+        reference1,
+        reference2,
+        movementType,
+        valueDate,
+        date3,
+        originalId,
+        origin,
+        proformaInvoiceFile,
+        id,
+        business)
     RETURNING *;`;

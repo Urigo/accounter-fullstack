@@ -126,9 +126,7 @@ type CommonError implements Error {
 union UpdateChargeResult = Charge | CommonError
 
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
-
 union GenerateTaxMovementResult = Charge | CommonError # TODO: update to match more than common transaction
-
 # Main Module
 " Financial entity, identifier by ID, can be a company or invdividual "
 type LtdFinancialEntity implements FinancialEntity {
