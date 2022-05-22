@@ -62,6 +62,9 @@ gql`
       referenceNumber
       description
     }
+    counterparty {
+      name
+    }
   }
 `;
 
@@ -70,25 +73,25 @@ type Props = {
   index: number;
   charge: ChargesFieldsFragment['charges']['0'];
   financialEntityType: VatFieldsFragment['__typename'];
-  financialEntityName?: string;
 };
 
 const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const ChargeRow = ({ columns, index, charge, financialEntityType, financialEntityName = '' }: Props) => {
+export const ChargeRow = ({ columns, index, charge, financialEntityType }: Props) => {
   const [hover, setHover] = useState(false);
   const alternativeCharge =
     !charge.counterparty?.name ||
     !charge.transactions[0].userNote?.trim() ||
     charge.tags.length === 0 ||
-    !charge.vat ||
+    !charge.vat?.raw ||
     charge.beneficiaries.length === 0
       ? suggestedCharge(charge)
       : undefined;
 
   const isBusiness = financialEntityType === 'LtdFinancialEntity';
+  const financialEntityName = charge.counterparty?.name ?? '';
 
   return (
     <>
