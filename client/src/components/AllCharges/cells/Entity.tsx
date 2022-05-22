@@ -26,7 +26,7 @@ export const Entity = ({ data, alternativeCharge, style }: Props) => {
     id: chargeId,
   } = data;
   const isFinancialEntity = name !== '';
-  const cellText = name ?? alternativeCharge?.financialEntity;
+  const cellText = isFinancialEntity ? name : alternativeCharge?.financialEntity;
 
   const { mutate, isLoading } = useUpdateCharge();
 
