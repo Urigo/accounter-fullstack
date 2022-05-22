@@ -612,25 +612,25 @@ export const financialStatus = async (query: any): Promise<string> => {
                   <th>מספר</th>
                   <th>תקין</th>
                   <th>invoice_date</th>
-                  <th>חשבון_חובה_1</th>
-                  <th>סכום_חובה_1</th>
-                  <th>מטח_סכום_חובה_1</th>
-                  <th>מטבע</th>
-                  <th>חשבון_זכות_1</th>
-                  <th>סכום_זכות_1</th>
-                  <th>מטח_סכום_זכות_1</th>
-                  <th>חשבון_חובה_2</th>
-                  <th>סכום_חובה_2</th>
-                  <th>מטח_סכום_חובה_2</th>
-                  <th>חשבון_זכות_2</th>
-                  <th>סכום_זכות_2</th>
-                  <th>מטח_סכום_זכות_2</th>
-                  <th>פרטים</th>
-                  <th>אסמכתא_1</th>
-                  <th>אסמכתא_2</th>
-                  <th>סוג_תנועה</th>
-                  <th>תאריך_ערך</th>
-                  <th>תאריך_3</th>
+                  <th>debit_account_1</th>
+                  <th>debit_amount_1</th>
+                  <th>foreign_debit_amount_1</th>
+                  <th>currency</th>
+                  <th>credit_account_1</th>
+                  <th>credit_amount_1</th>
+                  <th>foreign_credit_amount_1</th>
+                  <th>debit_account_2</th>
+                  <th>debit_amount_2</th>
+                  <th>foreign_debit_amount_2</th>
+                  <th>credit_account_2</th>
+                  <th>credit_amount_2</th>
+                  <th>foreign_credit_amount_2</th>
+                  <th>details</th>
+                  <th>reference_1</th>
+                  <th>reference_2</th>
+                  <th>movement_type</th>
+                  <th>value_date</th>
+                  <th>date_3</th>
                   <th>חשבשבת</th>
                 </tr>
               </thead>

@@ -6,14 +6,14 @@ import type { LedgerEntity } from '../models/types';
 interface ModifiedTransaction {
   counterAccount: string;
   hashavshevet_id?: string;
-  תאריך_3?: string;
-  תאריך_ערך?: string;
+  date_3?: string;
+  value_date?: string;
   invoice_date?: string;
-  אסמכתא_1?: string;
-  אסמכתא_2?: string;
-  פרטים: string;
-  סוג_תנועה?: string;
-  מטבע?: string;
+  reference_1?: string;
+  reference_2?: string;
+  details: string;
+  movement_type?: string;
+  currency?: string;
   direction: -1 | 1;
   amountForeign: number;
   amountNis: number;
@@ -31,14 +31,14 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transac
         <tr>
           <th>ח"ן</th>
           <th>חשבשבת#</th>
-          <th>תאריך_3</th>
+          <th>date_3</th>
           <th>תאריך_ ערך</th>
           <th>invoice_date</th>
-          <th>אסמכתא_1</th>
-          <th>אסמכתא_2</th>
-          <th>פרטים</th>
-          <th>סוג_תנועה</th>
-          <th>מטבע</th>
+          <th>reference_1</th>
+          <th>reference_2</th>
+          <th>details</th>
+          <th>movement_type</th>
+          <th>currency</th>
           <th colSpan={2}>חובה/זכות (מט"ח)</th>
           <th>יתרה (מט"ח)</th>
           <th colSpan={2}>חובה/זכות (שקל)</th>
@@ -74,14 +74,14 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transac
             <tr>
               <td>{transaction.counterAccount}</td>
               <td>{transaction.hashavshevet_id ?? ''}</td>
-              <td>{transaction.תאריך_3 ?? ''}</td>
-              <td>{transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
+              <td>{transaction.date_3 ?? ''}</td>
+              <td>{transaction.value_date ? transaction.value_date : ''}</td>
               <td>{transaction.invoice_date ? transaction.invoice_date : ''}</td>
-              <td>{transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
-              <td>{transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
-              <td>{transaction.פרטים === '0' ? '' : transaction.פרטים}</td>
-              <td>{transaction.סוג_תנועה ? transaction.סוג_תנועה : ''}</td>
-              <td>{transaction.מטבע ? transaction.מטבע : ''}</td>
+              <td>{transaction.reference_1 ? transaction.reference_1 : ''}</td>
+              <td>{transaction.reference_2 ? transaction.reference_2 : ''}</td>
+              <td>{transaction.details === '0' ? '' : transaction.details}</td>
+              <td>{transaction.movement_type ? transaction.movement_type : ''}</td>
+              <td>{transaction.currency ? transaction.currency : ''}</td>
               <td>{transaction.direction === -1 ? transaction.amountForeign : ''}</td>
               <td>{transaction.direction === 1 ? transaction.amountForeign : ''}</td>
               <td>{transaction.balanceForeign.toFixed(2)}</td>
@@ -114,32 +114,32 @@ export const UserTransactions: FC = () => {
     let amountNis: number = 0;
     let amountForeign: number = 0;
     let counterAccount: string = '';
-    if (transaction.חשבון_זכות_1 === username) {
+    if (transaction.credit_account_1 === username) {
       direction = 1;
-      amountNis = transaction.סכום_זכות_1 ? (amountNis = Number(transaction.סכום_זכות_1)) : 0;
-      amountForeign = transaction.מטח_סכום_זכות_1 ? Number(transaction.מטח_סכום_זכות_1) : 0;
-    } else if (transaction.חשבון_זכות_2 === username) {
+      amountNis = transaction.credit_amount_1 ? (amountNis = Number(transaction.credit_amount_1)) : 0;
+      amountForeign = transaction.foreign_credit_amount_1 ? Number(transaction.foreign_credit_amount_1) : 0;
+    } else if (transaction.credit_account_2 === username) {
       direction = 1;
-      amountNis = transaction.סכום_זכות_2 ? (amountNis = Number(transaction.סכום_זכות_2)) : 0;
-      amountForeign = transaction.מטח_סכום_זכות_2 ? Number(transaction.מטח_סכום_זכות_2) : 0;
-    } else if (transaction.חשבון_חובה_1 === username) {
+      amountNis = transaction.credit_amount_2 ? (amountNis = Number(transaction.credit_amount_2)) : 0;
+      amountForeign = transaction.foreign_credit_amount_2 ? Number(transaction.foreign_credit_amount_2) : 0;
+    } else if (transaction.debit_account_1 === username) {
       direction = -1;
-      amountNis = transaction.סכום_חובה_1 ? (amountNis = Number(transaction.סכום_חובה_1)) : 0;
-      amountForeign = transaction.מטח_סכום_חובה_1 ? Number(transaction.מטח_סכום_חובה_1) : 0;
-    } else if (transaction.חשבון_חובה_2 === username) {
+      amountNis = transaction.debit_amount_1 ? (amountNis = Number(transaction.debit_amount_1)) : 0;
+      amountForeign = transaction.foreign_debit_amount_1 ? Number(transaction.foreign_debit_amount_1) : 0;
+    } else if (transaction.debit_account_2 === username) {
       direction = -1;
-      amountNis = transaction.סכום_חובה_2 ? (amountNis = Number(transaction.סכום_חובה_2)) : 0;
-      amountForeign = transaction.מטח_סכום_חובה_2 ? Number(transaction.מטח_סכום_חובה_2) : 0;
+      amountNis = transaction.debit_amount_2 ? (amountNis = Number(transaction.debit_amount_2)) : 0;
+      amountForeign = transaction.foreign_debit_amount_2 ? Number(transaction.foreign_debit_amount_2) : 0;
     } else {
       return modifiedArray;
     }
 
     if (direction === 1) {
-      counterAccount = transaction.חשבון_חובה_1;
+      counterAccount = transaction.debit_account_1;
       sumForeignCredit += amountForeign;
       sumNisCredit += amountNis;
     } else if (direction === -1) {
-      counterAccount = transaction.חשבון_זכות_1;
+      counterAccount = transaction.credit_account_1;
       sumForeignDebit += amountForeign;
       sumNisDebit += amountNis;
     }
@@ -150,14 +150,14 @@ export const UserTransactions: FC = () => {
     modifiedArray.push({
       counterAccount,
       hashavshevet_id: transaction.hashavshevet_id,
-      תאריך_3: transaction.תאריך_3,
-      תאריך_ערך: transaction.תאריך_ערך,
+      date_3: transaction.date_3,
+      value_date: transaction.value_date,
       invoice_date: transaction.invoice_date,
-      אסמכתא_1: transaction.אסמכתא_1,
-      אסמכתא_2: transaction.אסמכתא_2,
-      פרטים: transaction.פרטים,
-      סוג_תנועה: transaction.סוג_תנועה,
-      מטבע: transaction.מטבע,
+      reference_1: transaction.reference_1,
+      reference_2: transaction.reference_2,
+      details: transaction.details,
+      movement_type: transaction.movement_type,
+      currency: transaction.currency,
       direction,
       amountForeign,
       amountNis,

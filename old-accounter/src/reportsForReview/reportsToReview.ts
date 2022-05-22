@@ -31,14 +31,14 @@ export const reportToReview = async (query: any): Promise<string> => {
     //   `
     //   select *
     //   from get_unified_tax_report_of_month($$${currrentCompany}$$, '2020-01-01', $$${reportMonthToReview}$$)
-    //   order by to_date(תאריך_3, 'DD/MM/YYYY') desc, original_id, פרטים, חשבון_חובה_1, id;
+    //   order by to_date(date_3, 'DD/MM/YYYY') desc, original_id, details, debit_account_1, id;
     //   `
     // ),
     pool.query(`
       select *
       from accounter_schema.ledger
       where business = $$6a20aa69-57ff-446e-8d6a-1e96d095e988$$
-      order by to_date(תאריך_3, 'DD/MM/YYYY') desc;
+      order by to_date(date_3, 'DD/MM/YYYY') desc;
       `),
     pool.query(`
       select *
@@ -54,26 +54,26 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   allTransactions.rows = allTransactions.rows.map((transaction: any) => {
     transaction.invoice_date = moment(transaction.event_date).format('DD/MM/YYYY');
-    transaction.חשבון_חובה_1 = transaction.account_type ? transaction.account_type : '';
-    transaction.סכום_חובה_1 = `${transaction.event_amount} ${transaction.currency_code}`;
-    transaction.מטח_סכום_חובה_1 = transaction.bank_description;
-    transaction.מטבע = '';
-    transaction.חשבון_זכות_1 = transaction.financial_entity;
-    transaction.סכום_זכות_1 = transaction.tax_category;
-    transaction.מטח_סכום_זכות_1 = transaction.current_balance;
-    transaction.חשבון_חובה_2 =
-      transaction.סכום_חובה_2 =
-      transaction.מטח_סכום_חובה_2 =
-      transaction.חשבון_זכות_2 =
-      transaction.סכום_זכות_2 =
+    transaction.debit_account_1 = transaction.account_type ? transaction.account_type : '';
+    transaction.debit_amount_1 = `${transaction.event_amount} ${transaction.currency_code}`;
+    transaction.foreign_debit_amount_1 = transaction.bank_description;
+    transaction.currency = '';
+    transaction.credit_account_1 = transaction.financial_entity;
+    transaction.credit_amount_1 = transaction.tax_category;
+    transaction.foreign_credit_amount_1 = transaction.current_balance;
+    transaction.debit_account_2 =
+      transaction.debit_amount_2 =
+      transaction.foreign_debit_amount_2 =
+      transaction.credit_account_2 =
+      transaction.credit_amount_2 =
         '';
-    transaction.מטח_סכום_זכות_2 = transaction.id;
-    transaction.פרטים = '0';
-    transaction.אסמכתא_1 = transaction.bank_reference;
-    transaction.אסמכתא_2 = moment(transaction.tax_invoice_date).format('DD/MM/YYYY');
-    transaction.סוג_תנועה = transaction.vat;
-    transaction.תאריך_ערך = moment(transaction.debit_date).format('DD/MM/YYYY');
-    transaction.תאריך_3 = moment(transaction.event_date).format('DD/MM/YY');
+    transaction.foreign_credit_amount_2 = transaction.id;
+    transaction.details = '0';
+    transaction.reference_1 = transaction.bank_reference;
+    transaction.reference_2 = moment(transaction.tax_invoice_date).format('DD/MM/YYYY');
+    transaction.movement_type = transaction.vat;
+    transaction.value_date = moment(transaction.debit_date).format('DD/MM/YYYY');
+    transaction.date_3 = moment(transaction.event_date).format('DD/MM/YY');
     transaction.original_id = transaction.id;
     transaction.origin = 'bank';
     return transaction;
@@ -81,8 +81,8 @@ export const reportToReview = async (query: any): Promise<string> => {
 
   reportToReview.rows = allLedger.rows.concat(allTransactions.rows);
   reportToReview.rows.sort((a: any, b: any) => {
-    const date1 = moment(a.תאריך_3, 'DD/MM/YYYY').valueOf();
-    const date2 = moment(b.תאריך_3, 'DD/MM/YYYY').valueOf();
+    const date1 = moment(a.date_3, 'DD/MM/YYYY').valueOf();
+    const date2 = moment(b.date_3, 'DD/MM/YYYY').valueOf();
 
     if (date1 > date2) {
       return -1;
@@ -109,36 +109,36 @@ export const reportToReview = async (query: any): Promise<string> => {
   let VAToutcome = 0;
   for (const transaction of reportToReview.rows) {
     if (
-      transaction.סכום_חובה_1 &&
-      transaction.חשבון_חובה_1 != 'מעמחוז' &&
-      transaction.חשבון_חובה_1 != 'עסק' &&
-      transaction.פרטים &&
-      transaction.פרטים != '0'
+      transaction.debit_amount_1 &&
+      transaction.debit_account_1 != 'מעמחוז' &&
+      transaction.debit_account_1 != 'עסק' &&
+      transaction.details &&
+      transaction.details != '0'
     ) {
-      if (transaction.סכום_חובה_1) {
-        outcomeSum += parseFloat(transaction.סכום_חובה_1);
+      if (transaction.debit_amount_1) {
+        outcomeSum += parseFloat(transaction.debit_amount_1);
       }
-      if (transaction.סכום_חובה_2) {
-        outcomeSum += parseFloat(transaction.סכום_חובה_2);
+      if (transaction.debit_amount_2) {
+        outcomeSum += parseFloat(transaction.debit_amount_2);
       }
-      if (transaction.סכום_זכות_1) {
-        incomeSum += parseFloat(transaction.סכום_זכות_1);
+      if (transaction.credit_amount_1) {
+        incomeSum += parseFloat(transaction.credit_amount_1);
       }
-      if (transaction.סכום_זכות_2) {
-        incomeSum += parseFloat(transaction.סכום_זכות_2);
+      if (transaction.credit_amount_2) {
+        incomeSum += parseFloat(transaction.credit_amount_2);
       }
 
-      if (transaction.סכום_חובה_2) {
-        VAToutcome += parseFloat(transaction.סכום_חובה_2);
+      if (transaction.debit_amount_2) {
+        VAToutcome += parseFloat(transaction.debit_amount_2);
       }
-      if (transaction.סכום_זכות_2) {
-        VATincome += parseFloat(transaction.סכום_זכות_2);
+      if (transaction.credit_amount_2) {
+        VATincome += parseFloat(transaction.credit_amount_2);
       }
     }
 
     // let exchangeRate: any = 0;
-    // if (transaction.תאריך_ערך) {
-    //   let valueDate = moment(transaction.תאריך_ערך, 'DD/MM/YYYY');
+    // if (transaction.value_date) {
+    //   let valueDate = moment(transaction.value_date, 'DD/MM/YYYY');
 
     //   exchangeRate = await pool.query(`
     //     select all_exchange_dates.eur_rate, all_exchange_dates.usd_rate
@@ -157,7 +157,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       }
       return `<a href='/user-transactions?name=${userName}'>${userName}</a>`;
     };
-    const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
+    const movementOrBank = transaction.details && transaction.details == '0';
     const addHoverEditButton = (attribute: string, viewableHtml?: string): string => {
       const elementId = `${attribute}-${transaction.id}`;
       const content = viewableHtml || transaction[attribute] || '';
@@ -175,7 +175,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       </div>`;
     };
     const missingHashavshevetSync =
-      (movementOrBank && !transaction.hashavshevet_id && transaction.חשבון_חובה_1 != 'כא') ||
+      (movementOrBank && !transaction.hashavshevet_id && transaction.debit_account_1 != 'כא') ||
       (!movementOrBank && !transaction.hashavshevet_id);
 
     // let url = `https://www.boi.org.il/currency.xml?rdate=${valueDate.format(
@@ -208,7 +208,7 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td>${counter++}</td>
         <td>
           <input onchange="changeConfirmation('${transaction.id}', this${
-      movementOrBank ? ", '" + transaction.חשבון_חובה_1 + "'" : ''
+      movementOrBank ? ", '" + transaction.debit_account_1 + "'" : ''
     });" type="checkbox" 
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
@@ -217,40 +217,40 @@ export const reportToReview = async (query: any): Promise<string> => {
           <img download class="invoiceImage" src="${transaction.proforma_invoice_file}">
         </td>
         <td>${addHoverEditButton(
-          'חשבון_חובה_1',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1)
+          'debit_account_1',
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_1)
         )}</td>
-        <td>${addHoverEditButton('סכום_חובה_1')}</td>
-        <td>${addHoverEditButton('מטח_סכום_חובה_1')}</td>
-        <td>${addHoverEditButton('מטבע')}</td>
+        <td>${addHoverEditButton('debit_amount_1')}</td>
+        <td>${addHoverEditButton('foreign_debit_amount_1')}</td>
+        <td>${addHoverEditButton('currency')}</td>
         <td>${addHoverEditButton(
-          'חשבון_זכות_1',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1)
+          'credit_account_1',
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_1)
         )}</td>
-        <td>${addHoverEditButton('סכום_זכות_1')}</td>
-        <td>${addHoverEditButton('מטח_סכום_זכות_1')}</td>
+        <td>${addHoverEditButton('credit_amount_1')}</td>
+        <td>${addHoverEditButton('foreign_credit_amount_1')}</td>
         <td>${addHoverEditButton(
-          'חשבון_חובה_2',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2)
+          'debit_account_2',
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_2)
         )}</td>
-        <td>${addHoverEditButton('סכום_חובה_2')}</td>
-        <td>${addHoverEditButton('מטח_סכום_חובה_2')}</td>
+        <td>${addHoverEditButton('debit_amount_2')}</td>
+        <td>${addHoverEditButton('foreign_debit_amount_2')}</td>
         <td>${addHoverEditButton(
-          'חשבון_זכות_2',
-          generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2)
+          'credit_account_2',
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_2)
         )}</td>
-        <td>${addHoverEditButton('סכום_זכות_2')}</td>
-        <td>${addHoverEditButton('מטח_סכום_זכות_2')}</td>
-        <td>${addHoverEditButton('פרטים')}</td>
-        <td>${addHoverEditButton('אסמכתא_1')}</td>
-        <td>${addHoverEditButton('אסמכתא_2')}</td>
-        <td>${addHoverEditButton('סוג_תנועה')}</td>
+        <td>${addHoverEditButton('credit_amount_2')}</td>
+        <td>${addHoverEditButton('foreign_credit_amount_2')}</td>
+        <td>${addHoverEditButton('details')}</td>
+        <td>${addHoverEditButton('reference_1')}</td>
+        <td>${addHoverEditButton('reference_2')}</td>
+        <td>${addHoverEditButton('movement_type')}</td>
         <td class="valueDate">
-          ${addHoverEditButton('תאריך_ערך')}
+          ${addHoverEditButton('value_date')}
           <div class="valueDateValues">
           </div>
         </td>
-        <td>${addHoverEditButton('תאריך_3')}</td>
+        <td>${addHoverEditButton('date_3')}</td>
         <td ${missingHashavshevetSync ? 'style="background-color: rgb(255,0,0);"' : ''}>
           ${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button type="button"
@@ -285,25 +285,25 @@ export const reportToReview = async (query: any): Promise<string> => {
                 <th>מספר</th>
                 <th>תקין</th>
                 <th>invoice_date</th>
-                <th>חשבון_חובה_1</th>
-                <th>סכום_חובה_1</th>
-                <th>מטח_סכום_חובה_1</th>
-                <th>מטבע</th>
-                <th>חשבון_זכות_1</th>
-                <th>סכום_זכות_1</th>
-                <th>מטח_סכום_זכות_1</th>
-                <th>חשבון_חובה_2</th>
-                <th>סכום_חובה_2</th>
-                <th>מטח_סכום_חובה_2</th>
-                <th>חשבון_זכות_2</th>
-                <th>סכום_זכות_2</th>
-                <th>מטח_סכום_זכות_2</th>
-                <th>פרטים</th>
-                <th>אסמכתא_1</th>
-                <th>אסמכתא_2</th>
-                <th>סוג_תנועה</th>
-                <th>תאריך_ערך</th>
-                <th>תאריך_3</th>
+                <th>debit_account_1</th>
+                <th>debit_amount_1</th>
+                <th>foreign_debit_amount_1</th>
+                <th>currency</th>
+                <th>credit_account_1</th>
+                <th>credit_amount_1</th>
+                <th>foreign_credit_amount_1</th>
+                <th>debit_account_2</th>
+                <th>debit_amount_2</th>
+                <th>foreign_debit_amount_2</th>
+                <th>credit_account_2</th>
+                <th>credit_amount_2</th>
+                <th>foreign_credit_amount_2</th>
+                <th>details</th>
+                <th>reference_1</th>
+                <th>reference_2</th>
+                <th>movement_type</th>
+                <th>value_date</th>
+                <th>date_3</th>
                 <th>חשבשבת</th>
             </tr>
         </thead>

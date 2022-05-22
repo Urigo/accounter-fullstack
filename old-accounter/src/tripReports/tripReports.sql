@@ -158,25 +158,25 @@ SELECT
       accounter_schema.saved_tax_reports_2020_03_04 t1
     WHERE
       COALESCE(t1.invoice_date, '') = COALESCE(t2.invoice_date, '')
-      AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
-      AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
-      AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
-      AND COALESCE(t1.מטבע, '') = COALESCE(t2.מטבע, '')
-      AND COALESCE(t1.חשבון_זכות_1, '') = COALESCE(t2.חשבון_זכות_1, '')
-      AND COALESCE(t1.סכום_זכות_1, '') = COALESCE(t2.סכום_זכות_1, '')
-      AND COALESCE(t1.מטח_סכום_זכות_1, '') = COALESCE(t2.מטח_סכום_זכות_1, '')
-      AND COALESCE(t1.חשבון_חובה_2, '') = COALESCE(t2.חשבון_חובה_2, '')
-      AND COALESCE(t1.סכום_חובה_2, '') = COALESCE(t2.סכום_חובה_2, '')
-      AND COALESCE(t1.מטח_סכום_חובה_2, '') = COALESCE(t2.מטח_סכום_חובה_2, '')
-      AND COALESCE(t1.חשבון_זכות_2, '') = COALESCE(t2.חשבון_זכות_2, '')
-      AND COALESCE(t1.סכום_זכות_2, '') = COALESCE(t2.סכום_זכות_2, '')
-      AND COALESCE(t1.מטח_סכום_זכות_2, '') = COALESCE(t2.מטח_סכום_זכות_2, '')
-      AND COALESCE(t1.פרטים, '') = COALESCE(t2.פרטים, '')
-      AND COALESCE(t1.אסמכתא_1, 0) = COALESCE(t2.אסמכתא_1, 0)
-      AND COALESCE(t1.אסמכתא_2, '') = COALESCE(t2.אסמכתא_2, '')
-      AND COALESCE(t1.סוג_תנועה, '') = COALESCE(t2.סוג_תנועה, '')
-      AND COALESCE(t1.תאריך_ערך, '') = COALESCE(t2.תאריך_ערך, '')
-      AND COALESCE(t1.תאריך_3, '') = COALESCE(t2.תאריך_3, '')
+      AND COALESCE(t1.debit_account_1, '') = COALESCE(t2.debit_account_1, '')
+      AND COALESCE(t1.debit_amount_1, '') = COALESCE(t2.debit_amount_1, '')
+      AND COALESCE(t1.foreign_debit_amount_1, '') = COALESCE(t2.foreign_debit_amount_1, '')
+      AND COALESCE(t1.currency, '') = COALESCE(t2.currency, '')
+      AND COALESCE(t1.credit_account_1, '') = COALESCE(t2.credit_account_1, '')
+      AND COALESCE(t1.credit_amount_1, '') = COALESCE(t2.credit_amount_1, '')
+      AND COALESCE(t1.foreign_credit_amount_1, '') = COALESCE(t2.foreign_credit_amount_1, '')
+      AND COALESCE(t1.debit_account_2, '') = COALESCE(t2.debit_account_2, '')
+      AND COALESCE(t1.debit_amount_2, '') = COALESCE(t2.debit_amount_2, '')
+      AND COALESCE(t1.foreign_debit_amount_2, '') = COALESCE(t2.foreign_debit_amount_2, '')
+      AND COALESCE(t1.credit_account_2, '') = COALESCE(t2.credit_account_2, '')
+      AND COALESCE(t1.credit_amount_2, '') = COALESCE(t2.credit_amount_2, '')
+      AND COALESCE(t1.foreign_credit_amount_2, '') = COALESCE(t2.foreign_credit_amount_2, '')
+      AND COALESCE(t1.details, '') = COALESCE(t2.details, '')
+      AND COALESCE(t1.reference_1, 0) = COALESCE(t2.reference_1, 0)
+      AND COALESCE(t1.reference_2, '') = COALESCE(t2.reference_2, '')
+      AND COALESCE(t1.movement_type, '') = COALESCE(t2.movement_type, '')
+      AND COALESCE(t1.value_date, '') = COALESCE(t2.value_date, '')
+      AND COALESCE(t1.date_3, '') = COALESCE(t2.date_3, '')
   ) AS reviewed INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_3
 FROM
   (
@@ -186,7 +186,7 @@ FROM
       FROM
         get_tax_report_of_month('2020-03-01')
       ORDER BY
-        to_date(תאריך_3, 'DD/MM/YYYY'),
+        to_date(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -196,7 +196,7 @@ FROM
       FROM
         get_tax_report_of_month('2020-04-01')
       ORDER BY
-        to_date(תאריך_3, 'DD/MM/YYYY'),
+        to_date(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -214,7 +214,7 @@ FROM
     )
   ) t2
 ORDER BY
-  to_date(תאריך_3, 'DD/MM/YYYY'),
+  to_date(date_3, 'DD/MM/YYYY'),
   original_id;
 
 SELECT
@@ -241,25 +241,25 @@ OR REPLACE FUNCTION trip_report(
   number_of_days_without_sleep_input FLOAT DEFAULT 0
 ) RETURNS TABLE (
   invoice_date VARCHAR,
-  חשבון_חובה_1 VARCHAR,
-  סכום_חובה_1 VARCHAR,
-  מטח_סכום_חובה_1 VARCHAR,
-  מטבע VARCHAR,
-  חשבון_זכות_1 VARCHAR,
-  סכום_זכות_1 VARCHAR,
-  מטח_סכום_זכות_1 VARCHAR,
-  חשבון_חובה_2 VARCHAR,
-  סכום_חובה_2 VARCHAR,
-  מטח_סכום_חובה_2 VARCHAR,
-  חשבון_זכות_2 VARCHAR,
-  סכום_זכות_2 VARCHAR,
-  מטח_סכום_זכות_2 VARCHAR,
-  פרטים VARCHAR,
-  אסמכתא_1 BIGINT,
-  אסמכתא_2 VARCHAR,
-  סוג_תנועה VARCHAR,
-  תאריך_ערך VARCHAR,
-  תאריך_3 VARCHAR,
+  debit_account_1 VARCHAR,
+  debit_amount_1 VARCHAR,
+  foreign_debit_amount_1 VARCHAR,
+  currency VARCHAR,
+  credit_account_1 VARCHAR,
+  credit_amount_1 VARCHAR,
+  foreign_credit_amount_1 VARCHAR,
+  debit_account_2 VARCHAR,
+  debit_amount_2 VARCHAR,
+  foreign_debit_amount_2 VARCHAR,
+  credit_account_2 VARCHAR,
+  credit_amount_2 VARCHAR,
+  foreign_credit_amount_2 VARCHAR,
+  details VARCHAR,
+  reference_1 BIGINT,
+  reference_2 VARCHAR,
+  movement_type VARCHAR,
+  value_date VARCHAR,
+  date_3 VARCHAR,
   original_id uuid,
   origin TEXT,
   invoice_image TEXT
@@ -291,27 +291,27 @@ with last_day as (
      ),
      formatted_trip_transactions as (
          select formatted_event_date                                            as invoice_date,
-                tax_category                                                    as חשבון_חובה_1,
-                formatted_event_amount_in_ils                                   as סכום_חובה_1,
-                formatted_foreign_amount_if_exist                               as מטח_סכום_חובה_1,
-                formatted_currency                                              AS מטבע,
-                formatted_account                                               as חשבון_זכות_1,
-                formatted_event_amount_in_ils                                   as סכום_זכות_1,
-                formatted_foreign_amount_if_exist                               as מטח_סכום_זכות_1,
-                null                                                            as חשבון_חובה_2,
-                null                                                            as סכום_חובה_2,
-                null                                                            as מטח_סכום_חובה_2,
-                null                                                            as חשבון_זכות_2,
-                null                                                            as סכום_זכות_2,
-                null                                                            as מטח_סכום_זכות_2,
-                user_description                                                AS פרטים,
-                bank_reference                                                  AS אסמכתא_1,
-                RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS אסמכתא_2,
-                null                                                            as סוג_תנועה,
+                tax_category                                                    as debit_account_1,
+                formatted_event_amount_in_ils                                   as debit_amount_1,
+                formatted_foreign_amount_if_exist                               as foreign_debit_amount_1,
+                formatted_currency                                              AS currency,
+                formatted_account                                               as credit_account_1,
+                formatted_event_amount_in_ils                                   as credit_amount_1,
+                formatted_foreign_amount_if_exist                               as foreign_credit_amount_1,
+                null                                                            as debit_account_2,
+                null                                                            as debit_amount_2,
+                null                                                            as foreign_debit_amount_2,
+                null                                                            as credit_account_2,
+                null                                                            as credit_amount_2,
+                null                                                            as foreign_credit_amount_2,
+                user_description                                                AS details,
+                bank_reference                                                  AS reference_1,
+                RIGHT(regexp_replace(tax_invoice_number, '[^0-9]+', '', 'g'), 9) AS reference_2,
+                null                                                            as movement_type,
                 (CASE
                      WHEN debit_date IS NULL THEN formatted_event_date
                      ELSE formatted_debit_date
-                    END)                                                        AS תאריך_ערך,
+                    END)                                                        AS value_date,
                 formatted_event_date,
                 id as original_id,
                 'trip_report' as origin,
@@ -342,25 +342,25 @@ with last_day as (
      ),
      total_eshel as (
          select to_char(last_day.date, 'DD/MM/YYYY')                                                 as invoice_date,
-                trip_name                                                                            as חשבון_חובה_1,
-                to_char(float8(higher_countries.total * exchange_rate.daily_date), 'FM999999999.00') as סכום_חובה_1,
-                to_char(float8(higher_countries.total), 'FM999999999.00')                            as מטח_סכום_חובה_1,
-                '$'                                                                                  as מטבע,
-                'אוריח'                                                                              as חשבון_זכות_1,
-                to_char(float8(higher_countries.total * exchange_rate.daily_date), 'FM999999999.00') as סכום_זכות_1,
-                to_char(float8(higher_countries.total), 'FM999999999.00')                            as מטח_סכום_זכות_1,
-                null                                                                                 as חשבון_חובה_2,
-                null                                                                                 as סכום_חובה_2,
-                null                                                                                 as מטח_סכום_חובה_2,
-                null                                                                                 as חשבון_זכות_2,
-                null                                                                                 as סכום_זכות_2,
-                null                                                                                 as מטח_סכום_זכות_2,
-                'אש״ל לא מנוצלות'                                                                      as פרטים,
-                null::int                                                                            as אסמכתא_1,
-                null                                                                                 as אסמכתא_2,
-                null                                                                                 as סוג_תנועה,
-                to_char(last_day.date, 'DD/MM/YYYY')                                                 as תאריך_ערך,
-                to_char(top_value_date.debit_date, 'DD/MM/YYYY')                                     as תאריך_3,
+                trip_name                                                                            as debit_account_1,
+                to_char(float8(higher_countries.total * exchange_rate.daily_date), 'FM999999999.00') as debit_amount_1,
+                to_char(float8(higher_countries.total), 'FM999999999.00')                            as foreign_debit_amount_1,
+                '$'                                                                                  as currency,
+                'אוריח'                                                                              as credit_account_1,
+                to_char(float8(higher_countries.total * exchange_rate.daily_date), 'FM999999999.00') as credit_amount_1,
+                to_char(float8(higher_countries.total), 'FM999999999.00')                            as foreign_credit_amount_1,
+                null                                                                                 as debit_account_2,
+                null                                                                                 as debit_amount_2,
+                null                                                                                 as foreign_debit_amount_2,
+                null                                                                                 as credit_account_2,
+                null                                                                                 as credit_amount_2,
+                null                                                                                 as foreign_credit_amount_2,
+                'אש״ל לא מנוצלות'                                                                      as details,
+                null::int                                                                            as reference_1,
+                null                                                                                 as reference_2,
+                null                                                                                 as movement_type,
+                to_char(last_day.date, 'DD/MM/YYYY')                                                 as value_date,
+                to_char(top_value_date.debit_date, 'DD/MM/YYYY')                                     as date_3,
                 null::uuid                                                                           as original_id,
                 'trip_report'                                                                        as origin,
                 ''                                                                                   as invoice_image

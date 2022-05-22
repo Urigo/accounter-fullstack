@@ -11,7 +11,7 @@ export const getAllUsers = async (): Promise<string> => {
   // TODO: get ALL users, or from current company? NULL will fetch all of them.
   const currrentCompany = businesses['Uri Goldshtein LTD'];
   const query =
-    ['חשבון_חובה_1', 'חשבון_חובה_2', 'חשבון_זכות_1', 'חשבון_זכות_2']
+    ['debit_account_1', 'debit_account_2', 'credit_account_1', 'credit_account_2']
       .map(
         column =>
           `select ${column} as userName from accounter_schema.ledger${

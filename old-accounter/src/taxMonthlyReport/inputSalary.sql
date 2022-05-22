@@ -3,10 +3,10 @@ SELECT
 FROM
   get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
 ORDER BY
-  to_date(תאריך_3, 'DD/MM/YYYY'),
+  to_date(date_3, 'DD/MM/YYYY'),
   original_id,
-  פרטים,
-  חשבון_חובה_1,
+  details,
+  debit_account_1,
   id;
 
 SELECT
@@ -19,10 +19,10 @@ SELECT
 FROM
   get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
 ORDER BY
-  to_date(תאריך_3, 'DD/MM/YYYY'),
+  to_date(date_3, 'DD/MM/YYYY'),
   original_id,
-  פרטים,
-  חשבון_חובה_1,
+  details,
+  debit_account_1,
   id;
 
 SELECT
@@ -35,25 +35,25 @@ DROP FUNCTION report_to_hashavshevet_by_month(salary_transaction uuid);
 CREATE
 OR REPLACE FUNCTION input_salary(salary_transaction_id uuid) RETURNS TABLE(
   invoice_date VARCHAR,
-  חשבון_חובה_1 VARCHAR,
-  סכום_חובה_1 VARCHAR,
-  מטח_סכום_חובה_1 VARCHAR,
-  מטבע VARCHAR,
-  חשבון_זכות_1 VARCHAR,
-  סכום_זכות_1 VARCHAR,
-  מטח_סכום_זכות_1 VARCHAR,
-  חשבון_חובה_2 VARCHAR,
-  סכום_חובה_2 VARCHAR,
-  מטח_סכום_חובה_2 VARCHAR,
-  חשבון_זכות_2 VARCHAR,
-  סכום_זכות_2 VARCHAR,
-  מטח_סכום_זכות_2 VARCHAR,
-  פרטים VARCHAR,
-  אסמכתא_1 BIGINT,
-  אסמכתא_2 VARCHAR,
-  סוג_תנועה VARCHAR,
-  תאריך_ערך VARCHAR,
-  תאריך_3 VARCHAR,
+  debit_account_1 VARCHAR,
+  debit_amount_1 VARCHAR,
+  foreign_debit_amount_1 VARCHAR,
+  currency VARCHAR,
+  credit_account_1 VARCHAR,
+  credit_amount_1 VARCHAR,
+  foreign_credit_amount_1 VARCHAR,
+  debit_account_2 VARCHAR,
+  debit_amount_2 VARCHAR,
+  foreign_debit_amount_2 VARCHAR,
+  credit_account_2 VARCHAR,
+  credit_amount_2 VARCHAR,
+  foreign_credit_amount_2 VARCHAR,
+  details VARCHAR,
+  reference_1 BIGINT,
+  reference_2 VARCHAR,
+  movement_type VARCHAR,
+  value_date VARCHAR,
+  date_3 VARCHAR,
   original_id uuid,
   origin TEXT,
   proforma_invoice_file TEXT,

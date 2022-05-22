@@ -47,7 +47,7 @@ const TransactionRow: FC<{
     }
     return <a href={`/user-transactions?name=${userName}`}>{userName}</a>;
   };
-  const movementOrBank = transaction.פרטים && transaction.פרטים == '0';
+  const movementOrBank = transaction.details && transaction.details == '0';
   const addHoverEditButton = (attribute: keyof LedgerEntity, viewableHtml?: JSX.Element) => {
     const content = viewableHtml || (transaction[attribute] as string) || '';
 
@@ -62,7 +62,7 @@ const TransactionRow: FC<{
     );
   };
   const missingHashavshevetSync =
-    (movementOrBank && !transaction.hashavshevet_id && transaction.חשבון_חובה_1 != 'כא') ||
+    (movementOrBank && !transaction.hashavshevet_id && transaction.debit_account_1 != 'כא') ||
     (!movementOrBank && !transaction.hashavshevet_id);
 
   return (
@@ -77,7 +77,7 @@ const TransactionRow: FC<{
           onChange={e => {
             reviewTransaction({
               id: transaction.id,
-              accountType: movementOrBank ? transaction.חשבון_חובה_1 : undefined,
+              accountType: movementOrBank ? transaction.debit_account_1 : undefined,
               reviewed: e.target.checked,
             });
           }}
@@ -90,25 +90,25 @@ const TransactionRow: FC<{
         {addHoverEditButton('invoice_date')}
         <img className="invoiceImage" src={transaction.proforma_invoice_file} />
       </td>
-      <td>{addHoverEditButton('חשבון_חובה_1', generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1))}</td>
-      <td>{addHoverEditButton('סכום_חובה_1')}</td>
-      <td>{addHoverEditButton('מטח_סכום_חובה_1')}</td>
-      <td>{addHoverEditButton('מטבע')}</td>
-      <td>{addHoverEditButton('חשבון_זכות_1', generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_1))}</td>
-      <td>{addHoverEditButton('סכום_זכות_1')}</td>
-      <td>{addHoverEditButton('מטח_סכום_זכות_1')}</td>
-      <td>{addHoverEditButton('חשבון_חובה_2', generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_2))}</td>
-      <td>{addHoverEditButton('סכום_חובה_2')}</td>
-      <td>{addHoverEditButton('מטח_סכום_חובה_2')}</td>
-      <td>{addHoverEditButton('חשבון_זכות_2', generateGoToUserTransactionsFunctionCall(transaction.חשבון_זכות_2))}</td>
-      <td>{addHoverEditButton('סכום_זכות_2')}</td>
-      <td>{addHoverEditButton('מטח_סכום_זכות_2')}</td>
-      <td>{addHoverEditButton('פרטים')}</td>
-      <td>{addHoverEditButton('אסמכתא_1')}</td>
-      <td>{addHoverEditButton('אסמכתא_2')}</td>
-      <td>{addHoverEditButton('סוג_תנועה')}</td>
-      <td className="valueDate">{addHoverEditButton('תאריך_ערך')}</td>
-      <td>{addHoverEditButton('תאריך_3')}</td>
+      <td>{addHoverEditButton('debit_account_1', generateGoToUserTransactionsFunctionCall(transaction.debit_account_1))}</td>
+      <td>{addHoverEditButton('debit_amount_1')}</td>
+      <td>{addHoverEditButton('foreign_debit_amount_1')}</td>
+      <td>{addHoverEditButton('currency')}</td>
+      <td>{addHoverEditButton('credit_account_1', generateGoToUserTransactionsFunctionCall(transaction.credit_account_1))}</td>
+      <td>{addHoverEditButton('credit_amount_1')}</td>
+      <td>{addHoverEditButton('foreign_credit_amount_1')}</td>
+      <td>{addHoverEditButton('debit_account_2', generateGoToUserTransactionsFunctionCall(transaction.debit_account_2))}</td>
+      <td>{addHoverEditButton('debit_amount_2')}</td>
+      <td>{addHoverEditButton('foreign_debit_amount_2')}</td>
+      <td>{addHoverEditButton('credit_account_2', generateGoToUserTransactionsFunctionCall(transaction.credit_account_2))}</td>
+      <td>{addHoverEditButton('credit_amount_2')}</td>
+      <td>{addHoverEditButton('foreign_credit_amount_2')}</td>
+      <td>{addHoverEditButton('details')}</td>
+      <td>{addHoverEditButton('reference_1')}</td>
+      <td>{addHoverEditButton('reference_2')}</td>
+      <td>{addHoverEditButton('movement_type')}</td>
+      <td className="valueDate">{addHoverEditButton('value_date')}</td>
+      <td>{addHoverEditButton('date_3')}</td>
       <td style={missingHashavshevetSync ? { backgroundColor: 'rgb(255,0,0)' } : undefined}>
         {transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
         <button
@@ -149,29 +149,29 @@ export const ReportToReview: FC<{
   const [incomeSum, outcomeSum, VATincome, VAToutcome] = transactions.reduce(
     ([income, outcome, vatIn, vatOut], transaction) => {
       if (
-        transaction.חשבון_חובה_1 != 'מעמחוז' &&
-        transaction.חשבון_חובה_1 != 'עסק' &&
-        transaction.פרטים &&
-        transaction.פרטים != '0'
+        transaction.debit_account_1 != 'מעמחוז' &&
+        transaction.debit_account_1 != 'עסק' &&
+        transaction.details &&
+        transaction.details != '0'
       ) {
-        if (transaction.סכום_חובה_1) {
-          outcome += parseFloat(transaction.סכום_חובה_1);
+        if (transaction.debit_amount_1) {
+          outcome += parseFloat(transaction.debit_amount_1);
         }
-        if (transaction.סכום_חובה_2) {
-          outcome += parseFloat(transaction.סכום_חובה_2);
+        if (transaction.debit_amount_2) {
+          outcome += parseFloat(transaction.debit_amount_2);
         }
-        if (transaction.סכום_זכות_1) {
-          income += parseFloat(transaction.סכום_זכות_1);
+        if (transaction.credit_amount_1) {
+          income += parseFloat(transaction.credit_amount_1);
         }
-        if (transaction.סכום_זכות_2) {
-          income += parseFloat(transaction.סכום_זכות_2);
+        if (transaction.credit_amount_2) {
+          income += parseFloat(transaction.credit_amount_2);
         }
 
-        if (transaction.סכום_זכות_2) {
-          vatIn += parseFloat(transaction.סכום_זכות_2);
+        if (transaction.credit_amount_2) {
+          vatIn += parseFloat(transaction.credit_amount_2);
         }
-        if (transaction.סכום_חובה_2) {
-          vatOut += parseFloat(transaction.סכום_חובה_2);
+        if (transaction.debit_amount_2) {
+          vatOut += parseFloat(transaction.debit_amount_2);
         }
       }
       return [income, outcome, vatIn, vatOut];
@@ -204,25 +204,25 @@ export const ReportToReview: FC<{
             <th>מספר</th>
             <th>תקין</th>
             <th>invoice_date</th>
-            <th>חשבון_חובה_1</th>
-            <th>סכום_חובה_1</th>
-            <th>מטח_סכום_חובה_1</th>
-            <th>מטבע</th>
-            <th>חשבון_זכות_1</th>
-            <th>סכום_זכות_1</th>
-            <th>מטח_סכום_זכות_1</th>
-            <th>חשבון_חובה_2</th>
-            <th>סכום_חובה_2</th>
-            <th>מטח_סכום_חובה_2</th>
-            <th>חשבון_זכות_2</th>
-            <th>סכום_זכות_2</th>
-            <th>מטח_סכום_זכות_2</th>
-            <th>פרטים</th>
-            <th>אסמכתא_1</th>
-            <th>אסמכתא_2</th>
-            <th>סוג_תנועה</th>
-            <th>תאריך_ערך</th>
-            <th>תאריך_3</th>
+            <th>debit_account_1</th>
+            <th>debit_amount_1</th>
+            <th>foreign_debit_amount_1</th>
+            <th>currency</th>
+            <th>credit_account_1</th>
+            <th>credit_amount_1</th>
+            <th>foreign_credit_amount_1</th>
+            <th>debit_account_2</th>
+            <th>debit_amount_2</th>
+            <th>foreign_debit_amount_2</th>
+            <th>credit_account_2</th>
+            <th>credit_amount_2</th>
+            <th>foreign_credit_amount_2</th>
+            <th>details</th>
+            <th>reference_1</th>
+            <th>reference_2</th>
+            <th>movement_type</th>
+            <th>value_date</th>
+            <th>date_3</th>
             <th>חשבשבת</th>
           </tr>
         </thead>
