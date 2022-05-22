@@ -21,11 +21,9 @@ type Props = {
 };
 
 export const Entity = ({ data, alternativeCharge, style }: Props) => {
-  const {
-    counterparty: { name },
-    id: chargeId,
-  } = data;
-  const isFinancialEntity = name !== '';
+  const { counterparty, id: chargeId } = data;
+  const { name } = counterparty || {};
+  const isFinancialEntity = name && name !== '';
   const cellText = isFinancialEntity ? name : alternativeCharge?.financialEntity;
 
   const { mutate, isLoading } = useUpdateCharge();
