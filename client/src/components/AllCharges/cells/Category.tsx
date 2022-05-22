@@ -21,7 +21,7 @@ type Props = {
 export const Category = ({ data, alternativeCharge, style }: Props) => {
   const { tags, id: chargeId } = data;
   const isPersonalCategory = tags.length > 0;
-  const cellText = tags.join(', ') ?? alternativeCharge?.personalCategory;
+  const cellText = isPersonalCategory ? tags.join(', ') : alternativeCharge?.personalCategory;
 
   const { mutate, isLoading } = useUpdateCharge();
 
