@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import type { TransactionColumn } from '../../models/types';
 import { ChargeRow } from './ChargeRow';
 import { useSearchParams } from 'react-router-dom';
@@ -14,7 +13,7 @@ gql`
   }
 `;
 
-export const AllCharges: FC = () => {
+export const AllCharges = () => {
   const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
 

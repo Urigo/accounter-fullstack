@@ -1,8 +1,12 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { VatTransaction } from '../../models/types';
 
-export const VatTransactionsString: FC<{ monthTaxReport: string }> = ({ monthTaxReport }) => {
+interface Props {
+  monthTaxReport: string;
+}
+
+export const VatTransactionsString = ({ monthTaxReport }: Props) => {
   const { getVatTransactions } = useSql();
   const [vatTransactions, setVatTransactions] = useState<VatTransaction[]>([]);
 

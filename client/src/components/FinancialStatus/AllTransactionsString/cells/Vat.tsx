@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
 import {
@@ -13,7 +13,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Vat: FC<Props> = ({ transaction, style }) => {
+export const Vat = ({ transaction, style }: Props) => {
   const indicator =
     (!transaction.vat &&
       isBusiness(transaction) &&

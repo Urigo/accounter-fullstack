@@ -1,10 +1,10 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../helpers';
 import { useSql } from '../hooks/useSql';
 import type { MonthTaxReport } from '../models/types';
 
-export const MonthlyReport: FC = () => {
+export const MonthlyReport = () => {
   const [searchParams] = useSearchParams();
   const { getMonthlyTaxesReport } = useSql();
   const [monthlyTaxesReport, setMonthlyTaxesReport] = useState<MonthTaxReport[]>([]);

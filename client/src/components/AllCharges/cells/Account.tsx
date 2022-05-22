@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
 import { AccountFieldsFragment } from '../../../__generated__/types';
 
@@ -24,7 +24,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Account: FC<Props> = ({ account, style }) => {
+export const Account = ({ account, style }: Props) => {
   const accountType =
     account.__typename === 'BankFinancialAccount'
       ? 'Bank'

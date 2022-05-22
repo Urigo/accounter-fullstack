@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 
@@ -7,7 +7,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const TaxCategory: FC<Props> = ({ transaction, style }) => {
+export const TaxCategory = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {transaction.tax_category ?? 'null'}

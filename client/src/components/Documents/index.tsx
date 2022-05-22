@@ -1,6 +1,6 @@
 import { Table, Image, Loader } from '@mantine/core';
 import gql from 'graphql-tag';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { PopUpModal } from '../common/Modal';
 import { RegularButton } from '../common/Button';
 import { useDocumentsQuery } from '../../__generated__/types';
@@ -114,7 +114,7 @@ gql`
   }
 `;
 
-export const DocumentsReport: FC = () => {
+export const DocumentsReport = () => {
   const { data, isLoading } = useDocumentsQuery();
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 

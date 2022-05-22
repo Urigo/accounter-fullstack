@@ -1,9 +1,11 @@
-import { FC, ReactElement, ReactNode, useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 
-export const HoverHandler: FC<{
+interface Props {
   hoverElement: ReactElement;
   children: ReactNode;
-}> = ({ children, hoverElement }) => {
+}
+
+export const HoverHandler = ({ children, hoverElement }: Props) => {
   const [isHover, setIsHover] = useState(false);
 
   return (

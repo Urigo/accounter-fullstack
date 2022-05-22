@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
 import { suggestedTransaction } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Entity: FC<Props> = ({ transaction, style }) => {
+export const Entity = ({ transaction, style }: Props) => {
   const isFinancialEntity = !!transaction.financial_entity;
   const cellText = transaction.financial_entity ?? suggestedTransaction(transaction)?.financialEntity;
 

@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { TransactionType } from '../../models/types';
 
@@ -8,7 +7,7 @@ type Props = {
   promptText: string;
 };
 
-export const UpdateButton: React.FC<Props> = ({ transaction, propertyName, promptText }) => {
+export const UpdateButton = ({ transaction, propertyName, promptText }: Props) => {
   const { editTransaction } = useSql();
 
   return (

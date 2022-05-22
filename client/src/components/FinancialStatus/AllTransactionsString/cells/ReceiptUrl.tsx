@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 import { isBusiness } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const ReceiptUrl: FC<Props> = ({ transaction, style }) => {
+export const ReceiptUrl = ({ transaction, style }: Props) => {
   const indicator = isBusiness(transaction) && !transaction.receipt_url && !transaction.tax_invoice_file;
 
   return (

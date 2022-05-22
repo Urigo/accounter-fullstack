@@ -1,4 +1,4 @@
-import { CSSProperties, FC, useCallback } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
 import { ShareWithFieldsFragment } from '../../../__generated__/types';
 import {
@@ -37,7 +37,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({ data, isBusiness, financialEntityName = '', alternativeCharge, style }) => {
+export const ShareWith = ({ data, isBusiness, financialEntityName = '', alternativeCharge, style }: Props) => {
   const { beneficiaries, id: chargeId } = data;
 
   const { mutate, isLoading } = useUpdateCharge();

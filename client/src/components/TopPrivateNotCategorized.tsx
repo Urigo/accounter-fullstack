@@ -1,9 +1,9 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../helpers';
 import { useSql } from '../hooks/useSql';
 import type { TopPrivateNotCategorizedExpense } from '../models/types';
 
-export const TopPrivateNotCategorized: FC = () => {
+export const TopPrivateNotCategorized = () => {
   const { getTopPrivateNotCategorized } = useSql();
   const [topPrivateNotCategorizedExpenses, setTopPrivateNotCategorizedExpenses] = useState<
     TopPrivateNotCategorizedExpense[]

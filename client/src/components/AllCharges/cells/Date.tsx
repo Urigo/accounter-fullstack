@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
 
 gql`
@@ -18,7 +18,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Date: FC<Props> = ({ createdAt, effectiveDate, style }) => {
+export const Date = ({ createdAt, effectiveDate, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {moment(createdAt).format('DD/MM/YY')}

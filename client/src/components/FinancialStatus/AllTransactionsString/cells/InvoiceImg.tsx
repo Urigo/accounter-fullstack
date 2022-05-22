@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 import { isBusiness } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const InvoiceImg: FC<Props> = ({ transaction, style }) => {
+export const InvoiceImg = ({ transaction, style }: Props) => {
   const indicator = isBusiness(transaction) && !transaction.proforma_invoice_file;
 
   return (

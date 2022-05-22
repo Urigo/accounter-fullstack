@@ -1,4 +1,4 @@
-import { FC, FormEventHandler, useEffect, useMemo, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSql } from '../hooks/useSql';
 import type { LedgerEntity } from '../models/types';
@@ -21,7 +21,11 @@ interface ModifiedTransaction {
   balanceNis: number;
 }
 
-const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transactions }) => {
+interface Props {
+  transactions: ModifiedTransaction[];
+}
+
+const TransactionTable = ({ transactions }: Props) => {
   const [balanceForeign, setBalanceForeign] = useState(0);
   const [balanceNis, setBalanceNis] = useState(0);
 
@@ -96,7 +100,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transac
   );
 };
 
-export const UserTransactions: FC = () => {
+export const UserTransactions = () => {
   const [searchParams] = useSearchParams();
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);
   const [inputValue, setInputValue] = useState<string>(searchParams.get('name') ?? '');

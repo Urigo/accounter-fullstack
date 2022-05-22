@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 import { isBusiness } from '../../../../helpers';
@@ -9,7 +9,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const InvoiceDate: FC<Props> = ({ transaction, style }) => {
+export const InvoiceDate = ({ transaction, style }: Props) => {
   const indicator = isBusiness(transaction) && !transaction.tax_invoice_date;
 
   return (

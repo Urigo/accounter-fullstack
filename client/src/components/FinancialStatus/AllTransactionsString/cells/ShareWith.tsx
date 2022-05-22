@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
 import { shareWithDotan, suggestedTransaction } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const ShareWith: FC<Props> = ({ transaction, style }) => {
+export const ShareWith = ({ transaction, style }: Props) => {
   const cellText =
     transaction.financial_accounts_to_balance ?? suggestedTransaction(transaction)?.financialAccountsToBalance;
 

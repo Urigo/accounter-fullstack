@@ -1,12 +1,14 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { LedgerEntity } from '../../models/types';
 import { HoverHandler } from '../common/HoverHandler';
 
-const EditElement: FC<{
+interface EditElementProps {
   transaction: LedgerEntity;
   attribute: keyof LedgerEntity;
-}> = ({ transaction, attribute }) => {
+}
+
+const EditElement = ({ transaction, attribute }: EditElementProps) => {
   const { updateBankTransactionAttribute } = useSql();
   const defaultValue =
     typeof transaction[attribute] === 'boolean'
@@ -33,12 +35,14 @@ const EditElement: FC<{
   );
 };
 
-const TransactionRow: FC<{
+interface TransactionRowProps {
   transaction: LedgerEntity;
   index: number;
   setSelected: (id: string) => void;
   isSelected: boolean;
-}> = ({ transaction, index, setSelected, isSelected }) => {
+}
+
+const TransactionRow = ({ transaction, index, setSelected, isSelected }: TransactionRowProps) => {
   const { generateTaxMovement, deleteTaxMovement, reviewTransaction } = useSql();
 
   const generateGoToUserTransactionsFunctionCall = (userName?: string | null) => {
@@ -134,10 +138,12 @@ const TransactionRow: FC<{
   );
 };
 
-export const ReportToReview: FC<{
+interface ReportToReviewProps {
   reportMonthToReview: string;
   currrentCompany: string;
-}> = ({ reportMonthToReview, currrentCompany }) => {
+}
+
+export const ReportToReview = ({ reportMonthToReview, currrentCompany }: ReportToReviewProps) => {
   const { getReportToReview } = useSql();
   const [selectedRow, setSelectedRow] = useState<string | undefined>(undefined);
   const [transactions, setTransactions] = useState<LedgerEntity[]>([]);

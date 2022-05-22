@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import { writeToClipboard } from '../../../helpers/clipboard';
 import type { TransactionType } from '../../../models/types';
 import { UpdateButton } from '../../common';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Links: FC<Props> = ({ transaction, style }) => {
+export const Links = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {transaction.links && 'yes'}

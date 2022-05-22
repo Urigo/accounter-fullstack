@@ -1,8 +1,8 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { LastInvoiceNumber } from '../../models/types';
 
-export const LastInvoiceNumbers: FC = () => {
+export const LastInvoiceNumbers = () => {
   const { getLastInvoiceNumbers } = useSql();
   const [lastInvoiceNumbers, setLastInvoiceNumbers] = useState<LastInvoiceNumber[]>([]);
 

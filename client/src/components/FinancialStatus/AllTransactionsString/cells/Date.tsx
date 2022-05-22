@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Date: FC<Props> = ({ transaction, style }) => {
+export const Date = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {moment(transaction.event_date).format('DD/MM/YY')}

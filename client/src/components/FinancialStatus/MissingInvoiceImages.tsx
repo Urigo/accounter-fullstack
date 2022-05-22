@@ -1,9 +1,13 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import { MissingInvoice } from '../../models/types';
 
-export const MissingInvoiceImages: FC<{ monthTaxReport: string }> = ({ monthTaxReport }) => {
+interface Props {
+  monthTaxReport: string;
+}
+
+export const MissingInvoiceImages = ({ monthTaxReport }: Props) => {
   const { getMissingInvoiceImages } = useSql();
   const [missingInvoiceImages, setMissingInvoiceImages] = useState<MissingInvoice[]>([]);
 
