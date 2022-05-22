@@ -93,31 +93,33 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
   return (
     <>
       <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
-        {columns.map(column => {
+        {columns.map((column, i) => {
           switch (column) {
             case 'Date': {
               return (
                 <Date
+                  key={column}
                   createdAt={charge.transactions[0].createdAt}
                   effectiveDate={charge.transactions[0].effectiveDate}
                 />
               );
             }
             case 'Amount': {
-              return <Amount amount={charge.transactions[0].amount.formatted} />;
+              return <Amount key={column} amount={charge.transactions[0].amount.formatted} />;
             }
             case 'Entity': {
-              return <Entity data={charge} alternativeCharge={alternativeCharge} />;
+              return <Entity key={column} data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'Description': {
-              return <Description data={charge.transactions[0]} alternativeCharge={alternativeCharge} />;
+              return <Description key={column} data={charge.transactions[0]} alternativeCharge={alternativeCharge} />;
             }
             case 'Category': {
-              return <Category data={charge} alternativeCharge={alternativeCharge} />;
+              return <Category key={column} data={charge} alternativeCharge={alternativeCharge} />;
             }
             case 'VAT': {
               return (
                 <Vat
+                  key={column}
                   vat={charge.vat}
                   isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
@@ -127,11 +129,12 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               );
             }
             case 'Account': {
-              return <Account account={charge.transactions[0].account} />;
+              return <Account key={column} account={charge.transactions[0].account} />;
             }
             case 'Share with': {
               return (
                 <ShareWith
+                  key={column}
                   data={charge}
                   isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
@@ -140,37 +143,93 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType, financi
               );
             }
             case 'Bank Description': {
-              return <BankDescription description={charge.transactions[0].description} />;
+              return <BankDescription key={column} description={charge.transactions[0].description} />;
             }
             case 'Invoice Img': {
-              return <InvoiceImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <InvoiceImg
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Invoice Date': {
-              return <InvoiceDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <InvoiceDate
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Invoice Number': {
-              return <InvoiceNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <InvoiceNumber
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Invoice File': {
-              return <InvoiceFile data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <InvoiceFile
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Receipt Image': {
-              return <ReceiptImg data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <ReceiptImg
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Receipt Date': {
-              return <ReceiptDate data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <ReceiptDate
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Receipt Number': {
-              return <ReceiptNumber data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <ReceiptNumber
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             case 'Receipt URL': {
-              return <ReceiptUrl data={charge} isBusiness={isBusiness} financialEntityName={financialEntityName} />;
+              return (
+                <ReceiptUrl
+                  key={column}
+                  data={charge}
+                  isBusiness={isBusiness}
+                  financialEntityName={financialEntityName}
+                />
+              );
             }
             // case 'Links': {
             //   return <Links charge={charge} />;
             // }
             default: {
-              return <td>missing impl</td>;
+              return <td key={i}>missing impl</td>;
             }
           }
         })}
