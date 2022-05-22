@@ -25,34 +25,34 @@ import {
 import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
-  fragment chargesFields on FinancialEntity {
-    ...vatFields
-    ...shareWithFields
+  fragment ChargesFields on FinancialEntity {
+    ...VatFields
+    ...ShareWithFields
     charges {
       id
-      ...dateFields
-      ...amountFields
-      ...entityFields
-      ...descriptionFields
-      ...categoryFields
-      ...accountFields
-      ...bankDescriptionFields
-      ...ledgerRecordsFields
-      ...suggestedCharge
-      ...invoiceImageFields
-      ...invoiceDateFields
-      ...invoiceNumberFields
-      ...invoiceFileFields
-      ...receiptImageFields
-      ...receiptDateFields
-      ...receiptNumberFields
-      ...receiptUrlFields
+      ...DateFields
+      ...AmountFields
+      ...EntityFields
+      ...DescriptionFields
+      ...CategoryFields
+      ...AccountFields
+      ...BankDescriptionFields
+      ...LedgerRecordsFields
+      ...SuggestedCharge
+      ...InvoiceImageFields
+      ...InvoiceDateFields
+      ...InvoiceNumberFields
+      ...InvoiceFileFields
+      ...ReceiptImageFields
+      ...ReceiptDateFields
+      ...ReceiptNumberFields
+      ...ReceiptUrlFields
     }
   }
 `;
 
 gql`
-  fragment suggestedCharge on Charge {
+  fragment SuggestedCharge on Charge {
     transactions {
       __typename
       amount {

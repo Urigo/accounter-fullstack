@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { InvoiceNumberFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment invoiceNumberFields on Charge {
+  fragment InvoiceNumberFields on Charge {
     invoice {
       ... on Invoice {
         serialNumber

@@ -12,7 +12,7 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 
 gql`
-  fragment shareWithFields on FinancialEntity {
+  fragment ShareWithFields on FinancialEntity {
     __typename
     ... on LtdFinancialEntity {
       name

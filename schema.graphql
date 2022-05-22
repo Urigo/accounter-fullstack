@@ -110,10 +110,6 @@ input FinancialAmountInput {
   currency: Currency!
 }
 
-interface Error {
-  message: String!
-}
-
 type CommonError {
   message: String!
 }
@@ -122,7 +118,7 @@ union UpdateChargeResult = Charge | CommonError
 
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
 # Main Module
-" Financial entity, identifier by ID, can be a company or invdividual "
+" Financial entity, identifier by ID, can be a company or individual "
 type LtdFinancialEntity implements FinancialEntity {
   id: ID!
   govermentId: String!
@@ -168,13 +164,13 @@ input ChargeFilter {
   withoutDocuments: Boolean
   " Include only charges that doesn't have invoice document linked "
   withoutInvoice: Boolean
-  " Include only charges occured after this date "
+  " Include only charges occurred after this date "
   fromDate: String
-  " Include only charges occured before this date "
+  " Include only charges occurred before this date "
   toDate: String
 }
 
-" represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
+" represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
 type Charge {
   id: ID!
   " when the initial charge was created from the first event we found "
@@ -247,12 +243,12 @@ extend interface Transaction {
 
 # Business Trip Module
 extend type Charge {
-  " should be later in busines trip module? "
+  " should be later in business trip module? "
   businessTrip: BusinessTrip
 }
 
 extend input ChargeFilter {
-  " filter by business trip (should be later in busines trip module?) "
+  " filter by business trip (should be later in business trip module?) "
   businessTrip: ID
 }
 
@@ -346,7 +342,7 @@ interface Transaction {
   balance: FinancialAmount!
 }
 
-" temp type until DB  supports transactions differenciation"
+" temp type until DB supports transactions differentiation"
 type CommonTransaction implements Transaction {
   id: ID!
   referenceNumber: String!

@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { LedgerRecordsFragment } from '../../../../__generated__/types';
 
 gql`
-  fragment ledgerRecords on Charge {
+  fragment LedgerRecords on Charge {
     ledgerRecords {
       id
       date

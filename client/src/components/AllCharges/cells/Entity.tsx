@@ -6,7 +6,7 @@ import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 import { EntityFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment entityFields on Charge {
+  fragment EntityFields on Charge {
     id
     counterparty {
       name

@@ -96,7 +96,7 @@ gql`
       userNote
     }
   }
-  query documents {
+  query Documents {
     documents {
       id
       image

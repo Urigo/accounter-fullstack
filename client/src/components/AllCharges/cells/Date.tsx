@@ -3,7 +3,7 @@ import { CSSProperties, FC } from 'react';
 import gql from 'graphql-tag';
 
 gql`
-  fragment dateFields on Charge {
+  fragment DateFields on Charge {
     transactions {
       id
       createdAt
