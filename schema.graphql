@@ -186,7 +186,7 @@ type Charge {
   " list of financial/bank transactions linked to the charge "
   transactions: [Transaction!]!
   " calculated counterparty details for the charge "
-  counterparty: Counterparty!
+  counterparty: Counterparty
   " user description, set manually by the user "
   description: String
   " user customer tags "

@@ -12,7 +12,7 @@ generates:
         CardFinancialAccount: ./financialAccounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
         Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         LedgerRecord: ./ledgerRecords.types.mjs#IGetLedgerRecordsByChargeIdsResult
-        NamedCounterparty: string
+        NamedCounterparty: ../prototypes.mjs#CounterpartyProto
         Invoice: ./documents.types.mjs#IGetEmailDocsResult
         Proforma: ./documents.types.mjs#IGetEmailDocsResult
         Receipt: ./documents.types.mjs#IGetEmailDocsResult
