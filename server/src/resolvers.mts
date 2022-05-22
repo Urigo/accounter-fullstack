@@ -253,6 +253,22 @@ export const resolvers: Resolvers = {
         };
       }
     },
+    generateTaxMovement: async (_, { chargeId }) => {
+      const charges = await getChargesByIds.run({ cahrgeIds: [chargeId] }, pool);
+      if (charges.length < 1) {
+        throw new Error(`Charge ID="${chargeId}" not found`);
+      }
+      const charge = charges[0];
+
+      const accounts = await getFinancialAccountsByAccountNumbers.run(
+        { accountNumbers: [charge.account_number] },
+        pool
+      );
+      if (accounts.length < 1) {
+        throw new Error(`Account number="${charge.account_number}" not found`);
+      }
+      const account = accounts[0];
+    },
   },
   Invoice: {
     ...commonDocumentsFields,
