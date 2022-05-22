@@ -488,7 +488,7 @@ export const resolvers: Resolvers = {
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
   },
   NamedCounterparty: {
-    __isTypeOf: (parent) => !!parent,
+    __isTypeOf: parent => !!parent,
     name: parent => parent!,
   },
   BeneficiaryCounterparty: {
