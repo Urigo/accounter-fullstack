@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node --experimental-specifier-resolution=node dist/old-accounter/src/index.js",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node --experimental-json-modules dist/old-accounter/src/index.js\"",
-    "scrape": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node --experimental-json-modules dist/old-accounter/src/scrape.js\"",
+    "scrape": "node --experimental-specifier-resolution=node --experimental-json-modules dist/old-accounter/src/scrape.js",
     "get": "node --experimental-specifier-resolution=node dist/old-accounter/src/scrape.js",
     "build": "tsc",
     "lint": "eslint --ignore-path .gitignore .",
