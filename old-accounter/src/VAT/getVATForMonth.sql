@@ -1,22 +1,21 @@
+SELECT
+  *
+FROM
+  get_vat_for_month('2020-12-01');
 
+DROP FUNCTION get_vat_for_month(month_input VARCHAR);
 
-
-
-SELECT * FROM get_vat_for_month('2020-12-01');
-
-drop function get_vat_for_month(month_input varchar);
-CREATE OR REPLACE FUNCTION get_vat_for_month(month_input varchar)
-RETURNS TABLE (
-    overall_VAT_status numeric(9,2),
-    vat numeric(9,2),
-    event_date date,
-    event_amount numeric(9,2),
-    financial_entity varchar,
-    user_description varchar,
-    bank_reference bigint,
-    account_number integer)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION get_vat_for_month(month_input VARCHAR) RETURNS TABLE (
+  overall_VAT_status NUMERIC(9, 2),
+  vat NUMERIC(9, 2),
+  event_date date,
+  event_amount NUMERIC(9, 2),
+  financial_entity VARCHAR,
+  user_description VARCHAR,
+  bank_reference BIGINT,
+  account_number INTEGER
+) LANGUAGE SQL AS $$
 SELECT
        SUM((CASE WHEN financial_entity = 'VAT' THEN (event_amount*-1)
             ELSE (real_vat) END)::numeric(9,2))

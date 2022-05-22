@@ -1,16 +1,16 @@
-select * from acending_invoice_numbers();
+SELECT
+  *
+FROM
+  acending_invoice_numbers();
 
-create or replace function acending_invoice_numbers()
-returns TABLE
-(
-    tax_invoice_number character varying,
-    user_description varchar,
-    financial_entity varchar,
-    event_amount numeric(9,2),
-    event_date date
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION acending_invoice_numbers() RETURNS TABLE (
+  tax_invoice_number CHARACTER VARYING,
+  user_description VARCHAR,
+  financial_entity VARCHAR,
+  event_amount NUMERIC(9, 2),
+  event_date date
+) LANGUAGE SQL AS $$
 
 SELECT tax_invoice_number,
        user_description,

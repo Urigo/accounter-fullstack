@@ -1,9 +1,10 @@
-select * from missing_receipts_numbers('2020-03-01');
+SELECT
+  *
+FROM
+  missing_receipts_numbers('2020-03-01');
 
-create or replace function missing_receipts_numbers(month_input varchar)
-returns setof formatted_merged_tables
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION missing_receipts_numbers(month_input VARCHAR) RETURNS SETOF formatted_merged_tables LANGUAGE SQL AS $$
 
 WITH this_month_business AS (
     SELECT *

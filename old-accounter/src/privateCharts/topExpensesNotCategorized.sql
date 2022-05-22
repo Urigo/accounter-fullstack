@@ -1,19 +1,19 @@
-select * from top_expenses_not_categorized('2020-10-01');
+SELECT
+  *
+FROM
+  top_expenses_not_categorized('2020-10-01');
 
-drop function top_expenses_not_categorized;
-CREATE OR REPLACE FUNCTION top_expenses_not_categorized(month_input varchar)
-    RETURNS TABLE
-            (
-                amount           numeric,
-                date             date,
-                description      text,
-                bank_description text,
-                currency_code    text,
-                event_number    bigint
-            )
-    LANGUAGE SQL
-AS
-$$
+DROP FUNCTION top_expenses_not_categorized;
+
+CREATE
+OR REPLACE FUNCTION top_expenses_not_categorized(month_input VARCHAR) RETURNS TABLE (
+  amount NUMERIC,
+  date date,
+  description TEXT,
+  bank_description TEXT,
+  currency_code TEXT,
+  event_number BIGINT
+) LANGUAGE SQL AS $$
 
 select abs(event_amount),
        event_date,

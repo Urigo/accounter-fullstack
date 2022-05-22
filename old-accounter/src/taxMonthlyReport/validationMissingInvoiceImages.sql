@@ -1,10 +1,12 @@
-select * from missing_invoice_images('2020-12-01');
+SELECT
+  *
+FROM
+  missing_invoice_images('2020-12-01');
 
-drop function missing_invoice_images(month_input varchar);
-create or replace function missing_invoice_images(month_input varchar)
-returns setof accounter_schema.all_transactions
-LANGUAGE SQL
-AS $$
+DROP FUNCTION missing_invoice_images(month_input VARCHAR);
+
+CREATE
+OR REPLACE FUNCTION missing_invoice_images(month_input VARCHAR) RETURNS SETOF accounter_schema.all_transactions LANGUAGE SQL AS $$
 
 WITH this_month_business AS (
     SELECT *

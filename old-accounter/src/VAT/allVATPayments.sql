@@ -1,16 +1,16 @@
-select * from all_vat_payments();
+SELECT
+  *
+FROM
+  all_vat_payments();
 
-create or replace function all_vat_payments()
-returns table
-(
-    event_date date,
-    event_amount numeric(9,2),
-    bank_reference integer,
-    account_number integer,
-    sum_vat numeric(9,2)
-)
-LANGUAGE SQL
-AS $$
+CREATE
+OR REPLACE FUNCTION all_vat_payments() RETURNS TABLE (
+  event_date date,
+  event_amount NUMERIC(9, 2),
+  bank_reference INTEGER,
+  account_number INTEGER,
+  sum_vat NUMERIC(9, 2)
+) LANGUAGE SQL AS $$
 
 
 SELECT
