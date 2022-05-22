@@ -110,7 +110,15 @@ input FinancialAmountInput {
   currency: Currency!
 }
 
-type CommonError {
+interface Error {
+  message: String!
+}
+
+interface Error {
+  message: String!
+}
+
+type CommonError implements Error {
   message: String!
 }
 
@@ -118,7 +126,7 @@ union UpdateChargeResult = Charge | CommonError
 
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
 # Main Module
-" Financial entity, identifier by ID, can be a company or individual "
+" Financial entity, identifier by ID, can be a company or invdividual "
 type LtdFinancialEntity implements FinancialEntity {
   id: ID!
   govermentId: String!
@@ -164,13 +172,13 @@ input ChargeFilter {
   withoutDocuments: Boolean
   " Include only charges that doesn't have invoice document linked "
   withoutInvoice: Boolean
-  " Include only charges occurred after this date "
+  " Include only charges occured after this date "
   fromDate: String
-  " Include only charges occurred before this date "
+  " Include only charges occured before this date "
   toDate: String
 }
 
-" represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
+" represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
 type Charge {
   id: ID!
   " when the initial charge was created from the first event we found "
@@ -243,12 +251,12 @@ extend interface Transaction {
 
 # Business Trip Module
 extend type Charge {
-  " should be later in business trip module? "
+  " should be later in busines trip module? "
   businessTrip: BusinessTrip
 }
 
 extend input ChargeFilter {
-  " filter by business trip (should be later in business trip module?) "
+  " filter by business trip (should be later in busines trip module?) "
   businessTrip: ID
 }
 
@@ -342,7 +350,7 @@ interface Transaction {
   balance: FinancialAmount!
 }
 
-" temp type until DB supports transactions differentiation"
+" temp type until DB  supports transactions differenciation"
 type CommonTransaction implements Transaction {
   id: ID!
   referenceNumber: String!
