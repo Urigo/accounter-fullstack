@@ -21,7 +21,7 @@ export const monthlyReport = async (query: any): Promise<string> => {
   for (const transaction of monthlyTaxesReport) {
     monthlyReportsHTMLTemplate = monthlyReportsHTMLTemplate.concat(`
       <tr>
-        <td>${transaction.תאריך_חשבונית}</td>
+        <td>${transaction.invoice_date}</td>
         <td>${transaction.חשבון_חובה_1}</td>
         <td>${transaction.סכום_חובה_1}</td>
         <td>${transaction.מטח_סכום_חובה_1}</td>
@@ -48,7 +48,7 @@ export const monthlyReport = async (query: any): Promise<string> => {
       <table>
         <thead>
             <tr>
-                <th>תאריך_חשבונית</th>
+                <th>invoice_date</th>
                 <th>חשבון_חובה_1</th>
                 <th>סכום_חובה_1</th>
                 <th>מטח_סכום_חובה_1</th>

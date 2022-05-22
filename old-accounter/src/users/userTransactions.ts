@@ -7,7 +7,7 @@ export const businesses = {
 };
 
 export type LedgerEntity = {
-  תאריך_חשבונית: string;
+  invoice_date: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
   מטח_סכום_חובה_1: string;
@@ -111,7 +111,7 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
           <td>${transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}</td>
           <td>${transaction.תאריך_3 ? transaction.תאריך_3 : ''}</td>
           <td>${transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
-          <td>${transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}</td>
+          <td>${transaction.invoice_date ? transaction.invoice_date : ''}</td>
           <td>${transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
           <td>${transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
           <td>${transaction.פרטים === '0' ? '' : transaction.פרטים}</td>
@@ -135,7 +135,7 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
                 <th>חשבשבת#</th>
                 <th>תאריך_3</th>
                 <th>תאריך_ ערך</th>
-                <th>תאריך_חשבונית</th>
+                <th>invoice_date</th>
                 <th>אסמכתא_1</th>
                 <th>אסמכתא_2</th>
                 <th>פרטים</th>

@@ -34,7 +34,7 @@ DROP FUNCTION report_to_hashavshevet_by_month(salary_transaction uuid);
 
 CREATE
 OR REPLACE FUNCTION input_salary(salary_transaction_id uuid) RETURNS TABLE(
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,

@@ -611,7 +611,7 @@ export const financialStatus = async (query: any): Promise<string> => {
                 <tr>
                   <th>מספר</th>
                   <th>תקין</th>
-                  <th>תאריך_חשבונית</th>
+                  <th>invoice_date</th>
                   <th>חשבון_חובה_1</th>
                   <th>סכום_חובה_1</th>
                   <th>מטח_סכום_חובה_1</th>

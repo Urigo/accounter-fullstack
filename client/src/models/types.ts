@@ -102,7 +102,7 @@ export interface VatTransaction {
 }
 
 export interface MonthTaxReport {
-  תאריך_חשבונית: string;
+  invoice_date: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
   מטח_סכום_חובה_1: string;
@@ -133,7 +133,7 @@ export interface TopPrivateNotCategorizedExpense {
 }
 
 export type LedgerEntity = {
-  תאריך_חשבונית: string;
+  invoice_date: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
   מטח_סכום_חובה_1: string;

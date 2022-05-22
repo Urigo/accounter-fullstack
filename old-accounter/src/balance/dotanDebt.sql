@@ -190,4 +190,4 @@ WHERE
 ORDER BY
   (to_date(תאריך_3, 'DD/MM/YYYY')),
   original_id,
-  תאריך_חשבונית;
+  invoice_date;

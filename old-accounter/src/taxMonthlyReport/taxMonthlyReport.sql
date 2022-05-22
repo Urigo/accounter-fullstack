@@ -9,7 +9,7 @@ WHERE
 ORDER BY
   (to_date(תאריך_3, 'DD/MM/YYYY')),
   original_id,
-  תאריך_חשבונית;
+  invoice_date;
 
 SELECT
   hash_index,
@@ -26,7 +26,7 @@ FROM
   accounter_schema.ledger hashavshevet
 WHERE
   origin = 'manual_salary'
-  AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01' :: date);
+  AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01' :: date);
 
 UPDATE
   accounter_schema.isracard_creditcard_transactions
@@ -93,8 +93,8 @@ FROM
 WHERE
   (
     hashavshevet.original_id IS NULL
-    AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01' :: date)
-    AND to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (
+    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01' :: date)
+    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') <= (
       date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
     ) :: date
   )
@@ -189,7 +189,7 @@ DROP FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR) RETURNS TABLE(
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,
@@ -222,8 +222,8 @@ from accounter_schema.ledger hashavshevet
 left join formatted_merged_tables bank on hashavshevet.original_id = bank.id
 where
     (hashavshevet.original_id is null and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') >= date_trunc('month', month_report::date) and
-     to_date(hashavshevet.תאריך_חשבונית, 'DD/MM/YYYY') <= (date_trunc('month', month_report::date) + interval '1 month' - interval '1 day')::date
+     to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', month_report::date) and
+     to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') <= (date_trunc('month', month_report::date) + interval '1 month' - interval '1 day')::date
     ) or (
     bank.business_trip is null and
     (bank.account_number = 2733 OR bank.account_number = 61066) AND
@@ -266,7 +266,7 @@ OR REPLACE FUNCTION get_unified_tax_report_of_month(
   month_start VARCHAR,
   month_end VARCHAR
 ) RETURNS TABLE(
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,
@@ -296,7 +296,7 @@ OR REPLACE FUNCTION get_unified_tax_report_of_month(
 
 
 (
-select hashavshevet.תאריך_חשבונית,
+select hashavshevet.invoice_date,
        hashavshevet.חשבון_חובה_1,
        hashavshevet.סכום_חובה_1,
        hashavshevet.מטח_סכום_חובה_1,
@@ -357,7 +357,7 @@ where owner = (
     )
 UNION ALL
 (select
-       formatted_event_date as תאריך_חשבונית,
+       formatted_event_date as invoice_date,
        formatted_account as חשבון_חובה_1,
        concat(event_amount::text, ' ', currency_code) as סכום_חובה_1,
        bank_description as מטח_סכום_חובה_1,
@@ -437,7 +437,7 @@ SELECT
     FROM
       accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
     WHERE
-      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      COALESCE(t1.invoice_date, '') = COALESCE(t2.invoice_date, '')
       AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
       AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
       AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
@@ -464,7 +464,7 @@ SELECT
     FROM
       accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08 t1
     WHERE
-      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      COALESCE(t1.invoice_date, '') = COALESCE(t2.invoice_date, '')
       AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
       AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
       AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
@@ -572,7 +572,7 @@ FROM
     UNION ALL
     (
       SELECT
-        תאריך_חשבונית,
+        invoice_date,
         חשבון_חובה_1,
         סכום_חובה_1,
         מטח_סכום_חובה_1,
@@ -681,7 +681,7 @@ WHERE
 
 INSERT INTO
   accounter_schema.ledger (
-    תאריך_חשבונית,
+    invoice_date,
     חשבון_חובה_1,
     סכום_חובה_1,
     מטח_סכום_חובה_1,
@@ -722,7 +722,7 @@ DROP FUNCTION get_tax_report_of_month(month_input VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_month(month_input VARCHAR) RETURNS TABLE(
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,
@@ -778,7 +778,7 @@ WHERE
                 END)
             ELSE
                 formatted_event_date
-        END) AS תאריך_חשבונית,
+        END) AS invoice_date,
         (CASE WHEN event_amount < 0 THEN
             (CASE WHEN side = 0 THEN
                 formatted_tax_category
@@ -942,7 +942,7 @@ WHERE
     FROM this_month_business, generate_series(0,1) as side /* 0 = Entities, 1 = Accounts */
 ), two_sides as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         חשבון_חובה_1,
         סכום_חובה_1,
         מטח_סכום_חובה_1,
@@ -981,7 +981,7 @@ WHERE
         is_conversion <> TRUE
 ), one_side as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         חשבון_חובה_1,
         סכום_חובה_1,
         מטח_סכום_חובה_1,
@@ -1020,7 +1020,7 @@ WHERE
        side = 1
 ), conversions as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         (CASE WHEN event_amount > 0 THEN חשבון_חובה_1 END) as חשבון_חובה_1,
         (CASE WHEN event_amount > 0 THEN סכום_חובה_1 END) as סכום_חובה_1,
         (CASE WHEN event_amount > 0 THEN מטח_סכום_חובה_1 END) as מטח_סכום_חובה_1,
@@ -1049,7 +1049,7 @@ WHERE
          side = 1
 ), conversions_fees as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         'שער' as חשבון_חובה_1,
         to_char(float8 (CASE WHEN event_amount > 0 THEN
             ((
@@ -1089,7 +1089,7 @@ WHERE
          event_amount > 0
 ), invoice_rates_change as (
     SELECT
-            תאריך_חשבונית AS תאריך_חשבונית,
+            invoice_date AS invoice_date,
             'שער' AS חשבון_חובה_1,
             to_char(float8 (
                 -- TODO: Remove this when we suport currency on invoice_amount
@@ -1182,7 +1182,7 @@ WHERE
          side = 0
 ), transfer_fees as (
     SELECT
-            formatted_event_date AS תאריך_חשבונית,
+            formatted_event_date AS invoice_date,
             'עמל' AS חשבון_חובה_1,
             to_char(float8 (CASE
                 WHEN currency_code = 'EUR' THEN (ABS(tax_invoice_amount) - event_amount) * (
@@ -1236,7 +1236,7 @@ WHERE
          financial_entity != 'Uri Goldshtein' -- TODO: Until handling tax invoice currency
 ), withholding_tax as (
     SELECT
-            formatted_event_date AS תאריך_חשבונית,
+            formatted_event_date AS invoice_date,
             'ניבמלק' AS חשבון_חובה_1,
             to_char(float8 (ABS(tax_invoice_amount + COALESCE(vat, 0)) - event_amount), 'FM999999999.00') AS סכום_חובה_1,
             null,
@@ -1277,7 +1277,7 @@ WHERE
     SELECT
        to_char(
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
-       , 'DD/MM/YYYY') AS תאריך_חשבונית,
+       , 'DD/MM/YYYY') AS invoice_date,
        'מעמחוז' AS חשבון_חובה_1,
        to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_חובה_1,
        NULL AS מטח_סכום_חובה_1,
@@ -1314,7 +1314,7 @@ WHERE
     SELECT
        to_char(
            (date_trunc('month', month_input::date) + interval '1 month' - interval '1 day')::date
-       , 'DD/MM/YYYY') AS תאריך_חשבונית,
+       , 'DD/MM/YYYY') AS invoice_date,
        'עסק' AS חשבון_חובה_1,
        to_char(float8 (ABS( SUM(real_vat)))  , 'FM999999999.00') AS סכום_חובה_1,
        NULL AS מטח_סכום_חובה_1,
@@ -1380,7 +1380,7 @@ WHERE
 )
 SELECT *
 FROM all_reports
-ORDER BY to_date(תאריך_חשבונית, 'DD/MM/YYYY'), אסמכתא_1 desc, אסמכתא_2 desc, סכום_חובה_1 desc, חשבון_חובה_1 desc;
+ORDER BY to_date(invoice_date, 'DD/MM/YYYY'), אסמכתא_1 desc, אסמכתא_2 desc, סכום_חובה_1 desc, חשבון_חובה_1 desc;
 
 
 
@@ -1396,4 +1396,4 @@ WHERE
 ORDER BY
   (to_date(תאריך_3, 'DD/MM/YYYY')),
   original_id,
-  תאריך_חשבונית;
+  invoice_date;

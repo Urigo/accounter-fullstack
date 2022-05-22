@@ -294,7 +294,7 @@ export function hashNumberRounded(number: any): string | null {
 }
 
 export const insertMovementQuery = `insert into accounter_schema.ledger (
-  תאריך_חשבונית,
+  invoice_date,
   חשבון_חובה_1,
   סכום_חובה_1,
   מטח_סכום_חובה_1,

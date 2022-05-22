@@ -157,7 +157,7 @@ SELECT
     FROM
       accounter_schema.saved_tax_reports_2020_03_04 t1
     WHERE
-      COALESCE(t1.תאריך_חשבונית, '') = COALESCE(t2.תאריך_חשבונית, '')
+      COALESCE(t1.invoice_date, '') = COALESCE(t2.invoice_date, '')
       AND COALESCE(t1.חשבון_חובה_1, '') = COALESCE(t2.חשבון_חובה_1, '')
       AND COALESCE(t1.סכום_חובה_1, '') = COALESCE(t2.סכום_חובה_1, '')
       AND COALESCE(t1.מטח_סכום_חובה_1, '') = COALESCE(t2.מטח_סכום_חובה_1, '')
@@ -240,7 +240,7 @@ OR REPLACE FUNCTION trip_report(
   number_of_days_with_sleep_input FLOAT,
   number_of_days_without_sleep_input FLOAT DEFAULT 0
 ) RETURNS TABLE (
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,
@@ -290,7 +290,7 @@ with last_day as (
          order by event_date
      ),
      formatted_trip_transactions as (
-         select formatted_event_date                                            as תאריך_חשבונית,
+         select formatted_event_date                                            as invoice_date,
                 tax_category                                                    as חשבון_חובה_1,
                 formatted_event_amount_in_ils                                   as סכום_חובה_1,
                 formatted_foreign_amount_if_exist                               as מטח_סכום_חובה_1,
@@ -341,7 +341,7 @@ with last_day as (
          where tax_category = trip_name
      ),
      total_eshel as (
-         select to_char(last_day.date, 'DD/MM/YYYY')                                                 as תאריך_חשבונית,
+         select to_char(last_day.date, 'DD/MM/YYYY')                                                 as invoice_date,
                 trip_name                                                                            as חשבון_חובה_1,
                 to_char(float8(higher_countries.total * exchange_rate.daily_date), 'FM999999999.00') as סכום_חובה_1,
                 to_char(float8(higher_countries.total), 'FM999999999.00')                            as מטח_סכום_חובה_1,

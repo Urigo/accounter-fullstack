@@ -6,7 +6,7 @@ const TAX_CATEGORIES_WITH_NOT_FULL_VAT = ['פלאפון', 'מידע', 'מחשב�
 const ENTITIES_WITHOUT_INVOICE_DATE = ['Uri Goldshtein', 'Poalim', 'Isracard'];
 const TAX_CATEGORIES_WITHOUT_INVOICE_DATE = ['אוריח'];
 const INSERT_MOVEMENT_QUERY = `insert into accounter_schema.ledger (
-    תאריך_חשבונית,
+  invoice_date,
     חשבון_חובה_1,
     סכום_חובה_1,
     מטח_סכום_חובה_1,

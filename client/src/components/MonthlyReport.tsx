@@ -29,7 +29,7 @@ export const MonthlyReport: FC = () => {
       <table>
         <thead>
           <tr>
-            <th>תאריך_חשבונית</th>
+            <th>invoice_date</th>
             <th>חשבון_חובה_1</th>
             <th>סכום_חובה_1</th>
             <th>מטח_סכום_חובה_1</th>
@@ -54,7 +54,7 @@ export const MonthlyReport: FC = () => {
         <tbody>
           {monthlyTaxesReport.map(row => (
             <tr>
-              <td>{row.תאריך_חשבונית}</td>
+              <td>{row.invoice_date}</td>
               <td>{row.חשבון_חובה_1}</td>
               <td>{row.סכום_חובה_1}</td>
               <td>{row.מטח_סכום_חובה_1}</td>

@@ -478,7 +478,7 @@ export const resolvers: Resolvers = {
     debitAccount: DbLedgerRecord => DbLedgerRecord.חשבון_חובה_1,
     originalAmount: DbLedgerRecord =>
       formatFinancialAmount(DbLedgerRecord.מטח_סכום_חובה_1 ?? DbLedgerRecord.סכום_חובה_1, DbLedgerRecord.מטבע),
-    date: DbLedgerRecord => DbLedgerRecord.תאריך_חשבונית,
+    date: DbLedgerRecord => DbLedgerRecord.invoice_date,
     description: () => 'Missing', // TODO: missing in DB
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,

@@ -8,7 +8,7 @@ interface ModifiedTransaction {
   hashavshevet_id?: string;
   תאריך_3?: string;
   תאריך_ערך?: string;
-  תאריך_חשבונית?: string;
+  invoice_date?: string;
   אסמכתא_1?: string;
   אסמכתא_2?: string;
   פרטים: string;
@@ -33,7 +33,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transac
           <th>חשבשבת#</th>
           <th>תאריך_3</th>
           <th>תאריך_ ערך</th>
-          <th>תאריך_חשבונית</th>
+          <th>invoice_date</th>
           <th>אסמכתא_1</th>
           <th>אסמכתא_2</th>
           <th>פרטים</th>
@@ -76,7 +76,7 @@ const TransactionTable: FC<{ transactions: ModifiedTransaction[] }> = ({ transac
               <td>{transaction.hashavshevet_id ?? ''}</td>
               <td>{transaction.תאריך_3 ?? ''}</td>
               <td>{transaction.תאריך_ערך ? transaction.תאריך_ערך : ''}</td>
-              <td>{transaction.תאריך_חשבונית ? transaction.תאריך_חשבונית : ''}</td>
+              <td>{transaction.invoice_date ? transaction.invoice_date : ''}</td>
               <td>{transaction.אסמכתא_1 ? transaction.אסמכתא_1 : ''}</td>
               <td>{transaction.אסמכתא_2 ? transaction.אסמכתא_2 : ''}</td>
               <td>{transaction.פרטים === '0' ? '' : transaction.פרטים}</td>
@@ -152,7 +152,7 @@ export const UserTransactions: FC = () => {
       hashavshevet_id: transaction.hashavshevet_id,
       תאריך_3: transaction.תאריך_3,
       תאריך_ערך: transaction.תאריך_ערך,
-      תאריך_חשבונית: transaction.תאריך_חשבונית,
+      invoice_date: transaction.invoice_date,
       אסמכתא_1: transaction.אסמכתא_1,
       אסמכתא_2: transaction.אסמכתא_2,
       פרטים: transaction.פרטים,

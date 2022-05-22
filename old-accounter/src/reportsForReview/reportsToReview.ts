@@ -53,7 +53,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   const allTransactions: any = results[2].value;
 
   allTransactions.rows = allTransactions.rows.map((transaction: any) => {
-    transaction.תאריך_חשבונית = moment(transaction.event_date).format('DD/MM/YYYY');
+    transaction.invoice_date = moment(transaction.event_date).format('DD/MM/YYYY');
     transaction.חשבון_חובה_1 = transaction.account_type ? transaction.account_type : '';
     transaction.סכום_חובה_1 = `${transaction.event_amount} ${transaction.currency_code}`;
     transaction.מטח_סכום_חובה_1 = transaction.bank_description;
@@ -213,7 +213,7 @@ export const reportToReview = async (query: any): Promise<string> => {
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">
-          ${addHoverEditButton('תאריך_חשבונית')}
+          ${addHoverEditButton('invoice_date')}
           <img download class="invoiceImage" src="${transaction.proforma_invoice_file}">
         </td>
         <td>${addHoverEditButton(
@@ -284,7 +284,7 @@ export const reportToReview = async (query: any): Promise<string> => {
             <tr>
                 <th>מספר</th>
                 <th>תקין</th>
-                <th>תאריך_חשבונית</th>
+                <th>invoice_date</th>
                 <th>חשבון_חובה_1</th>
                 <th>סכום_חובה_1</th>
                 <th>מטח_סכום_חובה_1</th>

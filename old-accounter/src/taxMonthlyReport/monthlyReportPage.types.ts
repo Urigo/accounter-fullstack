@@ -7,7 +7,7 @@ export interface IMonthlyTaxesReportSqlParams {
 
 /** 'monthlyTaxesReportSQL' return type */
 export interface IMonthlyTaxesReportSqlResult {
-  תאריך_חשבונית: string;
+  invoice_date: string;
   חשבון_חובה_1: string;
   סכום_חובה_1: string;
   מטח_סכום_חובה_1: string;

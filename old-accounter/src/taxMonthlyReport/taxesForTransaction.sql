@@ -50,7 +50,7 @@ DROP FUNCTION get_tax_report_of_transaction(transaction_id uuid);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_transaction(transaction_id uuid) RETURNS TABLE(
-  תאריך_חשבונית VARCHAR,
+  invoice_date VARCHAR,
   חשבון_חובה_1 VARCHAR,
   סכום_חובה_1 VARCHAR,
   מטח_סכום_חובה_1 VARCHAR,
@@ -93,7 +93,7 @@ WHERE
                 END)
             ELSE
                 formatted_event_date
-        END) AS תאריך_חשבונית,
+        END) AS invoice_date,
         (CASE WHEN event_amount < 0 THEN
             (CASE WHEN side = 0 THEN
                 formatted_tax_category
@@ -255,7 +255,7 @@ WHERE
     FROM this_month_business, generate_series(0,1) as side /* 0 = Entities, 1 = Accounts */
 ), two_sides as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         חשבון_חובה_1,
         סכום_חובה_1,
         מטח_סכום_חובה_1,
@@ -294,7 +294,7 @@ WHERE
         is_conversion <> TRUE
 ), one_side as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         חשבון_חובה_1,
         סכום_חובה_1,
         מטח_סכום_חובה_1,
@@ -333,7 +333,7 @@ WHERE
        side = 1
 ), conversions as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         (CASE WHEN event_amount > 0 THEN חשבון_חובה_1 END) as חשבון_חובה_1,
         (CASE WHEN event_amount > 0 THEN סכום_חובה_1 END) as סכום_חובה_1,
         (CASE WHEN event_amount > 0 THEN מטח_סכום_חובה_1 END) as מטח_סכום_חובה_1,
@@ -362,7 +362,7 @@ WHERE
          side = 1
 ), conversions_fees as (
     SELECT
-        תאריך_חשבונית,
+        invoice_date,
         'שער' as חשבון_חובה_1,
         to_char(float8 (CASE WHEN event_amount > 0 THEN
             ((
@@ -402,7 +402,7 @@ WHERE
          event_amount > 0
 ), invoice_rates_change as (
     SELECT
-            תאריך_חשבונית AS תאריך_חשבונית,
+            invoice_date AS invoice_date,
             'שער' AS חשבון_חובה_1,
             to_char(float8 (
                 -- TODO: Remove this when we suport currency on invoice_amount
@@ -495,7 +495,7 @@ WHERE
          side = 0
 ), transfer_fees as (
     SELECT
-            formatted_event_date AS תאריך_חשבונית,
+            formatted_event_date AS invoice_date,
             'עמל' AS חשבון_חובה_1,
             to_char(float8 (CASE
                 WHEN currency_code = 'EUR' THEN (ABS(tax_invoice_amount) - event_amount) * (
@@ -549,7 +549,7 @@ WHERE
          financial_entity != 'Uri Goldshtein' -- TODO: Until handling tax invoice currency
 ), withholding_tax as (
     SELECT
-            formatted_event_date AS תאריך_חשבונית,
+            formatted_event_date AS invoice_date,
             'ניבמלק' AS חשבון_חובה_1,
             to_char(float8 (ABS(tax_invoice_amount + COALESCE(vat, 0)) - event_amount), 'FM999999999.00') AS סכום_חובה_1,
             null,
@@ -607,7 +607,7 @@ WHERE
 )
 SELECT *
 FROM all_reports
-ORDER BY to_date(תאריך_חשבונית, 'DD/MM/YYYY'), אסמכתא_1 desc, אסמכתא_2 desc, סכום_חובה_1 desc, חשבון_חובה_1 desc;
+ORDER BY to_date(invoice_date, 'DD/MM/YYYY'), אסמכתא_1 desc, אסמכתא_2 desc, סכום_חובה_1 desc, חשבון_חובה_1 desc;
 
 
 

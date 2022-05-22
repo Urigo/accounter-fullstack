@@ -87,7 +87,7 @@ const TransactionRow: FC<{
         />
       </td>
       <td className="invoiceDate">
-        {addHoverEditButton('תאריך_חשבונית')}
+        {addHoverEditButton('invoice_date')}
         <img className="invoiceImage" src={transaction.proforma_invoice_file} />
       </td>
       <td>{addHoverEditButton('חשבון_חובה_1', generateGoToUserTransactionsFunctionCall(transaction.חשבון_חובה_1))}</td>
@@ -203,7 +203,7 @@ export const ReportToReview: FC<{
           <tr>
             <th>מספר</th>
             <th>תקין</th>
-            <th>תאריך_חשבונית</th>
+            <th>invoice_date</th>
             <th>חשבון_חובה_1</th>
             <th>סכום_חובה_1</th>
             <th>מטח_סכום_חובה_1</th>
