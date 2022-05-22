@@ -41,8 +41,10 @@ export function MonthTax({ monthIncomeTransactions }: Props) {
         </tr>
       </thead>
       <tbody>
-        {monthIncomeTransactions.map((row, i) => <MonthTaxRow key={i} row={row} />)}
+        {monthIncomeTransactions.map((row, i) => (
+          <MonthTaxRow key={i} row={row} />
+        ))}
       </tbody>
     </table>
   );
-};
+}
