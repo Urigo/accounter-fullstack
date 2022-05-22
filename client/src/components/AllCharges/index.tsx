@@ -58,7 +58,7 @@ export const AllCharges: FC = () => {
       <thead>
         <tr>
           {columns.map(key => (
-            <th>{key}</th>
+            <th key={key}>{key}</th>
           ))}
         </tr>
       </thead>
