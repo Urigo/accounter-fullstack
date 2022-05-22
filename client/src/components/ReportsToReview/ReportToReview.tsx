@@ -90,17 +90,25 @@ const TransactionRow: FC<{
         {addHoverEditButton('invoice_date')}
         <img className="invoiceImage" src={transaction.proforma_invoice_file} />
       </td>
-      <td>{addHoverEditButton('debit_account_1', generateGoToUserTransactionsFunctionCall(transaction.debit_account_1))}</td>
+      <td>
+        {addHoverEditButton('debit_account_1', generateGoToUserTransactionsFunctionCall(transaction.debit_account_1))}
+      </td>
       <td>{addHoverEditButton('debit_amount_1')}</td>
       <td>{addHoverEditButton('foreign_debit_amount_1')}</td>
       <td>{addHoverEditButton('currency')}</td>
-      <td>{addHoverEditButton('credit_account_1', generateGoToUserTransactionsFunctionCall(transaction.credit_account_1))}</td>
+      <td>
+        {addHoverEditButton('credit_account_1', generateGoToUserTransactionsFunctionCall(transaction.credit_account_1))}
+      </td>
       <td>{addHoverEditButton('credit_amount_1')}</td>
       <td>{addHoverEditButton('foreign_credit_amount_1')}</td>
-      <td>{addHoverEditButton('debit_account_2', generateGoToUserTransactionsFunctionCall(transaction.debit_account_2))}</td>
+      <td>
+        {addHoverEditButton('debit_account_2', generateGoToUserTransactionsFunctionCall(transaction.debit_account_2))}
+      </td>
       <td>{addHoverEditButton('debit_amount_2')}</td>
       <td>{addHoverEditButton('foreign_debit_amount_2')}</td>
-      <td>{addHoverEditButton('credit_account_2', generateGoToUserTransactionsFunctionCall(transaction.credit_account_2))}</td>
+      <td>
+        {addHoverEditButton('credit_account_2', generateGoToUserTransactionsFunctionCall(transaction.credit_account_2))}
+      </td>
       <td>{addHoverEditButton('credit_amount_2')}</td>
       <td>{addHoverEditButton('foreign_credit_amount_2')}</td>
       <td>{addHoverEditButton('details')}</td>
