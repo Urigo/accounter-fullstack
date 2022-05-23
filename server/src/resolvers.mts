@@ -1,4 +1,5 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
+import { hashavshevetFormat } from './helpers/hashavshevet.mjs';
 import {
   getChargeByFinancialAccountNumberLoader,
   getChargeByFinancialEntityIdLoader,
@@ -253,22 +254,168 @@ export const resolvers: Resolvers = {
         };
       }
     },
-    generateTaxMovement: async (_, { chargeId }) => {
-      const charges = await getChargesByIds.run({ cahrgeIds: [chargeId] }, pool);
-      if (charges.length < 1) {
-        throw new Error(`Charge ID="${chargeId}" not found`);
-      }
-      const charge = charges[0];
+  //   generateTaxMovement: async (_, { chargeId }) => {
+  //     const charge = await getChargeByIdLoader.load(chargeId);
+  //     if (!charge) {
+  //       throw new Error(`Charge ID="${chargeId}" not found`);
+  //     }
+  //     if (!charge.account_number) {
+  //       throw new Error(`Charge ID="${chargeId}" has no account number`);
+  //     }
 
-      const accounts = await getFinancialAccountsByAccountNumbers.run(
-        { accountNumbers: [charge.account_number] },
-        pool
-      );
-      if (accounts.length < 1) {
-        throw new Error(`Account number="${charge.account_number}" not found`);
-      }
-      const account = accounts[0];
-    },
+  //     const account = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
+  //     if (!account) {
+  //       throw new Error(`Account number="${charge.account_number}" not found`);
+  //     }
+
+
+
+
+
+
+
+  //     if (
+  //       charge.tax_invoice_currency &&
+  //       entryForFinancialAccount.debitAmountILS != entryForAccounting.debitAmountILS
+  //     ) {
+  //       console.log('שערררררררר של different currencies');
+  //       let credit = hashAccounts(
+  //         entryForFinancialAccount.creditAccount,
+  //         financialAccounts,
+  //         hashBusinessIndexes,
+  //         hashVATIndexes,
+  //         charge.currency_code,
+  //         isracardHashIndexes,
+  //         charge.bank_description
+  //       );
+  //       if (charge.event_amount < 0) {
+  //         credit = hashAccounts(
+  //           entryForFinancialAccount.debitAccount,
+  //           financialAccounts,
+  //           hashBusinessIndexes,
+  //           hashVATIndexes,
+  //           charge.currency_code,
+  //           isracardHashIndexes,
+  //           charge.bank_description
+  //         );
+  //       }
+  //       const entryForExchangeRatesDifferenceValues = [
+  //         hashavshevetFormat.date(charge.event_date),
+  //         hashVATIndexes.hashCurrencyRatesDifferencesIndex,
+  //         hashavshevetFormat.number(entryForFinancialAccount.debitAmountILS - entryForAccounting.debitAmountILS, {abs: true}),
+  //         null,
+  //         hashCurrencyType('ILS'),
+  //         credit,
+  //         hashavshevetFormat.number(entryForFinancialAccount.debitAmountILS - entryForAccounting.debitAmountILS, {abs: true}),
+  //         hashCurrencyType('ILS'),
+  //         null, // Check for interest transactions (הכנרבמ)
+  //         null,
+  //         null,
+  //         null,
+  //         null,
+  //         null,
+  //         entryForFinancialAccount.description,
+  //         entryForFinancialAccount.reference1
+  //           ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
+  //           : null, // add check on the db for it
+  //         entryForFinancialAccount.reference2
+  //           ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
+  //           : null,
+  //         null,
+  //         hashavshevetFormat.date(charge.debit_date ? charge.debit_date : charge.event_date),
+  //         hashavshevetFormat.date(charge.event_date),
+  //         charge.id,
+  //         'generated_invoice_rates_change_invoice_currency',
+  //         charge.proforma_invoice_file,
+  //         uuidv4(),
+  //         owner,
+  //       ];
+    
+  //       queryConfig.values = entryForExchangeRatesDifferenceValues;
+    
+  //       try {
+  //         const updateResult = await pool.query(queryConfig);
+  //         console.log(JSON.stringify(updateResult));
+  //       } catch (error) {
+  //         // TODO: Log important checks
+  //         console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
+  //       }
+  //     } else if (
+  //       getILSForDate(charge, invoiceExchangeRates).eventAmountILS !=
+  //         getILSForDate(charge, debitExchangeRates).eventAmountILS &&
+  //       charge.account_type != 'creditcard' &&
+  //       charge.financial_entity != 'Isracard' &&
+  //       charge.tax_invoice_date
+  //     ) {
+  //       console.log('שערררררררר');
+  //       let credit = hashAccounts(
+  //         entryForFinancialAccount.creditAccount,
+  //         financialAccounts,
+  //         hashBusinessIndexes,
+  //         hashVATIndexes,
+  //         charge.currency_code,
+  //         isracardHashIndexes,
+  //         charge.bank_description
+  //       );
+  //       if (charge.event_amount < 0) {
+  //         credit = hashAccounts(
+  //           entryForFinancialAccount.debitAccount,
+  //           financialAccounts,
+  //           hashBusinessIndexes,
+  //           hashVATIndexes,
+  //           charge.currency_code,
+  //           isracardHashIndexes,
+  //           charge.bank_description
+  //         );
+  //       }
+  //       const amount = hashavshevetFormat.number(
+  //         numberRounded(getILSForDate(charge, debitExchangeRates).eventAmountILS) -
+  //           numberRounded(getILSForDate(charge, invoiceExchangeRates).eventAmountILS)
+  //       );
+  //       const entryForExchangeRatesDifferenceValues = [
+  //         hashavshevetFormat.date(charge.tax_invoice_date),
+  //         credit,
+  //         amount,
+  //         null,
+  //         hashCurrencyType('ILS'),
+  //         hashVATIndexes.hashCurrencyRatesDifferencesIndex,
+  //         amount,
+  //         hashCurrencyType('ILS'),
+  //         null, // Check for interest transactions (הכנרבמ)
+  //         null,
+  //         null,
+  //         null,
+  //         null,
+  //         null,
+  //         entryForFinancialAccount.description,
+  //         entryForFinancialAccount.reference1
+  //           ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
+  //           : null, // add check on the db for it
+  //         entryForFinancialAccount.reference2
+  //           ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
+  //           : null,
+  //         null,
+  //         hashavshevetFormat.date(charge.debit_date ? charge.debit_date : charge.event_date),
+  //         hashavshevetFormat.date(charge.event_date),
+  //         charge.id,
+  //         'generated_invoice_rates_change',
+  //         charge.proforma_invoice_file,
+  //         uuidv4(),
+  //         owner,
+  //       ];
+    
+  //       queryConfig.values = entryForExchangeRatesDifferenceValues;
+    
+  //       try {
+  //         const updateResult = await pool.query(queryConfig);
+  //         console.log(JSON.stringify(updateResult));
+  //       } catch (error) {
+  //         // TODO: Log important checks
+  //         console.log('error in insert entryForExchangeRatesDifferenceValues - ', error);
+  //       }
+
+  //   },
+  // },
   },
   Invoice: {
     ...commonDocumentsFields,
