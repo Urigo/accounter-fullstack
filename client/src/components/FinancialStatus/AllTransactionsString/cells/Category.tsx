@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
 import { suggestedTransaction } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Category: FC<Props> = ({ transaction, style }) => {
+export const Category = ({ transaction, style }: Props) => {
   const isPersonalCategory = !!transaction.personal_category;
   const cellText = transaction.personal_category ?? suggestedTransaction(transaction)?.personalCategory;
 

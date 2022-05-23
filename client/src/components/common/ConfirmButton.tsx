@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useSql } from '../../hooks/useSql';
 import type { TransactionType } from '../../models/types';
 
@@ -8,7 +7,7 @@ type Props = {
   value?: string;
 };
 
-export const ConfirmButton: React.FC<Props> = ({ transaction, propertyName, value }) => {
+export const ConfirmButton = ({ transaction, propertyName, value }: Props) => {
   const updateToNew = () => {
     const { editTransaction } = useSql();
     if (!value) {

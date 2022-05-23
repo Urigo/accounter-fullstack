@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../../helpers/dates';
 import { AllTransactionsString } from './AllTransactionsString';
@@ -11,7 +10,7 @@ import { ThisMonthPrivateExpensesTable } from './ThisMonthPrivateExpensesTable';
 import { VatTransactionsString } from './VatTransactionsString';
 import '../../styles/table.css';
 
-export const FinancialStatus: FC = () => {
+export const FinancialStatus = () => {
   const [searchParams] = useSearchParams();
 
   const month = searchParams.get('month');

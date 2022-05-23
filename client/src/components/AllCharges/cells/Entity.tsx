@@ -1,4 +1,4 @@
-import { CSSProperties, FC, useCallback } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
 import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';

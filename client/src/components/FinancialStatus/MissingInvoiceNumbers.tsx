@@ -1,9 +1,13 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { MissingInvoice } from '../../models/types';
 
-const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
+interface MissingInvoiceNumberRowProps {
+  data: MissingInvoice;
+}
+
+const MissingInvoiceNumberRow = ({ data }: MissingInvoiceNumberRowProps) => {
   return (
     <tr>
       <td>{new Date(data.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
@@ -18,7 +22,11 @@ const MissingInvoiceNumberRow: FC<{ data: MissingInvoice }> = ({ data }) => {
   );
 };
 
-export const MissingInvoiceNumbers: FC<{ monthTaxReport: string }> = ({ monthTaxReport }) => {
+interface MissingInvoiceNumbersProps {
+  monthTaxReport: string;
+}
+
+export const MissingInvoiceNumbers = ({ monthTaxReport }: MissingInvoiceNumbersProps) => {
   const { getMissingInvoiceNumbers } = useSql();
   const [missingInvoiceNumbers, setMissingInvoiceNumbers] = useState<MissingInvoice[]>([]);
 

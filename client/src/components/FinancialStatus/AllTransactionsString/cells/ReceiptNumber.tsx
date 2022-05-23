@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../../helpers';
@@ -8,7 +8,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const ReceiptNumber: FC<Props> = ({ transaction, style }) => {
+export const ReceiptNumber = ({ transaction, style }: Props) => {
   const indicator =
     isBusiness(transaction) &&
     !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity ?? '') &&

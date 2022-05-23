@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import { currencyCodeToSymbol } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 
@@ -7,7 +7,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Amount: FC<Props> = ({ transaction, style }) => {
+export const Amount = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {transaction.event_amount}

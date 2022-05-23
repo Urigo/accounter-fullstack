@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import { CSSProperties, FC, useState } from 'react';
+import { CSSProperties, useState } from 'react';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { ChargesFragment } from '../../../__generated__/types';
 import {
@@ -45,7 +45,7 @@ const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSPrope
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const TransactionRow: FC<Props> = ({ transaction, columns, index, charge }) => {
+export const TransactionRow = ({ transaction, columns, index, charge }: Props) => {
   const [hover, setHover] = useState(false);
 
   return (

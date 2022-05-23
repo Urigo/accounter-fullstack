@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSql } from '../../../hooks/useSql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { TransactionRow } from './TransactionRow';
@@ -15,7 +15,7 @@ gql`
   }
 `;
 
-export const AllTransactionsString: FC = () => {
+export const AllTransactionsString = () => {
   const [searchParams] = useSearchParams();
   const financialEntity = searchParams.get('financialEntity');
 

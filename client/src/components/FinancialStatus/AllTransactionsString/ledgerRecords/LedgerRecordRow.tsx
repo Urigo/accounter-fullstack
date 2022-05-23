@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import gql from 'graphql-tag';
 import { LedgerRecordsFragment } from '../../../../__generated__/types';
 
@@ -32,7 +31,7 @@ type Props = {
   ledgerRecord: LedgerRecordsFragment['ledgerRecords']['0'];
 };
 
-export const LedgerRecordRow: FC<Props> = ({ ledgerRecord }) => {
+export const LedgerRecordRow = ({ ledgerRecord }: Props) => {
   return (
     <tr>
       <td>{ledgerRecord.creditAccount?.name}</td>

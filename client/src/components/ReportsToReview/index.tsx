@@ -1,10 +1,9 @@
-import { FC } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../../helpers';
 import { LastInvoiceNumbers } from '../FinancialStatus/LastInvoiceNumbers';
 import { ReportToReview } from './ReportToReview';
 
-export const ReportsToReview: FC = () => {
+export const ReportsToReview = () => {
   const [searchParams] = useSearchParams();
 
   const month = searchParams.get('month');

@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import type { TransactionType } from '../../../../models/types';
 
 type Props = {
@@ -6,7 +6,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Account: FC<Props> = ({ transaction, style }) => {
+export const Account = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
       {transaction.account_number}

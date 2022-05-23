@@ -1,9 +1,9 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { ThisMonthPrivateExpensesType } from '../../models/types';
 
-export const ThisMonthPrivateExpensesTable: FC = () => {
+export const ThisMonthPrivateExpensesTable = () => {
   const { getThisMonthPrivateExpenses } = useSql();
   const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<ThisMonthPrivateExpensesType[]>([]);
 

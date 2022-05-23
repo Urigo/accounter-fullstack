@@ -1,5 +1,5 @@
 import { Button, ButtonVariant } from '@mantine/core';
-import { ReactElement, CSSProperties, FC, PropsWithChildren, MouseEventHandler } from 'react';
+import { ReactElement, CSSProperties, PropsWithChildren, MouseEventHandler } from 'react';
 
 export interface ButtonProps {
   style?: CSSProperties;
@@ -8,7 +8,7 @@ export interface ButtonProps {
   variant?: ButtonVariant;
 }
 
-export const RegularButton: FC<PropsWithChildren<ButtonProps>> = ({ style, title, variant, onClick }) => {
+export const RegularButton = ({ style, title, variant, onClick }: PropsWithChildren<ButtonProps>) => {
   return (
     <>
       <Button onClick={onClick} style={style} variant={variant}>

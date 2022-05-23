@@ -1,4 +1,4 @@
-import { CSSProperties, FC } from 'react';
+import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
 
 gql`
@@ -16,6 +16,6 @@ type Props = {
   style?: CSSProperties;
 };
 
-export const Amount: FC<Props> = ({ amount, style }) => {
+export const Amount = ({ amount, style }: Props) => {
   return <td style={{ ...style }}>{amount}</td>;
 };

@@ -1,8 +1,8 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { businesses } from '../helpers';
 import { useSql } from '../hooks/useSql';
 
-export const AllUsers: FC = () => {
+export const AllUsers = () => {
   const { getAllUsers } = useSql();
   const [users, setUsers] = useState<{ username: string }[]>([]);
 
