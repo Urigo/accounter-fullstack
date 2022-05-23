@@ -11,6 +11,7 @@ gql`
       ... on Document {
         file
         id
+        image
       }
     }
   }

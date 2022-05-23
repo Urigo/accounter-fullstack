@@ -143,6 +143,7 @@ type LtdFinancialEntity implements FinancialEntity {
   accounts: [FinancialAccount!]!
   charges(filter: ChargeFilter): [Charge!]!
   linkedEntities: [FinancialEntity!]!
+  documents: [Document]
 }
 
 type PersonalFinancialEntity implements FinancialEntity {
@@ -163,6 +164,7 @@ interface FinancialEntity {
   charges(filter: ChargeFilter): [Charge!]!
 
   linkedEntities: [FinancialEntity!]!
+  documents: [Document]
 }
 
 input ChargeFilter {

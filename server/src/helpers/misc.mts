@@ -174,8 +174,8 @@ export async function buildLedgerEntries(
       charge.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : charge.is_property
-          ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
-          : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
+        ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
+        : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
