@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { ProfitRowType } from '../../models/types';
+import { AccounterBasicTable } from '../common/AccounterBasicTable';
+import { AccounterTable } from '../common/AccounterTable';
 
 interface ProfitRowProps {
   data: ProfitRowType;
@@ -30,24 +32,26 @@ export const ProfitTable = () => {
   }, []);
 
   return profitRows.length > 0 ? (
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Business Income</th>
-          <th>Business Expenses</th>
-          <th>overall_business_profit</th>
-          <th>business_profit_share</th>
-          <th>private_expenses</th>
-          <th>overall_private</th>
-        </tr>
-      </thead>
-      <tbody>
-        {profitRows.map((row, i) => (
-          <ProfitRow key={i} data={row} />
-        ))}
-      </tbody>
-    </table>
+    <AccounterBasicTable
+      content={
+        <>
+          <tr>
+            <th>Date</th>
+            <th>Business Income</th>
+            <th>Business Expenses</th>
+            <th>overall_business_profit</th>
+            <th>business_profit_share</th>
+            <th>private_expenses</th>
+            <th>overall_private</th>
+          </tr>
+          <tbody>
+            {profitRows.map((row, i) => (
+              <ProfitRow key={i} data={row} />
+            ))}
+          </tbody>
+        </>
+      }
+    />
   ) : (
     <div />
   );

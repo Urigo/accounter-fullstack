@@ -1,3 +1,4 @@
+import { FC, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../../helpers/dates';
 import { AllTransactionsString } from './AllTransactionsString';
@@ -8,7 +9,6 @@ import { MissingInvoiceNumbers } from './MissingInvoiceNumbers';
 import { ProfitTable } from './ProfitTable';
 import { ThisMonthPrivateExpensesTable } from './ThisMonthPrivateExpensesTable';
 import { VatTransactionsString } from './VatTransactionsString';
-import '../../styles/table.css';
 
 export const FinancialStatus = () => {
   const [searchParams] = useSearchParams();

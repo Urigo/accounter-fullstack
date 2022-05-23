@@ -2,6 +2,8 @@ import { CSSProperties } from 'react';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import gql from 'graphql-tag';
 import { ReceiptUrlFieldsFragment } from '../../../__generated__/types';
+import { RegularButton } from '../../common/ButtonImage';
+import { AccounterButton } from '../../common/Button';
 
 gql`
   fragment ReceiptUrlFields on Charge {
@@ -32,11 +34,7 @@ export const ReceiptUrl = ({ data, isBusiness, financialEntityName, style }: Pro
         ...style,
       }}
     >
-      {file && (
-        <a href={file} rel="noreferrer" target="_blank">
-          yes
-        </a>
-      )}
+      {file && <AccounterButton target="_blank" rel="noreferrer" herf={file} title="Open Link" />}
       {/* TODO: create update document hook */}
       {/* <UpdateButton transaction={transaction} propertyName="receipt_url" promptText="New Receipt url:" /> */}
     </td>

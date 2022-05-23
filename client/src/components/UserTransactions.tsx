@@ -2,6 +2,7 @@ import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSql } from '../hooks/useSql';
 import type { LedgerEntity } from '../models/types';
+import { AccounterBasicTable } from './common/AccounterBasicTable';
 
 interface ModifiedTransaction {
   counterAccount: string;
@@ -30,73 +31,77 @@ const TransactionTable = ({ transactions }: Props) => {
   const [balanceNis, setBalanceNis] = useState(0);
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>ח"ן</th>
-          <th>חשבשבת#</th>
-          <th>date_3</th>
-          <th>תאריך_ ערך</th>
-          <th>invoice_date</th>
-          <th>reference_1</th>
-          <th>reference_2</th>
-          <th>details</th>
-          <th>movement_type</th>
-          <th>currency</th>
-          <th colSpan={2}>חובה/זכות (מט"ח)</th>
-          <th>יתרה (מט"ח)</th>
-          <th colSpan={2}>חובה/זכות (שקל)</th>
-          <th>יתרה (שקל)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td>0.00</td>
-          <td></td>
-          <td></td>
-          <td>0.00</td>
-        </tr>
-        {transactions.map(transaction => {
-          transaction.balanceForeign = balanceForeign + transaction.direction * transaction.amountForeign;
-          setBalanceForeign(current => current + transaction.balanceForeign);
-
-          transaction.balanceNis = balanceNis + transaction.direction * transaction.amountNis;
-          setBalanceNis(current => current + transaction.balanceNis);
-          return (
+    <AccounterBasicTable
+      content={
+        <>
+          <thead>
             <tr>
-              <td>{transaction.counterAccount}</td>
-              <td>{transaction.hashavshevet_id ?? ''}</td>
-              <td>{transaction.date_3 ?? ''}</td>
-              <td>{transaction.value_date ? transaction.value_date : ''}</td>
-              <td>{transaction.invoice_date ? transaction.invoice_date : ''}</td>
-              <td>{transaction.reference_1 ? transaction.reference_1 : ''}</td>
-              <td>{transaction.reference_2 ? transaction.reference_2 : ''}</td>
-              <td>{transaction.details === '0' ? '' : transaction.details}</td>
-              <td>{transaction.movement_type ? transaction.movement_type : ''}</td>
-              <td>{transaction.currency ? transaction.currency : ''}</td>
-              <td>{transaction.direction === -1 ? transaction.amountForeign : ''}</td>
-              <td>{transaction.direction === 1 ? transaction.amountForeign : ''}</td>
-              <td>{transaction.balanceForeign.toFixed(2)}</td>
-              <td>{transaction.direction === -1 ? transaction.amountNis : ''}</td>
-              <td>{transaction.direction === 1 ? transaction.amountNis : ''}</td>
-              <td>{transaction.balanceNis.toFixed(2)}</td>
+              <th>ח"ן</th>
+              <th>חשבשבת#</th>
+              <th>date_3</th>
+              <th>תאריך_ ערך</th>
+              <th>invoice_date</th>
+              <th>reference_1</th>
+              <th>reference_2</th>
+              <th>details</th>
+              <th>movement_type</th>
+              <th>currency</th>
+              <th colSpan={2}>חובה/זכות (מט"ח)</th>
+              <th>יתרה (מט"ח)</th>
+              <th colSpan={2}>חובה/זכות (שקל)</th>
+              <th>יתרה (שקל)</th>
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>0.00</td>
+              <td></td>
+              <td></td>
+              <td>0.00</td>
+            </tr>
+            {transactions.map(transaction => {
+              transaction.balanceForeign = balanceForeign + transaction.direction * transaction.amountForeign;
+              setBalanceForeign(current => current + transaction.balanceForeign);
+
+              transaction.balanceNis = balanceNis + transaction.direction * transaction.amountNis;
+              setBalanceNis(current => current + transaction.balanceNis);
+              return (
+                <tr>
+                  <td>{transaction.counterAccount}</td>
+                  <td>{transaction.hashavshevet_id ?? ''}</td>
+                  <td>{transaction.date_3 ?? ''}</td>
+                  <td>{transaction.value_date ? transaction.value_date : ''}</td>
+                  <td>{transaction.invoice_date ? transaction.invoice_date : ''}</td>
+                  <td>{transaction.reference_1 ? transaction.reference_1 : ''}</td>
+                  <td>{transaction.reference_2 ? transaction.reference_2 : ''}</td>
+                  <td>{transaction.details === '0' ? '' : transaction.details}</td>
+                  <td>{transaction.movement_type ? transaction.movement_type : ''}</td>
+                  <td>{transaction.currency ? transaction.currency : ''}</td>
+                  <td>{transaction.direction === -1 ? transaction.amountForeign : ''}</td>
+                  <td>{transaction.direction === 1 ? transaction.amountForeign : ''}</td>
+                  <td>{transaction.balanceForeign.toFixed(2)}</td>
+                  <td>{transaction.direction === -1 ? transaction.amountNis : ''}</td>
+                  <td>{transaction.direction === 1 ? transaction.amountNis : ''}</td>
+                  <td>{transaction.balanceNis.toFixed(2)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </>
+      }
+    />
   );
 };
 
@@ -208,34 +213,38 @@ export const UserTransactions = () => {
       <TransactionTable transactions={modifiedTransactions} />
 
       <h2>User Card Totals</h2>
-      <table>
-        <thead>
-          <tr>
-            <th colSpan={2}>מט"ח</th>
-            <th colSpan={2}>שקל</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>{sumForeignDebit.toFixed(2)}</td>
-            <td>חובה</td>
-            <td>{sumNisDebit.toFixed(2)}</td>
-            <td>חובה</td>
-          </tr>
-          <tr>
-            <td>{sumForeignCredit.toFixed(2)}</td>
-            <td>זכות</td>
-            <td>{sumNisCredit.toFixed(2)}</td>
-            <td>זכות</td>
-          </tr>
-          <tr>
-            <td>{balanceForeign.toFixed(2)}</td>
-            <td>הפרש</td>
-            <td>{balanceNis.toFixed(2)}</td>
-            <td>הפרש</td>
-          </tr>
-        </tbody>
-      </table>
+      <AccounterBasicTable
+        content={
+          <>
+            <thead>
+              <tr>
+                <th colSpan={2}>מט"ח</th>
+                <th colSpan={2}>שקל</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{sumForeignDebit.toFixed(2)}</td>
+                <td>חובה</td>
+                <td>{sumNisDebit.toFixed(2)}</td>
+                <td>חובה</td>
+              </tr>
+              <tr>
+                <td>{sumForeignCredit.toFixed(2)}</td>
+                <td>זכות</td>
+                <td>{sumNisCredit.toFixed(2)}</td>
+                <td>זכות</td>
+              </tr>
+              <tr>
+                <td>{balanceForeign.toFixed(2)}</td>
+                <td>הפרש</td>
+                <td>{balanceNis.toFixed(2)}</td>
+                <td>הפרש</td>
+              </tr>
+            </tbody>
+          </>
+        }
+      />
     </>
   );
 };

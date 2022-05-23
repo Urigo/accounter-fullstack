@@ -1,5 +1,5 @@
 import { CSSProperties, PropsWithChildren, ReactElement } from 'react';
-import { Modal, Button, Group } from '@mantine/core';
+import { Modal } from '@mantine/core';
 
 export interface ModalProps {
   ButtonDisplay?: ReactElement;

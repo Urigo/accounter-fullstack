@@ -78,12 +78,7 @@ type Props = {
   financialEntityType: SuggestedChargeFragment['__typename'];
 };
 
-const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
-  backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
-});
-
-export const ChargeRow = ({ columns, index, charge, financialEntityType }: Props) => {
-  const [hover, setHover] = useState(false);
+export const ChargeRow = ({ columns, charge, financialEntityType }: Props) => {
   const alternativeCharge =
     !charge.counterparty?.name ||
     !charge.transactions[0].userNote?.trim() ||
@@ -98,7 +93,7 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType }: Props
 
   return (
     <>
-      <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+      <tr>
         {columns.map((column, i) => {
           switch (column) {
             case 'Date': {

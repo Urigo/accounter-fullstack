@@ -4,6 +4,7 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
 import { DescriptionFieldsFragment } from '../../../__generated__/types';
 import { useUpdateTransaction } from '../../../hooks/useUdateTransaction';
+import { AccounterDivider } from '../../common/Divider';
 
 gql`
   fragment DescriptionFields on Charge {
@@ -48,6 +49,7 @@ export const Description = ({ data, alternativeCharge, style }: Props) => {
       {!isDescription && alternativeCharge?.userDescription && (
         <ConfirmMiniButton onClick={() => updateUserNote(alternativeCharge.userDescription)} disabled={isLoading} />
       )}
+      <AccounterDivider my="sm" />
       <EditMiniButton
         onClick={() => updateUserNote(prompt('New user description:') ?? undefined)}
         disabled={isLoading}

@@ -4,6 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
 import { ChargesFieldsFragment, useFinancialEntityQuery } from '../../__generated__/types';
 import { businesses } from '../../helpers';
+import { AccounterLoader } from '../common/Loader';
+import { AccounterBasicTable } from '../common/AccounterBasicTable';
 
 gql`
   query FinancialEntity($financialEntityId: ID!) {
@@ -25,7 +27,7 @@ export const AllCharges = () => {
       ? businesses['Uri Goldshtein LTD']
       : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
-  const { data } = useFinancialEntityQuery({
+  const { data, isLoading } = useFinancialEntityQuery({
     financialEntityId,
   });
 
@@ -52,26 +54,36 @@ export const AllCharges = () => {
     'Links',
   ];
 
-  return (
-    <table>
-      <thead>
-        <tr>
-          {columns.map(key => (
-            <th key={key}>{key}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {allCharges.map((charge, i) => (
-          <ChargeRow
-            columns={columns}
-            index={i}
-            key={charge.id}
-            charge={charge as ChargesFieldsFragment['charges']['0']}
-            financialEntityType={data!.financialEntity.__typename}
-          />
-        ))}
-      </tbody>
-    </table>
+  return isLoading ? (
+    <AccounterLoader />
+  ) : (
+    <>
+      <h1>All Charges</h1>
+      <AccounterBasicTable
+        content={
+          <>
+            <thead>
+              <tr>
+                {columns.map(key => (
+                  <th key={key}>{key}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allCharges.map((charge, i) => (
+                <ChargeRow
+                  columns={columns}
+                  index={i}
+                  key={charge.id}
+                  charge={charge as ChargesFieldsFragment['charges']['0']}
+                  financialEntityType={data!.financialEntity.__typename}
+                  financialEntityName={'name' in data!.financialEntity ? data!.financialEntity.name : undefined}
+                />
+              ))}
+            </tbody>
+          </>
+        }
+      />
+    </>
   );
 };

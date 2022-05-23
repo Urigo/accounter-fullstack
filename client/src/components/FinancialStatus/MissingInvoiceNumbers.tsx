@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/useSql';
 import type { MissingInvoice } from '../../models/types';
+import { AccounterBasicTable } from '../common/AccounterBasicTable';
 
 interface MissingInvoiceNumberRowProps {
   data: MissingInvoice;
@@ -35,21 +36,23 @@ export const MissingInvoiceNumbers = ({ monthTaxReport }: MissingInvoiceNumbersP
   }, []);
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Entity</th>
-          <th>Description</th>
-          <th>Invoice Number</th>
-        </tr>
-      </thead>
-      <tbody>
-        {missingInvoiceNumbers.map((row, i) => (
-          <MissingInvoiceNumberRow key={i} data={row} />
-        ))}
-      </tbody>
-    </table>
+    <AccounterBasicTable
+      content={
+        <>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Entity</th>
+            <th>Description</th>
+            <th>Invoice Number</th>
+          </tr>
+          <tbody>
+            {missingInvoiceNumbers.map((row, i) => (
+              <MissingInvoiceNumberRow key={i} data={row} />
+            ))}
+          </tbody>
+        </>
+      }
+    />
   );
 };
