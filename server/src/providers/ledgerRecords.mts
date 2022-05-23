@@ -20,4 +20,4 @@ async function batchLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
   return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
 }
 
-export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds);
+export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds, { cache: false });

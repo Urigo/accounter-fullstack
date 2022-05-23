@@ -20,4 +20,4 @@ async function batchFinancialEntitiesByIds(ids: readonly string[]) {
   return ids.map(id => financialEntities.find(fe => fe.id === id));
 }
 
-export const getFinancialEntitieByIdLoader = new DataLoader(batchFinancialEntitiesByIds);
+export const getFinancialEntitieByIdLoader = new DataLoader(batchFinancialEntitiesByIds, { cache: false });

@@ -23,7 +23,10 @@ async function batchFinancialAccountsByFinancialEntityIds(financialEntityIds: re
   return financialEntityIds.map(financialEntityId => accounts.filter(charge => charge.owner === financialEntityId));
 }
 
-export const getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(batchFinancialAccountsByFinancialEntityIds);
+export const getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
+  batchFinancialAccountsByFinancialEntityIds,
+  { cache: false }
+);
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
 SELECT *
@@ -40,4 +43,6 @@ async function batchFinancialAccountsByAccountNumbers(accountNumbers: readonly n
   return accountNumbers.map(accountNumber => accounts.find(charge => charge.account_number === accountNumber));
 }
 
-export const getFinancialAccountByAccountNumberLoader = new DataLoader(batchFinancialAccountsByAccountNumbers);
+export const getFinancialAccountByAccountNumberLoader = new DataLoader(batchFinancialAccountsByAccountNumbers, {
+  cache: false,
+});
