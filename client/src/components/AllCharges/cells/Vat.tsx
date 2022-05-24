@@ -9,21 +9,16 @@ import gql from 'graphql-tag';
 import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment VatFields on FinancialEntity {
-    __typename
-    ... on LtdFinancialEntity {
-      name
+  fragment VatFields on Charge {
+    vat {
+      raw
+      formatted
+      currency
     }
-    charges {
-      vat {
+    transactions {
+      amount {
         raw
-        formatted
         currency
-      }
-      transactions {
-        amount {
-          raw
-        }
       }
     }
   }
@@ -31,19 +26,21 @@ gql`
 
 type Props = {
   isBusiness: boolean;
-  financialEntityName?: string;
-  vat: VatFieldsFragment['charges'][0]['vat'];
-  amount?: VatFieldsFragment['charges'][0]['transactions'][0]['amount']['raw'];
+  financialEntityName: string;
+  data: VatFieldsFragment;
   alternativeCharge?: SuggestedCharge;
   style?: CSSProperties;
 };
 
-export const Vat = ({ isBusiness, financialEntityName = '', vat, amount = 0, alternativeCharge, style }: Props) => {
+export const Vat = ({ isBusiness, financialEntityName, data, alternativeCharge, style }: Props) => {
+  const { vat, transactions } = data;
+  const { raw: amount, currency } = transactions[0]?.amount || { raw: 0, currency: Currency.Nis };
+
   const indicator =
     (!vat?.raw &&
       isBusiness &&
       !entitiesWithoutInvoice.includes(financialEntityName) &&
-      (!vat || vat.currency === Currency.Nis) &&
+      currency === Currency.Nis &&
       !businessesWithoutVAT.includes(financialEntityName) &&
       !businessesWithoutTaxCategory.includes(financialEntityName)) ||
     (vat?.raw && ((vat.raw > 0 && amount < 0) || (vat.raw < 0 && amount > 0)));

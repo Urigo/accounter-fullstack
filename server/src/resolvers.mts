@@ -99,7 +99,7 @@ const commonTransactionFields:
   effectiveDate: DbTransaction => DbTransaction.debit_date,
   direction: DbTransaction =>
     parseFloat(DbTransaction.event_amount!) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
-  amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount),
+  amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
   description: DbTransaction => `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
   userNote: DbTransaction => DbTransaction.user_description,
   account: async DbTransaction => {

@@ -2,7 +2,7 @@ import gql from 'graphql-tag';
 import { CSSProperties, useState } from 'react';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
-import { ChargesFieldsFragment, VatFieldsFragment } from '../../__generated__/types';
+import { ChargesFieldsFragment, SuggestedChargeFragment } from '../../__generated__/types';
 import {
   Account,
   Amount,
@@ -26,8 +26,7 @@ import { LedgerRecordsTable } from './ledgerRecords/LedgerRecordsTable';
 
 gql`
   fragment ChargesFields on FinancialEntity {
-    ...VatFields
-    ...ShareWithFields
+    ...SuggestedCharge
     charges {
       id
       ...DateFields
@@ -35,10 +34,11 @@ gql`
       ...EntityFields
       ...DescriptionFields
       ...CategoryFields
+      ...VatFields
       ...AccountFields
+      ...ShareWithFields
       ...BankDescriptionFields
       ...LedgerRecordsFields
-      ...SuggestedCharge
       ...InvoiceImageFields
       ...InvoiceDateFields
       ...InvoiceNumberFields
@@ -52,18 +52,21 @@ gql`
 `;
 
 gql`
-  fragment SuggestedCharge on Charge {
-    transactions {
-      __typename
-      amount {
-        raw
+  fragment SuggestedCharge on FinancialEntity {
+    __typename
+    charges {
+      transactions {
+        __typename
+        amount {
+          raw
+        }
+        userNote
+        referenceNumber
+        description
       }
-      userNote
-      referenceNumber
-      description
-    }
-    counterparty {
-      name
+      counterparty {
+        name
+      }
     }
   }
 `;
@@ -72,7 +75,7 @@ type Props = {
   columns: TransactionColumn[];
   index: number;
   charge: ChargesFieldsFragment['charges']['0'];
-  financialEntityType: VatFieldsFragment['__typename'];
+  financialEntityType: SuggestedChargeFragment['__typename'];
 };
 
 const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
@@ -123,10 +126,9 @@ export const ChargeRow = ({ columns, index, charge, financialEntityType }: Props
               return (
                 <Vat
                   key={column}
-                  vat={charge.vat}
+                  data={charge}
                   isBusiness={isBusiness}
                   financialEntityName={financialEntityName}
-                  amount={charge.transactions[0].amount.raw}
                   alternativeCharge={alternativeCharge}
                 ></Vat>
               );
