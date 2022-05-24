@@ -11,7 +11,7 @@ export interface SuggestedCharge {
 }
 
 // TODO: move logic to server?
-export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharge {
+export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): SuggestedCharge {
   const transactionDescription = charge.transactions?.[0]?.description;
   if (transactionDescription?.includes('SLACK TAYJ1FSUA/DUBLIN')) {
     return {

@@ -12,25 +12,19 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 
 gql`
-  fragment ShareWithFields on FinancialEntity {
-    __typename
-    ... on LtdFinancialEntity {
-      name
-    }
-    charges {
-      id
-      beneficiaries {
-        counterparty {
-          name
-        }
-        percentage
+  fragment ShareWithFields on Charge {
+    id
+    beneficiaries {
+      counterparty {
+        name
       }
+      percentage
     }
   }
 `;
 
 type Props = {
-  data: ShareWithFieldsFragment['charges'][0];
+  data: ShareWithFieldsFragment;
   isBusiness: boolean;
   financialEntityName?: string;
   alternativeCharge?: SuggestedCharge;

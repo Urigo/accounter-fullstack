@@ -15,12 +15,20 @@ export const formatFinancialAmount = (
 
 export const formatCurrency = (raw?: string | null): Currency => {
   switch (raw) {
+    case 'GBP':
+      return Currency.Gbp;
     case 'לש':
       return Currency.Gbp;
+    case 'USD':
+      return Currency.Usd;
     case '$':
       return Currency.Usd;
+    case 'EUR':
+      return Currency.Eur;
     case 'אירו':
       return Currency.Eur;
+    case 'ILS':
+      return Currency.Nis;
     case null:
       return Currency.Nis;
     case undefined:
