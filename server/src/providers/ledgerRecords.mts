@@ -67,7 +67,6 @@ export const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
         original_id,
         origin,
         proforma_invoice_file,
-        id,
         business)
     VALUES $$ledgerRecord(invoiceDate,
         debitAccount1,
@@ -92,6 +91,5 @@ export const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
         originalId,
         origin,
         proformaInvoiceFile,
-        id,
         business)
     RETURNING *;`;

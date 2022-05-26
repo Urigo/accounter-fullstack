@@ -1,1 +1,0 @@
-export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = ['פלאפון', 'מידע', 'מחשבים'];

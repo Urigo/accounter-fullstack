@@ -4,6 +4,7 @@ import {
   IGetChargesByFinancialEntityIdsQuery,
   IUpdateChargeQuery,
   IGetChargesByIdsQuery,
+  IGetConversionOtherSideQuery,
 } from '../__generated__/charges.types.mjs';
 import DataLoader from 'dataloader';
 import { pool } from '../providers/db.mjs';
@@ -76,6 +77,13 @@ async function batchChargesByFinancialEntityIds(financialEntityIds: readonly str
 }
 
 export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds, { cache: false });
+
+export const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
+    SELECT event_amount, currency_code
+    FROM accounter_schema.all_transactions
+    WHERE bank_reference = $bankReference
+      AND id <> $chargeId
+      LIMIT 1;`;
 
 export const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.all_transactions
