@@ -4,6 +4,7 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 import { EntityFieldsFragment } from '../../../__generated__/types';
+import { AccounterDivider } from '../../common/Divider';
 
 gql`
   fragment EntityFields on Charge {
@@ -55,6 +56,7 @@ export const Entity = ({ data, alternativeCharge, style }: Props) => {
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
         <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
       )}
+      <AccounterDivider my="sm" />
       <EditMiniButton onClick={() => updateTag(prompt('New financial entity:') ?? undefined)} disabled={isLoading} />
     </td>
   );

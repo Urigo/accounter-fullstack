@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { businesses } from '../helpers';
 import { useSql } from '../hooks/useSql';
+import { AccounterTable } from './common/AccounterTable';
 
 export const AllUsers = () => {
   const { getAllUsers } = useSql();
@@ -17,21 +18,7 @@ export const AllUsers = () => {
   return users.length ? (
     <>
       <h1>User Accounts List</h1>
-
-      <table>
-        <thead>
-          <tr>
-            <th>שם חשבון</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr>
-              <td>{user.username}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <AccounterTable items={users ?? []} columns={[{ title: 'שם חשבון', value: user => user.username }]} />
     </>
   ) : (
     <p>No user accounts found</p>

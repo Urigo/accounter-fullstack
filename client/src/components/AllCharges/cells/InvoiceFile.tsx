@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import gql from 'graphql-tag';
 import { InvoiceFileFieldsFragment } from '../../../__generated__/types';
+import { AccounterButton } from '../../common/Button';
 
 gql`
   fragment InvoiceFileFields on Charge {
@@ -32,11 +33,7 @@ export const InvoiceFile = ({ data, isBusiness, financialEntityName, style }: Pr
         ...style,
       }}
     >
-      {file && (
-        <a href={file} rel="noreferrer" target="_blank">
-          yes
-        </a>
-      )}
+      {file && <AccounterButton target="_blank" rel="noreferrer" herf={file} title="Click Here" />}
       {/* TODO: create update document hook */}
       {/* <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" /> */}
     </td>

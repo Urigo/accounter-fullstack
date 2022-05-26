@@ -9,31 +9,27 @@ export interface ButtonProps {
   size?: number;
   type?: 'submit' | 'button';
   style?: CSSProperties;
-  target?: string;
-  herf?: string;
-  rel?: string;
-  title?: string;
 }
 
-export const AccounterButton: FC<PropsWithChildren<ButtonProps>> = ({
-  title,
-  target,
-  herf,
-  rel,
-  type = 'button',
+export const ButtonImage: FC<PropsWithChildren<ButtonProps>> = ({
+  children,
   onClick = () => {
     void 0;
   },
   loading = false,
   disabled = false,
+  type = 'button',
 }) => {
   const buttonDisabled = disabled || loading;
 
   return (
-    <Button type={type} disabled={buttonDisabled} onClick={onClick} style={{ cursor: 'pointer' }}>
-      <a style={{ color: 'white' }} rel={rel} href={herf} target={target}>
-        {title}
-      </a>
+    <Button
+      type={type}
+      disabled={buttonDisabled}
+      onClick={onClick}
+      style={{ width: 100, height: 100, backgroundColor: 'transparent', cursor: 'pointer' }}
+    >
+      {children}
     </Button>
   );
 };

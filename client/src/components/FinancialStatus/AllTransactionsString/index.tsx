@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
 import { useFinancialEntityOldQuery } from '../../../__generated__/types';
 import { businesses } from '../../../helpers';
+import { AccounterBasicTable } from '../../common/AccounterBasicTable';
 
 gql`
   query FinancialEntityOld($financialEntityId: ID!) {
@@ -61,25 +62,31 @@ export const AllTransactionsString = () => {
   ];
 
   return (
-    <table>
-      <thead>
-        <tr>
-          {columns.map(key => (
-            <th>{key}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {allTransactions.map((row, i) => (
-          <TransactionRow
-            transaction={row}
-            columns={columns}
-            index={i}
-            key={row.id}
-            charge={data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === row.id)}
-          />
-        ))}
-      </tbody>
-    </table>
+    <AccounterBasicTable
+      content={
+        <>
+          <thead>
+            <tr>
+              {columns.map(key => (
+                <th>{key}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {allTransactions.map((row, i) => (
+              <TransactionRow
+                transaction={row}
+                columns={columns}
+                index={i}
+                key={row.id}
+                charge={
+                  data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === row.id)
+                }
+              />
+            ))}
+          </tbody>
+        </>
+      }
+    />
   );
 };

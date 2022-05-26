@@ -4,6 +4,7 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/useUdateCharge';
 import { CategoryFieldsFragment } from '../../../__generated__/types';
+import { AccounterDivider } from '../../common/Divider';
 
 gql`
   fragment CategoryFields on Charge {
@@ -46,6 +47,7 @@ export const Category = ({ data, alternativeCharge, style }: Props) => {
       {!isPersonalCategory && alternativeCharge?.personalCategory && (
         <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.personalCategory)} disabled={isLoading} />
       )}
+      <AccounterDivider my="sm" />
       <EditMiniButton onClick={() => updateTag(prompt('Enter new category') ?? undefined)} disabled={isLoading} />
     </td>
   );

@@ -10,6 +10,7 @@ import {
 } from '../../../helpers';
 import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { useUpdateCharge } from '../../../hooks/useUdateCharge';
+import { AccounterDivider } from '../../common/Divider';
 
 gql`
   fragment ShareWithFields on Charge {
@@ -69,6 +70,7 @@ export const ShareWith = ({ data, isBusiness, financialEntityName = '', alternat
           disabled={isLoading}
         />
       )}
+      <AccounterDivider my="sm" />
       <EditMiniButton
         onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
         disabled={isLoading}
