@@ -43,11 +43,7 @@ export const InvoiceImg = ({ data, isBusiness, financialEntityName, style }: Pro
           </ButtonImage>
           <PopUpModal
             modalSize="45%"
-            content={
-              <>
-                <Image alt="" src={image} />
-              </>
-            }
+            content={<Image alt="" src={image} />}
             opened={openedImage}
             onClose={() => setOpenedImage(null)}
           />

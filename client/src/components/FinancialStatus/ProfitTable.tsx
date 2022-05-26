@@ -35,15 +35,17 @@ export const ProfitTable = () => {
     <AccounterBasicTable
       content={
         <>
-          <tr>
-            <th>Date</th>
-            <th>Business Income</th>
-            <th>Business Expenses</th>
-            <th>overall_business_profit</th>
-            <th>business_profit_share</th>
-            <th>private_expenses</th>
-            <th>overall_private</th>
-          </tr>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Business Income</th>
+              <th>Business Expenses</th>
+              <th>overall_business_profit</th>
+              <th>business_profit_share</th>
+              <th>private_expenses</th>
+              <th>overall_private</th>
+            </tr>
+          </thead>
           <tbody>
             {profitRows.map((row, i) => (
               <ProfitRow key={i} data={row} />

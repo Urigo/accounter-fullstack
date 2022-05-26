@@ -21,13 +21,15 @@ export const MissingInvoiceImages = ({ monthTaxReport }: Props) => {
     <AccounterBasicTable
       content={
         <>
-          <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Entity</th>
-            <th>Description</th>
-            <th>Invoice Number</th>
-          </tr>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>Invoice Number</th>
+            </tr>
+          </thead>
           <tbody>
             {missingInvoiceImages.map((row, i) => (
               <tr key={i}>

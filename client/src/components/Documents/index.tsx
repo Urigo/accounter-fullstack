@@ -129,11 +129,7 @@ export const DocumentsReport = () => {
           {openedImage && (
             <PopUpModal
               modalSize="45%"
-              content={
-                <>
-                  <Image src={openedImage} />
-                </>
-              }
+              content={<Image src={openedImage} />}
               opened={openedImage}
               onClose={() => setOpenedImage(null)}
             />

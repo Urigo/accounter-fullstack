@@ -16,13 +16,15 @@ export const LastInvoiceNumbers = () => {
     <AccounterBasicTable
       content={
         <>
-          <tr>
-            <th>Invoice Number</th>
-            <th>Date</th>
-            <th>Entity</th>
-            <th>Description</th>
-            <th>Amount</th>
-          </tr>
+          <thead>
+            <tr>
+              <th>Invoice Number</th>
+              <th>Date</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
           <tbody>
             {lastInvoiceNumbers.map((row, i) => (
               <tr key={i}>

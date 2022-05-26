@@ -65,11 +65,13 @@ export const AllTransactionsString = () => {
     <AccounterBasicTable
       content={
         <>
-          <tr>
-            {columns.map(key => (
-              <th>{key}</th>
-            ))}
-          </tr>
+          <thead>
+            <tr>
+              {columns.map(key => (
+                <th>{key}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
             {allTransactions.map((row, i) => (
               <TransactionRow
