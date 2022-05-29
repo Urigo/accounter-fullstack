@@ -1,21 +1,37 @@
 import { formatFinancialAmount } from './helpers/amount.mjs';
+import { ENTITIES_WITHOUT_ACCOUNTING } from './helpers/constants.mjs';
+import { getILSForDate } from './helpers/exchange.mjs';
+import {
+  generateEntryForAccountingValues,
+  generateEntryForExchangeRatesDifferenceValues,
+  generateEntryForFinancialAccountValues,
+} from './helpers/hashavshevet.mjs';
+import { buildLedgerEntries, decorateCharge } from './helpers/misc.mjs';
 import {
   getChargeByFinancialAccountNumberLoader,
   getChargeByFinancialEntityIdLoader,
   getChargeByIdLoader,
   getChargesByFinancialAccountNumbers,
   getChargesByFinancialEntityIds,
+  getConversionOtherSide,
   updateCharge,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
 import { getDocsByChargeIdLoader, getEmailDocs } from './providers/documents.mjs';
+import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
 } from './providers/financialAccounts.mjs';
-import { getFinancialEntitieByIdLoader } from './providers/financialEntities.mjs';
-import { getLedgerRecordsByChargeIdLoader } from './providers/ledgerRecords.mjs';
+import { getFinancialEntityByIdLoader } from './providers/financialEntities.mjs';
+import {
+  getHashavshevetBusinessIndexes,
+  getHashavshevetIsracardIndex,
+  getHashavshevetVatIndexes,
+} from './providers/hashavshevet.mjs';
+import { getLedgerRecordsByChargeIdLoader, insertLedgerRecords } from './providers/ledgerRecords.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
+import { IInsertLedgerRecordsResult } from './__generated__/ledgerRecords.types.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -124,7 +140,7 @@ const commonTransactionFields:
 export const resolvers: Resolvers = {
   Query: {
     financialEntity: async (_, { id }) => {
-      const dbFe = await getFinancialEntitieByIdLoader.load(id);
+      const dbFe = await getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
@@ -247,6 +263,177 @@ export const resolvers: Resolvers = {
         const res = await updateCharge.run({ ...adjustedFields }, pool);
         return res[0];
       } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    generateTaxMovement: async (_, { chargeId }) => {
+      try {
+        const charge = await getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new Error(`Charge ID="${chargeId}" not found`);
+        }
+        if (!charge.account_number) {
+          throw new Error(`Charge ID="${chargeId}" has no account number`);
+        }
+
+        const account = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
+        if (!account) {
+          throw new Error(`Account number="${charge.account_number}" not found`);
+        }
+
+        if (!account.owner) {
+          throw new Error(`Account number="${charge.account_number}" has no owner`);
+        }
+        const owner = await getFinancialEntityByIdLoader.load(account.owner);
+        if (!owner) {
+          throw new Error(`FinancialEntity ID="${charge.account_number}" not found`);
+        }
+
+        const [hashBusinessIndexes] = await getHashavshevetBusinessIndexes.run(
+          { financialEntityName: charge.financial_entity, ownerId: owner.id },
+          pool
+        );
+        const hashVATIndexes = await getHashavshevetVatIndexes(owner.id);
+        const isracardHashIndex = await getHashavshevetIsracardIndex(charge);
+        const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge);
+
+        const decoratedCharge = decorateCharge(charge, hashBusinessIndexes.auto_tax_category);
+
+        const { entryForFinancialAccount, entryForAccounting } = await buildLedgerEntries(
+          decoratedCharge,
+          parseFloat(charge.event_amount!),
+          hashVATIndexes
+        );
+
+        const createdLedgerRecords: IInsertLedgerRecordsResult[] = [];
+
+        // insert accounting ledger
+        if (!ENTITIES_WITHOUT_ACCOUNTING.includes(decoratedCharge.financial_entity ?? '')) {
+          try {
+            const entryForAccountingValues = generateEntryForAccountingValues(
+              decoratedCharge,
+              entryForAccounting,
+              account,
+              hashBusinessIndexes,
+              hashVATIndexes,
+              isracardHashIndex,
+              owner
+            );
+            const updateResult = await insertLedgerRecords.run({ ledgerRecord: [entryForAccountingValues] }, pool);
+            if (updateResult.length === 0) {
+              throw new Error('Failed to insert accounting ledger record');
+            }
+            console.log(JSON.stringify(updateResult[0]));
+            createdLedgerRecords.push(updateResult[0]);
+          } catch (error) {
+            // TODO: Log important checks
+            throw new Error(`error in Accounting insert - ${error}`);
+          }
+        }
+
+        const conversionOtherSide = (
+          await getConversionOtherSide.run(
+            { chargeId: decoratedCharge.id, bankReference: decoratedCharge.bank_reference },
+            pool
+          )
+        ).shift();
+
+        // insert finacial account ledger
+        try {
+          const entryForFinancialAccountValues = generateEntryForFinancialAccountValues(
+            decoratedCharge,
+            entryForFinancialAccount,
+            account,
+            hashBusinessIndexes,
+            hashVATIndexes,
+            isracardHashIndex,
+            owner,
+            conversionOtherSide
+          );
+          const updateResult = await insertLedgerRecords.run({ ledgerRecord: [entryForFinancialAccountValues] }, pool);
+          if (updateResult.length === 0) {
+            throw new Error('Failed to insert financial account ledger record');
+          }
+          console.log(JSON.stringify(updateResult[0]));
+          createdLedgerRecords.push(updateResult[0]);
+        } catch (error) {
+          // TODO: Log important checks
+          throw new Error(`error in FinancialAccount insert - ${error}`);
+        }
+
+        if (
+          charge.tax_invoice_currency &&
+          entryForFinancialAccount.debitAmountILS != entryForAccounting.debitAmountILS
+        ) {
+          console.log('שערררררררר של different currencies');
+          try {
+            const entryForExchangeRatesDifferenceValues = generateEntryForExchangeRatesDifferenceValues(
+              decoratedCharge,
+              entryForFinancialAccount,
+              entryForAccounting,
+              account,
+              hashBusinessIndexes,
+              hashVATIndexes,
+              isracardHashIndex,
+              owner
+            );
+            const updateResult = await insertLedgerRecords.run(
+              { ledgerRecord: [entryForExchangeRatesDifferenceValues] },
+              pool
+            );
+            if (updateResult.length === 0) {
+              throw new Error('Failed to insert exchange rates difference ledger record');
+            }
+            console.log(JSON.stringify(updateResult[0]));
+            createdLedgerRecords.push(updateResult[0]);
+          } catch (error) {
+            // TODO: Log important checks
+            throw new Error(`error in ExchangeRatesDifference insert - ${error}`);
+          }
+        } else if (
+          getILSForDate(decoratedCharge, invoiceExchangeRates).eventAmountILS !=
+            getILSForDate(decoratedCharge, debitExchangeRates).eventAmountILS &&
+          decoratedCharge.account_type != 'creditcard' &&
+          decoratedCharge.financial_entity != 'Isracard' &&
+          decoratedCharge.tax_invoice_date
+        ) {
+          console.log('שערררררררר');
+          try {
+            const entryForExchangeRatesDifferenceValues = generateEntryForExchangeRatesDifferenceValues(
+              decoratedCharge,
+              entryForFinancialAccount,
+              entryForAccounting,
+              account,
+              hashBusinessIndexes,
+              hashVATIndexes,
+              isracardHashIndex,
+              owner,
+              true,
+              debitExchangeRates,
+              invoiceExchangeRates
+            );
+            const updateResult = await insertLedgerRecords.run(
+              { ledgerRecord: [entryForExchangeRatesDifferenceValues] },
+              pool
+            );
+            if (updateResult.length === 0) {
+              throw new Error('Failed to insert exchange rates difference ledger record');
+            }
+            console.log(JSON.stringify(updateResult[0]));
+            createdLedgerRecords.push(updateResult[0]);
+          } catch (error) {
+            // TODO: Log important checks
+            throw new Error(`error in ExchangeRatesDifference insert - ${error}`);
+          }
+        }
+
+        console.log(`Ledger records generated: ${createdLedgerRecords.map(r => r.id)}`);
+        return charge;
+      } catch (e) {
+        console.error(e);
         return {
           __typename: 'CommonError',
           message: (e as Error)?.message ?? 'Unknown error',
@@ -442,13 +629,10 @@ export const resolvers: Resolvers = {
       const invoices = docs.filter(
         d => !d.duplication_of && ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
       );
-      if (invoices.length === 0) {
-        return null;
-      }
       if (invoices.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
       }
-      return invoices[0];
+      return invoices.shift() ?? null;
     },
     receipt: async DbCharge => {
       if (!DbCharge.id) {
@@ -458,13 +642,10 @@ export const resolvers: Resolvers = {
       const receipts = docs.filter(
         d => !d.duplication_of && ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
       );
-      if (receipts.length === 0) {
-        return null;
-      }
       if (receipts.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
       }
-      return receipts[0];
+      return receipts.shift() ?? null;
     },
     accountantApproval: DbCharge => ({
       approved: DbCharge.reviewed ?? false,
