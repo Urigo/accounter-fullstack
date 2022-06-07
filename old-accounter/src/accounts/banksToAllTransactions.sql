@@ -63,7 +63,11 @@ BEGIN
                      WHEN NEW.currency_id = 'ש"ח' THEN 'ILS'
                      WHEN NEW.currency_id = 'NIS' THEN 'ILS'
                      WHEN NEW.currency_id = 'דולר' THEN 'USD'
-                     ELSE NEW.currency_id END
+                     -- use ILS as default:
+                     WHEN NEW.currency_id = 'EUR' THEN 'EUR'
+                     WHEN NEW.currency_id = 'USD' THEN 'USD'
+                     WHEN NEW.currency_id = 'GBP' THEN 'GBP'
+                     ELSE 'ILS' END
                     ),
                 CASE
                     WHEN NEW.full_purchase_date IS NULL THEN to_date(NEW.full_purchase_date_outbound, 'DD/MM/YYYY')
