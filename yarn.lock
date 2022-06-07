@@ -2779,10 +2779,10 @@ detect-node@^2.0.4, detect-node@^2.1.0:
   resolved "https://registry.yarnpkg.com/detect-node/-/detect-node-2.1.0.tgz#c9c70775a49c3d03bc2c06d9a73be550f978f8b1"
   integrity sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==
 
-devtools-protocol@0.0.982423:
-  version "0.0.982423"
-  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.982423.tgz#39ac3791d4c5b90ebb416d4384663b7b0cc44154"
-  integrity sha512-FnVW2nDbjGNw1uD/JRC+9U5768W7e1TfUwqbDTcSsAu1jXFjITSX8w3rkW5FEpHRMPPGpvNSmO1pOpqByiWscA==
+devtools-protocol@0.0.1001819:
+  version "0.0.1001819"
+  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1001819.tgz#0a98f44cefdb02cc684f3d5e6bd898a1690231d9"
+  integrity sha512-G6OsIFnv/rDyxSqBa2lDLR6thp9oJioLsb2Gl+LbQlyoA9/OBAkrTU9jiCcQ8Pnh7z4d6slDiLaogR5hzgJLmQ==
 
 diff@^4.0.1:
   version "4.0.2"
@@ -4984,16 +4984,16 @@ mkdirp@^1.0.4:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-modern-poalim-scraper@0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.3.3.tgz#9f5a37c29a116436b1bdaa779590c7ba904048a7"
-  integrity sha512-AUvOFpQd4xXia2lc/sQCa019bj89PmCftHExwyKtxjfSkfs588ZXkNXWqzBXqoULm38Cou/m1UJafNFcSaSjPg==
+modern-poalim-scraper@0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.3.4.tgz#5fee94229e0fbcca7514fc7aa9276ecb930176a5"
+  integrity sha512-PR+RwzQVfbAIlyBltn7bh/TcT1v9gxkwfQ54svWq0o+WjsG5rGR6bmWiMQmzIzl/kBtxMf6+nWljggzCWTcLQw==
   dependencies:
     ajv "8.11.0"
     ajv-formats "^2.1.1"
     inquirer "8.2.4"
-    node-fetch "3.2.4"
-    puppeteer "14.1.0"
+    node-fetch "3.2.5"
+    puppeteer "14.3.0"
     uuid "8.3.2"
 
 moment@2.29.3:
@@ -5073,10 +5073,10 @@ node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.7:
   dependencies:
     whatwg-url "^5.0.0"
 
-node-fetch@3.2.4:
-  version "3.2.4"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-3.2.4.tgz#3fbca2d8838111048232de54cb532bd3cf134947"
-  integrity sha512-WvYJRN7mMyOLurFR2YpysQGuwYrJN+qrrpHjJDuKMcSPdfFccRUla/kng2mz6HWSBxJcqPbvatS6Gb4RhOzCJw==
+node-fetch@3.2.5:
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-3.2.5.tgz#7d31da657804db5185540ddac7ddd516a9a2bd26"
+  integrity sha512-u7zCHdJp8JXBwF09mMfo2CL6kp37TslDl1KP3hRGTlCInBtag+UO3LGVy+NF0VzvnL3PVMpA2hXh1EtECFnyhQ==
   dependencies:
     data-uri-to-buffer "^4.0.0"
     fetch-blob "^3.1.4"
@@ -5680,14 +5680,14 @@ pupa@^2.1.1:
   dependencies:
     escape-goat "^2.0.0"
 
-puppeteer@14.1.0:
-  version "14.1.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.1.0.tgz#319560e20ff451890158d7146c79ab589c6e7031"
-  integrity sha512-T3eB4f6k9HVttYvyy8drGIKb04M+vxhepqM7qqcVCBTNT3T6M9cUaJT4k7P+a6wSonObJSJUP98JkPDQG+3fJw==
+puppeteer@14.3.0:
+  version "14.3.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.3.0.tgz#0099cabf97767461aca02486313e84fcfc776af6"
+  integrity sha512-pDtg1+vyw1UPIhUjh2/VW1HUdQnaZJHfMacrJciR3AVm+PBiqdCEcFeFb3UJ/CDEQlHOClm3/WFa7IjY25zIGg==
   dependencies:
     cross-fetch "3.1.5"
     debug "4.3.4"
-    devtools-protocol "0.0.982423"
+    devtools-protocol "0.0.1001819"
     extract-zip "2.0.1"
     https-proxy-agent "5.0.1"
     pkg-dir "4.2.0"
@@ -5696,7 +5696,7 @@ puppeteer@14.1.0:
     rimraf "3.0.2"
     tar-fs "2.1.1"
     unbzip2-stream "1.4.3"
-    ws "8.6.0"
+    ws "8.7.0"
 
 qs@6.10.3:
   version "6.10.3"
@@ -7162,7 +7162,12 @@ write-file-atomic@^3.0.0:
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
 
-ws@8.6.0, ws@^8.3.0:
+ws@8.7.0:
+  version "8.7.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-8.7.0.tgz#eaf9d874b433aa00c0e0d8752532444875db3957"
+  integrity sha512-c2gsP0PRwcLFzUiA8Mkr37/MI7ilIlHQxaEAtd0uNMbVMoy8puJyafRlm0bV9MbGSabUPeLrRRaqIBcFcA2Pqg==
+
+ws@^8.3.0:
   version "8.6.0"
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.6.0.tgz#e5e9f1d9e7ff88083d0c0dd8281ea662a42c9c23"
   integrity sha512-AzmM3aH3gk0aX7/rZLYvjdvZooofDu3fFOzGqcSnQ1tOcTWwhM/o+q++E8mAyVVIyUdajrkzWUGftaVSDLn1bw==
