@@ -36,7 +36,7 @@ export function decorateCharge(charge: IGetChargesByIdsResult, autoTaxCategory?:
   // what is happening here?
   if (decoreatedCharge.tax_invoice_currency) {
     decoreatedCharge.currency_code = decoreatedCharge.tax_invoice_currency;
-    decoreatedCharge.event_amount = decoreatedCharge.tax_invoice_amount;
+    decoreatedCharge.event_amount = decoreatedCharge.tax_invoice_amount ?? undefined;
     if (decoreatedCharge.account_type == 'creditcard') {
       decoreatedCharge.account_type = 'checking_usd';
     } else {
@@ -174,8 +174,8 @@ export async function buildLedgerEntries(
       charge.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : charge.is_property
-        ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
-        : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
+          ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
+          : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
