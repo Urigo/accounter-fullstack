@@ -12,7 +12,7 @@ import {
   hashNumberRounded,
   hashNumber,
   hashNumberNoAbs,
-} from './taxesForTransaction';
+} from './taxes-for-transaction';
 import { v4 as uuidv4 } from 'uuid';
 
 enum TransactionType {

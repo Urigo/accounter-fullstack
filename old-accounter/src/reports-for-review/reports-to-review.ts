@@ -3,8 +3,8 @@ import moment from 'moment';
 // import fetch from 'node-fetch';
 // import XML from 'pixl-xml';
 
-import { createTaxEntriesForMonth } from '../taxMonthlyReport/taxesForMonth';
-import { lastInvoiceNumbersQuery, getLastInvoiceNumbers } from '../firstPage';
+import { createTaxEntriesForMonth } from '../tax-monthly-report/taxes-for-month';
+import { lastInvoiceNumbersQuery, getLastInvoiceNumbers } from '../first-page';
 
 export const reportToReview = async (query: any): Promise<string> => {
   let reportMonthToReview;

@@ -1,13 +1,13 @@
 import { createReadStream } from 'fs';
 import { createServer } from 'http';
 import { parse } from 'url';
-import { reportToReview } from './reportsForReview/reportsToReview';
-import { printSomething } from './anotherFile';
-import { financialStatus, tableStyles } from './firstPage';
-import { monthlyReport } from './taxMonthlyReport/monthlyReportPage';
-import { topPrivateNotCategorized } from './privateCharts/privateCharts';
-import { createTaxEntriesForTransaction } from './taxMonthlyReport/taxesForTransaction';
-import { userTransactions } from './users/userTransactions';
+import { reportToReview } from './reports-for-review/reports-to-review';
+import { printSomething } from './another-file';
+import { financialStatus, tableStyles } from './first-page';
+import { monthlyReport } from './tax-monthly-report/monthly-report-page';
+import { topPrivateNotCategorized } from './private-charts/private-charts';
+import { createTaxEntriesForTransaction } from './tax-monthly-report/taxes-for-transaction';
+import { userTransactions } from './users/user-transactions';
 
 import dotenv from 'dotenv';
 const { config } = dotenv;
@@ -17,8 +17,8 @@ config();
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
-import { getAllUsers } from './users/getAllUsers';
-import { updateBankTransactionAttribute } from './taxMonthlyReport/updateTransactions';
+import { getAllUsers } from './users/get-all-users';
+import { updateBankTransactionAttribute } from './tax-monthly-report/update-transactions';
 const { Pool } = pg;
 
 console.log('hello world');

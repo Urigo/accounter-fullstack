@@ -1,4 +1,4 @@
-import { tableStyles } from '../firstPage';
+import { tableStyles } from '../first-page';
 import { pool } from '../index';
 
 export const businesses = {
