@@ -1,6 +1,6 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-import { pool } from '../providers/db.mjs';
+import { pool } from './db.mjs';
 import {
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,

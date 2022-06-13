@@ -1,7 +1,7 @@
 import pgQuery from '@pgtyped/query';
 import { IGetHashavshevetBusinessIndexesQuery, IGetHashGovIndexesQuery } from '../__generated__/hashavshevet.types.mjs';
 import { pool } from '../providers/db.mjs';
-import { getFinancialAccountByAccountNumberLoader } from './financialAccounts.mjs';
+import { getFinancialAccountByAccountNumberLoader } from './financial-accounts.mjs';
 import { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 
 const { sql } = pgQuery;
