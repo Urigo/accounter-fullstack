@@ -1,12 +1,12 @@
 import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
 import { businesses } from '../../helpers';
-import { AccounterLoader } from '../common/Loader';
+import { AccounterLoader } from '../common/loader';
 import { AccounterTable } from '../common/accounter-table';
 import { Table, Image, Card, Center } from '@mantine/core';
 import { PopUpModal } from '../common/modal';
 import { useState } from 'react';
-import { PageWrappers } from '../common/CommonWrappers';
+import { PageWrappers } from '../common/common-wrappers';
 import { useAllChargesQuery } from '../../__generated__/types';
 
 gql`
