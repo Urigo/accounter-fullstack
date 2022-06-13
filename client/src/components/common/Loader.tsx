@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { Loader } from '@mantine/core';
-import { Icon } from './Icon';
+import { Icon } from './icon';
 
 export const AccounterLoader: FC = () => {
   return (
