@@ -17,7 +17,7 @@ import {
   updateCharge,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import { getDocsByChargeIdLoader, getEmailDocs } from './providers/documents.mjs';
+import { getDocsByChargeIdLoader, getDocsByFinancialEntityIds, getEmailDocs } from './providers/documents.mjs';
 import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
@@ -70,6 +70,10 @@ const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinanci
     return charges;
   },
   linkedEntities: () => [], // TODO: implement
+  documents: async DbBusiness => {
+    const documents = await getDocsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
+    return documents;
+  },
 };
 
 const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
@@ -514,7 +518,6 @@ export const resolvers: Resolvers = {
     ...commonFinancialEntityFields,
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
-    documents: () => [], // TODO: implement
   },
   BankFinancialAccount: {
     __isTypeOf: DbAccount => !!DbAccount.bank_number,
