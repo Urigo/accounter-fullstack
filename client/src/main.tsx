@@ -1,15 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AllCharges } from './components/AllCharges';
-import { AllUsers } from './components/AllUsers';
-import { DocumentsReport } from './components/Documents';
-import { FinancialStatus } from './components/FinancialStatus';
-import { MonthlyReport } from './components/MonthlyReport';
-import { ReportsToReview } from './components/ReportsToReview';
-import { TopPrivateNotCategorized } from './components/TopPrivateNotCategorized';
-import { UserTransactions } from './components/UserTransactions';
-import { Providers } from './Providers';
+import { AllCharges } from './components/all-charges';
+import { AllUsers } from './components/all-users';
+import { DocumentsReport } from './components/documents';
+import { FinancialStatus } from './components/financial-status';
+import { MonthlyReport } from './components/monthly-report';
+import { ReportsToReview } from './components/reports-to-review';
+import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
+import { UserTransactions } from './components/user-transactions';
+import { Providers } from './providers';
 
 const rootElement = document.getElementById('root');
 

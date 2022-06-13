@@ -22,14 +22,14 @@ import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
-} from './providers/financialAccounts.mjs';
-import { getFinancialEntityByIdLoader } from './providers/financialEntities.mjs';
+} from './providers/financial-accounts.mjs';
+import { getFinancialEntityByIdLoader } from './providers/financial-entities.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
   getHashavshevetVatIndexes,
 } from './providers/hashavshevet.mjs';
-import { getLedgerRecordsByChargeIdLoader, insertLedgerRecords } from './providers/ledgerRecords.mjs';
+import { getLedgerRecordsByChargeIdLoader, insertLedgerRecords } from './providers/ledger-records.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import { IInsertLedgerRecordsResult } from './__generated__/ledgerRecords.types.mjs';
 import {

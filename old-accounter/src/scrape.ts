@@ -7,7 +7,7 @@ import { init } from 'modern-poalim-scraper';
 import lodash from 'lodash';
 const { camelCase, upperFirst } = lodash;
 
-import { saveTransactionsToDB } from './data/saveTransactionsToDB';
+import { saveTransactionsToDB } from './data/save-transactions-to-db';
 import { getCurrencyRates } from './data/currency';
 import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
 
