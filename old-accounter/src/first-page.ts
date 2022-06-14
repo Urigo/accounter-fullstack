@@ -191,7 +191,7 @@ export const financialStatus = async (query: any): Promise<string> => {
       `,
       [`$$${monthTaxReport}$$`]
     ),
-    pool.query(readFileSync('src/monthlyCharts.sql').toString()),
+    pool.query(readFileSync('src/monthlyCharts.sql', 'utf8')),
     pool.query(`
     with transactions_exclude as (
       select *
