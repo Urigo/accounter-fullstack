@@ -43,13 +43,14 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
   switch (typeof rawAmount) {
     case 'number':
       return rawAmount;
-    case 'string':
+    case 'string': {
       const amount = parseFloat(rawAmount);
       if (amount) {
         return amount;
       }
       console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
       return 0;
+    }
     default:
       console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
       return 0;

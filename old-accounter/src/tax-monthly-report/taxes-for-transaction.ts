@@ -408,10 +408,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'EUR':
         isracardHashIndexes = hashCreditcardIndexResult.rows[0].hashavshevet_account_eur;
         break;
-      default:
+      default: {
         const errorMessage = `Unknown account type - ${transaction.currency_code}`;
         console.error(errorMessage);
         return errorMessage;
+      }
     }
   }
 
@@ -559,10 +560,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'GBP':
         return 'לש';
         break;
-      default:
+      default: {
         const errorMessage = `Unknown account type - ${accountType}`;
         console.error(errorMessage);
         return errorMessage;
+      }
     }
   }
 
