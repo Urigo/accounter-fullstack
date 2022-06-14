@@ -1,6 +1,6 @@
 import { Paper, Table } from '@mantine/core';
 import { PropsWithChildren, ReactNode, useState } from 'react';
-import { AccounterButton } from './Button';
+import { AccounterButton } from './button';
 
 export interface AccounterTableProps<T> {
   highlightOnHover?: boolean;

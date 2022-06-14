@@ -29,22 +29,20 @@ gql`
 `;
 
 type Props = {
-  ledgerRecord?: LedgerRecordsFieldsFragment['ledgerRecords']['0'];
+  ledgerRecord: LedgerRecordsFieldsFragment['ledgerRecords']['0'];
 };
 
-export const LedgerRecords = ({ ledgerRecord }: Props) => {
+export const LedgerRecordRow = ({ ledgerRecord }: Props) => {
   return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'column', width: '50%' }}>
-        <Table style={{ textAlign: 'center' }}>
-          <tr>Date:</tr>
-        </Table>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'column', width: '50%' }}>
-        <Table style={{ textAlign: 'center' }}>
-          <tr>{ledgerRecord?.id}</tr>
-        </Table>
-      </div>
-    </>
+    <tr>
+      <td>{ledgerRecord.creditAccount?.name}</td>
+      <td>{ledgerRecord.debitAccount?.name}</td>
+      <td>{ledgerRecord.localCurrencyAmount.formatted}</td>
+      <td>{ledgerRecord.originalAmount.formatted}</td>
+      <td>{ledgerRecord.date}</td>
+      <td>{ledgerRecord.accountantApproval.approved}</td>
+      <td>{ledgerRecord.hashavshevetId}</td>
+      <td>{ledgerRecord.description}</td>
+    </tr>
   );
 };
