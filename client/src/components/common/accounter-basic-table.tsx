@@ -1,12 +1,12 @@
 import { Paper, Table } from '@mantine/core';
-import { FC, PropsWithChildren, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
 export interface TableProps {
   style?: React.CSSProperties;
   content?: ReactNode;
 }
 
-export const AccounterBasicTable: FC<PropsWithChildren<TableProps>> = ({ content, style }) => {
+export const AccounterBasicTable = ({ content, style }: TableProps) => {
   return (
     <>
       <Paper shadow="lg" style={{ overflowX: 'auto' }}>

@@ -1,4 +1,4 @@
-import { FC, PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 
 type JustifyContent =
   | 'flex-start'
@@ -11,6 +11,7 @@ type JustifyContent =
   | 'space-between'
   | 'space-around'
   | 'space-evenly';
+
 type AlignItems =
   | 'stretch'
   | 'flex-start'
@@ -23,6 +24,7 @@ type AlignItems =
   | 'end'
   | 'self-start'
   | 'self-end';
+
 type AlignContent =
   | 'flex-start'
   | 'flex-end'
@@ -46,14 +48,14 @@ interface FlexProps {
   style?: React.CSSProperties;
 }
 
-export const PageWrappers: FC<PropsWithChildren<FlexProps>> = ({
+export const PageWrappers = ({
   children,
   gap,
   justifyContent,
   alignItems,
   alignContent,
   backgroundColor,
-}) => {
+}: PropsWithChildren<FlexProps>) => {
   gap = gap ?? '0rem';
   alignContent = alignContent ?? 'flex-start';
   justifyContent = justifyContent ?? 'flex-start';
@@ -76,7 +78,7 @@ export const PageWrappers: FC<PropsWithChildren<FlexProps>> = ({
   );
 };
 
-export const FlexRow: FC<PropsWithChildren<FlexProps>> = ({
+export const FlexRow = ({
   children,
   gap,
   justifyContent,
@@ -84,7 +86,7 @@ export const FlexRow: FC<PropsWithChildren<FlexProps>> = ({
   alignContent,
   backgroundColor,
   style,
-}) => {
+}: PropsWithChildren<FlexProps>) => {
   gap = gap ?? '0rem';
   return (
     <div
@@ -105,6 +107,6 @@ export const FlexRow: FC<PropsWithChildren<FlexProps>> = ({
   );
 };
 
-export const FlexColumn: FC<PropsWithChildren<FlexProps>> = ({ children, style }) => {
+export const FlexColumn = ({ children, style }: PropsWithChildren<FlexProps>) => {
   return <div style={style && { display: 'flex', flexDirection: 'column' }}>{children}</div>;
 };

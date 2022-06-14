@@ -19,7 +19,7 @@ export const ReceiptImg = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.receipt_image && (
-        <a href={transaction.receipt_image} target="_blank">
+        <a href={transaction.receipt_image} target="_blank" rel="noreferrer">
           yes
         </a>
       )}

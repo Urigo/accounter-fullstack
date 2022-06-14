@@ -8,8 +8,9 @@ type Props = {
 };
 
 export const ConfirmButton = ({ transaction, propertyName, value }: Props) => {
+  const { editTransaction } = useSql();
+
   const updateToNew = () => {
-    const { editTransaction } = useSql();
     if (!value) {
       return;
     }

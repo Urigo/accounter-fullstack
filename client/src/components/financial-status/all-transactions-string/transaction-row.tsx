@@ -112,7 +112,7 @@ export const TransactionRow = ({ transaction, columns, index, charge }: Props) =
               return <Links transaction={transaction} />;
             }
           }
-          return <td>missing impl</td>;
+          return <td key={transaction.id}>missing impl</td>;
         })}
       </tr>
       <tr>

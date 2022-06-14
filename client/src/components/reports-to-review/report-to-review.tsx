@@ -93,7 +93,7 @@ const TransactionRow = ({ transaction, index, setSelected, isSelected }: Transac
       </td>
       <td className="invoiceDate">
         {addHoverEditButton('invoice_date')}
-        <img className="invoiceImage" src={transaction.proforma_invoice_file} />
+        <img className="invoiceImage" src={transaction.proforma_invoice_file} alt="Invoice" />
       </td>
       <td>
         {addHoverEditButton('debit_account_1', generateGoToUserTransactionsFunctionCall(transaction.debit_account_1))}

@@ -19,7 +19,7 @@ export const InvoiceImg = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.proforma_invoice_file && (
-        <a href={transaction.proforma_invoice_file} target="_blank">
+        <a href={transaction.proforma_invoice_file} target="_blank" rel="noreferrer">
           yes
         </a>
       )}

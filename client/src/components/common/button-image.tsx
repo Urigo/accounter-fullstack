@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core';
-import { CSSProperties, PropsWithChildren, MouseEventHandler, FC } from 'react';
+import { CSSProperties, PropsWithChildren, MouseEventHandler } from 'react';
 
 export interface ButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -11,7 +11,7 @@ export interface ButtonProps {
   style?: CSSProperties;
 }
 
-export const ButtonImage: FC<PropsWithChildren<ButtonProps>> = ({
+export const ButtonImage = ({
   children,
   onClick = () => {
     void 0;
@@ -19,7 +19,7 @@ export const ButtonImage: FC<PropsWithChildren<ButtonProps>> = ({
   loading = false,
   disabled = false,
   type = 'button',
-}) => {
+}: PropsWithChildren<ButtonProps>) => {
   const buttonDisabled = disabled || loading;
 
   return (

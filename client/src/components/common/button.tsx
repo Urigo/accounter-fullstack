@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core';
-import { CSSProperties, PropsWithChildren, MouseEventHandler, FC } from 'react';
+import { CSSProperties, MouseEventHandler } from 'react';
 
 export interface ButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -15,7 +15,7 @@ export interface ButtonProps {
   title?: string;
 }
 
-export const AccounterButton: FC<PropsWithChildren<ButtonProps>> = ({
+export const AccounterButton = ({
   title,
   target,
   herf,
@@ -26,7 +26,7 @@ export const AccounterButton: FC<PropsWithChildren<ButtonProps>> = ({
   },
   loading = false,
   disabled = false,
-}) => {
+}: ButtonProps) => {
   const buttonDisabled = disabled || loading;
 
   return (
