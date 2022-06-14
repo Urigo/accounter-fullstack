@@ -92,10 +92,7 @@ export async function saveTransactionsToDB(
       additionalColumnsToExcludeFromTransactionComparison.push('contraAccountFieldNameLable');
     }
     if (accountType == 'deposits') {
-      additionalColumnsToExcludeFromTransactionComparison.push('validityDate');
-      additionalColumnsToExcludeFromTransactionComparison.push('formattedDate');
-      additionalColumnsToExcludeFromTransactionComparison.push('validityTime');
-      additionalColumnsToExcludeFromTransactionComparison.push('formattedValidityTime');
+      additionalColumnsToExcludeFromTransactionComparison.push('validityDate', 'formattedDate', 'validityTime', 'formattedValidityTime');
     }
     const whereClause = createWhereClause(
       transaction,
