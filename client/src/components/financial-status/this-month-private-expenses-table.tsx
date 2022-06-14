@@ -13,7 +13,7 @@ export const ThisMonthPrivateExpensesTable = () => {
   }, []);
 
   return (
-    thisMonthPrivateExpenses.length > 0 && (
+    thisMonthPrivateExpenses.length > 0 ? (
       <AccounterBasicTable
         content={
           <>
@@ -34,6 +34,6 @@ export const ThisMonthPrivateExpensesTable = () => {
           </>
         }
       />
-    )
+    ) : null
   );
 };
