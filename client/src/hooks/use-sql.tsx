@@ -104,7 +104,7 @@ export const useSql = () => {
     return (monthlyTaxesReport ?? []) as MonthTaxReport[];
   };
 
-  const onGetTopPrivateNotCategorized = async (startingDate: string = '2020-01-01') => {
+  const onGetTopPrivateNotCategorized = async (startingDate = '2020-01-01') => {
     const topPrivateNotCategorizedExpenses = await fetch(`${serverUrl}/getTopPrivateNotCategorized`, {
       method: 'POST',
       headers: {
@@ -214,10 +214,7 @@ export const useSql = () => {
     return undefined;
   };
 
-  const onGetReportToReview = async (
-    company: string = 'Software Products Guilda Ltd.',
-    reportMonthToReview: string = '2020-12-01'
-  ) => {
+  const onGetReportToReview = async (company = 'Software Products Guilda Ltd.', reportMonthToReview = '2020-12-01') => {
     const transactions = await fetch(`${serverUrl}/getReportToReview`, {
       method: 'POST',
       headers: {

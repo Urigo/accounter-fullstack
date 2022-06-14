@@ -16,6 +16,7 @@ gql`
       currency
     }
     transactions {
+      id
       amount {
         raw
         currency

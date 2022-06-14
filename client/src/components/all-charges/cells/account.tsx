@@ -5,6 +5,7 @@ import { AccountFieldsFragment } from '../../../__generated__/types';
 gql`
   fragment AccountFields on Charge {
     transactions {
+      id
       account {
         id
         __typename

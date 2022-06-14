@@ -86,15 +86,17 @@ export const reportToReview = async (query: any): Promise<string> => {
 
     if (date1 > date2) {
       return -1;
-    } else if (date1 < date2) {
-      return 1;
-    } else if (a.original_id > b.original_id) {
-      return -1;
-    } else if (a.original_id < b.original_id) {
-      return 1;
-    } else {
-      return 0;
     }
+    if (date1 < date2) {
+      return 1;
+    }
+    if (a.original_id > b.original_id) {
+      return -1;
+    }
+    if (a.original_id < b.original_id) {
+      return 1;
+    }
+    return 0;
   });
   // console.log(JSON.stringify(reportToReview.rows));
 

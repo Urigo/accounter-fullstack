@@ -170,35 +170,26 @@ export function hashAccounts(
   switch (accountType) {
     case 'checking_ils':
       return financialAccounts.hashavshevet_account_ils;
-      break;
     case 'checking_usd':
       return financialAccounts.hashavshevet_account_usd;
-      break;
     case 'checking_eur':
       return financialAccounts.hashavshevet_account_eur;
-      break;
     case 'creditcard':
-      switch (currency) {
-        case 'ILS':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_ils;
-          break;
-        case 'USD':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_usd;
-          break;
-        case 'EUR':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_eur;
-          break;
-        default:
-          const errorMessage = `Unknown currency - ${currency}`;
-          console.error(errorMessage);
-          creditCardHashAccount = errorMessage;
+      if (currency === 'ILS') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_ils;
+      } else if (currency === 'USD') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_usd;
+      } else if (currency === 'EUR') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_eur;
+      } else {
+        const errorMessage = `Unknown currency - ${currency}`;
+        console.error(errorMessage);
+        creditCardHashAccount = errorMessage;
       }
       return creditCardHashAccount;
-      break;
     case 'Isracard':
       console.log('isracardHashIndexes', isracardHashIndexes);
       return isracardHashIndexes;
-      break;
     // case 'Hot Mobile':
     //   return 'הוט';
     //   break;
@@ -268,11 +259,11 @@ export function hashAccounts(
         if (transactionDescription == 'הפקדה לפקדון') {
           return 'פקדון';
           // return '4668039';
-        } else if (hashBusinessIndexes.hash_index) {
-          return hashBusinessIndexes.hash_index;
-        } else {
-          return accountType ? accountType.substring(0, 15).trimEnd() : null;
         }
+        if (hashBusinessIndexes.hash_index) {
+          return hashBusinessIndexes.hash_index;
+        }
+        return accountType ? accountType.substring(0, 15).trimEnd() : null;
       }
       return accountType ? accountType.substring(0, 15).trimEnd() : null;
   }
@@ -370,6 +361,10 @@ export async function getTransactionExchangeRates(transaction: any) {
   };
 }
 
+function swap(obj: any, key1: any, key2: any) {
+  [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
+}
+
 export async function createTaxEntriesForTransaction(transactionId: string) {
   let transaction: any = await pool.query(`
     SELECT *
@@ -413,10 +408,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'EUR':
         isracardHashIndexes = hashCreditcardIndexResult.rows[0].hashavshevet_account_eur;
         break;
-      default:
+      default: {
         const errorMessage = `Unknown account type - ${transaction.currency_code}`;
         console.error(errorMessage);
         return errorMessage;
+      }
     }
   }
 
@@ -524,9 +520,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   entryForAccounting.description = entryForFinancialAccount.description = transaction.user_description;
 
   if (transaction.event_amount < 0) {
-    function swap(obj: any, key1: any, key2: any) {
-      [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
-    }
     swap(entryForAccounting, 'creditAccount', 'debitAccount');
     swap(entryForAccounting, 'creditAmount', 'debitAmount');
     swap(entryForAccounting, 'creditAmountILS', 'debitAmountILS');
@@ -567,10 +560,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       case 'GBP':
         return 'לש';
         break;
-      default:
+      default: {
         const errorMessage = `Unknown account type - ${accountType}`;
         console.error(errorMessage);
         return errorMessage;
+      }
     }
   }
 

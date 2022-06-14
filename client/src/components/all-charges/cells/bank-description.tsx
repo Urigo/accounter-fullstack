@@ -5,6 +5,7 @@ import { BankDescriptionFieldsFragment } from '../../../__generated__/types';
 gql`
   fragment BankDescriptionFields on Charge {
     transactions {
+      id
       description
     }
   }

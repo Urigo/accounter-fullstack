@@ -92,10 +92,12 @@ export async function saveTransactionsToDB(
       additionalColumnsToExcludeFromTransactionComparison.push('contraAccountFieldNameLable');
     }
     if (accountType == 'deposits') {
-      additionalColumnsToExcludeFromTransactionComparison.push('validityDate');
-      additionalColumnsToExcludeFromTransactionComparison.push('formattedDate');
-      additionalColumnsToExcludeFromTransactionComparison.push('validityTime');
-      additionalColumnsToExcludeFromTransactionComparison.push('formattedValidityTime');
+      additionalColumnsToExcludeFromTransactionComparison.push(
+        'validityDate',
+        'formattedDate',
+        'validityTime',
+        'formattedValidityTime'
+      );
     }
     const whereClause = createWhereClause(
       transaction,
@@ -297,8 +299,7 @@ function createWhereClause(
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(transaction[camelCaseColumnName]));
           }
-        } else if (!isNotNull && dBcolumn.data_type == 'json') {
-        } else {
+        } else if (isNotNull || dBcolumn.data_type != 'json') {
           // TODO: Log important checks
           console.log('unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName);
         }

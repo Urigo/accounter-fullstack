@@ -251,7 +251,7 @@ export function generateEntryForFinancialAccountValues(
 ): IInsertLedgerRecordsParams['ledgerRecord'][0] {
   const isILS = charge.currency_code === 'ILS';
 
-  let foreignBalance = null;
+  const foreignBalance = null;
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] = charge.currency_code
     ? hashavshevetFormat.currency(charge.currency_code)
     : null; // TODO(Uri): Check if it works for forgien creditcard in ILS

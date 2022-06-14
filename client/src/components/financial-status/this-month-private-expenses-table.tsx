@@ -12,28 +12,26 @@ export const ThisMonthPrivateExpensesTable = () => {
     getThisMonthPrivateExpenses().then(setThisMonthPrivateExpenses);
   }, []);
 
-  return (
-    thisMonthPrivateExpenses.length > 0 && (
-      <AccounterBasicTable
-        content={
-          <>
-            <thead>
-              <tr>
-                <th>Personal Category</th>
-                <th>Amount</th>
+  return thisMonthPrivateExpenses.length > 0 ? (
+    <AccounterBasicTable
+      content={
+        <>
+          <thead>
+            <tr>
+              <th>Personal Category</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {thisMonthPrivateExpenses.map((row, i) => (
+              <tr key={i}>
+                <td>{row.personal_category}</td>
+                <td>{formatCurrency.format(row.overall_sum)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {thisMonthPrivateExpenses.map((row, i) => (
-                <tr key={i}>
-                  <td>{row.personal_category}</td>
-                  <td>{formatCurrency.format(row.overall_sum)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </>
-        }
-      />
-    )
-  );
+            ))}
+          </tbody>
+        </>
+      }
+    />
+  ) : null;
 };

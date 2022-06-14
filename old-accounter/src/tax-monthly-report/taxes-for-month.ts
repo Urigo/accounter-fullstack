@@ -4,7 +4,7 @@ import {
   addTrueVATtoTransaction,
   hashDateFormat,
   hashAccounts,
-  insertMovementQuery,
+  // insertMovementQuery,
   getVATIndexes,
   getILSForDate,
   getTransactionExchangeRates,
@@ -23,8 +23,8 @@ enum TransactionType {
 function getVATTransaction(
   month: Date,
   transactionType: TransactionType,
-  businessName: String,
-  VATCadence: String
+  businessName: string,
+  VATCadence: string
 ): any {
   const getCurrentBusinessAccountsQuery = `
     (select account_number
@@ -138,7 +138,7 @@ export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
-export async function createTaxEntriesForMonth(month: Date, businessName: String, pool: pg.Pool) {
+export async function createTaxEntriesForMonth(month: Date, businessName: string, pool: pg.Pool) {
   const businessIdByNameQuery = `
   (
     select id
@@ -186,7 +186,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
   const advancePercentageRate = 8.2;
-  for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
+  for (const monthIncomeTransaction of monthIncomeTransactions?.rows ?? []) {
     if (monthIncomeTransaction.tax_invoice_currency) {
       const originalCurrency = monthIncomeTransaction.currency_code;
       monthIncomeTransaction.currency_code = monthIncomeTransaction.tax_invoice_currency;
@@ -353,7 +353,6 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
   let leftMonthVATReportHTMLTemplate = '';
   let overallVATHTMLTemplate = '';
   const transactionsForReport = [];
-  const leftTransactionsReport = [];
   for (const transactionType of Object.values(TransactionType)) {
     console.log(`VAT transactions - ${transactionType}`);
     const monthIncomeVATTransactions: any = await pool.query(
@@ -373,7 +372,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
     let expensesWithoutVATVATSum = 0;
     const sharedInvoiceIDs: any[] = [];
     const changedVATTransactions = [];
-    for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
+    for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows ?? []) {
       const referencedInvoice: any = await pool.query(`
         select * from accounter_schema.taxes where
         id = (
@@ -531,7 +530,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
       }
     }
 
-    for (const leftTransaction of leftTransactions?.rows) {
+    for (const leftTransaction of leftTransactions?.rows ?? []) {
       leftMonthVATReportHTMLTemplate = leftMonthVATReportHTMLTemplate.concat(`
       <tr>
         <td>${leftTransaction.financial_entity}-${leftTransaction.vatNumber}</td>
@@ -546,7 +545,6 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
     }
 
     transactionsForReport.push(...changedVATTransactions);
-    leftTransactionsReport.push(...leftTransactions.rows);
 
     // console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
@@ -607,10 +605,10 @@ export async function createTaxEntriesForMonth(month: Date, businessName: String
             </tr>
     `);
 
-      let queryConfig = {
-        text: insertMovementQuery,
-        values: entryForMonthlyVAT,
-      };
+      // let queryConfig = {
+      //   text: insertMovementQuery,
+      //   values: entryForMonthlyVAT,
+      // };
 
       // try {
       //   let updateResult = await pool.query(queryConfig);
