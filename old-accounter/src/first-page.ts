@@ -104,7 +104,7 @@ export const lastInvoiceNumbersQuery = `
 export function getLastInvoiceNumbers(lastInvoiceNumbers: any) {
   let lastInvoiceNumbersHTMLTemplate = '';
   if (lastInvoiceNumbers?.rows) {
-    for (const transaction of lastInvoiceNumbers?.rows) {
+    for (const transaction of lastInvoiceNumbers?.rows ?? []) {
       lastInvoiceNumbersHTMLTemplate = lastInvoiceNumbersHTMLTemplate.concat(`
         <tr>
           <td>${transaction.tax_invoice_number}</td>
@@ -243,7 +243,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let profitTableHTMLTemplate = '';
   if (profitTable?.rows) {
-    for (const profitMonth of profitTable?.rows) {
+    for (const profitMonth of profitTable?.rows ?? []) {
       profitTableHTMLTemplate = profitTableHTMLTemplate.concat(`
         <tr>
             <td>${profitMonth.date}</td>
@@ -278,7 +278,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let thisMonthPrivateExpensesTableHTMLTemplate = '';
   if (thisMonthPrivateExpensesTable?.rows) {
-    for (const expenseCategory of thisMonthPrivateExpensesTable?.rows) {
+    for (const expenseCategory of thisMonthPrivateExpensesTable?.rows ?? []) {
       thisMonthPrivateExpensesTableHTMLTemplate = thisMonthPrivateExpensesTableHTMLTemplate.concat(`
         <tr>
             <td>${expenseCategory.personal_category}</td>
@@ -303,7 +303,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let missingInvoiceDatesHTMLTemplate = '';
   if (missingInvoiceDates?.rows) {
-    for (const transaction of missingInvoiceDates?.rows) {
+    for (const transaction of missingInvoiceDates?.rows ?? []) {
       missingInvoiceDatesHTMLTemplate = missingInvoiceDatesHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
@@ -334,7 +334,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let missingInvoiceNumbersHTMLTemplate = '';
   if (missingInvoiceNumbers?.rows) {
-    for (const transaction of missingInvoiceNumbers?.rows) {
+    for (const transaction of missingInvoiceNumbers?.rows ?? []) {
       missingInvoiceNumbersHTMLTemplate = missingInvoiceNumbersHTMLTemplate.concat(`
         <tr>
           <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
@@ -365,7 +365,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let missingInvoiceImagesHTMLTemplate = '';
   if (missingInvoiceImages?.rows) {
-    for (const transaction of missingInvoiceImages?.rows) {
+    for (const transaction of missingInvoiceImages?.rows ?? []) {
       missingInvoiceImagesHTMLTemplate = missingInvoiceImagesHTMLTemplate.concat(`
           <tr>
             <td>${transaction.event_date.toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
@@ -396,7 +396,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let VATTransactionsString = '';
   if (VATTransactions?.rows) {
-    for (const transaction of VATTransactions?.rows) {
+    for (const transaction of VATTransactions?.rows ?? []) {
       VATTransactionsString = VATTransactionsString.concat(`
         <tr>
           <td>${transaction.overall_vat_status}</td>
@@ -429,7 +429,7 @@ export const financialStatus = async (query: any): Promise<string> => {
 
   let allTransactionsString = '';
   if (allTransactions?.rows) {
-    for (const transaction of allTransactions?.rows) {
+    for (const transaction of allTransactions?.rows ?? []) {
       allTransactionsString = allTransactionsString.concat(`
         <tr bank_reference=${transaction.bank_reference}
             account_number=${transaction.account_number}

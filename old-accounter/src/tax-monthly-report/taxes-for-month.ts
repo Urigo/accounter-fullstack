@@ -186,7 +186,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
   const advancePercentageRate = 8.2;
-  for (const monthIncomeTransaction of monthIncomeTransactions?.rows) {
+  for (const monthIncomeTransaction of monthIncomeTransactions?.rows ?? []) {
     if (monthIncomeTransaction.tax_invoice_currency) {
       const originalCurrency = monthIncomeTransaction.currency_code;
       monthIncomeTransaction.currency_code = monthIncomeTransaction.tax_invoice_currency;
@@ -372,7 +372,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
     let expensesWithoutVATVATSum = 0;
     const sharedInvoiceIDs: any[] = [];
     const changedVATTransactions = [];
-    for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows) {
+    for (const monthIncomeVATTransaction of monthIncomeVATTransactions?.rows ?? []) {
       const referencedInvoice: any = await pool.query(`
         select * from accounter_schema.taxes where
         id = (
@@ -530,7 +530,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
       }
     }
 
-    for (const leftTransaction of leftTransactions?.rows) {
+    for (const leftTransaction of leftTransactions?.rows ?? []) {
       leftMonthVATReportHTMLTemplate = leftMonthVATReportHTMLTemplate.concat(`
       <tr>
         <td>${leftTransaction.financial_entity}-${leftTransaction.vatNumber}</td>
