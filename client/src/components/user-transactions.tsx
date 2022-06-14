@@ -36,7 +36,7 @@ const TransactionTable = ({ transactions }: Props) => {
         <>
           <thead>
             <tr>
-              <th>ח"ן</th>
+              <th>ח&quot;ן</th>
               <th>חשבשבת#</th>
               <th>date_3</th>
               <th>תאריך_ערך</th>
@@ -46,8 +46,8 @@ const TransactionTable = ({ transactions }: Props) => {
               <th>details</th>
               <th>movement_type</th>
               <th>currency</th>
-              <th colSpan={2}>חובה/זכות (מט"ח)</th>
-              <th>יתרה (מט"ח)</th>
+              <th colSpan={2}>חובה/זכות (מט&quot;ח)</th>
+              <th>יתרה (מט&quot;ח)</th>
               <th colSpan={2}>חובה/זכות (שקל)</th>
               <th>יתרה (שקל)</th>
             </tr>
@@ -218,7 +218,7 @@ export const UserTransactions = () => {
           <>
             <thead>
               <tr>
-                <th colSpan={2}>מט"ח</th>
+                <th colSpan={2}>מט&quot;ח</th>
                 <th colSpan={2}>שקל</th>
               </tr>
             </thead>
