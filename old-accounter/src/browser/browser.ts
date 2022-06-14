@@ -2,7 +2,7 @@ console.log('this should display only in browser');
 
 export function printElement(clickedElement: HTMLElement, newValue: string) {
   const changeRequest = {
-    newValue: newValue,
+    newValue,
     propertyToChange: clickedElement!.parentElement!.getAttribute('class'),
     id: clickedElement!.parentElement!.parentElement!.getAttribute('transaction_id'),
     bank_reference: clickedElement!.parentElement!.parentElement!.getAttribute('bank_reference'),
