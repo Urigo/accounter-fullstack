@@ -3,40 +3,43 @@ SELECT
 FROM
   formatted_merged_tables;
 
-DROP VIEW formatted_merged_tables CASCADE;
+DROP VIEW
+  formatted_merged_tables CASCADE;
 
 CREATE
-OR REPLACE VIEW formatted_merged_tables AS WITH all_exchange_dates AS (
-  SELECT
-    dt AS exchange_date,
-    (
-      SELECT
-        t1.eur
-      FROM
-        accounter_schema.exchange_rates t1
-      WHERE
-        date_trunc('day', t1.exchange_date) :: date <= times_table.dt
-      ORDER BY
-        t1.exchange_date DESC
-      LIMIT
-        1
-    ) eur_rate, (
-      SELECT
-        t1.usd
-      FROM
-        accounter_schema.exchange_rates t1
-      WHERE
-        date_trunc('day', t1.exchange_date) :: date <= times_table.dt
-      ORDER BY
-        t1.exchange_date DESC
-      LIMIT
-        1
-    ) usd_rate
-  FROM
-    times_table
-  ORDER BY
-    dt
-)
+OR REPLACE VIEW formatted_merged_tables AS
+WITH
+  all_exchange_dates AS (
+    SELECT
+      dt AS exchange_date,
+      (
+        SELECT
+          t1.eur
+        FROM
+          accounter_schema.exchange_rates t1
+        WHERE
+          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+        ORDER BY
+          t1.exchange_date DESC
+        LIMIT
+          1
+      ) eur_rate, (
+        SELECT
+          t1.usd
+        FROM
+          accounter_schema.exchange_rates t1
+        WHERE
+          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+        ORDER BY
+          t1.exchange_date DESC
+        LIMIT
+          1
+      ) usd_rate
+    FROM
+      times_table
+    ORDER BY
+      dt
+  )
 SELECT
   *,
   (

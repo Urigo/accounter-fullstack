@@ -3,7 +3,8 @@ SELECT
 FROM
   get_vat_for_month('2020-12-01');
 
-DROP FUNCTION get_vat_for_month(month_input VARCHAR);
+DROP FUNCTION
+  get_vat_for_month(month_input VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION get_vat_for_month(month_input VARCHAR) RETURNS TABLE (

@@ -185,7 +185,8 @@ WHERE
 ORDER BY
   (to_date(date_3, 'DD/MM/YYYY'));
 
-DROP FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR);
+DROP FUNCTION
+  report_to_hashavshevet_by_month(month_report VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR) RETURNS TABLE(
@@ -258,7 +259,8 @@ ORDER BY
   debit_account_1,
   id;
 
-DROP FUNCTION get_unified_tax_report_of_month;
+DROP FUNCTION
+  get_unified_tax_report_of_month;
 
 CREATE
 OR REPLACE FUNCTION get_unified_tax_report_of_month(
@@ -607,49 +609,50 @@ ORDER BY
 
 -- TODO: Reuse logic of getting business month from the initial query
 -- TODO: Reuse logic of what is deductible
-WITH this_month_business AS (
-  SELECT
-    *
-  FROM
-    formatted_merged_tables
-  WHERE
-    business_trip IS NULL
-    AND (
-      account_number = 2733
-      OR account_number = 61066
-    )
-    AND (
-      (
-        (
-          financial_entity != 'Isracard'
-          OR financial_entity IS NULL
-        )
-        AND account_type != 'creditcard'
-        AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
-        AND event_date :: TEXT :: date <= (
-          date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-        ) :: date
-        OR event_date IS NULL
+WITH
+  this_month_business AS (
+    SELECT
+      *
+    FROM
+      formatted_merged_tables
+    WHERE
+      business_trip IS NULL
+      AND (
+        account_number = 2733
+        OR account_number = 61066
       )
-      OR (
+      AND (
         (
-          account_type = 'creditcard'
-          OR financial_entity = 'Isracard'
+          (
+            financial_entity != 'Isracard'
+            OR financial_entity IS NULL
+          )
+          AND account_type != 'creditcard'
+          AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
+          AND event_date :: TEXT :: date <= (
+            date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+          ) :: date
+          OR event_date IS NULL
         )
-        AND (
-          debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-08-01') :: date
-          AND debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-08-01') :: date
-          OR (
-            debit_date IS NULL
-            AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
-            AND event_date :: TEXT :: date <= (
-              date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-            ) :: date
+        OR (
+          (
+            account_type = 'creditcard'
+            OR financial_entity = 'Isracard'
+          )
+          AND (
+            debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-08-01') :: date
+            AND debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-08-01') :: date
+            OR (
+              debit_date IS NULL
+              AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
+              AND event_date :: TEXT :: date <= (
+                date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
+              ) :: date
+            )
           )
         )
       )
-    )
-)
+  )
 SELECT
   (
     (
@@ -718,7 +721,8 @@ SELECT
 FROM
   get_tax_report_of_month('2020-12-01');
 
-DROP FUNCTION get_tax_report_of_month(month_input VARCHAR);
+DROP FUNCTION
+  get_tax_report_of_month(month_input VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_month(month_input VARCHAR) RETURNS TABLE(
