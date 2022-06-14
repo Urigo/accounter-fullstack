@@ -883,9 +883,7 @@ export function suggestedTransaction(transaction: any) {
     suggestedTransaction.financialAccountsToBalance = 'no';
     return suggestedTransaction;
   }
-  suggestedTransaction.financialEntity = transaction.detailed_bank_description
-    .replaceAll(`"`, '')
-    .replaceAll(`'`, '');
+  suggestedTransaction.financialEntity = transaction.detailed_bank_description.replaceAll(`"`, '').replaceAll(`'`, '');
   suggestedTransaction.userDescription = 'Food';
   suggestedTransaction.personalCategory = 'food';
 

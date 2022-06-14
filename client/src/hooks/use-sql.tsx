@@ -214,10 +214,7 @@ export const useSql = () => {
     return undefined;
   };
 
-  const onGetReportToReview = async (
-    company = 'Software Products Guilda Ltd.',
-    reportMonthToReview = '2020-12-01'
-  ) => {
+  const onGetReportToReview = async (company = 'Software Products Guilda Ltd.', reportMonthToReview = '2020-12-01') => {
     const transactions = await fetch(`${serverUrl}/getReportToReview`, {
       method: 'POST',
       headers: {
