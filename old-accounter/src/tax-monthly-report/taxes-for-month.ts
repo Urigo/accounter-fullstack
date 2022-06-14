@@ -353,7 +353,6 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   let leftMonthVATReportHTMLTemplate = '';
   let overallVATHTMLTemplate = '';
   const transactionsForReport = [];
-  const leftTransactionsReport = [];
   for (const transactionType of Object.values(TransactionType)) {
     console.log(`VAT transactions - ${transactionType}`);
     const monthIncomeVATTransactions: any = await pool.query(
@@ -546,7 +545,6 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
     }
 
     transactionsForReport.push(...changedVATTransactions);
-    leftTransactionsReport.push(...leftTransactions.rows);
 
     // console.log(`expensesVATSum - ${transactionType}`, expensesVATSum);
     if (expensesVATSum != 0) {
