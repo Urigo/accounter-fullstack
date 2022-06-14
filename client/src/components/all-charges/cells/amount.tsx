@@ -4,6 +4,7 @@ import gql from 'graphql-tag';
 gql`
   fragment AmountFields on Charge {
     transactions {
+      id
       amount {
         formatted
       }

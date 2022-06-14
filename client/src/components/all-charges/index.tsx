@@ -21,6 +21,7 @@ gql`
         __typename
       }
       charges {
+        id
         beneficiaries {
           counterparty {
             name

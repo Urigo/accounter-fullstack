@@ -27,6 +27,7 @@ import { LedgerRecordsTable } from './ledger-records/ledger-records-table';
 
 gql`
   fragment Charges on FinancialEntity {
+    id
     charges {
       id
       ...LedgerRecords
