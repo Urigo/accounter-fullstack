@@ -39,7 +39,7 @@ const TransactionTable = ({ transactions }: Props) => {
               <th>ח"ן</th>
               <th>חשבשבת#</th>
               <th>date_3</th>
-              <th>תאריך_ ערך</th>
+              <th>תאריך_ערך</th>
               <th>invoice_date</th>
               <th>reference_1</th>
               <th>reference_2</th>
