@@ -111,18 +111,18 @@ export const UserTransactions = () => {
   const [inputValue, setInputValue] = useState<string>(searchParams.get('name') ?? '');
   const [username, setUsername] = useState<string>(inputValue);
   const { getUserTransactions } = useSql();
-  let balanceForeign: number = 0;
-  let sumForeignDebit: number = 0;
-  let sumForeignCredit: number = 0;
-  let balanceNis: number = 0;
-  let sumNisDebit: number = 0;
-  let sumNisCredit: number = 0;
+  let balanceForeign = 0;
+  let sumForeignDebit = 0;
+  let sumForeignCredit = 0;
+  let balanceNis = 0;
+  let sumNisDebit = 0;
+  let sumNisCredit = 0;
 
   function modifyLedgerTransaction(modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) {
     let direction: 1 | -1 = 1;
-    let amountNis: number = 0;
-    let amountForeign: number = 0;
-    let counterAccount: string = '';
+    let amountNis = 0;
+    let amountForeign = 0;
+    let counterAccount = '';
     if (transaction.credit_account_1 === username) {
       direction = 1;
       amountNis = transaction.credit_amount_1 ? (amountNis = Number(transaction.credit_amount_1)) : 0;
