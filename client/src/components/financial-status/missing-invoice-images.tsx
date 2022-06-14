@@ -3,7 +3,6 @@ import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import { MissingInvoice } from '../../models/types';
 import { AccounterBasicTable } from '../common/accounter-basic-table';
-import { AccounterTable } from '../common/accounter-table';
 
 interface Props {
   monthTaxReport: string;

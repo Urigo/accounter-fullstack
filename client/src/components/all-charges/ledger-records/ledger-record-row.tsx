@@ -1,4 +1,3 @@
-import { Table } from '@mantine/core';
 import gql from 'graphql-tag';
 import { LedgerRecordsFieldsFragment } from '../../../__generated__/types';
 

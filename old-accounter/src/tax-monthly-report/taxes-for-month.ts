@@ -4,7 +4,7 @@ import {
   addTrueVATtoTransaction,
   hashDateFormat,
   hashAccounts,
-  insertMovementQuery,
+  // insertMovementQuery,
   getVATIndexes,
   getILSForDate,
   getTransactionExchangeRates,
@@ -605,10 +605,10 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
             </tr>
     `);
 
-      let queryConfig = {
-        text: insertMovementQuery,
-        values: entryForMonthlyVAT,
-      };
+      // let queryConfig = {
+      //   text: insertMovementQuery,
+      //   values: entryForMonthlyVAT,
+      // };
 
       // try {
       //   let updateResult = await pool.query(queryConfig);
