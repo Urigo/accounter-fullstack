@@ -2,7 +2,6 @@ import { CSSProperties } from 'react';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import gql from 'graphql-tag';
 import { ReceiptUrlFieldsFragment } from '../../../__generated__/types';
-import { RegularButton } from '../../common/button-image';
 import { AccounterButton } from '../../common/button';
 
 gql`

@@ -1,4 +1,4 @@
-import { LedgerRecordRow } from './ledger-record-row';
+import { LedgerRecords } from './ledger-record-row';
 import { LedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { AccounterBasicTable } from '../../common/accounter-basic-table';
 
@@ -25,7 +25,7 @@ export const LedgerRecordsTable = ({ ledgerRecords }: Props) => {
           </thead>
           <tbody>
             {ledgerRecords.map(r => (
-              <LedgerRecordRow key={r.id} ledgerRecord={r} />
+              <LedgerRecords key={r.id} ledgerRecord={r} />
             ))}
           </tbody>
         </>
