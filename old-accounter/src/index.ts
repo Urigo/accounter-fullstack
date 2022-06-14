@@ -33,7 +33,7 @@ export const pool = new Pool({
 });
 
 async function main() {
-  const server = createServer(async function (request, response) {
+  const server = createServer(async (request, response) => {
     console.log(`new request ${request.url}`);
     if (request.url == '/' || (request.url && request.url.startsWith('/?month='))) {
       response.statusCode = 200;
