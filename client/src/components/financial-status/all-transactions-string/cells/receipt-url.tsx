@@ -19,7 +19,7 @@ export const ReceiptUrl = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.receipt_url && (
-        <a href={transaction.receipt_url} target="_blank">
+        <a href={transaction.receipt_url} target="_blank" rel="noreferrer">
           yes
         </a>
       )}

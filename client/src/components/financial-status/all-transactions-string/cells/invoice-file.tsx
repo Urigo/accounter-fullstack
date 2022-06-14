@@ -19,7 +19,7 @@ export const InvoiceFile = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.tax_invoice_file && (
-        <a href={transaction.tax_invoice_file} target="_blank">
+        <a href={transaction.tax_invoice_file} target="_blank" rel="noreferrer">
           yes
         </a>
       )}
