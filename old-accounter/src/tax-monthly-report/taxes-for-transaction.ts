@@ -170,35 +170,26 @@ export function hashAccounts(
   switch (accountType) {
     case 'checking_ils':
       return financialAccounts.hashavshevet_account_ils;
-      break;
     case 'checking_usd':
       return financialAccounts.hashavshevet_account_usd;
-      break;
     case 'checking_eur':
       return financialAccounts.hashavshevet_account_eur;
-      break;
     case 'creditcard':
-      switch (currency) {
-        case 'ILS':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_ils;
-          break;
-        case 'USD':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_usd;
-          break;
-        case 'EUR':
-          creditCardHashAccount = financialAccounts.hashavshevet_account_eur;
-          break;
-        default:
-          const errorMessage = `Unknown currency - ${currency}`;
-          console.error(errorMessage);
-          creditCardHashAccount = errorMessage;
+      if (currency === 'ILS') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_ils;
+      } else if (currency === 'USD') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_usd;
+      } else if (currency === 'EUR') {
+        creditCardHashAccount = financialAccounts.hashavshevet_account_eur;
+      } else {
+        const errorMessage = `Unknown currency - ${currency}`;
+        console.error(errorMessage);
+        creditCardHashAccount = errorMessage;
       }
       return creditCardHashAccount;
-      break;
     case 'Isracard':
       console.log('isracardHashIndexes', isracardHashIndexes);
       return isracardHashIndexes;
-      break;
     // case 'Hot Mobile':
     //   return 'הוט';
     //   break;
