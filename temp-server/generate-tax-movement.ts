@@ -353,11 +353,11 @@ function hashAccounts(
         if (transactionDescription == 'הפקדה לפקדון') {
           return 'פקדון';
           // return '4668039';
-        } else if (hashBusinessIndexes.hash_index) {
-          return hashBusinessIndexes.hash_index;
-        } else {
-          return accountType ? accountType.substring(0, 15).trimEnd() : null;
         }
+        if (hashBusinessIndexes.hash_index) {
+          return hashBusinessIndexes.hash_index;
+        }
+        return accountType ? accountType.substring(0, 15).trimEnd() : null;
       }
       return accountType ? accountType.substring(0, 15).trimEnd() : null;
   }

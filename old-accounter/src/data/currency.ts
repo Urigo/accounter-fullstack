@@ -54,9 +54,8 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
       euroRate: dailyEuroRate,
       gbpRate: dailyGBPRate,
     };
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 export async function getCurrencyRates(pool: Pool) {

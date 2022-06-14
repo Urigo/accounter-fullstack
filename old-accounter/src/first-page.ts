@@ -32,14 +32,13 @@ function shareWithDotan(transaction: any) {
     transaction.financial_accounts_to_balance === 'training_fund'
   ) {
     return false;
-  } else {
-    return !(
-      !isBusiness(transaction) ||
-      privateBusinessExpenses.includes(transaction.financial_entity) ||
-      businessesNotToShare.includes(transaction.financial_entity) ||
-      businessesWithoutTaxCategory.includes(transaction.financial_entity)
-    );
   }
+  return !(
+    !isBusiness(transaction) ||
+    privateBusinessExpenses.includes(transaction.financial_entity) ||
+    businessesNotToShare.includes(transaction.financial_entity) ||
+    businessesWithoutTaxCategory.includes(transaction.financial_entity)
+  );
 }
 
 export function currencyCodeToSymbol(currency_code: string): string {
