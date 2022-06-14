@@ -23,8 +23,8 @@ enum TransactionType {
 function getVATTransaction(
   month: Date,
   transactionType: TransactionType,
-  businessName: String,
-  VATCadence: String
+  businessName: string,
+  VATCadence: string
 ): any {
   const getCurrentBusinessAccountsQuery = `
     (select account_number
@@ -138,7 +138,7 @@ export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
-export async function createTaxEntriesForMonth(month: Date, businessName: String, pool: pg.Pool) {
+export async function createTaxEntriesForMonth(month: Date, businessName: string, pool: pg.Pool) {
   const businessIdByNameQuery = `
   (
     select id
