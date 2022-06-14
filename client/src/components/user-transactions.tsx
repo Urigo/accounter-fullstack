@@ -78,7 +78,7 @@ const TransactionTable = ({ transactions }: Props) => {
               transaction.balanceNis = balanceNis + transaction.direction * transaction.amountNis;
               setBalanceNis(current => current + transaction.balanceNis);
               return (
-                <tr>
+                <tr key={transaction.hashavshevet_id}>
                   <td>{transaction.counterAccount}</td>
                   <td>{transaction.hashavshevet_id ?? ''}</td>
                   <td>{transaction.date_3 ?? ''}</td>

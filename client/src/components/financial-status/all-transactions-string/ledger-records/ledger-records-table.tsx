@@ -25,7 +25,7 @@ export const LedgerRecordsTable = ({ ledgerRecords }: Props) => {
           </thead>
           <tbody>
             {ledgerRecords.map(r => (
-              <LedgerRecordRow ledgerRecord={r} />
+              <LedgerRecordRow ledgerRecord={r} key={r.id} />
             ))}
           </tbody>
         </>
