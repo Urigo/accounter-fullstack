@@ -370,6 +370,10 @@ export async function getTransactionExchangeRates(transaction: any) {
   };
 }
 
+function swap(obj: any, key1: any, key2: any) {
+  [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
+}
+
 export async function createTaxEntriesForTransaction(transactionId: string) {
   let transaction: any = await pool.query(`
     SELECT *
@@ -524,9 +528,6 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
   entryForAccounting.description = entryForFinancialAccount.description = transaction.user_description;
 
   if (transaction.event_amount < 0) {
-    function swap(obj: any, key1: any, key2: any) {
-      [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
-    }
     swap(entryForAccounting, 'creditAccount', 'debitAccount');
     swap(entryForAccounting, 'creditAmount', 'debitAmount');
     swap(entryForAccounting, 'creditAmountILS', 'debitAmountILS');
