@@ -294,8 +294,7 @@ function createWhereClause(
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(transaction[camelCaseColumnName]));
           }
-        } else if (!isNotNull && dBcolumn.data_type == 'json') {
-        } else {
+        } else if (isNotNull || dBcolumn.data_type != 'json') {
           // TODO: Log important checks
           console.log('unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName);
         }
