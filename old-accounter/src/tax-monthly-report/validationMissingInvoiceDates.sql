@@ -3,7 +3,8 @@ SELECT
 FROM
   missing_invoice_dates('2020-12-01');
 
-DROP FUNCTION missing_invoice_dates(month_input VARCHAR);
+DROP FUNCTION
+  missing_invoice_dates(month_input VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION missing_invoice_dates(month_input VARCHAR) RETURNS SETOF accounter_schema.all_transactions LANGUAGE SQL AS $$

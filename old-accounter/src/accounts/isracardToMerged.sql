@@ -1,4 +1,5 @@
-DROP VIEW all_creditcard_transactions CASCADE;
+DROP VIEW
+  all_creditcard_transactions CASCADE;
 
 CREATE
 OR REPLACE VIEW all_creditcard_transactions AS

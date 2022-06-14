@@ -30,7 +30,8 @@ SELECT
 FROM
   input_salary('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
 
-DROP FUNCTION report_to_hashavshevet_by_month(salary_transaction uuid);
+DROP FUNCTION
+  report_to_hashavshevet_by_month(salary_transaction uuid);
 
 CREATE
 OR REPLACE FUNCTION input_salary(salary_transaction_id uuid) RETURNS TABLE(

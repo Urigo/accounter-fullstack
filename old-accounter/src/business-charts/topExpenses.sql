@@ -81,33 +81,34 @@ ORDER BY
   SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) NULLS LAST;
 
 -- Business and private income, expense and overall by month or year
-WITH transactions_exclude AS (
-  SELECT
-    *
-  FROM
-    formatted_merged_tables
-  WHERE
-    personal_category <> 'conversion'
-    AND personal_category <> 'investments'
-    AND financial_entity <> 'Isracard'
-    AND financial_entity <> 'Tax'
-    AND financial_entity <> 'VAT'
-    AND financial_entity <> 'Tax Shuma'
-    AND financial_entity <> 'Tax Corona Grant'
-    AND financial_entity <> 'Uri Goldshtein'
-    AND financial_entity <> 'Uri Goldshtein Hoz'
-    AND financial_entity <> 'Uri Goldshtein Employee Social Security'
-    AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
-    AND financial_entity <> 'Dotan Simha'
-),
-business_accounts AS (
-  SELECT
-    account_number
-  FROM
-    accounter_schema.financial_accounts
-  WHERE
-    private_business = 'business'
-)
+WITH
+  transactions_exclude AS (
+    SELECT
+      *
+    FROM
+      formatted_merged_tables
+    WHERE
+      personal_category <> 'conversion'
+      AND personal_category <> 'investments'
+      AND financial_entity <> 'Isracard'
+      AND financial_entity <> 'Tax'
+      AND financial_entity <> 'VAT'
+      AND financial_entity <> 'Tax Shuma'
+      AND financial_entity <> 'Tax Corona Grant'
+      AND financial_entity <> 'Uri Goldshtein'
+      AND financial_entity <> 'Uri Goldshtein Hoz'
+      AND financial_entity <> 'Uri Goldshtein Employee Social Security'
+      AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
+      AND financial_entity <> 'Dotan Simha'
+  ),
+  business_accounts AS (
+    SELECT
+      account_number
+    FROM
+      accounter_schema.financial_accounts
+    WHERE
+      private_business = 'business'
+  )
 SELECT
   --  month
   --     to_char(event_date, 'YYYY/mm') as date,
@@ -187,26 +188,27 @@ ORDER BY
   date;
 
 -- Expenses (Overall, by year, by month, by personal category, private)
-WITH transactions_exclude AS (
-  SELECT
-    *
-  FROM
-    formatted_merged_tables
-  WHERE
-    personal_category <> 'conversion'
-    AND personal_category <> 'investments'
-    AND financial_entity <> 'Isracard'
-    AND financial_entity <> 'Tax'
-    AND financial_entity <> 'VAT'
-    AND financial_entity <> 'Tax Shuma'
-    AND financial_entity <> 'Tax Corona Grant'
-    AND financial_entity <> 'Uri Goldshtein'
-    AND financial_entity <> 'Uri Goldshtein Hoz'
-    AND financial_entity <> 'Uri Goldshtein Employee Social Security'
-    AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
-    AND financial_entity <> 'Dotan Simha'
-    AND personal_category <> 'business'
-)
+WITH
+  transactions_exclude AS (
+    SELECT
+      *
+    FROM
+      formatted_merged_tables
+    WHERE
+      personal_category <> 'conversion'
+      AND personal_category <> 'investments'
+      AND financial_entity <> 'Isracard'
+      AND financial_entity <> 'Tax'
+      AND financial_entity <> 'VAT'
+      AND financial_entity <> 'Tax Shuma'
+      AND financial_entity <> 'Tax Corona Grant'
+      AND financial_entity <> 'Uri Goldshtein'
+      AND financial_entity <> 'Uri Goldshtein Hoz'
+      AND financial_entity <> 'Uri Goldshtein Employee Social Security'
+      AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
+      AND financial_entity <> 'Dotan Simha'
+      AND personal_category <> 'business'
+  )
 SELECT
   personal_category,
   sum(event_amount_in_usd) :: float4 AS overall_sum
@@ -221,26 +223,27 @@ ORDER BY
   sum(event_amount_in_usd);
 
 -- Top Expenses
-WITH transactions_exclude AS (
-  SELECT
-    *
-  FROM
-    formatted_merged_tables
-  WHERE
-    personal_category <> 'conversion'
-    AND personal_category <> 'investments'
-    AND financial_entity <> 'Isracard'
-    AND financial_entity <> 'Tax'
-    AND financial_entity <> 'VAT'
-    AND financial_entity <> 'Tax Shuma'
-    AND financial_entity <> 'Tax Corona Grant'
-    AND financial_entity <> 'Uri Goldshtein'
-    AND financial_entity <> 'Uri Goldshtein Hoz'
-    AND financial_entity <> 'Uri Goldshtein Employee Social Security'
-    AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
-    AND financial_entity <> 'Dotan Simha'
-    AND personal_category <> 'business'
-)
+WITH
+  transactions_exclude AS (
+    SELECT
+      *
+    FROM
+      formatted_merged_tables
+    WHERE
+      personal_category <> 'conversion'
+      AND personal_category <> 'investments'
+      AND financial_entity <> 'Isracard'
+      AND financial_entity <> 'Tax'
+      AND financial_entity <> 'VAT'
+      AND financial_entity <> 'Tax Shuma'
+      AND financial_entity <> 'Tax Corona Grant'
+      AND financial_entity <> 'Uri Goldshtein'
+      AND financial_entity <> 'Uri Goldshtein Hoz'
+      AND financial_entity <> 'Uri Goldshtein Employee Social Security'
+      AND financial_entity <> 'Uri Goldshtein Employee Tax Withholding'
+      AND financial_entity <> 'Dotan Simha'
+      AND personal_category <> 'business'
+  )
 SELECT
   event_date,
   event_amount_in_usd,

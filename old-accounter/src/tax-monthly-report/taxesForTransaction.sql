@@ -22,7 +22,8 @@ FROM
 WHERE
   original_id = $$2c384a0f-57b0-454a-a052-1e30cac638d2$$;
 
-CREATE TABLE accounter_schema.ledger AS
+CREATE TABLE
+  accounter_schema.ledger AS
 SELECT
   *
 FROM
@@ -36,7 +37,9 @@ INSERT INTO
 SELECT
   *
 FROM
-  get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade') RETURNING *;
+  get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade')
+RETURNING
+  *;
 
 SELECT
   * INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
@@ -46,7 +49,8 @@ ORDER BY
   to_date(date_3, 'DD/MM/YYYY'),
   original_id;
 
-DROP FUNCTION get_tax_report_of_transaction(transaction_id uuid);
+DROP FUNCTION
+  get_tax_report_of_transaction(transaction_id uuid);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_transaction(transaction_id uuid) RETURNS TABLE(

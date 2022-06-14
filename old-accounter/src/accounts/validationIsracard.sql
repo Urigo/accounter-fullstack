@@ -45,25 +45,26 @@ WHERE
 /*
  make sure that there are no duplicates in creditcards
  */
-WITH all_creditcard_transactions AS (
-  SELECT
-    *,
-    CASE
-      WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound
-      WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date
-    END AS real_date,
-    CASE
-      WHEN payment_sum IS NULL THEN payment_sum_outbound
-      WHEN payment_sum_outbound IS NULL THEN payment_sum
-    END AS real_payment
-  FROM
-    accounter_schema.isracard_creditcard_transactions
-  WHERE
-    full_supplier_name_outbound <> 'TOTAL FOR DATE'
-    OR full_supplier_name_outbound IS NULL
-    AND full_supplier_name_outbound <> 'CASH ADVANCE FEE'
-    OR full_supplier_name_outbound IS NULL
-)
+WITH
+  all_creditcard_transactions AS (
+    SELECT
+      *,
+      CASE
+        WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound
+        WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date
+      END AS real_date,
+      CASE
+        WHEN payment_sum IS NULL THEN payment_sum_outbound
+        WHEN payment_sum_outbound IS NULL THEN payment_sum
+      END AS real_payment
+    FROM
+      accounter_schema.isracard_creditcard_transactions
+    WHERE
+      full_supplier_name_outbound <> 'TOTAL FOR DATE'
+      OR full_supplier_name_outbound IS NULL
+      AND full_supplier_name_outbound <> 'CASH ADVANCE FEE'
+      OR full_supplier_name_outbound IS NULL
+  )
 SELECT
   real_payment,
   real_date,

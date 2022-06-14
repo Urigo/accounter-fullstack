@@ -104,7 +104,8 @@ ALTER TABLE
 ADD
   CONSTRAINT source_enum CHECK (source IN ('israeliCurrencyDeposit'));
 
-DROP VIEW merged_tables CASCADE;
+DROP VIEW
+  merged_tables CASCADE;
 
 CREATE
 OR REPLACE VIEW merged_tables AS

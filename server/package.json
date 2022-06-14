@@ -15,15 +15,15 @@
     "generate": "cd .. && yarn codegen && cd server && yarn sqlgen"
   },
   "devDependencies": {
-    "@types/node": "17.0.35",
-    "prettier": "2.6.2",
-    "typescript": "4.7.0-beta"
+    "@types/node": "17.0.42",
+    "prettier": "2.7.0",
+    "typescript": "4.7.3"
   },
   "dependencies": {
-    "@graphql-tools/load-files": "6.5.3",
-    "@graphql-tools/mock": "8.6.11",
-    "@graphql-tools/schema": "8.3.13",
-    "@graphql-yoga/node": "2.6.0",
+    "@graphql-tools/load-files": "6.5.4",
+    "@graphql-tools/mock": "8.6.12",
+    "@graphql-tools/schema": "8.3.14",
+    "@graphql-yoga/node": "2.9.2",
     "@pgtyped/cli": "1.0.0",
     "@pgtyped/query": "1.0.0",
     "currency.js": "2.0.4",
