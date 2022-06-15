@@ -318,7 +318,7 @@ export function generateEntryForFinancialAccountValues(
     : null; // NOTE(Uri): add check on the db for it
   const movementType: IInsertLedgerRecordsParams['ledgerRecord'][0]['movementType'] = null;
   const valueDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['valueDate'] =
-    charge.debit_date || charge.event_date ? hashavshevetFormat.date(charge.debit_date ?? charge.event_date!) : null;
+    charge.debit_date || charge.event_date ? hashavshevetFormat.date(charge.debit_date ?? charge.event_date) : null;
   const date3: IInsertLedgerRecordsParams['ledgerRecord'][0]['date3'] = charge.event_date
     ? hashavshevetFormat.date(charge.event_date)
     : null;
@@ -405,7 +405,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
   invoiceExchangeRates?: IGetExchangeRatesByDatesResult
 ): IInsertLedgerRecordsParams['ledgerRecord'][0] {
   const credit = hashavshevetFormat.account(
-    parseFloat(charge.event_amount!) < 0
+    parseFloat(charge.event_amount) < 0
       ? entryForFinancialAccount.debitAccount
       : entryForFinancialAccount.creditAccount,
     financialAccount,
@@ -455,7 +455,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
     : null;
   const movementType: IInsertLedgerRecordsParams['ledgerRecord'][0]['movementType'] = null;
   const valueDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['valueDate'] =
-    charge.debit_date || charge.event_date ? hashavshevetFormat.date(charge.debit_date ?? charge.event_date!) : null;
+    charge.debit_date || charge.event_date ? hashavshevetFormat.date(charge.debit_date ?? charge.event_date) : null;
   const date3: IInsertLedgerRecordsParams['ledgerRecord'][0]['date3'] = charge.event_date
     ? hashavshevetFormat.date(charge.event_date)
     : null;

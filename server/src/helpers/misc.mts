@@ -96,7 +96,7 @@ export async function buildLedgerEntries(
   entryForFinancialAccount: EntryForFinancialAccount;
   entryForAccounting: EntryForAccounting;
 }> {
-  const chargeAmount = parseFloat(charge.event_amount!);
+  const chargeAmount = parseFloat(charge.event_amount);
 
   // entryForFinancialAccount setup
   const entryForFinancialAccount: Partial<EntryForFinancialAccount> = {};
