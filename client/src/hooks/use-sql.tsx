@@ -116,7 +116,11 @@ export const useSql = () => {
     return (topPrivateNotCategorizedExpenses ?? []) as TopPrivateNotCategorizedExpense[];
   };
 
-  const onUpdateBankTransactionAttribute = async (data: { transactionId: string; attribute: string; value: any }) => {
+  const onUpdateBankTransactionAttribute = async <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+    transactionId: string;
+    attribute: K;
+    value: T;
+  }) => {
     const result = await fetch(`${serverUrl}/updateBankTransactionAttribute`, {
       method: 'POST',
       headers: {
@@ -128,7 +132,11 @@ export const useSql = () => {
     return result;
   };
 
-  const onEditTransactionProperty = async (data: { propertyToChange: string; newValue: any; id: string }) => {
+  const onEditTransactionProperty = async <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+    propertyToChange: K;
+    newValue: T;
+    id: string;
+  }) => {
     if (data.newValue) {
       try {
         const result = await fetch(`${serverUrl}/editTransaction`, {
@@ -237,9 +245,16 @@ export const useSql = () => {
     getAllTransactions: (financialEntity: string | null) => onGetAllTransactions(financialEntity),
     getMonthlyTaxesReport: (monthTaxReport: string) => onGetMonthlyTaxesReport(monthTaxReport),
     getTopPrivateNotCategorized: (startingDate?: string) => onGetTopPrivateNotCategorized(startingDate),
-    updateBankTransactionAttribute: (data: { transactionId: string; attribute: string; value: any }) =>
-      onUpdateBankTransactionAttribute(data),
-    editTransaction: (data: { propertyToChange: string; newValue: any; id: string }) => onEditTransactionProperty(data),
+    updateBankTransactionAttribute: <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+      transactionId: string;
+      attribute: K;
+      value: T;
+    }) => onUpdateBankTransactionAttribute(data),
+    editTransaction: <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+      propertyToChange: K;
+      newValue: T;
+      id: string;
+    }) => onEditTransactionProperty(data),
     deleteTaxMovement: (transactionId: string) => {
       onDeleteTaxMovement(transactionId);
     },

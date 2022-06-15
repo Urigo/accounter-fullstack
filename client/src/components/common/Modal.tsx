@@ -7,12 +7,17 @@ export interface ModalProps {
   content?: ReactNode;
   title?: ReactElement;
   modalSize?: string;
-  opened?: any;
-  onClose?: any;
-  onClickInsideButton?: any;
+  opened?: boolean;
+  onClose?: () => void;
 }
 
-export const PopUpModal = ({ content, title, opened, onClose, modalSize }: PropsWithChildren<ModalProps>) => {
+export const PopUpModal = ({
+  content,
+  title,
+  opened = false,
+  onClose = () => null,
+  modalSize,
+}: PropsWithChildren<ModalProps>) => {
   return (
     <>
       <Modal size={modalSize} opened={opened} onClose={onClose} title={title}>

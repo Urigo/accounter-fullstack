@@ -37,7 +37,7 @@ export const AllTransactionsString = () => {
 
   useEffect(() => {
     getAllTransactions(financialEntity).then(setAllTransactions);
-  }, []);
+  }, [getAllTransactions, financialEntity]);
 
   const columns: TransactionColumn[] = [
     'Date',

@@ -28,7 +28,7 @@ export const ProfitTable = () => {
 
   useEffect(() => {
     getProfitTable().then(setProfitRows);
-  }, []);
+  }, [getProfitTable]);
 
   return profitRows.length > 0 ? (
     <AccounterBasicTable

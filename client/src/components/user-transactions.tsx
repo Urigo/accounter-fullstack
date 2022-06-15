@@ -1,4 +1,4 @@
-import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+import { FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSql } from '../hooks/use-sql';
 import type { LedgerEntity } from '../models/types';
@@ -111,70 +111,73 @@ export const UserTransactions = () => {
   const [inputValue, setInputValue] = useState<string>(searchParams.get('name') ?? '');
   const [username, setUsername] = useState<string>(inputValue);
   const { getUserTransactions } = useSql();
-  let balanceForeign = 0;
-  let sumForeignDebit = 0;
-  let sumForeignCredit = 0;
-  let balanceNis = 0;
-  let sumNisDebit = 0;
-  let sumNisCredit = 0;
+  const balanceForeign = useRef(0);
+  const sumForeignDebit = useRef(0);
+  const sumForeignCredit = useRef(0);
+  const balanceNis = useRef(0);
+  const sumNisDebit = useRef(0);
+  const sumNisCredit = useRef(0);
 
-  function modifyLedgerTransaction(modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) {
-    let direction: 1 | -1 = 1;
-    let amountNis = 0;
-    let amountForeign = 0;
-    let counterAccount = '';
-    if (transaction.credit_account_1 === username) {
-      direction = 1;
-      amountNis = transaction.credit_amount_1 ? (amountNis = Number(transaction.credit_amount_1)) : 0;
-      amountForeign = transaction.foreign_credit_amount_1 ? Number(transaction.foreign_credit_amount_1) : 0;
-    } else if (transaction.credit_account_2 === username) {
-      direction = 1;
-      amountNis = transaction.credit_amount_2 ? (amountNis = Number(transaction.credit_amount_2)) : 0;
-      amountForeign = transaction.foreign_credit_amount_2 ? Number(transaction.foreign_credit_amount_2) : 0;
-    } else if (transaction.debit_account_1 === username) {
-      direction = -1;
-      amountNis = transaction.debit_amount_1 ? (amountNis = Number(transaction.debit_amount_1)) : 0;
-      amountForeign = transaction.foreign_debit_amount_1 ? Number(transaction.foreign_debit_amount_1) : 0;
-    } else if (transaction.debit_account_2 === username) {
-      direction = -1;
-      amountNis = transaction.debit_amount_2 ? (amountNis = Number(transaction.debit_amount_2)) : 0;
-      amountForeign = transaction.foreign_debit_amount_2 ? Number(transaction.foreign_debit_amount_2) : 0;
-    } else {
+  const modifyLedgerTransaction = useCallback(
+    (modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) => {
+      let direction: 1 | -1 = 1;
+      let amountNis = 0;
+      let amountForeign = 0;
+      let counterAccount = '';
+      if (transaction.credit_account_1 === username) {
+        direction = 1;
+        amountNis = Number(transaction.credit_amount_1 ?? '0');
+        amountForeign = Number(transaction.foreign_credit_amount_1 ?? '0');
+      } else if (transaction.credit_account_2 === username) {
+        direction = 1;
+        amountNis = Number(transaction.credit_amount_2 ?? '0');
+        amountForeign = Number(transaction.foreign_credit_amount_2 ?? '0');
+      } else if (transaction.debit_account_1 === username) {
+        direction = -1;
+        amountNis = Number(transaction.debit_amount_1 ?? '0');
+        amountForeign = Number(transaction.foreign_debit_amount_1 ?? '0');
+      } else if (transaction.debit_account_2 === username) {
+        direction = -1;
+        amountNis = Number(transaction.debit_amount_2 ?? '0');
+        amountForeign = Number(transaction.foreign_debit_amount_2 ?? '0');
+      } else {
+        return modifiedArray;
+      }
+
+      if (direction === 1) {
+        counterAccount = transaction.debit_account_1;
+        sumForeignCredit.current += amountForeign;
+        sumNisCredit.current += amountNis;
+      } else if (direction === -1) {
+        counterAccount = transaction.credit_account_1;
+        sumForeignDebit.current += amountForeign;
+        sumNisDebit.current += amountNis;
+      }
+
+      balanceForeign.current += amountForeign * direction;
+      balanceNis.current += amountNis * direction;
+
+      modifiedArray.push({
+        counterAccount,
+        hashavshevet_id: transaction.hashavshevet_id,
+        date_3: transaction.date_3,
+        value_date: transaction.value_date,
+        invoice_date: transaction.invoice_date,
+        reference_1: transaction.reference_1,
+        reference_2: transaction.reference_2,
+        details: transaction.details,
+        movement_type: transaction.movement_type,
+        currency: transaction.currency,
+        direction,
+        amountForeign,
+        amountNis,
+        balanceForeign: 0,
+        balanceNis: 0,
+      });
       return modifiedArray;
-    }
-
-    if (direction === 1) {
-      counterAccount = transaction.debit_account_1;
-      sumForeignCredit += amountForeign;
-      sumNisCredit += amountNis;
-    } else if (direction === -1) {
-      counterAccount = transaction.credit_account_1;
-      sumForeignDebit += amountForeign;
-      sumNisDebit += amountNis;
-    }
-
-    balanceForeign += amountForeign * direction;
-    balanceNis += amountNis * direction;
-
-    modifiedArray.push({
-      counterAccount,
-      hashavshevet_id: transaction.hashavshevet_id,
-      date_3: transaction.date_3,
-      value_date: transaction.value_date,
-      invoice_date: transaction.invoice_date,
-      reference_1: transaction.reference_1,
-      reference_2: transaction.reference_2,
-      details: transaction.details,
-      movement_type: transaction.movement_type,
-      currency: transaction.currency,
-      direction,
-      amountForeign,
-      amountNis,
-      balanceForeign: 0,
-      balanceNis: 0,
-    });
-    return modifiedArray;
-  }
+    },
+    [username]
+  );
 
   const onUsernameChanged: FormEventHandler<HTMLFormElement> = event => {
     setUsername(inputValue);
@@ -190,7 +193,7 @@ export const UserTransactions = () => {
     if (inputValue && inputValue !== '') {
       getUserTransactions(inputValue).then(setTransactions);
     }
-  }, []);
+  }, [getUserTransactions, inputValue]);
 
   // on transactions change, modify new data
   const modifiedTransactions = useMemo(
@@ -224,21 +227,21 @@ export const UserTransactions = () => {
             </thead>
             <tbody>
               <tr>
-                <td>{sumForeignDebit.toFixed(2)}</td>
+                <td>{sumForeignDebit.current.toFixed(2)}</td>
                 <td>חובה</td>
-                <td>{sumNisDebit.toFixed(2)}</td>
+                <td>{sumNisDebit.current.toFixed(2)}</td>
                 <td>חובה</td>
               </tr>
               <tr>
-                <td>{sumForeignCredit.toFixed(2)}</td>
+                <td>{sumForeignCredit.current.toFixed(2)}</td>
                 <td>זכות</td>
-                <td>{sumNisCredit.toFixed(2)}</td>
+                <td>{sumNisCredit.current.toFixed(2)}</td>
                 <td>זכות</td>
               </tr>
               <tr>
-                <td>{balanceForeign.toFixed(2)}</td>
+                <td>{balanceForeign.current.toFixed(2)}</td>
                 <td>הפרש</td>
-                <td>{balanceNis.toFixed(2)}</td>
+                <td>{balanceNis.current.toFixed(2)}</td>
                 <td>הפרש</td>
               </tr>
             </tbody>

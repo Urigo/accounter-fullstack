@@ -113,12 +113,12 @@ const commonTransactionFields:
   | FeeTransactionResolvers
   | WireTransactionResolvers
   | CommonTransactionResolvers = {
-  id: DbTransaction => DbTransaction.id!,
+  id: DbTransaction => DbTransaction.id,
   referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
   createdAt: DbTransaction => DbTransaction.event_date,
   effectiveDate: DbTransaction => DbTransaction.debit_date,
   direction: DbTransaction =>
-    parseFloat(DbTransaction.event_amount!) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
+    parseFloat(DbTransaction.event_amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
   amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
   description: DbTransaction => `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
   userNote: DbTransaction => DbTransaction.user_description,
@@ -308,7 +308,7 @@ export const resolvers: Resolvers = {
 
         const { entryForFinancialAccount, entryForAccounting } = await buildLedgerEntries(
           decoratedCharge,
-          parseFloat(charge.event_amount!),
+          parseFloat(charge.event_amount),
           hashVATIndexes
         );
 
@@ -538,7 +538,7 @@ export const resolvers: Resolvers = {
     fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
   Charge: {
-    id: DbCharge => DbCharge.id!,
+    id: DbCharge => DbCharge.id,
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocument: async DbCharge => {
       if (!DbCharge.id) {
@@ -592,7 +592,7 @@ export const resolvers: Resolvers = {
               '6a20aa69-57ff-446e-8d6a-1e96d095e988'
             );
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
-            if (guildAccountsNumbers.includes(DbCharge.account_number!)) {
+            if (guildAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
                   name: 'Uri',
@@ -610,7 +610,7 @@ export const resolvers: Resolvers = {
               'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
             );
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
-            if (uriAccountsNumbers.includes(DbCharge.account_number!)) {
+            if (uriAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
                   name: 'Uri',
@@ -676,7 +676,7 @@ export const resolvers: Resolvers = {
   },
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
-    name: parent => parent!,
+    name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {
     __isTypeOf: () => true,

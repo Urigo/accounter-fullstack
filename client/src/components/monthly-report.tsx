@@ -21,7 +21,7 @@ export const MonthlyReport = () => {
 
   useEffect(() => {
     getMonthlyTaxesReport(monthTaxReport).then(setMonthlyTaxesReport);
-  }, []);
+  }, [getMonthlyTaxesReport, monthTaxReport]);
 
   return (
     <>

@@ -3,7 +3,7 @@ const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
   extends: ['@theguild', '@theguild/eslint-config/react'],
-  rules: {},
+  rules: { 'no-console': 1 },
   overrides: [
     {
       // Setup GraphQL Parser
@@ -26,6 +26,21 @@ module.exports = {
       extends: 'plugin:@graphql-eslint/schema-recommended',
       rules: {
         '@graphql-eslint/description-style': ['error', { style: 'inline' }],
+        '@graphql-eslint/strict-id-in-types': [
+          'error',
+          {
+            exceptions: {
+              types: [
+                'AccountantApproval',
+                'BeneficiaryCounterparty',
+                'CommonError',
+                'DateRange',
+                'FinancialAmount',
+                'NamedCounterparty',
+              ],
+            },
+          },
+        ],
       },
     },
     {
@@ -37,5 +52,18 @@ module.exports = {
         '@graphql-eslint/unique-fragment-name': 'error',
       },
     },
+    {
+      files: 'client/**',
+      env: {
+        browser: true,
+      },
+    },
+    {
+      files: 'server/**',
+      env: {
+        node: true,
+      },
+    },
   ],
+  ignorePatterns: ['**/old-accounter/**', '**/temp-server/**'],
 };

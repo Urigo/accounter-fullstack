@@ -10,7 +10,7 @@ export const ThisMonthPrivateExpensesTable = () => {
 
   useEffect(() => {
     getThisMonthPrivateExpenses().then(setThisMonthPrivateExpenses);
-  }, []);
+  }, [getThisMonthPrivateExpenses]);
 
   return thisMonthPrivateExpenses.length > 0 ? (
     <AccounterBasicTable

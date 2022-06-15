@@ -96,7 +96,7 @@ export async function buildLedgerEntries(
   entryForFinancialAccount: EntryForFinancialAccount;
   entryForAccounting: EntryForAccounting;
 }> {
-  const chargeAmount = parseFloat(charge.event_amount!);
+  const chargeAmount = parseFloat(charge.event_amount);
 
   // entryForFinancialAccount setup
   const entryForFinancialAccount: Partial<EntryForFinancialAccount> = {};
@@ -192,7 +192,11 @@ export async function buildLedgerEntries(
   };
 }
 
-export function swapObjectKeys(obj: Record<any, any>, key1: any, key2: any) {
+export function swapObjectKeys(
+  obj: Record<string | number | symbol, unknown>,
+  key1: string | number | symbol,
+  key2: string | number | symbol
+) {
   [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
 }
 

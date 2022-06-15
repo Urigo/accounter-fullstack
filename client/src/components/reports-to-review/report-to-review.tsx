@@ -10,7 +10,7 @@ interface EditElementProps {
 }
 
 const EditElement = ({ transaction, attribute }: EditElementProps) => {
-  const { updateBankTransactionAttribute } = useSql();
+  // const { updateBankTransactionAttribute } = useSql();
   const defaultValue =
     typeof transaction[attribute] === 'boolean'
       ? transaction[attribute].toString()
@@ -21,7 +21,8 @@ const EditElement = ({ transaction, attribute }: EditElementProps) => {
     <div className="editor">
       <input type="text" defaultValue={defaultValue} value={value} onChange={e => setValue(e.target.value)} />
       <br />
-      <button
+      {/* TODO: Cannot use updateBankTransactionAttribute to update ledger */}
+      {/* <button
         onClick={() =>
           updateBankTransactionAttribute({
             transactionId: transaction.id,
@@ -31,7 +32,7 @@ const EditElement = ({ transaction, attribute }: EditElementProps) => {
         }
       >
         Execute
-      </button>
+      </button> */}
     </div>
   );
 };
@@ -159,7 +160,7 @@ export const ReportToReview = ({ reportMonthToReview, currrentCompany }: ReportT
 
   useEffect(() => {
     getReportToReview(currrentCompany, reportMonthToReview).then(setTransactions);
-  }, []);
+  }, [getReportToReview, currrentCompany, reportMonthToReview]);
 
   const [incomeSum, outcomeSum, VATincome, VAToutcome] = transactions.reduce(
     ([income, outcome, vatIn, vatOut], transaction) => {

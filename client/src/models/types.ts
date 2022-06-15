@@ -32,7 +32,7 @@ export interface TransactionType {
   current_balance: number;
   tax_invoice_file: string | null;
   detailed_bank_description: string;
-  links: any | null;
+  links: string | null;
   receipt_image: string | null;
   receipt_url: string | null;
   receipt_date: string | null;

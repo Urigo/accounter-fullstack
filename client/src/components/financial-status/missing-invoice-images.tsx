@@ -14,7 +14,7 @@ export const MissingInvoiceImages = ({ monthTaxReport }: Props) => {
 
   useEffect(() => {
     getMissingInvoiceImages(monthTaxReport).then(setMissingInvoiceImages);
-  }, []);
+  }, [getMissingInvoiceImages, monthTaxReport]);
 
   return (
     <AccounterBasicTable
