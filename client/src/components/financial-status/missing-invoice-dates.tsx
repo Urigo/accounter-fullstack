@@ -14,7 +14,7 @@ export const MissingInvoiceDates = ({ monthTaxReport }: Props) => {
 
   useEffect(() => {
     getMissingInvoiceDates(monthTaxReport).then(setMissingInvoiceDates);
-  }, []);
+  }, [getMissingInvoiceDates, monthTaxReport]);
 
   return (
     <AccounterBasicTable

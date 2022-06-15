@@ -159,7 +159,7 @@ export const ReportToReview = ({ reportMonthToReview, currrentCompany }: ReportT
 
   useEffect(() => {
     getReportToReview(currrentCompany, reportMonthToReview).then(setTransactions);
-  }, []);
+  }, [getReportToReview, currrentCompany, reportMonthToReview]);
 
   const [incomeSum, outcomeSum, VATincome, VAToutcome] = transactions.reduce(
     ([income, outcome, vatIn, vatOut], transaction) => {

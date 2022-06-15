@@ -13,7 +13,7 @@ export const VatTransactionsString = ({ monthTaxReport }: Props) => {
 
   useEffect(() => {
     getVatTransactions(monthTaxReport).then(setVatTransactions);
-  }, []);
+  }, [getVatTransactions, monthTaxReport]);
 
   return (
     <AccounterBasicTable

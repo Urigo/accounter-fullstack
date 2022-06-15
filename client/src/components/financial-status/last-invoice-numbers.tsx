@@ -9,7 +9,7 @@ export const LastInvoiceNumbers = () => {
 
   useEffect(() => {
     getLastInvoiceNumbers().then(setLastInvoiceNumbers);
-  }, []);
+  }, [getLastInvoiceNumbers]);
 
   return (
     <AccounterBasicTable

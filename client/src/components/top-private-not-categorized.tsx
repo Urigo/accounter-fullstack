@@ -12,7 +12,7 @@ export const TopPrivateNotCategorized = () => {
 
   useEffect(() => {
     getTopPrivateNotCategorized().then(setTopPrivateNotCategorizedExpenses);
-  }, []);
+  }, [getTopPrivateNotCategorized]);
 
   return topPrivateNotCategorizedExpenses ? (
     <>

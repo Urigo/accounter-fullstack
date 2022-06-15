@@ -13,7 +13,7 @@ export const AllUsers = () => {
 
   useEffect(() => {
     getAllUsers(companyId).then(setUsers);
-  }, []);
+  }, [getAllUsers, companyId]);
 
   return users.length ? (
     <>

@@ -33,7 +33,7 @@ export const MissingInvoiceNumbers = ({ monthTaxReport }: MissingInvoiceNumbersP
 
   useEffect(() => {
     getMissingInvoiceNumbers(monthTaxReport).then(setMissingInvoiceNumbers);
-  }, []);
+  }, [getMissingInvoiceNumbers, monthTaxReport]);
 
   return (
     <AccounterBasicTable
