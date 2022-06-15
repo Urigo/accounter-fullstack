@@ -118,63 +118,66 @@ export const UserTransactions = () => {
   const sumNisDebit = useRef(0);
   const sumNisCredit = useRef(0);
 
-  const modifyLedgerTransaction = useCallback((modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) => {
-    let direction: 1 | -1 = 1;
-    let amountNis = 0;
-    let amountForeign = 0;
-    let counterAccount = '';
-    if (transaction.credit_account_1 === username) {
-      direction = 1;
-      amountNis = Number(transaction.credit_amount_1 ?? '0');
-      amountForeign = Number(transaction.foreign_credit_amount_1 ?? '0');
-    } else if (transaction.credit_account_2 === username) {
-      direction = 1;
-      amountNis = Number(transaction.credit_amount_2 ?? '0');
-      amountForeign = Number(transaction.foreign_credit_amount_2 ?? '0');
-    } else if (transaction.debit_account_1 === username) {
-      direction = -1;
-      amountNis = Number(transaction.debit_amount_1 ?? '0');
-      amountForeign = Number(transaction.foreign_debit_amount_1 ?? '0');
-    } else if (transaction.debit_account_2 === username) {
-      direction = -1;
-      amountNis = Number(transaction.debit_amount_2 ?? '0');
-      amountForeign = Number(transaction.foreign_debit_amount_2 ?? '0');
-    } else {
+  const modifyLedgerTransaction = useCallback(
+    (modifiedArray: ModifiedTransaction[], transaction: LedgerEntity) => {
+      let direction: 1 | -1 = 1;
+      let amountNis = 0;
+      let amountForeign = 0;
+      let counterAccount = '';
+      if (transaction.credit_account_1 === username) {
+        direction = 1;
+        amountNis = Number(transaction.credit_amount_1 ?? '0');
+        amountForeign = Number(transaction.foreign_credit_amount_1 ?? '0');
+      } else if (transaction.credit_account_2 === username) {
+        direction = 1;
+        amountNis = Number(transaction.credit_amount_2 ?? '0');
+        amountForeign = Number(transaction.foreign_credit_amount_2 ?? '0');
+      } else if (transaction.debit_account_1 === username) {
+        direction = -1;
+        amountNis = Number(transaction.debit_amount_1 ?? '0');
+        amountForeign = Number(transaction.foreign_debit_amount_1 ?? '0');
+      } else if (transaction.debit_account_2 === username) {
+        direction = -1;
+        amountNis = Number(transaction.debit_amount_2 ?? '0');
+        amountForeign = Number(transaction.foreign_debit_amount_2 ?? '0');
+      } else {
+        return modifiedArray;
+      }
+
+      if (direction === 1) {
+        counterAccount = transaction.debit_account_1;
+        sumForeignCredit.current += amountForeign;
+        sumNisCredit.current += amountNis;
+      } else if (direction === -1) {
+        counterAccount = transaction.credit_account_1;
+        sumForeignDebit.current += amountForeign;
+        sumNisDebit.current += amountNis;
+      }
+
+      balanceForeign.current += amountForeign * direction;
+      balanceNis.current += amountNis * direction;
+
+      modifiedArray.push({
+        counterAccount,
+        hashavshevet_id: transaction.hashavshevet_id,
+        date_3: transaction.date_3,
+        value_date: transaction.value_date,
+        invoice_date: transaction.invoice_date,
+        reference_1: transaction.reference_1,
+        reference_2: transaction.reference_2,
+        details: transaction.details,
+        movement_type: transaction.movement_type,
+        currency: transaction.currency,
+        direction,
+        amountForeign,
+        amountNis,
+        balanceForeign: 0,
+        balanceNis: 0,
+      });
       return modifiedArray;
-    }
-
-    if (direction === 1) {
-      counterAccount = transaction.debit_account_1;
-      sumForeignCredit.current += amountForeign;
-      sumNisCredit.current += amountNis;
-    } else if (direction === -1) {
-      counterAccount = transaction.credit_account_1;
-      sumForeignDebit.current += amountForeign;
-      sumNisDebit.current += amountNis;
-    }
-
-    balanceForeign.current += amountForeign * direction;
-    balanceNis.current += amountNis * direction;
-
-    modifiedArray.push({
-      counterAccount,
-      hashavshevet_id: transaction.hashavshevet_id,
-      date_3: transaction.date_3,
-      value_date: transaction.value_date,
-      invoice_date: transaction.invoice_date,
-      reference_1: transaction.reference_1,
-      reference_2: transaction.reference_2,
-      details: transaction.details,
-      movement_type: transaction.movement_type,
-      currency: transaction.currency,
-      direction,
-      amountForeign,
-      amountNis,
-      balanceForeign: 0,
-      balanceNis: 0,
-    });
-    return modifiedArray;
-  }, [username]);
+    },
+    [username]
+  );
 
   const onUsernameChanged: FormEventHandler<HTMLFormElement> = event => {
     setUsername(inputValue);
