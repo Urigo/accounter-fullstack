@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { CSSProperties, PropsWithChildren } from 'react';
 
 type JustifyContent =
   | 'flex-start'
@@ -45,7 +45,7 @@ interface FlexProps {
   alignContent?: AlignContent;
   gap?: string;
   backgroundColor?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 export const PageWrappers = ({

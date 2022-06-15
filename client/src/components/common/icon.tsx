@@ -1,8 +1,9 @@
 import { Image, ImageProps } from '@mantine/core';
+import type { RefAttributes } from 'react';
 
 export type IconName = 'logo';
 
-interface IconProps extends ImageProps, React.RefAttributes<HTMLDivElement> {
+interface IconProps extends ImageProps, RefAttributes<HTMLDivElement> {
   name: IconName;
 }
 

@@ -1,8 +1,8 @@
 import { Paper, Table } from '@mantine/core';
-import { ReactNode } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 
 export interface TableProps {
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   content?: ReactNode;
 }
 
