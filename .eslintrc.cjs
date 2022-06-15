@@ -37,5 +37,17 @@ module.exports = {
         '@graphql-eslint/unique-fragment-name': 'error',
       },
     },
+    {
+      files: 'client/**',
+      env: {
+        browser: true,
+      }
+    },
+    {
+      files: 'server/**',
+      env: {
+        node: true,
+      }
+    }
   ],
 };
