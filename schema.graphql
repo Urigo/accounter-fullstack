@@ -1,17 +1,25 @@
 # Scalars
-scalar URL
+
+" Date "
 scalar Date
-scalar Percentage
-scalar Rate
+" IBAN "
 scalar IBAN
+" Percentage"
+scalar Percentage
+" Rate "
+scalar Rate
+" URL "
+scalar URL
 
 # Common Types
+
 " a date range "
 type DateRange {
   start: Date!
   end: Date!
 }
 
+" represent a link to an external file "
 interface Linkable {
   file: URL
 }
@@ -44,6 +52,7 @@ enum Currency {
   EUR
 }
 
+" The other side of a transaction "
 interface Counterparty {
   name: String!
 }
@@ -55,17 +64,21 @@ enum TransactionDirection {
 }
 
 # Root types
+
+" query root "
 type Query {
   financialEntity(id: ID!): FinancialEntity!
   documents: [Document!]!
 }
 
+" mutation root "
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
 }
 
+" input variables for updateCharge "
 input UpdateChargeInput {
   # createdAt: Date!
   # additionalDocument: [Linkable!]!
@@ -83,6 +96,7 @@ input UpdateChargeInput {
   # businessTrip: BusinessTrip
 }
 
+" input variables for updateTransaction "
 input UpdateTransactionInput {
   referenceNumber: String
   # createdAt: Date!
@@ -97,33 +111,43 @@ input UpdateTransactionInput {
   hashavshevetId: Int
 }
 
+" input variables for updateCharge.Counterparty"
 input CounterpartyInput {
   name: String!
 }
 
+" input variables for updateCharge.AccountantApproval"
 input AccountantApprovalInput {
   approved: Boolean!
   remark: String
 }
 
+" input variables for updateCharge.FinancialAmount"
 input FinancialAmountInput {
   value: Float!
   currency: Currency!
 }
 
+" basic structure of error "
 interface Error {
   message: String!
 }
 
+" common type of errors"
 type CommonError implements Error {
   message: String!
 }
 
+" result type for updateCharge "
 union UpdateChargeResult = Charge | CommonError
 
+" result type for updateTransaction "
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
+" result type for generateTaxMovement "
 union GenerateTaxMovementResult = Charge | CommonError # TODO: update to match more than common transaction
+
 # Main Module
+
 " Financial entity, identifier by ID, can be a company or individual "
 type LtdFinancialEntity implements FinancialEntity {
   id: ID!
@@ -142,6 +166,7 @@ type LtdFinancialEntity implements FinancialEntity {
   documents: [Document]
 }
 
+" Financial entity, identifier by ID, represents an actual person "
 type PersonalFinancialEntity implements FinancialEntity {
   id: ID!
   name: String!
@@ -154,6 +179,7 @@ type PersonalFinancialEntity implements FinancialEntity {
   documents: [Document]
 }
 
+" represent a financial entity of any type that may hold financial accounts (company, business, individual) "
 interface FinancialEntity {
   id: ID!
   accounts: [FinancialAccount!]!
@@ -163,6 +189,7 @@ interface FinancialEntity {
   documents: [Document]
 }
 
+" input variables for charge filtering "
 input ChargeFilter {
   " Include only charges that doesn't have transactions linked "
   withoutTransaction: Boolean
@@ -205,11 +232,14 @@ type BeneficiaryCounterparty {
   percentage: Percentage
 }
 
+" represent every kind of invoice document "
 union BroadInvoice = Invoice | InvoiceReceipt
 
+" represent every kind of receipt document "
 union BroadReceipt = Receipt | InvoiceReceipt
 
 # Taxes Module
+
 extend type Charge {
   " calculated field based on the actual ledger records, optional because not all charges has VAT "
   vat: FinancialAmount
@@ -235,12 +265,14 @@ extend interface Transaction {
   accountantApproval: AccountantApproval!
 }
 
+" info regarding the accountant approval process "
 type AccountantApproval {
   approved: Boolean!
   remark: String
 }
 
 # Hashavshevet Module
+
 extend type LedgerRecord {
   hashavshevetId: String
 }
@@ -250,6 +282,7 @@ extend interface Transaction {
 }
 
 # Business Trip Module
+
 extend type Charge {
   " should be later in busines trip module? "
   businessTrip: BusinessTrip
@@ -260,12 +293,14 @@ extend input ChargeFilter {
   businessTrip: ID
 }
 
+" represent a business trip "
 type BusinessTrip {
   id: ID!
   name: String!
   dates: DateRange!
 }
 
+" document that haven't yet been processed"
 type Unprocessed implements Document & Linkable {
   id: ID!
   image: URL!
@@ -420,6 +455,7 @@ type ConversionTransaction implements Transaction {
   officialRate: Rate
 }
 
+" represent atomic movement of funds "
 type LedgerRecord {
   id: ID!
   creditAccount: Counterparty
@@ -429,6 +465,7 @@ type LedgerRecord {
   description: String!
 }
 
+" represent a counterparty with a name "
 type NamedCounterparty implements Counterparty {
   name: String!
 }
@@ -439,6 +476,7 @@ interface FinancialAccount {
   charges(filter: ChargeFilter): [Charge!]!
 }
 
+" represent a single bank account"
 type BankFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
@@ -458,6 +496,7 @@ type BankFinancialAccount implements FinancialAccount {
   name: String
 }
 
+" represent a single credit card "
 type CardFinancialAccount implements FinancialAccount {
   id: ID!
   charges(filter: ChargeFilter): [Charge!]!
