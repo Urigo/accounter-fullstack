@@ -13,6 +13,7 @@ export interface AccounterTableProps<T> {
   }>;
   items: Array<T>;
   moreInfo?: (item: T) => ReactNode | string | null;
+  showButton: boolean;
 }
 
 export interface AccountTableRow<T> {
@@ -21,6 +22,7 @@ export interface AccountTableRow<T> {
   columns: AccounterTableProps<T>['columns'];
   moreInfo?: AccounterTableProps<T>['moreInfo'];
   stateBaseId?: string;
+  isShowAll: boolean;
 }
 
 export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>>) {
@@ -41,7 +43,7 @@ export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>
           )}
         </td>
       </tr>
-      {opened && moreInfoValue !== null ? (
+      {(props.isShowAll || opened) && moreInfoValue !== null ? (
         <tr key={`more_info_${props.key}`}>
           <td colSpan={6}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
@@ -55,23 +57,44 @@ export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>
 }
 
 export function AccounterTable<T>(props: PropsWithChildren<AccounterTableProps<T>>) {
+  const [isShowAll, setShowAll] = useState(false);
+
   return (
-    <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>
-      <thead style={props.stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
-        <tr style={{ backgroundColor: 'lightgrey', width: 'center' }}>
-          {props.columns.map((c, index) => (
-            <td key={String(index)}>{c.title}</td>
-          ))}
-          <tr style={{ backgroundColor: 'lightgrey', width: 'center' }}>
-            {props.moreInfo === null || (undefined && 'More Info')}
+    <>
+      {props.showButton === true ? (
+        <button
+          className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
+          type="button"
+          onClick={() => {
+            setShowAll(prev => !prev);
+          }}
+        >
+          {isShowAll ? 'Hide All' : 'Show All'}
+        </button>
+      ) : null}
+      <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>
+        <thead style={props.stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
+          <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+            {props.columns.map((c, index) => (
+              <th key={String(index)}>{c.title}</th>
+            ))}
+            <tr style={{ backgroundColor: 'lightgrey', width: 'center' }}>
+              {props.moreInfo === null || (undefined && 'More Info')}
+            </tr>
           </tr>
-        </tr>
-      </thead>
-      <tbody>
-        {props.items.map((item, index) => (
-          <AccounterTableRow key={String(index)} columns={props.columns} item={item} moreInfo={props.moreInfo} />
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {props.items.map((item, index) => (
+            <AccounterTableRow
+              key={String(index)}
+              columns={props.columns}
+              item={item}
+              moreInfo={props.moreInfo}
+              isShowAll={isShowAll}
+            />
+          ))}
+        </tbody>
+      </Table>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import { Button } from '@mantine/core';
 import { CSSProperties, MouseEventHandler } from 'react';
 
 export interface ButtonProps {
@@ -17,23 +16,18 @@ export interface ButtonProps {
 
 export const AccounterButton = ({
   title,
-  target,
-  herf,
-  rel,
   type = 'button',
   onClick = () => {
     void 0;
   },
-  loading = false,
-  disabled = false,
 }: ButtonProps) => {
-  const buttonDisabled = disabled || loading;
-
   return (
-    <Button type={type} disabled={buttonDisabled} onClick={onClick} style={{ cursor: 'pointer' }}>
-      <a style={{ color: 'white' }} rel={rel} href={herf} target={target}>
-        {title}
-      </a>
-    </Button>
+    <button
+      type={type}
+      onClick={onClick}
+      className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded;"
+    >
+      {title}
+    </button>
   );
 };

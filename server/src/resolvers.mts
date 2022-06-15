@@ -540,7 +540,7 @@ export const resolvers: Resolvers = {
   Charge: {
     id: DbCharge => DbCharge.id,
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
-    additionalDocument: async DbCharge => {
+    additionalDocuments: async DbCharge => {
       if (!DbCharge.id) {
         return [];
       }
