@@ -26,8 +26,21 @@ module.exports = {
       extends: 'plugin:@graphql-eslint/schema-recommended',
       rules: {
         '@graphql-eslint/description-style': ['error', { style: 'inline' }],
-        '@graphql-eslint/strict-id-in-types': ['error', { exceptions: { types: ['AccountantApproval', 'BeneficiaryCounterparty', 'CommonError', 'DateRange', 'FinancialAmount', 'NamedCounterparty', ] } }],
-        '@graphql-eslint/no-hashtag-description': 1,
+        '@graphql-eslint/strict-id-in-types': [
+          'error',
+          {
+            exceptions: {
+              types: [
+                'AccountantApproval',
+                'BeneficiaryCounterparty',
+                'CommonError',
+                'DateRange',
+                'FinancialAmount',
+                'NamedCounterparty',
+              ],
+            },
+          },
+        ],
       },
     },
     {
