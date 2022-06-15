@@ -80,8 +80,8 @@ function account(
   }
 }
 
-function number(rawNumber: any, options: { abs?: boolean } = { abs: false }): string | null {
-  let parsed = Number.parseFloat(rawNumber);
+function number(rawNumber: unknown, options: { abs?: boolean } = { abs: false }): string | null {
+  let parsed = Number.parseFloat(rawNumber as string);
   if (isNaN(parsed)) {
     return null;
   }

@@ -1,5 +1,6 @@
-export function parseIntRound(v: any) {
-  return parseInt(v + Math.sign(v) / 2);
+export function parseIntRound(v: number) {
+  // Note: why not use Math.round?
+  return parseInt((v + Math.sign(v) / 2) as unknown as string);
 }
 
 export function stringNumberRounded(number: string): number {
