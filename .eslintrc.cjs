@@ -3,7 +3,7 @@ const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
   extends: ['@theguild', '@theguild/eslint-config/react'],
-  rules: {},
+  rules: { 'no-console': 1 },
   overrides: [
     {
       // Setup GraphQL Parser
@@ -41,13 +41,14 @@ module.exports = {
       files: 'client/**',
       env: {
         browser: true,
-      }
+      },
     },
     {
       files: 'server/**',
       env: {
         node: true,
-      }
-    }
+      },
+    },
   ],
+  ignorePatterns: ['**/old-accounter/**', '**/temp-server/**'],
 };
