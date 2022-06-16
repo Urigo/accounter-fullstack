@@ -17,12 +17,10 @@ export const PopUpModal = ({
   opened = false,
   onClose = () => null,
   modalSize,
-}: PropsWithChildren<ModalProps>) => {
+}: PropsWithChildren<ModalProps>): ReactElement => {
   return (
-    <>
-      <Modal size={modalSize} opened={opened} onClose={onClose} title={title}>
-        {content}
-      </Modal>
-    </>
+    <Modal size={modalSize} opened={opened} onClose={onClose} title={title}>
+      {content}
+    </Modal>
   );
 };

@@ -26,7 +26,7 @@
     "deploy": "git push heroku master",
     "lint": "eslint --ignore-path .gitignore .",
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",
-    "prettier:check": "prettier --ignore-path .gitignore --check .",
+    "lint:prettier": "prettier --ignore-path .gitignore --check .",
     "sqlgen": "npx pgtyped -c pgTypedConfig.json",
     "codegen": "graphql-codegen --config codegen.yml",
     "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\""
