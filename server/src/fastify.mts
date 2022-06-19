@@ -19,7 +19,6 @@ export async function buildApp(logging = true) {
     reply: FastifyReply;
   }>({
     schema,
-    // Integrate Fastify Logger to Yoga
     logging: {
       debug: (...args) => args.forEach(arg => app.log.debug(arg)),
       info: (...args) => args.forEach(arg => app.log.info(arg)),
@@ -28,9 +27,10 @@ export async function buildApp(logging = true) {
     },
   });
 
-  //   app.addContentTypeParser('multipart/form-data', {}, (req, payload, done) =>
-  //     done(null),
-  //   )
+  app.addContentTypeParser('multipart/form-data', {}, (req, payload, done) =>
+    // TODO: implement for file uploads
+    done(null)
+  );
 
   app.route({
     url: '/graphql',
