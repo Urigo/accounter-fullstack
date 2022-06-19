@@ -10,6 +10,7 @@ import { ReportsToReview } from './components/reports-to-review';
 import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
 import { UserTransactions } from './components/user-transactions';
 import { Providers } from './providers';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 
@@ -33,7 +34,7 @@ root.render(
           <Route
             path="*"
             element={
-              <main style={{ padding: '1rem' }}>
+              <main className="p-4">
                 <p>404: There&apos;s nothing here!</p>
               </main>
             }

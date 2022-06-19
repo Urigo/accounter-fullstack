@@ -4,7 +4,7 @@ import { pool } from './db.mjs';
 import {
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
-} from '../__generated__/financialEntities.types.mjs';
+} from '../__generated__/financial-entities.types.mjs';
 
 const { sql } = pgQuery;
 

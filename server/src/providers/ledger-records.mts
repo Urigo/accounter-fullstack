@@ -5,7 +5,7 @@ import {
   IGetLedgerRecordsByChargeIdsQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsQuery,
-} from '../__generated__/ledgerRecords.types.mjs';
+} from '../__generated__/ledger-records.types.mjs';
 
 const { sql } = pgQuery;
 

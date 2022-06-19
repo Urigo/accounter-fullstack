@@ -31,7 +31,7 @@ import {
 } from './providers/hashavshevet.mjs';
 import { getLedgerRecordsByChargeIdLoader, insertLedgerRecords } from './providers/ledger-records.mjs';
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IInsertLedgerRecordsResult } from './__generated__/ledgerRecords.types.mjs';
+import { IInsertLedgerRecordsResult } from './__generated__/ledger-records.types.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
