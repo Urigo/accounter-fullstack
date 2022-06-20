@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceFolder}/dist/scrape.js",
+      "program": "${workspaceFolder}/old-accounter/dist/old-accounter/src/index.js",
       "console": "integratedTerminal",
       "runtimeArgs": ["--experimental-specifier-resolution=node", "--experimental-json-modules"]
     }

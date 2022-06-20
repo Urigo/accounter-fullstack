@@ -59,7 +59,7 @@ BEGIN
                                                        detailed_bank_description)
 
         VALUES (
-                (CASE
+                CAST ((CASE
                      WHEN NEW.currency_id = 'ש"ח' THEN 'ILS'
                      WHEN NEW.currency_id = 'NIS' THEN 'ILS'
                      WHEN NEW.currency_id = 'דולר' THEN 'USD'
@@ -68,7 +68,7 @@ BEGIN
                      WHEN NEW.currency_id = 'USD' THEN 'USD'
                      WHEN NEW.currency_id = 'GBP' THEN 'GBP'
                      ELSE 'ILS' END
-                    ),
+                    ) as currency),
                 CASE
                     WHEN NEW.full_purchase_date IS NULL THEN to_date(NEW.full_purchase_date_outbound, 'DD/MM/YYYY')
                     WHEN NEW.full_purchase_date_outbound IS NULL THEN to_date(NEW.full_purchase_date, 'DD/MM/YYYY')

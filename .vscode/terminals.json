@@ -6,21 +6,21 @@
       "description": "Run App",
       "open": true,
       "cwd": "client",
-      "command": "nvm use 18.3.0 && yarn dev"
+      "command": "nvm use 18.4.0 && yarn dev"
     },
     {
       "name": "server:dev",
       "description": "Run server",
       "open": true,
       "cwd": "server",
-      "command": "nvm use 18.3.0 && yarn dev"
+      "command": "nvm use 18.4.0 && yarn dev"
     },
     {
       "name": "temp-server:dev",
       "description": "Run temp-server",
       "open": true,
       "cwd": "temp-server",
-      "command": "nvm use 18.3.0 && yarn dev"
+      "command": "nvm use 18.4.0 && yarn dev"
     }
   ]
 }
