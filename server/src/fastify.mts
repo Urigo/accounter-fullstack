@@ -5,9 +5,6 @@ import { getSchema } from './schema.mjs';
 export async function buildApp(logging = true) {
   const app = fastify({
     logger: logging && {
-      transport: {
-        target: 'pino-pretty',
-      },
       level: process.env.LOG_LEVEL || 'debug',
     },
   });

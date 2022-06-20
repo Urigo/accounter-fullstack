@@ -6,7 +6,7 @@
   "main": "./server/src/index.mts",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon --exec \"yarn start\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "start": "node dist/index.mjs",
     "prestart": "yarn build",
     "build": "tsc",
