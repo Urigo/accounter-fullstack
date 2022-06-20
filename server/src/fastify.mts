@@ -8,7 +8,7 @@ export async function buildApp(logging = true) {
       transport: {
         target: 'pino-pretty',
       },
-      level: 'debug',
+      level: process.env.LOG_LEVEL || 'debug',
     },
   });
 
