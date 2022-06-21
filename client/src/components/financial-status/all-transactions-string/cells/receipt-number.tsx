@@ -1,7 +1,8 @@
 import { CSSProperties } from 'react';
+
+import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
-import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../../helpers';
 
 type Props = {
   transaction: TransactionType;

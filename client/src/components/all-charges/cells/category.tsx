@@ -1,9 +1,10 @@
-import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { CSSProperties, useCallback } from 'react';
+
+import { CategoryFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { CategoryFieldsFragment } from '../../../__generated__/types';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { AccounterDivider } from '../../common/divider';
 
 gql`

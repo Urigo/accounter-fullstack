@@ -1,11 +1,12 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-import { pool } from './db.mjs';
+
 import {
   IGetLedgerRecordsByChargeIdsQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsQuery,
 } from '../__generated__/ledger-records.types.mjs';
+import { pool } from './db.mjs';
 
 const { sql } = pgQuery;
 

@@ -1,10 +1,11 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-import { pool } from './db.mjs';
+
 import {
-  IGetFinancialAccountsByFinancialEntityIdsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
+  IGetFinancialAccountsByFinancialEntityIdsQuery,
 } from '../__generated__/financial-accounts.types.mjs';
+import { pool } from './db.mjs';
 
 const { sql } = pgQuery;
 

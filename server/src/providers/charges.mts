@@ -1,12 +1,13 @@
 import pgQuery from '@pgtyped/query';
+import DataLoader from 'dataloader';
+
 import {
   IGetChargesByFinancialAccountNumbersQuery,
   IGetChargesByFinancialEntityIdsQuery,
-  IUpdateChargeQuery,
   IGetChargesByIdsQuery,
   IGetConversionOtherSideQuery,
+  IUpdateChargeQuery,
 } from '../__generated__/charges.types.mjs';
-import DataLoader from 'dataloader';
 import { pool } from '../providers/db.mjs';
 
 const { sql } = pgQuery;

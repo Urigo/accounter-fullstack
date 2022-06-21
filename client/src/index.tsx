@@ -1,6 +1,9 @@
+import './index.css';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Route,Routes } from 'react-router-dom';
+
 import { AllCharges } from './components/all-charges';
 import { AllUsers } from './components/all-users';
 import { DocumentsReport } from './components/documents';
@@ -10,7 +13,6 @@ import { ReportsToReview } from './components/reports-to-review';
 import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
 import { UserTransactions } from './components/user-transactions';
 import { Providers } from './providers';
-import './index.css';
 
 const rootElement = document.getElementById('root');
 

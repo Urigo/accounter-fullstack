@@ -1,5 +1,6 @@
 import { createServer } from '@graphql-yoga/node';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
+
 import { getSchema } from './schema.mjs';
 
 export async function buildApp(logging = true) {

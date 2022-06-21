@@ -1,13 +1,14 @@
-import { useSearchParams } from 'react-router-dom';
+import { Card, Center,Image, Table } from '@mantine/core';
 import gql from 'graphql-tag';
-import { businesses } from '../../helpers';
-import { AccounterLoader } from '../common/loader';
-import { AccounterTable } from '../common/accounter-table';
-import { Table, Image, Card, Center } from '@mantine/core';
-import { PopUpModal } from '../common/modal';
 import { useState } from 'react';
-import { PageWrappers } from '../common/common-wrappers';
+import { useSearchParams } from 'react-router-dom';
+
 import { useAllChargesQuery } from '../../__generated__/types';
+import { businesses } from '../../helpers';
+import { AccounterTable } from '../common/accounter-table';
+import { PageWrappers } from '../common/common-wrappers';
+import { AccounterLoader } from '../common/loader';
+import { PopUpModal } from '../common/modal';
 
 gql`
   query AllCharges($financialEntityId: ID!) {

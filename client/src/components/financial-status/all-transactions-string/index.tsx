@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useSql } from '../../../hooks/use-sql';
-import type { TransactionColumn, TransactionType } from '../../../models/types';
-import { TransactionRow } from './transaction-row';
-import { useSearchParams } from 'react-router-dom';
 import gql from 'graphql-tag';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
 import { useFinancialEntityOldQuery } from '../../../__generated__/types';
 import { businesses } from '../../../helpers';
+import { useSql } from '../../../hooks/use-sql';
+import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { AccounterBasicTable } from '../../common/accounter-basic-table';
+import { TransactionRow } from './transaction-row';
 
 gql`
   query FinancialEntityOld($financialEntityId: ID!) {

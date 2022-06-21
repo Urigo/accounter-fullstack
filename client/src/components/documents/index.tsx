@@ -1,11 +1,12 @@
 import { Image } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
-import { PopUpModal } from '../common/modal';
+
 import { useDocumentsQuery } from '../../__generated__/types';
 import { AccounterTable } from '../common/accounter-table';
-import { AccounterLoader } from '../common/loader';
 import { AccounterButton } from '../common/button';
+import { AccounterLoader } from '../common/loader';
+import { PopUpModal } from '../common/modal';
 
 gql`
   fragment UnprocessedFields on Unprocessed {

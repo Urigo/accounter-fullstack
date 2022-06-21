@@ -1,7 +1,8 @@
 import gql from 'graphql-tag';
 import { CSSProperties, useState } from 'react';
-import type { TransactionColumn, TransactionType } from '../../../models/types';
+
 import { ChargesFragment } from '../../../__generated__/types';
+import type { TransactionColumn, TransactionType } from '../../../models/types';
 import {
   Account,
   Amount,
