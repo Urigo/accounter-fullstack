@@ -3,7 +3,12 @@ const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
   extends: ['@theguild', '@theguild/eslint-config/react'],
-  rules: { 'no-console': 1 },
+  plugins: ['eslint-plugin-simple-import-sort'],
+  rules: { 
+    'no-console': 1,
+    'simple-import-sort/imports': 'error',
+    'simple-import-sort/exports': 'error',
+  },
   overrides: [
     {
       // Setup GraphQL Parser
