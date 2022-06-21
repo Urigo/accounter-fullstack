@@ -23,6 +23,8 @@ function currency(currency: string): string | null {
       return 'אירו';
     case 'USD':
       return '$';
+    case 'GBP':
+      return 'לש';
     default:
       throw new Error(`Unknown currency type: ${currency}`);
   }

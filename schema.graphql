@@ -74,6 +74,7 @@ type Query {
 " mutation root "
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
+  updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
 }
@@ -96,6 +97,19 @@ input UpdateChargeInput {
   accountantApproval: AccountantApprovalInput
   isProperty: Boolean
   # businessTrip: BusinessTrip
+}
+
+" input variables for updateLedger "
+input UpdateLedgerRecordInput {
+  creditAccount: CounterpartyInput
+  debitAccount: CounterpartyInput
+  originalAmount: FinancialAmountInput
+  date: Date
+  description: String
+  accountantApproval: AccountantApprovalInput
+  " in shekels at the moment"
+  localCurrencyAmount: FinancialAmountInput
+  hashavshevetId: String
 }
 
 " input variables for updateTransaction "
@@ -146,6 +160,9 @@ type CommonError implements Error {
 
 " result type for updateCharge "
 union UpdateChargeResult = Charge | CommonError
+
+" result type for updateLedgerRecord "
+union UpdateLedgerRecordResult = LedgerRecord | CommonError
 
 " result type for updateTransaction "
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction

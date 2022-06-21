@@ -1,5 +1,5 @@
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IInsertLedgerRecordsResult } from './__generated__/ledger-records.types.mjs';
+import { IInsertLedgerRecordsResult, IUpdateLedgerRecordParams } from './__generated__/ledger-records.types.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -21,6 +21,7 @@ import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
+  hashavshevetFormat,
 } from './helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from './helpers/misc.mjs';
 import {
@@ -45,7 +46,11 @@ import {
   getHashavshevetIsracardIndex,
   getHashavshevetVatIndexes,
 } from './providers/hashavshevet.mjs';
-import { getLedgerRecordsByChargeIdLoader, insertLedgerRecords } from './providers/ledger-records.mjs';
+import {
+  getLedgerRecordsByChargeIdLoader,
+  insertLedgerRecords,
+  updateLedgerRecord,
+} from './providers/ledger-records.mjs';
 
 const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
@@ -206,6 +211,61 @@ export const resolvers: Resolvers = {
       try {
         getChargeByIdLoader.clear(chargeId);
         const res = await updateCharge.run({ ...adjustedFields }, pool);
+        return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    updateLedgerRecord: async (_, { ledgerRecordId, fields }) => {
+      const currency =
+        fields.originalAmount?.currency || fields.localCurrencyAmount?.currency
+          ? hashavshevetFormat.currency(fields.originalAmount?.currency ?? fields.localCurrencyAmount?.currency ?? '')
+          : null;
+
+      const adjustedFields: IUpdateLedgerRecordParams = {
+        // TODO: which fields should date & description inputs fill?
+        ledgerRecordId,
+        business: null,
+        creditAccount1: fields.creditAccount?.name ?? null,
+        creditAccount2: null,
+        creditAmount1: fields.localCurrencyAmount?.value.toFixed(2) ?? null,
+        creditAmount2: null,
+        currency,
+        date3: null,
+        debitAccount1: fields.debitAccount?.name ?? null,
+        debitAccount2: null,
+        debitAmount1: fields.localCurrencyAmount?.value.toFixed(2) ?? null,
+        debitAmount2: null,
+        details: fields.description ?? null,
+        foreignCreditAmount1: fields.originalAmount?.value.toFixed(2) ?? null,
+        foreignCreditAmount2: null,
+        foreignDebitAmount1: fields.originalAmount?.value.toFixed(2) ?? null,
+        foreignDebitAmount2: null,
+        hashavshevetId: Number(fields.hashavshevetId) ?? null,
+        invoiceDate: fields.date ?? null,
+        movementType: null,
+        origin: null,
+        originalId: null,
+        proformaInvoiceFile: null,
+        reference1: null,
+        reference2: null,
+        reviewed: fields.accountantApproval?.approved ?? null,
+        valueDate: null,
+      };
+      try {
+        const res = await updateLedgerRecord.run({ ...adjustedFields }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to update ledger record ID='${ledgerRecordId}'`);
+        }
+
+        /* clear cache */
+        if (res[0].original_id) {
+          getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
+        }
         return res[0];
       } catch (e) {
         return {
