@@ -1,5 +1,5 @@
 import { Paper, Table } from '@mantine/core';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 import { AccounterButton } from './button';
 
@@ -25,7 +25,7 @@ export interface AccountTableRow<T> {
   isShowAll: boolean;
 }
 
-export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>>) {
+export function AccounterTableRow<T>(props: AccountTableRow<T>) {
   const [opened, setOpen] = useState(false);
   const moreInfoValue = props.moreInfo ? props.moreInfo(props.item) : null;
 
@@ -56,8 +56,7 @@ export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>
   );
 }
 
-export function AccounterTable<T>(props: PropsWithChildren<AccounterTableProps<T>>) {
-  props.showButton === false;
+export function AccounterTable<T>(props: AccounterTableProps<T>) {
   const [isShowAll, setShowAll] = useState(false);
 
   return (
