@@ -4,9 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useAllChargesQuery } from '../../__generated__/types';
 import { businesses } from '../../helpers';
 import { AccounterTable } from '../common/accounter-table';
-import { LedgerRecordTable } from './ledger-record-table';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsGallery } from './documents-gallery';
+import { LedgerRecordTable } from './ledger-record-table';
 import { ShareWithCell } from './share-with-cell';
 
 gql`

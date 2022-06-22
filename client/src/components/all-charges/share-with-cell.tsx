@@ -1,5 +1,6 @@
-import { TableShareWithFieldsFragment } from '../../__generated__/types';
 import gql from 'graphql-tag';
+
+import { TableShareWithFieldsFragment } from '../../__generated__/types';
 
 gql`
   fragment TableShareWithFields on Charge {

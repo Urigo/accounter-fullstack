@@ -1,6 +1,7 @@
-import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
 import { Badge } from '@mantine/core';
 import gql from 'graphql-tag';
+
+import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
 
 gql`
   fragment TableLedgerRecordsFields on Charge {

@@ -1,8 +1,9 @@
 import { Badge, Image } from '@mantine/core';
-import { useState } from 'react';
-import { DocumentsPopUp } from './documents-pop-up';
 import gql from 'graphql-tag';
+import { useState } from 'react';
+
 import { GalleryDocumentsFieldsFragment } from '../../__generated__/types';
+import { DocumentsPopUp } from './documents-pop-up';
 
 gql`
   fragment GalleryDocumentsFields on Charge {

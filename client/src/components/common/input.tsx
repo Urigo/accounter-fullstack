@@ -1,4 +1,4 @@
-import { HTMLProps, HTMLInputTypeAttribute, forwardRef } from 'react';
+import { forwardRef,HTMLInputTypeAttribute, HTMLProps } from 'react';
 
 export type InputProps = HTMLProps<HTMLInputElement> & {
   inputInfo: Array<{

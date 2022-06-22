@@ -1,15 +1,16 @@
-import { CSSProperties, ReactNode } from 'react';
 import { Modal } from '@mantine/core';
+import gql from 'graphql-tag';
+import { CSSProperties, ReactNode } from 'react';
+
 import { ModalDocumentsFieldsFragment } from '../../__generated__/types';
 import {
   isDocumentInvoice,
-  isDocumentReceipt,
   isDocumentInvoiceReceipt,
   isDocumentProforma,
+  isDocumentReceipt,
 } from '../../helpers/documents';
-import { Input } from '../common/input';
 import { ButtonWithLabel } from '../common/button-with-label';
-import gql from 'graphql-tag';
+import { Input } from '../common/input';
 
 gql`
   fragment ModalDocumentsFields on Charge {
