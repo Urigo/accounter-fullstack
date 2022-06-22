@@ -51,7 +51,7 @@ export const ReceiptImg = ({ data, isBusiness, financialEntityName, style }: Pro
           <PopUpModal
             modalSize="45%"
             content={<Image alt="" src={image} />}
-            opened={openedImage}
+            opened={Boolean(openedImage)}
             onClose={() => setOpenedImage(null)}
           />
         </>
