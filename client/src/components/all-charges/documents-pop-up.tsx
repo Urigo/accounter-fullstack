@@ -89,7 +89,39 @@ export interface Props {
   content?: ReactNode;
 }
 
-export const DocumentsPopUp = ({ opened, onClose, documentData }: Props) => {
+export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
+  const isDocumentProcessed =
+    isDocumentInvoice(documentData) ||
+    isDocumentReceipt(documentData) ||
+    isDocumentInvoiceReceipt(documentData) ||
+    isDocumentProforma(documentData);
+
+  const inputsInfo = isDocumentProcessed
+    ? [
+        { textLabel: 'Type', placeholder: documentData?.__typename },
+        {
+          textLabel: 'Amount',
+          placeholder: documentData?.amount?.formatted ? String(documentData.amount.formatted) : 'No data for Amount',
+        },
+        {
+          textLabel: 'Date',
+          placeholder: documentData?.date ? String(documentData?.date) : 'No data for Date',
+        },
+        { textLabel: 'ID', placeholder: documentData?.id },
+        {
+          textLabel: 'Serial Number',
+          placeholder: documentData?.serialNumber ? String(documentData?.serialNumber) : 'No data for Serial Number',
+        },
+        {
+          textLabel: 'VAT',
+          placeholder: documentData.vat?.formatted ? String(documentData?.vat.formatted) : 'No data for VAT',
+        },
+      ]
+    : [
+        { textLabel: 'Type', placeholder: documentData?.__typename },
+        { textLabel: 'ID', placeholder: documentData?.id },
+      ];
+
   return (
     <Modal
       size="70%"
@@ -97,50 +129,21 @@ export const DocumentsPopUp = ({ opened, onClose, documentData }: Props) => {
       onClose={onClose}
       title={<h1 className="title-font sm:text-4xl text-3xl mb-4 font-medium text-gray-900">Edit Documents</h1>}
     >
-      {isDocumentInvoice(documentData) ||
-      isDocumentReceipt(documentData) ||
-      isDocumentInvoiceReceipt(documentData) ||
-      isDocumentProforma(documentData) ? (
-        <>
-          <div style={{ flexDirection: 'row', display: 'flex', gap: 10 }}>
-            <div style={{ width: '50%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="container mx-auto flex py-12 md: flex-col items-center">
-                <Input
-                  inputInfo={[
-                    { textLabel: 'Type', placeholder: documentData?.__typename },
-                    { textLabel: 'Amount', placeholder: String(documentData?.amount?.raw) && 'No data for Amount' },
-                    { textLabel: 'Date', placeholder: String(documentData?.date) && 'No data for Date' },
-                    { textLabel: 'ID', placeholder: documentData?.id },
-                    {
-                      textLabel: 'Serial Number',
-                      placeholder: String(documentData?.serialNumber) && 'No data for Serial Number',
-                    },
-                    { textLabel: 'VAT', placeholder: String(documentData?.vat) && 'No data for VAT' },
-                  ]}
-                />
-                <ButtonWithLabel textLabel="File" url={documentData?.file} textButton="Open Link" />
-              </div>
-            </div>
-            <div style={{ width: '50%', flexDirection: 'column' }}>
-              <div>
-                <div className="container mx-auto flex  md:flex-row flex-col items-right">
-                  <img className="object-cover object-center rounded" alt="hero" src={documentData?.image} />
-                </div>
-              </div>
-            </div>
+      <div style={{ flexDirection: 'row', display: 'flex', gap: 10 }}>
+        <div style={{ width: '50%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="container mx-auto flex py-12 md: flex-col items-center">
+            {inputsInfo.map((i, index) => (
+              <Input key={index} textLabel={i.textLabel} placeholder={i.placeholder} />
+            ))}
+            <ButtonWithLabel target="_blank" textLabel="File" url={documentData?.file} title="Open Link" />
           </div>
-        </>
-      ) : (
-        <div className="container mx-auto flex py-12 md: flex-col items-center">
-          <Input
-            inputInfo={[
-              { textLabel: 'Type', placeholder: documentData?.__typename },
-              { textLabel: 'ID', placeholder: documentData?.id },
-            ]}
-          />
-          <ButtonWithLabel textLabel="File" url={documentData?.file} textButton="Open Link" />
         </div>
-      )}
+        <div style={{ width: '50%', flexDirection: 'column' }}>
+          <div className="container mx-auto flex  md:flex-row flex-col items-right">
+            <img className="object-cover object-center rounded" alt="hero" src={documentData?.image} />
+          </div>
+        </div>
+      </div>
     </Modal>
   );
 };

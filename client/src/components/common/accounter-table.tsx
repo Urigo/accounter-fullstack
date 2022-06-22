@@ -13,7 +13,7 @@ export interface AccounterTableProps<T> {
   }>;
   items: Array<T>;
   moreInfo?: (item: T) => ReactNode | string | null;
-  showButton: boolean;
+  showButton?: boolean;
 }
 
 export interface AccountTableRow<T> {
@@ -57,6 +57,7 @@ export function AccounterTableRow<T>(props: PropsWithChildren<AccountTableRow<T>
 }
 
 export function AccounterTable<T>(props: PropsWithChildren<AccounterTableProps<T>>) {
+  props.showButton === false;
   const [isShowAll, setShowAll] = useState(false);
 
   return (

@@ -1,33 +1,27 @@
 import { CSSProperties, MouseEventHandler } from 'react';
 
-export interface ButtonProps {
+export interface Props {
   onClick?: MouseEventHandler<HTMLButtonElement>;
-  width?: string;
-  disabled?: boolean;
-  loading?: boolean;
-  size?: number;
+  herf?: string;
   type?: 'submit' | 'button';
   style?: CSSProperties;
   target?: string;
-  herf?: string;
   rel?: string;
   title?: string;
+  url?: string;
 }
 
-export const AccounterButton = ({
-  title,
-  type = 'button',
-  onClick = () => {
-    void 0;
-  },
-}: ButtonProps) => {
+export const AccounterButton = ({ title, herf, style, target, rel, type = 'button', onClick }: Props) => {
   return (
     <button
+      style={style}
       type={type}
       onClick={onClick}
       className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded;"
     >
-      {title}
+      <a rel={rel} target={target} href={herf} type={type}>
+        {title}
+      </a>
     </button>
   );
 };

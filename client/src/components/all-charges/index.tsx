@@ -52,73 +52,71 @@ export const AllCharges = () => {
   }
 
   return (
-    <>
-      <div className="text-gray-600 body-font">
-        <div className="container px-5 py-12 mx-auto">
-          <div className="flex flex-col text-center w-full mb-1">
-            <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">All Charges</h1>
-          </div>
-          <AccounterTable
-            showButton={true}
-            moreInfo={item =>
-              item.ledgerRecords[0]?.id ? (
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      justifyContent: 'flex-start',
-                    }}
-                  >
-                    <LedgerRecordTable ledgerRecords={item.ledgerRecords} />
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      width: '50%',
-                      justifyContent: 'flex-start',
-                    }}
-                  >
-                    <DocumentsGallery additionalDocumentsData={item.additionalDocuments} />
-                  </div>
-                </div>
-              ) : null
-            }
-            striped
-            highlightOnHover
-            stickyHeader
-            items={extendedTransactions}
-            columns={[
-              {
-                title: 'Date',
-                value: data => data.transactions[0].effectiveDate,
-              },
-              {
-                title: 'Amount',
-                value: data =>
-                  Number(data.transactions[0].amount.raw) > 0 ? (
-                    <div style={{ color: 'green' }}>{data.transactions[0].amount.formatted}</div>
-                  ) : (
-                    <div style={{ color: 'red' }}>{data.transactions[0].amount.formatted}</div>
-                  ),
-              },
-              {
-                title: 'Entity',
-                value: data => data.counterparty?.name,
-              },
-              {
-                title: 'Description',
-                value: data => data.transactions[0].userNote,
-              },
-              {
-                title: 'Share With',
-                value: data => <ShareWithCell data={data.charge?.beneficiaries} />,
-              },
-            ]}
-          />
+    <div className="text-gray-600 body-font">
+      <div className="container px-5 py-12 mx-auto">
+        <div className="flex flex-col text-center w-full mb-1">
+          <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">All Charges</h1>
         </div>
+        <AccounterTable
+          showButton={true}
+          moreInfo={item =>
+            item.ledgerRecords[0]?.id ? (
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <LedgerRecordTable ledgerRecords={item.ledgerRecords} />
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    width: '50%',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <DocumentsGallery additionalDocumentsData={item.additionalDocuments} />
+                </div>
+              </div>
+            ) : null
+          }
+          striped
+          highlightOnHover
+          stickyHeader
+          items={extendedTransactions}
+          columns={[
+            {
+              title: 'Date',
+              value: data => data.transactions[0].effectiveDate,
+            },
+            {
+              title: 'Amount',
+              value: data =>
+                Number(data.transactions[0].amount.raw) > 0 ? (
+                  <div style={{ color: 'green' }}>{data.transactions[0].amount.formatted}</div>
+                ) : (
+                  <div style={{ color: 'red' }}>{data.transactions[0].amount.formatted}</div>
+                ),
+            },
+            {
+              title: 'Entity',
+              value: data => data.counterparty?.name,
+            },
+            {
+              title: 'Description',
+              value: data => data.transactions[0].userNote,
+            },
+            {
+              title: 'Share With',
+              value: data => <ShareWithCell data={data.charge?.beneficiaries} />,
+            },
+          ]}
+        />
       </div>
-    </>
+    </div>
   );
 };

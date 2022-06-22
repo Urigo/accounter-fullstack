@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { useState } from 'react';
 
 import { GalleryDocumentsFieldsFragment } from '../../__generated__/types';
-import { DocumentsPopUp } from './documents-pop-up';
+import { DocumentPopUp } from './documents-pop-up';
 
 gql`
   fragment GalleryDocumentsFields on Charge {
@@ -101,7 +101,7 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                   />
                 </div>
               </div>
-              <DocumentsPopUp
+              <DocumentPopUp
                 onClose={() => setOpenModal(null)}
                 key={doc.id}
                 opened={openModal === doc.id}
