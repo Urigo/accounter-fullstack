@@ -10,10 +10,8 @@ export const HoverHandler = ({ children, hoverElement }: Props) => {
 
   return (
     <div onMouseEnter={() => setIsHover(true)} onMouseLeave={() => setIsHover(false)}>
-      <>
-        {children}
-        {isHover && { hoverElement }}
-      </>
+      {children}
+      {isHover && { hoverElement }}
     </div>
   );
 };
