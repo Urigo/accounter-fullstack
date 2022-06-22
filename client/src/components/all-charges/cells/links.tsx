@@ -14,7 +14,7 @@ export const Links = ({ transaction, style }: Props) => {
     <td style={{ ...style }}>
       {transaction.links && 'yes'}
       <UpdateButton transaction={transaction} propertyName="links" promptText="New links:" />
-      <button type="button" onClick={() => writeToClipboard(transaction.links)}>
+      <button type="button" onClick={() => writeToClipboard(transaction.links ?? '')}>
         &#9986;
       </button>
     </td>

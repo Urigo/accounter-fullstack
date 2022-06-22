@@ -129,7 +129,7 @@ export const DocumentsReport = () => {
         <PopUpModal
           modalSize="45%"
           content={<Image src={openedImage} />}
-          opened={openedImage}
+          opened={!!openedImage}
           onClose={() => setOpenedImage(null)}
         />
       )}
@@ -138,13 +138,13 @@ export const DocumentsReport = () => {
         stickyHeader={true}
         items={data?.documents ?? []}
         columns={[
-          { title: 'Type', value: docs => docs.__typename },
+          { title: 'Type', value: doc => doc.__typename },
           {
             title: 'Image',
-            value: docs =>
-              docs.image ? (
-                <button onClick={() => setOpenedImage(docs.image)}>
-                  <img alt="missing img" src={docs.image} height={80} width={80} />
+            value: doc =>
+              doc.image ? (
+                <button onClick={() => setOpenedImage(doc.image)}>
+                  <img alt="missing img" src={doc.image} height={80} width={80} />
                 </button>
               ) : (
                 'No image'
@@ -152,19 +152,19 @@ export const DocumentsReport = () => {
           },
           {
             title: 'File',
-            value: docs =>
-              docs.file && <AccounterButton target="_blank" rel="noreferrer" herf={docs.file} title="Open Link" />,
+            value: doc =>
+              doc.file && <AccounterButton target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />,
           },
-          { title: 'Date', value: docs => null ?? docs.date },
-          { title: 'Serial Number', value: docs => null ?? docs.serialNumber },
-          { title: 'VAT', value: docs => null ?? docs.vat?.formatted },
-          { title: 'Amount', value: docs => docs.charge?.transactions[0].amount.formatted ?? null },
+          { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },
+          { title: 'Serial Number', value: doc => ('serialNumber' in doc ? doc.serialNumber : null) },
+          { title: 'VAT', value: doc => ('vat' in doc ? doc.vat?.formatted : null) },
+          { title: 'Amount', value: doc => doc.charge?.transactions[0].amount.formatted ?? null },
           {
             title: 'Realted Transaction',
-            value: docs =>
-              docs.charge?.transactions[0].id ? (
+            value: doc =>
+              doc.charge?.transactions[0].id ? (
                 <AccounterTable
-                  items={docs.charge?.transactions ?? []}
+                  items={doc.charge?.transactions ?? []}
                   columns={[
                     {
                       title: 'Transaction Amount',
