@@ -1,5 +1,9 @@
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IInsertLedgerRecordsResult, IUpdateLedgerRecordParams } from './__generated__/ledger-records.types.mjs';
+import {
+  IInsertLedgerRecordsParams,
+  IInsertLedgerRecordsResult,
+  IUpdateLedgerRecordParams,
+} from './__generated__/ledger-records.types.mjs';
 import {
   BankFinancialAccountResolvers,
   CardFinancialAccountResolvers,
@@ -226,7 +230,6 @@ export const resolvers: Resolvers = {
           : null;
 
       const adjustedFields: IUpdateLedgerRecordParams = {
-        // TODO: which fields should date & description inputs fill?
         ledgerRecordId,
         business: null,
         creditAccount1: fields.creditAccount?.name ?? null,
@@ -267,6 +270,64 @@ export const resolvers: Resolvers = {
           getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
         }
         return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    insertLedgerRecord: async (_, { chargeId, record }) => {
+      const charge = await getChargeByIdLoader.load(chargeId);
+
+      if (!charge) {
+        throw new Error(`Charge ID='${chargeId}' not found`);
+      }
+
+      const currency =
+        record.originalAmount?.currency || record.localCurrencyAmount?.currency
+          ? hashavshevetFormat.currency(record.originalAmount?.currency ?? record.localCurrencyAmount?.currency ?? '')
+          : null;
+
+      const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
+        business: record.businessId ?? null,
+        creditAccount1: record.creditAccount?.name ?? null,
+        creditAccount2: record.creditAccount2?.name ?? null,
+        creditAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
+        creditAmount2: record.creditAmount2?.value.toFixed(2) ?? null,
+        currency,
+        date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
+        debitAccount1: record.debitAccount?.name ?? null,
+        debitAccount2: record.debitAccount2?.name ?? null,
+        debitAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
+        debitAmount2: record.debitAmount2?.value.toFixed(2) ?? null,
+        details: record.description ?? null,
+        foreignCreditAmount1: record.originalAmount?.value.toFixed(2) ?? null,
+        foreignCreditAmount2: null,
+        foreignDebitAmount1: record.originalAmount?.value.toFixed(2) ?? null,
+        foreignDebitAmount2: null,
+        hashavshevetId: Number(record.hashavshevetId) ?? null,
+        invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
+        movementType: record.movementType ?? null,
+        origin: 'manual',
+        originalId: null,
+        proformaInvoiceFile: record.proformaInvoiceFile ?? null,
+        reference1: record.reference1 ?? null,
+        reference2: record.reference2 ?? null,
+        reviewed: record.accountantApproval?.approved ?? null,
+        valueDate: record.valueDate ? hashavshevetFormat.date(record.valueDate) : null,
+      };
+      try {
+        const res = await insertLedgerRecords.run({ ledgerRecord: [{ ...newLedgerRecord }] }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to insert ledger record to charge ID='${chargeId}'`);
+        }
+
+        /* clear cache */
+        getLedgerRecordsByChargeIdLoader.clear(chargeId);
+
+        return charge;
       } catch (e) {
         return {
           __typename: 'CommonError',

@@ -211,6 +211,8 @@ export function generateEntryForAccountingValues(
   const proformaInvoiceFile: IInsertLedgerRecordsParams['ledgerRecord'][0]['proformaInvoiceFile'] =
     charge.proforma_invoice_file;
   const business: IInsertLedgerRecordsParams['ledgerRecord'][0]['business'] = owner.id;
+  const hashavshevetId: IInsertLedgerRecordsParams['ledgerRecord'][0]['hashavshevetId'] = null;
+  const reviewed: IInsertLedgerRecordsParams['ledgerRecord'][0]['reviewed'] = false;
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
@@ -237,6 +239,8 @@ export function generateEntryForAccountingValues(
     origin,
     proformaInvoiceFile,
     business,
+    hashavshevetId,
+    reviewed,
   };
 
   return ledger;
@@ -330,6 +334,8 @@ export function generateEntryForFinancialAccountValues(
   const proformaInvoiceFile: IInsertLedgerRecordsParams['ledgerRecord'][0]['proformaInvoiceFile'] =
     charge.proforma_invoice_file;
   const business: IInsertLedgerRecordsParams['ledgerRecord'][0]['business'] = owner.id;
+  const hashavshevetId: IInsertLedgerRecordsParams['ledgerRecord'][0]['hashavshevetId'] = null;
+  const reviewed: IInsertLedgerRecordsParams['ledgerRecord'][0]['reviewed'] = false;
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
@@ -356,6 +362,8 @@ export function generateEntryForFinancialAccountValues(
     origin,
     proformaInvoiceFile,
     business,
+    hashavshevetId,
+    reviewed,
   };
 
   if (charge.is_conversion) {
@@ -469,6 +477,8 @@ export function generateEntryForExchangeRatesDifferenceValues(
   const proformaInvoiceFile: IInsertLedgerRecordsParams['ledgerRecord'][0]['proformaInvoiceFile'] =
     charge.proforma_invoice_file;
   const business: IInsertLedgerRecordsParams['ledgerRecord'][0]['business'] = owner.id;
+  const hashavshevetId: IInsertLedgerRecordsParams['ledgerRecord'][0]['hashavshevetId'] = null;
+  const reviewed: IInsertLedgerRecordsParams['ledgerRecord'][0]['reviewed'] = false;
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
@@ -495,6 +505,8 @@ export function generateEntryForExchangeRatesDifferenceValues(
     origin,
     proformaInvoiceFile,
     business,
+    hashavshevetId,
+    reviewed,
   };
 
   return ledger;
