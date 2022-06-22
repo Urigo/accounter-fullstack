@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core';
-import { CSSProperties, MouseEventHandler,PropsWithChildren } from 'react';
+import { CSSProperties, MouseEventHandler, PropsWithChildren } from 'react';
 
 export interface ButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;

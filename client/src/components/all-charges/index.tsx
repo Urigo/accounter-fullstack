@@ -1,4 +1,4 @@
-import { Card, Center,Image, Table } from '@mantine/core';
+import { Card, Center, Image, Table } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
