@@ -1,5 +1,6 @@
-import { CSSProperties, useCallback } from 'react';
 import gql from 'graphql-tag';
+import { CSSProperties, useCallback } from 'react';
+
 import { ShareWithFieldsFragment } from '../../../__generated__/types';
 import {
   businessesNotToShare,
@@ -8,8 +9,8 @@ import {
   privateBusinessExpenses,
   SuggestedCharge,
 } from '../../../helpers';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
+import { ConfirmMiniButton, EditMiniButton } from '../../common';
 import { AccounterDivider } from '../../common/divider';
 
 gql`

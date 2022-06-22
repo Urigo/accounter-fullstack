@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+
 import { buildApp } from './fastify.mjs';
 
 config();

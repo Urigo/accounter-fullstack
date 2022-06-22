@@ -1,7 +1,8 @@
-import { CSSProperties } from 'react';
-import { entitiesWithoutInvoice, entitiesWithoutInvoiceNumuber } from '../../../helpers';
 import gql from 'graphql-tag';
+import { CSSProperties } from 'react';
+
 import { InvoiceNumberFieldsFragment } from '../../../__generated__/types';
+import { entitiesWithoutInvoice, entitiesWithoutInvoiceNumuber } from '../../../helpers';
 
 gql`
   fragment InvoiceNumberFields on Charge {

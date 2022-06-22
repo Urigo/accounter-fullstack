@@ -1,7 +1,8 @@
 import gql from 'graphql-tag';
+
+import { ChargesFieldsFragment, SuggestedChargeFragment } from '../../__generated__/types';
 import { suggestedCharge } from '../../helpers';
 import type { TransactionColumn } from '../../models/types';
-import { ChargesFieldsFragment, SuggestedChargeFragment } from '../../__generated__/types';
 import {
   Account,
   Amount,

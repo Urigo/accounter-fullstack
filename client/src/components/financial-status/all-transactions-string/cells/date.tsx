@@ -1,5 +1,6 @@
 import moment from 'moment';
 import { CSSProperties } from 'react';
+
 import type { TransactionType } from '../../../../models/types';
 
 type Props = {

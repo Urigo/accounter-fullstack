@@ -1,6 +1,6 @@
+import gql from 'graphql-tag';
 import moment from 'moment';
 import { CSSProperties } from 'react';
-import gql from 'graphql-tag';
 
 gql`
   fragment DateFields on Charge {

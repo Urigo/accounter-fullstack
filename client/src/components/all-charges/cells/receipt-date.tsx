@@ -1,8 +1,9 @@
+import gql from 'graphql-tag';
 import moment from 'moment';
 import { CSSProperties } from 'react';
-import { entitiesWithoutInvoice } from '../../../helpers';
-import gql from 'graphql-tag';
+
 import { ReceiptDateFieldsFragment } from '../../../__generated__/types';
+import { entitiesWithoutInvoice } from '../../../helpers';
 
 gql`
   fragment ReceiptDateFields on Charge {

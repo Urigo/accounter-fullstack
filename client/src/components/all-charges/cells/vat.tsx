@@ -1,12 +1,13 @@
+import gql from 'graphql-tag';
 import { CSSProperties } from 'react';
+
+import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 import {
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
   entitiesWithoutInvoice,
   SuggestedCharge,
 } from '../../../helpers';
-import gql from 'graphql-tag';
-import { Currency, VatFieldsFragment } from '../../../__generated__/types';
 
 gql`
   fragment VatFields on Charge {

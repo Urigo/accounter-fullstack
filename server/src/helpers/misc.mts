@@ -1,6 +1,6 @@
+import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
-import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 

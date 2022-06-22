@@ -1,10 +1,11 @@
-import { CSSProperties, useState } from 'react';
-import { entitiesWithoutInvoice } from '../../../helpers';
-import gql from 'graphql-tag';
-import { InvoiceImageFieldsFragment } from '../../../__generated__/types';
-import { PopUpModal } from '../../common/modal';
 import { Image } from '@mantine/core';
+import gql from 'graphql-tag';
+import { CSSProperties, useState } from 'react';
+
+import { InvoiceImageFieldsFragment } from '../../../__generated__/types';
+import { entitiesWithoutInvoice } from '../../../helpers';
 import { ButtonImage } from '../../common/button-image';
+import { PopUpModal } from '../../common/modal';
 
 gql`
   fragment InvoiceImageFields on Charge {

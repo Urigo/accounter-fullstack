@@ -1,12 +1,13 @@
 import { CSSProperties } from 'react';
-import type { TransactionType } from '../../../../models/types';
-import { ConfirmButton, UpdateButton } from '../../../common';
+
 import {
   businessesWithoutTaxCategory,
   businessesWithoutVAT,
   isBusiness,
   suggestedTransaction,
 } from '../../../../helpers';
+import type { TransactionType } from '../../../../models/types';
+import { ConfirmButton, UpdateButton } from '../../../common';
 
 type Props = {
   transaction: TransactionType;

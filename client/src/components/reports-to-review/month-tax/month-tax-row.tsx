@@ -1,5 +1,5 @@
-import { MonthIncomeTransaction } from '.';
 import { hashDateFormat } from '../../../helpers';
+import { MonthIncomeTransaction } from '.';
 
 interface Props {
   row: MonthIncomeTransaction;

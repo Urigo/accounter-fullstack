@@ -1,5 +1,5 @@
-import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
+import { CSSProperties } from 'react';
 
 gql`
   fragment AmountFields on Charge {

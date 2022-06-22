@@ -1,5 +1,6 @@
-import { CSSProperties } from 'react';
 import gql from 'graphql-tag';
+import { CSSProperties } from 'react';
+
 import { AccountFieldsFragment } from '../../../__generated__/types';
 
 gql`

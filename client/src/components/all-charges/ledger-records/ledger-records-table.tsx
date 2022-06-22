@@ -1,6 +1,6 @@
-import { LedgerRecordRow } from './ledger-record-row';
 import { LedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { AccounterBasicTable } from '../../common/accounter-basic-table';
+import { LedgerRecordRow } from './ledger-record-row';
 
 type Props = {
   ledgerRecords: LedgerRecordsFieldsFragment['ledgerRecords'];

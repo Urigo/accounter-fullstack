@@ -1,4 +1,5 @@
 import { gql } from 'graphql-tag';
+
 import { UpdateChargeMutation, UpdateChargeMutationVariables, useUpdateChargeMutation } from '../__generated__/types';
 
 gql`
