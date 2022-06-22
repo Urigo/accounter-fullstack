@@ -69,6 +69,12 @@ module.exports = {
         node: true,
       },
     },
+    {
+      files: 'client/**/*.tsx',
+      rules: {
+        'react/jsx-no-useless-fragment': 'error',
+      },
+    },
   ],
   ignorePatterns: ['**/old-accounter/**', '**/temp-server/**'],
 };

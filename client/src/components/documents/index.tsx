@@ -121,79 +121,75 @@ export const DocumentsReport = () => {
   const { data, isLoading } = useDocumentsQuery();
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 
-  return (
+  return isLoading ? (
+    <AccounterLoader />
+  ) : (
     <>
-      {isLoading ? (
-        <AccounterLoader />
-      ) : (
-        <>
-          {openedImage && (
-            <PopUpModal
-              modalSize="45%"
-              content={<Image src={openedImage} />}
-              opened={openedImage}
-              onClose={() => setOpenedImage(null)}
-            />
-          )}
-          <div style={{ fontSize: 40 }}>Documents</div>
-          <AccounterTable
-            stickyHeader={true}
-            items={data?.documents ?? []}
-            columns={[
-              { title: 'Type', value: docs => docs.__typename },
-              {
-                title: 'Image',
-                value: docs =>
-                  docs.image ? (
-                    <button onClick={() => setOpenedImage(docs.image)}>
-                      <img alt="missing img" src={docs.image} height={80} width={80} />
-                    </button>
-                  ) : (
-                    'No image'
-                  ),
-              },
-              {
-                title: 'File',
-                value: docs =>
-                  docs.file && <AccounterButton target="_blank" rel="noreferrer" herf={docs.file} title="Open Link" />,
-              },
-              { title: 'Date', value: docs => null ?? docs.date },
-              { title: 'Serial Number', value: docs => null ?? docs.serialNumber },
-              { title: 'VAT', value: docs => null ?? docs.vat?.formatted },
-              { title: 'Amount', value: docs => docs.charge?.transactions[0].amount.formatted ?? null },
-              {
-                title: 'Realted Transaction',
-                value: docs =>
-                  docs.charge?.transactions[0].id ? (
-                    <AccounterTable
-                      items={docs.charge?.transactions ?? []}
-                      columns={[
-                        {
-                          title: 'Transaction Amount',
-                          value: transaction => transaction.amount.formatted,
-                        },
-                        {
-                          title: 'Transaction Created At',
-                          value: transaction => transaction.createdAt,
-                        },
-                        {
-                          title: 'Transaction Effective Date',
-                          value: transaction => transaction.effectiveDate,
-                        },
-                        {
-                          title: 'Transaction Description',
-                          value: transaction => transaction.description,
-                        },
-                      ]}
-                    />
-                  ) : (
-                    'No Realted Transaction'
-                  ),
-              },
-            ]}
-          />
-        </>
+      {openedImage && (
+        <PopUpModal
+          modalSize="45%"
+          content={<Image src={openedImage} />}
+          opened={openedImage}
+          onClose={() => setOpenedImage(null)}
+        />
       )}
+      <div style={{ fontSize: 40 }}>Documents</div>
+      <AccounterTable
+        stickyHeader={true}
+        items={data?.documents ?? []}
+        columns={[
+          { title: 'Type', value: docs => docs.__typename },
+          {
+            title: 'Image',
+            value: docs =>
+              docs.image ? (
+                <button onClick={() => setOpenedImage(docs.image)}>
+                  <img alt="missing img" src={docs.image} height={80} width={80} />
+                </button>
+              ) : (
+                'No image'
+              ),
+          },
+          {
+            title: 'File',
+            value: docs =>
+              docs.file && <AccounterButton target="_blank" rel="noreferrer" herf={docs.file} title="Open Link" />,
+          },
+          { title: 'Date', value: docs => null ?? docs.date },
+          { title: 'Serial Number', value: docs => null ?? docs.serialNumber },
+          { title: 'VAT', value: docs => null ?? docs.vat?.formatted },
+          { title: 'Amount', value: docs => docs.charge?.transactions[0].amount.formatted ?? null },
+          {
+            title: 'Realted Transaction',
+            value: docs =>
+              docs.charge?.transactions[0].id ? (
+                <AccounterTable
+                  items={docs.charge?.transactions ?? []}
+                  columns={[
+                    {
+                      title: 'Transaction Amount',
+                      value: transaction => transaction.amount.formatted,
+                    },
+                    {
+                      title: 'Transaction Created At',
+                      value: transaction => transaction.createdAt,
+                    },
+                    {
+                      title: 'Transaction Effective Date',
+                      value: transaction => transaction.effectiveDate,
+                    },
+                    {
+                      title: 'Transaction Description',
+                      value: transaction => transaction.description,
+                    },
+                  ]}
+                />
+              ) : (
+                'No Realted Transaction'
+              ),
+          },
+        ]}
+      />
     </>
   );
 };
