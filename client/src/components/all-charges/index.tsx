@@ -1,34 +1,25 @@
-import { Card, Center, Image, Table } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useAllChargesQuery } from '../../__generated__/types';
 import { businesses } from '../../helpers';
 import { AccounterTable } from '../common/accounter-table';
-import { PageWrappers } from '../common/common-wrappers';
 import { AccounterLoader } from '../common/loader';
-import { PopUpModal } from '../common/modal';
+import { DocumentsGallery } from './documents-gallery';
+import { LedgerRecordTable } from './ledger-record-table';
+import { ShareWithCell } from './share-with-cell';
 
 gql`
   query AllCharges($financialEntityId: ID!) {
     financialEntity(id: $financialEntityId) {
       ...ChargesFields
       id
-      documents {
-        id
-        image
-        file
-        __typename
-      }
       charges {
         id
-        beneficiaries {
-          counterparty {
-            name
-          }
-          percentage
-        }
+        ...TableLedgerRecordsFields
+        ...GalleryDocumentsFields
+        ...ModalDocumentsFields
+        ...TableShareWithFields
       }
     }
   }
@@ -37,7 +28,6 @@ gql`
 export const AllCharges = () => {
   const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
-  const [openedImage, setOpenedImage] = useState<string | null>(null);
 
   // TODO: improve the ID logic
   const financialEntityId =
@@ -56,127 +46,77 @@ export const AllCharges = () => {
     ...t,
     charge: data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === t.id),
   }));
-  const beneficiaries = [
-    {
-      name: data?.financialEntity.charges[0].beneficiaries[0].counterparty.name,
-      percentage: data?.financialEntity.charges[0].beneficiaries[0].percentage,
-    },
-  ];
 
-  return isLoading ? (
-    <AccounterLoader />
-  ) : (
-    <>
-      <h1>All Charges</h1>
-      <AccounterTable
-        moreInfo={item =>
-          item.ledgerRecords[0]?.id ? (
-            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'column', width: '50%' }}>
-                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'column', width: '50%' }}>
-                    <Table striped style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      <tr>Date:</tr>
-                      <tr>Credit Account:</tr>
-                      <tr>Debit Account:</tr>
-                      <tr>Local Amount:</tr>
-                      <tr>Original Amount:</tr>
-                      <tr>Description:</tr>
-                      <tr>Accountant Approval:</tr>
-                      <tr>Hashavshevet ID:</tr>
-                    </Table>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'column', width: '50%' }}>
-                    <Table style={{ textAlign: 'center' }}>
-                      <tr>{item.ledgerRecords[0]?.date ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.creditAccount?.name ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.debitAccount?.name ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.localCurrencyAmount?.formatted ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.originalAmount.formatted ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.description ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.accountantApproval.approved ?? 'No Data Info'}</tr>
-                      <tr>{item.ledgerRecords[0]?.hashavshevetId ?? 'No Data Info'}</tr>
-                    </Table>
-                  </div>
+  if (isLoading) {
+    return <AccounterLoader />;
+  }
+
+  return (
+    <div className="text-gray-600 body-font">
+      <div className="container px-5 py-12 mx-auto">
+        <div className="flex flex-col text-center w-full mb-1">
+          <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">All Charges</h1>
+        </div>
+        <AccounterTable
+          showButton={true}
+          moreInfo={item =>
+            item.ledgerRecords[0]?.id ? (
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <LedgerRecordTable ledgerRecords={item.ledgerRecords} />
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    width: '50%',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <DocumentsGallery additionalDocumentsData={item.additionalDocuments} />
                 </div>
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  flexDirection: 'column',
-                  width: '50%',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
-                  {item.invoice?.id || item.receipt?.id ? (
-                    <Card
-                      shadow="sm"
-                      p="md"
-                      component="a"
-                      onClick={() => setOpenedImage(item.invoice?.image || item.receipt?.image)}
-                      target="_blank"
-                    >
-                      <Card.Section>
-                        <Image src={item.invoice?.image || item.receipt?.image} height={160} alt="Missing Image" />
-                      </Card.Section>
-                    </Card>
-                  ) : (
-                    <Center style={{ alignItems: 'center', display: 'flex', alignContent: 'center' }}>
-                      No Invoice or Receipt related
-                    </Center>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null
-        }
-        striped
-        highlightOnHover
-        stickyHeader
-        items={extendedTransactions}
-        columns={[
-          {
-            title: 'Date',
-            value: data => data.transactions[0].effectiveDate,
-          },
-          {
-            title: 'Amount',
-            value: data => data.transactions[0].amount.formatted,
-          },
-          {
-            title: 'Entity',
-            value: data => data.counterparty?.name,
-          },
-          {
-            title: 'Description',
-            value: data => data.transactions[0].userNote,
-          },
-          {
-            title: 'Share With',
-            value: () => beneficiaries.map(item => `${item.name}: ${item.percentage}%`),
-          },
-        ]}
-      />
-      {openedImage && (
-        <PopUpModal
-          modalSize="65%"
-          content={
-            <PageWrappers>
-              <div style={{ flexDirection: 'row', display: 'flex', gap: 10 }}>
-                <div style={{ width: '50%' }}>
-                  <h1>Documents Details</h1>
-                </div>
-                <div style={{ width: '50%' }}>
-                  <Image src={openedImage} alt="Missing Image" />
-                </div>
-              </div>
-            </PageWrappers>
+            ) : null
           }
-          opened={openedImage}
-          onClose={() => setOpenedImage(null)}
+          striped
+          highlightOnHover
+          stickyHeader
+          items={extendedTransactions}
+          columns={[
+            {
+              title: 'Date',
+              value: data => data.transactions[0].effectiveDate,
+            },
+            {
+              title: 'Amount',
+              value: data =>
+                Number(data.transactions[0].amount.raw) > 0 ? (
+                  <div style={{ color: 'green' }}>{data.transactions[0].amount.formatted}</div>
+                ) : (
+                  <div style={{ color: 'red' }}>{data.transactions[0].amount.formatted}</div>
+                ),
+            },
+            {
+              title: 'Entity',
+              value: data => data.counterparty?.name,
+            },
+            {
+              title: 'Description',
+              value: data => data.transactions[0].userNote,
+            },
+            {
+              title: 'Share With',
+              value: data => <ShareWithCell data={data.charge?.beneficiaries} />,
+            },
+          ]}
         />
-      )}
-    </>
+      </div>
+    </div>
   );
 };

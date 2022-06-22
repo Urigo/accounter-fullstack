@@ -216,7 +216,7 @@ type Charge {
   " when the initial charge was created from the first event we found "
   createdAt: Date!
   " additional documents attached to the charge "
-  additionalDocument: [Document!]!
+  additionalDocuments: [Document!]!
   " ledger records linked to the charge "
   ledgerRecords: [LedgerRecord!]!
   " list of financial/bank transactions linked to the charge "

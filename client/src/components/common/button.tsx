@@ -1,39 +1,27 @@
-import { Button } from '@mantine/core';
 import { CSSProperties, MouseEventHandler } from 'react';
 
-export interface ButtonProps {
+export interface Props {
   onClick?: MouseEventHandler<HTMLButtonElement>;
-  width?: string;
-  disabled?: boolean;
-  loading?: boolean;
-  size?: number;
+  herf?: string;
   type?: 'submit' | 'button';
   style?: CSSProperties;
   target?: string;
-  herf?: string;
   rel?: string;
   title?: string;
+  url?: string;
 }
 
-export const AccounterButton = ({
-  title,
-  target,
-  herf,
-  rel,
-  type = 'button',
-  onClick = () => {
-    void 0;
-  },
-  loading = false,
-  disabled = false,
-}: ButtonProps) => {
-  const buttonDisabled = disabled || loading;
-
+export const AccounterButton = ({ title, herf, style, target, rel, type = 'button', onClick }: Props) => {
   return (
-    <Button type={type} disabled={buttonDisabled} onClick={onClick} style={{ cursor: 'pointer' }}>
-      <a style={{ color: 'white' }} rel={rel} href={herf} target={target}>
+    <button
+      style={style}
+      type={type}
+      onClick={onClick}
+      className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded;"
+    >
+      <a rel={rel} target={target} href={herf} type={type}>
         {title}
       </a>
-    </Button>
+    </button>
   );
 };
