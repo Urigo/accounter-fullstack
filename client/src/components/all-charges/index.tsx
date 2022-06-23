@@ -33,6 +33,7 @@ gql`
 gql`
   fragment SuggestedCharge on FinancialEntity {
     id
+    __typename
     charges {
       id
       transactions {
@@ -68,6 +69,7 @@ export const AllCharges = () => {
     financialEntityId,
   });
 
+  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
   const allCharges = data?.financialEntity?.charges ?? [];
   const extendedTransactions = allCharges.map(t => ({
     ...t,
@@ -150,7 +152,13 @@ export const AllCharges = () => {
             },
             {
               title: 'Share With',
-              value: data => <ShareWith data={data.charge?.beneficiaries} />,
+              value: (data, alternativeCharge) => (
+                <ShareWith
+                  data={data}
+                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                  isBusiness={isBusiness}
+                />
+              ),
             },
           ]}
         />

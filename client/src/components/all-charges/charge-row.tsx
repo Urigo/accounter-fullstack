@@ -26,32 +26,32 @@ import { LedgerRecordsTable } from './ledger-records/ledger-records-table';
 
 gql`
   fragment ChargesFields on Charge {
-      id
-      ...DateFields
-      ...AmountFields
-      ...EntityFields
-      ...DescriptionFields
-      ...CategoryFields
-      ...VatFields
-      ...AccountFields
-      ...ShareWithFields
-      ...BankDescriptionFields
-      ...LedgerRecordsFields
-      ...InvoiceImageFields
-      ...InvoiceDateFields
-      ...InvoiceNumberFields
-      ...InvoiceFileFields
-      ...ReceiptImageFields
-      ...ReceiptDateFields
-      ...ReceiptNumberFields
-      ...ReceiptUrlFields
+    id
+    ...DateFields
+    ...AmountFields
+    ...EntityFields
+    ...DescriptionFields
+    ...CategoryFields
+    ...VatFields
+    ...AccountFields
+    ...ShareWithFields
+    ...BankDescriptionFields
+    ...LedgerRecordsFields
+    ...InvoiceImageFields
+    ...InvoiceDateFields
+    ...InvoiceNumberFields
+    ...InvoiceFileFields
+    ...ReceiptImageFields
+    ...ReceiptDateFields
+    ...ReceiptNumberFields
+    ...ReceiptUrlFields
   }
 `;
 
 type Props = {
   columns: TransactionColumn[];
   index: number;
-  charge: ChargesFieldsFragment['charges']['0'];
+  charge: ChargesFieldsFragment;
   financialEntityType: SuggestedChargeFragment['__typename'];
 };
 
@@ -62,7 +62,7 @@ export const ChargeRow = ({ columns, charge, financialEntityType }: Props) => {
     charge.tags.length === 0 ||
     !charge.vat?.raw ||
     charge.beneficiaries.length === 0
-      ? suggestedCharge(charge)
+      ? suggestedCharge(charge as unknown as SuggestedChargeFragment['charges'][0])
       : undefined;
 
   const isBusiness = financialEntityType === 'LtdFinancialEntity';
