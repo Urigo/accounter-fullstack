@@ -49,6 +49,10 @@ gql`
       counterparty {
         name
       }
+      vat {
+        raw
+      }
+      tags
     }
   }
 `;
@@ -119,10 +123,10 @@ export const AllCharges = () => {
           items={extendedTransactions}
           extraRowData={item =>
             !item.counterparty?.name ||
-            !item.transactions[0].userNote?.trim() ||
-            item.tags.length === 0 ||
+            !item.transactions[0]?.userNote?.trim() ||
+            item.tags?.length === 0 ||
             !item.vat?.raw ||
-            item.beneficiaries.length === 0
+            item.beneficiaries?.length === 0
               ? suggestedCharge(item)
               : undefined
           }

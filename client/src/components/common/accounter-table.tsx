@@ -14,7 +14,7 @@ export interface AccounterTableProps<T, U> {
   items: Array<T>;
   moreInfo?: (item: T) => ReactNode | string | null;
   showButton?: boolean;
-  extraRowData?: (item: T) => U;
+  extraRowData?: (item: T) => U | undefined;
 }
 
 export interface AccountTableRow<T, U> {
