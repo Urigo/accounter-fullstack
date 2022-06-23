@@ -2,24 +2,51 @@ import gql from 'graphql-tag';
 import { useSearchParams } from 'react-router-dom';
 
 import { useAllChargesQuery } from '../../__generated__/types';
-import { businesses } from '../../helpers';
+import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { AccounterTable } from '../common/accounter-table';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsGallery } from './documents-gallery';
 import { LedgerRecordTable } from './ledger-record-table';
-import { ShareWithCell } from './share-with-cell';
+import { Amount, Date, Description, Entity, ShareWith } from './table-cells';
 
 gql`
   query AllCharges($financialEntityId: ID!) {
     financialEntity(id: $financialEntityId) {
-      ...ChargesFields
+      ...SuggestedCharge
       id
       charges {
         id
+        ...ChargesFields
+        ...AllChargesAmountFields
+        ...AllChargesDateFields
+        ...AllChargesDescriptionFields
+        ...AllChargesEntityFields
+        ...AllChargesShareWithFields
         ...TableLedgerRecordsFields
         ...GalleryDocumentsFields
         ...ModalDocumentsFields
-        ...TableShareWithFields
+      }
+    }
+  }
+`;
+
+gql`
+  fragment SuggestedCharge on FinancialEntity {
+    id
+    charges {
+      id
+      transactions {
+        id
+        __typename
+        amount {
+          raw
+        }
+        userNote
+        referenceNumber
+        description
+      }
+      counterparty {
+        name
       }
     }
   }
@@ -88,31 +115,42 @@ export const AllCharges = () => {
           highlightOnHover
           stickyHeader
           items={extendedTransactions}
+          extraRowData={item =>
+            !item.counterparty?.name ||
+            !item.transactions[0].userNote?.trim() ||
+            item.tags.length === 0 ||
+            !item.vat?.raw ||
+            item.beneficiaries.length === 0
+              ? suggestedCharge(item)
+              : undefined
+          }
           columns={[
             {
               title: 'Date',
-              value: data => data.transactions[0].effectiveDate,
+              value: data => <Date data={data.transactions[0]} />,
             },
             {
               title: 'Amount',
-              value: data =>
-                Number(data.transactions[0].amount.raw) > 0 ? (
-                  <div style={{ color: 'green' }}>{data.transactions[0].amount.formatted}</div>
-                ) : (
-                  <div style={{ color: 'red' }}>{data.transactions[0].amount.formatted}</div>
-                ),
+              value: data => <Amount data={data.transactions[0]} />,
             },
             {
               title: 'Entity',
-              value: data => data.counterparty?.name,
+              value: (data, alternativeCharge) => (
+                <Entity data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+              ),
             },
             {
               title: 'Description',
-              value: data => data.transactions[0].userNote,
+              value: (data, alternativeCharge) => (
+                <Description
+                  data={data.transactions[0]}
+                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                />
+              ),
             },
             {
               title: 'Share With',
-              value: data => <ShareWithCell data={data.charge?.beneficiaries} />,
+              value: data => <ShareWith data={data.charge?.beneficiaries} />,
             },
           ]}
         />

@@ -1,9 +1,9 @@
 import gql from 'graphql-tag';
 
-import { TableShareWithFieldsFragment } from '../../__generated__/types';
+import { AllChargesShareWithFieldsFragment } from '../../../__generated__/types';
 
 gql`
-  fragment TableShareWithFields on Charge {
+  fragment AllChargesShareWithFields on Charge {
     id
     beneficiaries {
       counterparty {
@@ -17,10 +17,10 @@ gql`
 `;
 
 export interface Props {
-  data?: TableShareWithFieldsFragment['beneficiaries'];
+  data?: AllChargesShareWithFieldsFragment['beneficiaries'];
 }
 
-export const ShareWithCell = ({ data }: Props) => {
+export const ShareWith = ({ data }: Props) => {
   return (
     <div className="text-gray-600 body-font">
       <div className="container px-6 py-5 mx-auto">

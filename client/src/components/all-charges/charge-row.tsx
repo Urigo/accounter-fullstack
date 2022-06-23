@@ -25,9 +25,7 @@ import {
 import { LedgerRecordsTable } from './ledger-records/ledger-records-table';
 
 gql`
-  fragment ChargesFields on FinancialEntity {
-    ...SuggestedCharge
-    charges {
+  fragment ChargesFields on Charge {
       id
       ...DateFields
       ...AmountFields
@@ -47,27 +45,6 @@ gql`
       ...ReceiptDateFields
       ...ReceiptNumberFields
       ...ReceiptUrlFields
-    }
-  }
-`;
-
-gql`
-  fragment SuggestedCharge on FinancialEntity {
-    __typename
-    charges {
-      transactions {
-        __typename
-        amount {
-          raw
-        }
-        userNote
-        referenceNumber
-        description
-      }
-      counterparty {
-        name
-      }
-    }
   }
 `;
 
