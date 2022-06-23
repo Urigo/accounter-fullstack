@@ -18,4 +18,4 @@
 // export { Vat } from './vat';
 
 // NOTE: deprecated
-export {}
+export {};

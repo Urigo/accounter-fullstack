@@ -43,4 +43,4 @@
 // };
 
 // NOTE: deprecated
-export {}
+export {};
