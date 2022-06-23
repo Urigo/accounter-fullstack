@@ -16,7 +16,7 @@ gql`
       id
       charges {
         id
-        ...ChargesFields
+        # ...ChargesFields
         ...AllChargesAmountFields
         ...AllChargesDateFields
         ...AllChargesDescriptionFields
