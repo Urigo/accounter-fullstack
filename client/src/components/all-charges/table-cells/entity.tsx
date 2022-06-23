@@ -5,7 +5,6 @@ import { AllChargesEntityFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton, EditMiniButton } from '../../common';
-import { AccounterDivider } from '../../common/divider';
 
 gql`
   fragment AllChargesEntityFields on Charge {
@@ -31,28 +30,29 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
 
   const updateTag = useCallback(
     (value?: string) => {
-      mutate({
-        chargeId,
-        fields: {
-          counterparty: value
-            ? {
-                name: value,
-              }
-            : undefined,
-        },
-      });
+      if (value !== undefined) {
+        mutate({
+          chargeId,
+          fields: {
+            counterparty: value
+              ? {
+                  name: value,
+                }
+              : undefined,
+          },
+        });
+      }
     },
     [chargeId, mutate]
   );
 
   return (
-    <td style={isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>
-      {cellText ?? 'undefined'}
+    <div className="flex flex-wrap">
+      <p style={isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>{cellText ?? 'undefined'}</p>
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
         <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
       )}
-      <AccounterDivider my="sm" />
       <EditMiniButton onClick={() => updateTag(prompt('New financial entity:') ?? undefined)} disabled={isLoading} />
-    </td>
+    </div>
   );
 };

@@ -11,7 +11,6 @@ import {
 } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton, EditMiniButton } from '../../common';
-import { AccounterDivider } from '../../common/divider';
 
 gql`
   fragment AllChargesShareWithFields on Charge {
@@ -42,10 +41,12 @@ export const ShareWith = ({ data, alternativeCharge, isBusiness }: Props) => {
 
   const updateTag = useCallback(
     (value?: string) => {
-      mutate({
-        chargeId,
-        fields: { beneficiaries: value },
-      });
+      if (value !== undefined) {
+        mutate({
+          chargeId,
+          fields: { beneficiaries: value },
+        });
+      }
     },
     [chargeId, mutate]
   );
@@ -61,28 +62,32 @@ export const ShareWith = ({ data, alternativeCharge, isBusiness }: Props) => {
   return (
     <div className="text-gray-600 body-font">
       <div className="container px-6 py-5 mx-auto">
-        <div
-          className="flex flex-wrap -m-4 text-center gap-5"
-          style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
-        >
+        <div className="flex flex-wrap -m-4 text-center gap-5">
           {beneficiaries?.map((beneficiary, index) => (
-            <div key={index} className="sm:w-1/4">
+            <div
+              key={index}
+              className="sm:w-1/4"
+              style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
+            >
               <h2 className="title-font font-medium sm:text-base text-gray-900">{beneficiary.counterparty.name}</h2>
               <p className="leading-relaxed">{beneficiary.percentage}%</p>
             </div>
           ))}
+          {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance && (
+            <div className="sm:w-1/4">
+              <ConfirmMiniButton
+                onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
+          <div className="sm:w-1/4">
+            <EditMiniButton
+              onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
+              disabled={isLoading}
+            />
+          </div>
         </div>
-        {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance && (
-          <ConfirmMiniButton
-            onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
-            disabled={isLoading}
-          />
-        )}
-        <AccounterDivider my="sm" />
-        <EditMiniButton
-          onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
-          disabled={isLoading}
-        />
       </div>
     </div>
   );
