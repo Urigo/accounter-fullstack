@@ -290,17 +290,17 @@ export const resolvers: Resolvers = {
           : null;
 
       const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
-        business: record.businessId ?? null,
+        business: null,
         creditAccount1: record.creditAccount?.name ?? null,
-        creditAccount2: record.creditAccount2?.name ?? null,
+        creditAccount2: null,
         creditAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
-        creditAmount2: record.creditAmount2?.value.toFixed(2) ?? null,
+        creditAmount2: null,
         currency,
-        date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
+        date3: null,
         debitAccount1: record.debitAccount?.name ?? null,
-        debitAccount2: record.debitAccount2?.name ?? null,
+        debitAccount2: null,
         debitAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
-        debitAmount2: record.debitAmount2?.value.toFixed(2) ?? null,
+        debitAmount2: null,
         details: record.description ?? null,
         foreignCreditAmount1: record.originalAmount?.value.toFixed(2) ?? null,
         foreignCreditAmount2: null,
@@ -308,14 +308,14 @@ export const resolvers: Resolvers = {
         foreignDebitAmount2: null,
         hashavshevetId: Number(record.hashavshevetId) ?? null,
         invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
-        movementType: record.movementType ?? null,
+        movementType: null,
         origin: 'manual',
         originalId: null,
-        proformaInvoiceFile: record.proformaInvoiceFile ?? null,
-        reference1: record.reference1 ?? null,
-        reference2: record.reference2 ?? null,
+        proformaInvoiceFile: null,
+        reference1: null,
+        reference2: null,
         reviewed: record.accountantApproval?.approved ?? null,
-        valueDate: record.valueDate ? hashavshevetFormat.date(record.valueDate) : null,
+        valueDate: null,
       };
       try {
         const res = await insertLedgerRecords.run({ ledgerRecord: [{ ...newLedgerRecord }] }, pool);

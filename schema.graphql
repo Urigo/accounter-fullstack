@@ -75,7 +75,7 @@ type Query {
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
-  insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
+  insertLedgerRecord(chargeId: ID!, record: UpdateLedgerRecordInput!): InsertLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
 }
@@ -111,30 +111,6 @@ input UpdateLedgerRecordInput {
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
   hashavshevetId: String
-}
-
-" input variables for insertLedgerRecord "
-input InsertLedgerRecordInput {
-  creditAccount: CounterpartyInput
-  creditAccount2: CounterpartyInput # TODO: remove after DB migration to new ledger structure
-  debitAccount: CounterpartyInput
-  debitAccount2: CounterpartyInput # TODO: remove after DB migration to new ledger structure
-  originalAmount: FinancialAmountInput
-  date: Date
-  description: String
-  accountantApproval: AccountantApprovalInput
-  " in shekels at the moment"
-  localCurrencyAmount: FinancialAmountInput
-  hashavshevetId: String
-  movementType: String # TODO: remove after DB migration to new ledger structure
-  businessId: ID # TODO: remove after DB migration to new ledger structure
-  valueDate: Date # TODO: remove after DB migration to new ledger structure
-  date3: Date # TODO: remove after DB migration to new ledger structure
-  creditAmount2: FinancialAmountInput # TODO: remove after DB migration to new ledger structure
-  debitAmount2: FinancialAmountInput # TODO: remove after DB migration to new ledger structure
-  proformaInvoiceFile: URL # TODO: remove after DB migration to new ledger structure
-  reference1: String # TODO: remove after DB migration to new ledger structure
-  reference2: String # TODO: remove after DB migration to new ledger structure
 }
 
 " input variables for updateTransaction "
