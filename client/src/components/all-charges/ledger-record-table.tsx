@@ -2,20 +2,25 @@ import { Badge } from '@mantine/core';
 import gql from 'graphql-tag';
 
 import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
+import { CreditAccount, Date, DebitAccount } from './ledger-records/cells';
 
 gql`
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       id
-      date
+      ...LedgerRecordsDateFields
+      ...LedgerRecordsCreditAccountFields
+      ...LedgerRecordsDebitAccountFields
+      # ...LedgerRecordsLocalAmountFields
+      # ...LedgerRecordsOriginalAmountFields
+      # ...LedgerRecordsDescriptionFields
+      # ...LedgerRecordsAccountantApprovalFields
+      # ...LedgerRecordsHashavshevetIdFields
       originalAmount {
         formatted
       }
       localCurrencyAmount {
         formatted
-      }
-      creditAccount {
-        name
       }
       debitAccount {
         name
@@ -51,15 +56,20 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
       <tbody>
         {ledgerRecords.map(i => (
           <tr key={i.id}>
-            <td>{i.date ?? 'Missing Data'}</td>
-            <td>{i.creditAccount?.name ?? 'Missing Account'}</td>
-            <td>{i.debitAccount?.name ?? 'Missing Account'}</td>
+            <Date data={i} />
+            <CreditAccount data={i} />
+            <DebitAccount data={i} />
+            {/* <LocalAmount data={i} /> */}
             <td>{i.localCurrencyAmount.formatted ?? 'Missing Amount'}</td>
+            {/* <OriginalAmount data={i} /> */}
             <td>{i.originalAmount.formatted}</td>
+            {/* <Description data={i} /> */}
             <td>{i.description}</td>
+            {/* <AccountantApproval data={i} /> */}
             <td>
               {i.accountantApproval.approved == true ? <Badge color="green">YES</Badge> : <Badge color="red">NO</Badge>}
             </td>
+            {/* <HashavshevetId data={i} /> */}
             <td>{i.hashavshevetId}</td>
           </tr>
         ))}
