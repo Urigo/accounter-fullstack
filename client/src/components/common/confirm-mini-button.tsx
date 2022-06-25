@@ -3,7 +3,7 @@ import { Check } from 'tabler-icons-react';
 
 export function ConfirmMiniButton(props: ActionIconProps<'button'>) {
   return (
-    <ActionIcon variant="hover" {...props}>
+    <ActionIcon variant="hover" color="green" {...props}>
       <Check size={20} />
     </ActionIcon>
   );

@@ -3,29 +3,31 @@ import { ReactNode, useState } from 'react';
 
 import { AccounterButton } from './button';
 
-export interface AccounterTableProps<T> {
+export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;
   striped?: boolean;
   stickyHeader?: boolean;
   columns: Array<{
     title: string | ReactNode;
-    value: (item: T) => string | ReactNode;
+    value: (item: T, alternativeCharge?: U) => string | ReactNode;
   }>;
   items: Array<T>;
   moreInfo?: (item: T) => ReactNode | string | null;
   showButton?: boolean;
+  extraRowData?: (item: T) => U | undefined;
 }
 
-export interface AccountTableRow<T> {
+export interface AccountTableRow<T, U> {
   item: T;
   key: string;
-  columns: AccounterTableProps<T>['columns'];
-  moreInfo?: AccounterTableProps<T>['moreInfo'];
+  columns: AccounterTableProps<T, U>['columns'];
+  moreInfo?: AccounterTableProps<T, U>['moreInfo'];
   stateBaseId?: string;
   isShowAll: boolean;
+  extraRowData?: (item: T) => U | undefined;
 }
 
-export function AccounterTableRow<T>(props: AccountTableRow<T>) {
+export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
   const [opened, setOpen] = useState(false);
   const moreInfoValue = props.moreInfo ? props.moreInfo(props.item) : null;
 
@@ -33,7 +35,9 @@ export function AccounterTableRow<T>(props: AccountTableRow<T>) {
     <>
       <tr key={props.key}>
         {props.columns.map((c, index) => (
-          <td key={String(index)}>{c.value(props.item)}</td>
+          <td key={String(index)}>
+            {c.value(props.item, props.extraRowData ? props.extraRowData(props.item) : undefined)}
+          </td>
         ))}
         <td>
           {moreInfoValue === null ? (
@@ -56,7 +60,7 @@ export function AccounterTableRow<T>(props: AccountTableRow<T>) {
   );
 }
 
-export function AccounterTable<T>(props: AccounterTableProps<T>) {
+export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
   const [isShowAll, setShowAll] = useState(false);
 
   return (
@@ -91,6 +95,7 @@ export function AccounterTable<T>(props: AccounterTableProps<T>) {
               item={item}
               moreInfo={props.moreInfo}
               isShowAll={isShowAll}
+              extraRowData={props.extraRowData}
             />
           ))}
         </tbody>
