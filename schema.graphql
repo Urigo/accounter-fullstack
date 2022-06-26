@@ -80,6 +80,17 @@ type Mutation {
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
+  generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
+  updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
+}
+
+" input variables for updateCDocument "
+input UpdateDocumentFieldsInput {
+  vat: FinancialAmountInput
+  serialNumber: String
+  date: TimelessDate
+  amount: FinancialAmountInput
+  id: ID!
 }
 
 " input variables for updateCharge "
@@ -186,6 +197,15 @@ interface Error {
 " common type of errors"
 type CommonError implements Error {
   message: String!
+}
+
+" result type for updateCharge "
+union UpdateDocumentResult = UpdateDocumentSuccessfulResult | CommonError
+
+" result type for updateDocument "
+type UpdateDocumentSuccessfulResult {
+  id: ID!
+  document: Document
 }
 
 " result type for updateCharge "

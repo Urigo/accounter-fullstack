@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
+import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -188,6 +189,50 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
+    updateDocument: async (_, args) => {
+      try {
+        const adjustedFields: IUpdateDocumentParams = {
+          documentId: args.documentId,
+          duplicationOf: null,
+          emailId: null,
+          emailReceivedDate: null,
+          emailSender: null,
+          emailSubject: null,
+          emailToPayperForwardDate: null,
+          fileHash: null,
+          imageUrl: null,
+          payperCurrencySymbol: args.fields.amount?.currency ?? null,
+          payperDocumentDate: args.fields.date ?? null,
+          payperDocumentId: args.fields.serialNumber ?? null,
+          payperDocumentType: null,
+          payperId: args.fields.id ?? null,
+          payperProvider: null,
+          payperProviderId: null,
+          payperTotalForPayment: args.fields.amount?.value.toFixed(2) ?? null,
+          payperUpdatedAt: null,
+          payperUpdatedFlag: null,
+          payperVatPaytment: args.fields.vat?.value.toFixed(2) ?? null,
+          transactionId: null,
+          uriComments: null,
+        };
+        try {
+          const res = await updateDocument.run({ ...adjustedFields }, pool);
+          if (!res || res.length === 0) {
+            throw new Error(`Document ID="${args.documentId}" not found`);
+          }
+          return {
+            document: res[0],
+          };
+        } catch (e) {
+          throw new Error(`Error updating document ID="${args.documentId}". details: ${e}`);
+        }
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
         ? JSON.stringify(fields.beneficiaries.map(b => ({ name: b.counterparty.name, percentage: b.percentage })))

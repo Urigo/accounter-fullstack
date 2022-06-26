@@ -12,6 +12,7 @@
   "dependencies": {
     "@mantine/core": "4.2.11",
     "@mantine/hooks": "4.2.11",
+    "@mantine/notifications": "4.2.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "7.33.1",
