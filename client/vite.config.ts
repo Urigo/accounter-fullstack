@@ -7,4 +7,12 @@ export default defineConfig({
   server: {
     port: 3001,
   },
+  optimizeDeps: {
+    include: ['react-hook-form'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/react-hook-form/, /node_modules/],
+    },
+  },
 });
