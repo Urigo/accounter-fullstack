@@ -26,6 +26,7 @@ import {
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
   hashavshevetFormat,
+  parseDate,
 } from './helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from './helpers/misc.mjs';
 import {
@@ -801,7 +802,7 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.foreign_debit_amount_1 ?? DbLedgerRecord.debit_amount_1,
         DbLedgerRecord.currency
       ),
-    date: DbLedgerRecord => DbLedgerRecord.invoice_date,
+    date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date),
     description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,

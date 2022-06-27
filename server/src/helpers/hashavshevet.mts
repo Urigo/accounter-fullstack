@@ -11,6 +11,10 @@ import { ENTITIES_WITHOUT_INVOICE_DATE, TAX_CATEGORIES_WITHOUT_INVOICE_DATE } fr
 import { getILSForDate } from './exchange.mjs';
 import { EntryForAccounting, EntryForFinancialAccount, numberRounded, VatExtendedCharge } from './misc.mjs';
 
+/* regex of dd/mm/yyyy */
+const HASHAVSHEVET_DATE_FORMAT =
+  /^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$/;
+
 function date(date: Date): string {
   return format(date, 'dd/MM/yyyy');
 }
@@ -108,6 +112,24 @@ export const hashavshevetFormat = {
   account,
   currency,
 };
+
+/**
+ *
+ * @param raw - string date from hashavshevet, format dd/mm/yyyy
+ * @returns string date in format yyyy-mm-dd
+ */
+export function parseDate(raw?: string) {
+  if (!raw) {
+    return undefined;
+  }
+
+  const isFormatted = HASHAVSHEVET_DATE_FORMAT.test(raw);
+  if (isFormatted) {
+    const parts = raw.split('/');
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  throw new Error(`Invalid Hashavshevet date format. expected dd/mm/yyyy, got: "${raw}"`);
+}
 
 export function generateEntryForAccountingValues(
   charge: VatExtendedCharge,
