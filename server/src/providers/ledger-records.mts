@@ -108,133 +108,107 @@ export const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   SET
   business = COALESCE(
     $business,
-    business,
-    NULL
+    business
   ),
   credit_account_1 = COALESCE(
     $creditAccount1,
-    credit_account_1,
-    NULL
+    credit_account_1
   ),
   credit_account_2 = COALESCE(
     $creditAccount2,
-    credit_account_2,
-    NULL
+    credit_account_2
   ),
   credit_amount_1 = COALESCE(
     $creditAmount1,
-    credit_amount_1,
-    NULL
+    credit_amount_1
   ),
   credit_amount_2 = COALESCE(
     $creditAmount2,
-    credit_amount_2,
-    NULL
+    credit_amount_2
   ),
   currency = COALESCE(
     $currency,
-    currency,
-    NULL
+    currency
   ),
   date_3 = COALESCE(
     $date3,
-    date_3,
-    NULL
+    date_3
   ),
   debit_account_1 = COALESCE(
     $debitAccount1,
-    debit_account_1,
-    NULL
+    debit_account_1
   ),
   debit_account_2 = COALESCE(
     $debitAccount2,
-    debit_account_2,
-    NULL
+    debit_account_2
   ),
   debit_amount_1 = COALESCE(
     $debitAmount1,
-    debit_amount_1,
-    NULL
+    debit_amount_1
   ),
   debit_amount_2 = COALESCE(
     $debitAmount2,
-    debit_amount_2,
-    NULL
+    debit_amount_2
   ),
   details = COALESCE(
     $details,
-    details,
-    NULL
+    details
   ),
   foreign_credit_amount_1 = COALESCE(
     $foreignCreditAmount1,
-    foreign_credit_amount_1,
-    NULL
+    foreign_credit_amount_1
   ),
   foreign_credit_amount_2 = COALESCE(
     $foreignCreditAmount2,
-    foreign_credit_amount_2,
-    NULL
+    foreign_credit_amount_2
   ),
   foreign_debit_amount_1 = COALESCE(
     $foreignDebitAmount1,
-    foreign_debit_amount_1,
-    NULL
+    foreign_debit_amount_1
   ),
   foreign_debit_amount_2 = COALESCE(
     $foreignDebitAmount2,
-    foreign_debit_amount_2,
-    NULL
+    foreign_debit_amount_2
   ),
   hashavshevet_id = COALESCE(
     $hashavshevetId,
-    hashavshevet_id,
-    NULL
+    hashavshevet_id
   ),
   invoice_date = COALESCE(
     $invoiceDate,
-    invoice_date,
-    NULL
+    invoice_date
   ),
   movement_type = COALESCE(
     $movementType,
-    movement_type,
-    NULL
+    movement_type
   ),
   origin = COALESCE(
     $origin,
-    origin,
-    NULL
+    origin
   ),
   original_id = COALESCE(
     $originalId,
-    original_id,
-    NULL
+    original_id
   ),
   proforma_invoice_file = COALESCE(
     $proformaInvoiceFile,
-    proforma_invoice_file,
-    NULL
+    proforma_invoice_file
   ),
   reference_1 = COALESCE(
     $reference1,
-    reference_1,
-    NULL
+    reference_1
   ),
   reference_2 = COALESCE(
     $reference2,
-    reference_2,
-    NULL
+    reference_2
   ),
   reviewed = COALESCE(
     $reviewed,
-    reviewed,
-    NULL
+    reviewed
   ),
   value_date = COALESCE(
     $valueDate,
-    value_date,
-    NULL
+    value_date
   )
   WHERE
     id = $ledgerRecordId

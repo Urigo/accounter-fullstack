@@ -1,8 +1,12 @@
 import { Badge } from '@mantine/core';
 import gql from 'graphql-tag';
+import { useState } from 'react';
 
 import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
+import { EditMiniButton } from '../common';
+import { PopUpModal } from '../common/modal';
 import { CreditAccount, Date, DebitAccount } from './ledger-records/cells';
+import { EditLedgerRecord } from './ledger-records/edit-ledger-record';
 
 gql`
   fragment TableLedgerRecordsFields on Charge {
@@ -16,6 +20,7 @@ gql`
       # ...LedgerRecordsDescriptionFields
       # ...LedgerRecordsAccountantApprovalFields
       # ...LedgerRecordsHashavshevetIdFields
+      ...EditLedgerRecordsFields
       originalAmount {
         formatted
       }
@@ -39,6 +44,7 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
+  const [editLedgerId, setEditLedgerId] = useState<string | undefined>(undefined);
   return (
     <table style={{ width: '100%', height: '100%' }}>
       <thead>
@@ -51,6 +57,7 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
           <th>Description</th>
           <th>Accountant Approval</th>
           <th>Hashavshevet ID</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -71,9 +78,22 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
             </td>
             {/* <HashavshevetId data={i} /> */}
             <td>{i.hashavshevetId}</td>
+            <td>
+              <EditMiniButton onClick={() => setEditLedgerId(i.id)} />
+            </td>
           </tr>
         ))}
       </tbody>
+      <PopUpModal
+        modalSize="75%"
+        content={
+          ledgerRecords.some(r => r.id === editLedgerId) && (
+            <EditLedgerRecord ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!} />
+          )
+        }
+        opened={!!editLedgerId}
+        onClose={() => setEditLedgerId(undefined)}
+      />
     </table>
   );
 };
