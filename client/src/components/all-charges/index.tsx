@@ -7,7 +7,7 @@ import { AccounterTable } from '../common/accounter-table';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsGallery } from './documents-gallery';
 import { LedgerRecordTable } from './ledger-record-table';
-import { Amount, Date, Description, Entity, ShareWith } from './table-cells';
+import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
 
 gql`
   query AllCharges($financialEntityId: ID!) {
@@ -21,6 +21,7 @@ gql`
         ...AllChargesDateFields
         ...AllChargesDescriptionFields
         ...AllChargesEntityFields
+        ...AllChargesTagsFields
         ...AllChargesShareWithFields
         ...TableLedgerRecordsFields
         ...GalleryDocumentsFields
@@ -153,6 +154,10 @@ export const AllCharges = () => {
                   alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
                 />
               ),
+            },
+            {
+              title: 'Tags',
+              value: data => <Tags data={data} />,
             },
             {
               title: 'Share With',
