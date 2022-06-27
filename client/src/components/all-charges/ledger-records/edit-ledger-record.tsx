@@ -3,6 +3,8 @@ import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
 import { CurrencyInput } from '../../common/inputs';
 
 type Props = {
@@ -15,9 +17,16 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
     handleSubmit,
     formState: { dirtyFields },
   } = useForm<TableLedgerRecordsFieldsFragment['ledgerRecords']['0']>();
+  const { mutate, isLoading } = useUpdateLedgerRecord();
 
   const onSubmit: SubmitHandler<TableLedgerRecordsFieldsFragment['ledgerRecords']['0']> = data => {
-    // TODO: handle submit
+    const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
+    if (Object.keys(dataToUpdate ?? {}).length > 0) {
+      mutate({
+        ledgerRecordId: ledgerRecord.id,
+        fields: { date: dataToUpdate },
+      });
+    }
   };
 
   return (
@@ -129,7 +138,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
                         {...amountField}
                         error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
                         label="Original Currency"
-                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
+                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
                       />
                     )}
                   />
@@ -141,7 +150,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
         <button
           type="submit"
           className="flex mx-auto mt-16 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-          disabled={Object.keys(dirtyFields).length === 0}
+          disabled={isLoading || Object.keys(dirtyFields).length === 0}
         >
           Accept
         </button>
