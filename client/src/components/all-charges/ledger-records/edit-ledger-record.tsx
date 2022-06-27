@@ -1,14 +1,37 @@
 import { TextInput } from '@mantine/core';
+import gql from 'graphql-tag';
 import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
+import { EditLedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
 import { CurrencyInput } from '../../common/inputs';
 
+gql`
+  fragment EditLedgerRecordsFields on LedgerRecord {
+    id
+    creditAccount {
+      name
+    }
+    debitAccount {
+      name
+    }
+    date
+    description
+    localCurrencyAmount {
+      raw
+      currency
+    }
+    originalAmount {
+      raw
+      currency
+    }
+  }
+`;
+
 type Props = {
-  ledgerRecord: TableLedgerRecordsFieldsFragment['ledgerRecords']['0'];
+  ledgerRecord: EditLedgerRecordsFieldsFragment;
 };
 
 export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
@@ -16,10 +39,10 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<TableLedgerRecordsFieldsFragment['ledgerRecords']['0']>();
+  } = useForm<EditLedgerRecordsFieldsFragment>();
   const { mutate, isLoading } = useUpdateLedgerRecord();
 
-  const onSubmit: SubmitHandler<TableLedgerRecordsFieldsFragment['ledgerRecords']['0']> = data => {
+  const onSubmit: SubmitHandler<EditLedgerRecordsFieldsFragment> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (Object.keys(dataToUpdate ?? {}).length > 0) {
       mutate({

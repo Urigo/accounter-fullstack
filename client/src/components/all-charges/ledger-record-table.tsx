@@ -20,15 +20,12 @@ gql`
       # ...LedgerRecordsDescriptionFields
       # ...LedgerRecordsAccountantApprovalFields
       # ...LedgerRecordsHashavshevetIdFields
+      ...EditLedgerRecordsFields
       originalAmount {
         formatted
-        raw
-        currency
       }
       localCurrencyAmount {
         formatted
-        raw
-        currency
       }
       debitAccount {
         name
