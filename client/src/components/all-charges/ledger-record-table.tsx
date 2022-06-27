@@ -88,7 +88,11 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
         modalSize="75%"
         content={
           ledgerRecords.some(r => r.id === editLedgerId) && (
-            <EditLedgerRecord ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!} />
+            <EditLedgerRecord
+              ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!}
+              onAccept={() => setEditLedgerId(undefined)}
+              onCancel={() => setEditLedgerId(undefined)}
+            />
           )
         }
         opened={!!editLedgerId}

@@ -1,4 +1,4 @@
-import { TextInput } from '@mantine/core';
+import { NumberInput, TextInput } from '@mantine/core';
 import gql from 'graphql-tag';
 import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -27,14 +27,17 @@ gql`
       raw
       currency
     }
+    hashavshevetId
   }
 `;
 
 type Props = {
   ledgerRecord: EditLedgerRecordsFieldsFragment;
+  onAccept?: () => void;
+  onCancel?: () => void;
 };
 
-export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
+export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) => {
   const {
     control,
     handleSubmit,
@@ -49,6 +52,9 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
         ledgerRecordId: ledgerRecord.id,
         fields: dataToUpdate as UpdateLedgerRecordInput,
       });
+      if (onAccept) {
+        onAccept();
+      }
     }
   };
 
@@ -169,14 +175,45 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
               />
             </div>
           </div>
+          <div className="p-2 sm:w-1/2 w-full">
+            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
+              <Controller
+                name="hashavshevetId"
+                control={control}
+                defaultValue={ledgerRecord.hashavshevetId}
+                render={({ field: { value, ...field }, fieldState }) => {
+                  const adjustedValue = value ? parseInt(value) : undefined;
+                  return (
+                    <NumberInput
+                      hideControls
+                      precision={0}
+                      value={adjustedValue}
+                      {...field}
+                      error={fieldState.error?.message}
+                      label="Hashavshevet ID"
+                    />
+                  );
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <button
-          type="submit"
-          className="flex mx-auto mt-16 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-          disabled={isLoading || Object.keys(dirtyFields).length === 0}
-        >
-          Accept
-        </button>
+        <div className="container flex justify-center gap-20">
+          <button
+            type="submit"
+            className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            disabled={isLoading || Object.keys(dirtyFields).length === 0}
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );
