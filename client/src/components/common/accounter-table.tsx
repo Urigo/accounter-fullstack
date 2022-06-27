@@ -19,7 +19,6 @@ export interface AccounterTableProps<T, U> {
 
 export interface AccountTableRow<T, U> {
   item: T;
-  key: string;
   columns: AccounterTableProps<T, U>['columns'];
   moreInfo?: AccounterTableProps<T, U>['moreInfo'];
   stateBaseId?: string;
@@ -33,22 +32,24 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
 
   return (
     <>
-      <tr key={props.key}>
+      <tr>
         {props.columns.map((c, index) => (
           <td key={String(index)}>
             {c.value(props.item, props.extraRowData ? props.extraRowData(props.item) : undefined)}
           </td>
         ))}
-        <td>
-          {moreInfoValue === null ? (
-            'No Data Related'
-          ) : (
-            <AccounterButton title="Ledger Info" onClick={() => setOpen(!opened)} />
-          )}
-        </td>
+        {props.moreInfo && (
+          <td>
+            {moreInfoValue === null ? (
+              'No Data Related'
+            ) : (
+              <AccounterButton title="Ledger Info" onClick={() => setOpen(!opened)} />
+            )}
+          </td>
+        )}
       </tr>
       {(props.isShowAll || opened) && moreInfoValue !== null ? (
-        <tr key={`more_info_${props.key}`}>
+        <tr>
           <td colSpan={6}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               {moreInfoValue}
@@ -82,15 +83,13 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
             {props.columns.map((c, index) => (
               <th key={String(index)}>{c.title}</th>
             ))}
-            <tr style={{ backgroundColor: 'lightgrey', width: 'center' }}>
-              {props.moreInfo === null || (undefined && 'More Info')}
-            </tr>
+            {props.moreInfo && <th>More Info</th>}
           </tr>
         </thead>
         <tbody>
           {props.items.map((item, index) => (
             <AccounterTableRow
-              key={String(index)}
+              key={index}
               columns={props.columns}
               item={item}
               moreInfo={props.moreInfo}
