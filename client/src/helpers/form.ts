@@ -1,4 +1,6 @@
-export type MakeBoolean<T> = T extends Record<string, unknown> ? { [K in keyof T]: MakeBoolean<T[K]> } : boolean | undefined;
+export type MakeBoolean<T> = T extends Record<string, unknown>
+  ? { [K in keyof T]: MakeBoolean<T[K]> }
+  : boolean | undefined;
 
 export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
   if (!dirtyFields) {
