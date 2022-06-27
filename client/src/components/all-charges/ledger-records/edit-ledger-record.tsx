@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { EditLedgerRecordsFieldsFragment } from '../../../__generated__/types';
+import { EditLedgerRecordsFieldsFragment, UpdateLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
 import { CurrencyInput } from '../../common/inputs';
@@ -47,7 +47,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
     if (Object.keys(dataToUpdate ?? {}).length > 0) {
       mutate({
         ledgerRecordId: ledgerRecord.id,
-        fields: { date: dataToUpdate },
+        fields: dataToUpdate as UpdateLedgerRecordInput,
       });
     }
   };

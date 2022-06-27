@@ -247,7 +247,7 @@ export const resolvers: Resolvers = {
         foreignCreditAmount2: null,
         foreignDebitAmount1: fields.originalAmount?.value.toFixed(2) ?? null,
         foreignDebitAmount2: null,
-        hashavshevetId: Number(fields.hashavshevetId) ?? null,
+        hashavshevetId: fields.hashavshevetId ? parseInt(fields.hashavshevetId) : null,
         invoiceDate: fields.date ?? null,
         movementType: null,
         origin: null,
@@ -273,7 +273,7 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: (e as Error)?.message ?? 'Unknown error',
+          message: `Error executing updateLedgerRecord:\n${(e as Error)?.message ?? 'Unknown error'}`,
         };
       }
     },
@@ -776,6 +776,12 @@ export const resolvers: Resolvers = {
       remark: 'Missing', // TODO: missing in DB
     }),
     property: DbCharge => DbCharge.is_property,
+  },
+  UpdateLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'LedgerRecord';
+    },
   },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
