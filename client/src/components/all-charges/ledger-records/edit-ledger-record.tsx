@@ -1,4 +1,4 @@
-import { TextInput } from '@mantine/core';
+import { NumberInput, TextInput } from '@mantine/core';
 import gql from 'graphql-tag';
 import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -27,28 +27,34 @@ gql`
       raw
       currency
     }
+    hashavshevetId
   }
 `;
 
 type Props = {
   ledgerRecord: EditLedgerRecordsFieldsFragment;
+  onAccept?: () => void;
+  onCancel?: () => void;
 };
 
-export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
+export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) => {
   const {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<EditLedgerRecordsFieldsFragment>();
+  } = useForm<UpdateLedgerRecordInput>();
   const { mutate, isLoading } = useUpdateLedgerRecord();
 
-  const onSubmit: SubmitHandler<EditLedgerRecordsFieldsFragment> = data => {
+  const onSubmit: SubmitHandler<UpdateLedgerRecordInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
-    if (Object.keys(dataToUpdate ?? {}).length > 0) {
+    if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       mutate({
         ledgerRecordId: ledgerRecord.id,
-        fields: dataToUpdate as UpdateLedgerRecordInput,
+        fields: dataToUpdate,
       });
+      if (onAccept) {
+        onAccept();
+      }
     }
   };
 
@@ -59,6 +65,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
           <h1 className="sm:text-3xl text-2xl font-medium text-center title-font text-gray-900 mb-4">
             Edit Ledger Record
           </h1>
+          <p>ID: {ledgerRecord.id}</p>
         </div>
         <div className="flex flex-wrap lg:w-4/5 sm:mx-auto sm:mb-2 -mx-2">
           <div className="p-2 sm:w-1/2 w-full">
@@ -113,7 +120,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
                 render={({ field, fieldState }) => (
                   <TextInput
                     {...field}
-                    value={field.value === 'Missing' ? '' : field.value}
+                    value={!field || field.value === 'Missing' ? '' : field.value!}
                     error={fieldState.error?.message}
                     label="Description"
                   />
@@ -124,7 +131,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="localCurrencyAmount.raw"
+                name="localCurrencyAmount.value"
                 control={control}
                 defaultValue={ledgerRecord.localCurrencyAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
@@ -148,7 +155,7 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="originalAmount.raw"
+                name="originalAmount.value"
                 control={control}
                 defaultValue={ledgerRecord.originalAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
@@ -169,14 +176,45 @@ export const EditLedgerRecord = ({ ledgerRecord }: Props) => {
               />
             </div>
           </div>
+          <div className="p-2 sm:w-1/2 w-full">
+            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
+              <Controller
+                name="hashavshevetId"
+                control={control}
+                defaultValue={ledgerRecord.hashavshevetId}
+                render={({ field: { value, ...field }, fieldState }) => {
+                  const adjustedValue = value ? parseInt(value) : undefined;
+                  return (
+                    <NumberInput
+                      hideControls
+                      precision={0}
+                      value={adjustedValue}
+                      {...field}
+                      error={fieldState.error?.message}
+                      label="Hashavshevet ID"
+                    />
+                  );
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <button
-          type="submit"
-          className="flex mx-auto mt-16 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-          disabled={isLoading || Object.keys(dirtyFields).length === 0}
-        >
-          Accept
-        </button>
+        <div className="container flex justify-center gap-20">
+          <button
+            type="submit"
+            className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            disabled={isLoading || Object.keys(dirtyFields).length === 0}
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );
