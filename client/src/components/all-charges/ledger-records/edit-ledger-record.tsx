@@ -42,15 +42,15 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<EditLedgerRecordsFieldsFragment>();
+  } = useForm<UpdateLedgerRecordInput>();
   const { mutate, isLoading } = useUpdateLedgerRecord();
 
-  const onSubmit: SubmitHandler<EditLedgerRecordsFieldsFragment> = data => {
+  const onSubmit: SubmitHandler<UpdateLedgerRecordInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
-    if (Object.keys(dataToUpdate ?? {}).length > 0) {
+    if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       mutate({
         ledgerRecordId: ledgerRecord.id,
-        fields: dataToUpdate as UpdateLedgerRecordInput,
+        fields: dataToUpdate,
       });
       if (onAccept) {
         onAccept();
@@ -65,6 +65,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
           <h1 className="sm:text-3xl text-2xl font-medium text-center title-font text-gray-900 mb-4">
             Edit Ledger Record
           </h1>
+          <p>ID: {ledgerRecord.id}</p>
         </div>
         <div className="flex flex-wrap lg:w-4/5 sm:mx-auto sm:mb-2 -mx-2">
           <div className="p-2 sm:w-1/2 w-full">
@@ -119,7 +120,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
                 render={({ field, fieldState }) => (
                   <TextInput
                     {...field}
-                    value={field.value === 'Missing' ? '' : field.value}
+                    value={(!field || field.value === 'Missing') ? '' : field.value!}
                     error={fieldState.error?.message}
                     label="Description"
                   />
@@ -130,7 +131,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="localCurrencyAmount.raw"
+                name="localCurrencyAmount.value"
                 control={control}
                 defaultValue={ledgerRecord.localCurrencyAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
@@ -154,7 +155,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="originalAmount.raw"
+                name="originalAmount.value"
                 control={control}
                 defaultValue={ledgerRecord.originalAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
