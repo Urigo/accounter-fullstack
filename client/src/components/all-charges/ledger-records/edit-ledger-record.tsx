@@ -120,7 +120,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
                 render={({ field, fieldState }) => (
                   <TextInput
                     {...field}
-                    value={(!field || field.value === 'Missing') ? '' : field.value!}
+                    value={!field || field.value === 'Missing' ? '' : field.value!}
                     error={fieldState.error?.message}
                     label="Description"
                   />
