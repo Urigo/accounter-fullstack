@@ -88,9 +88,9 @@ input UpdateChargeInput {
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # transactions: [Transaction!]!
   counterparty: CounterpartyInput
-  description: String
+  # description: String
   tag: String
-  beneficiaries: String
+  beneficiaries: [BeneficiaryInput!]
   vat: FinancialAmountInput
   withholdingTax: FinancialAmountInput
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
@@ -137,6 +137,11 @@ input CounterpartyInput {
   name: String!
 }
 
+input BeneficiaryInput {
+  counterparty: CounterpartyInput!
+  percentage: Percentage!
+}
+
 " input variables for updateCharge.AccountantApproval"
 input AccountantApprovalInput {
   approved: Boolean!
@@ -145,7 +150,7 @@ input AccountantApprovalInput {
 
 " input variables for updateCharge.FinancialAmount"
 input FinancialAmountInput {
-  value: Float!
+  raw: Float!
   currency: Currency!
 }
 
@@ -255,7 +260,7 @@ type Charge {
 " defines a link between a counterparty and their part in the charge "
 type BeneficiaryCounterparty {
   counterparty: Counterparty!
-  percentage: Percentage
+  percentage: Percentage!
 }
 
 " represent every kind of invoice document "
