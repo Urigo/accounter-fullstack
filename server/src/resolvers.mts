@@ -350,9 +350,7 @@ export const resolvers: Resolvers = {
         currencyRate: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Nis
-            ? null
-            : fields.balance?.raw?.toFixed(2),
+          fields.balance?.currency && fields.balance.currency !== Currency.Nis ? null : fields.balance?.raw?.toFixed(2),
         debitDate: fields.effectiveDate,
         detailedBankDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
