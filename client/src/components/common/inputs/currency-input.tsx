@@ -1,13 +1,16 @@
-import { ComponentProps, DetailedHTMLProps, forwardRef, InputHTMLAttributes } from 'react';
+import { ComponentProps, DetailedHTMLProps, forwardRef } from 'react';
 
 import { Currency } from '../../../__generated__/types';
+import { NumberInput } from './number-input';
 
 type CurrencyCodeProps = DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> & {
   label?: string;
+  error?: string;
 };
 
 export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps>(function CurrencyCodeInput({
   label,
+  error,
   ...props
 }) {
   return (
@@ -18,7 +21,7 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
         </label>
       )}
       <select
-        className="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 pr-7 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-md"
+        className="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-md"
         {...props}
       >
         {Object.keys(Currency).map(key => (
@@ -31,44 +34,25 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
   );
 });
 
-type Props = Omit<DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, 'type'> & {
-  label?: string;
-  error?: string;
-  name: string;
+type Props = React.ComponentProps<typeof NumberInput> & {
   currencyCodeProps: ComponentProps<typeof CurrencyCodeInput>;
 };
 
-export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({ label, error, ...props }) {
+export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
+  currencyCodeProps,
+  ...props
+}) {
   return (
-    <div>
-      {label && (
-        <label htmlFor={props.name} className="block text-sm font-medium text-gray-700">
-          {label}
-        </label>
-      )}
-      <div className="mt-1 relative rounded-md shadow-sm">
-        <style>
-          {`/* Chrome, Safari, Edge, Opera */
-            input::-webkit-outer-spin-button,
-            input::-webkit-inner-spin-button {
-              -webkit-appearance: none;
-              margin: 0;
-            }
-
-            /* Firefox */
-            input[type=number] {
-              -moz-appearance: textfield;
-            }
-          `}
-        </style>
-        <input
-          type="number"
-          {...props}
-          className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-        />
-        <CurrencyCodeInput {...props.currencyCodeProps} />
-        {error && <p className="text-red-500 text-xs italic">{error}</p>}
-      </div>
-    </div>
+    <NumberInput {...props} rightPadding="pr-12">
+      <CurrencyCodeInput {...currencyCodeProps} />
+    </NumberInput>
   );
 });
+
+// export function CurrencyInput({ currencyCodeProps, ...props }: Props) {
+// return (
+//       <NumberInput {...props}>
+//         <CurrencyCodeInput {...currencyCodeProps} />
+//       </NumberInput>
+//   );
+// };

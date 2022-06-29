@@ -4,6 +4,8 @@ import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 
 import { UpdateChargeInput } from '../../../__generated__/types';
+import { PercentageInput } from './percentage-input';
+import { TextInput } from './text-input';
 
 type Props = {
   label?: string;
@@ -52,16 +54,8 @@ export function BeneficiariesInput({ label, formManager }: Props) {
               <Controller
                 control={control}
                 name={`beneficiaries.${index}.counterparty.name`}
-                rules={{ required: 'Required' }}
-                render={({ field, fieldState }) => (
-                  <input
-                    type="text"
-                    {...field}
-                    className={`focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-${
-                      fieldState.error ? 'red' : 'gray'
-                    }-300 rounded-md`}
-                  />
-                )}
+                rules={{ required: 'Required', minLength: { value: 2, message: 'Minimum 2 characters' } }}
+                render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} />}
               />
             </div>
             <p>:</p>
@@ -69,34 +63,9 @@ export function BeneficiariesInput({ label, formManager }: Props) {
               <Controller
                 control={control}
                 name={`beneficiaries.${index}.percentage`}
-                rules={{ required: 'Required' }}
+                rules={{ required: 'Required', max: 100, min: 0 }}
                 render={({ field, fieldState }) => (
-                  <>
-                    <style>
-                      {`/* Chrome, Safari, Edge, Opera */
-                        input::-webkit-outer-spin-button,
-                        input::-webkit-inner-spin-button {
-                          -webkit-appearance: none;
-                          margin: 0;
-                        }
-
-                        /* Firefox */
-                        input[type=number] {
-                          -moz-appearance: textfield;
-                        }
-                      `}
-                    </style>
-                    {fieldState.error?.message}
-                    <input
-                      type="number"
-                      // defaultValue={defaultValue?.[index].percentage}
-                      {...field}
-                      className={`focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-${
-                        fieldState.error ? 'red' : 'gray'
-                      }-300 rounded-md`}
-                    />
-                    <p className="absolute inset-y-0 right-0 flex items-center">%</p>
-                  </>
+                  <PercentageInput {...field} error={fieldState.error?.message} isDirty={fieldState.isDirty} />
                 )}
               />
             </div>
