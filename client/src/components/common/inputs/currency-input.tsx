@@ -10,7 +10,6 @@ type CurrencyCodeProps = DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelect
 
 export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps>(function CurrencyCodeInput({
   label,
-  error,
   ...props
 }) {
   return (
@@ -35,24 +34,18 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
 });
 
 type Props = React.ComponentProps<typeof NumberInput> & {
+  error?: string;
   currencyCodeProps: ComponentProps<typeof CurrencyCodeInput>;
 };
 
 export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
-  currencyCodeProps,
+  currencyCodeProps: {error: currencyError, ...currencyCodeProps},
+  error,
   ...props
 }) {
   return (
-    <NumberInput {...props} rightPadding="pr-12">
+    <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
       <CurrencyCodeInput {...currencyCodeProps} />
     </NumberInput>
   );
 });
-
-// export function CurrencyInput({ currencyCodeProps, ...props }: Props) {
-// return (
-//       <NumberInput {...props}>
-//         <CurrencyCodeInput {...currencyCodeProps} />
-//       </NumberInput>
-//   );
-// };

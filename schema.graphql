@@ -88,6 +88,7 @@ input UpdateChargeInput {
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # transactions: [Transaction!]!
   counterparty: CounterpartyInput
+  # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # description: String
   tag: String
   beneficiaries: [BeneficiaryInput!]
@@ -137,6 +138,7 @@ input CounterpartyInput {
   name: String!
 }
 
+" input variables for beneficiary"
 input BeneficiaryInput {
   counterparty: CounterpartyInput!
   percentage: Percentage!
