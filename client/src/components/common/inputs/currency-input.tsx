@@ -39,7 +39,7 @@ type Props = React.ComponentProps<typeof NumberInput> & {
 };
 
 export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
-  currencyCodeProps: {error: currencyError, ...currencyCodeProps},
+  currencyCodeProps: { error: currencyError, ...currencyCodeProps },
   error,
   ...props
 }) {
