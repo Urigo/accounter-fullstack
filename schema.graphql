@@ -110,7 +110,7 @@ input UpdateLedgerRecordInput {
   accountantApproval: AccountantApprovalInput
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 " input variables for updateTransaction "
@@ -305,11 +305,11 @@ type AccountantApproval {
 # Hashavshevet Module
 
 extend type LedgerRecord {
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 extend interface Transaction {
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 # Business Trip Module
@@ -429,7 +429,7 @@ type CommonTransaction implements Transaction {
   account: FinancialAccount!
   balance: FinancialAmount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 " העברה "
@@ -444,7 +444,7 @@ type WireTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
 }
 
@@ -460,7 +460,7 @@ type FeeTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
 }
 
@@ -476,7 +476,7 @@ type ConversionTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
   from: Currency!
   to: Currency!

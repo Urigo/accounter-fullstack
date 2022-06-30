@@ -147,7 +147,7 @@ const commonTransactionFields:
     approved: DbTransaction.reviewed ?? false,
     remark: 'Missing', // TODO: missing in DB
   }),
-  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id?.toString() ?? '',
+  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id,
 };
 
 export const resolvers: Resolvers = {
@@ -250,7 +250,7 @@ export const resolvers: Resolvers = {
         foreignCreditAmount2: null,
         foreignDebitAmount1: fields.originalAmount?.raw.toFixed(2) ?? null,
         foreignDebitAmount2: null,
-        hashavshevetId: fields.hashavshevetId ? parseInt(fields.hashavshevetId) : null,
+        hashavshevetId: fields.hashavshevetId ?? null,
         invoiceDate: fields.date ?? null,
         movementType: null,
         origin: null,
@@ -802,13 +802,13 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.currency
       ),
     date: DbLedgerRecord => DbLedgerRecord.invoice_date,
-    description: () => 'Missing', // TODO: missing in DB
+    description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
     localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
-    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
+    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
   },
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
