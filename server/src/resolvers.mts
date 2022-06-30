@@ -689,11 +689,11 @@ export const resolvers: Resolvers = {
         return [];
       }
       try {
-          return JSON.parse(DbCharge.personal_category!);
+        return JSON.parse(DbCharge.personal_category!);
       } catch {
         null;
       }
-      return [DbCharge.personal_category];
+      return [{ name: DbCharge.personal_category }];
     },
     beneficiaries: async DbCharge => {
       // TODO: update to better implementation after DB is updated

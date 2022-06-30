@@ -92,7 +92,7 @@ input UpdateChargeInput {
   counterparty: CounterpartyInput
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # description: String
-  tags: [String!]
+  tags: [TagInput!]
   beneficiaries: [BeneficiaryInput!]
   vat: FinancialAmountInput
   withholdingTax: FinancialAmountInput
@@ -137,6 +137,11 @@ input UpdateTransactionInput {
 
 " input variables for updateCharge.Counterparty"
 input CounterpartyInput {
+  name: String!
+}
+
+" input variables for Tag"
+input TagInput {
   name: String!
 }
 
@@ -256,9 +261,13 @@ type Charge {
   " user description, set manually by the user "
   description: String
   " user customer tags "
-  tags: [String!]!
+  tags: [Tag!]!
   " a list of beneficiaries and their part in the charge "
   beneficiaries: [BeneficiaryCounterparty!]!
+}
+
+interface Tag {
+  name: String!
 }
 
 " defines a link between a counterparty and their part in the charge "
