@@ -147,7 +147,7 @@ const commonTransactionFields:
     approved: DbTransaction.reviewed ?? false,
     remark: 'Missing', // TODO: missing in DB
   }),
-  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id?.toString() ?? '',
+  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id,
 };
 
 export const resolvers: Resolvers = {
@@ -166,6 +166,9 @@ export const resolvers: Resolvers = {
   },
   Mutation: {
     updateCharge: async (_, { chargeId, fields }) => {
+      const financialAccountsToBalance = fields.beneficiaries
+        ? JSON.stringify(fields.beneficiaries.map(b => ({ name: b.counterparty.name, percentage: b.percentage })))
+        : null;
       const adjustedFields: IUpdateChargeParams = {
         accountNumber: null,
         accountType: null,
@@ -181,7 +184,7 @@ export const resolvers: Resolvers = {
         eventAmount: null,
         eventDate: null,
         eventNumber: null,
-        financialAccountsToBalance: fields.beneficiaries,
+        financialAccountsToBalance,
         financialEntity: fields.counterparty?.name,
         hashavshevetId: null,
         interest: null,
@@ -204,12 +207,12 @@ export const resolvers: Resolvers = {
         taxInvoiceNumber: null,
         userDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
-        vat: fields.vat?.currency && fields.vat.currency !== Currency.Nis ? null : fields.vat?.value,
+        vat: fields.vat?.currency && fields.vat.currency !== Currency.Nis ? null : fields.vat?.raw,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         withholdingTax:
           fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Nis
             ? null
-            : fields.withholdingTax?.value,
+            : fields.withholdingTax?.raw ?? null,
         chargeId,
       };
       try {
@@ -234,20 +237,20 @@ export const resolvers: Resolvers = {
         business: null,
         creditAccount1: fields.creditAccount?.name ?? null,
         creditAccount2: null,
-        creditAmount1: fields.localCurrencyAmount?.value.toFixed(2) ?? null,
+        creditAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
         date3: null,
         debitAccount1: fields.debitAccount?.name ?? null,
         debitAccount2: null,
-        debitAmount1: fields.localCurrencyAmount?.value.toFixed(2) ?? null,
+        debitAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         debitAmount2: null,
         details: fields.description ?? null,
-        foreignCreditAmount1: fields.originalAmount?.value.toFixed(2) ?? null,
+        foreignCreditAmount1: fields.originalAmount?.raw.toFixed(2) ?? null,
         foreignCreditAmount2: null,
-        foreignDebitAmount1: fields.originalAmount?.value.toFixed(2) ?? null,
+        foreignDebitAmount1: fields.originalAmount?.raw.toFixed(2) ?? null,
         foreignDebitAmount2: null,
-        hashavshevetId: fields.hashavshevetId ? parseInt(fields.hashavshevetId) : null,
+        hashavshevetId: fields.hashavshevetId ?? null,
         invoiceDate: fields.date ?? null,
         movementType: null,
         origin: null,
@@ -293,18 +296,18 @@ export const resolvers: Resolvers = {
         business: null,
         creditAccount1: record.creditAccount?.name ?? null,
         creditAccount2: null,
-        creditAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
+        creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
         date3: null,
         debitAccount1: record.debitAccount?.name ?? null,
         debitAccount2: null,
-        debitAmount1: record.localCurrencyAmount?.value.toFixed(2) ?? null,
+        debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
         debitAmount2: null,
         details: record.description ?? null,
-        foreignCreditAmount1: record.originalAmount?.value.toFixed(2) ?? null,
+        foreignCreditAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
         foreignCreditAmount2: null,
-        foreignDebitAmount1: record.originalAmount?.value.toFixed(2) ?? null,
+        foreignDebitAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
         foreignDebitAmount2: null,
         hashavshevetId: Number(record.hashavshevetId) ?? null,
         invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
@@ -347,14 +350,12 @@ export const resolvers: Resolvers = {
         currencyRate: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Nis
-            ? null
-            : fields.balance?.value?.toFixed(2),
+          fields.balance?.currency && fields.balance.currency !== Currency.Nis ? null : fields.balance?.raw?.toFixed(2),
         debitDate: fields.effectiveDate,
         detailedBankDescription: null,
         // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
         eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Nis ? null : fields.amount?.value?.toFixed(2),
+          fields.amount?.currency && fields.amount.currency !== Currency.Nis ? null : fields.amount?.raw?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
@@ -680,6 +681,14 @@ export const resolvers: Resolvers = {
     description: () => 'Missing', // TODO: implement
     tags: DbCharge => (DbCharge.personal_category ? [DbCharge.personal_category] : []),
     beneficiaries: async DbCharge => {
+      // TODO: update to better implementation after DB is updated
+      try {
+        if (DbCharge.financial_accounts_to_balance) {
+          return JSON.parse(DbCharge.financial_accounts_to_balance);
+        }
+      } catch {
+        null;
+      }
       switch (DbCharge.financial_accounts_to_balance) {
         case 'no':
           return [
@@ -793,19 +802,20 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.currency
       ),
     date: DbLedgerRecord => DbLedgerRecord.invoice_date,
-    description: () => 'Missing', // TODO: missing in DB
+    description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
     localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
-    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id?.toString() ?? null,
+    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
   },
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
     name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {
+    // TODO: improve counterparty handle
     __isTypeOf: () => true,
     counterparty: parent => parent.name,
     percentage: parent => parent.percentage,

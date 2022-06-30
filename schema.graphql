@@ -88,9 +88,10 @@ input UpdateChargeInput {
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # transactions: [Transaction!]!
   counterparty: CounterpartyInput
-  description: String
+  # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
+  # description: String
   tag: String
-  beneficiaries: String
+  beneficiaries: [BeneficiaryInput!]
   vat: FinancialAmountInput
   withholdingTax: FinancialAmountInput
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
@@ -110,7 +111,7 @@ input UpdateLedgerRecordInput {
   accountantApproval: AccountantApprovalInput
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 " input variables for updateTransaction "
@@ -137,6 +138,12 @@ input CounterpartyInput {
   name: String!
 }
 
+" input variables for beneficiary"
+input BeneficiaryInput {
+  counterparty: CounterpartyInput!
+  percentage: Percentage!
+}
+
 " input variables for updateCharge.AccountantApproval"
 input AccountantApprovalInput {
   approved: Boolean!
@@ -145,7 +152,7 @@ input AccountantApprovalInput {
 
 " input variables for updateCharge.FinancialAmount"
 input FinancialAmountInput {
-  value: Float!
+  raw: Float!
   currency: Currency!
 }
 
@@ -255,7 +262,7 @@ type Charge {
 " defines a link between a counterparty and their part in the charge "
 type BeneficiaryCounterparty {
   counterparty: Counterparty!
-  percentage: Percentage
+  percentage: Percentage!
 }
 
 " represent every kind of invoice document "
@@ -300,11 +307,11 @@ type AccountantApproval {
 # Hashavshevet Module
 
 extend type LedgerRecord {
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 extend interface Transaction {
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 # Business Trip Module
@@ -424,7 +431,7 @@ type CommonTransaction implements Transaction {
   account: FinancialAccount!
   balance: FinancialAmount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
 }
 
 " העברה "
@@ -439,7 +446,7 @@ type WireTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
 }
 
@@ -455,7 +462,7 @@ type FeeTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
 }
 
@@ -471,7 +478,7 @@ type ConversionTransaction implements Transaction {
   userNote: String
   account: FinancialAccount!
   accountantApproval: AccountantApproval!
-  hashavshevetId: String
+  hashavshevetId: Int
   balance: FinancialAmount!
   from: Currency!
   to: Currency!

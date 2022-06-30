@@ -1,11 +1,15 @@
 import gql from 'graphql-tag';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useAllChargesQuery } from '../../__generated__/types';
+import { EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
 import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { AccounterLoader } from '../common/loader';
+import { PopUpModal } from '../common/modal';
 import { DocumentsGallery } from './documents-gallery';
+import { EditCharge } from './edit-charge';
 import { LedgerRecordTable } from './ledger-record-table';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
 
@@ -26,6 +30,7 @@ gql`
         ...TableLedgerRecordsFields
         ...GalleryDocumentsFields
         ...ModalDocumentsFields
+        ...EditChargeFields
       }
     }
   }
@@ -61,6 +66,7 @@ gql`
 export const AllCharges = () => {
   const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
+  const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
 
   // TODO: improve the ID logic
   const financialEntityId =
@@ -169,9 +175,27 @@ export const AllCharges = () => {
                 />
               ),
             },
+            {
+              title: 'Edit',
+              value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
+            },
           ]}
         />
       </div>
+      {editCharge && (
+        <PopUpModal
+          modalSize="75%"
+          content={
+            <EditCharge
+              charge={editCharge}
+              onAccept={() => setEditCharge(undefined)}
+              onCancel={() => setEditCharge(undefined)}
+            />
+          }
+          opened={!!editCharge}
+          onClose={() => setEditCharge(undefined)}
+        />
+      )}
     </div>
   );
 };

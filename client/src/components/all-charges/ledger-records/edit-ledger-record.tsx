@@ -1,4 +1,3 @@
-import { NumberInput, TextInput } from '@mantine/core';
 import gql from 'graphql-tag';
 import moment from 'moment';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -6,7 +5,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { EditLedgerRecordsFieldsFragment, UpdateLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
-import { CurrencyInput } from '../../common/inputs';
+import { CurrencyInput, NumberInput, TextInput } from '../../common/inputs';
 
 gql`
   fragment EditLedgerRecordsFields on LedgerRecord {
@@ -131,7 +130,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="localCurrencyAmount.value"
+                name="localCurrencyAmount.raw"
                 control={control}
                 defaultValue={ledgerRecord.localCurrencyAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
@@ -155,7 +154,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="originalAmount.value"
+                name="originalAmount.raw"
                 control={control}
                 defaultValue={ledgerRecord.originalAmount.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
@@ -186,7 +185,6 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
                   const adjustedValue = value ? parseInt(value) : undefined;
                   return (
                     <NumberInput
-                      hideControls
                       precision={0}
                       value={adjustedValue}
                       {...field}

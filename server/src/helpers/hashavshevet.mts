@@ -19,6 +19,8 @@ function currency(currency: string): string | null {
   switch (currency) {
     case 'ILS':
       return null;
+    case 'NIS':
+      return null;
     case 'EUR':
       return 'אירו';
     case 'USD':
@@ -33,6 +35,8 @@ function currency(currency: string): string | null {
 function getCreditcardAccount(financialAccounts: IGetFinancialAccountsByAccountNumbersResult, currency: string | null) {
   switch (currency) {
     case 'ILS':
+      return financialAccounts.hashavshevet_account_ils;
+    case 'NIS':
       return financialAccounts.hashavshevet_account_ils;
     case 'USD':
       return financialAccounts.hashavshevet_account_usd;
