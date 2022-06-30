@@ -226,7 +226,10 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: (e as Error)?.message ?? 'Unknown error',
+          message:
+            (e as Error)?.message ??
+            (e as { errors: Error[] })?.errors.map(e => e.message).toString() ??
+            'Unknown error',
         };
       }
     },
@@ -805,6 +808,12 @@ export const resolvers: Resolvers = {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'LedgerRecord';
+    },
+  },
+  UpdateChargeResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
     },
   },
   LedgerRecord: {

@@ -266,7 +266,7 @@ type Charge {
   beneficiaries: [BeneficiaryCounterparty!]!
 }
 
-interface Tag {
+type Tag {
   name: String!
 }
 
