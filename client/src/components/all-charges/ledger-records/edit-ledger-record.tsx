@@ -182,7 +182,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
                 control={control}
                 defaultValue={ledgerRecord.hashavshevetId}
                 render={({ field: { value, ...field }, fieldState }) => {
-                  const adjustedValue = value ? parseInt(value) : undefined;
+                  const adjustedValue = value ?? undefined;
                   return (
                     <NumberInput
                       precision={0}

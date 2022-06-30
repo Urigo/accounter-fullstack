@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 import { useCallback } from 'react';
 
-import { AllChargesShareWithFieldsFragment } from '../../../__generated__/types';
+import { AllChargesShareWithFieldsFragment, BeneficiaryInput } from '../../../__generated__/types';
 import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
@@ -44,7 +44,7 @@ export const ShareWith = ({ data, alternativeCharge, isBusiness }: Props) => {
       if (value !== undefined) {
         mutate({
           chargeId,
-          fields: { beneficiaries: value },
+          fields: { beneficiaries: value as unknown as BeneficiaryInput[] },
         });
       }
     },

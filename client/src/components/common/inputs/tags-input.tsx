@@ -39,7 +39,7 @@ export function TagsInput({ label, formManager }: Props) {
       </div>
 
       <ActionIcon variant="hover">
-        <PlaylistAdd size={20} onClick={() => append({name: ''})} />
+        <PlaylistAdd size={20} onClick={() => append({ name: '' })} />
       </ActionIcon>
     </div>
   );
