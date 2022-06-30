@@ -92,7 +92,7 @@ input UpdateChargeInput {
   counterparty: CounterpartyInput
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # description: String
-  tag: String
+  tags: [String!]
   beneficiaries: [BeneficiaryInput!]
   vat: FinancialAmountInput
   withholdingTax: FinancialAmountInput
