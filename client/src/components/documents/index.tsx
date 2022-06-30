@@ -82,7 +82,9 @@ gql`
     createdAt
     description
     __typename
-    tags
+    tags {
+      name
+    }
     vat {
       formatted
       __typename

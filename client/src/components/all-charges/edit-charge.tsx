@@ -26,7 +26,9 @@ gql`
       }
     }
     property
-    tags
+    tags {
+      name
+    }
     vat {
       raw
       currency
