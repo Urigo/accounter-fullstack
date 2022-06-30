@@ -1,3 +1,5 @@
+import { format } from 'date-fns';
+
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   IInsertLedgerRecordsParams,
@@ -26,6 +28,7 @@ import {
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
   hashavshevetFormat,
+  parseDate,
 } from './helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from './helpers/misc.mjs';
 import {
@@ -55,6 +58,7 @@ import {
   insertLedgerRecords,
   updateLedgerRecord,
 } from './providers/ledger-records.mjs';
+import { TimelessDateScalar } from './scalars/timeless-date.mjs';
 
 const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
@@ -125,7 +129,7 @@ const commonTransactionFields:
   id: DbTransaction => DbTransaction.id,
   referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
   createdAt: DbTransaction => DbTransaction.event_date,
-  effectiveDate: DbTransaction => DbTransaction.debit_date,
+  effectiveDate: DbTransaction => (DbTransaction.debit_date ? format(DbTransaction.debit_date, 'yyyy-MM-dd') : null),
   direction: DbTransaction =>
     parseFloat(DbTransaction.event_amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
   amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
@@ -251,7 +255,7 @@ export const resolvers: Resolvers = {
         foreignDebitAmount1: fields.originalAmount?.raw.toFixed(2) ?? null,
         foreignDebitAmount2: null,
         hashavshevetId: fields.hashavshevetId ?? null,
-        invoiceDate: fields.date ?? null,
+        invoiceDate: fields.date ? hashavshevetFormat.date(fields.date) : null,
         movementType: null,
         origin: null,
         originalId: null,
@@ -801,7 +805,7 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.foreign_debit_amount_1 ?? DbLedgerRecord.debit_amount_1,
         DbLedgerRecord.currency
       ),
-    date: DbLedgerRecord => DbLedgerRecord.invoice_date,
+    date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date),
     description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
@@ -834,4 +838,5 @@ export const resolvers: Resolvers = {
     __isTypeOf: () => true,
     ...commonTransactionFields,
   },
+  TimelessDate: TimelessDateScalar,
 };

@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { GraphQLError } from 'graphql';
 
 import type { IGetConversionOtherSideResult } from '../__generated__/charges.types.mjs';
 import { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
@@ -7,12 +8,24 @@ import type { IGetFinancialEntitiesByIdsResult } from '../__generated__/financia
 import type { IGetHashavshevetBusinessIndexesResult } from '../__generated__/hashavshevet.types.mjs';
 import type { IInsertLedgerRecordsParams } from '../__generated__/ledger-records.types.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
+import { TIMELESS_DATE_REGEX, TimelessDateString } from '../scalars/index.js';
 import { ENTITIES_WITHOUT_INVOICE_DATE, TAX_CATEGORIES_WITHOUT_INVOICE_DATE } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 import { EntryForAccounting, EntryForFinancialAccount, numberRounded, VatExtendedCharge } from './misc.mjs';
 
-function date(date: Date): string {
-  return format(date, 'dd/MM/yyyy');
+/* regex of dd/mm/yyyy */
+const HASHAVSHEVET_DATE_REGEX =
+  /^(?:(?:31(\/)(?:0[13578]|1[02]))\1|(?:(?:29|30)(\/)(?:0[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)\d{2})$|^(?:29(\/)02\3(?:(?:(?:1[6-9]|[2-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0[1-9]|1\d|2[0-8])(\/)(?:(?:0[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)\d{2})$/;
+
+function date(date: Date | TimelessDateString): string | undefined {
+  if (date instanceof Date) {
+    return format(date, 'dd/MM/yyyy');
+  }
+  if (typeof date === 'string' && TIMELESS_DATE_REGEX.test(date)) {
+    const parts = date.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return undefined;
 }
 
 function currency(currency: string): string | null {
@@ -28,7 +41,7 @@ function currency(currency: string): string | null {
     case 'GBP':
       return 'לש';
     default:
-      throw new Error(`Unknown currency type: ${currency}`);
+      throw new GraphQLError(`Unknown currency type: ${currency}`);
   }
 }
 
@@ -43,7 +56,7 @@ function getCreditcardAccount(financialAccounts: IGetFinancialAccountsByAccountN
     case 'EUR':
       return financialAccounts.hashavshevet_account_eur;
     default:
-      throw new Error(`Unknown currency - ${currency}`);
+      throw new GraphQLError(`Unknown currency - ${currency}`);
   }
 }
 
@@ -108,6 +121,24 @@ export const hashavshevetFormat = {
   account,
   currency,
 };
+
+/**
+ *
+ * @param raw - string date from hashavshevet, format dd/mm/yyyy
+ * @returns string date in format yyyy-mm-dd
+ */
+export function parseDate(raw?: string) {
+  if (!raw) {
+    return null;
+  }
+
+  const isFormatted = HASHAVSHEVET_DATE_REGEX.test(raw);
+  if (isFormatted) {
+    const parts = raw.split('/');
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  throw new GraphQLError(`Invalid Hashavshevet date format. expected dd/mm/yyyy, got: "${raw}"`);
+}
 
 export function generateEntryForAccountingValues(
   charge: VatExtendedCharge,
