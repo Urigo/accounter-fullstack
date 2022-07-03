@@ -7,7 +7,7 @@ import {
 } from '../__generated__/types';
 
 gql`
-  mutation InsertLedgerRecord($chargeId: ID!, $record: UpdateLedgerRecordInput!) {
+  mutation InsertLedgerRecord($chargeId: ID!, $record: InsertLedgerRecordInput!) {
     insertLedgerRecord(chargeId: $chargeId, record: $record) {
       __typename
       ... on Charge {
@@ -32,6 +32,7 @@ export const useInsertLedgerRecord = () => {
     if (data.insertLedgerRecord.__typename === 'CommonError') {
       throw new Error(data.insertLedgerRecord.message);
     }
+    // TODO: if caching - update local data for charge
     return data.insertLedgerRecord;
   };
   return useInsertLedgerRecordMutation({
