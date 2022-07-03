@@ -408,7 +408,7 @@ export const resolvers: Resolvers = {
         };
       }
     },
-    generateTaxMovement: async (_, { chargeId }) => {
+    generateLedgerRecords: async (_, { chargeId }) => {
       try {
         const charge = await getChargeByIdLoader.load(chargeId);
         if (!charge) {
@@ -823,6 +823,12 @@ export const resolvers: Resolvers = {
     },
   },
   InsertLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  GenerateLedgerRecordsResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';

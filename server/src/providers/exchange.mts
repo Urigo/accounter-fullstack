@@ -27,8 +27,8 @@ const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
 
 export async function batchExchageRates(dates: readonly Date[]) {
   const numericDates = dates.map(d => d.getTime());
-  const endDate = format(new Date(Math.max(...numericDates)), 'YYYY-MM-DD');
-  const startDate = format(new Date(Math.min(...numericDates)), 'YYYY-MM-DD');
+  const endDate = format(new Date(Math.max(...numericDates)), 'yyyy-MM-dd');
+  const startDate = format(new Date(Math.min(...numericDates)), 'yyyy-MM-dd');
 
   const rates = await getExchangeRatesByDates.run({ startDate, endDate }, pool);
 
