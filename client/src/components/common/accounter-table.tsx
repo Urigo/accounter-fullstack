@@ -1,6 +1,7 @@
 import { Paper, Table } from '@mantine/core';
 import { ReactNode, useState } from 'react';
 
+import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { InsertLedgerRecord } from '../all-charges/ledger-records/insert-ledger-record';
 import { AccounterButton } from './button';
 import { PopUpModal } from './modal';
@@ -32,6 +33,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
   const [opened, setOpen] = useState(false);
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const moreInfoValue = props.moreInfo ? props.moreInfo(props.item) : null;
+  const { mutate, isLoading } = useGenerateLedgerRecords();
 
   return (
     <>
@@ -50,9 +52,8 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
             )}
             <AccounterButton
               title="Generate Ledger"
-              onClick={() => {
-                return null; /*TODO: impl*/
-              }}
+              disabled={isLoading}
+              onClick={() => mutate({ chargeId: props.item.id })}
             />
             <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(props.item.id)} />
           </td>
