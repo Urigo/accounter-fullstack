@@ -77,7 +77,7 @@ type Query {
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
-  insertLedgerRecord(chargeId: ID!, record: UpdateLedgerRecordInput!): InsertLedgerRecordResult!
+  insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
 }
@@ -114,6 +114,21 @@ input UpdateLedgerRecordInput {
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
   hashavshevetId: Int
+}
+
+" input variables for insertLedgerRecord "
+input InsertLedgerRecordInput {
+  creditAccount: CounterpartyInput
+  debitAccount: CounterpartyInput
+  originalAmount: FinancialAmountInput
+  date: TimelessDate #invoiceDate
+  description: String
+  accountantApproval: AccountantApprovalInput
+  " in shekels at the moment"
+  localCurrencyAmount: FinancialAmountInput
+  hashavshevetId: Int
+  valueDate: TimelessDate
+  date3: TimelessDate #TODO: better naming
 }
 
 " input variables for updateTransaction "

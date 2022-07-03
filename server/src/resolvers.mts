@@ -288,46 +288,52 @@ export const resolvers: Resolvers = {
       }
     },
     insertLedgerRecord: async (_, { chargeId, record }) => {
-      const charge = await getChargeByIdLoader.load(chargeId);
-
-      if (!charge) {
-        throw new Error(`Charge ID='${chargeId}' not found`);
-      }
-
-      const currency =
-        record.originalAmount?.currency || record.localCurrencyAmount?.currency
-          ? hashavshevetFormat.currency(record.originalAmount?.currency ?? record.localCurrencyAmount?.currency ?? '')
-          : null;
-
-      const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
-        business: null,
-        creditAccount1: record.creditAccount?.name ?? null,
-        creditAccount2: null,
-        creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
-        creditAmount2: null,
-        currency,
-        date3: null,
-        debitAccount1: record.debitAccount?.name ?? null,
-        debitAccount2: null,
-        debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
-        debitAmount2: null,
-        details: record.description ?? null,
-        foreignCreditAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
-        foreignCreditAmount2: null,
-        foreignDebitAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
-        foreignDebitAmount2: null,
-        hashavshevetId: Number(record.hashavshevetId) ?? null,
-        invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
-        movementType: null,
-        origin: 'manual',
-        originalId: null,
-        proformaInvoiceFile: null,
-        reference1: null,
-        reference2: null,
-        reviewed: record.accountantApproval?.approved ?? null,
-        valueDate: null,
-      };
       try {
+        const charge = await getChargeByIdLoader.load(chargeId);
+
+        if (!charge) {
+          throw new Error(`Charge ID='${chargeId}' not found`);
+        }
+
+        const financialAccount = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
+
+        if (!financialAccount || !financialAccount.owner) {
+          throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
+        }
+
+        const currency =
+          record.originalAmount?.currency || record.localCurrencyAmount?.currency
+            ? hashavshevetFormat.currency(record.originalAmount?.currency ?? record.localCurrencyAmount?.currency ?? '')
+            : null;
+
+        const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
+          business: financialAccount.owner,
+          creditAccount1: record.creditAccount?.name ?? null,
+          creditAccount2: null,
+          creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
+          creditAmount2: null,
+          currency,
+          date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
+          debitAccount1: record.debitAccount?.name ?? null,
+          debitAccount2: null,
+          debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
+          debitAmount2: null,
+          details: record.description ?? null,
+          foreignCreditAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
+          foreignCreditAmount2: null,
+          foreignDebitAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
+          foreignDebitAmount2: null,
+          hashavshevetId: Number(record.hashavshevetId) ?? null,
+          invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
+          movementType: null,
+          origin: 'manual',
+          originalId: chargeId,
+          proformaInvoiceFile: null,
+          reference1: null,
+          reference2: null,
+          reviewed: record.accountantApproval?.approved ?? null,
+          valueDate: record.valueDate ? hashavshevetFormat.date(record.valueDate) : null,
+        };
         const res = await insertLedgerRecords.run({ ledgerRecord: [{ ...newLedgerRecord }] }, pool);
 
         if (!res || res.length === 0) {
@@ -341,7 +347,7 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: (e as Error)?.message ?? 'Unknown error',
+          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
         };
       }
     },
@@ -811,6 +817,12 @@ export const resolvers: Resolvers = {
     },
   },
   UpdateChargeResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  InsertLedgerRecordResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';
