@@ -36,7 +36,7 @@
     "modern-poalim-scraper": "0.3.7"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/cli": "2.6.4",
     "@graphql-codegen/introspection": "2.1.1",
     "@graphql-codegen/typescript": "2.5.1",
     "@graphql-codegen/typescript-operations": "2.4.2",
@@ -47,10 +47,10 @@
     "@theguild/prettier-config": "0.0.1",
     "@types/node": "18.0.0",
     "concurrently": "7.2.2",
-    "eslint": "8.18.0",
+    "eslint": "8.19.0",
     "eslint-plugin-simple-import-sort": "7.0.0",
     "prettier": "2.7.1",
-    "prettier-plugin-sql": "0.8.1",
+    "prettier-plugin-sql": "0.8.3",
     "typescript": "4.7.4"
   },
   "engines": {
