@@ -9,7 +9,9 @@ import { ConfirmMiniButton, EditMiniButton } from '../../common';
 gql`
   fragment AllChargesTagsFields on Charge {
     id
-    tags
+    tags {
+      name
+    }
   }
 `;
 
@@ -21,11 +23,11 @@ type Props = {
 export const Tags = ({ data, alternativeCharge }: Props) => {
   const { mutate, isLoading } = useUpdateCharge();
   const { tags: originalTags, id: chargeId } = data;
-  const [tags, setTags] = useState<string[]>(originalTags);
+  const [tags, setTags] = useState<{ name: string }[]>(originalTags);
   const isPersonalCategory = originalTags.length > 0;
 
   if (tags.length === 0 && alternativeCharge?.personalCategory) {
-    setTags([alternativeCharge.personalCategory]);
+    setTags([{ name: alternativeCharge.personalCategory }]);
   }
 
   const updateTag = useCallback(
@@ -33,7 +35,7 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
     (value?: string) => {
       mutate({
         chargeId,
-        fields: { tag: value },
+        fields: { tags: [{ name: value! }] },
       });
     },
     [chargeId, mutate]
@@ -43,11 +45,11 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
     <ul className="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg">
       {tags.map((tag, i) => (
         <li
-          key={tag}
+          key={tag.name}
           className={`w-full px-4 py-2 ${i === tags.length - 1 ? '' : 'border-b'} border-gray-200 rounded-t-lg`}
           style={isPersonalCategory ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}
         >
-          {tag}
+          {tag.name}
           {!isPersonalCategory && alternativeCharge?.personalCategory && (
             <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.personalCategory)} disabled={isLoading} />
           )}

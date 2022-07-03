@@ -58,7 +58,9 @@ gql`
       vat {
         raw
       }
-      tags
+      tags {
+        name
+      }
     }
   }
 `;

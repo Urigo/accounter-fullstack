@@ -11,7 +11,7 @@ import {
 import { MakeBoolean, relevantDataPicker } from '../../helpers';
 import { useUpdateCharge } from '../../hooks/use-update-charge';
 import { useUpdateTransaction } from '../../hooks/use-update-transaction';
-import { BeneficiariesInput, CurrencyInput, TextInput } from '../common/inputs';
+import { BeneficiariesInput, CurrencyInput, TagsInput, TextInput } from '../common/inputs';
 
 gql`
   fragment EditChargeFields on Charge {
@@ -26,7 +26,9 @@ gql`
       }
     }
     property
-    tags
+    tags {
+      name
+    }
     vat {
       raw
       currency
@@ -135,19 +137,12 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
           </div>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
-              <Controller
-                name="isProperty"
-                control={chargeControl}
-                defaultValue={charge.property === true}
-                render={({ field: { value, ...field } }) => {
-                  return <Switch {...field} checked={value === true} label="Is Property" />;
-                }}
-              />
+              <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} />
             </div>
           </div>
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
-              <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} />
+              <TagsInput formManager={useFormManager} />
             </div>
           </div>
           <div className="p-2 sm:w-1/2 w-full">
@@ -195,6 +190,18 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
                     )}
                   />
                 )}
+              />
+            </div>
+          </div>
+          <div className="p-2 sm:w-1/2 w-full">
+            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
+              <Controller
+                name="isProperty"
+                control={chargeControl}
+                defaultValue={charge.property}
+                render={({ field: { value, ...field } }) => {
+                  return <Switch {...field} checked={value === true} label="Is Property" />;
+                }}
               />
             </div>
           </div>
