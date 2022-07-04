@@ -1,10 +1,9 @@
-import { OneOfInputObjectsRule, useExtendedValidation } from '@envelop/extended-validation';
 import { createServer } from '@graphql-yoga/node';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getSchema } from './schema.mjs';
 
-export async function useBuildApp(logging = true) {
+export async function buildApp(logging = true) {
   const app = fastify({
     logger: logging && {
       level: process.env.LOG_LEVEL || 'debug',
@@ -24,11 +23,6 @@ export async function useBuildApp(logging = true) {
       warn: (...args) => args.forEach(arg => app.log.warn(arg)),
       error: (...args) => args.forEach(arg => app.log.error(arg)),
     },
-    plugins: [
-      useExtendedValidation({
-        rules: [OneOfInputObjectsRule],
-      }),
-    ],
   });
 
   app.addContentTypeParser('multipart/form-data', {}, (req, payload, done) =>

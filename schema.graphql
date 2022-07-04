@@ -84,11 +84,11 @@ type Mutation {
   updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
 }
 
-" input variables for updateCDocument "
+" input variables for updateDocument "
 input UpdateDocumentFieldsInput {
   vat: FinancialAmountInput
   serialNumber: String
-  date: TimelessDate
+  date: TimelessDate!
   amount: FinancialAmountInput
   id: ID!
 }

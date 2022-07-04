@@ -15,6 +15,7 @@ import {
 import { MakeBoolean, relevantDataPicker } from '../../helpers/form';
 import { useUpdateDocument } from '../../hooks/use-update-document';
 import { ButtonWithLabel } from '../common/button-with-label';
+import { Input } from '../common/input';
 import { CurrencyInput } from '../common/inputs/currency-input';
 
 gql`
@@ -146,12 +147,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     defaultValue={documentData.__typename}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <TextInput
-                        {...field}
-                        error={fieldState.error?.message}
-                        label="Type"
-                        className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
-                      />
+                      <Input {...field} error={fieldState.error?.message} label="Type" />
                     )}
                   />
                   <Controller
@@ -163,12 +159,11 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                       // TODO: update after adding DATE scalar (for timeless dates)
                       const parsedDate = moment(value).format('YYYY-MM-DD');
                       return (
-                        <TextInput
+                        <Input
+                          label="Date"
                           error={fieldState.error?.message}
                           {...fieldProps}
                           placeholder={parsedDate}
-                          label="Date"
-                          className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                         />
                       );
                     }}
@@ -179,14 +174,13 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     defaultValue={documentData?.serialNumber}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <TextInput
+                      <Input
                         error={fieldState.error?.message}
                         {...field}
                         placeholder={
                           documentData?.serialNumber ? String(documentData?.serialNumber) : 'No data for Serial Number'
                         }
                         label="Serial Number"
-                        className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                       />
                     )}
                   />
@@ -241,12 +235,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     defaultValue={documentData.__typename}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <TextInput
-                        {...field}
-                        error={fieldState.error?.message}
-                        label="Type"
-                        className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
-                      />
+                      <Input {...field} error={fieldState.error?.message} label="Type" />
                     )}
                   />
                   <Controller
@@ -260,7 +249,6 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                         {...field}
                         placeholder={documentData.id}
                         label="ID"
-                        className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                       />
                     )}
                   />

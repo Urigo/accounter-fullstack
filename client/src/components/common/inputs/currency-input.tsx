@@ -44,8 +44,17 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   ...props
 }) {
   return (
-    <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
-      <CurrencyCodeInput {...currencyCodeProps} />
-    </NumberInput>
+    <div
+      className="w-full
+    py-3
+    font-medium
+    placeholder:text-black-500
+    disabled:cursor-not-allowed
+    disabled:opacity-30"
+    >
+      <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
+        <CurrencyCodeInput {...currencyCodeProps} />
+      </NumberInput>
+    </div>
   );
 });

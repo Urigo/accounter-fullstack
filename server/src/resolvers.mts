@@ -208,24 +208,21 @@ export const resolvers: Resolvers = {
           payperId: args.fields.id ?? null,
           payperProvider: null,
           payperProviderId: null,
-          payperTotalForPayment: args.fields.amount?.value.toFixed(2) ?? null,
+          payperTotalForPayment: args.fields.amount?.raw.toFixed(2) ?? null,
           payperUpdatedAt: null,
           payperUpdatedFlag: null,
-          payperVatPaytment: args.fields.vat?.value.toFixed(2) ?? null,
+          payperVatPaytment: args.fields.vat?.raw.toFixed(2) ?? null,
           transactionId: null,
           uriComments: null,
         };
-        try {
-          const res = await updateDocument.run({ ...adjustedFields }, pool);
-          if (!res || res.length === 0) {
-            throw new Error(`Document ID="${args.documentId}" not found`);
-          }
-          return {
-            document: res[0],
-          };
-        } catch (e) {
-          throw new Error(`Error updating document ID="${args.documentId}". details: ${e}`);
+        const res = await updateDocument.run({ ...adjustedFields }, pool);
+        if (!res || res.length === 0) {
+          throw new Error(`Document ID="${args.documentId}" not found`);
         }
+        return {
+          __typename: 'UpdateDocumentSuccessfulResult',
+          document: res[0],
+        };
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -862,16 +859,10 @@ export const resolvers: Resolvers = {
       return 'Charge';
     },
   },
-  InsertLedgerRecordResult: {
+  UpdateDocumentResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'Charge';
-    },
-  },
-  GenerateLedgerRecordsResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'Charge';
+      return 'UpdateDocumentSuccessfulResult';
     },
   },
   LedgerRecord: {
