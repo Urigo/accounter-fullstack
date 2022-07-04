@@ -13,16 +13,16 @@ generates:
         Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         LedgerRecord: ./ledger-records.types.mjs#IGetLedgerRecordsByChargeIdsResult
         NamedCounterparty: ../prototypes.mjs#CounterpartyProto
-        Invoice: ./documents.types.mjs#IGetEmailDocsResult
-        Proforma: ./documents.types.mjs#IGetEmailDocsResult
-        Receipt: ./documents.types.mjs#IGetEmailDocsResult
-        InvoiceReceipt: ./documents.types.mjs#IGetEmailDocsResult
+        Invoice: ./documents.types.mjs#IGetAllDocumentsResult
+        Proforma: ./documents.types.mjs#IGetAllDocumentsResult
+        Receipt: ./documents.types.mjs#IGetAllDocumentsResult
+        InvoiceReceipt: ./documents.types.mjs#IGetAllDocumentsResult
         WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
-        Unprocessed: ./documents.types.mjs#IGetEmailDocsResult
+        Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
     plugins:
       - 'typescript'
       - 'typescript-resolvers'
