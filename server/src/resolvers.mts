@@ -1,7 +1,6 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -68,6 +67,7 @@ import {
   updateLedgerRecord,
 } from './providers/ledger-records.mjs';
 import { TimelessDateScalar } from './scalars/timeless-date.mjs';
+import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 
 const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
@@ -854,6 +854,18 @@ export const resolvers: Resolvers = {
     },
   },
   UpdateChargeResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  InsertLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  GenerateLedgerRecordsResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';

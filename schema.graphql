@@ -80,7 +80,6 @@ type Mutation {
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
-  generateTaxMovement(chargeId: ID!): GenerateTaxMovementResult!
   updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
 }
 
