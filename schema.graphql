@@ -30,7 +30,7 @@ interface Linkable {
 interface Document implements Linkable {
   id: ID!
   " previewable image "
-  image: URL!
+  image: URL
   " link to original file gmail, pdf "
   file: URL
   charge: Charge
@@ -363,7 +363,7 @@ type BusinessTrip {
 " document that haven't yet been processed"
 type Unprocessed implements Document & Linkable {
   id: ID!
-  image: URL!
+  image: URL
   file: URL
   charge: Charge
 }
@@ -371,7 +371,7 @@ type Unprocessed implements Document & Linkable {
 " invoice document "
 type Invoice implements Document & Linkable {
   id: ID!
-  image: URL!
+  image: URL
   file: URL
   vat: FinancialAmount
   charge: Charge
@@ -384,7 +384,7 @@ type Invoice implements Document & Linkable {
 " proforma document "
 type Proforma implements Document & Linkable {
   id: ID!
-  image: URL!
+  image: URL
   file: URL
   vat: FinancialAmount
   charge: Charge
@@ -398,7 +398,7 @@ type Proforma implements Document & Linkable {
 type Receipt implements Document & Linkable {
   id: ID!
   " previewable image "
-  image: URL!
+  image: URL
   " gmail, pdf "
   file: URL
   charge: Charge
@@ -412,7 +412,7 @@ type Receipt implements Document & Linkable {
 " Invoice receipt document - חשבונית מס קבלה "
 type InvoiceReceipt implements Document & Linkable {
   id: ID!
-  image: URL!
+  image: URL
   file: URL
   vat: FinancialAmount
   charge: Charge
