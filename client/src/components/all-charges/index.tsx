@@ -102,7 +102,7 @@ export const AllCharges = () => {
         <AccounterTable
           showButton={true}
           moreInfo={item =>
-            item.ledgerRecords[0]?.id ? (
+            item.ledgerRecords.length > 0 || item.additionalDocuments.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
                 <div
                   style={{

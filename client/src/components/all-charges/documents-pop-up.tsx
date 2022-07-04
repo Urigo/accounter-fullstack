@@ -138,11 +138,13 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
             <ButtonWithLabel target="_blank" textLabel="File" url={documentData?.file} title="Open Link" />
           </div>
         </div>
-        <div style={{ width: '50%', flexDirection: 'column' }}>
-          <div className="container mx-auto flex  md:flex-row flex-col items-right">
-            <img className="object-cover object-center rounded" alt="hero" src={documentData?.image} />
+        {documentData?.image && (
+          <div style={{ width: '50%', flexDirection: 'column' }}>
+            <div className="container mx-auto flex  md:flex-row flex-col items-right">
+              <img className="object-cover object-center rounded" alt={documentData.image} src={documentData.image} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Modal>
   );
