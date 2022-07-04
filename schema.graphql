@@ -376,8 +376,8 @@ type Invoice implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
 
-  serialNumber: String!
-  date: TimelessDate!
+  serialNumber: String
+  date: TimelessDate
   amount: FinancialAmount
 }
 
@@ -389,8 +389,8 @@ type Proforma implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
 
-  serialNumber: String!
-  date: TimelessDate!
+  serialNumber: String
+  date: TimelessDate
   amount: FinancialAmount
 }
 
@@ -404,8 +404,8 @@ type Receipt implements Document & Linkable {
   charge: Charge
   vat: FinancialAmount
   invoice: Invoice
-  serialNumber: String!
-  date: TimelessDate!
+  serialNumber: String
+  date: TimelessDate
   amount: FinancialAmount
 }
 
@@ -417,8 +417,8 @@ type InvoiceReceipt implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
 
-  serialNumber: String!
-  date: TimelessDate!
+  serialNumber: String
+  date: TimelessDate
   amount: FinancialAmount
 }
 
