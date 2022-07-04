@@ -14,8 +14,12 @@ import {
   Currency,
   DocumentResolvers,
   FeeTransactionResolvers,
+  InvoiceReceiptResolvers,
+  InvoiceResolvers,
   LtdFinancialEntityResolvers,
   PersonalFinancialEntityResolvers,
+  ProformaResolvers,
+  ReceiptResolvers,
   Resolvers,
   TransactionDirection,
   WireTransactionResolvers,
@@ -41,7 +45,11 @@ import {
   updateCharge,
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
-import { getDocsByChargeIdLoader, getDocsByFinancialEntityIds, getEmailDocs } from './providers/documents.mjs';
+import {
+  getAllDocuments,
+  getDocumentsByChargeIdLoader,
+  getDocumentsByFinancialEntityIds,
+} from './providers/documents.mjs';
 import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
@@ -84,7 +92,7 @@ const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinanci
   },
   linkedEntities: () => [], // TODO: implement
   documents: async DbBusiness => {
-    const documents = await getDocsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
+    const documents = await getDocumentsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
     return documents;
   },
 };
@@ -111,14 +119,25 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
 const commonDocumentsFields: DocumentResolvers = {
   id: documentRoot => documentRoot.id,
   charge: async documentRoot => {
-    if (!documentRoot.transaction_id) {
+    if (!documentRoot.charge_id) {
       return null;
     }
-    const charge = await getChargeByIdLoader.load(documentRoot.transaction_id);
+    const charge = await getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
   },
   image: documentRoot => documentRoot.image_url,
-  file: documentRoot => `https://mail.google.com/mail/u/0/#inbox/${documentRoot.email_id}`,
+  file: documentRoot => documentRoot.file_url,
+};
+
+const commonFinancialDocumentsFields:
+  | InvoiceResolvers
+  | ReceiptResolvers
+  | InvoiceReceiptResolvers
+  | ProformaResolvers = {
+  serialNumber: documentRoot => documentRoot.serial_number ?? '',
+  date: documentRoot => documentRoot.date,
+  amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
+  vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
 };
 
 const commonTransactionFields:
@@ -164,7 +183,7 @@ export const resolvers: Resolvers = {
       return dbFe;
     },
     documents: async () => {
-      const dbDocs = await getEmailDocs.run(void 0, pool);
+      const dbDocs = await getAllDocuments.run(void 0, pool);
       return dbDocs;
     },
   },
@@ -583,57 +602,37 @@ export const resolvers: Resolvers = {
   Invoice: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'חשבונית מס';
+      return documentRoot.type == 'invoice';
     },
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    vat: documentRoot =>
-      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    ...commonFinancialDocumentsFields,
   },
   InvoiceReceipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'חשבונית מס קבלה';
+      return documentRoot.type == 'invoice_receipt';
     },
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    vat: documentRoot =>
-      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    ...commonFinancialDocumentsFields,
   },
 
   Proforma: {
     ...commonDocumentsFields,
     __isTypeOf: () => false,
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    vat: documentRoot =>
-      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    ...commonFinancialDocumentsFields,
   },
 
   Unprocessed: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == null;
+      return documentRoot.type == null;
     },
   },
 
   Receipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.payper_document_type == 'קבלה';
+      return documentRoot.type == 'receipt';
     },
-    serialNumber: documentRoot => documentRoot.payper_document_id ?? '',
-    date: documentRoot => documentRoot.payper_document_date,
-    amount: documentRoot =>
-      formatFinancialAmount(documentRoot.payper_total_for_payment, documentRoot.payper_currency_symbol),
-    vat: documentRoot =>
-      documentRoot.payper_vat_paytment != null ? formatFinancialAmount(documentRoot.payper_vat_paytment) : null,
+    ...commonFinancialDocumentsFields,
   },
 
   LtdFinancialEntity: {
@@ -679,8 +678,8 @@ export const resolvers: Resolvers = {
       if (!DbCharge.id) {
         return [];
       }
-      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
-      return docs.filter(d => !d.duplication_of);
+      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
+      return docs;
     },
     ledgerRecords: async DbCharge => {
       if (!DbCharge.id) {
@@ -782,10 +781,8 @@ export const resolvers: Resolvers = {
       if (!DbCharge.id) {
         return null;
       }
-      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
-      const invoices = docs.filter(
-        d => !d.duplication_of && ['חשבונית מס', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
-      );
+      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
+      const invoices = docs.filter(d => ['invoice', 'invoice_receipt'].includes(d.type ?? ''));
       if (invoices.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
       }
@@ -795,10 +792,8 @@ export const resolvers: Resolvers = {
       if (!DbCharge.id) {
         return null;
       }
-      const docs = await getDocsByChargeIdLoader.load(DbCharge.id);
-      const receipts = docs.filter(
-        d => !d.duplication_of && ['קבלה', 'חשבונית מס קבלה'].includes(d.payper_document_type ?? '')
-      );
+      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
+      const receipts = docs.filter(d => ['receipt', 'invoice_receipt'].includes(d.type ?? ''));
       if (receipts.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
       }
