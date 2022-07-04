@@ -202,9 +202,8 @@ type CommonError implements Error {
 " result type for updateCharge "
 union UpdateDocumentResult = UpdateDocumentSuccessfulResult | CommonError
 
-" result type for updateDocument "
+" result type for updateDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type UpdateDocumentSuccessfulResult {
-  id: ID!
   document: Document
 }
 
