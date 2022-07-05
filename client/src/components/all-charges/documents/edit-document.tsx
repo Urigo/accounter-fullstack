@@ -88,7 +88,7 @@ export interface Props {
   style?: CSSProperties;
   opened: boolean;
   onClose: () => void;
-  documentData: EditDocumentFieldsFragment['additionalDocuments']['0'];
+  documentData: EditDocumentFieldsFragment;
   content?: ReactNode;
 }
 
