@@ -94,7 +94,7 @@ export interface Props {
   content?: ReactNode;
 }
 
-export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
+export const EditDocument = ({ opened, onClose, documentData }: Props) => {
   const {
     control,
     handleSubmit,
