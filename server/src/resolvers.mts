@@ -1,7 +1,11 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IGetAllDocumentsResult, IUpdateDocumentParams } from './__generated__/documents.types.mjs';
+import {
+  IGetAllDocumentsResult,
+  IInsertDocumentsParams,
+  IUpdateDocumentParams,
+} from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -52,6 +56,7 @@ import {
   getAllDocuments,
   getDocumentsByChargeIdLoader,
   getDocumentsByFinancialEntityIds,
+  insertDocuments,
   updateDocument,
 } from './providers/documents.mjs';
 import { getChargeExchangeRates } from './providers/exchange.mjs';
@@ -400,6 +405,46 @@ export const resolvers: Resolvers = {
         getLedgerRecordsByChargeIdLoader.clear(chargeId);
 
         return charge;
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
+        };
+      }
+    },
+    insertDocument: async (_, { record }) => {
+      try {
+        if (record.chargeId) {
+          const charge = await getChargeByIdLoader.load(record.chargeId);
+
+          if (!charge) {
+            throw new Error(`Charge ID='${record.chargeId}' not found`);
+          }
+        }
+
+        const newDocument: IInsertDocumentsParams['document']['0'] = {
+          image: record.image ?? null,
+          file: record.file ?? null,
+          documentType: record.documentType,
+          serialNumber: record.serialNumber ?? null,
+          date: record.date ?? null,
+          amount: record.amount?.raw ?? null,
+          currencyCode: record.amount?.currency ?? null,
+          vat: record.vat?.raw ?? null,
+          chargeId: record.chargeId ?? null,
+        };
+        const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
+        }
+
+        if (record.chargeId) {
+          /* clear cache */
+          getDocumentsByChargeIdLoader.clear(record.chargeId);
+        }
+
+        return { document: res[0] };
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -871,6 +916,12 @@ export const resolvers: Resolvers = {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'UpdateDocumentSuccessfulResult';
+    },
+  },
+  InsertDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'InsertDocumentSuccessfulResult';
     },
   },
   LedgerRecord: {

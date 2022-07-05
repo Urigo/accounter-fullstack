@@ -89,6 +89,7 @@ type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
+  insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
   updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
@@ -153,6 +154,18 @@ input InsertLedgerRecordInput {
   hashavshevetId: Int
   valueDate: TimelessDate
   date3: TimelessDate #TODO: better naming
+}
+
+" input variables for insertDocument "
+input InsertDocumentInput {
+  image: URL
+  file: URL
+  vat: FinancialAmountInput
+  documentType: DocumentType
+  serialNumber: String
+  date: TimelessDate
+  amount: FinancialAmountInput
+  chargeId: ID
 }
 
 " input variables for updateTransaction "
@@ -228,6 +241,14 @@ union UpdateLedgerRecordResult = LedgerRecord | CommonError
 
 " result type for insertLedgerRecord "
 union InsertLedgerRecordResult = Charge | CommonError
+
+" result type for insertDocument "
+union InsertDocumentResult = InsertDocumentSuccessfulResult | CommonError
+
+" result type for insertDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type InsertDocumentSuccessfulResult {
+  document: Document
+}
 
 " result type for updateTransaction "
 union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
