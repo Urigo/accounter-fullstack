@@ -135,8 +135,8 @@ const commonDocumentsFields: DocumentResolvers = {
 
 const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
   const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  return DocumentType[key as keyof typeof DocumentType]
-}
+  return DocumentType[key as keyof typeof DocumentType];
+};
 
 const commonFinancialDocumentsFields:
   | InvoiceResolvers<any, IGetAllDocumentsResult>
@@ -148,7 +148,6 @@ const commonFinancialDocumentsFields:
   amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
 };
-
 
 const commonTransactionFields:
   | ConversionTransactionResolvers
@@ -198,7 +197,7 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
-    updateDocument: async (_, {fields, documentId}) => {
+    updateDocument: async (_, { fields, documentId }) => {
       try {
         const adjustedFields: IUpdateDocumentParams = {
           documentId,

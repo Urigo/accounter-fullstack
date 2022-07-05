@@ -4,7 +4,12 @@ import gql from 'graphql-tag';
 import { CSSProperties, ReactNode } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { Currency, DocumentType, ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
+import {
+  Currency,
+  DocumentType,
+  ModalDocumentsFieldsFragment,
+  UpdateDocumentFieldsInput,
+} from '../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import {
   isDocumentInvoice,
@@ -94,7 +99,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<Partial<UpdateDocumentFieldsInput>>({defaultValues: {...documentData}});
+  } = useForm<Partial<UpdateDocumentFieldsInput>>({ defaultValues: { ...documentData } });
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
 
@@ -125,16 +130,17 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
         <div style={{ width: '50%', flexDirection: 'column' }}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="shadow p-3 sm:rounded-md sm:overflow-hidden">
+              <Controller
+                name="documentType"
+                control={control}
+                rules={{ required: 'Required' }}
+                render={({ field, fieldState }) => (
+                  <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
+                )}
+              />
+              {isDocumentProcessed && (
+                <>
                   <Controller
-                    name="documentType"
-                    control={control}
-                    rules={{ required: 'Required' }}
-                    render={({ field, fieldState }) => (
-                      <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
-                    )}
-                  />
-                  {isDocumentProcessed && (<>
-                    <Controller
                     name="date"
                     control={control}
                     defaultValue={documentData.date}
@@ -145,7 +151,9 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                         message: 'Date must be im format yyyy-mm-dd',
                       },
                     }}
-                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Date" />}
+                    render={({ field, fieldState }) => (
+                      <TextInput {...field} error={fieldState.error?.message} label="Date" />
+                    )}
                   />
                   <Controller
                     name="serialNumber"
@@ -203,32 +211,37 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                       />
                     )}
                   />
-                  </>)}
-                  <Controller
-                    name="image"
-                    control={control}
-                    defaultValue={documentData.image}
-                    rules={{
-                      required: 'Required'
-                    }}
-                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Image URL" />}
-                  />
-                  <Controller
-                    name="file"
-                    control={control}
-                    defaultValue={documentData.file}
-                    rules={{
-                      required: 'Required'
-                    }}
-                    render={({ field, fieldState }) => (<div className="flex flex-row gap-1 w-full">
+                </>
+              )}
+              <Controller
+                name="image"
+                control={control}
+                defaultValue={documentData.image}
+                rules={{
+                  required: 'Required',
+                }}
+                render={({ field, fieldState }) => (
+                  <TextInput {...field} error={fieldState.error?.message} label="Image URL" />
+                )}
+              />
+              <Controller
+                name="file"
+                control={control}
+                defaultValue={documentData.file}
+                rules={{
+                  required: 'Required',
+                }}
+                render={({ field, fieldState }) => (
+                  <div className="flex flex-row gap-1 w-full">
                     <TextInput className="grow" {...field} error={fieldState.error?.message} label="File URL" />
                     <ActionIcon variant="hover">
-                      <a  rel="noreferrer" target="_blank" href={field.value} type="button">
-      <File size={20} />
+                      <a rel="noreferrer" target="_blank" href={field.value} type="button">
+                        <File size={20} />
                       </a>
-    </ActionIcon>
-                    </div>)}
-                  />
+                    </ActionIcon>
+                  </div>
+                )}
+              />
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                 <button
                   type="submit"
