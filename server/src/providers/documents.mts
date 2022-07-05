@@ -5,6 +5,7 @@ import {
   IGetAllDocumentsQuery,
   IGetDocumentsByChargeIdQuery,
   IGetDocumentsByFinancialEntityIdsQuery,
+  IInsertDocumentsQuery,
   IUpdateDocumentQuery,
 } from '../__generated__/documents.types.mjs';
 import { pool } from '../providers/db.mjs';
@@ -103,3 +104,28 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
     id = $documentId
   RETURNING *;
 `;
+
+export const insertDocuments = sql<IInsertDocumentsQuery>`
+    INSERT INTO accounter_schema.documents (
+      image_url,
+      file_url,
+      type,
+      serial_number,
+      date,
+      total_amount,
+      currency_code,
+      vat_amount,
+      charge_id
+    )
+    VALUES $$document(
+      image,
+      file,
+      documentType,
+      serialNumber,
+      date,
+      amount,
+      currencyCode,
+      vat,
+      chargeId
+    )
+    RETURNING *;`;

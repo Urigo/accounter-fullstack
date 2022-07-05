@@ -2,13 +2,13 @@ import { Badge, Image } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 
-import { GalleryDocumentsFieldsFragment } from '../../__generated__/types';
-import { DocumentPopUp } from './documents-pop-up';
+import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
+import { EditDocument } from './edit-document';
 
 gql`
-  fragment GalleryDocumentsFields on Charge {
-    ...ModalDocumentsFields
+  fragment DocumentsGalleryFields on Charge {
     additionalDocuments {
+      ...EditDocumentFields
       id
       image
       ... on Invoice {
@@ -28,7 +28,7 @@ gql`
 `;
 
 type Props = {
-  additionalDocumentsData: GalleryDocumentsFieldsFragment['additionalDocuments'];
+  additionalDocumentsData: DocumentsGalleryFieldsFragment['additionalDocuments'];
 };
 
 export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
@@ -54,11 +54,7 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                     </div>
                   </button>
                   {openModal === doc.id && (
-                    <DocumentPopUp
-                      onClose={() => setOpenModal(null)}
-                      opened={openModal === doc.id}
-                      documentData={doc}
-                    />
+                    <EditDocument onClose={() => setOpenModal(null)} opened={openModal === doc.id} documentData={doc} />
                   )}
                 </div>
               ))}

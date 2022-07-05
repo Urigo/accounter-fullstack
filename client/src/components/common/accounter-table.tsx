@@ -2,6 +2,7 @@ import { Paper, Table } from '@mantine/core';
 import { ReactNode, useState } from 'react';
 
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
+import { InsertDocument } from '../all-charges/documents/insert-document';
 import { InsertLedgerRecord } from '../all-charges/ledger-records/insert-ledger-record';
 import { AccounterButton } from './button';
 import { PopUpModal } from './modal';
@@ -32,6 +33,7 @@ export interface AccountTableRow<T, U> {
 export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
   const [opened, setOpen] = useState(false);
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
+  const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const moreInfoValue = props.moreInfo ? props.moreInfo(props.item) : null;
   const { mutate, isLoading } = useGenerateLedgerRecords();
 
@@ -56,6 +58,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
               onClick={() => mutate({ chargeId: props.item.id })}
             />
             <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(props.item.id)} />
+            <AccounterButton title="Insert Document" onClick={() => setInsertDocument(props.item.id)} />
           </td>
         )}
       </tr>
@@ -74,6 +77,14 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
           content={<InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />}
           opened={!!insertLedger}
           onClose={() => setInsertLedger(undefined)}
+        />
+      )}
+      {insertDocument && (
+        <PopUpModal
+          modalSize="75%"
+          content={<InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />}
+          opened={!!insertDocument}
+          onClose={() => setInsertDocument(undefined)}
         />
       )}
     </>

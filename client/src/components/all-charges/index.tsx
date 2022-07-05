@@ -8,7 +8,7 @@ import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { AccounterLoader } from '../common/loader';
 import { PopUpModal } from '../common/modal';
-import { DocumentsGallery } from './documents-gallery';
+import { DocumentsGallery } from './documents/documents-gallery';
 import { EditCharge } from './edit-charge';
 import { LedgerRecordTable } from './ledger-record-table';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
@@ -28,7 +28,7 @@ gql`
         ...AllChargesTagsFields
         ...AllChargesShareWithFields
         ...TableLedgerRecordsFields
-        ...GalleryDocumentsFields
+        ...DocumentsGalleryFields
         ...EditChargeFields
       }
     }
