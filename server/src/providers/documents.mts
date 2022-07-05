@@ -42,7 +42,7 @@ export const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEnti
           )
         ORDER BY created_at DESC;`;
 
-        export const updateDocument = sql<IUpdateDocumentQuery>`
+export const updateDocument = sql<IUpdateDocumentQuery>`
         UPDATE accounter_schema.email_invoices
         SET
         email_subject = COALESCE(
