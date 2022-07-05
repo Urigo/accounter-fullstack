@@ -260,11 +260,11 @@ export const resolvers: Resolvers = {
         taxInvoiceFile: null,
         taxInvoiceNumber: null,
         userDescription: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
-        vat: fields.vat?.currency && fields.vat.currency !== Currency.Nis ? null : fields.vat?.raw,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+        vat: fields.vat?.currency && fields.vat.currency !== Currency.Ils ? null : fields.vat?.raw,
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         withholdingTax:
-          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Nis
+          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Ils
             ? null
             : fields.withholdingTax?.raw ?? null,
         chargeId,
@@ -411,14 +411,14 @@ export const resolvers: Resolvers = {
         contraCurrencyCode: null,
         currencyCode: null,
         currencyRate: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Nis ? null : fields.balance?.raw?.toFixed(2),
+          fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
         debitDate: fields.effectiveDate,
         detailedBankDescription: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Nis ? null : fields.amount?.raw?.toFixed(2),
+          fields.amount?.currency && fields.amount.currency !== Currency.Ils ? null : fields.amount?.raw?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,

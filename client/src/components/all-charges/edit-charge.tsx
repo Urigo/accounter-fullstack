@@ -155,7 +155,7 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
                   <Controller
                     name="vat.currency"
                     control={chargeControl}
-                    defaultValue={charge.vat?.currency ?? Currency.Nis}
+                    defaultValue={charge.vat?.currency ?? Currency.Ils}
                     render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                       <CurrencyInput
                         {...amountField}

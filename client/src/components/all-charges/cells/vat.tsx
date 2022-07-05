@@ -36,13 +36,13 @@
 
 // export const Vat = ({ isBusiness, financialEntityName, data, alternativeCharge, style }: Props) => {
 //   const { vat, transactions } = data;
-//   const { raw: amount, currency } = transactions[0]?.amount || { raw: 0, currency: Currency.Nis };
+//   const { raw: amount, currency } = transactions[0]?.amount || { raw: 0, currency: Currency.Ils };
 
 //   const indicator =
 //     (!vat?.raw &&
 //       isBusiness &&
 //       !entitiesWithoutInvoice.includes(financialEntityName) &&
-//       currency === Currency.Nis &&
+//       currency === Currency.Ils &&
 //       !businessesWithoutVAT.includes(financialEntityName) &&
 //       !businessesWithoutTaxCategory.includes(financialEntityName)) ||
 //     (vat?.raw && ((vat.raw > 0 && amount < 0) || (vat.raw < 0 && amount > 0)));
