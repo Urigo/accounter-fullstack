@@ -1,11 +1,11 @@
 import { Modal, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
-import moment from 'moment';
 import { CSSProperties, ReactNode } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
+import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import {
   isDocumentInvoice,
   isDocumentInvoiceReceipt,
@@ -108,7 +108,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<ModalDocumentsFieldsFragment['additionalDocuments']['0']>();
+  } = useForm<ModalDocumentsFieldsFragment['additionalDocuments']['0']>({defaultValues: documentData});
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
 
@@ -154,32 +154,25 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     name="date"
                     control={control}
                     defaultValue={documentData.date}
-                    rules={{ required: 'Required' }}
-                    render={({ field: { value, ...fieldProps }, fieldState }) => {
-                      // TODO: update after adding DATE scalar (for timeless dates)
-                      const parsedDate = moment(value).format('YYYY-MM-DD');
-                      return (
-                        <Input
-                          label="Date"
-                          error={fieldState.error?.message}
-                          {...fieldProps}
-                          placeholder={parsedDate}
-                        />
-                      );
+                    rules={{
+                      required: 'Required',
+                      pattern: {
+                        value: TIMELESS_DATE_REGEX,
+                        message: 'Date must be im format yyyy-mm-dd',
+                      },
                     }}
+                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Date" />}
                   />
                   <Controller
                     name="serialNumber"
                     control={control}
-                    defaultValue={documentData?.serialNumber}
+                    defaultValue={documentData.serialNumber}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <Input
-                        error={fieldState.error?.message}
+                      <TextInput
                         {...field}
-                        placeholder={
-                          documentData?.serialNumber ? String(documentData?.serialNumber) : 'No data for Serial Number'
-                        }
+                        value={!field || field.value === 'Missing' ? '' : field.value!}
+                        error={fieldState.error?.message}
                         label="Serial Number"
                       />
                     )}
@@ -195,7 +188,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                         defaultValue={documentData.vat?.currency}
                         render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                           <CurrencyInput
-                            className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+                            // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                             {...vatField}
                             error={vatFieldState.error?.message || currencyCodeFieldState.error?.message}
                             label="VAT"
@@ -216,7 +209,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                         defaultValue={documentData.amount?.currency}
                         render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                           <CurrencyInput
-                            className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+                            // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                             {...amountField}
                             error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
                             label="Amount"
