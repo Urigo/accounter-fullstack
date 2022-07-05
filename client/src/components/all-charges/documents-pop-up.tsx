@@ -25,12 +25,6 @@ gql`
       image
       file
       __typename
-      ... on Unprocessed {
-        id
-        image
-        file
-        __typename
-      }
       ... on Invoice {
         vat {
           raw
@@ -44,7 +38,6 @@ gql`
           formatted
           currency
         }
-        __typename
       }
       ... on Proforma {
         vat {
@@ -59,7 +52,6 @@ gql`
           formatted
           currency
         }
-        __typename
       }
       ... on Receipt {
         vat {
@@ -74,7 +66,6 @@ gql`
           formatted
           currency
         }
-        __typename
       }
       ... on InvoiceReceipt {
         vat {
@@ -89,7 +80,6 @@ gql`
           formatted
           currency
         }
-        __typename
       }
     }
   }
