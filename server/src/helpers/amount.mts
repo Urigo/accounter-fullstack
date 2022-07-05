@@ -28,14 +28,14 @@ export const formatCurrency = (raw?: string | null): Currency => {
     case 'אירו':
       return Currency.Eur;
     case 'ILS':
-      return Currency.Nis;
+      return Currency.Ils;
     case null:
-      return Currency.Nis;
+      return Currency.Ils;
     case undefined:
-      return Currency.Nis;
+      return Currency.Ils;
     default:
       console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
-      return Currency.Nis;
+      return Currency.Ils;
   }
 };
 

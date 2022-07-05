@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
+import { IGetAllDocumentsResult, IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -13,6 +14,7 @@ import {
   ConversionTransactionResolvers,
   Currency,
   DocumentResolvers,
+  DocumentType,
   FeeTransactionResolvers,
   InvoiceReceiptResolvers,
   InvoiceResolvers,
@@ -20,6 +22,7 @@ import {
   PersonalFinancialEntityResolvers,
   ProformaResolvers,
   ReceiptResolvers,
+  Resolver,
   Resolvers,
   TransactionDirection,
   WireTransactionResolvers,
@@ -49,6 +52,7 @@ import {
   getAllDocuments,
   getDocumentsByChargeIdLoader,
   getDocumentsByFinancialEntityIds,
+  updateDocument,
 } from './providers/documents.mjs';
 import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
@@ -129,6 +133,11 @@ const commonDocumentsFields: DocumentResolvers = {
   file: documentRoot => documentRoot.file_url,
 };
 
+const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
+  const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
+  return DocumentType[key as keyof typeof DocumentType];
+};
+
 const commonFinancialDocumentsFields:
   | InvoiceResolvers
   | ReceiptResolvers
@@ -188,6 +197,34 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
+    updateDocument: async (_, { fields, documentId }) => {
+      try {
+        const adjustedFields: IUpdateDocumentParams = {
+          documentId,
+          chargeId: fields.chargeId ?? null,
+          currencyCode: fields.amount?.currency ?? null,
+          date: fields.date ?? null,
+          fileUrl: fields.file ?? null,
+          imageUrl: fields.image ?? null,
+          serialNumber: fields.serialNumber ?? null,
+          totalAmount: fields.amount?.raw ?? null,
+          type: fields.documentType ?? null,
+          vatAmount: fields.vat?.raw ?? null,
+        };
+        const res = await updateDocument.run({ ...adjustedFields }, pool);
+        if (!res || res.length === 0) {
+          throw new Error(`Document ID="${documentId}" not found`);
+        }
+        return {
+          document: res[0],
+        };
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
         ? JSON.stringify(fields.beneficiaries.map(b => ({ name: b.counterparty.name, percentage: b.percentage })))
@@ -229,11 +266,11 @@ export const resolvers: Resolvers = {
         taxInvoiceFile: null,
         taxInvoiceNumber: null,
         userDescription: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
-        vat: fields.vat?.currency && fields.vat.currency !== Currency.Nis ? null : fields.vat?.raw,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+        vat: fields.vat?.currency && fields.vat.currency !== Currency.Ils ? null : fields.vat?.raw,
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         withholdingTax:
-          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Nis
+          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Ils
             ? null
             : fields.withholdingTax?.raw ?? null,
         chargeId,
@@ -380,14 +417,14 @@ export const resolvers: Resolvers = {
         contraCurrencyCode: null,
         currencyCode: null,
         currencyRate: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Nis ? null : fields.balance?.raw?.toFixed(2),
+          fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
         debitDate: fields.effectiveDate,
         detailedBankDescription: null,
-        // TODO: implement not-Nis logic. currently if vatCurrency is set and not to Nis, ignoring the update
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Nis ? null : fields.amount?.raw?.toFixed(2),
+          fields.amount?.currency && fields.amount.currency !== Currency.Ils ? null : fields.amount?.raw?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
@@ -600,39 +637,40 @@ export const resolvers: Resolvers = {
     },
   },
   Invoice: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'invoice';
+      return documentRoot.type === 'INVOICE';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
   InvoiceReceipt: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'invoice_receipt';
+      return documentRoot.type === 'INVOICE_RECEIPT';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
-
   Proforma: {
-    ...commonDocumentsFields,
     __isTypeOf: () => false,
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
-
   Unprocessed: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == null;
+      return documentRoot.type === null;
     },
+    ...commonDocumentsFields,
   },
-
   Receipt: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'receipt';
+      return documentRoot.type === 'RECEIPT';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
 
   LtdFinancialEntity: {
@@ -782,7 +820,7 @@ export const resolvers: Resolvers = {
         return null;
       }
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const invoices = docs.filter(d => ['invoice', 'invoice_receipt'].includes(d.type ?? ''));
+      const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (invoices.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
       }
@@ -793,7 +831,7 @@ export const resolvers: Resolvers = {
         return null;
       }
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const receipts = docs.filter(d => ['receipt', 'invoice_receipt'].includes(d.type ?? ''));
+      const receipts = docs.filter(d => ['RECEIPT', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (receipts.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
       }
@@ -827,6 +865,12 @@ export const resolvers: Resolvers = {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';
+    },
+  },
+  UpdateDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UpdateDocumentSuccessfulResult';
     },
   },
   LedgerRecord: {

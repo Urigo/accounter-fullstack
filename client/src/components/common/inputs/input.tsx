@@ -13,6 +13,7 @@ type Props = Omit<
   rightPadding?: string;
   precision?: number;
   type?: 'text' | 'number';
+  className?: string;
 };
 
 export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(function Input({
@@ -25,6 +26,7 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
   precision,
   children,
   isDirty,
+  className,
   ...props
 }) {
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -41,7 +43,7 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
   }
 
   return (
-    <div>
+    <div className={className}>
       {label && (
         <label htmlFor={props.name} className="block text-sm font-medium text-gray-700">
           {label}
@@ -68,9 +70,9 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
           type={type}
           {...props}
           onChange={type === 'number' ? handleChange : onChange}
-          className={`focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-2 ${rightPadding} sm:text-sm border-${
+          className={`w-full bg-gray-100 rounded border bg-opacity-50 border-${
             error ? 'red' : isDirty ? 'green' : 'gray'
-          }-300 rounded-md`}
+          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out block ${rightPadding} sm:text-sm rounded-md`}
         />
         {children}
       </div>

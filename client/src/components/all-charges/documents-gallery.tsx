@@ -7,66 +7,21 @@ import { DocumentPopUp } from './documents-pop-up';
 
 gql`
   fragment GalleryDocumentsFields on Charge {
+    ...ModalDocumentsFields
     additionalDocuments {
       id
       image
-      file
-      __typename
-      ... on Unprocessed {
-        file
-        __typename
-      }
       ... on Invoice {
-        vat {
-          raw
-          formatted
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-        }
-        __typename
+        documentType
       }
       ... on Proforma {
-        vat {
-          raw
-          formatted
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-        }
-        __typename
+        documentType
       }
       ... on Receipt {
-        vat {
-          raw
-          formatted
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-        }
-        __typename
+        documentType
       }
       ... on InvoiceReceipt {
-        vat {
-          raw
-          formatted
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-        }
-        __typename
+        documentType
       }
     }
   }
@@ -92,11 +47,19 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                 <div key={doc.id} className="p-4 md:w-2/4">
                   <button onClick={() => setOpenModal(doc.id)}>
                     <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
-                      <h2 className="text-gray-900 text-lg title-font font-medium">{doc.__typename}</h2>
+                      <h2 className="text-gray-900 text-lg title-font font-medium">
+                        {'documentType' in doc ? doc.documentType : 'Unprocessed'}
+                      </h2>
                       <Image src={doc.image} className="max-w-[100%] text-gray-900 text-lg title-font font-medium" />
                     </div>
                   </button>
-                  <DocumentPopUp onClose={() => setOpenModal(null)} opened={openModal === doc.id} documentData={doc} />
+                  {openModal === doc.id && (
+                    <DocumentPopUp
+                      onClose={() => setOpenModal(null)}
+                      opened={openModal === doc.id}
+                      documentData={doc}
+                    />
+                  )}
                 </div>
               ))}
             </div>

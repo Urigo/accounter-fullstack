@@ -1,30 +1,52 @@
-import { forwardRef, HTMLInputTypeAttribute, HTMLProps } from 'react';
+import clsx from 'clsx';
+import { ComponentProps, ReactElement } from 'react';
 
-export type InputProps = HTMLProps<HTMLInputElement> & {
-  type?: HTMLInputTypeAttribute;
-  placeholder?: string;
-  name?: string;
-  id?: string;
-  textLabel?: string;
-};
-
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({
-  type,
+export const Input = ({
+  className,
+  error,
+  label,
+  inputId,
+  inputName,
+  labelHtmlFor,
   placeholder,
-  name,
-  id,
-  textLabel,
-}) {
+  ...props
+}: ComponentProps<'input'> & {
+  error?: string;
+  label?: string;
+  labelHtmlFor?: string;
+  placeholder?: string;
+  inputName?: string;
+  inputId?: string;
+}): ReactElement => {
   return (
-    <div className="relative mr-4 lg:w-full xl:w-2/2 w-3/4">
-      <label className="leading-7 text-sm text-gray-600">{textLabel}</label>
+    <div className="col-span-6 sm:col-span-3">
+      <label htmlFor={labelHtmlFor} className="block text-sm font-medium text-black-500">
+        {label}
+      </label>
       <input
-        type={type}
-        id={id}
+        id={inputId}
+        name={inputName}
         placeholder={placeholder}
-        name={name}
-        className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+        className={clsx(
+          `
+          w-full
+          rounded-xl
+          border
+          py-3
+          px-4
+          font-medium
+          placeholder:text-black-500
+          focus:ring-1
+          disabled:cursor-not-allowed
+          disabled:opacity-30
+          `,
+          error
+            ? 'border-red-500  bg-gray-200 focus:ring-black-500'
+            : 'border-transparent bg-gray-200 focus:border-black-800',
+          className
+        )}
+        {...props}
       />
     </div>
   );
-});
+};

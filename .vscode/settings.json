@@ -6,5 +6,6 @@
       "text": "$(rocket) Run Accounter $(rocket)",
       "tooltip": "Start dev environment"
     }
-  ]
+  ],
+  "editor.formatOnSave": true
 }

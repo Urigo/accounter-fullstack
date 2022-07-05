@@ -1,9 +1,9 @@
-import { ComponentProps, DetailedHTMLProps, forwardRef } from 'react';
+import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
 
 import { Currency } from '../../../__generated__/types';
 import { NumberInput } from './number-input';
 
-type CurrencyCodeProps = DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> & {
+type CurrencyCodeProps = DetailedHTMLProps<SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> & {
   label?: string;
   error?: string;
 };
@@ -44,8 +44,17 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   ...props
 }) {
   return (
-    <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
-      <CurrencyCodeInput {...currencyCodeProps} />
-    </NumberInput>
+    <div
+      className="w-full
+    py-3
+    font-medium
+    placeholder:text-black-500
+    disabled:cursor-not-allowed
+    disabled:opacity-30"
+    >
+      <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
+        <CurrencyCodeInput {...currencyCodeProps} />
+      </NumberInput>
+    </div>
   );
 });

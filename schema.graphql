@@ -34,6 +34,9 @@ interface Document implements Linkable {
   " link to original file gmail, pdf "
   file: URL
   charge: Charge
+  " the specific type of the document"
+  # eslint-disable-next-line @graphql-eslint/no-typename-prefix
+  documentType: DocumentType
 }
 
 " Represent financial amount "
@@ -49,9 +52,17 @@ type FinancialAmount {
 " All possible currencies "
 enum Currency {
   USD
-  NIS
+  ILS
   GBP
   EUR
+}
+
+" All possible document types "
+enum DocumentType {
+  INVOICE
+  RECEIPT
+  INVOICE_RECEIPT
+  PROFORMA
 }
 
 " The other side of a transaction "
@@ -80,6 +91,19 @@ type Mutation {
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
+  updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
+}
+
+" input variables for updateDocument "
+input UpdateDocumentFieldsInput {
+  vat: FinancialAmountInput
+  serialNumber: String
+  date: TimelessDate
+  amount: FinancialAmountInput
+  documentType: DocumentType
+  image: URL
+  file: URL
+  chargeId: ID
 }
 
 " input variables for updateCharge "
@@ -186,6 +210,14 @@ interface Error {
 " common type of errors"
 type CommonError implements Error {
   message: String!
+}
+
+" result type for updateCharge "
+union UpdateDocumentResult = UpdateDocumentSuccessfulResult | CommonError
+
+" result type for updateDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type UpdateDocumentSuccessfulResult {
+  document: Document
 }
 
 " result type for updateCharge "
@@ -366,6 +398,7 @@ type Unprocessed implements Document & Linkable {
   image: URL
   file: URL
   charge: Charge
+  documentType: DocumentType
 }
 
 " invoice document "
@@ -375,6 +408,7 @@ type Invoice implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
@@ -388,6 +422,7 @@ type Proforma implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
@@ -402,6 +437,7 @@ type Receipt implements Document & Linkable {
   " gmail, pdf "
   file: URL
   charge: Charge
+  documentType: DocumentType
   vat: FinancialAmount
   invoice: Invoice
   serialNumber: String
@@ -416,6 +452,7 @@ type InvoiceReceipt implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
