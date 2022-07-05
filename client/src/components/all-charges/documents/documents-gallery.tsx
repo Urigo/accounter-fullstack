@@ -7,8 +7,8 @@ import { EditDocument } from './edit-document';
 
 gql`
   fragment GalleryDocumentsFields on Charge {
-    ...ModalDocumentsFields
     additionalDocuments {
+      ...EditDocumentFields
       id
       image
       ... on Invoice {
@@ -54,11 +54,7 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                     </div>
                   </button>
                   {openModal === doc.id && (
-                    <EditDocument
-                      onClose={() => setOpenModal(null)}
-                      opened={openModal === doc.id}
-                      documentData={doc}
-                    />
+                    <EditDocument onClose={() => setOpenModal(null)} opened={openModal === doc.id} documentData={doc} />
                   )}
                 </div>
               ))}

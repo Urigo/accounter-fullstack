@@ -8,7 +8,7 @@ import { File } from 'tabler-icons-react';
 import {
   Currency,
   DocumentType,
-  ModalDocumentsFieldsFragment,
+  EditDocumentFieldsFragment,
   UpdateDocumentFieldsInput,
 } from '../../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
@@ -24,63 +24,61 @@ import { ButtonWithLabel } from '../../common/button-with-label';
 import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
 
 gql`
-  fragment ModalDocumentsFields on Charge {
-    additionalDocuments {
-      id
-      image
-      file
-      __typename
-      ... on Invoice {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        documentType
-        amount {
-          raw
-          currency
-        }
+  fragment EditDocumentFields on Document {
+    id
+    image
+    file
+    __typename
+    ... on Invoice {
+      vat {
+        raw
+        currency
       }
-      ... on Proforma {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        documentType
-        amount {
-          raw
-          currency
-        }
+      serialNumber
+      date
+      documentType
+      amount {
+        raw
+        currency
       }
-      ... on Receipt {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        documentType
-        amount {
-          raw
-          currency
-        }
+    }
+    ... on Proforma {
+      vat {
+        raw
+        currency
       }
-      ... on InvoiceReceipt {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        documentType
-        amount {
-          raw
-          currency
-        }
+      serialNumber
+      date
+      documentType
+      amount {
+        raw
+        currency
+      }
+    }
+    ... on Receipt {
+      vat {
+        raw
+        currency
+      }
+      serialNumber
+      date
+      documentType
+      amount {
+        raw
+        currency
+      }
+    }
+    ... on InvoiceReceipt {
+      vat {
+        raw
+        currency
+      }
+      serialNumber
+      date
+      documentType
+      amount {
+        raw
+        currency
       }
     }
   }
@@ -90,7 +88,7 @@ export interface Props {
   style?: CSSProperties;
   opened: boolean;
   onClose: () => void;
-  documentData: ModalDocumentsFieldsFragment['additionalDocuments']['0'];
+  documentData: EditDocumentFieldsFragment['additionalDocuments']['0'];
   content?: ReactNode;
 }
 
