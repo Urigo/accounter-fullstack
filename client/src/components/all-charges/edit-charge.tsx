@@ -93,9 +93,6 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
     }
   };
 
-  // TODO:
-  // tag
-
   return (
     <form className="text-gray-600 body-font" onSubmit={handleChargeSubmit(onChargeSubmit)}>
       <div className="container px-5 py-24 mx-auto">
