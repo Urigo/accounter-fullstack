@@ -13,6 +13,7 @@ type Props = Omit<
   rightPadding?: string;
   precision?: number;
   type?: 'text' | 'number';
+  className?: string;
 };
 
 export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(function Input({
@@ -25,6 +26,7 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
   precision,
   children,
   isDirty,
+  className,
   ...props
 }) {
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -41,7 +43,7 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
   }
 
   return (
-    <div>
+    <div className={className}>
       {label && (
         <label htmlFor={props.name} className="block text-sm font-medium text-gray-700">
           {label}

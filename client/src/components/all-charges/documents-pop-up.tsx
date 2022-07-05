@@ -1,4 +1,4 @@
-import { Modal, TextInput } from '@mantine/core';
+import { ActionIcon, Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { CSSProperties, ReactNode } from 'react';
@@ -15,7 +15,8 @@ import {
 import { MakeBoolean, relevantDataPicker } from '../../helpers/form';
 import { useUpdateDocument } from '../../hooks/use-update-document';
 import { ButtonWithLabel } from '../common/button-with-label';
-import { CurrencyInput, SelectInput } from '../common/inputs';
+import { CurrencyInput, SelectInput, TextInput } from '../common/inputs';
+import { File } from 'tabler-icons-react';
 
 gql`
   fragment ModalDocumentsFields on Charge {
@@ -219,7 +220,14 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     rules={{
                       required: 'Required'
                     }}
-                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="File URL" />}
+                    render={({ field, fieldState }) => (<div className="flex flex-row gap-1 w-full">
+                    <TextInput className="grow" {...field} error={fieldState.error?.message} label="File URL" />
+                    <ActionIcon variant="hover">
+                      <a  rel="noreferrer" target="_blank" href={field.value} type="button">
+      <File size={20} />
+                      </a>
+    </ActionIcon>
+                    </div>)}
                   />
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                 <button

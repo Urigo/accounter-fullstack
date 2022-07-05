@@ -1,9 +1,9 @@
-import { ComponentProps, DetailedHTMLProps, forwardRef } from 'react';
+import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
 
 import { Currency } from '../../../__generated__/types';
 import { NumberInput } from './number-input';
 
-type CurrencyCodeProps = DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> & {
+type CurrencyCodeProps = DetailedHTMLProps<SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> & {
   label?: string;
   error?: string;
 };
