@@ -2,7 +2,7 @@ import { Badge, Image } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 
-import { GalleryDocumentsFieldsFragment } from '../../__generated__/types';
+import { GalleryDocumentsFieldsFragment } from '../../../__generated__/types';
 import { DocumentPopUp } from './documents-pop-up';
 
 gql`

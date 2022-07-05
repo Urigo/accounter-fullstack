@@ -10,18 +10,18 @@ import {
   DocumentType,
   ModalDocumentsFieldsFragment,
   UpdateDocumentFieldsInput,
-} from '../../__generated__/types';
-import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
+} from '../../../__generated__/types';
+import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import {
   isDocumentInvoice,
   isDocumentInvoiceReceipt,
   isDocumentProforma,
   isDocumentReceipt,
-} from '../../helpers/documents';
-import { MakeBoolean, relevantDataPicker } from '../../helpers/form';
-import { useUpdateDocument } from '../../hooks/use-update-document';
-import { ButtonWithLabel } from '../common/button-with-label';
-import { CurrencyInput, SelectInput, TextInput } from '../common/inputs';
+} from '../../../helpers/documents';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
+import { useUpdateDocument } from '../../../hooks/use-update-document';
+import { ButtonWithLabel } from '../../common/button-with-label';
+import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
 
 gql`
   fragment ModalDocumentsFields on Charge {
