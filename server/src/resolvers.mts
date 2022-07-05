@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
+import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -49,6 +50,7 @@ import {
   getAllDocuments,
   getDocumentsByChargeIdLoader,
   getDocumentsByFinancialEntityIds,
+  updateDocument,
 } from './providers/documents.mjs';
 import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
@@ -67,7 +69,6 @@ import {
   updateLedgerRecord,
 } from './providers/ledger-records.mjs';
 import { TimelessDateScalar } from './scalars/timeless-date.mjs';
-import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 
 const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
