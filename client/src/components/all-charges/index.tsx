@@ -28,7 +28,7 @@ gql`
         ...AllChargesTagsFields
         ...AllChargesShareWithFields
         ...TableLedgerRecordsFields
-        ...GalleryDocumentsFields
+        ...DocumentsGalleryFields
         ...EditChargeFields
       }
     }

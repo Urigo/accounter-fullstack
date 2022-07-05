@@ -2,11 +2,11 @@ import { Badge, Image } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 
-import { GalleryDocumentsFieldsFragment } from '../../../__generated__/types';
+import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
 import { EditDocument } from './edit-document';
 
 gql`
-  fragment GalleryDocumentsFields on Charge {
+  fragment DocumentsGalleryFields on Charge {
     additionalDocuments {
       ...EditDocumentFields
       id
@@ -28,7 +28,7 @@ gql`
 `;
 
 type Props = {
-  additionalDocumentsData: GalleryDocumentsFieldsFragment['additionalDocuments'];
+  additionalDocumentsData: DocumentsGalleryFieldsFragment['additionalDocuments'];
 };
 
 export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
