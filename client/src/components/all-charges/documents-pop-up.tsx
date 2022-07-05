@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { CSSProperties, ReactNode } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
+import { DocumentType, ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import {
   isDocumentInvoice,
@@ -15,8 +15,7 @@ import {
 import { MakeBoolean, relevantDataPicker } from '../../helpers/form';
 import { useUpdateDocument } from '../../hooks/use-update-document';
 import { ButtonWithLabel } from '../common/button-with-label';
-import { Input } from '../common/input';
-import { CurrencyInput } from '../common/inputs/currency-input';
+import { CurrencyInput, SelectInput } from '../common/inputs';
 
 gql`
   fragment ModalDocumentsFields on Charge {
@@ -28,56 +27,52 @@ gql`
       ... on Invoice {
         vat {
           raw
-          formatted
           currency
         }
         serialNumber
         date
+        documentType
         amount {
           raw
-          formatted
           currency
         }
       }
       ... on Proforma {
         vat {
           raw
-          formatted
           currency
         }
         serialNumber
         date
+        documentType
         amount {
           raw
-          formatted
           currency
         }
       }
       ... on Receipt {
         vat {
           raw
-          formatted
           currency
         }
         serialNumber
         date
+        documentType
         amount {
           raw
-          formatted
           currency
         }
       }
       ... on InvoiceReceipt {
         vat {
           raw
-          formatted
           currency
         }
         serialNumber
         date
+        documentType
         amount {
           raw
-          formatted
           currency
         }
       }
@@ -98,12 +93,12 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<ModalDocumentsFieldsFragment['additionalDocuments']['0']>({defaultValues: documentData});
+  } = useForm<Partial<UpdateDocumentFieldsInput>>({defaultValues: {...documentData}});
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
 
-  const onSubmit: SubmitHandler<ModalDocumentsFieldsFragment['additionalDocuments']['0']> = documentData => {
-    const dataToUpdate = relevantDataPicker(documentData, dirtyFields as MakeBoolean<typeof documentData>);
+  const onSubmit: SubmitHandler<Partial<UpdateDocumentFieldsInput>> = data => {
+    const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (Object.keys(dataToUpdate ?? {}).length > 0) {
       mutate({
         documentId: documentData.id,
@@ -132,12 +127,11 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
               {isDocumentProcessed ? (
                 <>
                   <Controller
-                    name="__typename"
+                    name="documentType"
                     control={control}
-                    defaultValue={documentData.__typename}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <Input {...field} error={fieldState.error?.message} label="Type" />
+                      <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
                     )}
                   />
                   <Controller
@@ -211,31 +205,14 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                   />
                 </>
               ) : (
-                <>
                   <Controller
-                    name="__typename"
+                    name="documentType"
                     control={control}
-                    defaultValue={documentData.__typename}
                     rules={{ required: 'Required' }}
                     render={({ field, fieldState }) => (
-                      <Input {...field} error={fieldState.error?.message} label="Type" />
+                      <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
                     )}
                   />
-                  <Controller
-                    name="id"
-                    control={control}
-                    defaultValue={documentData?.id}
-                    rules={{ required: 'Required' }}
-                    render={({ field, fieldState }) => (
-                      <TextInput
-                        error={fieldState.error?.message}
-                        {...field}
-                        placeholder={documentData.id}
-                        label="ID"
-                      />
-                    )}
-                  />
-                </>
               )}
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                 <button

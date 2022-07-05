@@ -34,6 +34,8 @@ interface Document implements Linkable {
   " link to original file gmail, pdf "
   file: URL
   charge: Charge
+  " the specific type of the document"
+  documentType: DocumentType
 }
 
 " Represent financial amount "
@@ -52,6 +54,14 @@ enum Currency {
   ILS
   GBP
   EUR
+}
+
+" All possible document types "
+enum DocumentType {
+  INVOICE
+  RECEIPT
+  INVOICE_RECEIPT
+  PROFORMA
 }
 
 " The other side of a transaction "
@@ -87,9 +97,9 @@ type Mutation {
 input UpdateDocumentFieldsInput {
   vat: FinancialAmountInput
   serialNumber: String
-  date: TimelessDate!
+  date: TimelessDate
   amount: FinancialAmountInput
-  id: ID!
+  documentType: DocumentType
 }
 
 " input variables for updateCharge "
@@ -384,6 +394,7 @@ type Unprocessed implements Document & Linkable {
   image: URL
   file: URL
   charge: Charge
+  documentType: DocumentType
 }
 
 " invoice document "
@@ -393,6 +404,7 @@ type Invoice implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType!
 
   serialNumber: String
   date: TimelessDate
@@ -406,6 +418,7 @@ type Proforma implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType!
 
   serialNumber: String
   date: TimelessDate
@@ -425,6 +438,7 @@ type Receipt implements Document & Linkable {
   serialNumber: String
   date: TimelessDate
   amount: FinancialAmount
+  documentType: DocumentType!
 }
 
 " Invoice receipt document - חשבונית מס קבלה "
@@ -434,6 +448,7 @@ type InvoiceReceipt implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
+  documentType: DocumentType!
 
   serialNumber: String
   date: TimelessDate

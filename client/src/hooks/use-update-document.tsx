@@ -16,13 +16,6 @@ gql`
       ... on UpdateDocumentSuccessfulResult {
         document {
           id
-          image
-          file
-          __typename
-          ...InvoiceFields
-          ...InvoiceReceiptFields
-          ...ReceiptFields
-          ...ProformaFields
         }
       }
     }
@@ -38,8 +31,8 @@ export const useUpdateDocument = () => {
     return new Error(`Error updating charge ID [${documentId}]: ${(e as Error)?.message}`);
   };
   const onSuccess = async (data: UpdateDocumentMutation) => {
-    if (data.updateDocument.__typename === 'UpdateDocumentSuccessfulResult') {
-      throw new Error(data.updateDocument.__typename);
+    if (data.updateDocument.__typename === 'CommonError') {
+      throw new Error(data.updateDocument.message);
     }
     return data.updateDocument;
   };

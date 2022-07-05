@@ -202,7 +202,7 @@ export const resolvers: Resolvers = {
           imageUrl: null,
           serialNumber: args.fields.serialNumber ?? null,
           totalAmount: args.fields.amount?.raw ?? null,
-          type: null,
+          type: args.fields.documentType ?? null,
           vatAmount: args.fields.vat?.raw ?? null,
         };
         const res = await updateDocument.run({ ...adjustedFields }, pool);
@@ -633,14 +633,14 @@ export const resolvers: Resolvers = {
   Invoice: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'invoice';
+      return documentRoot.type == 'INVOICE';
     },
     ...commonFinancialDocumentsFields,
   },
   InvoiceReceipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'invoice_receipt';
+      return documentRoot.type == 'INVOICE_RECEIPT';
     },
     ...commonFinancialDocumentsFields,
   },
@@ -661,7 +661,7 @@ export const resolvers: Resolvers = {
   Receipt: {
     ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'receipt';
+      return documentRoot.type == 'RECEIPT';
     },
     ...commonFinancialDocumentsFields,
   },
@@ -813,7 +813,7 @@ export const resolvers: Resolvers = {
         return null;
       }
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const invoices = docs.filter(d => ['invoice', 'invoice_receipt'].includes(d.type ?? ''));
+      const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (invoices.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
       }
@@ -824,7 +824,7 @@ export const resolvers: Resolvers = {
         return null;
       }
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const receipts = docs.filter(d => ['receipt', 'invoice_receipt'].includes(d.type ?? ''));
+      const receipts = docs.filter(d => ['RECEIPT', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (receipts.length > 1) {
         console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
       }

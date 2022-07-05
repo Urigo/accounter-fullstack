@@ -42,10 +42,14 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
             : relevantDataPicker(values[key as keyof typeof values], dirtyFields[key as keyof typeof values]);
         /* additions to keep entire object instead of subset */
         if (
-          ['localCurrencyAmount', 'originalAmount', 'withholdingTax', 'beneficiaries', 'vat', 'tags'].includes(key) &&
+          ['localCurrencyAmount', 'originalAmount', 'withholdingTax', 'beneficiaries', 'vat', 'tags', 'amount'].includes(key) &&
           value
         ) {
-          return [key, values[key as keyof typeof values]];
+          /* remove unnecessary fields */
+          const adjustedValue = values[key as keyof typeof values] as unknown as {formatted?: string};
+          delete adjustedValue['formatted'];
+
+          return [key, adjustedValue];
         }
         return [key, value];
       })
