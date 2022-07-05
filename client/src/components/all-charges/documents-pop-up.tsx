@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { CSSProperties, ReactNode } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { DocumentType, ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
+import { Currency, DocumentType, ModalDocumentsFieldsFragment, UpdateDocumentFieldsInput } from '../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import {
   isDocumentInvoice,
@@ -123,9 +123,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
       <div style={{ flexDirection: 'row', display: 'flex', gap: 10 }}>
         <div style={{ width: '50%', flexDirection: 'column' }}>
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="shadow sm:rounded-md sm:overflow-hidden">
-              {isDocumentProcessed ? (
-                <>
+            <div className="shadow p-3 sm:rounded-md sm:overflow-hidden">
                   <Controller
                     name="documentType"
                     control={control}
@@ -134,7 +132,8 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                       <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
                     )}
                   />
-                  <Controller
+                  {isDocumentProcessed && (<>
+                    <Controller
                     name="date"
                     control={control}
                     defaultValue={documentData.date}
@@ -167,9 +166,9 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     defaultValue={documentData.vat?.raw}
                     render={({ field: vatField, fieldState: vatFieldState }) => (
                       <Controller
-                        name="vat.currency"
+                        name="amount.currency"
                         control={control}
-                        defaultValue={documentData.vat?.currency}
+                        defaultValue={documentData.amount?.currency ?? Currency.Ils}
                         render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                           <CurrencyInput
                             // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -197,23 +196,31 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                             {...amountField}
                             error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
                             label="Amount"
-                            currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
+                            currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
                           />
                         )}
                       />
                     )}
                   />
-                </>
-              ) : (
+                  </>)}
                   <Controller
-                    name="documentType"
+                    name="image"
                     control={control}
-                    rules={{ required: 'Required' }}
-                    render={({ field, fieldState }) => (
-                      <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
-                    )}
+                    defaultValue={documentData.image}
+                    rules={{
+                      required: 'Required'
+                    }}
+                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Image URL" />}
                   />
-              )}
+                  <Controller
+                    name="file"
+                    control={control}
+                    defaultValue={documentData.file}
+                    rules={{
+                      required: 'Required'
+                    }}
+                    render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="File URL" />}
+                  />
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                 <button
                   type="submit"

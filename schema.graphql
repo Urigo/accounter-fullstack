@@ -100,6 +100,9 @@ input UpdateDocumentFieldsInput {
   date: TimelessDate
   amount: FinancialAmountInput
   documentType: DocumentType
+  image: URL
+  file: URL
+  chargeId: ID
 }
 
 " input variables for updateCharge "
@@ -404,7 +407,7 @@ type Invoice implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
-  documentType: DocumentType!
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
@@ -418,7 +421,7 @@ type Proforma implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
-  documentType: DocumentType!
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
@@ -433,12 +436,12 @@ type Receipt implements Document & Linkable {
   " gmail, pdf "
   file: URL
   charge: Charge
+  documentType: DocumentType
   vat: FinancialAmount
   invoice: Invoice
   serialNumber: String
   date: TimelessDate
   amount: FinancialAmount
-  documentType: DocumentType!
 }
 
 " Invoice receipt document - חשבונית מס קבלה "
@@ -448,7 +451,7 @@ type InvoiceReceipt implements Document & Linkable {
   file: URL
   vat: FinancialAmount
   charge: Charge
-  documentType: DocumentType!
+  documentType: DocumentType
 
   serialNumber: String
   date: TimelessDate
