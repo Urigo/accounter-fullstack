@@ -53,9 +53,12 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
             <AccounterButton
               title="Generate Ledger"
               disabled={isLoading}
-              onClick={() => mutate({ chargeId: props.item.id })}
+              onClick={() => mutate({ chargeId: (props.item as unknown as { id: string }).id })}
             />
-            <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(props.item.id)} />
+            <AccounterButton
+              title="Insert Ledger"
+              onClick={() => setInsertLedger((props.item as unknown as { id: string }).id)}
+            />
           </td>
         )}
       </tr>
