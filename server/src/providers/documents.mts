@@ -53,11 +53,6 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
     charge_id,
     NULL
   ),
-  created_at = COALESCE(
-    $createdAt,
-    created_at,
-    NULL
-  ),
   currency_code = COALESCE(
     $currencyCode,
     currency_code,

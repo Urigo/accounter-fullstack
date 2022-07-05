@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import { IUpdateDocumentParams } from './__generated__/documents.types.mjs';
+import { IGetAllDocumentsResult, IUpdateDocumentParams } from './__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -14,6 +14,7 @@ import {
   ConversionTransactionResolvers,
   Currency,
   DocumentResolvers,
+  DocumentType,
   FeeTransactionResolvers,
   InvoiceReceiptResolvers,
   InvoiceResolvers,
@@ -21,6 +22,7 @@ import {
   PersonalFinancialEntityResolvers,
   ProformaResolvers,
   ReceiptResolvers,
+  Resolver,
   Resolvers,
   TransactionDirection,
   WireTransactionResolvers,
@@ -131,16 +133,22 @@ const commonDocumentsFields: DocumentResolvers = {
   file: documentRoot => documentRoot.file_url,
 };
 
+const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
+  const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
+  return DocumentType[key as keyof typeof DocumentType]
+}
+
 const commonFinancialDocumentsFields:
-  | InvoiceResolvers
-  | ReceiptResolvers
-  | InvoiceReceiptResolvers
-  | ProformaResolvers = {
+  | InvoiceResolvers<any, IGetAllDocumentsResult>
+  | ReceiptResolvers<any, IGetAllDocumentsResult>
+  | InvoiceReceiptResolvers<any, IGetAllDocumentsResult>
+  | ProformaResolvers<any, IGetAllDocumentsResult> = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
   date: documentRoot => documentRoot.date,
   amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
 };
+
 
 const commonTransactionFields:
   | ConversionTransactionResolvers
@@ -190,24 +198,23 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
-    updateDocument: async (_, args) => {
+    updateDocument: async (_, {fields, documentId}) => {
       try {
         const adjustedFields: IUpdateDocumentParams = {
-          documentId: args.documentId,
-          chargeId: null,
-          createdAt: null,
-          currencyCode: args.fields.amount?.currency ?? null,
-          date: args.fields.date ?? null,
-          fileUrl: null,
-          imageUrl: null,
-          serialNumber: args.fields.serialNumber ?? null,
-          totalAmount: args.fields.amount?.raw ?? null,
-          type: args.fields.documentType ?? null,
-          vatAmount: args.fields.vat?.raw ?? null,
+          documentId,
+          chargeId: fields.chargeId ?? null,
+          currencyCode: fields.amount?.currency ?? null,
+          date: fields.date ?? null,
+          fileUrl: fields.file ?? null,
+          imageUrl: fields.image ?? null,
+          serialNumber: fields.serialNumber ?? null,
+          totalAmount: fields.amount?.raw ?? null,
+          type: fields.documentType ?? null,
+          vatAmount: fields.vat?.raw ?? null,
         };
         const res = await updateDocument.run({ ...adjustedFields }, pool);
         if (!res || res.length === 0) {
-          throw new Error(`Document ID="${args.documentId}" not found`);
+          throw new Error(`Document ID="${documentId}" not found`);
         }
         return {
           document: res[0],
@@ -631,39 +638,40 @@ export const resolvers: Resolvers = {
     },
   },
   Invoice: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'INVOICE';
+      return documentRoot.type === 'INVOICE';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
   InvoiceReceipt: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'INVOICE_RECEIPT';
+      return documentRoot.type === 'INVOICE_RECEIPT';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
-
   Proforma: {
-    ...commonDocumentsFields,
     __isTypeOf: () => false,
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
-
   Unprocessed: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == null;
+      return documentRoot.type === null;
     },
+    ...commonDocumentsFields,
   },
-
   Receipt: {
-    ...commonDocumentsFields,
     __isTypeOf(documentRoot) {
-      return documentRoot.type == 'RECEIPT';
+      return documentRoot.type === 'RECEIPT';
     },
+    ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    documentType,
   },
 
   LtdFinancialEntity: {
