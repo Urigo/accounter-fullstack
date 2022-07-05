@@ -35,6 +35,7 @@ interface Document implements Linkable {
   file: URL
   charge: Charge
   " the specific type of the document"
+  # eslint-disable-next-line @graphql-eslint/no-typename-prefix
   documentType: DocumentType
 }
 

@@ -1,8 +1,9 @@
 import { ActionIcon, Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactNode, useEffect } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { File } from 'tabler-icons-react';
 
 import {
   Currency,
@@ -21,7 +22,6 @@ import { MakeBoolean, relevantDataPicker } from '../../helpers/form';
 import { useUpdateDocument } from '../../hooks/use-update-document';
 import { ButtonWithLabel } from '../common/button-with-label';
 import { CurrencyInput, SelectInput, TextInput } from '../common/inputs';
-import { File } from 'tabler-icons-react';
 
 gql`
   fragment ModalDocumentsFields on Charge {
@@ -99,6 +99,8 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
+    setValue,
+    watch,
   } = useForm<Partial<UpdateDocumentFieldsInput>>({ defaultValues: { ...documentData } });
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
@@ -118,6 +120,11 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
     isDocumentReceipt(documentData) ||
     isDocumentInvoiceReceipt(documentData) ||
     isDocumentProforma(documentData);
+
+  // auto update vat currency according to amount currency
+  useEffect(() => {
+    setValue('vat.currency', watch('amount.currency'));
+  }, [setValue, watch('amount.currency')]);
 
   return (
     <Modal
@@ -152,7 +159,12 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                       },
                     }}
                     render={({ field, fieldState }) => (
-                      <TextInput {...field} error={fieldState.error?.message} label="Date" />
+                      <TextInput
+                        {...field}
+                        error={fieldState.error?.message}
+                        isDirty={fieldState.isDirty}
+                        label="Date"
+                      />
                     )}
                   />
                   <Controller
@@ -165,6 +177,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                         {...field}
                         value={!field || field.value === 'Missing' ? '' : field.value!}
                         error={fieldState.error?.message}
+                        isDirty={fieldState.isDirty}
                         label="Serial Number"
                       />
                     )}
@@ -175,7 +188,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                     defaultValue={documentData.vat?.raw}
                     render={({ field: vatField, fieldState: vatFieldState }) => (
                       <Controller
-                        name="amount.currency"
+                        name="vat.currency"
                         control={control}
                         defaultValue={documentData.amount?.currency ?? Currency.Ils}
                         render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
@@ -183,6 +196,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                             // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                             {...vatField}
                             error={vatFieldState.error?.message || currencyCodeFieldState.error?.message}
+                            isDirty={vatFieldState.isDirty || currencyCodeFieldState.isDirty}
                             label="VAT"
                             currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
                           />
@@ -204,6 +218,7 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                             // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                             {...amountField}
                             error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
+                            isDirty={amountFieldState.isDirty || currencyCodeFieldState.isDirty}
                             label="Amount"
                             currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
                           />
@@ -221,7 +236,12 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                   required: 'Required',
                 }}
                 render={({ field, fieldState }) => (
-                  <TextInput {...field} error={fieldState.error?.message} label="Image URL" />
+                  <TextInput
+                    {...field}
+                    error={fieldState.error?.message}
+                    isDirty={fieldState.isDirty}
+                    label="Image URL"
+                  />
                 )}
               />
               <Controller
@@ -233,7 +253,13 @@ export const DocumentPopUp = ({ opened, onClose, documentData }: Props) => {
                 }}
                 render={({ field, fieldState }) => (
                   <div className="flex flex-row gap-1 w-full">
-                    <TextInput className="grow" {...field} error={fieldState.error?.message} label="File URL" />
+                    <TextInput
+                      className="grow"
+                      {...field}
+                      error={fieldState.error?.message}
+                      isDirty={fieldState.isDirty}
+                      label="File URL"
+                    />
                     <ActionIcon variant="hover">
                       <a rel="noreferrer" target="_blank" href={field.value} type="button">
                         <File size={20} />
