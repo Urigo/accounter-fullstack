@@ -18,7 +18,7 @@ import {
 import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
 
 export interface Props {
-  document: EditDocumentFieldsFragment;
+  document?: EditDocumentFieldsFragment;
   control: Control<Partial<UpdateDocumentFieldsInput>, object>;
 }
 
@@ -27,7 +27,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
     isDocumentInvoice(document) ||
     isDocumentReceipt(document) ||
     isDocumentInvoiceReceipt(document) ||
-    isDocumentProforma(document);
+    isDocumentProforma(document) || !document;
 
   return (
     <>
@@ -44,7 +44,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
           <Controller
             name="date"
             control={control}
-            defaultValue={document.date}
+            defaultValue={document?.date}
             rules={{
               required: 'Required',
               pattern: {
@@ -59,7 +59,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
           <Controller
             name="serialNumber"
             control={control}
-            defaultValue={document.serialNumber}
+            defaultValue={document?.serialNumber}
             rules={{ required: 'Required' }}
             render={({ field, fieldState }) => (
               <TextInput
@@ -74,12 +74,12 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
           <Controller
             name="vat.raw"
             control={control}
-            defaultValue={document.vat?.raw}
+            defaultValue={document?.vat?.raw}
             render={({ field: vatField, fieldState: vatFieldState }) => (
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={document.amount?.currency ?? Currency.Ils}
+                defaultValue={document?.amount?.currency ?? Currency.Ils}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -96,12 +96,12 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
           <Controller
             name="amount.raw"
             control={control}
-            defaultValue={document.amount?.raw}
+            defaultValue={document?.amount?.raw}
             render={({ field: amountField, fieldState: amountFieldState }) => (
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={document.amount?.currency}
+                defaultValue={document?.amount?.currency}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -120,7 +120,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
       <Controller
         name="image"
         control={control}
-        defaultValue={document.image}
+        defaultValue={document?.image}
         rules={{
           required: 'Required',
         }}
@@ -131,7 +131,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
       <Controller
         name="file"
         control={control}
-        defaultValue={document.file}
+        defaultValue={document?.file}
         rules={{
           required: 'Required',
         }}
