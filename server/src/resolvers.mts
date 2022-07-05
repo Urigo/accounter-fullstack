@@ -194,34 +194,22 @@ export const resolvers: Resolvers = {
       try {
         const adjustedFields: IUpdateDocumentParams = {
           documentId: args.documentId,
-          duplicationOf: null,
-          emailId: null,
-          emailReceivedDate: null,
-          emailSender: null,
-          emailSubject: null,
-          emailToPayperForwardDate: null,
-          fileHash: null,
+          chargeId: null,
+          createdAt: null,
+          currencyCode: args.fields.amount?.currency ?? null,
+          date: args.fields.date ?? null,
+          fileUrl: null,
           imageUrl: null,
-          payperCurrencySymbol: args.fields.amount?.currency ?? null,
-          payperDocumentDate: args.fields.date ?? null,
-          payperDocumentId: args.fields.serialNumber ?? null,
-          payperDocumentType: null,
-          payperId: args.fields.id ?? null,
-          payperProvider: null,
-          payperProviderId: null,
-          payperTotalForPayment: args.fields.amount?.raw.toFixed(2) ?? null,
-          payperUpdatedAt: null,
-          payperUpdatedFlag: null,
-          payperVatPaytment: args.fields.vat?.raw.toFixed(2) ?? null,
-          transactionId: null,
-          uriComments: null,
+          serialNumber: args.fields.serialNumber ?? null,
+          totalAmount: args.fields.amount?.raw ?? null,
+          type: null,
+          vatAmount: args.fields.vat?.raw ?? null,
         };
         const res = await updateDocument.run({ ...adjustedFields }, pool);
         if (!res || res.length === 0) {
           throw new Error(`Document ID="${args.documentId}" not found`);
         }
         return {
-          __typename: 'UpdateDocumentSuccessfulResult',
           document: res[0],
         };
       } catch (e) {
