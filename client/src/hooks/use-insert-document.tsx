@@ -7,11 +7,13 @@ import {
 } from '../__generated__/types';
 
 gql`
-  mutation InsertDocument($chargeId: ID!, $record: InsertDocumentInput!) {
-    insertDocument(chargeId: $chargeId, record: $record) {
+  mutation InsertDocument($record: InsertDocumentInput!) {
+    insertDocument(record: $record) {
       __typename
-      ... on Charge {
-        id
+      ... on InsertDocumentSuccessfulResult {
+        document {
+          id
+        }
       }
       ... on CommonError {
         message
@@ -24,9 +26,9 @@ export const useInsertDocument = () => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const onError = async (e: unknown, { chargeId }: InsertDocumentMutationVariables) => {
+  const onError = async (e: unknown, { record }: InsertDocumentMutationVariables) => {
     console.log(e);
-    return new Error(`Error inserting ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`);
+    return new Error(`Error inserting ledger record to charge ID [${record.chargeId}]: ${(e as Error)?.message}`);
   };
   const onSuccess = async (data: InsertDocumentMutation) => {
     if (data.insertDocument.__typename === 'CommonError') {

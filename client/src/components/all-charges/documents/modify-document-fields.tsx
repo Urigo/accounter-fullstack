@@ -6,6 +6,7 @@ import {
   Currency,
   DocumentType,
   EditDocumentFieldsFragment,
+  InsertDocumentInput,
   UpdateDocumentFieldsInput,
 } from '../../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
@@ -16,10 +17,9 @@ import {
   isDocumentReceipt,
 } from '../../../helpers/documents';
 import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
-
 export interface Props {
   document?: EditDocumentFieldsFragment;
-  control: Control<Partial<UpdateDocumentFieldsInput>, object>;
+  control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
 }
 
 export const ModifyDocumentFields = ({ document, control }: Props) => {
@@ -27,7 +27,8 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
     isDocumentInvoice(document) ||
     isDocumentReceipt(document) ||
     isDocumentInvoiceReceipt(document) ||
-    isDocumentProforma(document) || !document;
+    isDocumentProforma(document) ||
+    !document;
 
   return (
     <>

@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { InsertDocumentInput } from '../../../__generated__/types';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
 import { ModifyDocumentFields } from './modify-document-fields';
 
@@ -22,11 +21,9 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
   const { mutate, isLoading } = useInsertDocument();
 
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
-    const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
-    if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
+    if (data && Object.keys(data).length > 0) {
       mutate({
-        chargeId,
-        record: dataToUpdate,
+        record: { ...data, chargeId },
       });
       if (closeModal) {
         closeModal();

@@ -86,11 +86,11 @@ export const EditDocument = ({ opened, onClose, documentData }: Props) => {
     formState: { dirtyFields },
     setValue,
     watch,
-  } = useForm<Partial<UpdateDocumentFieldsInput>>({ defaultValues: { ...documentData } });
+  } = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...documentData } });
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
 
-  const onSubmit: SubmitHandler<Partial<UpdateDocumentFieldsInput>> = data => {
+  const onSubmit: SubmitHandler<UpdateDocumentFieldsInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (Object.keys(dataToUpdate ?? {}).length > 0) {
       mutate({
