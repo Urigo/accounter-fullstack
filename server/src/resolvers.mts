@@ -139,10 +139,10 @@ const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<s
 };
 
 const commonFinancialDocumentsFields:
-  | InvoiceResolvers<any, IGetAllDocumentsResult>
-  | ReceiptResolvers<any, IGetAllDocumentsResult>
-  | InvoiceReceiptResolvers<any, IGetAllDocumentsResult>
-  | ProformaResolvers<any, IGetAllDocumentsResult> = {
+  | InvoiceResolvers
+  | ReceiptResolvers
+  | InvoiceReceiptResolvers
+  | ProformaResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
   date: documentRoot => documentRoot.date,
   amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
