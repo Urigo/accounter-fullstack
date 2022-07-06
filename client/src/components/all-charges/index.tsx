@@ -110,14 +110,14 @@ export const AllCharges = () => {
           moreInfo={item =>
             item.ledgerRecords.length > 0 || item.additionalDocuments.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-                <div  className="flex flex-col gap-2 items-center">
-                <AccounterButton
-              title="Generate Ledger"
-              disabled={generationRunning}
-              onClick={() => generateLedger({ chargeId: item.id })}
-            />
-            <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(item.id)} />
-            <AccounterButton title="Insert Document" onClick={() => setInsertDocument(item.id)} />
+                <div className="flex flex-col gap-2 items-center">
+                  <AccounterButton
+                    title="Generate Ledger"
+                    disabled={generationRunning}
+                    onClick={() => generateLedger({ chargeId: item.id })}
+                  />
+                  <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(item.id)} />
+                  <AccounterButton title="Insert Document" onClick={() => setInsertDocument(item.id)} />
                 </div>
                 <div
                   style={{
