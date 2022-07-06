@@ -36,6 +36,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
         name="documentType"
         control={control}
         rules={{ required: 'Required' }}
+        defaultValue={DocumentType.Unprocessed}
         render={({ field, fieldState }) => (
           <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
         )}
