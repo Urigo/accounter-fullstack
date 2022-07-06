@@ -425,7 +425,7 @@ export const resolvers: Resolvers = {
         const newDocument: IInsertDocumentsParams['document']['0'] = {
           image: record.image ?? null,
           file: record.file ?? null,
-          documentType: record.documentType,
+          documentType: record.documentType ?? DocumentType.Unprocessed,
           serialNumber: record.serialNumber ?? null,
           date: record.date ?? null,
           amount: record.amount?.raw ?? null,
@@ -705,7 +705,7 @@ export const resolvers: Resolvers = {
   },
   Unprocessed: {
     __isTypeOf(documentRoot) {
-      return documentRoot.type === null;
+      return !documentRoot.type || documentRoot.type === 'UNPROCESSED';
     },
     ...commonDocumentsFields,
   },
