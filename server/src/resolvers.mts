@@ -384,7 +384,7 @@ export const resolvers: Resolvers = {
           foreignCreditAmount2: null,
           foreignDebitAmount1: record.originalAmount?.raw.toFixed(2) ?? null,
           foreignDebitAmount2: null,
-          hashavshevetId: Number(record.hashavshevetId) ?? null,
+          hashavshevetId: record.hashavshevetId ? Number(record.hashavshevetId) : null,
           invoiceDate: record.date ? hashavshevetFormat.date(record.date) : null,
           movementType: null,
           origin: 'manual',
