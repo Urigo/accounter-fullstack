@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { AllChargesEntityFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { ConfirmMiniButton } from '../../common';
 
 gql`
   fragment AllChargesEntityFields on Charge {
@@ -52,7 +52,6 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
         <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
       )}
-      <EditMiniButton onClick={() => updateTag(prompt('New financial entity:') ?? undefined)} disabled={isLoading} />
     </div>
   );
 };
