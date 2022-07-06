@@ -18,9 +18,5 @@ type Props = {
 export const CreditAccount = ({ data }: Props) => {
   const { creditAccount } = data;
 
-  return (
-    <td>
-      {creditAccount?.name ?? 'Missing Account'}
-    </td>
-  );
+  return <td>{creditAccount?.name ?? 'Missing Account'}</td>;
 };

@@ -18,9 +18,5 @@ type Props = {
 export const DebitAccount = ({ data }: Props) => {
   const { debitAccount } = data;
 
-  return (
-    <td>
-      {debitAccount?.name ?? 'Missing Account'}
-    </td>
-  );
+  return <td>{debitAccount?.name ?? 'Missing Account'}</td>;
 };

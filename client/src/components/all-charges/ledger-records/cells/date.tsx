@@ -16,9 +16,5 @@ type Props = {
 export const Date = ({ data }: Props) => {
   const { date } = data;
 
-  return (
-    <td>
-      {date ?? 'Missing Data'}
-    </td>
-  );
+  return <td>{date ?? 'Missing Data'}</td>;
 };
