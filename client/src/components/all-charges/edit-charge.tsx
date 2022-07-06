@@ -64,7 +64,7 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
     control: transactionControl,
     handleSubmit: handleTransactionSubmit,
     formState: { dirtyFields: dirtyTransactionFields },
-  } = useForm<UpdateTransactionInput>({ defaultValues: charge.transactions?.[0] });
+  } = useForm<UpdateTransactionInput>({ defaultValues: transaction });
 
   const { mutate: mutateCharge, isLoading: isChargeLoading } = useUpdateCharge();
   const { mutate: mutateTransaction, isLoading: isTransactionLoading } = useUpdateTransaction();
@@ -145,30 +145,6 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="vat.raw"
-                control={chargeControl}
-                defaultValue={charge.vat?.raw}
-                render={({ field: amountField, fieldState: amountFieldState }) => (
-                  <Controller
-                    name="vat.currency"
-                    control={chargeControl}
-                    defaultValue={charge.vat?.currency ?? Currency.Ils}
-                    render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
-                      <CurrencyInput
-                        {...amountField}
-                        error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
-                        label="Vat"
-                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
-                      />
-                    )}
-                  />
-                )}
-              />
-            </div>
-          </div>
-          <div className="p-2 sm:w-1/2 w-full">
-            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
-              <Controller
                 name="withholdingTax.raw"
                 control={chargeControl}
                 defaultValue={charge.withholdingTax?.raw}
@@ -176,13 +152,13 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
                   <Controller
                     name="withholdingTax.currency"
                     control={chargeControl}
-                    defaultValue={charge.withholdingTax?.currency}
+                    defaultValue={charge.withholdingTax?.currency ?? Currency.Ils}
                     render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                       <CurrencyInput
                         {...amountField}
                         error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
                         label="withholding Tax"
-                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
+                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
                       />
                     )}
                   />
