@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
-import { InsertDocumentInput } from '../../../__generated__/types';
+import { DocumentType, InsertDocumentInput } from '../../../__generated__/types';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
 import { ModifyDocumentFields } from './modify-document-fields';
 
@@ -30,6 +30,8 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
       }
     }
   };
+
+  setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
 
   // auto update vat currency according to amount currency
   useEffect(() => {

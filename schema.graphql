@@ -63,6 +63,7 @@ enum DocumentType {
   RECEIPT
   INVOICE_RECEIPT
   PROFORMA
+  UNPROCESSED
 }
 
 " The other side of a transaction "
