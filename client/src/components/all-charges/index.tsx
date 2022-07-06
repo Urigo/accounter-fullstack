@@ -186,7 +186,9 @@ export const AllCharges = () => {
             },
             {
               title: 'Tags',
-              value: data => <Tags data={data} />,
+              value: (data, alternativeCharge) => (
+                <Tags data={data} alternativeCharge={alternativeCharge as SuggestedCharge} />
+              ),
             },
             {
               title: 'Share With',
