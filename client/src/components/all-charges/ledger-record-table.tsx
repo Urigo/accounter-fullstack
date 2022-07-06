@@ -57,7 +57,7 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
           <th>Description</th>
           <th>Accountant Approval</th>
           <th>Hashavshevet ID</th>
-          <th></th>
+          <th>Edit</th>
         </tr>
       </thead>
       <tbody>

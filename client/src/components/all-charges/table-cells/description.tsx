@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { AllChargesDescriptionFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { ConfirmMiniButton } from '../../common';
 
 gql`
   fragment AllChargesDescriptionFields on Charge {
@@ -45,10 +45,6 @@ export const Description = ({ data, alternativeCharge }: Props) => {
       {!isDescription && alternativeCharge?.userDescription && (
         <ConfirmMiniButton onClick={() => updateUserNote(alternativeCharge.userDescription)} disabled={isLoading} />
       )}
-      <EditMiniButton
-        onClick={() => updateUserNote(prompt('New user description:') ?? undefined)}
-        disabled={isLoading}
-      />
     </div>
   );
 };

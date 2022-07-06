@@ -10,7 +10,7 @@ import {
   SuggestedCharge,
 } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { ConfirmMiniButton } from '../../common';
 
 gql`
   fragment AllChargesShareWithFields on Charge {
@@ -81,12 +81,6 @@ export const ShareWith = ({ data, alternativeCharge, isBusiness }: Props) => {
               />
             </div>
           )}
-          <div className="sm:w-1/4">
-            <EditMiniButton
-              onClick={() => updateTag(prompt('New Account to share (use old string method):') ?? undefined)}
-              disabled={isLoading}
-            />
-          </div>
         </div>
       </div>
     </div>

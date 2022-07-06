@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { AllChargesTagsFieldsFragment } from '../../../__generated__/types';
 import { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { ConfirmMiniButton, EditMiniButton } from '../../common';
+import { ConfirmMiniButton } from '../../common';
 
 gql`
   fragment AllChargesTagsFields on Charge {
@@ -55,7 +55,6 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
           )}
         </li>
       ))}
-      <EditMiniButton onClick={() => updateTag(prompt('Enter new category') ?? undefined)} disabled={isLoading} />
     </ul>
   );
 };
