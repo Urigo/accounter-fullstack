@@ -16,6 +16,7 @@ import { EditCharge } from './edit-charge';
 import { LedgerRecordTable } from './ledger-record-table';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
+import { Account } from './table-cells/account';
 
 gql`
   query AllCharges($financialEntityId: ID!) {
@@ -25,6 +26,7 @@ gql`
       charges {
         id
         # ...ChargesFields
+        ...AllChargesAccountFields
         ...AllChargesAmountFields
         ...AllChargesDateFields
         ...AllChargesDescriptionFields
@@ -168,6 +170,10 @@ export const AllCharges = () => {
               value: (data, alternativeCharge) => (
                 <Entity data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
               ),
+            },
+            {
+              title: 'Account',
+              value: data => <Account data={data.transactions[0]} />,
             },
             {
               title: 'Description',
