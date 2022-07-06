@@ -47,7 +47,6 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
             control={control}
             defaultValue={document?.date}
             rules={{
-              required: 'Required',
               pattern: {
                 value: TIMELESS_DATE_REGEX,
                 message: 'Date must be im format yyyy-mm-dd',
@@ -61,7 +60,6 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
             name="serialNumber"
             control={control}
             defaultValue={document?.serialNumber}
-            rules={{ required: 'Required' }}
             render={({ field, fieldState }) => (
               <TextInput
                 {...field}
@@ -122,9 +120,6 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
         name="image"
         control={control}
         defaultValue={document?.image}
-        rules={{
-          required: 'Required',
-        }}
         render={({ field, fieldState }) => (
           <TextInput {...field} error={fieldState.error?.message} isDirty={fieldState.isDirty} label="Image URL" />
         )}
@@ -133,9 +128,6 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
         name="file"
         control={control}
         defaultValue={document?.file}
-        rules={{
-          required: 'Required',
-        }}
         render={({ field, fieldState }) => (
           <div className="flex flex-row gap-1 w-full">
             <TextInput
