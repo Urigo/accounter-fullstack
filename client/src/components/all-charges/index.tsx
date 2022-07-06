@@ -4,13 +4,17 @@ import { useSearchParams } from 'react-router-dom';
 
 import { EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
 import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
+import { AccounterButton } from '../common/button';
 import { AccounterLoader } from '../common/loader';
 import { PopUpModal } from '../common/modal';
 import { DocumentsGallery } from './documents/documents-gallery';
+import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
 import { LedgerRecordTable } from './ledger-record-table';
+import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
 
 gql`
@@ -68,6 +72,9 @@ export const AllCharges = () => {
   const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
   const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
+  const { mutate: generateLedger, isLoading: generationRunning } = useGenerateLedgerRecords();
+  const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
+  const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
 
   // TODO: improve the ID logic
   const financialEntityId =
@@ -103,6 +110,15 @@ export const AllCharges = () => {
           moreInfo={item =>
             item.ledgerRecords.length > 0 || item.additionalDocuments.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                <div  className="flex flex-col gap-2 items-center">
+                <AccounterButton
+              title="Generate Ledger"
+              disabled={generationRunning}
+              onClick={() => generateLedger({ chargeId: item.id })}
+            />
+            <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(item.id)} />
+            <AccounterButton title="Insert Document" onClick={() => setInsertDocument(item.id)} />
+                </div>
                 <div
                   style={{
                     display: 'flex',
@@ -177,6 +193,15 @@ export const AllCharges = () => {
               ),
             },
             {
+              title: 'More Info',
+              value: data => (
+                <div>
+                  <p>Ledger Records: {data.ledgerRecords.length}</p>
+                  <p>Documents: {data.additionalDocuments.length}</p>
+                </div>
+              ),
+            },
+            {
               title: 'Edit',
               value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
             },
@@ -195,6 +220,22 @@ export const AllCharges = () => {
           }
           opened={!!editCharge}
           onClose={() => setEditCharge(undefined)}
+        />
+      )}
+      {insertLedger && (
+        <PopUpModal
+          modalSize="75%"
+          content={<InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />}
+          opened={!!insertLedger}
+          onClose={() => setInsertLedger(undefined)}
+        />
+      )}
+      {insertDocument && (
+        <PopUpModal
+          modalSize="75%"
+          content={<InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />}
+          opened={!!insertDocument}
+          onClose={() => setInsertDocument(undefined)}
         />
       )}
     </div>
