@@ -187,7 +187,7 @@ export const AllCharges = () => {
             {
               title: 'Tags',
               value: (data, alternativeCharge) => (
-                <Tags data={data} alternativeCharge={alternativeCharge as SuggestedCharge} />
+                <Tags data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
               ),
             },
             {

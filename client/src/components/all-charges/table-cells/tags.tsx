@@ -17,7 +17,7 @@ gql`
 
 type Props = {
   data: AllChargesTagsFieldsFragment;
-  alternativeCharge: SuggestedCharge;
+  alternativeCharge?: SuggestedCharge;
 };
 
 export const Tags = ({ data, alternativeCharge }: Props) => {
