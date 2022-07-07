@@ -9,6 +9,7 @@ import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel } from '../../common/button-with-label';
 import { ModifyDocumentFields } from './modify-document-fields';
+import { UnlinkDocumentButton } from './unlink-document-button';
 
 gql`
   fragment EditDocumentFields on Document {
@@ -122,7 +123,7 @@ export const EditDocument = ({ opened, onClose, documentData }: Props) => {
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="shadow p-3 sm:rounded-md sm:overflow-hidden">
               <ModifyDocumentFields document={documentData} control={control} />
-              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6 flex flex-row">
                 <button
                   type="submit"
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -144,6 +145,7 @@ export const EditDocument = ({ opened, onClose, documentData }: Props) => {
                 >
                   Save
                 </button>
+                <UnlinkDocumentButton documentId={documentData.id} />
               </div>
             </div>
           </form>
