@@ -9,12 +9,12 @@ export interface AccounterTableProps<T, U> {
   stickyHeader?: boolean;
   columns: Array<{
     title: string | ReactNode;
-    value: (item: T, alternativeCharge?: U) => string | ReactNode;
+    value: (item: T, context?: U) => string | ReactNode;
   }>;
   items: Array<T>;
-  moreInfo?: (item: T) => ReactNode | string | null;
+  moreInfo?: (item: T) => ReactNode;
   showButton?: boolean;
-  extraRowData?: (item: T) => U | undefined;
+  rowContext?: (item: T) => U | undefined;
 }
 
 export interface AccountTableRow<T, U> {
@@ -23,7 +23,7 @@ export interface AccountTableRow<T, U> {
   moreInfo?: AccounterTableProps<T, U>['moreInfo'];
   stateBaseId?: string;
   isShowAll: boolean;
-  extraRowData?: (item: T) => U | undefined;
+  rowContext?: (item: T) => U | undefined;
 }
 
 export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
@@ -35,7 +35,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
       <tr>
         {props.columns.map((c, index) => (
           <td key={String(index)}>
-            {c.value(props.item, props.extraRowData ? props.extraRowData(props.item) : undefined)}
+            {c.value(props.item, props.rowContext ? props.rowContext(props.item) : undefined)}
           </td>
         ))}
         {props.moreInfo && (
@@ -94,7 +94,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
               item={item}
               moreInfo={props.moreInfo}
               isShowAll={isShowAll}
-              extraRowData={props.extraRowData}
+              rowContext={props.rowContext}
             />
           ))}
         </tbody>
