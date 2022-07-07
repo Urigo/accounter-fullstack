@@ -37,6 +37,10 @@ gql`
       raw
       currency
     }
+    totalAmount {
+      raw
+      currency
+    }
     transactions {
       id
       userNote
@@ -51,7 +55,9 @@ type Props = {
 };
 
 export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
-  const useFormManager = useForm<UpdateChargeInput>({ defaultValues: charge });
+  const useFormManager = useForm<UpdateChargeInput>({
+    defaultValues: { ...charge, vat: charge.vat?.raw, withholdingTax: charge.withholdingTax?.raw },
+  });
   const {
     control: chargeControl,
     handleSubmit: handleChargeSubmit,
@@ -145,19 +151,70 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
           <div className="p-2 sm:w-1/2 w-full">
             <div className="bg-gray-100 rounded flex p-4 h-full items-center">
               <Controller
-                name="withholdingTax.raw"
+                name="totalAmount.raw"
+                control={chargeControl}
+                defaultValue={charge.totalAmount?.raw}
+                render={({ field: amountField, fieldState: amountFieldState }) => (
+                  <Controller
+                    name="totalAmount.currency"
+                    control={chargeControl}
+                    defaultValue={charge.totalAmount?.currency ?? Currency.Ils}
+                    render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                      <CurrencyInput
+                        {...amountField}
+                        value={amountField.value ?? undefined}
+                        error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
+                        label="Total Amount"
+                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
+                      />
+                    )}
+                  />
+                )}
+              />
+            </div>
+          </div>
+          <div className="p-2 sm:w-1/2 w-full">
+            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
+              <Controller
+                name="vat"
+                control={chargeControl}
+                defaultValue={charge.vat?.raw}
+                render={({ field: amountField, fieldState: amountFieldState }) => (
+                  <Controller
+                    name="totalAmount.currency"
+                    control={chargeControl}
+                    defaultValue={charge.totalAmount?.currency ?? Currency.Ils}
+                    render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                      <CurrencyInput
+                        {...amountField}
+                        value={amountField.value ?? undefined}
+                        error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
+                        label="Vat"
+                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
+                      />
+                    )}
+                  />
+                )}
+              />
+            </div>
+          </div>
+          <div className="p-2 sm:w-1/2 w-full">
+            <div className="bg-gray-100 rounded flex p-4 h-full items-center">
+              <Controller
+                name="withholdingTax"
                 control={chargeControl}
                 defaultValue={charge.withholdingTax?.raw}
                 render={({ field: amountField, fieldState: amountFieldState }) => (
                   <Controller
-                    name="withholdingTax.currency"
+                    name="totalAmount.currency"
                     control={chargeControl}
-                    defaultValue={charge.withholdingTax?.currency ?? Currency.Ils}
+                    defaultValue={charge.totalAmount?.currency ?? Currency.Ils}
                     render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                       <CurrencyInput
                         {...amountField}
+                        value={amountField.value ?? undefined}
                         error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
-                        label="withholding Tax"
+                        label="Withholding Tax"
                         currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
                       />
                     )}

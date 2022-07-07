@@ -120,8 +120,9 @@ input UpdateChargeInput {
   # description: String
   tags: [TagInput!]
   beneficiaries: [BeneficiaryInput!]
-  vat: FinancialAmountInput
-  withholdingTax: FinancialAmountInput
+  vat: Float
+  withholdingTax: Float
+  totalAmount: FinancialAmountInput
   # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
   # invoice: Invoice
   accountantApproval: AccountantApprovalInput
@@ -359,6 +360,8 @@ extend type Charge {
   vat: FinancialAmount
   " withholding tax "
   withholdingTax: FinancialAmount
+  " the total amount of the charge "
+  totalAmount: FinancialAmount
   " linked invoice document "
   invoice: BroadInvoice
   " linked receipt document "
