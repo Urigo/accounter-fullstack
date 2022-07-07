@@ -1,3 +1,5 @@
+import { SimpleGrid } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
@@ -18,7 +20,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     setValue,
     watch,
   } = useForm<InsertDocumentInput>();
-  const { mutate, isLoading } = useInsertDocument();
+  const { mutate, isLoading, isError, isSuccess } = useInsertDocument();
 
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
     if (data && Object.keys(data).length > 0) {
@@ -39,34 +41,42 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
   }, [setValue, watch('amount.currency')]);
 
   return (
-    <form className="text-gray-600 body-font" onSubmit={handleSubmit(onSubmit)}>
-      <div className="container px-5 py-24 mx-auto">
-        <div className="text-center mb-20">
-          <h1 className="sm:text-3xl text-2xl font-medium text-center title-font text-gray-900 mb-4">
-            Insert Document
-          </h1>
-          <p>to charge ID: {chargeId}</p>
-        </div>
-        <div className="flex flex-wrap lg:w-4/5 sm:mx-auto sm:mb-2 -mx-2">
+    <div className=" px-5 w-max h-max justify-items-center">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SimpleGrid cols={5}>
           <ModifyDocumentFields control={control} />
-        </div>
-        <div className="container flex justify-center gap-20">
+        </SimpleGrid>
+        <div className="flex justify-center gap-5 mt-5">
           <button
             type="submit"
-            className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
             disabled={isLoading || Object.keys(dirtyFields).length === 0}
+            onClick={() => {
+              if (isError) {
+                showNotification({
+                  title: 'Error!',
+                  message: 'Oh no!, we have an error! 🤥',
+                });
+              }
+              if (isSuccess) {
+                showNotification({
+                  title: 'Update Success!',
+                  message: 'Hey there, you add new document!',
+                });
+              }
+            }}
           >
             Accept
           </button>
           <button
             type="button"
-            className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+            className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
             onClick={closeModal}
           >
             Cancel
           </button>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };

@@ -6,8 +6,8 @@ import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '.
 import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
+import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
-import { PopUpModal } from '../common/modal';
 import { ChargeExtendedInfo } from './chaerge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
@@ -183,8 +183,17 @@ export const AllCharges = () => {
         />
       </div>
       {editCharge && (
-        <PopUpModal
-          modalSize="75%"
+        <PopUpDrawer
+          modalSize="40%"
+          position="bottom"
+          title={
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+              <h1 className="sm:text-2xl font-small text-gray-900">Edit Charge:</h1>
+              <a href="/#" className="pt-1">
+                ID: {editCharge.id}
+              </a>
+            </div>
+          }
           content={
             <EditCharge
               charge={editCharge}
@@ -197,16 +206,34 @@ export const AllCharges = () => {
         />
       )}
       {insertLedger && (
-        <PopUpModal
-          modalSize="75%"
+        <PopUpDrawer
+          modalSize="40%"
+          position="bottom"
+          title={
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+              <h1 className="sm:text-2xl font-small text-gray-900">Insert Ledger:</h1>
+              <a href="/#" className="pt-1">
+                ID: {insertLedger}
+              </a>
+            </div>
+          }
           content={<InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />}
           opened={!!insertLedger}
           onClose={() => setInsertLedger(undefined)}
         />
       )}
       {insertDocument && (
-        <PopUpModal
-          modalSize="75%"
+        <PopUpDrawer
+          modalSize="40%"
+          position="bottom"
+          title={
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+              <h1 className="sm:text-2xl font-small text-gray-900">Insert Document:</h1>
+              <a href="/#" className="pt-1">
+                ID: {insertDocument}
+              </a>
+            </div>
+          }
           content={<InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />}
           opened={!!insertDocument}
           onClose={() => setInsertDocument(undefined)}

@@ -46,7 +46,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
 
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
       <div className="h-full flex flex-col relative overflow-hidden">
         {fields?.map((beneficiery, index) => (
           <div key={beneficiery.id} className="flex items-center gap-2 text-gray-600 mb-2">

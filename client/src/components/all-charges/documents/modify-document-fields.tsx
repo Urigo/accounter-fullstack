@@ -1,6 +1,4 @@
-import { ActionIcon } from '@mantine/core';
 import { Control, Controller } from 'react-hook-form';
-import { File } from 'tabler-icons-react';
 
 import {
   Currency,
@@ -130,7 +128,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
         control={control}
         defaultValue={document?.file}
         render={({ field, fieldState }) => (
-          <div className="flex flex-row gap-1 w-full">
+          <div className="flex flex-row">
             <TextInput
               className="grow"
               {...field}
@@ -138,11 +136,6 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
               isDirty={fieldState.isDirty}
               label="File URL"
             />
-            <ActionIcon variant="hover">
-              <a rel="noreferrer" target="_blank" href={field.value} type="button">
-                <File size={20} />
-              </a>
-            </ActionIcon>
           </div>
         )}
       />
