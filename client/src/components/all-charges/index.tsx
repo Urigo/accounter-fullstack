@@ -2,18 +2,15 @@ import gql from 'graphql-tag';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
+import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
 import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
-import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
-import { AccounterButton } from '../common/button';
 import { AccounterLoader } from '../common/loader';
 import { PopUpModal } from '../common/modal';
-import { DocumentsGallery } from './documents/documents-gallery';
+import { ChargeExtendedInfo } from './chaerge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
-import { LedgerRecordTable } from './ledger-record-table';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
 import { Account } from './table-cells/account';
@@ -74,7 +71,6 @@ export const AllCharges = () => {
   const [searchParams] = useSearchParams();
   const financialEntityName = searchParams.get('financialEntity');
   const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
-  const { mutate: generateLedger, isLoading: generationRunning } = useGenerateLedgerRecords();
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
 
@@ -92,13 +88,22 @@ export const AllCharges = () => {
 
   const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
   const allCharges = data?.financialEntity?.charges ?? [];
-  const extendedTransactions = allCharges.map(t => ({
-    ...t,
-    charge: data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === t.id),
-  }));
 
   if (isLoading) {
     return <AccounterLoader />;
+  }
+
+  function generateRowContext(charge: AllChargesQuery['financialEntity']['charges'][0]) {
+    if (
+      !charge.counterparty?.name ||
+      !charge.transactions[0]?.userNote?.trim() ||
+      charge.tags?.length === 0 ||
+      !charge.vat?.raw ||
+      charge.beneficiaries?.length === 0
+    ) {
+      return suggestedCharge(charge);
+    }
+    return undefined;
   }
 
   return (
@@ -109,53 +114,14 @@ export const AllCharges = () => {
         </div>
         <AccounterTable
           showButton={true}
-          moreInfo={item =>
-            item.ledgerRecords.length > 0 || item.additionalDocuments.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-                <div className="flex flex-col gap-2 items-center">
-                  <AccounterButton
-                    title="Generate Ledger"
-                    disabled={generationRunning}
-                    onClick={() => generateLedger({ chargeId: item.id })}
-                  />
-                  <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(item.id)} />
-                  <AccounterButton title="Insert Document" onClick={() => setInsertDocument(item.id)} />
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                  }}
-                >
-                  <LedgerRecordTable ledgerRecords={item.ledgerRecords} />
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    width: '50%',
-                    justifyContent: 'flex-start',
-                  }}
-                >
-                  <DocumentsGallery additionalDocumentsData={item.additionalDocuments} />
-                </div>
-              </div>
-            ) : null
-          }
+          moreInfo={item => (
+            <ChargeExtendedInfo charge={item} setInsertLedger={setInsertLedger} setInsertDocument={setInsertDocument} />
+          )}
           striped
           highlightOnHover
           stickyHeader
-          items={extendedTransactions}
-          extraRowData={item =>
-            !item.counterparty?.name ||
-            !item.transactions[0]?.userNote?.trim() ||
-            item.tags?.length === 0 ||
-            !item.vat?.raw ||
-            item.beneficiaries?.length === 0
-              ? suggestedCharge(item)
-              : undefined
-          }
+          items={allCharges}
+          rowContext={generateRowContext}
           columns={[
             {
               title: 'Date',
