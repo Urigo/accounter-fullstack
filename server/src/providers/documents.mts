@@ -49,11 +49,13 @@ export const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEnti
 export const updateDocument = sql<IUpdateDocumentQuery>`
   UPDATE accounter_schema.documents
   SET
-  charge_id = COALESCE(
-    $chargeId,
-    charge_id,
-    NULL
-  ),
+  charge_id = CASE
+    WHEN $chargeId='NULL' THEN NULL
+    ELSE COALESCE(
+      $chargeId::UUID,
+      charge_id,
+      NULL
+    ) END,
   currency_code = COALESCE(
     $currencyCode,
     currency_code,

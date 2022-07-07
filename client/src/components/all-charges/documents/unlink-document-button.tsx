@@ -16,7 +16,7 @@ export function UnlinkDocumentButton({ documentId }: Props) {
   function onUnlink() {
     mutate({
       documentId,
-      fields: { chargeId: null },
+      fields: { chargeId: 'NULL' },
     });
   }
 
