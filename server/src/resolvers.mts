@@ -241,12 +241,12 @@ export const resolvers: Resolvers = {
         bankReference: null,
         businessTrip: null,
         contraCurrencyCode: null,
-        currencyCode: null,
+        currencyCode: fields.totalAmount?.currency ?? null,
         currencyRate: null,
         currentBalance: null,
         debitDate: null,
         detailedBankDescription: null,
-        eventAmount: null,
+        eventAmount: fields.totalAmount?.raw?.toFixed(2) ?? null,
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance,
@@ -271,13 +271,8 @@ export const resolvers: Resolvers = {
         taxInvoiceFile: null,
         taxInvoiceNumber: null,
         userDescription: null,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        vat: fields.vat?.currency && fields.vat.currency !== Currency.Ils ? null : fields.vat?.raw,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        withholdingTax:
-          fields.withholdingTax?.currency && fields.withholdingTax.currency !== Currency.Ils
-            ? null
-            : fields.withholdingTax?.raw ?? null,
+        vat: fields.vat ?? null,
+        withholdingTax: fields.withholdingTax ?? null,
         chargeId,
       };
       try {
@@ -858,8 +853,11 @@ export const resolvers: Resolvers = {
           return [];
       }
     },
-    vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat) : null),
-    withholdingTax: DbCharge => formatFinancialAmount(DbCharge.withholding_tax),
+    vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat, DbCharge.currency_code) : null),
+    withholdingTax: DbCharge =>
+      DbCharge.withholding_tax != null ? formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code) : null,
+    totalAmount: DbCharge =>
+      DbCharge.event_amount != null ? formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code) : null,
     invoice: async DbCharge => {
       if (!DbCharge.id) {
         return null;
