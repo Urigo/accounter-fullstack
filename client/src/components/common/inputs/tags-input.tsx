@@ -19,7 +19,7 @@ export function TagsInput({ label, formManager }: Props) {
 
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-700">{label ?? 'Tags'}</label>}
+      <label className="block text-sm pb-1 font-medium text-gray-700">{label ?? 'Tags'}</label>
       <div className="h-full flex flex-col relative overflow-hidden">
         {fields?.map((tag, index) => (
           <div key={`${tag.id}`} className="flex items-center gap-2 text-gray-600 mb-2">
