@@ -37,6 +37,8 @@ interface Document implements Linkable {
   " the specific type of the document"
   # eslint-disable-next-line @graphql-eslint/no-typename-prefix
   documentType: DocumentType
+  creditor: String
+  debtor: String
 }
 
 " Represent financial amount "
@@ -106,6 +108,8 @@ input UpdateDocumentFieldsInput {
   image: URL
   file: URL
   chargeId: ID
+  creditor: String
+  debtor: String
 }
 
 " input variables for updateCharge "
@@ -168,6 +172,8 @@ input InsertDocumentInput {
   date: TimelessDate
   amount: FinancialAmountInput
   chargeId: ID
+  creditor: String
+  debtor: String
 }
 
 " input variables for updateTransaction "
@@ -424,6 +430,8 @@ type Unprocessed implements Document & Linkable {
   file: URL
   charge: Charge
   documentType: DocumentType
+  creditor: String
+  debtor: String
 }
 
 " invoice document "
@@ -434,6 +442,8 @@ type Invoice implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
   documentType: DocumentType
+  creditor: String
+  debtor: String
 
   serialNumber: String
   date: TimelessDate
@@ -448,6 +458,8 @@ type Proforma implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
   documentType: DocumentType
+  creditor: String
+  debtor: String
 
   serialNumber: String
   date: TimelessDate
@@ -468,6 +480,8 @@ type Receipt implements Document & Linkable {
   serialNumber: String
   date: TimelessDate
   amount: FinancialAmount
+  creditor: String
+  debtor: String
 }
 
 " Invoice receipt document - חשבונית מס קבלה "
@@ -478,6 +492,8 @@ type InvoiceReceipt implements Document & Linkable {
   vat: FinancialAmount
   charge: Charge
   documentType: DocumentType
+  creditor: String
+  debtor: String
 
   serialNumber: String
   date: TimelessDate
