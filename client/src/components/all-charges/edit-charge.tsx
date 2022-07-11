@@ -1,4 +1,4 @@
-import { SimpleGrid, Switch } from '@mantine/core';
+import { Switch } from '@mantine/core';
 import gql from 'graphql-tag';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
@@ -12,6 +12,7 @@ import { MakeBoolean, relevantDataPicker } from '../../helpers';
 import { useUpdateCharge } from '../../hooks/use-update-charge';
 import { useUpdateTransaction } from '../../hooks/use-update-transaction';
 import { BeneficiariesInput, CurrencyInput, TagsInput, TextInput } from '../common/inputs';
+import { SimpleGrid } from '../common/simple-grid';
 
 gql`
   fragment EditChargeFields on Charge {

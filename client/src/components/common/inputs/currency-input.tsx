@@ -45,8 +45,8 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
 }) {
   return (
     <div>
-      <div className="relative flex flex-row ">
-        <NumberInput {...props} error={error || currencyError} />
+      <div className="w-full flex flex-row ">
+        <NumberInput className="w-full" {...props} error={error || currencyError} />
         <CurrencyCodeInput {...currencyCodeProps} />
       </div>
     </div>

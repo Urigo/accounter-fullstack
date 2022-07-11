@@ -1,4 +1,3 @@
-import { SimpleGrid } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
@@ -6,6 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { EditLedgerRecordsFieldsFragment, UpdateLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
+import { SimpleGrid } from '../../common/simple-grid';
 import { LedgerRecordFields } from './ledger-record-fields';
 
 gql`

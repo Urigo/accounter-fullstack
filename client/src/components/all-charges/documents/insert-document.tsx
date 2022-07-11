@@ -1,10 +1,10 @@
-import { SimpleGrid } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { DocumentType, InsertDocumentInput } from '../../../__generated__/types';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
+import { SimpleGrid } from '../../common/simple-grid';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {
