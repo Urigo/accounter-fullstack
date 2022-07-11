@@ -34,7 +34,7 @@
     "vite": "2.9.13"
   },
   "engines": {
-    "node": "18.4.0"
+    "node": "18.5.0"
   },
   "license": "MIT"
 }

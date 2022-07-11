@@ -13,14 +13,14 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
   ...props
 }) {
   return (
-    <div className="absolute inset-y-0 right-0 flex items-center">
+    <div className="bottom-0 mt-6">
       {label && (
         <label htmlFor="currency" className="sr-only">
           {label}
         </label>
       )}
       <select
-        className="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-md"
+        className={` bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md`}
         {...props}
       >
         {Object.keys(Currency).map(key => (
@@ -44,17 +44,11 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   ...props
 }) {
   return (
-    <div
-      className="w-full
-    py-3
-    font-medium
-    placeholder:text-black-500
-    disabled:cursor-not-allowed
-    disabled:opacity-30"
-    >
-      <NumberInput {...props} error={error || currencyError} rightPadding="pr-12">
+    <div>
+      <div className="relative flex flex-row ">
+        <NumberInput {...props} error={error || currencyError} />
         <CurrencyCodeInput {...currencyCodeProps} />
-      </NumberInput>
+      </div>
     </div>
   );
 });

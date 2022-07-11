@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
 import { EditMiniButton } from '../common';
-import { PopUpModal } from '../common/modal';
+import { PopUpDrawer } from '../common/drawer';
 import { CreditAccount, Date, DebitAccount } from './ledger-records/cells';
 import { EditLedgerRecord } from './ledger-records/edit-ledger-record';
 
@@ -84,8 +84,17 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
           </tr>
         ))}
       </tbody>
-      <PopUpModal
-        modalSize="75%"
+      <PopUpDrawer
+        modalSize="40%"
+        position="bottom"
+        title={
+          <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+            <h1 className="sm:text-2xl font-small text-gray-900">Edit Ledger Record:</h1>
+            <a href="/#" className="pt-1">
+              ID: {editLedgerId}
+            </a>
+          </div>
+        }
         content={
           ledgerRecords.some(r => r.id === editLedgerId) && (
             <EditLedgerRecord

@@ -14,14 +14,16 @@ export const SelectInput = forwardRef<HTMLSelectElement, Props>(function SelectI
   return (
     <div>
       {label && (
-        <label htmlFor={props.name} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={props.name} className="text-sm font-medium text-gray-700">
           {label}
         </label>
       )}
-      <div className="mt-1 relative rounded-md shadow-sm">
+      <div>
         <select
           ref={ref}
-          className="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-md"
+          className={` bg-gray-100 border border-${
+            error ? 'red' : 'gray'
+          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out block sm:text-sm rounded-md`}
           {...props}
         >
           {Object.keys(selectionEnum).map(key => (

@@ -14,7 +14,7 @@ type Props = {
   control: Control<UpdateLedgerRecordInput | InsertLedgerRecordInput, any>;
 };
 
-export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
+export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
   return (
     <>
       <Controller

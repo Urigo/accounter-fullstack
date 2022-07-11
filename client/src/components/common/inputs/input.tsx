@@ -45,11 +45,11 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
   return (
     <div className={className}>
       {label && (
-        <label htmlFor={props.name} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={props.name} className="text-sm font-medium text-gray-700">
           {label}
         </label>
       )}
-      <div className="mt-1 relative rounded-md shadow-sm">
+      <div>
         {!showControls && type === 'number' && (
           <style>
             {`/* Chrome, Safari, Edge, Opera */
@@ -70,9 +70,9 @@ export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(func
           type={type}
           {...props}
           onChange={type === 'number' ? handleChange : onChange}
-          className={`w-full bg-gray-100 rounded border bg-opacity-50 border-${
+          className={` bg-gray-100 rounded border border-${
             error ? 'red' : isDirty ? 'green' : 'gray'
-          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out block ${rightPadding} sm:text-sm rounded-md`}
+          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out  ${rightPadding} sm:text-sm rounded-md`}
         />
         {children}
       </div>
