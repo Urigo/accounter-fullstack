@@ -1,13 +1,35 @@
 import { Pagination } from '@mantine/core';
+import gql from 'graphql-tag';
 import { useState } from 'react';
 
+import { DocumentsToMatchQuery, useDocumentsToMatchQuery } from '../../__generated__/types';
+import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';
 
-export function DocumentsMatch() {
-  // TODO: get unmatched documents
-  const documentsToMatch: any[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+gql`
+  query DocumentsToMatch {
+    documents {
+      id
+      charge {
+        id
+      }
+      ...DocumentMatchFields
+    }
+  }
+`;
 
-  const [documents, setDocuments] = useState(documentsToMatch);
+export function DocumentsMatch() {
+  const { isLoading } = useDocumentsToMatchQuery(
+    {},
+    {
+      onSuccess: data => {
+        setDocuments(data.documents.filter(doc => !doc.charge));
+        return data;
+      },
+    }
+  );
+
+  const [documents, setDocuments] = useState<DocumentsToMatchQuery['documents']>([]);
   const [activeDocumentIndex, setActiveDocumentIndex] = useState(1);
 
   function removeDocument(index?: number) {
@@ -27,14 +49,19 @@ export function DocumentsMatch() {
         <div className="flex flex-col text-center w-full mb-1">
           <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">Document Matches</h1>
         </div>
-        {documents.length === 0 ? (
+        {documents?.length === 0 && (
           <div className="flex flex-col text-center w-full mb-1">
-            <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">No Document Found</h3>
+            {isLoading ? (
+              <AccounterLoader />
+            ) : (
+              <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">No Document Found</h3>
+            )}
           </div>
-        ) : (
+        )}
+        {documents?.length > 0 && (
           <>
             <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
-            <DocumentHandler document={documents[activeDocumentIndex]} skipDocument={removeDocument} />
+            <DocumentHandler document={documents[activeDocumentIndex - 1]} skipDocument={removeDocument} />
           </>
         )}
       </div>

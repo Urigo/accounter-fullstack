@@ -1,10 +1,72 @@
 import { Stepper } from '@mantine/core';
+import gql from 'graphql-tag';
 import { useState } from 'react';
 
-import { AccounterButton } from '../common/button';
+import { DocumentMatchFieldsFragment } from '../../__generated__/types';
+
+// TODO: update fragment to use only relevant data
+gql`
+  fragment DocumentMatchFields on Document {
+    __typename
+    id
+    image
+    file
+    ... on Proforma {
+      vat {
+        raw
+        formatted
+        currency
+      }
+      serialNumber
+      date
+      amount {
+        raw
+        formatted
+        currency
+      }
+    }
+    ... on InvoiceReceipt {
+      vat {
+        raw
+        formatted
+        currency
+      }
+      serialNumber
+      date
+      amount {
+        raw
+        formatted
+        currency
+      }
+    }
+    ... on Invoice {
+      vat {
+        raw
+        formatted
+        currency
+      }
+      serialNumber
+      date
+    }
+    ... on Receipt {
+      vat {
+        raw
+        formatted
+        currency
+      }
+      serialNumber
+      date
+      amount {
+        raw
+        formatted
+        currency
+      }
+    }
+  }
+`;
 
 interface Props {
-  document: any;
+  document: DocumentMatchFieldsFragment;
   skipDocument: () => void;
 }
 
