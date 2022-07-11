@@ -3,7 +3,9 @@ import gql from 'graphql-tag';
 import { useState } from 'react';
 
 import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
+import { PopUpDrawer } from '../../common/drawer';
 import { EditDocument } from './edit-document';
+import { UnlinkDocumentButton } from './unlink-document-button';
 
 gql`
   fragment DocumentsGalleryFields on Charge {
@@ -54,7 +56,22 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                     </div>
                   </button>
                   {openModal === doc.id && (
-                    <EditDocument onClose={() => setOpenModal(null)} opened={openModal === doc.id} documentData={doc} />
+                    <PopUpDrawer
+                      modalSize="40%"
+                      position="bottom"
+                      opened={openModal === doc.id}
+                      onClose={() => setOpenModal(null)}
+                      title={
+                        <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+                          <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
+                          <a href="/#" className="pt-1">
+                            ID: {doc.id}
+                          </a>
+                          <UnlinkDocumentButton documentId={doc.id} />
+                        </div>
+                      }
+                      content={<EditDocument documentData={doc} />}
+                    ></PopUpDrawer>
                   )}
                 </div>
               ))}
