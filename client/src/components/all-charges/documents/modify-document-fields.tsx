@@ -83,7 +83,7 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
               />
             )}
           />
-            <Controller
+          <Controller
             name="creditor"
             control={control}
             defaultValue={document?.creditor}
