@@ -70,6 +70,34 @@ export const ModifyDocumentFields = ({ document, control }: Props) => {
             )}
           />
           <Controller
+            name="debtor"
+            control={control}
+            defaultValue={document?.debtor}
+            render={({ field, fieldState }) => (
+              <TextInput
+                {...field}
+                value={!field || field.value === 'Missing' ? '' : field.value!}
+                error={fieldState.error?.message}
+                isDirty={fieldState.isDirty}
+                label="Debtor"
+              />
+            )}
+          />
+          <Controller
+            name="creditor"
+            control={control}
+            defaultValue={document?.creditor}
+            render={({ field, fieldState }) => (
+              <TextInput
+                {...field}
+                value={!field || field.value === 'Missing' ? '' : field.value!}
+                error={fieldState.error?.message}
+                isDirty={fieldState.isDirty}
+                label="Creditor"
+              />
+            )}
+          />
+          <Controller
             name="vat.raw"
             control={control}
             defaultValue={document?.vat?.raw}

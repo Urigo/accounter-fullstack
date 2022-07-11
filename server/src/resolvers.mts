@@ -136,6 +136,8 @@ const commonDocumentsFields: DocumentResolvers = {
   },
   image: documentRoot => documentRoot.image_url,
   file: documentRoot => documentRoot.file_url,
+  creditor: documentType => documentType.creditor,
+  debtor: documentType => documentType.debtor,
 };
 
 const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
@@ -152,6 +154,8 @@ const commonFinancialDocumentsFields:
   date: documentRoot => documentRoot.date,
   amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
+  creditor: documentType => documentType.creditor,
+  debtor: documentType => documentType.debtor,
 };
 
 const commonTransactionFields:
