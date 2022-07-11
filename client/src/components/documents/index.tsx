@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { useDocumentsQuery } from '../../__generated__/types';
 import { AccounterTable } from '../common/accounter-table';
-import { AccounterButton } from '../common/button';
+import { Button } from '../common/button';
 import { AccounterLoader } from '../common/loader';
 import { PopUpModal } from '../common/modal';
 
@@ -166,8 +166,7 @@ export const DocumentsReport = () => {
           },
           {
             title: 'File',
-            value: doc =>
-              doc.file && <AccounterButton target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />,
+            value: doc => doc.file && <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />,
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },
           { title: 'Serial Number', value: doc => ('serialNumber' in doc ? doc.serialNumber : null) },

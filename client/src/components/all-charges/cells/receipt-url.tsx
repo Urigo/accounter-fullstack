@@ -3,7 +3,7 @@
 
 // import { ReceiptUrlFieldsFragment } from '../../../__generated__/types';
 // import { entitiesWithoutInvoice } from '../../../helpers';
-// import { AccounterButton } from '../../common/button';
+// import { Button } from '../../common/button';
 
 // gql`
 //   fragment ReceiptUrlFields on Charge {
@@ -35,7 +35,7 @@
 //         ...style,
 //       }}
 //     >
-//       {file && <AccounterButton target="_blank" rel="noreferrer" herf={file} title="Open Link" />}
+//       {file && <Button target="_blank" rel="noreferrer" herf={file} title="Open Link" />}
 //       {/* TODO: create update document hook */}
 //       {/* <UpdateButton transaction={transaction} propertyName="receipt_url" promptText="New Receipt url:" /> */}
 //     </td>

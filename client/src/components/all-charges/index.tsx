@@ -8,7 +8,7 @@ import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
-import { ChargeExtendedInfo } from './chaerge-extended-info';
+import { ChargeExtendedInfo } from './charge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
