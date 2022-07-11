@@ -1,7 +1,7 @@
 import { Paper, Table } from '@mantine/core';
 import { ReactNode, useState } from 'react';
 
-import { AccounterButton } from './button';
+import { Button } from './button';
 
 export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;
@@ -43,7 +43,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
             {moreInfoValue === null ? (
               <p>No Data Related</p>
             ) : (
-              <AccounterButton title="Ledger Info" onClick={() => setOpen(!opened)} />
+              <Button title="Ledger Info" onClick={() => setOpen(!opened)} />
             )}
           </td>
         )}

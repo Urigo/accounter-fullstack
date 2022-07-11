@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction } from 'react';
 
 import { AllChargesQuery } from '../../__generated__/types';
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
-import { AccounterButton } from '../common/button';
+import { Button } from '../common/button';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-record-table';
 
@@ -18,13 +18,13 @@ export function ChargeExtendedInfo({ charge, setInsertLedger, setInsertDocument 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
       <div className="flex flex-col gap-2 items-center">
-        <AccounterButton
+        <Button
           title="Generate Ledger"
           disabled={generationRunning}
           onClick={() => generateLedger({ chargeId: charge.id })}
         />
-        <AccounterButton title="Insert Ledger" onClick={() => setInsertLedger(charge.id)} />
-        <AccounterButton title="Insert Document" onClick={() => setInsertDocument(charge.id)} />
+        <Button title="Insert Ledger" onClick={() => setInsertLedger(charge.id)} />
+        <Button title="Insert Document" onClick={() => setInsertDocument(charge.id)} />
       </div>
       {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
         <>

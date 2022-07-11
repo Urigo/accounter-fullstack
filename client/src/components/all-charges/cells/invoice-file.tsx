@@ -3,7 +3,7 @@
 
 // import { InvoiceFileFieldsFragment } from '../../../__generated__/types';
 // import { entitiesWithoutInvoice } from '../../../helpers';
-// import { AccounterButton } from '../../common/button';
+// import { Button } from '../../common/button';
 
 // gql`
 //   fragment InvoiceFileFields on Charge {
@@ -34,7 +34,7 @@
 //         ...style,
 //       }}
 //     >
-//       {file && <AccounterButton target="_blank" rel="noreferrer" herf={file} title="Click Here" />}
+//       {file && <Button target="_blank" rel="noreferrer" herf={file} title="Click Here" />}
 //       {/* TODO: create update document hook */}
 //       {/* <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" /> */}
 //     </td>

@@ -11,7 +11,7 @@ export interface Props extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButton
   url?: string;
 }
 
-export const AccounterButton = ({ title, herf, style, target, rel, type = 'button', onClick, ...props }: Props) => {
+export const Button = ({ title, herf, style, target, rel, type = 'button', onClick, ...props }: Props) => {
   return (
     <button
       style={style}
