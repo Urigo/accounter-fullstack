@@ -28,6 +28,7 @@ export const FinancialStatus = () => {
       <a href="/reports-to-review"> Monthly report to review</a>
       <a href="/private-charts"> Private Charts</a>
       <a href="/documents"> Documents</a>
+      <a href="/charts"> Charts</a>
       <ProfitTable />
       <br />
       <ThisMonthPrivateExpensesTable />

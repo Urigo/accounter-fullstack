@@ -14,6 +14,7 @@ import { ReportsToReview } from './components/reports-to-review';
 import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
 import { UserTransactions } from './components/user-transactions';
 import { Providers } from './providers';
+import { Charts } from './components/charts';
 
 const rootElement = document.getElementById('root');
 
@@ -31,6 +32,7 @@ root.render(
           <Route path="/monthly-report" element={<MonthlyReport />} />
           <Route path="/reports-to-review" element={<ReportsToReview />} />
           <Route path="/documents" element={<DocumentsReport />} />
+          <Route path="/charts" element={<Charts />} />
           <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
           <Route path="/user-transactions" element={<UserTransactions />} />
           <Route path="/all-users" element={<AllUsers />} />
