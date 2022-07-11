@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "graphql": "16.5.0",
-    "modern-poalim-scraper": "0.3.7"
+    "modern-poalim-scraper": "0.3.8"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "2.6.4",
