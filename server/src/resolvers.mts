@@ -124,6 +124,10 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
     return charges;
   },
 };
+const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
+  const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
+  return DocumentType[key as keyof typeof DocumentType];
+};
 
 const commonDocumentsFields: DocumentResolvers = {
   id: documentRoot => documentRoot.id,
@@ -139,11 +143,7 @@ const commonDocumentsFields: DocumentResolvers = {
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,
-};
-
-const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
-  const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  return DocumentType[key as keyof typeof DocumentType];
+  documentType,
 };
 
 const commonFinancialDocumentsFields:
@@ -155,8 +155,8 @@ const commonFinancialDocumentsFields:
   date: documentRoot => documentRoot.date,
   amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
-  creditor: documentType => documentType.creditor,
-  debtor: documentType => documentType.debtor,
+  creditor: documentRoot => documentRoot.creditor,
+  debtor: documentRoot => documentRoot.debtor,
 };
 
 const commonTransactionFields:
@@ -688,7 +688,6 @@ export const resolvers: Resolvers = {
     },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
-    documentType,
   },
   InvoiceReceipt: {
     __isTypeOf(documentRoot) {
@@ -696,13 +695,11 @@ export const resolvers: Resolvers = {
     },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
-    documentType,
   },
   Proforma: {
     __isTypeOf: () => false,
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
-    documentType,
   },
   Unprocessed: {
     __isTypeOf(documentRoot) {
@@ -716,7 +713,6 @@ export const resolvers: Resolvers = {
     },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
-    documentType,
   },
 
   LtdFinancialEntity: {

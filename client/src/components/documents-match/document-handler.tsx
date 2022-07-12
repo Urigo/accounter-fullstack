@@ -12,7 +12,7 @@ function EditStep({
   setReadyForNextStep,
 }: Pick<Props, 'document'> & { setReadyForNextStep: (ready: boolean) => void }) {
   setReadyForNextStep(true);
-  return document?.id ? <EditDocument documentData={document} /> : null;
+  return <EditDocument documentData={document} />;
 }
 
 gql`
