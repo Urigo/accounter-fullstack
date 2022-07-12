@@ -7,20 +7,24 @@ import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';
 
 gql`
-  query DocumentsToMatch {
+  query DocumentsToMatch($financialEntityId: ID!) {
     documents {
       id
       charge {
         id
       }
-      ...DocumentMatchFields
+      ...DocumentHandlerFields
     }
+    ...DocumentMatchChargesFields
   }
 `;
 
 export function DocumentsMatch() {
-  const { isLoading } = useDocumentsToMatchQuery(
-    {},
+    // TODO: improve the ID logic
+    const financialEntityId = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+
+  const { data, isLoading } = useDocumentsToMatchQuery(
+    {financialEntityId},
     {
       onSuccess: data => {
         setDocuments(data.documents.filter(doc => !doc.charge));
@@ -61,7 +65,7 @@ export function DocumentsMatch() {
         {documents?.length > 0 && (
           <>
             <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
-            <DocumentHandler document={documents[activeDocumentIndex - 1]} skipDocument={removeDocument} />
+            <DocumentHandler document={documents[activeDocumentIndex - 1]} charges={data?.financialEntity?.charges} skipDocument={removeDocument} />
           </>
         )}
       </div>
