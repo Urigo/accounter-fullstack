@@ -751,8 +751,13 @@ export const resolvers: Resolvers = {
     number: DbAccount => DbAccount.account_number.toString(),
     fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
-  Charge: {
+  Charge:  {
     id: DbCharge => DbCharge.id,
+    totalAmountExchangeRates: async DbCharge => {
+      const charge = await getChargeByIdLoader.load(DbCharge.id);
+      const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge!);
+
+    },
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocuments: async DbCharge => {
       if (!DbCharge.id) {

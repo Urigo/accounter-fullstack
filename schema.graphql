@@ -369,7 +369,9 @@ extend type Charge {
   withholdingTax: FinancialAmount
   " the total amount of the charge "
   totalAmount: FinancialAmount
-  " linked invoice document "
+    " the total amount of the charge after exchange rates function"
+  totalAmountExchangeRates: FinancialAmount
+    " linked invoice document "
   invoice: BroadInvoice
   " linked receipt document "
   receipt: BroadReceipt

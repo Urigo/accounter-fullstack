@@ -1,7 +1,5 @@
-import { MonthlyLineChart } from "./monthly-line-chart";
-
-
+import { MonthlyLineChart } from './monthly-line-chart';
 
 export function Charts() {
-    return <MonthlyLineChart />;
-  }
+  return <MonthlyLineChart />;
+}
