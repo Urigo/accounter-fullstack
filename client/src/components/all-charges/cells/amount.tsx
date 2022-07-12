@@ -1,25 +1,25 @@
-// import gql from 'graphql-tag';
-// import { CSSProperties } from 'react';
+import gql from 'graphql-tag';
 
-// gql`
-//   fragment AmountFields on Charge {
-//     transactions {
-//       id
-//       amount {
-//         formatted
-//       }
-//     }
-//   }
-// `;
+import { AllChargesAmountFieldsFragment } from '../../../__generated__/types';
 
-// type Props = {
-//   amount: string;
-//   style?: CSSProperties;
-// };
+gql`
+  fragment AllChargesAmountFields on Charge {
+    transactions {
+      id
+      amount {
+        raw
+        formatted
+      }
+    }
+  }
+`;
 
-// export const Amount = ({ amount, style }: Props) => {
-//   return <td style={{ ...style }}>{amount}</td>;
-// };
+type Props = {
+  data: AllChargesAmountFieldsFragment['transactions']['0'];
+};
 
-// NOTE: deprecated
-export {};
+export const Amount = ({ data }: Props) => {
+  const { amount } = data;
+
+  return <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red' }}>{amount.formatted}</div>;
+};
