@@ -24,6 +24,7 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       const record = dataToUpdate;
+      // NOTE: manually add dummy local currency (required by schema)
       if (record.localCurrencyAmount) {
         record.localCurrencyAmount.currency = Currency.Ils;
       }
