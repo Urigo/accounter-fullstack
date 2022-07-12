@@ -6,8 +6,8 @@ export const stringComparer = (string1: string, string2: string): number => {
   let longestMatch = 0;
 
   // clean anything but letters and digits
-  const stripped1 = string1.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const stripped2 = string2.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const stripped1 = string1.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const stripped2 = string2.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
   for (let i = 0; i < stripped1.length; i++) {
     let identLength = 0;
@@ -30,6 +30,6 @@ export const stringComparer = (string1: string, string2: string): number => {
   return longestMatch;
 };
 
-export const containsHebrew = (str) => {
+export const containsHebrew = str => {
   return /[\u0590-\u05FF]/.test(str);
 };

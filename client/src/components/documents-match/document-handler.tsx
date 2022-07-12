@@ -7,9 +7,12 @@ import { EditDocument } from '../all-charges/documents/edit-document';
 import { DocumentMatchCompleted } from './document-match-completed';
 import { DocumentMatchesSelection } from './document-matches-selection';
 
-function EditStep({document, setReadyForNextStep}: Pick<Props, 'document'> & {setReadyForNextStep: (ready: boolean) => void}) {
+function EditStep({
+  document,
+  setReadyForNextStep,
+}: Pick<Props, 'document'> & { setReadyForNextStep: (ready: boolean) => void }) {
   setReadyForNextStep(true);
-  return document?.id ? <EditDocument documentData={document}/> : null
+  return document?.id ? <EditDocument documentData={document} /> : null;
 }
 
 gql`
@@ -33,7 +36,10 @@ export function DocumentHandler({ document, charges, skipDocument }: Props) {
   const [active, setActive] = useState(firstStep);
   const [readyForNextStep, setReadyForNextStep] = useState(false);
   const [selectedChargeId, setSelectedChargeId] = useState<string | null>(null);
-  const nextStep = () => {setReadyForNextStep(false); setActive(current => (current < 3 ? current + 1 : current))};
+  const nextStep = () => {
+    setReadyForNextStep(false);
+    setActive(current => (current < 3 ? current + 1 : current));
+  };
   const prevStep = () => setActive(current => (current > 0 ? current - 1 : current));
 
   // force EditStep rerender on document switch
@@ -44,7 +50,6 @@ export function DocumentHandler({ document, charges, skipDocument }: Props) {
     }, 1);
   }, [document.id]);
 
-  
   return (
     <>
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
@@ -52,13 +57,22 @@ export function DocumentHandler({ document, charges, skipDocument }: Props) {
           {active === 0 && <EditStep document={document} setReadyForNextStep={setReadyForNextStep} />}
         </Stepper.Step>
         <Stepper.Step label="Match" description="Select Matching Charge">
-          <DocumentMatchesSelection setReadyForNextStep={setReadyForNextStep} document={document} charges={charges} setSelectedChargeId={setSelectedChargeId} />
+          <DocumentMatchesSelection
+            setReadyForNextStep={setReadyForNextStep}
+            document={document}
+            charges={charges}
+            setSelectedChargeId={setSelectedChargeId}
+          />
         </Stepper.Step>
         {/* <Stepper.Step label="Confirm" description="Approve Match">
           review and confirm selection
         </Stepper.Step> */}
         <Stepper.Completed>
-          {selectedChargeId ? <DocumentMatchCompleted documentId={document.id} chargeId={selectedChargeId} /> : <p>We had error executing this match :(</p>}
+          {selectedChargeId ? (
+            <DocumentMatchCompleted documentId={document.id} chargeId={selectedChargeId} />
+          ) : (
+            <p>We had error executing this match :(</p>
+          )}
         </Stepper.Completed>
       </Stepper>
       <div className="flex flex-col sm:flex-row sm:justify-center lg:justify-start gap-2.5">

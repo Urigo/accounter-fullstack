@@ -20,11 +20,11 @@ gql`
 `;
 
 export function DocumentsMatch() {
-    // TODO: improve the ID logic
-    const financialEntityId = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+  // TODO: improve the ID logic
+  const financialEntityId = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
   const { data, isLoading } = useDocumentsToMatchQuery(
-    {financialEntityId},
+    { financialEntityId },
     {
       onSuccess: data => {
         setDocuments(data.documents.filter(doc => !doc.charge));
@@ -65,7 +65,11 @@ export function DocumentsMatch() {
         {documents?.length > 0 && (
           <>
             <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
-            <DocumentHandler document={documents[activeDocumentIndex - 1]} charges={data?.financialEntity?.charges} skipDocument={removeDocument} />
+            <DocumentHandler
+              document={documents[activeDocumentIndex - 1]}
+              charges={data?.financialEntity?.charges}
+              skipDocument={removeDocument}
+            />
           </>
         )}
       </div>
