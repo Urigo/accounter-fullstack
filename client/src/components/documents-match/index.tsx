@@ -63,14 +63,14 @@ export function DocumentsMatch() {
           </div>
         )}
         {documents?.length > 0 && (
-          <>
+          <div className="flex flex-col gap-3">
             <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
             <DocumentHandler
               document={documents[activeDocumentIndex - 1]}
               charges={data?.financialEntity?.charges}
               skipDocument={removeDocument}
             />
-          </>
+          </div>
         )}
       </div>
     </div>
