@@ -1,10 +1,10 @@
-import { SimpleGrid } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { InsertLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record';
+import { SimpleGrid } from '../../common/simple-grid';
 import { InsertLedgerRecordFields } from './insert-ledger-record-fields';
 
 type Props = {

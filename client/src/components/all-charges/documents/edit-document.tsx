@@ -1,4 +1,4 @@
-import { Image, SimpleGrid } from '@mantine/core';
+import { Image } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel } from '../../common/button-with-label';
 import { PopUpModal } from '../../common/modal';
+import { SimpleGrid } from '../../common/simple-grid';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 gql`
