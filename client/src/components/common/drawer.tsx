@@ -1,10 +1,9 @@
 import { Drawer } from '@mantine/core';
-import { CSSProperties, PropsWithChildren, ReactElement, ReactNode } from 'react';
+import { CSSProperties, PropsWithChildren, ReactElement } from 'react';
 
 export interface Props {
   ButtonDisplay?: ReactElement;
   style?: CSSProperties;
-  content?: ReactNode;
   title?: ReactElement;
   modalSize?: string;
   opened?: boolean;
@@ -17,7 +16,7 @@ export interface Props {
 }
 
 export const PopUpDrawer = ({
-  content,
+  children,
   position,
   title,
   withOverlay = false,
@@ -41,7 +40,7 @@ export const PopUpDrawer = ({
       padding={padding}
       size={modalSize}
     >
-      {content}
+      {children}
     </Drawer>
   );
 };
