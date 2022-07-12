@@ -1,4 +1,5 @@
 import type { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
+import { Currency } from '../__generated__/types.mjs';
 import type { VatExtendedCharge } from './misc.mjs';
 
 export function getILSForDate(
@@ -32,6 +33,33 @@ export function getILSForDate(
       vatAfterDiductionILS: charge.vatAfterDiduction,
       amountBeforeVATILS: charge.amountBeforeVAT,
       amountBeforeFullVATILS: charge.amountBeforeFullVAT,
+    };
+  }
+
+  // TODO(Uri): Log important checks
+  throw new Error(`New account currency ${charge.currency_code} on charge ID=${charge.id} `);
+}
+
+
+export function getExchageRatesForDate(
+  charge: VatExtendedCharge,
+  exchageRates?: IGetExchangeRatesByDatesResult,
+  currencyType?: Currency,
+): {
+  eventAmount: number;
+} {
+  const amountToUse = parseFloat(charge.tax_invoice_amount ? charge.tax_invoice_amount : charge.event_amount);
+  if (charge.currency_code && currencyType) {
+    const currencyKey = currencyType.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
+    const rate = parseFloat(exchageRates?.[currencyKey] ?? '');
+    
+    if (isNaN(rate)) {
+      throw new Error(
+        `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
+      );
+    }
+    return {
+      eventAmount: amountToUse * rate,
     };
   }
 

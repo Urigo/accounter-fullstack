@@ -59,7 +59,6 @@ import {
   insertDocuments,
   updateDocument,
 } from './providers/documents.mjs';
-import { getChargeExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
@@ -76,6 +75,8 @@ import {
   updateLedgerRecord,
 } from './providers/ledger-records.mjs';
 import { TimelessDateScalar } from './scalars/timeless-date.mjs';
+import { id } from 'date-fns/locale';
+import { getChargeExchangeRates, getExchangeRatesByDateLoader } from './providers/exchange.mjs';
 
 const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
@@ -194,8 +195,8 @@ const commonTransactionFields:
 
 export const resolvers: Resolvers = {
   Query: {
-    financialEntity: async (_, { id }) => {
-      const dbFe = await getFinancialEntityByIdLoader.load(id);
+    financialEntity: async (_, { id }, context) => {
+      const dbFe = await context.getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
@@ -753,10 +754,15 @@ export const resolvers: Resolvers = {
   },
   Charge:  {
     id: DbCharge => DbCharge.id,
-    totalAmountExchangeRates: async DbCharge => {
-      const charge = await getChargeByIdLoader.load(DbCharge.id);
-      const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge!);
+    amountBaseExchangeRates: async (DbCharge, {currencyType} ) => {
 
+      const ExchangeRatesByDate = await getExchangeRatesByDateLoader.load(DbCharge.event_date);
+
+      const amountExchangeRatesUsd = ExchangeRatesByDate?.usd
+      if (!amountExchangeRatesUsd) {
+        throw new Error(`getChargeExchangeRates func with ID="${DbCharge.id}" not found`);
+      }
+      getILSForDate(currencyType, debitExchangeRatesUsd);
     },
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocuments: async DbCharge => {
