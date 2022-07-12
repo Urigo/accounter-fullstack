@@ -194,16 +194,15 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          content={
-            <EditCharge
-              charge={editCharge}
-              onAccept={() => setEditCharge(undefined)}
-              onCancel={() => setEditCharge(undefined)}
-            />
-          }
           opened={!!editCharge}
           onClose={() => setEditCharge(undefined)}
-        />
+        >
+          <EditCharge
+            charge={editCharge}
+            onAccept={() => setEditCharge(undefined)}
+            onCancel={() => setEditCharge(undefined)}
+          />
+        </PopUpDrawer>
       )}
       {insertLedger && (
         <PopUpDrawer
@@ -217,10 +216,11 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          content={<InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />}
           opened={!!insertLedger}
           onClose={() => setInsertLedger(undefined)}
-        />
+        >
+          <InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />
+        </PopUpDrawer>
       )}
       {insertDocument && (
         <PopUpDrawer
@@ -234,10 +234,11 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          content={<InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />}
           opened={!!insertDocument}
           onClose={() => setInsertDocument(undefined)}
-        />
+        >
+          <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
+        </PopUpDrawer>
       )}
     </div>
   );
