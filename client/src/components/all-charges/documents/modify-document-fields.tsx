@@ -17,16 +17,18 @@ import {
 import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
 export interface Props {
   document?: EditDocumentFieldsFragment;
+  showExtendedFields?: boolean;
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
 }
 
-export const ModifyDocumentFields = ({ document, control }: Props) => {
+export const ModifyDocumentFields = ({ document, showExtendedFields = false, control }: Props) => {
   const isDocumentProcessed =
     isDocumentInvoice(document) ||
     isDocumentReceipt(document) ||
     isDocumentInvoiceReceipt(document) ||
     isDocumentProforma(document) ||
-    !document;
+    !document ||
+    showExtendedFields;
 
   return (
     <>
