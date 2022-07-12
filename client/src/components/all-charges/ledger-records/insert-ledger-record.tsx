@@ -2,7 +2,7 @@ import { SimpleGrid } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
-import { InsertLedgerRecordInput } from '../../../__generated__/types';
+import { Currency, InsertLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record';
 import { InsertLedgerRecordFields } from './insert-ledger-record-fields';
@@ -23,9 +23,13 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
   const onSubmit: SubmitHandler<InsertLedgerRecordInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
+      const record = dataToUpdate;
+      if (record.localCurrencyAmount) {
+        record.localCurrencyAmount.currency = Currency.Ils;
+      }
       mutate({
         chargeId,
-        record: dataToUpdate,
+        record,
       });
       if (closeModal) {
         closeModal();
