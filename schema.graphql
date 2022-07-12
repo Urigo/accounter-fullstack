@@ -39,6 +39,7 @@ interface Document implements Linkable {
   documentType: DocumentType
   creditor: String
   debtor: String
+  isReviewed: Boolean
 }
 
 " Represent financial amount "
@@ -432,6 +433,7 @@ type Unprocessed implements Document & Linkable {
   documentType: DocumentType
   creditor: String
   debtor: String
+  isReviewed: Boolean
 }
 
 " invoice document "
@@ -444,6 +446,7 @@ type Invoice implements Document & Linkable {
   documentType: DocumentType
   creditor: String
   debtor: String
+  isReviewed: Boolean
 
   serialNumber: String
   date: TimelessDate
@@ -460,6 +463,7 @@ type Proforma implements Document & Linkable {
   documentType: DocumentType
   creditor: String
   debtor: String
+  isReviewed: Boolean
 
   serialNumber: String
   date: TimelessDate
@@ -482,6 +486,7 @@ type Receipt implements Document & Linkable {
   amount: FinancialAmount
   creditor: String
   debtor: String
+  isReviewed: Boolean
 }
 
 " Invoice receipt document - חשבונית מס קבלה "
@@ -494,6 +499,7 @@ type InvoiceReceipt implements Document & Linkable {
   documentType: DocumentType
   creditor: String
   debtor: String
+  isReviewed: Boolean
 
   serialNumber: String
   date: TimelessDate

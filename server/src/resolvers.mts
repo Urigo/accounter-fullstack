@@ -136,8 +136,9 @@ const commonDocumentsFields: DocumentResolvers = {
   },
   image: documentRoot => documentRoot.image_url,
   file: documentRoot => documentRoot.file_url,
-  creditor: documentType => documentType.creditor,
-  debtor: documentType => documentType.debtor,
+  creditor: documentRoot => documentRoot.creditor,
+  debtor: documentRoot => documentRoot.debtor,
+  isReviewed: documentRoot => documentRoot.is_reviewed,
 };
 
 const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
@@ -219,6 +220,7 @@ export const resolvers: Resolvers = {
           totalAmount: fields.amount?.raw ?? null,
           type: fields.documentType ?? null,
           vatAmount: fields.vat?.raw ?? null,
+          isReviewed: true,
         };
         const res = await updateDocument.run({ ...adjustedFields }, pool);
         if (!res || res.length === 0) {
