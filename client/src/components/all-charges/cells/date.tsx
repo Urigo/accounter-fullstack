@@ -1,33 +1,23 @@
-// import gql from 'graphql-tag';
-// import moment from 'moment';
-// import { CSSProperties } from 'react';
+import gql from 'graphql-tag';
+import moment from 'moment';
 
-// gql`
-//   fragment DateFields on Charge {
-//     transactions {
-//       id
-//       createdAt
-//       effectiveDate
-//     }
-//   }
-// `;
+import { AllChargesDateFieldsFragment } from '../../../__generated__/types';
 
-// type Props = {
-//   createdAt: string;
-//   effectiveDate?: string;
-//   style?: CSSProperties;
-// };
+gql`
+  fragment AllChargesDateFields on Charge {
+    transactions {
+      id
+      effectiveDate
+    }
+  }
+`;
 
-// export const Date = ({ createdAt, effectiveDate, style }: Props) => {
-//   return (
-//     <td style={{ ...style }}>
-//       {moment(createdAt).format('DD/MM/YY')}
-//       {effectiveDate && (
-//         <div style={{ fontSize: '12px', color: 'gray' }}>{moment(effectiveDate).format('DD/MM/YY')}</div>
-//       )}
-//     </td>
-//   );
-// };
+type Props = {
+  data: AllChargesDateFieldsFragment['transactions']['0'];
+};
 
-// NOTE: deprecated
-export {};
+export const Date = ({ data }: Props) => {
+  const { effectiveDate } = data;
+
+  return <div style={{ fontSize: '12px', color: 'gray' }}>{moment(effectiveDate).format('YYYY-MM-DD')}</div>;
+};

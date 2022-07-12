@@ -2,11 +2,11 @@ import { Badge } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 
-import { TableLedgerRecordsFieldsFragment } from '../../__generated__/types';
-import { EditMiniButton } from '../common';
-import { PopUpDrawer } from '../common/drawer';
-import { CreditAccount, Date, DebitAccount } from './ledger-records/cells';
-import { EditLedgerRecord } from './ledger-records/edit-ledger-record';
+import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
+import { EditMiniButton } from '../../common';
+import { PopUpDrawer } from '../../common/drawer';
+import { CreditAccount, Date, DebitAccount } from './cells';
+import { EditLedgerRecord } from './edit-ledger-record';
 
 gql`
   fragment TableLedgerRecordsFields on Charge {

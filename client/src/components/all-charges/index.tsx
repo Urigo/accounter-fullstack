@@ -8,12 +8,12 @@ import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
+import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
+import { Account } from './cells/account';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
-import { Amount, Date, Description, Entity, ShareWith, Tags } from './table-cells';
-import { Account } from './table-cells/account';
 
 gql`
   query AllCharges($financialEntityId: ID!) {
