@@ -73,6 +73,7 @@ export const AllCharges = () => {
   const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
+  const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
 
   // TODO: improve the ID logic
   const financialEntityId =
@@ -115,7 +116,7 @@ export const AllCharges = () => {
         <AccounterTable
           showButton={true}
           moreInfo={item => (
-            <ChargeExtendedInfo charge={item} setInsertLedger={setInsertLedger} setInsertDocument={setInsertDocument} />
+            <ChargeExtendedInfo charge={item} setInsertLedger={setInsertLedger} setInsertDocument={setInsertDocument} setMatchDocuments={setMatchDocuments} />
           )}
           striped
           highlightOnHover
@@ -212,7 +213,7 @@ export const AllCharges = () => {
             <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
               <h1 className="sm:text-2xl font-small text-gray-900">Insert Ledger:</h1>
               <a href="/#" className="pt-1">
-                ID: {insertLedger}
+                Charge ID: {insertLedger}
               </a>
             </div>
           }
@@ -230,7 +231,7 @@ export const AllCharges = () => {
             <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
               <h1 className="sm:text-2xl font-small text-gray-900">Insert Document:</h1>
               <a href="/#" className="pt-1">
-                ID: {insertDocument}
+                Charge ID: {insertDocument}
               </a>
             </div>
           }
@@ -239,6 +240,23 @@ export const AllCharges = () => {
         >
           <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
         </PopUpDrawer>
+      )}
+      {matchDocuments && (
+        <PopUpDrawer
+          modalSize="80%"
+          position="bottom"
+          title={
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+              <h1 className="sm:text-2xl font-small text-gray-900">Match Documents:</h1>
+              <a href="/#" className="pt-1">
+                Charge ID: {matchDocuments}
+              </a>
+            </div>
+          }
+          content={<MatchDocuments chargeId={matchDocuments} closeModal={() => setInsertDocument(undefined)} />}
+          opened={!!insertDocument}
+          onClose={() => setInsertDocument(undefined)}
+        />
       )}
     </div>
   );
