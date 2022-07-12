@@ -4,7 +4,7 @@ import { AllChargesQuery } from '../../__generated__/types';
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { Button } from '../common/button';
 import { DocumentsGallery } from './documents/documents-gallery';
-import { LedgerRecordTable } from './ledger-record-table';
+import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 
 interface Props {
   charge: AllChargesQuery['financialEntity']['charges'][0];
