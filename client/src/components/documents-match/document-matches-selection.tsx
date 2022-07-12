@@ -78,9 +78,10 @@ interface Props {
     document: DocumentMatchFieldsFragment;
     charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges'];
     setReadyForNextStep: (ready: boolean) => void;
+    setSelectedChargeId: (id: string) => void;
 }
 
-export function DocumentMatchesSelection({document, charges, setReadyForNextStep}: Props) {
+export function DocumentMatchesSelection({document, charges, setReadyForNextStep, setSelectedChargeId}: Props) {
     const [selectedCharge, setSelectedCharge] = useState<string | null>(null);
     const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
 
@@ -221,7 +222,7 @@ export function DocumentMatchesSelection({document, charges, setReadyForNextStep
             </div>
             <div className="z-50 mt-6 rounded-lg">
             <button
-                onClick={() => {setSelectedCharge(charge.id); setReadyForNextStep(true)}}
+                onClick={() => {setSelectedCharge(charge.id); setSelectedChargeId(charge.id); setReadyForNextStep(true)}}
                 className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white"
                 style={selectedCharge === charge.id ? {backgroundColor: 'lightGreen'} : {}}
               >
