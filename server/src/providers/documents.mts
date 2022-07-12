@@ -101,6 +101,10 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
     $vatAmount,
     vat_amount,
     NULL
+  ),
+  is_reviewed = COALESCE(
+    $isReviewed,
+    is_reviewed
   )
   WHERE
     id = $documentId
