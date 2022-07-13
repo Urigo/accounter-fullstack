@@ -20,6 +20,7 @@ gql`
       name
     }
     transactions {
+      id
       createdAt
       description
     }
