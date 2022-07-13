@@ -13,7 +13,7 @@ interface Props {
   selectedDocuments: string[];
 }
 
-export function WideFilteredSelection({ charge, documents, toggleDocument, selectedDocuments }: Props) {
+export function WideFilteredSelection({ documents, toggleDocument, selectedDocuments }: Props) {
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 
   return (
