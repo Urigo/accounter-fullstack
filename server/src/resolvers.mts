@@ -41,7 +41,7 @@ import {
   hashavshevetFormat,
   parseDate,
 } from './helpers/hashavshevet.mjs';
-import { buildLedgerEntries, decorateCharge } from './helpers/misc.mjs';
+import { buildLedgerEntries, decorateCharge, effectiveDateSuplement } from './helpers/misc.mjs';
 import {
   getChargeByFinancialAccountNumberLoader,
   getChargeByFinancialEntityIdLoader,
@@ -167,7 +167,7 @@ const commonTransactionFields:
   id: DbTransaction => DbTransaction.id,
   referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
   createdAt: DbTransaction => DbTransaction.event_date,
-  effectiveDate: DbTransaction => (DbTransaction.debit_date ? format(DbTransaction.debit_date, 'yyyy-MM-dd') : null),
+  effectiveDate: DbTransaction => effectiveDateSuplement(DbTransaction),
   direction: DbTransaction =>
     parseFloat(DbTransaction.event_amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
   amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
