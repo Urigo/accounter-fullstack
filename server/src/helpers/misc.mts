@@ -1,3 +1,5 @@
+import { format } from 'date-fns';
+
 import type {
   IGetChargesByFinancialAccountNumbersResult,
   IGetChargesByIdsResult,
@@ -6,7 +8,6 @@ import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
-import { format } from 'date-fns';
 
 export type VatExtendedCharge = IGetChargesByIdsResult & {
   vatAfterDiduction: number;
