@@ -8,6 +8,7 @@ import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
+import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
 import { Account } from './cells/account';
 import { ChargeExtendedInfo } from './charge-extended-info';
@@ -116,7 +117,12 @@ export const AllCharges = () => {
         <AccounterTable
           showButton={true}
           moreInfo={item => (
-            <ChargeExtendedInfo charge={item} setInsertLedger={setInsertLedger} setInsertDocument={setInsertDocument} setMatchDocuments={setMatchDocuments} />
+            <ChargeExtendedInfo
+              charge={item}
+              setInsertLedger={setInsertLedger}
+              setInsertDocument={setInsertDocument}
+              setMatchDocuments={setMatchDocuments}
+            />
           )}
           striped
           highlightOnHover
@@ -246,17 +252,18 @@ export const AllCharges = () => {
           modalSize="80%"
           position="bottom"
           title={
-            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
               <h1 className="sm:text-2xl font-small text-gray-900">Match Documents:</h1>
               <a href="/#" className="pt-1">
                 Charge ID: {matchDocuments}
               </a>
             </div>
           }
-          content={<MatchDocuments chargeId={matchDocuments} closeModal={() => setInsertDocument(undefined)} />}
-          opened={!!insertDocument}
-          onClose={() => setInsertDocument(undefined)}
-        />
+          opened={!!matchDocuments}
+          onClose={() => setMatchDocuments(undefined)}
+        >
+          <DocumentsToChargeMatcher chargeId={matchDocuments} onDone={() => setMatchDocuments(undefined)} />
+        </PopUpDrawer>
       )}
     </div>
   );
