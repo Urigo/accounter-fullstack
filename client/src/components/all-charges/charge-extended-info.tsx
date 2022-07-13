@@ -10,9 +10,10 @@ interface Props {
   charge: AllChargesQuery['financialEntity']['charges'][0];
   setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
+  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
 }
 
-export function ChargeExtendedInfo({ charge, setInsertLedger, setInsertDocument }: Props) {
+export function ChargeExtendedInfo({ charge, setInsertLedger, setInsertDocument, setMatchDocuments }: Props) {
   const { mutate: generateLedger, isLoading: generationRunning } = useGenerateLedgerRecords();
 
   return (
@@ -25,6 +26,7 @@ export function ChargeExtendedInfo({ charge, setInsertLedger, setInsertDocument 
         />
         <Button title="Insert Ledger" onClick={() => setInsertLedger(charge.id)} />
         <Button title="Insert Document" onClick={() => setInsertDocument(charge.id)} />
+        <Button title="Match Document" onClick={() => setMatchDocuments(charge.id)} />
       </div>
       {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
         <>
