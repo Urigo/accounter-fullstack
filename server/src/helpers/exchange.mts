@@ -1,3 +1,4 @@
+import { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import type { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
 import { Currency } from '../__generated__/types.mjs';
 import type { VatExtendedCharge } from './misc.mjs';
@@ -42,20 +43,20 @@ export function getILSForDate(
 
 
 export function getExchageRatesForDate(
-  charge: VatExtendedCharge,
+  charge: IGetChargesByIdsResult,
   exchageRates?: IGetExchangeRatesByDatesResult,
   currencyType?: Currency,
 ): {
   eventAmount: number;
 } {
-  const amountToUse = parseFloat(charge.tax_invoice_amount ?? charge.event_amount);
-  if (charge.currency_code && currencyType) {
+  const amountToUse = parseFloat(charge?.tax_invoice_amount ?? charge?.event_amount);
+  if (charge?.currency_code && currencyType) {
     /* get exchange rate from origin currency to ILS */
-    const originCurrencyKey = charge.currency_code?.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
+    const originCurrencyKey = charge?.currency_code?.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
     const rateFromOrigin = originCurrencyKey === 'ils' ? 1 : parseFloat(exchageRates?.[originCurrencyKey] ?? '');
     if (isNaN(rateFromOrigin)) {
       throw new Error(
-        `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
+        `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge?.currency_code} not found`
       );
     }
     
@@ -67,8 +68,11 @@ export function getExchageRatesForDate(
         `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
       );
     }
+    const result =  amountToUse * rateFromOrigin / rateOfResult;
     
-    return amountToUse * rateFromOrigin / rateOfResult;
+    return {
+      eventAmount: result,
+    }
   }
 
   // TODO(Uri): Log important checks

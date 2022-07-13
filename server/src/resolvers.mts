@@ -33,7 +33,7 @@ import {
 } from './__generated__/types.mjs';
 import { formatFinancialAmount } from './helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from './helpers/constants.mjs';
-import { getILSForDate } from './helpers/exchange.mjs';
+import { getExchageRatesForDate, getILSForDate } from './helpers/exchange.mjs';
 import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
@@ -756,13 +756,18 @@ export const resolvers: Resolvers = {
     id: DbCharge => DbCharge.id,
     amountBaseExchangeRates: async (DbCharge, {currencyType} ) => {
 
+      const charge = await getChargeByIdLoader.load(DbCharge.id);
+
       const ExchangeRatesByDate = await getExchangeRatesByDateLoader.load(DbCharge.event_date);
 
       const amountExchangeRatesUsd = ExchangeRatesByDate?.usd
       if (!amountExchangeRatesUsd) {
         throw new Error(`getChargeExchangeRates func with ID="${DbCharge.id}" not found`);
       }
-      getILSForDate(currencyType, debitExchangeRatesUsd);
+      const rawAmountExchageRates = await getExchageRatesForDate(charge!, ExchangeRatesByDate, currencyType!);
+      const result = await formatFinancialAmount(rawAmountExchageRates.eventAmount, currencyType)
+      
+      return result; 
     },
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocuments: async DbCharge => {
