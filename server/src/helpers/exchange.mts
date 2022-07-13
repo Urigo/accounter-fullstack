@@ -68,7 +68,9 @@ export function getExchageRatesForDate(
         `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
       );
     }
-    const result =  amountToUse * rateFromOrigin / rateOfResult;
+    const result =  amountToUse * rateFromOrigin;
+    const test =  rateOfResult / result ;
+
     
     return {
       eventAmount: result,

@@ -195,8 +195,8 @@ const commonTransactionFields:
 
 export const resolvers: Resolvers = {
   Query: {
-    financialEntity: async (_, { id }, context) => {
-      const dbFe = await context.getFinancialEntityByIdLoader.load(id);
+    financialEntity: async (_, { id }) => {
+      const dbFe = await getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
@@ -755,19 +755,14 @@ export const resolvers: Resolvers = {
   Charge:  {
     id: DbCharge => DbCharge.id,
     amountBaseExchangeRates: async (DbCharge, {currencyType} ) => {
+      const charge = DbCharge
 
-      const charge = await getChargeByIdLoader.load(DbCharge.id);
+      const exchangeRatesByDate = await getExchangeRatesByDateLoader.load(DbCharge.event_date);
 
-      const ExchangeRatesByDate = await getExchangeRatesByDateLoader.load(DbCharge.event_date);
-
-      const amountExchangeRatesUsd = ExchangeRatesByDate?.usd
-      if (!amountExchangeRatesUsd) {
-        throw new Error(`getChargeExchangeRates func with ID="${DbCharge.id}" not found`);
-      }
-      const rawAmountExchageRates = await getExchageRatesForDate(charge!, ExchangeRatesByDate, currencyType!);
-      const result = await formatFinancialAmount(rawAmountExchageRates.eventAmount, currencyType)
+      const rawAmountExchageRates = await getExchageRatesForDate(charge, exchangeRatesByDate, currencyType!);
+      // const result = await formatFinancialAmount(rawAmountExchageRates.eventAmount, DbCharge.currency_code)
       
-      return result; 
+      return rawAmountExchageRates.eventAmount; 
     },
     createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
     additionalDocuments: async DbCharge => {

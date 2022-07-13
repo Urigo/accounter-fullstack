@@ -370,7 +370,7 @@ extend type Charge {
   " the total amount of the charge "
   totalAmount: FinancialAmount
     " the total amount of the charge after exchange rates function"
-  amountBaseExchangeRates(currencyType: Currency): FinancialAmount
+  amountBaseExchangeRates(currencyType: Currency): Float
     " linked invoice document "
   invoice: BroadInvoice
   " linked receipt document "
