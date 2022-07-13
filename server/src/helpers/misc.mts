@@ -1,4 +1,9 @@
-import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
+import { format } from 'date-fns';
+
+import type {
+  IGetChargesByFinancialAccountNumbersResult,
+  IGetChargesByIdsResult,
+} from '../__generated__/charges.types.mjs';
 import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
@@ -210,4 +215,14 @@ export function stringNumberRounded(number: string): number {
 
 export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
+}
+
+export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccountNumbersResult) {
+  if (transaction.debit_date) {
+    return format(transaction.debit_date, 'yyyy-MM-dd');
+  }
+  if (transaction.currency_code === 'ILS' && transaction.event_date && transaction.account_type === 'creditcard') {
+    return format(transaction.event_date, 'yyyy-MM-dd');
+  }
+  return null;
 }
