@@ -205,6 +205,13 @@ export const resolvers: Resolvers = {
       const dbDocs = await getAllDocuments.run(void 0, pool);
       return dbDocs;
     },
+    chargeById: async (_, { id }) => {
+      const dbCharge = await getChargeByIdLoader.load(id);
+      if (!dbCharge) {
+        throw new Error(`Charge ID="${id}" not found`);
+      }
+      return dbCharge;
+    },
   },
   Mutation: {
     updateDocument: async (_, { fields, documentId }) => {

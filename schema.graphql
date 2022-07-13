@@ -86,6 +86,7 @@ enum TransactionDirection {
 type Query {
   financialEntity(id: ID!): FinancialEntity!
   documents: [Document!]!
+  chargeById(id: ID!): Charge!
 }
 
 " mutation root "
