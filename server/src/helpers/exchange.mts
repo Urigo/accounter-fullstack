@@ -48,7 +48,7 @@ export function getExchageRatesForDate(
 ): {
   eventAmount: number;
 } {
-  const amountToUse = parseFloat(charge.tax_invoice_amount ? charge.tax_invoice_amount : charge.event_amount);
+  const amountToUse = parseFloat(charge.tax_invoice_amount ?? charge.event_amount);
   if (charge.currency_code && currencyType) {
     /* get exchange rate from origin currency to ILS */
     const originCurrencyKey = charge.currency_code?.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
