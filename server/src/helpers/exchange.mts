@@ -50,17 +50,25 @@ export function getExchageRatesForDate(
 } {
   const amountToUse = parseFloat(charge.tax_invoice_amount ? charge.tax_invoice_amount : charge.event_amount);
   if (charge.currency_code && currencyType) {
-    const currencyKey = currencyType.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
-    const rate = parseFloat(exchageRates?.[currencyKey] ?? '');
-    
-    if (isNaN(rate)) {
+    /* get exchange rate from origin currency to ILS */
+    const originCurrencyKey = charge.currency_code?.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
+    const rateFromOrigin = originCurrencyKey === 'ils' ? 1 : parseFloat(exchageRates?.[originCurrencyKey] ?? '');
+    if (isNaN(rateFromOrigin)) {
       throw new Error(
         `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
       );
     }
-    return {
-      eventAmount: amountToUse * rate,
-    };
+    
+    /* get exchange rate from ILS to requested currency */
+    const destinationCurrencyKey = currencyType.toLowerCase() as 'usd' | 'ils' | 'eur' | 'gbp';
+    const rateOfResult = destinationCurrencyKey === 'ils' ? 1 : parseFloat(exchageRates?.[destinationCurrencyKey] ?? '');
+    if (isNaN(rateOfResult)) {
+      throw new Error(
+        `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`
+      );
+    }
+    
+    return amountToUse * rateFromOrigin / rateOfResult;
   }
 
   // TODO(Uri): Log important checks
