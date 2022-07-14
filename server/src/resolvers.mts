@@ -51,6 +51,7 @@ import {
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
 import {
+  deleteDocument,
   getAllDocuments,
   getDocumentsByChargeIdLoader,
   getDocumentsByFinancialEntityIds,
@@ -240,6 +241,10 @@ export const resolvers: Resolvers = {
           message: (e as Error)?.message ?? 'Unknown error',
         };
       }
+    },
+    deleteDocument: async (_, { documentId }) => {
+      await deleteDocument.run({ documentId }, pool);
+      return true;
     },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
