@@ -72,7 +72,7 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           <Controller
             name="localCurrencyAmount.currency"
             control={control}
-            defaultValue={Currency.Ils ?? ledgerRecord.localCurrencyAmount?.currency}
+            defaultValue={ledgerRecord.localCurrencyAmount?.currency ?? Currency.Ils}
             render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
               <CurrencyInput
                 {...amountField}
