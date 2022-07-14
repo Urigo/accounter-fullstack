@@ -70,8 +70,9 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                           <UnlinkDocumentButton documentId={doc.id} />
                         </div>
                       }
-                      content={<EditDocument documentData={doc} />}
-                    ></PopUpDrawer>
+                    >
+                      <EditDocument documentData={doc} />
+                    </PopUpDrawer>
                   )}
                 </div>
               ))}
