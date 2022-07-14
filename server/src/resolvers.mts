@@ -249,7 +249,9 @@ export const resolvers: Resolvers = {
       if (res.length === 1) {
         return true;
       }
-      throw new GraphQLError(res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`);
+      throw new GraphQLError(
+        res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`
+      );
     },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
