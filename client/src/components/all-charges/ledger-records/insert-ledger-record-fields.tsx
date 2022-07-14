@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 
 import {
+  Currency,
   EditLedgerRecordsFieldsFragment,
   InsertLedgerRecordInput,
   UpdateLedgerRecordInput,
@@ -71,7 +72,7 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           <Controller
             name="localCurrencyAmount.currency"
             control={control}
-            defaultValue={ledgerRecord.localCurrencyAmount?.currency}
+            defaultValue={ledgerRecord.localCurrencyAmount?.currency ?? Currency.Ils}
             render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
               <CurrencyInput
                 {...amountField}
