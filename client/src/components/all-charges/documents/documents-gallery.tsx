@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
 import { PopUpDrawer } from '../../common/drawer';
+import { DeleteDocumentButton } from './delete-document-button';
 import { EditDocument } from './edit-document';
 import { UnlinkDocumentButton } from './unlink-document-button';
 
@@ -62,12 +63,13 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                       opened={openModal === doc.id}
                       onClose={() => setOpenModal(null)}
                       title={
-                        <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+                        <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
                           <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
                           <a href="/#" className="pt-1">
                             ID: {doc.id}
                           </a>
                           <UnlinkDocumentButton documentId={doc.id} />
+                          <DeleteDocumentButton documentId={doc.id} />
                         </div>
                       }
                     >

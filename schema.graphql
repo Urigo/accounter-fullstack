@@ -92,12 +92,13 @@ type Query {
 " mutation root "
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
+  updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
-  insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
-  updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
+  insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
   updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
+  deleteDocument(documentId: ID!): Boolean!
 }
 
 " input variables for updateDocument "

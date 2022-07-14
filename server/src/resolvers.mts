@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   IGetAllDocumentsResult,
@@ -51,6 +53,7 @@ import {
 } from './providers/charges.mjs';
 import { pool } from './providers/db.mjs';
 import {
+  deleteDocument,
   getAllDocuments,
   getDocumentsByChargeIdLoader,
   getDocumentsByFinancialEntityIds,
@@ -240,6 +243,15 @@ export const resolvers: Resolvers = {
           message: (e as Error)?.message ?? 'Unknown error',
         };
       }
+    },
+    deleteDocument: async (_, { documentId }) => {
+      const res = await deleteDocument.run({ documentId }, pool);
+      if (res.length === 1) {
+        return true;
+      }
+      throw new GraphQLError(
+        res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`
+      );
     },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries

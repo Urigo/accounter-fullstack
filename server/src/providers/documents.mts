@@ -2,6 +2,7 @@ import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 
 import {
+  IDeleteDocumentQuery,
   IGetAllDocumentsQuery,
   IGetDocumentsByChargeIdQuery,
   IGetDocumentsByFinancialEntityIdsQuery,
@@ -109,6 +110,12 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
   WHERE
     id = $documentId
   RETURNING *;
+`;
+
+export const deleteDocument = sql<IDeleteDocumentQuery>`
+  DELETE FROM accounter_schema.documents
+  WHERE id = $documentId
+  RETURNING id;
 `;
 
 export const insertDocuments = sql<IInsertDocumentsQuery>`
