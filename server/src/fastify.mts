@@ -1,7 +1,13 @@
 import { createServer } from '@graphql-yoga/node';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
+import { Pool } from 'pg';
 
+import { pool } from './providers/db.mjs';
 import { getSchema } from './schema.mjs';
+
+export type Context = {
+  dbPool: Pool;
+}
 
 export async function buildApp(logging = true) {
   const app = fastify({
@@ -23,6 +29,9 @@ export async function buildApp(logging = true) {
       warn: (...args) => args.forEach(arg => app.log.warn(arg)),
       error: (...args) => args.forEach(arg => app.log.error(arg)),
     },
+    context: {
+      dbPool: pool,
+    }
   });
 
   app.addContentTypeParser('multipart/form-data', {}, (req, payload, done) =>

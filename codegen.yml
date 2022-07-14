@@ -4,6 +4,7 @@ documents: './client/src/**/*.tsx'
 generates:
   server/src/__generated__/types.mts:
     config:
+      contextType: ../fastify.mjs#Context
       optionalResolveType: true
       mappers:
         LtdFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
