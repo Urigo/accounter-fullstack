@@ -114,7 +114,8 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
 
 export const deleteDocument = sql<IDeleteDocumentQuery>`
   DELETE FROM accounter_schema.documents
-  WHERE id = $documentId;
+  WHERE id = $documentId
+  RETURNING id;
 `;
 
 export const insertDocuments = sql<IInsertDocumentsQuery>`

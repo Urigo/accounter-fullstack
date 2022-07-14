@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+
 import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   IGetAllDocumentsResult,
@@ -243,8 +245,11 @@ export const resolvers: Resolvers = {
       }
     },
     deleteDocument: async (_, { documentId }) => {
-      await deleteDocument.run({ documentId }, pool);
-      return true;
+      const res = await deleteDocument.run({ documentId }, pool);
+      if (res.length === 1) {
+        return true;
+      }
+      throw new GraphQLError(res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`);
     },
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
