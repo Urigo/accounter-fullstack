@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
-import { DocumentType, EditDocumentFieldsFragment, UpdateDocumentFieldsInput } from '../../../__generated__/types';
+import { EditDocumentFieldsFragment, UpdateDocumentFieldsInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel } from '../../common/button-with-label';
@@ -86,7 +86,6 @@ export const EditDocument = ({ documentData }: Props) => {
     watch,
   } = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...documentData } });
   const [openModal, setOpenModal] = useState<string | null>(null);
-  const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
 
   const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
 
@@ -105,25 +104,13 @@ export const EditDocument = ({ documentData }: Props) => {
     setValue('vat.currency', watch('amount.currency'));
   }, [setValue, watch('amount.currency')]);
 
-  // auto update vat currency according to amount currency
-  useEffect(() => {
-    const type = watch('documentType');
-    setShowExtendedFields(
-      !!type &&
-        (type === DocumentType.Invoice ||
-          type === DocumentType.Receipt ||
-          type === DocumentType.InvoiceReceipt ||
-          type === DocumentType.Proforma)
-    );
-  }, [setValue, watch('documentType')]);
-
   return (
     <>
       <div className="flex flex-row">
         <div className=" px-5 w-4/5 h-max justify-items-center">
           <form onSubmit={handleSubmit(onSubmit)}>
             <SimpleGrid cols={4}>
-              <ModifyDocumentFields document={documentData} showExtendedFields={showExtendedFields} control={control} />
+              <ModifyDocumentFields document={documentData} watch={watch} control={control} />
               <ButtonWithLabel target="_blank" textLabel="File" url={documentData?.file} title="Open Link" />
             </SimpleGrid>
             <div className="flex justify-center mt-5">

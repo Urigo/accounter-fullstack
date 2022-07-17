@@ -1,4 +1,5 @@
-import { Control, Controller } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { Control, Controller, UseFormWatch } from 'react-hook-form';
 
 import {
   Currency,
@@ -17,18 +18,30 @@ import {
 import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
 export interface Props {
   document?: EditDocumentFieldsFragment;
-  showExtendedFields?: boolean;
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
+  watch: UseFormWatch<UpdateDocumentFieldsInput | InsertDocumentInput>;
 }
 
-export const ModifyDocumentFields = ({ document, showExtendedFields = false, control }: Props) => {
+export const ModifyDocumentFields = ({ document, control, watch }: Props) => {
+  const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
+
   const isDocumentProcessed =
     isDocumentInvoice(document) ||
     isDocumentReceipt(document) ||
     isDocumentInvoiceReceipt(document) ||
-    isDocumentProforma(document) ||
-    !document ||
-    showExtendedFields;
+    isDocumentProforma(document);
+
+  // auto update vat currency according to amount currency
+  useEffect(() => {
+    const type = watch('documentType');
+    setShowExtendedFields(
+      !!type &&
+        (type === DocumentType.Invoice ||
+          type === DocumentType.Receipt ||
+          type === DocumentType.InvoiceReceipt ||
+          type === DocumentType.Proforma)
+    );
+  }, [watch('documentType')]);
 
   return (
     <>
@@ -41,12 +54,12 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
         )}
       />
-      {isDocumentProcessed && (
+      {showExtendedFields && (
         <>
           <Controller
             name="date"
             control={control}
-            defaultValue={document?.date}
+            defaultValue={isDocumentProcessed ? document?.date : undefined}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
@@ -60,7 +73,7 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <Controller
             name="serialNumber"
             control={control}
-            defaultValue={document?.serialNumber}
+            defaultValue={isDocumentProcessed ? document?.serialNumber : undefined}
             render={({ field, fieldState }) => (
               <TextInput
                 {...field}
@@ -74,7 +87,7 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <Controller
             name="debtor"
             control={control}
-            defaultValue={document?.debtor}
+            defaultValue={isDocumentProcessed ? document?.debtor : undefined}
             render={({ field, fieldState }) => (
               <TextInput
                 {...field}
@@ -88,7 +101,7 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <Controller
             name="creditor"
             control={control}
-            defaultValue={document?.creditor}
+            defaultValue={isDocumentProcessed ? document?.creditor : undefined}
             render={({ field, fieldState }) => (
               <TextInput
                 {...field}
@@ -102,12 +115,12 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <Controller
             name="vat.raw"
             control={control}
-            defaultValue={document?.vat?.raw}
+            defaultValue={isDocumentProcessed ? document?.vat?.raw : undefined}
             render={({ field: vatField, fieldState: vatFieldState }) => (
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={document?.amount?.currency ?? Currency.Ils}
+                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : undefined}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -124,12 +137,12 @@ export const ModifyDocumentFields = ({ document, showExtendedFields = false, con
           <Controller
             name="amount.raw"
             control={control}
-            defaultValue={document?.amount?.raw}
+            defaultValue={isDocumentProcessed ? document?.amount?.raw : undefined}
             render={({ field: amountField, fieldState: amountFieldState }) => (
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={document?.amount?.currency}
+                defaultValue={isDocumentProcessed ? document?.amount?.currency : undefined}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"

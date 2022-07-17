@@ -30,6 +30,6 @@ export const stringComparer = (string1: string, string2: string): number => {
   return longestMatch;
 };
 
-export const containsHebrew = str => {
+export const containsHebrew = (str: string) => {
   return /[\u0590-\u05FF]/.test(str);
 };
