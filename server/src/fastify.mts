@@ -1,9 +1,8 @@
-import { useGraphQLModules } from '@envelop/graphql-modules'
+import { useGraphQLModules } from '@envelop/graphql-modules';
 import { createServer } from '@graphql-yoga/node';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
 
 import { createGraphQLApp } from './modules/app.mjs';
-import { getSchema } from './schema.mjs';
 
 export async function buildApp(logging = true) {
   const app = fastify({
@@ -12,24 +11,19 @@ export async function buildApp(logging = true) {
     },
   });
 
-  const modulesApp = createGraphQLApp()
-
-  const schema = await getSchema();
+  const modulesApp = createGraphQLApp();
 
   const graphQLServer = createServer<{
     req: FastifyRequest;
     reply: FastifyReply;
   }>({
-    schema,
     logging: {
       debug: (...args) => args.forEach(arg => app.log.debug(arg)),
       info: (...args) => args.forEach(arg => app.log.info(arg)),
       warn: (...args) => args.forEach(arg => app.log.warn(arg)),
       error: (...args) => args.forEach(arg => app.log.error(arg)),
     },
-    plugins: [
-      useGraphQLModules(modulesApp)
-    ]
+    plugins: [useGraphQLModules(modulesApp)],
   });
 
   app.addContentTypeParser('multipart/form-data', {}, (req, payload, done) =>
