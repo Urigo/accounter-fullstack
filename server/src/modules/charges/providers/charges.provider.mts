@@ -1,14 +1,17 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import { Injectable, Scope } from 'graphql-modules';
+import { Pool } from 'pg';
 
 import {
   IGetChargesByFinancialAccountNumbersQuery,
   IGetChargesByFinancialEntityIdsQuery,
   IGetChargesByIdsQuery,
+  IGetConversionOtherSideParams,
   IGetConversionOtherSideQuery,
+  IUpdateChargeParams,
   IUpdateChargeQuery,
-} from '../__generated__/charges.types.mjs';
-import { pool } from '../providers/db.mjs';
+} from '../generated-types/charges.provider.types.mjs';
 
 const { sql } = pgQuery;
 
@@ -17,19 +20,7 @@ const getChargesByIds = sql<IGetChargesByIdsQuery>`
     FROM accounter_schema.all_transactions
     WHERE id IN $$cahrgeIds;`;
 
-async function batchChargesByIds(ids: readonly string[]) {
-  const charges = await getChargesByIds.run(
-    {
-      cahrgeIds: ids,
-    },
-    pool
-  );
-  return ids.map(id => charges.find(charge => charge.id === id));
-}
-
-export const getChargeByIdLoader = new DataLoader(batchChargesByIds, { cache: false });
-
-export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
+const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
     SELECT *
     FROM accounter_schema.all_transactions
     WHERE account_number IN $$financialAccountNumbers
@@ -37,25 +28,7 @@ export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAcc
     AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY event_date DESC;`;
 
-async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: readonly number[]) {
-  const charges = await getChargesByFinancialAccountNumbers.run(
-    {
-      financialAccountNumbers,
-      fromDate: null,
-      toDate: null,
-    },
-    pool
-  );
-  return financialAccountNumbers.map(accountNumber =>
-    charges.filter(charge => charge.account_number === accountNumber)
-  );
-}
-
-export const getChargeByFinancialAccountNumberLoader = new DataLoader(batchChargesByFinancialAccountNumbers, {
-  cache: false,
-});
-
-export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
+const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT at.*, fa.owner as financial_entity_id
     FROM accounter_schema.all_transactions at
     LEFT JOIN accounter_schema.financial_accounts fa
@@ -65,28 +38,14 @@ export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityId
     AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY at.event_date DESC;`;
 
-async function batchChargesByFinancialEntityIds(financialEntityIds: readonly string[]) {
-  const charges = await getChargesByFinancialEntityIds.run(
-    {
-      financialEntityIds,
-      fromDate: null,
-      toDate: null,
-    },
-    pool
-  );
-  return financialEntityIds.map(id => charges.filter(charge => charge.financial_entity_id === id));
-}
-
-export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds, { cache: false });
-
-export const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
+const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
     SELECT event_amount, currency_code
     FROM accounter_schema.all_transactions
     WHERE bank_reference = $bankReference
       AND id <> $chargeId
       LIMIT 1;`;
 
-export const updateCharge = sql<IUpdateChargeQuery>`
+const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.all_transactions
   SET
   tax_invoice_date = COALESCE(
@@ -283,3 +242,63 @@ export const updateCharge = sql<IUpdateChargeQuery>`
     id = $chargeId
   RETURNING *;
 `;
+
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
+export class ChargesProvider {
+  constructor(private pool: Pool) {}
+
+  private batchChargesByIds = async (ids: readonly string[]) => {
+    const charges = await getChargesByIds.run(
+      {
+        cahrgeIds: ids,
+      },
+      this.pool
+    );
+    return ids.map(id => charges.find(charge => charge.id === id));
+  };
+
+  public getChargeByIdLoader = new DataLoader(this.batchChargesByIds, { cache: false });
+
+  private batchChargesByFinancialAccountNumbers = async (financialAccountNumbers: readonly number[]) => {
+    const charges = await getChargesByFinancialAccountNumbers.run(
+      {
+        financialAccountNumbers,
+        fromDate: null,
+        toDate: null,
+      },
+      this.pool
+    );
+    return financialAccountNumbers.map(accountNumber =>
+      charges.filter(charge => charge.account_number === accountNumber)
+    );
+  };
+
+  public getChargeByFinancialAccountNumberLoader = new DataLoader(this.batchChargesByFinancialAccountNumbers, {
+    cache: false,
+  });
+
+  private batchChargesByFinancialEntityIds = async (financialEntityIds: readonly string[]) => {
+    const charges = await getChargesByFinancialEntityIds.run(
+      {
+        financialEntityIds,
+        fromDate: null,
+        toDate: null,
+      },
+      this.pool
+    );
+    return financialEntityIds.map(id => charges.filter(charge => charge.financial_entity_id === id));
+  };
+
+  public getChargeByFinancialEntityIdLoader = new DataLoader(this.batchChargesByFinancialEntityIds, { cache: false });
+
+  public updateCharge = async (fields: IUpdateChargeParams) => {
+    return await updateCharge.run(fields, this.pool);
+  };
+
+  public getConversionOtherSide = async (params: IGetConversionOtherSideParams) => {
+    return await getConversionOtherSide.run(params, this.pool);
+  };
+}

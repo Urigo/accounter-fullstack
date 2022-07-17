@@ -1,13 +1,15 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import { Injectable, Scope } from 'graphql-modules';
+import { Pool } from 'pg';
 
 import {
   IGetLedgerRecordsByChargeIdsQuery,
-  IGetLedgerRecordsByFinancialEntityIdsQuery,
+  IInsertLedgerRecordsParams,
   IInsertLedgerRecordsQuery,
+  IUpdateLedgerRecordParams,
   IUpdateLedgerRecordQuery,
-} from '../__generated__/ledger-records.types.mjs';
-import { pool } from './db.mjs';
+} from '../generated-types/ledger-records.provider.types.mjs';
 
 const { sql } = pgQuery;
 
@@ -16,35 +18,23 @@ const getLedgerRecordsByChargeIds = sql<IGetLedgerRecordsByChargeIdsQuery>`
     FROM accounter_schema.ledger
     WHERE original_id IN $$chargeIds;`;
 
-async function batchLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
-  const ledgerRecords = await getLedgerRecordsByChargeIds.run(
-    {
-      chargeIds,
-    },
-    pool
-  );
-  return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
-}
+// const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`
+//     SELECT *
+//     FROM accounter_schema.ledger
+//     WHERE original_id IN (SELECT id
+//         FROM accounter_schema.financial_accounts
+//         WHERE owner IN (
+//             SELECT id
+//             FROM accounter_schema.all_transactions
+//             WHERE account_number IN (
+//                 SELECT account_number
+//                 FROM accounter_schema.financial_accounts
+//                 WHERE owner IN $$financialEntityIds
+//             )
+//         )
+//     );`;
 
-export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds, { cache: false });
-
-export const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`
-    SELECT *
-    FROM accounter_schema.ledger
-    WHERE original_id IN (SELECT id
-        FROM accounter_schema.financial_accounts
-        WHERE owner IN (
-            SELECT id
-            FROM accounter_schema.all_transactions
-            WHERE account_number IN (
-                SELECT account_number
-                FROM accounter_schema.financial_accounts
-                WHERE owner IN $$financialEntityIds
-            )
-        )
-    );`;
-
-export const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
+const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     INSERT INTO accounter_schema.ledger (
       business,
       credit_account_1,
@@ -103,7 +93,7 @@ export const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     )
     RETURNING *;`;
 
-export const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
+const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger
   SET
   business = COALESCE(
@@ -214,3 +204,31 @@ export const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     id = $ledgerRecordId
   RETURNING *;
 `;
+
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
+export class LedgerRecordsProvider {
+  constructor(private pool: Pool) {}
+
+  private batchLedgerRecordsByChargeIds = async (chargeIds: readonly string[]) => {
+    const ledgerRecords = await getLedgerRecordsByChargeIds.run(
+      {
+        chargeIds,
+      },
+      this.pool
+    );
+    return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
+  };
+
+  public getLedgerRecordsByChargeIdLoader = new DataLoader(this.batchLedgerRecordsByChargeIds, { cache: false });
+
+  public insertLedgerRecords = async (params: IInsertLedgerRecordsParams) => {
+    return await insertLedgerRecords.run(params, this.pool);
+  };
+
+  public updateLedgerRecord = async (params: IUpdateLedgerRecordParams) => {
+    return await updateLedgerRecord.run(params, this.pool);
+  };
+}

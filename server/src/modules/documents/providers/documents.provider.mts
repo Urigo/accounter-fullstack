@@ -1,19 +1,22 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import { Injectable, Scope } from 'graphql-modules';
+import { Pool } from 'pg';
 
 import {
   IDeleteDocumentQuery,
   IGetAllDocumentsQuery,
   IGetDocumentsByChargeIdQuery,
   IGetDocumentsByFinancialEntityIdsQuery,
+  IInsertDocumentsParams,
   IInsertDocumentsQuery,
+  IUpdateDocumentParams,
   IUpdateDocumentQuery,
-} from '../__generated__/documents.types.mjs';
-import { pool } from '../providers/db.mjs';
+} from '../generated-types/documents.provider.types.mjs';
 
 const { sql } = pgQuery;
 
-export const getAllDocuments = sql<IGetAllDocumentsQuery>`
+const getAllDocuments = sql<IGetAllDocumentsQuery>`
   SELECT *
   FROM accounter_schema.documents
   ORDER BY created_at DESC;
@@ -26,15 +29,7 @@ const getDocumentsByChargeId = sql<IGetDocumentsByChargeIdQuery>`
   ORDER BY created_at DESC;
 `;
 
-async function batchDocumentsByChargeIds(chargeIds: readonly string[]) {
-  const docs = await getDocumentsByChargeId.run({ chargeIds }, pool);
-
-  return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
-}
-
-export const getDocumentsByChargeIdLoader = new DataLoader(batchDocumentsByChargeIds, { cache: false });
-
-export const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
+const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE charge_id IN(
@@ -47,7 +42,7 @@ export const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEnti
   ORDER BY created_at DESC;
 `;
 
-export const updateDocument = sql<IUpdateDocumentQuery>`
+const updateDocument = sql<IUpdateDocumentQuery>`
   UPDATE accounter_schema.documents
   SET
   charge_id = CASE
@@ -112,13 +107,13 @@ export const updateDocument = sql<IUpdateDocumentQuery>`
   RETURNING *;
 `;
 
-export const deleteDocument = sql<IDeleteDocumentQuery>`
+const deleteDocument = sql<IDeleteDocumentQuery>`
   DELETE FROM accounter_schema.documents
   WHERE id = $documentId
   RETURNING id;
 `;
 
-export const insertDocuments = sql<IInsertDocumentsQuery>`
+const insertDocuments = sql<IInsertDocumentsQuery>`
     INSERT INTO accounter_schema.documents (
       image_url,
       file_url,
@@ -142,3 +137,39 @@ export const insertDocuments = sql<IInsertDocumentsQuery>`
       chargeId
     )
     RETURNING *;`;
+
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
+export class DocumentsProvider {
+  constructor(private pool: Pool) {}
+
+  private batchDocumentsByChargeIds = async (chargeIds: readonly string[]) => {
+    const docs = await getDocumentsByChargeId.run({ chargeIds }, this.pool);
+
+    return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
+  };
+
+  public getDocumentsByChargeIdLoader = new DataLoader(this.batchDocumentsByChargeIds, { cache: false });
+
+  public insertDocuments = async (newDocument: IInsertDocumentsParams['document']['0']) => {
+    return await insertDocuments.run({ document: [{ ...newDocument }] }, this.pool);
+  };
+
+  public updateDocument = async (adjustedFields: IUpdateDocumentParams) => {
+    return await updateDocument.run({ ...adjustedFields }, this.pool);
+  };
+
+  public getDocumentsByFinancialEntityIds = async (financialEntityIds: string[]) => {
+    return await getDocumentsByFinancialEntityIds.run({ financialEntityIds }, this.pool);
+  };
+
+  public deleteDocument = async (documentId: string) => {
+    return await deleteDocument.run({ documentId }, this.pool);
+  };
+
+  public getAllDocuments = async () => {
+    return await getAllDocuments.run(undefined, this.pool);
+  };
+}

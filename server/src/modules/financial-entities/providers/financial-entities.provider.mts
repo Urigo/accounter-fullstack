@@ -3,49 +3,51 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { Pool } from 'pg';
 
+import type {
+  IGetFinancialEntitiesByIdsQuery,
+  IGetFinancialEntitiesByNamesQuery,
+} from '../generated-types/financial-entities.provider.types.mjs';
+
 const { sql } = pgQuery;
 
+const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
+    SELECT *
+    FROM accounter_schema.businesses
+    WHERE id IN $$ids;`;
+
+const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
+    SELECT *
+    FROM accounter_schema.businesses
+    WHERE name IN $$names;`;
+
 @Injectable({
-    scope: Scope.Singleton,
-    global: true
-  })
-  export class FinancialEntitiesProvider {
-    constructor(
-      private pool: Pool,
-    ) {
-    }
+  scope: Scope.Singleton,
+  global: true,
+})
+export class FinancialEntitiesProvider {
+  constructor(private pool: Pool) {}
 
-    private getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
-        SELECT *
-        FROM accounter_schema.businesses
-        WHERE id IN $$ids;`;
+  private batchFinancialEntitiesByIds = async (ids: readonly string[]) => {
+    const financialEntities = await getFinancialEntitiesByIds.run(
+      {
+        ids,
+      },
+      this.pool
+    );
+    return ids.map(id => financialEntities.find(fe => fe.id === id));
+  };
 
-    private batchFinancialEntitiesByIds = async (ids: readonly string[]) => {
-        const financialEntities = await this.getFinancialEntitiesByIds.run(
-            {
-            ids,
-            },
-            this.pool
-        );
-        return ids.map(id => financialEntities.find(fe => fe.id === id));
-    }
+  public getFinancialEntityByIdLoader = new DataLoader(this.batchFinancialEntitiesByIds, { cache: false });
 
-    public getFinancialEntityByIdLoader = new DataLoader(this.batchFinancialEntitiesByIds, { cache: false });
-
-    private getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
-        SELECT *
-        FROM accounter_schema.businesses
-        WHERE name IN $$names;`;
-
-    private batchFinancialEntitiesByNames = async (names: readonly string[]) => {
-    const financialEntities = await this.getFinancialEntitiesByNames.run(
-        {
+  private batchFinancialEntitiesByNames = async (names: readonly string[]) => {
+    const financialEntities = await getFinancialEntitiesByNames.run(
+      {
         names,
-        },
-        this.pool
+      },
+      this.pool
     );
     return names.map(name => financialEntities.find(fe => fe.name === name));
-    }
+  };
 
-    public getFinancialEntityByNameLoader = new DataLoader(this.batchFinancialEntitiesByNames, { cache: false });
+  public getFinancialEntityByNameLoader = new DataLoader(this.batchFinancialEntitiesByNames, { cache: false });
 }
