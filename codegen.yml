@@ -1,8 +1,22 @@
 overwrite: true
-schema: './**/*.graphql'
-documents: './client/src/**/*.tsx'
+schema: ./server/src/**/*.graphql
 generates:
-  server/src/__generated__/types.mts:
+  ./schema.graphql:
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+    plugins:
+      - schema-ast
+  server/src/modules/:
+    preset: graphql-modules
+    presetConfig:
+      baseTypesPath: ../generated-types/graphql.ts
+      filename: generated-types/graphql.ts
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+    resolvers_config:
+      contextType: graphql-modules#ExecutionContext
     config:
       optionalResolveType: true
       mappers:
@@ -24,14 +38,22 @@ generates:
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
     plugins:
-      - 'typescript'
-      - 'typescript-resolvers'
+      - add:
+          content: '/* eslint-disable */'
+      - typescript
+      - typescript-resolvers
   client/src/__generated__/types.ts:
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+    documents: ./client/src/**/*.tsx
     config:
       fetcher:
-        func: '../hooks/use-graphql#useGraphql'
+        func: ../hooks/use-graphql#useGraphql
         isReactHook: true
     plugins:
-      - 'typescript'
-      - 'typescript-operations'
-      - 'typescript-react-query'
+      - add:
+          content: '/* eslint-disable */'
+      - typescript
+      - typescript-operations
+      - typescript-react-query
