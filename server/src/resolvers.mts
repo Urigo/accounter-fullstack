@@ -78,53 +78,6 @@ import {
 } from './providers/ledger-records.mjs';
 import { TimelessDateScalar } from './scalars/timeless-date.mjs';
 
-const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
-  id: DbBusiness => DbBusiness.id,
-  accounts: async DbBusiness => {
-    // TODO: add functionality for linkedEntities data
-    const accounts = await getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
-    return accounts;
-  },
-  charges: async (DbBusiness, { filter }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
-      return charges;
-    }
-    const charges = await getChargesByFinancialEntityIds.run(
-      {
-        financialEntityIds: [DbBusiness.id],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      },
-      pool
-    );
-    return charges;
-  },
-  linkedEntities: () => [], // TODO: implement
-  documents: async DbBusiness => {
-    const documents = await getDocumentsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
-    return documents;
-  },
-};
-
-const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
-  id: DbAccount => DbAccount.id,
-  charges: async (DbAccount, { filter }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
-      return charges;
-    }
-    const charges = await getChargesByFinancialAccountNumbers.run(
-      {
-        financialAccountNumbers: [DbAccount.account_number],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      },
-      pool
-    );
-    return charges;
-  },
-};
 const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
   const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
   return DocumentType[key as keyof typeof DocumentType];
@@ -195,13 +148,6 @@ const commonTransactionFields:
 
 export const resolvers: Resolvers = {
   Query: {
-    financialEntity: async (_, { id }) => {
-      const dbFe = await getFinancialEntityByIdLoader.load(id);
-      if (!dbFe) {
-        throw new Error(`Financial entity ID="${id}" not found`);
-      }
-      return dbFe;
-    },
     documents: async () => {
       const dbDocs = await getAllDocuments.run(void 0, pool);
       return dbDocs;
@@ -732,24 +678,6 @@ export const resolvers: Resolvers = {
     ...commonFinancialDocumentsFields,
   },
 
-  LtdFinancialEntity: {
-    __isTypeOf: () => true,
-    ...commonFinancialEntityFields,
-    govermentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
-    name: DbBusiness => DbBusiness.hebrew_name ?? DbBusiness.name,
-    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
-
-    englishName: DbBusiness => DbBusiness.name,
-    email: DbBusiness => DbBusiness.email,
-    website: DbBusiness => DbBusiness.website,
-    phoneNumber: DbBusiness => DbBusiness.phone_number,
-  },
-  PersonalFinancialEntity: {
-    __isTypeOf: () => false,
-    ...commonFinancialEntityFields,
-    name: DbBusiness => DbBusiness.name,
-    email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
-  },
   BankFinancialAccount: {
     __isTypeOf: DbAccount => !!DbAccount.bank_number,
     ...commonFinancialAccountFields,

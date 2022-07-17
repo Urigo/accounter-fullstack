@@ -4,7 +4,7 @@ enum TransactionDirection {
   CREDIT
 }
 
-" defines a tag / category for charge arrangement" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+" defines a tag / category for charge arrangement"  
 type Tag {
   name: String!
 }

@@ -34,7 +34,6 @@ input InsertLedgerRecordInput {
 
 " result type for generateLedgerRecords "
 union GenerateLedgerRecordsResult = Charge | CommonError # TODO: update to match more than common transaction
-
 " result type for updateLedgerRecord "
 union UpdateLedgerRecordResult = LedgerRecord | CommonError
 

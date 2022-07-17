@@ -3,3 +3,4 @@ node_modules/
 dist/
 .env
 **/__generated__/
+**/generated-types/

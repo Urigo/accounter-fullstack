@@ -31,7 +31,7 @@ interface Document implements Linkable {
   file: URL
   charge: Charge
   " the specific type of the document"
-  # eslint-disable-next-line @graphql-eslint/no-typename-prefix
+   
   documentType: DocumentType
   creditor: String
   debtor: String
@@ -151,7 +151,7 @@ input InsertDocumentInput {
 " result type for updateCharge "
 union UpdateDocumentResult = UpdateDocumentSuccessfulResult | CommonError
 
-" result type for updateDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+" result type for updateDocument"  
 type UpdateDocumentSuccessfulResult {
   document: Document
 }
@@ -159,7 +159,7 @@ type UpdateDocumentSuccessfulResult {
 " result type for insertDocument "
 union InsertDocumentResult = InsertDocumentSuccessfulResult | CommonError
 
-" result type for insertDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+" result type for insertDocument"  
 type InsertDocumentSuccessfulResult {
   document: Document
 }
