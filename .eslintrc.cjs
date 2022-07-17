@@ -2,7 +2,7 @@ const SCHEMA_PATH = 'schema.graphql';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
-  extends: ['@theguild', '@theguild/eslint-config/react'],
+  extends: ['@theguild'],
   plugins: ['eslint-plugin-simple-import-sort'],
   rules: {
     'no-console': 1,
@@ -28,7 +28,7 @@ module.exports = {
     {
       // Setup recommended config for schema file
       files: SCHEMA_PATH,
-      extends: 'plugin:@graphql-eslint/schema-recommended',
+      extends: ['plugin:@graphql-eslint/schema-recommended', '@theguild/eslint-config/react'],
       rules: {
         '@graphql-eslint/description-style': ['error', { style: 'inline' }],
         '@graphql-eslint/strict-id-in-types': [
