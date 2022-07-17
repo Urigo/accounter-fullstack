@@ -7,11 +7,11 @@
     "moduleResolution": "Node",
     "strict": true,
     "sourceMap": true,
+    "experimentalDecorators": true,
     // Needed for CommonJS modules
     "allowSyntheticDefaultImports": true, // (C)
     //
     "declaration": true,
-    "skipLibCheck": true,
-    "experimentalDecorators": true
+    "skipLibCheck": true
   }
 }

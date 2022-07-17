@@ -4,7 +4,7 @@ enum TransactionDirection {
   CREDIT
 }
 
-" defines a tag / category for charge arrangement"  
+" defines a tag / category for charge arrangement"
 type Tag {
   name: String!
 }

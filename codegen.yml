@@ -20,23 +20,23 @@ generates:
     config:
       optionalResolveType: true
       mappers:
-        LtdFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
-        PersonalFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
-        BankFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
-        CardFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
-        Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        LedgerRecord: ./ledger-records.types.mjs#IGetLedgerRecordsByChargeIdsResult
+        LtdFinancialEntity: ../modules/financial-entities/generated-types/financial-entities.provider.types.mjs#IGetFinancialEntitiesByIdsResult
+        PersonalFinancialEntity: ../modules/financial-entities/generated-types/financial-entities.provider.types.mjs#IGetFinancialEntitiesByIdsResult
+        BankFinancialAccount: ../modules/financial-accounts/generated-types/financial-accounts.providers.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
+        CardFinancialAccount: ../modules/financial-accounts/generated-types/financial-accounts.providers.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
+        Charge: ../modules/charges/generated-types/charges.provider.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        LedgerRecord: ../modules/ledger-records/generated-types/ledger-records.provider.types.mjs#IGetLedgerRecordsByChargeIdsResult
         NamedCounterparty: ../prototypes.mjs#CounterpartyProto
-        Invoice: ./documents.types.mjs#IGetAllDocumentsResult
-        Proforma: ./documents.types.mjs#IGetAllDocumentsResult
-        Receipt: ./documents.types.mjs#IGetAllDocumentsResult
-        InvoiceReceipt: ./documents.types.mjs#IGetAllDocumentsResult
-        WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        Invoice: ../modules/documents/generated-types/documents.provider.types.mjs#IGetAllDocumentsResult
+        Proforma: ../modules/documents/generated-types/documents.provider.types.mjs#IGetAllDocumentsResult
+        Receipt: ../modules/documents/generated-types/documents.provider.types.mjs#IGetAllDocumentsResult
+        InvoiceReceipt: ../modules/documents/generated-types/documents.provider.types.mjs#IGetAllDocumentsResult
+        WireTransaction: ../modules/charges/generated-types/charges.provider.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        FeeTransaction: ../modules/charges/generated-types/charges.provider.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        ConversionTransaction: ../modules/charges/generated-types/charges.provider.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        CommonTransaction: ../modules/charges/generated-types/charges.provider.types.mjs#IGetChargesByFinancialAccountNumbersResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
-        Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
+        Unprocessed: ../modules/documents/generated-types/documents.provider.types.mjs#IGetAllDocumentsResult
     plugins:
       - add:
           content: '/* eslint-disable */'

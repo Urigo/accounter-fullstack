@@ -1,4 +1,4 @@
-import type { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
+import type { IGetExchangeRatesByDatesResult } from '../modules/generated-types/exchange.providers.types.mjs';
 import type { VatExtendedCharge } from './misc.mjs';
 
 export function getILSForDate(

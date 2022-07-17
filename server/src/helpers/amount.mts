@@ -1,4 +1,4 @@
-import { Currency, FinancialAmount } from '../__generated__/types.mjs';
+import { Currency, FinancialAmount } from '../generated-types/graphql';
 
 export const formatFinancialAmount = (
   rawAmount?: number | string | null,
@@ -16,26 +16,26 @@ export const formatFinancialAmount = (
 export const formatCurrency = (raw?: string | null): Currency => {
   switch (raw) {
     case 'GBP':
-      return Currency.Gbp;
+      return 'GBP';
     case 'לש':
-      return Currency.Gbp;
+      return 'GBP';
     case 'USD':
-      return Currency.Usd;
+      return 'USD';
     case '$':
-      return Currency.Usd;
+      return 'USD';
     case 'EUR':
-      return Currency.Eur;
+      return 'EUR';
     case 'אירו':
-      return Currency.Eur;
+      return 'EUR';
     case 'ILS':
-      return Currency.Ils;
+      return 'ILS';
     case null:
-      return Currency.Ils;
+      return 'ILS';
     case undefined:
-      return Currency.Ils;
+      return 'ILS';
     default:
       console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
-      return Currency.Ils;
+      return 'ILS';
   }
 };
 

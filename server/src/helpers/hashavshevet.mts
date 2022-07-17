@@ -1,14 +1,14 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 
-import type { IGetConversionOtherSideResult } from '../__generated__/charges.types.mjs';
-import { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
-import type { IGetFinancialAccountsByAccountNumbersResult } from '../__generated__/financial-accounts.types.mjs';
-import type { IGetFinancialEntitiesByIdsResult } from '../__generated__/financial-entities.types.mjs';
-import type { IGetHashavshevetBusinessIndexesResult } from '../__generated__/hashavshevet.types.mjs';
-import type { IInsertLedgerRecordsParams } from '../__generated__/ledger-records.types.mjs';
-import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
-import { TIMELESS_DATE_REGEX, TimelessDateString } from '../scalars/index.js';
+import type { IGetConversionOtherSideResult } from '../modules/charges/generated-types/charges.provider.types.mjs';
+import { TIMELESS_DATE_REGEX, TimelessDateString } from '../modules/common/resolvers/timeless-date.mjs';
+import type { IGetFinancialAccountsByAccountNumbersResult } from '../modules/financial-accounts/generated-types/financial-accounts.providers.types.mjs';
+import type { IGetFinancialEntitiesByIdsResult } from '../modules/financial-entities/generated-types/financial-entities.provider.types.mjs';
+import type { IGetExchangeRatesByDatesResult } from '../modules/generated-types/exchange.providers.types.mjs';
+import type { IGetHashavshevetBusinessIndexesResult } from '../modules/hashavshevet/generated-types/hashavshevet.provider.types.mjs';
+import type { VatIndexesKeys } from '../modules/hashavshevet/providers/hashavshevet.provider.mjs';
+import type { IInsertLedgerRecordsParams } from '../modules/ledger-records/generated-types/ledger-records.provider.types.mjs';
 import { ENTITIES_WITHOUT_INVOICE_DATE, TAX_CATEGORIES_WITHOUT_INVOICE_DATE } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 import { EntryForAccounting, EntryForFinancialAccount, numberRounded, VatExtendedCharge } from './misc.mjs';

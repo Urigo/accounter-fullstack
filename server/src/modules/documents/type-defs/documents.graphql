@@ -31,7 +31,6 @@ interface Document implements Linkable {
   file: URL
   charge: Charge
   " the specific type of the document"
-   
   documentType: DocumentType
   creditor: String
   debtor: String
@@ -151,7 +150,7 @@ input InsertDocumentInput {
 " result type for updateCharge "
 union UpdateDocumentResult = UpdateDocumentSuccessfulResult | CommonError
 
-" result type for updateDocument"  
+" result type for updateDocument"
 type UpdateDocumentSuccessfulResult {
   document: Document
 }
@@ -159,7 +158,7 @@ type UpdateDocumentSuccessfulResult {
 " result type for insertDocument "
 union InsertDocumentResult = InsertDocumentSuccessfulResult | CommonError
 
-" result type for insertDocument"  
+" result type for insertDocument"
 type InsertDocumentSuccessfulResult {
   document: Document
 }
