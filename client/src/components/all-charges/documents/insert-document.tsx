@@ -44,7 +44,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     <div className=" px-5 w-max h-max justify-items-center">
       <form onSubmit={handleSubmit(onSubmit)}>
         <SimpleGrid cols={5}>
-          <ModifyDocumentFields control={control} showExtendedFields />
+          <ModifyDocumentFields control={control} watch={watch} />
         </SimpleGrid>
         <div className="flex justify-center gap-5 mt-5">
           <button

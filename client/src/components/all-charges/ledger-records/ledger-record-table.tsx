@@ -95,18 +95,17 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
             </a>
           </div>
         }
-        content={
-          ledgerRecords.some(r => r.id === editLedgerId) && (
-            <EditLedgerRecord
-              ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!}
-              onAccept={() => setEditLedgerId(undefined)}
-              onCancel={() => setEditLedgerId(undefined)}
-            />
-          )
-        }
         opened={!!editLedgerId}
         onClose={() => setEditLedgerId(undefined)}
-      />
+      >
+        {ledgerRecords.some(r => r.id === editLedgerId) && (
+          <EditLedgerRecord
+            ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!}
+            onAccept={() => setEditLedgerId(undefined)}
+            onCancel={() => setEditLedgerId(undefined)}
+          />
+        )}
+      </PopUpDrawer>
     </table>
   );
 };
