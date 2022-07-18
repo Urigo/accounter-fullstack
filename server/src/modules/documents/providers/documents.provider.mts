@@ -140,7 +140,7 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
 
 @Injectable({
   scope: Scope.Singleton,
-  global: true,
+  global: false,
 })
 export class DocumentsProvider {
   constructor(private pool: Pool) {}

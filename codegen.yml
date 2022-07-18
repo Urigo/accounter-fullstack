@@ -1,12 +1,6 @@
 overwrite: true
 schema: ./server/src/**/*.graphql
 generates:
-  ./schema.graphql:
-    hooks:
-      afterOneFileWrite:
-        - prettier --write
-    plugins:
-      - schema-ast
   server/src/modules/:
     preset: graphql-modules
     presetConfig:

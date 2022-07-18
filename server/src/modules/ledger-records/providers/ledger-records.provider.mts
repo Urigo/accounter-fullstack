@@ -207,7 +207,7 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
 
 @Injectable({
   scope: Scope.Singleton,
-  global: true,
+  global: false,
 })
 export class LedgerRecordsProvider {
   constructor(private pool: Pool) {}

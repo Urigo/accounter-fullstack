@@ -12,7 +12,7 @@ import { ExchangeProvider } from '../../providers/exchange.providers.mjs';
 
 @Injectable({
   scope: Scope.Singleton,
-  global: true,
+  global: false,
 })
 export class GenerateLedgerRecordsProvider {
   constructor(private exchangeProvider: ExchangeProvider) {}
