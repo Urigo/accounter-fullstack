@@ -40,9 +40,7 @@ const commonFinancialEntityFields:
   | DocumentsModule.LtdFinancialEntityResolvers
   | DocumentsModule.PersonalFinancialEntityResolvers = {
   documents: async (DbBusiness, _, { injector }) => {
-    const documents = await injector
-      .get(DocumentsProvider)
-      .getDocumentsByFinancialEntityIds({ financialEntityIds: [DbBusiness.id] });
+    const documents = await injector.get(DocumentsProvider).getDocumentsByFinancialEntityIds([DbBusiness.id]);
     return documents;
   },
 };
@@ -86,7 +84,7 @@ export const resolvers: DocumentsModule.Resolvers = {
       }
     },
     deleteDocument: async (_, { documentId }, { injector }) => {
-      const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
+      const res = await injector.get(DocumentsProvider).deleteDocument(documentId);
       if (res.length === 1) {
         return true;
       }
@@ -115,7 +113,7 @@ export const resolvers: DocumentsModule.Resolvers = {
           vat: record.vat?.raw ?? null,
           chargeId: record.chargeId ?? null,
         };
-        const res = await injector.get(DocumentsProvider).insertDocuments({ document: [{ ...newDocument }] });
+        const res = await injector.get(DocumentsProvider).insertDocuments([{ ...newDocument }]);
 
         if (!res || res.length === 0) {
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
@@ -123,7 +121,7 @@ export const resolvers: DocumentsModule.Resolvers = {
 
         if (record.chargeId) {
           /* clear cache */
-          injector.get(ChargesProvider).getDocumentsByChargeIdLoader.clear(record.chargeId);
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.clear(record.chargeId);
         }
 
         return { __typename: 'InsertDocumentSuccessfulResult', document: res[0] };

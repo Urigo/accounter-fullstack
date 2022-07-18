@@ -8,18 +8,18 @@ input UpdateChargeInput {
   # createdAt: Date!
   # additionalDocument: [Linkable!]!
   # ledgerRecords: [LedgerRecord!]!
-
   # transactions: [Transaction!]!
-  counterparty: CounterpartyInput
 
+  counterparty: CounterpartyInput
   # description: String
+
   tags: [TagInput!]
   beneficiaries: [BeneficiaryInput!]
   vat: Float
   withholdingTax: Float
   totalAmount: FinancialAmountInput
-
   # invoice: Invoice
+
   accountantApproval: AccountantApprovalInput
   isProperty: Boolean
   # businessTrip: BusinessTrip
@@ -28,17 +28,17 @@ input UpdateChargeInput {
 " input variables for updateTransaction "
 input UpdateTransactionInput {
   referenceNumber: String
-
   # createdAt: Date!
+
   effectiveDate: TimelessDate
-
   # direction: TransactionDirection
+
   amount: FinancialAmountInput
-
   # description: String // NOTE: which field should be updated? and should we update fields originated at bank/card info?
-  userNote: String
 
+  userNote: String
   # account: FinancialAccount
+
   balance: FinancialAmountInput
   hashavshevetId: Int
 }

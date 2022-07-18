@@ -81,7 +81,7 @@ export const resolvers: LedgerRecordsModule.Resolvers = {
     },
     insertLedgerRecord: async (_, { chargeId, record }, { injector }) => {
       try {
-        const charge = await injector.get(LedgerRecordsProvider).getChargeByIdLoader.load(chargeId);
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
 
         if (!charge) {
           throw new Error(`Charge ID='${chargeId}' not found`);
@@ -149,7 +149,7 @@ export const resolvers: LedgerRecordsModule.Resolvers = {
     },
     generateLedgerRecords: async (_, { chargeId }, { injector }) => {
       try {
-        const charge = await injector.get(LedgerRecordsProvider).getChargeByIdLoader.load(chargeId);
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
         if (!charge) {
           throw new Error(`Charge ID="${chargeId}" not found`);
         }

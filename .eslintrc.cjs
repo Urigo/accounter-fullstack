@@ -1,4 +1,4 @@
-const SCHEMA_PATH = 'schema.graphql';
+const SCHEMA_PATH = 'server/**/*.{graphql,gql}';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {

@@ -44,7 +44,7 @@ const commonFinancialAccountFields:
         .getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
       return charges;
     }
-    const charges = await injector.get(ChargesProvider).getChargesByFinancialAccountNumbers({
+    const charges = await injector.get(ChargesProvider).getChargesByFinancialAccountNumbersWithFilters({
       financialAccountNumbers: [DbAccount.account_number],
       fromDate: filter?.fromDate,
       toDate: filter?.toDate,
@@ -61,7 +61,7 @@ const commonFinancialEntityFields:
       const charges = await injector.get(ChargesProvider).getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
       return charges;
     }
-    const charges = await injector.get(ChargesProvider).getChargesByFinancialEntityIds({
+    const charges = await injector.get(ChargesProvider).getChargesByFinancialEntityIdsWithFilters({
       financialEntityIds: [DbBusiness.id],
       fromDate: filter?.fromDate,
       toDate: filter?.toDate,

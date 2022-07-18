@@ -4,7 +4,9 @@ import { Injectable, Scope } from 'graphql-modules';
 import { Pool } from 'pg';
 
 import {
+  IGetChargesByFinancialAccountNumbersParams,
   IGetChargesByFinancialAccountNumbersQuery,
+  IGetChargesByFinancialEntityIdsParams,
   IGetChargesByFinancialEntityIdsQuery,
   IGetChargesByIdsQuery,
   IGetConversionOtherSideParams,
@@ -262,6 +264,12 @@ export class ChargesProvider {
 
   public getChargeByIdLoader = new DataLoader(this.batchChargesByIds, { cache: false });
 
+  public getChargesByFinancialAccountNumbersWithFilters = async (
+    params: IGetChargesByFinancialAccountNumbersParams
+  ) => {
+    return await getChargesByFinancialAccountNumbers.run(params, this.pool);
+  };
+
   private batchChargesByFinancialAccountNumbers = async (financialAccountNumbers: readonly number[]) => {
     const charges = await getChargesByFinancialAccountNumbers.run(
       {
@@ -279,6 +287,10 @@ export class ChargesProvider {
   public getChargeByFinancialAccountNumberLoader = new DataLoader(this.batchChargesByFinancialAccountNumbers, {
     cache: false,
   });
+
+  public getChargesByFinancialEntityIdsWithFilters = async (params: IGetChargesByFinancialEntityIdsParams) => {
+    return await getChargesByFinancialEntityIds.run(params, this.pool);
+  };
 
   private batchChargesByFinancialEntityIds = async (financialEntityIds: readonly string[]) => {
     const charges = await getChargesByFinancialEntityIds.run(

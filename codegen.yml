@@ -9,9 +9,8 @@ generates:
     hooks:
       afterOneFileWrite:
         - prettier --write
-    resolvers_config:
-      contextType: graphql-modules#ExecutionContext
     config:
+      contextType: graphql-modules#ExecutionContext
       optionalResolveType: true
       mappers:
         LtdFinancialEntity: ../modules/financial-entities/generated-types/financial-entities.provider.types.mjs#IGetFinancialEntitiesByIdsResult

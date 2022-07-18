@@ -153,8 +153,8 @@ export class DocumentsProvider {
 
   public getDocumentsByChargeIdLoader = new DataLoader(this.batchDocumentsByChargeIds, { cache: false });
 
-  public insertDocuments = async (newDocument: IInsertDocumentsParams['document']['0']) => {
-    return await insertDocuments.run({ document: [{ ...newDocument }] }, this.pool);
+  public insertDocuments = async (newDocuments: IInsertDocumentsParams['document']) => {
+    return await insertDocuments.run({ document: newDocuments }, this.pool);
   };
 
   public updateDocument = async (adjustedFields: IUpdateDocumentParams) => {
