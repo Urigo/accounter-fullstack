@@ -7,42 +7,63 @@ import { init } from 'modern-poalim-scraper';
 import lodash from 'lodash';
 const { camelCase, upperFirst } = lodash;
 
+type Scraper = Awaited<ReturnType<typeof init>>;
+type HapoalimScraper = Awaited<ReturnType<Scraper['hapoalim']>>;
+type IsracardScraper = Awaited<ReturnType<Scraper['isracard']>>;
+
 import { saveTransactionsToDB } from './data/save-transactions-to-db';
 import { getCurrencyRates } from './data/currency';
 import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
+import { AccountDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/accountDataSchema';
+import { HapoalimDepositsSchema } from 'modern-poalim-scraper/dist/generatedTypes/hapoalimDepositsSchema';
+import { ILSCheckingTransactionsDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/ILSCheckingTransactionsDataSchema';
+import { ForeignTransactionsSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsSchema';
+import { IsracardCardsTransactionsList } from 'modern-poalim-scraper/dist/generatedTypes/isracardCardsTransactionsList';
 
 function getTransactionsFromCards(CardsTransactionsListBean: any) {
   const allData: any = [];
-  CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: any) => {
-    const txnGroups = CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
-    if (txnGroups) {
-      txnGroups.forEach((txnGroup: any) => {
-        if (txnGroup.txnIsrael) {
-          const israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
-            ...transaction,
-            card: cardInformation.slice(cardInformation.length - 4),
-          }));
-          allData.push(...israelTransactions);
-        }
-        if (txnGroup.txnAbroad) {
-          const abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
-            ...transaction,
-            card: cardInformation.slice(cardInformation.length - 4),
-          }));
-          allData.push(...abroadTransactions);
-        }
-      });
-    }
-  });
+  if (CardsTransactionsListBean) {
+    CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: number) => {
+      const txnGroups =
+        CardsTransactionsListBean[`Index${index}` as keyof IsracardCardsTransactionsList['CardsTransactionsListBean']]
+          ?.CurrentCardTransactions;
+      if (txnGroups) {
+        txnGroups.forEach((txnGroup: any) => {
+          if (txnGroup.txnIsrael) {
+            const israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
+              ...transaction,
+              card: cardInformation.slice(cardInformation.length - 4),
+            }));
+            allData.push(...israelTransactions);
+          }
+          if (txnGroup.txnAbroad) {
+            const abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
+              ...transaction,
+              card: cardInformation.slice(cardInformation.length - 4),
+            }));
+            allData.push(...abroadTransactions);
+          }
+        });
+      }
+    });
+  }
 
   return allData;
 }
 
 // TODO: Remove all any
-async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
-  const ILSTransactions = await newScraperIstance.getILSTransactions(account);
+async function getILSfromBankAndSave(newScraperIstance: HapoalimScraper, account: AccountDataSchema[0], pool: pg.Pool) {
+  if (newScraperIstance === 'Unknown Error') {
+    console.log('getILSfromBankAndSave: No scraper');
+    return;
+  }
+  const ILSTransactions = (await newScraperIstance.getILSTransactions(account)) as {
+    isValid: boolean;
+    errors: unknown;
+    data: ILSCheckingTransactionsDataSchema | null;
+  };
   console.log(
-    `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
+    `finished getting ILSTransactions ${ILSTransactions.data?.retrievalTransactionData.bankNumber}:${ILSTransactions.data?.retrievalTransactionData.branchNumber}:${ILSTransactions.data?.retrievalTransactionData.accountNumber}`,
     ILSTransactions.isValid
   );
   if (!ILSTransactions.isValid) {
@@ -53,14 +74,14 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
   }
 
   if (
-    ILSTransactions.data.retrievalTransactionData.accountNumber != 410915 &&
-    ILSTransactions.data.retrievalTransactionData.accountNumber != 61066 &&
-    ILSTransactions.data.retrievalTransactionData.accountNumber != 466803
+    ILSTransactions.data?.retrievalTransactionData.accountNumber != 410915 &&
+    ILSTransactions.data?.retrievalTransactionData.accountNumber != 61066 &&
+    ILSTransactions.data?.retrievalTransactionData.accountNumber != 466803
   ) {
     console.error(`UNKNOWN ACCOUNT 
-      ${ILSTransactions.data.retrievalTransactionData.bankNumber}
-      ${ILSTransactions.data.retrievalTransactionData.branchNumber}
-      ${ILSTransactions.data.retrievalTransactionData.accountNumber}
+      ${ILSTransactions.data?.retrievalTransactionData.bankNumber}
+      ${ILSTransactions.data?.retrievalTransactionData.branchNumber}
+      ${ILSTransactions.data?.retrievalTransactionData.accountNumber}
     `);
   } else {
     console.log(
@@ -94,8 +115,20 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
   }
 }
 
-async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
-  const foreignTransactions = await newScraperIstance.getForeignTransactions(account);
+async function getForeignTransactionsfromBankAndSave(
+  newScraperIstance: HapoalimScraper,
+  account: AccountDataSchema[0],
+  pool: pg.Pool
+) {
+  if (newScraperIstance === 'Unknown Error') {
+    console.log('getForeignTransactionsfromBankAndSave: No scraper');
+    return;
+  }
+  const foreignTransactions = (await newScraperIstance.getForeignTransactions(account)) as {
+    isValid: boolean;
+    errors: unknown;
+    data: ForeignTransactionsSchema | null;
+  };
   console.log(`finished getting foreignTransactions ${account.accountNumber}`, foreignTransactions.isValid);
   if (!foreignTransactions.isValid) {
     console.log(
@@ -104,67 +137,76 @@ async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, acc
     );
   }
 
-  await Promise.all(
-    foreignTransactions.data.balancesAndLimitsDataList.map(async (foreignAccountsArray: any) => {
-      let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
-      switch (foreignAccountsArray.currencyCode) {
-        case 19:
-          accountCurrency = 'usd';
-          break;
-        case 100:
-          accountCurrency = 'eur';
-          break;
-        case 27:
-          accountCurrency = 'gbp';
-          break;
-        default:
-          // TODO: Log important checks
-          console.error('New account currency - ', foreignAccountsArray.currencyCode);
-          break;
-      }
-      if (accountCurrency) {
-        console.log(
-          `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
-        );
-        await saveTransactionsToDB(
-          foreignAccountsArray.transactions,
-          accountCurrency,
-          {
-            accountNumber: foreignAccountsArray.accountNumber,
-            branchNumber: foreignAccountsArray.branchNumber,
-            bankNumber: foreignAccountsArray.bankNumber,
-          },
-          pool
-        );
-        console.log(
-          `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
-        );
-      }
-    })
-  );
+  if (foreignTransactions.data) {
+    await Promise.all(
+      foreignTransactions.data.balancesAndLimitsDataList.map(async foreignAccountsArray => {
+        let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
+        switch (foreignAccountsArray.currencyCode) {
+          case 19:
+            accountCurrency = 'usd';
+            break;
+          case 100:
+            accountCurrency = 'eur';
+            break;
+          case 27:
+            accountCurrency = 'gbp';
+            break;
+          default:
+            // TODO: Log important checks
+            console.error('New account currency - ', foreignAccountsArray.currencyCode);
+            break;
+        }
+        if (accountCurrency) {
+          console.log(
+            `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+          );
+          await saveTransactionsToDB(
+            foreignAccountsArray.transactions,
+            accountCurrency,
+            {
+              accountNumber: foreignAccountsArray.accountNumber,
+              branchNumber: foreignAccountsArray.branchNumber,
+              bankNumber: foreignAccountsArray.bankNumber,
+            },
+            pool
+          );
+          console.log(
+            `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+          );
+        }
+      })
+    );
+  }
 }
 
-async function getBankData(pool: pg.Pool, scraper: any) {
+async function getBankData(pool: pg.Pool, scraper: Scraper) {
   console.log('start getBankData');
   console.log('Bank Login');
   const newPoalimInstance = await scraper.hapoalim(
     {
-      userCode: process.env.USER_CODE,
-      password: process.env.PASSWORD,
+      userCode: process.env.USER_CODE as string,
+      password: process.env.PASSWORD as string,
     },
     {
       validateSchema: true,
-      isBusiness: true,
+      isBusiness: false,
     }
   );
   console.log('getting accounts');
-  const accounts = await newPoalimInstance.getAccountsData();
+  const accounts =
+    newPoalimInstance === 'Unknown Error'
+      ? { isValid: false, errors: '', data: null }
+      : ((await newPoalimInstance.getAccountsData()) as {
+          isValid: boolean;
+          errors: unknown;
+          data: AccountDataSchema | null;
+        });
   console.log('finished getting accounts', accounts.isValid);
   if (!accounts.isValid) {
     console.log(`getAccountsData Poalim schema errors: `, accounts.errors);
   }
   const tableName = 'financial_accounts';
-  for (const account of accounts.data) {
+  for (const account of accounts.data ?? []) {
     let whereClause = `
     SELECT * FROM ${`accounter_schema.` + tableName}
     WHERE 
@@ -193,7 +235,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     }
 
     for (const dBcolumn of columnNamesResult.rows) {
-      const camelCaseColumnName = camelCase(dBcolumn.column_name);
+      const camelCaseColumnName = camelCase(dBcolumn.column_name) as keyof typeof account;
       if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
         let actualCondition = '';
         const isNotNull = typeof account[camelCaseColumnName] !== 'undefined' && account[camelCaseColumnName] != null;
@@ -205,7 +247,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           dBcolumn.data_type == 'USER-DEFINED' ||
           dBcolumn.data_type == 'text'
         ) {
-          if (isNotNull && camelCaseColumnName != 'beneficiaryDetailsData') {
+          if (isNotNull && (camelCaseColumnName as string) != 'beneficiaryDetailsData') {
             actualCondition = `= $$` + account[camelCaseColumnName] + `$$`;
           }
         } else if (dBcolumn.data_type == 'date' || dBcolumn.data_type == 'bit') {
@@ -221,7 +263,8 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         ) {
           actualCondition = `= ` + account[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
-          const firstKey = Object.keys(account[camelCaseColumnName])[0];
+          const inner = account[camelCaseColumnName];
+          const firstKey = Object.keys(account[camelCaseColumnName])[0] as keyof typeof inner;
           actualCondition = `->> '` + firstKey + `' = '` + account[camelCaseColumnName][firstKey] + `'`;
           if (Object.keys(account[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
@@ -250,12 +293,12 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       } else {
         console.log('Account not found!!');
 
-        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
+        let columnNames = columnNamesResult.rows.map((column: { column_name: string }) => column.column_name);
 
         columnNames = columnNames.filter((columnName: string) => columnName != 'id');
         let text = `INSERT INTO accounter_schema.${tableName}
         (
-          ${columnNames.map((x: any) => x).join(', ')},
+          ${columnNames.map(x => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
         text = text.substring(0, lastIndexOfComma).concat(text.substring(lastIndexOfComma + 1, text.length));
@@ -287,6 +330,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           account.serviceAuthorizationDesc,
           account.branchTypeCode,
           account.mymailEntitlementSwitch,
+          null,
         ];
 
         const res = await pool.query(text, values);
@@ -298,7 +342,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
   }
 
   await Promise.all(
-    accounts.data.map(async (account: any) => {
+    (accounts.data ?? []).map(async account => {
       console.log(`Getting ILS, Foreign and deposits for ${account.accountNumber}`);
       const results = await Promise.allSettled([
         getILSfromBankAndSave(newPoalimInstance, account, pool),
@@ -313,9 +357,17 @@ async function getBankData(pool: pg.Pool, scraper: any) {
   // console.log('closed');
 }
 
-async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+async function getDepositsAndSave(newScraperIstance: HapoalimScraper, account: AccountDataSchema[0], pool: pg.Pool) {
+  if (newScraperIstance === 'Unknown Error') {
+    console.log('getDepositsAndSave: No scraper');
+    return;
+  }
   console.log('getting deposits');
-  const deposits = await newScraperIstance.getDeposits(account);
+  const deposits = (await newScraperIstance.getDeposits(account)) as {
+    isValid: boolean;
+    errors: unknown;
+    data: HapoalimDepositsSchema | null;
+  };
   console.log(`finished getting deposits ${account.accountNumber}`, deposits.isValid);
   if (!deposits.isValid) {
     console.log(`getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `, deposits.errors);
@@ -325,12 +377,12 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
   } else {
     console.log(`Saving deposits for ${account.accountNumber}`);
-    if (deposits.data.list.length != 1) {
-      console.log('WRONG NUMBER OF DEPOSITS', deposits.data.list);
+    if (deposits.data?.list.length != 1) {
+      console.log('WRONG NUMBER OF DEPOSITS', deposits.data?.list);
     } else {
       delete deposits.data.list[0].messages;
 
-      if (deposits.data.list[0].data.length != 1) {
+      if (deposits.data.list[0].data?.length != 1) {
         console.log('Deposit internal array arong', deposits.data);
       } else {
         delete deposits.data.list[0].data[0].metadata;
@@ -340,7 +392,10 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
         for (const key of internalArrayKeys) {
           let pascalKey = camelCase(key);
           pascalKey = upperFirst(pascalKey);
-          deposits.data.list[0][`data0${pascalKey}`] = deposits.data.list[0].data[0][key];
+          const something = deposits.data.list[0].data[0];
+          const otherthing = deposits.data.list[0];
+          deposits.data.list[0][`data0${pascalKey}` as keyof typeof otherthing] =
+            deposits.data.list[0].data[0][key as keyof typeof something];
         }
         delete deposits.data.list[0].data;
 
@@ -360,9 +415,18 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
   }
 }
 
-async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newIsracardInstance: any, id: any) {
+async function getCreditCardTransactionsAndSave(
+  month: Date,
+  pool: pg.Pool,
+  newIsracardInstance: IsracardScraper,
+  id: string
+) {
   console.log(`Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
-  const monthTransactions = await newIsracardInstance.getMonthTransactions(month);
+  const monthTransactions = (await newIsracardInstance.getMonthTransactions(month)) as {
+    isValid: boolean;
+    errors: unknown;
+    data: IsracardCardsTransactionsList | null;
+  };
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
     console.log(
@@ -374,7 +438,7 @@ async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newI
     console.error(`Replace password for creditcard ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
-  const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
+  const allData = getTransactionsFromCards(monthTransactions.data?.CardsTransactionsListBean);
 
   const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
@@ -388,7 +452,15 @@ async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newI
   }
 }
 
-async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) {
+async function getCreditCardData(
+  pool: pg.Pool,
+  scraper: Scraper,
+  credentials: {
+    ID: string;
+    password: string;
+    card6Digits: string;
+  }
+) {
   console.log('start getCreditCardData');
   console.log('Creditcard Login');
   const newIsracardInstance = await scraper.isracard(
@@ -434,14 +506,14 @@ async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) 
   console.log('After Init scraper');
   await Promise.allSettled([
     getCreditCardData(pool, newScraperInstance, {
-      ID: process.env.ISRACARD_ID,
-      password: process.env.ISRACARD_PASSWORD,
-      card6Digits: process.env.ISRACARD_6_DIGITS,
+      ID: process.env.ISRACARD_ID as string,
+      password: process.env.ISRACARD_PASSWORD as string,
+      card6Digits: process.env.ISRACARD_6_DIGITS as string,
     }),
     getCreditCardData(pool, thirdScraperInstance, {
-      ID: process.env.DOTAN_ISRACARD_ID,
-      password: process.env.DOTAN_ISRACARD_PASSWORD,
-      card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS,
+      ID: process.env.DOTAN_ISRACARD_ID as string,
+      password: process.env.DOTAN_ISRACARD_PASSWORD as string,
+      card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS as string,
     }),
     getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),
