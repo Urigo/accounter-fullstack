@@ -10,34 +10,56 @@ const { camelCase, upperFirst } = lodash;
 type Scraper = Awaited<ReturnType<typeof init>>;
 type HapoalimScraper = Awaited<ReturnType<Scraper['hapoalim']>>;
 type IsracardScraper = Awaited<ReturnType<Scraper['isracard']>>;
+export type DecoratedDeposit = Omit<Deposits[0], 'messages' | 'data'> & {
+  messages?: Deposits[0]['messages'];
+  data?: (Omit<Deposits[0]['data'][0], 'metadata'> & {
+    metadata?: Deposits[0]['data'][0]['metadata'];
+  })[];
+  [key: `data0${string}`]: any;
+};
+export type CardTransaction = (
+  | NonNullable<
+      IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][0]['txnIsrael']
+    >[0]
+  | NonNullable<
+      IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][0]['txnAbroad']
+    >[0]
+) & { card: string };
 
 import { saveTransactionsToDB } from './data/save-transactions-to-db';
 import { getCurrencyRates } from './data/currency';
 import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
 import { AccountDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/accountDataSchema';
-import { HapoalimDepositsSchema } from 'modern-poalim-scraper/dist/generatedTypes/hapoalimDepositsSchema';
+import { Deposits, HapoalimDepositsSchema } from 'modern-poalim-scraper/dist/generatedTypes/hapoalimDepositsSchema';
 import { ILSCheckingTransactionsDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/ILSCheckingTransactionsDataSchema';
-import { ForeignTransactionsSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsSchema';
-import { IsracardCardsTransactionsList } from 'modern-poalim-scraper/dist/generatedTypes/isracardCardsTransactionsList';
+import { ForeignTransactionsBusinessSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsBusinessSchema';
+import {
+  Index,
+  IsracardCardsTransactionsList,
+} from 'modern-poalim-scraper/dist/generatedTypes/isracardCardsTransactionsList';
 
-function getTransactionsFromCards(CardsTransactionsListBean: any) {
-  const allData: any = [];
+function getTransactionsFromCards(
+  CardsTransactionsListBean?: IsracardCardsTransactionsList['CardsTransactionsListBean']
+) {
+  const allData: CardTransaction[] = [];
   if (CardsTransactionsListBean) {
-    CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: number) => {
-      const txnGroups =
-        CardsTransactionsListBean[`Index${index}` as keyof IsracardCardsTransactionsList['CardsTransactionsListBean']]
-          ?.CurrentCardTransactions;
+    CardsTransactionsListBean.cardNumberList.forEach((cardInformation, index) => {
+      const txnGroups = (
+        CardsTransactionsListBean[
+          `Index${index}` as keyof IsracardCardsTransactionsList['CardsTransactionsListBean']
+        ] as Index
+      )?.CurrentCardTransactions;
       if (txnGroups) {
-        txnGroups.forEach((txnGroup: any) => {
+        txnGroups.forEach(txnGroup => {
           if (txnGroup.txnIsrael) {
-            const israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
+            const israelTransactions = txnGroup.txnIsrael.map(transaction => ({
               ...transaction,
               card: cardInformation.slice(cardInformation.length - 4),
             }));
             allData.push(...israelTransactions);
           }
           if (txnGroup.txnAbroad) {
-            const abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
+            const abroadTransactions = txnGroup.txnAbroad.map(transaction => ({
               ...transaction,
               card: cardInformation.slice(cardInformation.length - 4),
             }));
@@ -76,7 +98,8 @@ async function getILSfromBankAndSave(newScraperIstance: HapoalimScraper, account
   if (
     ILSTransactions.data?.retrievalTransactionData.accountNumber != 410915 &&
     ILSTransactions.data?.retrievalTransactionData.accountNumber != 61066 &&
-    ILSTransactions.data?.retrievalTransactionData.accountNumber != 466803
+    ILSTransactions.data?.retrievalTransactionData.accountNumber != 466803 &&
+    ILSTransactions.data?.retrievalTransactionData.accountNumber != 362396
   ) {
     console.error(`UNKNOWN ACCOUNT 
       ${ILSTransactions.data?.retrievalTransactionData.bankNumber}
@@ -127,7 +150,7 @@ async function getForeignTransactionsfromBankAndSave(
   const foreignTransactions = (await newScraperIstance.getForeignTransactions(account)) as {
     isValid: boolean;
     errors: unknown;
-    data: ForeignTransactionsSchema | null;
+    data: ForeignTransactionsBusinessSchema | null;
   };
   console.log(`finished getting foreignTransactions ${account.accountNumber}`, foreignTransactions.isValid);
   if (!foreignTransactions.isValid) {
@@ -207,6 +230,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
   }
   const tableName = 'financial_accounts';
   for (const account of accounts.data ?? []) {
+    /* check if account exists */
     let whereClause = `
     SELECT * FROM ${`accounter_schema.` + tableName}
     WHERE 
@@ -288,6 +312,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
     try {
       const res = await pool.query(whereClause);
 
+      /* add new accounts */
       if (res.rowCount > 0) {
         // console.log('found');
       } else {
@@ -341,6 +366,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
     }
   }
 
+  /* fetch account data */
   await Promise.all(
     (accounts.data ?? []).map(async account => {
       console.log(`Getting ILS, Foreign and deposits for ${account.accountNumber}`);
@@ -380,27 +406,25 @@ async function getDepositsAndSave(newScraperIstance: HapoalimScraper, account: A
     if (deposits.data?.list.length != 1) {
       console.log('WRONG NUMBER OF DEPOSITS', deposits.data?.list);
     } else {
-      delete deposits.data.list[0].messages;
+      const deposit: DecoratedDeposit = deposits.data.list[0];
+      delete deposit.messages;
 
-      if (deposits.data.list[0].data?.length != 1) {
+      if (deposit.data?.length != 1) {
         console.log('Deposit internal array arong', deposits.data);
       } else {
-        delete deposits.data.list[0].data[0].metadata;
+        delete deposit.data[0].metadata;
 
-        const internalArrayKeys = Object.keys(deposits.data.list[0].data[0]);
+        const internalArrayKeys = Object.keys(deposit.data[0]);
 
         for (const key of internalArrayKeys) {
           let pascalKey = camelCase(key);
           pascalKey = upperFirst(pascalKey);
-          const something = deposits.data.list[0].data[0];
-          const otherthing = deposits.data.list[0];
-          deposits.data.list[0][`data0${pascalKey}` as keyof typeof otherthing] =
-            deposits.data.list[0].data[0][key as keyof typeof something];
+          deposit[`data0${pascalKey}`] = deposit.data[0][key as keyof typeof deposit.data[0]];
         }
-        delete deposits.data.list[0].data;
+        delete deposit.data;
 
         await saveTransactionsToDB(
-          [deposits.data.list[0]],
+          [deposit],
           'deposits',
           {
             accountNumber: account.accountNumber,
@@ -440,10 +464,16 @@ async function getCreditCardTransactionsAndSave(
   }
   const allData = getTransactionsFromCards(monthTransactions.data?.CardsTransactionsListBean);
 
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *'];
-  const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
-    wantedCreditCards.includes(transaction.card)
-  );
+  const cards: string[] = ['9270', '6466', '5084'];
+  allData.forEach(t => {
+    if (!cards.includes(t.card)) {
+      console.log('\n\nNew card!!! ', t.card);
+      cards.push(t.card);
+    }
+  });
+
+  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '9270', '6466', '5084'];
+  const onlyWantedCreditCardsTransactions = allData.filter(transaction => wantedCreditCards.includes(transaction.card));
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
     console.log(`saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);

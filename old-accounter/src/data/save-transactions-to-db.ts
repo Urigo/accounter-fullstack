@@ -2,36 +2,110 @@ import pg from 'pg';
 import lodash from 'lodash';
 const { camelCase } = lodash;
 import moment from 'moment';
+import { ILSCheckingTransactionsDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/ILSCheckingTransactionsDataSchema';
+import { ForeignTransactionsBusinessSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsBusinessSchema';
+import { CardTransaction, DecoratedDeposit } from '../scrape';
 
 export type AccountTypes = 'ils' | 'usd' | 'eur' | 'gbp' | 'deposits' | 'isracard';
+type ILSTransaction = ILSCheckingTransactionsDataSchema['transactions'][0] & {
+  beneficiaryDetailsDataPartyName?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['partyName']
+    | null;
+  beneficiaryDetailsDataMessageHeadline?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['messageHeadline']
+    | null;
+  beneficiaryDetailsDataPartyHeadline?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['partyHeadline']
+    | null;
+  beneficiaryDetailsDataMessageDetail?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['messageDetail']
+    | null;
+  beneficiaryDetailsDataTableNumber?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['tableNumber']
+    | null;
+  beneficiaryDetailsDataRecordNumber?:
+    | NonNullable<ILSCheckingTransactionsDataSchema['transactions'][0]['beneficiaryDetailsData']>['recordNumber']
+    | null;
+};
+type ForeignTransaction = ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0] & {
+  metadataAttributesOriginalEventKey?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['originalEventKey']
+    | null;
+  metadataAttributesContraBranchNumber?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['contraBranchNumber']
+    | null;
+  metadataAttributesContraAccountNumber?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['contraAccountNumber']
+    | null;
+  metadataAttributesContraBankNumber?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['contraBankNumber']
+    | null;
+  metadataAttributesContraAccountFieldNameLable?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['contraAccountFieldNameLable']
+    | null;
+  metadataAttributesDataGroupCode?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['dataGroupCode']
+    | null;
+  metadataAttributesCurrencyRate?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['currencyRate']
+    | null;
+  metadataAttributesContraCurrencyCode?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['contraCurrencyCode']
+    | null;
+  metadataAttributesRateFixingCode?:
+    | NonNullable<
+        ForeignTransactionsBusinessSchema['balancesAndLimitsDataList'][0]['transactions'][0]['metadata']
+      >['attributes']['rateFixingCode']
+    | null;
+};
+type Transactions = ILSTransaction[] | ForeignTransaction[] | DecoratedDeposit[] | CardTransaction[];
+type AccountObject = {
+  accountNumber: number;
+  branchNumber: number;
+  bankNumber: number;
+};
 
-export async function saveTransactionsToDB(
-  transactions: any,
+export async function saveTransactionsToDB<T extends Transactions>(
+  transactions1: T,
   accountType: AccountTypes,
-  accountObject: any,
+  accountObject: AccountObject | null,
   pool: pg.Pool
 ) {
-  if (accountObject) {
-    transactions = transactions.map((transaction: any) => ({
-      ...transaction,
-      ...accountObject,
-    }));
-  }
+  const transactions = transactions1.map(transaction => ({
+    ...transaction,
+    ...(accountObject ?? {}),
+  }));
 
   for (const transaction of transactions) {
     let oldContraAccountFieldNameLableAPI = false;
     // console.log(transaction.card);
-    if (transaction.card && transaction.card == '17 *') {
+    if ('card' in transaction && transaction.card == '17 *') {
       transaction.card = '9217';
     }
-    if (accountType == 'ils') {
+    if ('activityDescriptionIncludeValueDate' in transaction && accountType == 'ils') {
       normalizeBeneficiaryDetailsData(transaction);
       if (transaction.activityDescriptionIncludeValueDate == undefined) {
         transaction.activityDescriptionIncludeValueDate = null;
       }
     } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
-      normalizeForeignTransactionMetadata(transaction);
-      if (transaction.contraAccountFieldNameLable == 0) {
+      normalizeForeignTransactionMetadata(transaction as ForeignTransaction);
+      if ('contraAccountFieldNameLable' in transaction && transaction.contraAccountFieldNameLable == '0') {
         console.log('old API!');
         transaction.contraAccountFieldNameLable = null;
         oldContraAccountFieldNameLableAPI = true;
@@ -115,11 +189,11 @@ export async function saveTransactionsToDB(
       } else {
         console.log('not found');
 
-        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
+        let columnNames = columnNamesResult.rows.map((column: { column_name: string }) => column.column_name);
         columnNames = columnNames.filter((columnName: string) => columnName != 'id');
         let text = `INSERT INTO accounter_schema.${tableName}
         (
-          ${columnNames.map((x: any) => x).join(', ')},
+          ${columnNames.map(x => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
         text = text.substring(0, lastIndexOfComma).concat(text.substring(lastIndexOfComma + 1, text.length));
@@ -138,17 +212,23 @@ export async function saveTransactionsToDB(
         }
 
         try {
-          if (transaction.transactionType == 'TODAY') {
+          if ('transactionType' in transaction && transaction.transactionType == 'TODAY') {
             console.log('Today transaction - ', transaction);
-          } else if (accountType == 'ils' && moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2) {
+          } else if (
+            accountType == 'ils' &&
+            'eventDate' in transaction &&
+            moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
+          ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
           } else if (
             (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') &&
+            'executingDate' in transaction &&
             moment(transaction.executingDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
           ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
           } else if (
             accountType == 'isracard' &&
+            'fullPurchaseDateOutbound' in transaction &&
             ((transaction.fullPurchaseDate != null &&
               moment(transaction.fullPurchaseDate, 'DD/MM/YYYY').diff(moment(), 'months') > 2) ||
               (transaction.fullPurchaseDateOutbound != null &&
@@ -161,11 +241,11 @@ export async function saveTransactionsToDB(
               console.log(
                 `success in insert to ${accountType} - ${transaction.accountNumber} - ${res.rows[0].activity_description} - ${res.rows[0].event_amount} - ${res.rows[0].event_date}`
               );
-            } else if (res.rows[0].original_amount) {
-              console.log(
-                `success in insert to ${accountType}-${transaction.cardNumber} - `,
-                res.rows[0].original_amount
-              );
+              // } else if (res.rows[0].original_amount) {
+              //   console.log(
+              //     `success in insert to ${accountType}-${transaction.cardNumber} - `,
+              //     res.rows[0].original_amount
+              //   );
             } else if (res.rows[0].card) {
               console.log(
                 `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${res.rows[0].supplier_name} - ${res.rows[0].supplier_name_outbound} - ${res.rows[0].full_purchase_date_outbound}`,
@@ -194,7 +274,7 @@ export async function saveTransactionsToDB(
   }
 }
 
-function normalizeBeneficiaryDetailsData(transaction: any) {
+function normalizeBeneficiaryDetailsData(transaction: ILSTransaction) {
   if (typeof transaction.beneficiaryDetailsData !== 'undefined' && transaction.beneficiaryDetailsData != null) {
     transaction.beneficiaryDetailsDataPartyName = transaction.beneficiaryDetailsData.partyName;
     transaction.beneficiaryDetailsDataMessageHeadline = transaction.beneficiaryDetailsData.messageHeadline;
@@ -214,9 +294,16 @@ function normalizeBeneficiaryDetailsData(transaction: any) {
   }
 }
 
-function findMissingTransactionKeys(transaction: any, columnNames: any, knownOptionals: string[], accountType: string) {
+function findMissingTransactionKeys(
+  transaction: Transactions[0],
+  columnNames: { rows: { column_name: string }[] },
+  knownOptionals: string[],
+  accountType: string
+) {
   const allKeys = Object.keys(transaction);
-  const fixedExistingKeys: string[] = columnNames.rows.map((column: any) => camelCase(column.column_name));
+  const fixedExistingKeys: string[] = columnNames.rows.map((column: { column_name: string }) =>
+    camelCase(column.column_name)
+  );
 
   const InTransactionNotInDB = allKeys.filter(x => !fixedExistingKeys.includes(x));
   const inDBNotInTransaction = fixedExistingKeys.filter(x => !allKeys.includes(x));
@@ -232,8 +319,8 @@ function findMissingTransactionKeys(transaction: any, columnNames: any, knownOpt
   }
 }
 
-function createWhereClause(
-  transaction: any,
+function createWhereClause<T>(
+  transaction: T,
   checkingColumnNames: any,
   tableName: string,
   extraColumnsToExcludeFromComparison: string[]
@@ -253,8 +340,8 @@ function createWhereClause(
     columnNamesToExcludeFromComparison = columnNamesToExcludeFromComparison.concat(extraColumnsToExcludeFromComparison);
   }
   for (const dBcolumn of checkingColumnNames.rows) {
-    const camelCaseColumnName = camelCase(dBcolumn.column_name);
-    if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
+    const camelCaseColumnName = camelCase(dBcolumn.column_name) as keyof T;
+    if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName as string)) {
       let actualCondition = '';
       const isNotNull =
         typeof transaction[camelCaseColumnName] !== 'undefined' && transaction[camelCaseColumnName] != null;
@@ -264,8 +351,8 @@ function createWhereClause(
         if (isNotNull) {
           actualCondition = `
             ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName]}$$ OR 
-            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace('הנחה', 'צבירת')}$$ OR 
-            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace('צבירת', 'הנחה')}$$
+            ${dBcolumn.column_name} = $$${String(transaction[camelCaseColumnName]).replace('הנחה', 'צבירת')}$$ OR 
+            ${dBcolumn.column_name} = $$${String(transaction[camelCaseColumnName]).replace('צבירת', 'הנחה')}$$
           `;
         }
         whereClause = whereClause.concat(`  (${actualCondition}) AND  `);
@@ -294,14 +381,15 @@ function createWhereClause(
           actualCondition = `= ` + transaction[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
           const firstKey = Object.keys(transaction[camelCaseColumnName])[0];
-          actualCondition = `->> '` + firstKey + `' = '` + transaction[camelCaseColumnName][firstKey] + `'`;
+          const value = transaction[camelCaseColumnName];
+          actualCondition = `->> '` + firstKey + `' = '` + String(value[firstKey as keyof typeof value]) + `'`;
           if (Object.keys(transaction[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(transaction[camelCaseColumnName]));
           }
         } else if (isNotNull || dBcolumn.data_type != 'json') {
           // TODO: Log important checks
-          console.log('unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName);
+          console.log('unknown type ' + dBcolumn.data_type + ' ' + (camelCaseColumnName as string));
         }
 
         whereClause = whereClause.concat(
@@ -317,7 +405,7 @@ function createWhereClause(
   return whereClause;
 }
 
-function normalizeForeignTransactionMetadata(transaction: any) {
+function normalizeForeignTransactionMetadata(transaction: ForeignTransaction) {
   if (typeof transaction.metadata !== 'undefined' && transaction.metadata != null) {
     if (typeof transaction.metadata.attributes !== 'undefined' && transaction.metadata.attributes != null) {
       transaction.metadataAttributesOriginalEventKey = transaction.metadata.attributes.originalEventKey;
@@ -327,9 +415,6 @@ function normalizeForeignTransactionMetadata(transaction: any) {
       transaction.metadataAttributesContraAccountFieldNameLable =
         transaction.metadata.attributes.contraAccountFieldNameLable;
       transaction.metadataAttributesDataGroupCode = transaction.metadata.attributes.dataGroupCode;
-      transaction.metadataAttributesCurrencyRate = transaction.metadata.attributes.currencyRate;
-      transaction.metadataAttributesContraCurrencyCode = transaction.metadata.attributes.contraCurrencyCode;
-      transaction.metadataAttributesRateFixingCode = transaction.metadata.attributes.rateFixingCode;
       transaction.metadataAttributesCurrencyRate = transaction.metadata.attributes.currencyRate;
       transaction.metadataAttributesContraCurrencyCode = transaction.metadata.attributes.contraCurrencyCode;
       transaction.metadataAttributesRateFixingCode = transaction.metadata.attributes.rateFixingCode;
@@ -352,219 +437,221 @@ function normalizeForeignTransactionMetadata(transaction: any) {
   }
 }
 
-function transactionValuesToArray(transaction: any, accountType: AccountTypes) {
-  let values: string[] = [];
+function transactionValuesToArray(transaction: Transactions[0], accountType: AccountTypes) {
+  let values: (number | string | null | Record<string, any>)[] = [];
   if (accountType == 'ils') {
     values = [
-      transaction.eventDate,
-      transaction.formattedEventDate,
-      transaction.serialNumber,
-      transaction.activityTypeCode,
-      transaction.activityDescription,
-      transaction.textCode,
-      transaction.referenceNumber,
-      transaction.referenceCatenatedNumber,
-      transaction.valueDate,
-      transaction.formattedValueDate,
-      transaction.eventAmount,
-      transaction.eventActivityTypeCode,
-      transaction.currentBalance,
-      transaction.internalLinkCode,
-      transaction.originalEventCreateDate,
-      transaction.formattedOriginalEventCreateDate,
-      transaction.transactionType,
-      transaction.dataGroupCode,
-      transaction.beneficiaryDetailsData,
-      transaction.expandedEventDate,
-      transaction.executingBranchNumber,
-      transaction.eventId,
-      transaction.details,
-      transaction.pfmDetails,
-      transaction.differentDateIndication,
-      transaction.rejectedDataEventPertainingIndication,
-      transaction.tableNumber,
-      transaction.recordNumber,
-      transaction.contraBankNumber,
-      transaction.contraBranchNumber,
-      transaction.contraAccountNumber,
-      transaction.contraAccountTypeCode,
-      transaction.marketingOfferContext,
-      transaction.commentExistenceSwitch,
-      transaction.englishActionDesc,
-      transaction.fieldDescDisplaySwitch,
-      transaction.urlAddressNiar,
-      transaction.offerActivityContext,
-      transaction.comment,
-      transaction.beneficiaryDetailsDataPartyName,
-      transaction.beneficiaryDetailsDataMessageHeadline,
-      transaction.beneficiaryDetailsDataPartyHeadline,
-      transaction.beneficiaryDetailsDataMessageDetail,
-      transaction.beneficiaryDetailsDataTableNumber,
-      transaction.beneficiaryDetailsDataRecordNumber,
-      transaction.activityDescriptionIncludeValueDate,
-      transaction.bankNumber,
-      transaction.branchNumber,
-      transaction.accountNumber,
+      (transaction as ILSTransaction & AccountObject).eventDate,
+      (transaction as ILSTransaction & AccountObject).formattedEventDate,
+      (transaction as ILSTransaction & AccountObject).serialNumber,
+      (transaction as ILSTransaction & AccountObject).activityTypeCode,
+      (transaction as ILSTransaction & AccountObject).activityDescription,
+      (transaction as ILSTransaction & AccountObject).textCode,
+      (transaction as ILSTransaction & AccountObject).referenceNumber,
+      (transaction as ILSTransaction & AccountObject).referenceCatenatedNumber,
+      (transaction as ILSTransaction & AccountObject).valueDate,
+      (transaction as ILSTransaction & AccountObject).formattedValueDate,
+      (transaction as ILSTransaction & AccountObject).eventAmount,
+      (transaction as ILSTransaction & AccountObject).eventActivityTypeCode,
+      (transaction as ILSTransaction & AccountObject).currentBalance,
+      (transaction as ILSTransaction & AccountObject).internalLinkCode,
+      (transaction as ILSTransaction & AccountObject).originalEventCreateDate,
+      (transaction as ILSTransaction & AccountObject).formattedOriginalEventCreateDate,
+      (transaction as ILSTransaction & AccountObject).transactionType,
+      (transaction as ILSTransaction & AccountObject).dataGroupCode,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsData,
+      (transaction as ILSTransaction & AccountObject).expandedEventDate,
+      (transaction as ILSTransaction & AccountObject).executingBranchNumber,
+      (transaction as ILSTransaction & AccountObject).eventId,
+      (transaction as ILSTransaction & AccountObject).details,
+      (transaction as ILSTransaction & AccountObject).pfmDetails,
+      (transaction as ILSTransaction & AccountObject).differentDateIndication,
+      (transaction as ILSTransaction & AccountObject).rejectedDataEventPertainingIndication,
+      (transaction as ILSTransaction & AccountObject).tableNumber,
+      (transaction as ILSTransaction & AccountObject).recordNumber,
+      (transaction as ILSTransaction & AccountObject).contraBankNumber,
+      (transaction as ILSTransaction & AccountObject).contraBranchNumber,
+      (transaction as ILSTransaction & AccountObject).contraAccountNumber,
+      (transaction as ILSTransaction & AccountObject).contraAccountTypeCode,
+      (transaction as ILSTransaction & AccountObject).marketingOfferContext,
+      (transaction as ILSTransaction & AccountObject).commentExistenceSwitch,
+      (transaction as ILSTransaction & AccountObject).englishActionDesc,
+      (transaction as ILSTransaction & AccountObject).fieldDescDisplaySwitch,
+      // (transaction as ILSTransaction & AccountObject).urlAddressNiar,
+      null,
+      (transaction as ILSTransaction & AccountObject).offerActivityContext,
+      (transaction as ILSTransaction & AccountObject).comment,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataPartyName ?? null,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataMessageHeadline ?? null,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataPartyHeadline ?? null,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataMessageDetail ?? null,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataTableNumber ?? null,
+      (transaction as ILSTransaction & AccountObject).beneficiaryDetailsDataRecordNumber ?? null,
+      (transaction as ILSTransaction & AccountObject).activityDescriptionIncludeValueDate,
+      (transaction as ILSTransaction & AccountObject).bankNumber,
+      (transaction as ILSTransaction & AccountObject).branchNumber,
+      (transaction as ILSTransaction & AccountObject).accountNumber,
     ];
   } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
     values = [
-      transaction.metadataAttributesOriginalEventKey,
-      transaction.metadataAttributesContraBranchNumber,
-      transaction.metadataAttributesContraAccountNumber,
-      transaction.metadataAttributesContraBankNumber,
-      transaction.metadataAttributesContraAccountFieldNameLable,
-      transaction.metadataAttributesDataGroupCode,
-      transaction.metadataAttributesCurrencyRate,
-      transaction.metadataAttributesContraCurrencyCode,
-      transaction.metadataAttributesRateFixingCode,
-      transaction.executingDate,
-      transaction.formattedExecutingDate,
-      transaction.valueDate,
-      transaction.formattedValueDate,
-      transaction.originalSystemId,
-      transaction.activityDescription,
-      transaction.eventAmount,
-      transaction.currentBalance,
-      transaction.referenceCatenatedNumber,
-      transaction.referenceNumber,
-      transaction.currencyRate,
-      transaction.eventDetails,
-      transaction.rateFixingCode,
-      transaction.contraCurrencyCode,
-      transaction.eventActivityTypeCode,
-      transaction.transactionType,
-      transaction.rateFixingShortDescription,
-      transaction.currencyLongDescription,
-      transaction.activityTypeCode,
-      transaction.eventNumber,
-      transaction.validityDate,
-      transaction.comments,
-      transaction.commentExistenceSwitch,
-      transaction.accountName,
-      transaction.contraBankNumber,
-      transaction.contraBranchNumber,
-      transaction.contraAccountNumber,
-      transaction.originalEventKey,
-      transaction.contraAccountFieldNameLable,
-      transaction.dataGroupCode,
-      transaction.rateFixingDescription,
-      transaction.urlAddressNiar,
-      transaction.currencySwiftCode,
-      transaction.urlAddress,
-      transaction.bankNumber,
-      transaction.branchNumber,
-      transaction.accountNumber,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesOriginalEventKey ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesContraBranchNumber ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesContraAccountNumber ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesContraBankNumber ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesContraAccountFieldNameLable ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesDataGroupCode ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesCurrencyRate ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesContraCurrencyCode ?? null,
+      (transaction as ForeignTransaction & AccountObject).metadataAttributesRateFixingCode ?? null,
+      (transaction as ForeignTransaction & AccountObject).executingDate,
+      (transaction as ForeignTransaction & AccountObject).formattedExecutingDate,
+      (transaction as ForeignTransaction & AccountObject).valueDate,
+      (transaction as ForeignTransaction & AccountObject).formattedValueDate,
+      (transaction as ForeignTransaction & AccountObject).originalSystemId,
+      (transaction as ForeignTransaction & AccountObject).activityDescription,
+      (transaction as ForeignTransaction & AccountObject).eventAmount,
+      (transaction as ForeignTransaction & AccountObject).currentBalance,
+      (transaction as ForeignTransaction & AccountObject).referenceCatenatedNumber,
+      (transaction as ForeignTransaction & AccountObject).referenceNumber,
+      (transaction as ForeignTransaction & AccountObject).currencyRate,
+      (transaction as ForeignTransaction & AccountObject).eventDetails,
+      (transaction as ForeignTransaction & AccountObject).rateFixingCode,
+      (transaction as ForeignTransaction & AccountObject).contraCurrencyCode,
+      (transaction as ForeignTransaction & AccountObject).eventActivityTypeCode,
+      (transaction as ForeignTransaction & AccountObject).transactionType,
+      (transaction as ForeignTransaction & AccountObject).rateFixingShortDescription,
+      (transaction as ForeignTransaction & AccountObject).currencyLongDescription,
+      (transaction as ForeignTransaction & AccountObject).activityTypeCode,
+      (transaction as ForeignTransaction & AccountObject).eventNumber,
+      (transaction as ForeignTransaction & AccountObject).validityDate,
+      (transaction as ForeignTransaction & AccountObject).comments,
+      (transaction as ForeignTransaction & AccountObject).commentExistenceSwitch,
+      (transaction as ForeignTransaction & AccountObject).accountName,
+      (transaction as ForeignTransaction & AccountObject).contraBankNumber,
+      (transaction as ForeignTransaction & AccountObject).contraBranchNumber,
+      (transaction as ForeignTransaction & AccountObject).contraAccountNumber,
+      (transaction as ForeignTransaction & AccountObject).originalEventKey,
+      (transaction as ForeignTransaction & AccountObject).contraAccountFieldNameLable,
+      (transaction as ForeignTransaction & AccountObject).dataGroupCode,
+      (transaction as ForeignTransaction & AccountObject).rateFixingDescription,
+      // (transaction as ForeignTransaction & AccountObject).urlAddressNiar,
+      null,
+      (transaction as ForeignTransaction & AccountObject).currencySwiftCode,
+      (transaction as ForeignTransaction & AccountObject).urlAddress,
+      (transaction as ForeignTransaction & AccountObject).bankNumber,
+      (transaction as ForeignTransaction & AccountObject).branchNumber,
+      (transaction as ForeignTransaction & AccountObject).accountNumber,
     ];
   } else if (accountType == 'isracard') {
     values = [
-      transaction.specificDate,
-      transaction.cardIndex,
-      transaction.dealsInbound,
-      transaction.supplierId,
-      transaction.supplierName,
-      transaction.dealSumType,
-      transaction.paymentSumSign,
-      transaction.purchaseDate,
-      transaction.fullPurchaseDate,
-      transaction.moreInfo,
-      transaction.horaatKeva,
-      transaction.voucherNumber,
-      transaction.voucherNumberRatz,
-      transaction.solek,
-      transaction.purchaseDateOutbound,
-      transaction.fullPurchaseDateOutbound,
-      transaction.currencyId,
-      transaction.currentPaymentCurrency,
-      transaction.city,
-      transaction.supplierNameOutbound,
-      transaction.fullSupplierNameOutbound,
-      transaction.paymentDate,
-      transaction.fullPaymentDate,
-      transaction.isShowDealsOutbound,
-      transaction.adendum,
-      transaction.voucherNumberRatzOutbound,
-      transaction.isShowLinkForSupplierDetails,
-      transaction.dealSum,
-      transaction.paymentSum,
-      transaction.fullSupplierNameHeb,
-      transaction.dealSumOutbound,
-      transaction.paymentSumOutbound,
-      transaction.isHoraatKeva,
-      transaction.stage,
-      transaction.returnCode,
-      transaction.message,
-      transaction.returnMessage,
-      transaction.displayProperties,
-      transaction.tablePageNum,
-      transaction.isError,
-      transaction.isCaptcha,
-      transaction.isButton,
-      transaction.siteName,
-      transaction.clientIpAddress,
-      transaction.card,
+      (transaction as CardTransaction & AccountObject).specificDate,
+      (transaction as CardTransaction & AccountObject).cardIndex,
+      (transaction as CardTransaction & AccountObject).dealsInbound,
+      (transaction as CardTransaction & AccountObject).supplierId,
+      (transaction as CardTransaction & AccountObject).supplierName,
+      (transaction as CardTransaction & AccountObject).dealSumType,
+      (transaction as CardTransaction & AccountObject).paymentSumSign,
+      (transaction as CardTransaction & AccountObject).purchaseDate,
+      (transaction as CardTransaction & AccountObject).fullPurchaseDate,
+      (transaction as CardTransaction & AccountObject).moreInfo,
+      (transaction as CardTransaction & AccountObject).horaatKeva,
+      (transaction as CardTransaction & AccountObject).voucherNumber,
+      (transaction as CardTransaction & AccountObject).voucherNumberRatz,
+      (transaction as CardTransaction & AccountObject).solek,
+      (transaction as CardTransaction & AccountObject).purchaseDateOutbound,
+      (transaction as CardTransaction & AccountObject).fullPurchaseDateOutbound,
+      (transaction as CardTransaction & AccountObject).currencyId,
+      (transaction as CardTransaction & AccountObject).currentPaymentCurrency,
+      (transaction as CardTransaction & AccountObject).city,
+      (transaction as CardTransaction & AccountObject).supplierNameOutbound,
+      (transaction as CardTransaction & AccountObject).fullSupplierNameOutbound,
+      (transaction as CardTransaction & AccountObject).paymentDate,
+      (transaction as CardTransaction & AccountObject).fullPaymentDate,
+      (transaction as CardTransaction & AccountObject).isShowDealsOutbound,
+      (transaction as CardTransaction & AccountObject).adendum,
+      (transaction as CardTransaction & AccountObject).voucherNumberRatzOutbound,
+      (transaction as CardTransaction & AccountObject).isShowLinkForSupplierDetails,
+      (transaction as CardTransaction & AccountObject).dealSum,
+      (transaction as CardTransaction & AccountObject).paymentSum,
+      (transaction as CardTransaction & AccountObject).fullSupplierNameHeb,
+      (transaction as CardTransaction & AccountObject).dealSumOutbound,
+      (transaction as CardTransaction & AccountObject).paymentSumOutbound,
+      (transaction as CardTransaction & AccountObject).isHoraatKeva,
+      (transaction as CardTransaction & AccountObject).stage,
+      (transaction as CardTransaction & AccountObject).returnCode,
+      (transaction as CardTransaction & AccountObject).message,
+      (transaction as CardTransaction & AccountObject).returnMessage,
+      (transaction as CardTransaction & AccountObject).displayProperties,
+      (transaction as CardTransaction & AccountObject).tablePageNum,
+      (transaction as CardTransaction & AccountObject).isError,
+      (transaction as CardTransaction & AccountObject).isCaptcha,
+      (transaction as CardTransaction & AccountObject).isButton,
+      (transaction as CardTransaction & AccountObject).siteName,
+      (transaction as CardTransaction & AccountObject).clientIpAddress ?? null,
+      (transaction as CardTransaction & AccountObject).card,
     ];
   } else if (accountType == 'deposits') {
     values = [
-      transaction.data0ShortProductName,
-      transaction.data0PrincipalAmount,
-      transaction.data0RevaluedTotalAmount,
-      transaction.data0EndExitDate,
-      transaction.data0PaymentDate,
-      transaction.data0StatedAnnualInterestRate,
-      transaction.data0HebrewPurposeDescription,
-      transaction.data0ObjectiveAmount,
-      transaction.data0ObjectiveDate,
-      transaction.data0AgreementOpeningDate,
-      transaction.data0EventWithdrawalAmount,
-      transaction.data0StartExitDate,
-      transaction.data0PeriodUntilNextEvent,
-      transaction.data0RenewalDescription,
-      transaction.data0RequestedRenewalNumber,
-      transaction.data0InterestBaseDescription,
-      transaction.data0InterestTypeDescription,
-      transaction.data0SpreadPercent,
-      transaction.data0VariableInterestDescription,
-      transaction.data0AdjustedInterest,
-      transaction.data0InterestCalculatingMethodDescription,
-      transaction.data0InterestCreditingMethodDescription,
-      transaction.data0InterestPaymentDescription,
-      transaction.data0NominalInterest,
-      transaction.data0DepositSerialId,
-      transaction.data0LinkageBaseDescription,
-      transaction.data0RenewalCounter,
-      transaction.data0ProductFreeText,
-      transaction.data0PartyTextId,
-      transaction.data0ActualIndexRate,
-      transaction.data0InterestTypeCode,
-      transaction.data0ProductNumber,
-      transaction.data0ProductPurposeCode,
-      transaction.data0DetailedAccountTypeCode,
-      transaction.data0FormattedEndExitDate,
-      transaction.data0FormattedPaymentDate,
-      transaction.data0FormattedObjectiveDate,
-      transaction.data0FormattedAgreementOpeningDate,
-      transaction.data0FormattedStartExitDate,
-      transaction.data0LienDescription,
-      transaction.data0WithdrawalEnablingIndication,
-      transaction.data0RenewalEnablingIndication,
-      transaction.data0StandingOrderEnablingIndication,
-      transaction.data0AdditionEnablingIndication,
-      transaction.data0TimeUnitDescription,
-      transaction.data0FormattedRevaluedTotalAmount,
-      transaction.data0WarningExistanceIndication,
-      transaction.data0RenewalDateExplanation,
-      transaction.source,
-      transaction.validityDate,
-      transaction.validityTime,
-      transaction.israeliCurrencyDepositPrincipalBalanceAmount,
-      transaction.depositsRevaluedAmount,
-      transaction.formattedValidityTime,
-      transaction.formattedDate,
-      transaction.amount,
-      transaction.revaluatedAmount,
-      transaction.accountNumber,
-      transaction.branchNumber,
-      transaction.bankNumber,
+      (transaction as DecoratedDeposit & AccountObject).data0ShortProductName,
+      (transaction as DecoratedDeposit & AccountObject).data0PrincipalAmount,
+      (transaction as DecoratedDeposit & AccountObject).data0RevaluedTotalAmount,
+      (transaction as DecoratedDeposit & AccountObject).data0EndExitDate,
+      (transaction as DecoratedDeposit & AccountObject).data0PaymentDate,
+      (transaction as DecoratedDeposit & AccountObject).data0StatedAnnualInterestRate,
+      (transaction as DecoratedDeposit & AccountObject).data0HebrewPurposeDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0ObjectiveAmount,
+      (transaction as DecoratedDeposit & AccountObject).data0ObjectiveDate,
+      (transaction as DecoratedDeposit & AccountObject).data0AgreementOpeningDate,
+      (transaction as DecoratedDeposit & AccountObject).data0EventWithdrawalAmount,
+      (transaction as DecoratedDeposit & AccountObject).data0StartExitDate,
+      (transaction as DecoratedDeposit & AccountObject).data0PeriodUntilNextEvent,
+      (transaction as DecoratedDeposit & AccountObject).data0RenewalDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0RequestedRenewalNumber,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestBaseDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestTypeDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0SpreadPercent,
+      (transaction as DecoratedDeposit & AccountObject).data0VariableInterestDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0AdjustedInterest,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestCalculatingMethodDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestCreditingMethodDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestPaymentDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0NominalInterest,
+      (transaction as DecoratedDeposit & AccountObject).data0DepositSerialId,
+      (transaction as DecoratedDeposit & AccountObject).data0LinkageBaseDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0RenewalCounter,
+      (transaction as DecoratedDeposit & AccountObject).data0ProductFreeText,
+      (transaction as DecoratedDeposit & AccountObject).data0PartyTextId,
+      (transaction as DecoratedDeposit & AccountObject).data0ActualIndexRate,
+      (transaction as DecoratedDeposit & AccountObject).data0InterestTypeCode,
+      (transaction as DecoratedDeposit & AccountObject).data0ProductNumber,
+      (transaction as DecoratedDeposit & AccountObject).data0ProductPurposeCode,
+      (transaction as DecoratedDeposit & AccountObject).data0DetailedAccountTypeCode,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedEndExitDate,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedPaymentDate,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedObjectiveDate,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedAgreementOpeningDate,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedStartExitDate,
+      (transaction as DecoratedDeposit & AccountObject).data0LienDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0WithdrawalEnablingIndication,
+      (transaction as DecoratedDeposit & AccountObject).data0RenewalEnablingIndication,
+      (transaction as DecoratedDeposit & AccountObject).data0StandingOrderEnablingIndication,
+      (transaction as DecoratedDeposit & AccountObject).data0AdditionEnablingIndication,
+      (transaction as DecoratedDeposit & AccountObject).data0TimeUnitDescription,
+      (transaction as DecoratedDeposit & AccountObject).data0FormattedRevaluedTotalAmount,
+      (transaction as DecoratedDeposit & AccountObject).data0WarningExistanceIndication,
+      (transaction as DecoratedDeposit & AccountObject).data0RenewalDateExplanation,
+      (transaction as DecoratedDeposit & AccountObject).source,
+      (transaction as DecoratedDeposit & AccountObject).validityDate,
+      (transaction as DecoratedDeposit & AccountObject).validityTime,
+      (transaction as DecoratedDeposit & AccountObject).israeliCurrencyDepositPrincipalBalanceAmount,
+      (transaction as DecoratedDeposit & AccountObject).depositsRevaluedAmount,
+      (transaction as DecoratedDeposit & AccountObject).formattedValidityTime,
+      (transaction as DecoratedDeposit & AccountObject).formattedDate,
+      (transaction as DecoratedDeposit & AccountObject).amount,
+      (transaction as DecoratedDeposit & AccountObject).revaluatedAmount,
+      (transaction as DecoratedDeposit & AccountObject).accountNumber,
+      (transaction as DecoratedDeposit & AccountObject).branchNumber,
+      (transaction as DecoratedDeposit & AccountObject).bankNumber,
     ];
   }
   return values;
