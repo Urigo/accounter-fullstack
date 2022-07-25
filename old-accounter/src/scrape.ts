@@ -6,6 +6,17 @@ const { Pool } = pg;
 import { init } from 'modern-poalim-scraper';
 import lodash from 'lodash';
 const { camelCase, upperFirst } = lodash;
+import { saveTransactionsToDB } from './data/save-transactions-to-db';
+import { getCurrencyRates } from './data/currency';
+import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
+import { AccountDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/accountDataSchema';
+import { Deposits, HapoalimDepositsSchema } from 'modern-poalim-scraper/dist/generatedTypes/hapoalimDepositsSchema';
+import { ILSCheckingTransactionsDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/ILSCheckingTransactionsDataSchema';
+import { ForeignTransactionsBusinessSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsBusinessSchema';
+import {
+  Index,
+  IsracardCardsTransactionsList,
+} from 'modern-poalim-scraper/dist/generatedTypes/isracardCardsTransactionsList';
 
 type Scraper = Awaited<ReturnType<typeof init>>;
 type HapoalimScraper = Awaited<ReturnType<Scraper['hapoalim']>>;
@@ -25,18 +36,6 @@ export type CardTransaction = (
       IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][0]['txnAbroad']
     >[0]
 ) & { card: string };
-
-import { saveTransactionsToDB } from './data/save-transactions-to-db';
-import { getCurrencyRates } from './data/currency';
-import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
-import { AccountDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/accountDataSchema';
-import { Deposits, HapoalimDepositsSchema } from 'modern-poalim-scraper/dist/generatedTypes/hapoalimDepositsSchema';
-import { ILSCheckingTransactionsDataSchema } from 'modern-poalim-scraper/dist/generatedTypes/ILSCheckingTransactionsDataSchema';
-import { ForeignTransactionsBusinessSchema } from 'modern-poalim-scraper/dist/generatedTypes/foreignTransactionsBusinessSchema';
-import {
-  Index,
-  IsracardCardsTransactionsList,
-} from 'modern-poalim-scraper/dist/generatedTypes/isracardCardsTransactionsList';
 
 function getTransactionsFromCards(
   CardsTransactionsListBean?: IsracardCardsTransactionsList['CardsTransactionsListBean']
@@ -464,15 +463,7 @@ async function getCreditCardTransactionsAndSave(
   }
   const allData = getTransactionsFromCards(monthTransactions.data?.CardsTransactionsListBean);
 
-  const cards: string[] = ['9270', '6466', '5084'];
-  allData.forEach(t => {
-    if (!cards.includes(t.card)) {
-      console.log('\n\nNew card!!! ', t.card);
-      cards.push(t.card);
-    }
-  });
-
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '9270', '6466', '5084'];
+  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *'];
   const onlyWantedCreditCardsTransactions = allData.filter(transaction => wantedCreditCards.includes(transaction.card));
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
