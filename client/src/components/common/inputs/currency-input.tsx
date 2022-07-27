@@ -36,6 +36,7 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
 type Props = React.ComponentProps<typeof NumberInput> & {
   error?: string;
   currencyCodeProps: ComponentProps<typeof CurrencyCodeInput>;
+  precision?: number;
 };
 
 export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
@@ -46,7 +47,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   return (
     <div>
       <div className="w-full flex flex-row ">
-        <NumberInput className="w-full" {...props} error={error || currencyError} />
+        <NumberInput className="w-full" {...props} precision={props.precision ?? 2} error={error || currencyError} />
         <CurrencyCodeInput {...currencyCodeProps} />
       </div>
     </div>
