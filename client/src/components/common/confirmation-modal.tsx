@@ -22,13 +22,13 @@ export function ConfirmationModal({
           <div className="flex mx-auto flex-row justify-evenly">
             <button
               onClick={props.onClose}
-              className="flex mt-6 text-white bg-red-500 border-0 py-2 px-5 focus:outline-none hover:bg-red-600 rounded"
+              className="flex mt-6 text-white bg-red-500 border-0 py-2 px-5 focus:outline-none hover:bg-red-600 rounded disabled:opacity-25"
             >
               {labels.cancel}
             </button>
             <button
               onClick={onConfirm}
-              className="flex mt-6 text-white bg-indigo-500 border-0 py-2 px-5 focus:outline-none hover:bg-indigo-600 rounded"
+              className="flex mt-6 text-white bg-indigo-500 border-0 py-2 px-5 focus:outline-none hover:bg-indigo-600 rounded disabled:opacity-25"
             >
               {labels.confirm}
             </button>

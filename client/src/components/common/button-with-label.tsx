@@ -20,7 +20,7 @@ export const ButtonWithLabel = ({ title, url, style, target, textLabel, rel, typ
           style={style}
           type={type}
           onClick={onClick}
-          className={` bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent hover:bg-indigo-500 hover:text-white text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md`}
+          className={` bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent hover:bg-indigo-500 hover:text-white text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md disabled:opacity-25`}
         >
           <a rel={rel} target={target} href={url} type={type}>
             {title}

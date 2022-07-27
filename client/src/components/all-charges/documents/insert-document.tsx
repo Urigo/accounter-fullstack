@@ -49,7 +49,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
         <div className="flex justify-center gap-5 mt-5">
           <button
             type="submit"
-            className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg disabled:opacity-25"
             disabled={isLoading || Object.keys(dirtyFields).length === 0}
             onClick={() => {
               if (isError) {
@@ -70,7 +70,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
           </button>
           <button
             type="button"
-            className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+            className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg disabled:opacity-25"
             onClick={closeModal}
           >
             Cancel

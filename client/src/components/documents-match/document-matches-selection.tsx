@@ -175,7 +175,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                     <li>
                       <button
                         onClick={() => setExtandedInfoFlag(false)}
-                        className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
+                        className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600 disabled:opacity-25"
                         title="read less"
                       >
                         {' '}
@@ -187,7 +187,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                   <li>
                     <button
                       onClick={() => setExtandedInfoFlag(true)}
-                      className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
+                      className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600 disabled:opacity-25"
                       title="read more"
                     >
                       {' '}
@@ -245,7 +245,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                       <li>
                         <button
                           onClick={() => setExtandedInfoFlag(false)}
-                          className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
+                          className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300 disabled:opacity-25"
                           title="read less"
                         >
                           {' '}
@@ -257,7 +257,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                     <li>
                       <button
                         onClick={() => setExtandedInfoFlag(true)}
-                        className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
+                        className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300 disabled:opacity-25"
                         title="read more"
                       >
                         {' '}
@@ -274,7 +274,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                     setSelectedChargeId(charge.id);
                     setReadyForNextStep(true);
                   }}
-                  className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white"
+                  className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white disabled:opacity-25"
                   style={selectedCharge === charge.id ? { backgroundColor: 'lightGreen' } : {}}
                 >
                   Match
