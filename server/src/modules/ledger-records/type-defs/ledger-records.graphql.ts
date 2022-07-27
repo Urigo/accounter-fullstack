@@ -1,4 +1,6 @@
-" represent atomic movement of funds "
+import { gql } from "graphql-modules"
+
+export const ledgerRecordsSchema = gql`" represent atomic movement of funds "
 type LedgerRecord {
   id: ID!
   creditAccount: Counterparty
@@ -13,4 +15,4 @@ type LedgerRecord {
 extend type Charge {
   " ledger records linked to the charge "
   ledgerRecords: [LedgerRecord!]!
-}
+}`

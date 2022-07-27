@@ -1,4 +1,6 @@
-extend type Charge {
+import { gql } from "graphql-modules";
+
+export const businessTripsSchema = gql`extend type Charge {
   " should be later in busines trip module? "
   businessTrip: BusinessTrip
 }
@@ -13,4 +15,4 @@ type BusinessTrip {
   id: ID!
   name: String!
   dates: DateRange!
-}
+}`

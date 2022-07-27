@@ -1,4 +1,6 @@
-extend type Mutation {
+import { gql } from "graphql-modules";
+
+export const chargesMutationsSchema = gql`extend type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
 }
@@ -62,4 +64,4 @@ input BeneficiaryInput {
 " input variables for updateCharge.Counterparty"
 input CounterpartyInput {
   name: String!
-}
+}`

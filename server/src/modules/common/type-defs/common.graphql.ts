@@ -1,4 +1,6 @@
-# Scalars
+import { gql } from "graphql-modules";
+
+export const commonSchema = gql`# Scalars
 
 " Date "
 scalar Date
@@ -56,4 +58,4 @@ type Mutation {
 " node interface "
 interface Node {
   id: ID!
-}
+}`

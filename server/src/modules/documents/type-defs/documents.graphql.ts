@@ -1,4 +1,6 @@
-" All possible document types "
+import { gql } from "graphql-modules";
+
+export const documentsSchema = gql`" All possible document types "
 enum DocumentType {
   INVOICE
   RECEIPT
@@ -188,4 +190,4 @@ extend type Charge {
   invoice: BroadInvoice
   " linked receipt document "
   receipt: BroadReceipt
-}
+}`

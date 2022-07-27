@@ -1,4 +1,6 @@
-extend type LedgerRecord {
+import { gql } from "graphql-modules";
+
+export const hashavshevetSchema = gql`extend type LedgerRecord {
   hashavshevetId: Int
 }
 
@@ -20,4 +22,4 @@ extend type FeeTransaction {
 
 extend type ConversionTransaction {
   hashavshevetId: Int
-}
+}`

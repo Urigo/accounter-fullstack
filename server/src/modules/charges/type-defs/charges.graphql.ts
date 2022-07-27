@@ -1,4 +1,6 @@
-" The direction of the transaction "
+import { gql } from "graphql-modules";
+
+export const chargesSchema = gql`" The direction of the transaction "
 enum TransactionDirection {
   DEBIT
   CREDIT
@@ -171,4 +173,4 @@ extend type BankFinancialAccount {
 
 extend type CardFinancialAccount {
   charges(filter: ChargeFilter): [Charge!]!
-}
+}`

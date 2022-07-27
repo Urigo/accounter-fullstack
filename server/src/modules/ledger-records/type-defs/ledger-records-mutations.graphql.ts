@@ -1,4 +1,6 @@
-extend type Mutation {
+import { gql } from "graphql-modules"
+
+export const ledgerRecordsMutationsSchema = gql`extend type Mutation {
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
@@ -38,4 +40,4 @@ union GenerateLedgerRecordsResult = Charge | CommonError # TODO: update to match
 union UpdateLedgerRecordResult = LedgerRecord | CommonError
 
 " result type for insertLedgerRecord "
-union InsertLedgerRecordResult = Charge | CommonError
+union InsertLedgerRecordResult = Charge | CommonError`

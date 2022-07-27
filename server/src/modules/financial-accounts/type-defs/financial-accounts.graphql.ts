@@ -1,4 +1,6 @@
-" Represent something external that we scrape, like bank or card "
+import { gql } from "graphql-modules";
+
+export const financialAccountsSchema = gql`" Represent something external that we scrape, like bank or card "
 interface FinancialAccount {
   id: ID!
 }
@@ -40,4 +42,4 @@ extend type PersonalFinancialEntity {
 
 extend interface FinancialEntity {
   accounts: [FinancialAccount!]!
-}
+}`

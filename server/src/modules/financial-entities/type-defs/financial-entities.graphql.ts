@@ -1,4 +1,6 @@
-extend type Query {
+import { gql } from "graphql-modules";
+
+export const financialEntitiesSchema = gql`extend type Query {
   financialEntity(id: ID!): FinancialEntity!
 }
 
@@ -31,4 +33,4 @@ interface FinancialEntity {
   id: ID!
 
   linkedEntities: [FinancialEntity!]!
-}
+}`
