@@ -1,8 +1,8 @@
-const SCHEMA_PATH = 'schema.graphql';
+const SCHEMA_PATH = 'server/**/*.{graphql,gql}';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
-  extends: ['@theguild', '@theguild/eslint-config/react'],
+  extends: ['@theguild'],
   plugins: ['eslint-plugin-simple-import-sort'],
   rules: {
     'no-console': 1,
@@ -28,9 +28,10 @@ module.exports = {
     {
       // Setup recommended config for schema file
       files: SCHEMA_PATH,
-      extends: 'plugin:@graphql-eslint/schema-recommended',
+      extends: ['plugin:@graphql-eslint/schema-recommended'],
       rules: {
-        '@graphql-eslint/description-style': ['error', { style: 'inline' }],
+        '@graphql-eslint/description-style': ['warn', { style: 'inline' }],
+        '@graphql-eslint/no-typename-prefix': 'warn',
         '@graphql-eslint/strict-id-in-types': [
           'error',
           {
@@ -42,6 +43,9 @@ module.exports = {
                 'DateRange',
                 'FinancialAmount',
                 'NamedCounterparty',
+                'InsertDocumentSuccessfulResult',
+                'UpdateDocumentSuccessfulResult',
+                'Tag',
               ],
             },
           },
@@ -59,6 +63,7 @@ module.exports = {
     },
     {
       files: 'client/**',
+      extends: ['@theguild/eslint-config/react'],
       env: {
         browser: true,
       },

@@ -3,12 +3,12 @@
     {
       "mode": "sql",
       "include": "**/*.sql",
-      "emitTemplate": "src/__generated__/{{name}}.types.mts"
+      "emitTemplate": "{{dir}}/../generated-types/{{name}}.types.mts"
     },
     {
       "mode": "ts",
       "include": "**/providers/**/*.mts",
-      "emitTemplate": "src/__generated__/{{name}}.types.mts"
+      "emitTemplate": "{{dir}}/../generated-types/{{name}}.types.mts"
     }
   ],
   "srcDir": "./src/",
