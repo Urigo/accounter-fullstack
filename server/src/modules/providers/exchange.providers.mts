@@ -2,7 +2,7 @@ import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 
 import { IGetChargesByIdsResult } from '../charges/generated-types/charges.provider.types.mjs';
 import {

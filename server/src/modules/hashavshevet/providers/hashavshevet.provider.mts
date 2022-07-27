@@ -1,6 +1,6 @@
 import pgQuery from '@pgtyped/query';
 import { Injectable, Scope } from 'graphql-modules';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 
 import { IGetChargesByIdsResult } from '../../charges/generated-types/charges.provider.types.mjs';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.providers.mjs';
