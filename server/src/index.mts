@@ -1,8 +1,6 @@
-import { config } from 'dotenv';
+import './polyfills.mjs';
 
 import { buildApp } from './fastify.mjs';
-
-config();
 
 async function main() {
   const app = await buildApp(true);
