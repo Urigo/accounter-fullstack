@@ -1,4 +1,5 @@
 const SCHEMA_PATH = 'server/**/*.{graphql,gql}';
+const SCHEMA_TS_PATH = 'server/**/*.{graphql,gql}.{,c,m}{j,t}s{,x}';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
@@ -16,7 +17,7 @@ module.exports = {
       parser: '@graphql-eslint/eslint-plugin',
       plugins: ['@graphql-eslint'],
       parserOptions: {
-        schema: SCHEMA_PATH,
+        schema: SCHEMA_TS_PATH,
         operations: OPERATIONS_PATH,
       },
     },
