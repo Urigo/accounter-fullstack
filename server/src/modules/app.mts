@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 import { createApplication } from 'graphql-modules';
-import { Pool } from 'pg';
+import pkg from 'pg';
 
 import { accountantModule } from './accountant/index.mjs';
 import { chargesModule } from './charges/index.mjs';
@@ -14,6 +14,8 @@ import { ExchangeProvider } from './providers/exchange.providers.mjs';
 import { TaxesModule } from './taxes/index.mjs';
 
 config();
+
+const { Pool } = pkg;
 
 export function createGraphQLApp() {
   return createApplication({
