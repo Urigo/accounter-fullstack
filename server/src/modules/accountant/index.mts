@@ -3,7 +3,7 @@ import { createModule } from 'graphql-modules';
 import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 
-import {accountantSchema} from './type-defs/accountant.graphql.js';
+import { accountantSchema } from './type-defs/accountant.graphql.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

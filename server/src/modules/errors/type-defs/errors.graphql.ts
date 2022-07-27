@@ -1,6 +1,7 @@
-import { gql } from "graphql-modules";
+import { gql } from 'graphql-modules';
 
-export const errorsSchema = gql`  " basic structure of error "
+export const errorsSchema = gql`
+  " basic structure of error "
   interface Error {
     message: String!
   }
@@ -8,4 +9,5 @@ export const errorsSchema = gql`  " basic structure of error "
   " common type of errors"
   type CommonError implements Error {
     message: String!
-  }`
+  }
+`;
