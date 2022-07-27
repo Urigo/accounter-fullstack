@@ -68,7 +68,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
     <>
       {props.showButton === true ? (
         <button
-          className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
+          className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm disabled:opacity-25"
           type="button"
           onClick={() => {
             setShowAll(prev => !prev);
