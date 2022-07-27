@@ -1,5 +1,5 @@
 const SCHEMA_PATH = 'server/**/*.{graphql,gql}';
-const SCHEMA_TS_PATH = 'server/**/*.{graphql,gql}.{,c,m}{j,t}s{,x}';
+const SCHEMA_TS_PATH = 'server/**/*.graphql.ts';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
