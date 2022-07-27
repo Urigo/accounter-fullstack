@@ -655,7 +655,7 @@
   dependencies:
     "@envelop/types" "2.3.0"
 
-"@envelop/graphql-modules@^3.4.0":
+"@envelop/graphql-modules@3.4.0":
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/@envelop/graphql-modules/-/graphql-modules-3.4.0.tgz#91193e50e61e9a6103a661fd248c54bb55dc26a2"
   integrity sha512-LDqC3nLiWYLCtJmlAyn9kiJH5R1Fu8+1kJjD8Rgf8FF2vGD/fblFFJoBUkC34OKjH9GBrog5L6TkGSWSUP2z7Q==
@@ -4322,7 +4322,7 @@ graphql-executor@0.0.23:
   resolved "https://registry.yarnpkg.com/graphql-executor/-/graphql-executor-0.0.23.tgz#205c1764b39ee0fcf611553865770f37b45851a2"
   integrity sha512-3Ivlyfjaw3BWmGtUSnMpP/a4dcXCp0mJtj0PiPG14OKUizaMKlSEX+LX2Qed0LrxwniIwvU6B4w/koVjEPyWJg==
 
-graphql-modules@^2.1.0:
+graphql-modules@2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/graphql-modules/-/graphql-modules-2.1.0.tgz#d99692034b4b053fba3d0ebe49e4e66772ed2785"
   integrity sha512-fOUc4i5xNLkRxqx234MIr+kolrxk1tZ2onTeRIcB73mCY4NeKxej7FMLb5St+UcNLzhqM4L6Mf47rN9MPVDmgA==
@@ -6581,6 +6581,11 @@ real-require@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/real-require/-/real-require-0.1.0.tgz#736ac214caa20632847b7ca8c1056a0767df9381"
   integrity sha512-r/H9MzAWtrv8aSVjPCMFpDMl5q66GqtmmRkRjpHTsp4zBAa+snZyiQNlMONiUmEJcsnaw0wCauJ2GWODr/aFkg==
+
+reflect-metadata@0.1.13:
+  version "0.1.13"
+  resolved "https://registry.yarnpkg.com/reflect-metadata/-/reflect-metadata-0.1.13.tgz#67ae3ca57c972a2aa1642b10fe363fe32d49dc08"
+  integrity sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==
 
 regenerator-runtime@^0.13.4:
   version "0.13.9"
