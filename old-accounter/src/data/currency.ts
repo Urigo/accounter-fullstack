@@ -16,7 +16,9 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
     try {
       await page.goto(url);
       // await page.screenshot({ path: 'example.png' });
-      let textRes = await page.evaluate('document.getElementById("webkit-xml-viewer-source-xml").innerHTML');
+      let textRes = (await page.evaluate(
+        'document.getElementById("webkit-xml-viewer-source-xml").innerHTML'
+      )) as string;
       textRes = textRes.replace(/(\r\n|\n|\r)/gm, '').replaceAll(' ', '');
 
       const currencyRates: any = XML.parse(textRes);
