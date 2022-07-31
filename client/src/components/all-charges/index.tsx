@@ -150,7 +150,7 @@ export const AllCharges = () => {
             },
             {
               header: 'Description',
-              cell: (data) => (
+              cell: data => (
                 <Description
                   data={data.row.original.transactions[0]}
                   alternativeCharge={generateRowContext(data.row.original)}
@@ -159,13 +159,11 @@ export const AllCharges = () => {
             },
             {
               header: 'Tags',
-              cell: (data) => (
-                <Tags data={data.row.original} alternativeCharge={generateRowContext(data.row.original)} />
-              ),
+              cell: data => <Tags data={data.row.original} alternativeCharge={generateRowContext(data.row.original)} />,
             },
             {
               header: 'Share With',
-              cell: (data) => (
+              cell: data => (
                 <ShareWith
                   data={data.row.original}
                   alternativeCharge={generateRowContext(data.row.original)}
@@ -184,7 +182,9 @@ export const AllCharges = () => {
             },
             {
               header: 'Edit',
-              cell: data => <EditMiniButton onClick={() => setEditCharge(data.row.original as EditChargeFieldsFragment)} />,
+              cell: data => (
+                <EditMiniButton onClick={() => setEditCharge(data.row.original as EditChargeFieldsFragment)} />
+              ),
             },
           ]}
         />

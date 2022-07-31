@@ -7,29 +7,36 @@ import {
   Row,
   SortingState,
   useReactTable,
-} from '@tanstack/react-table'
-import { useVirtual } from '@tanstack/react-virtual'
-import { ReactNode, useRef, useState } from 'react'
+} from '@tanstack/react-table';
+import { useVirtual } from '@tanstack/react-virtual';
+import { ReactNode, useRef, useState } from 'react';
 
 import { Button } from './button';
 
 export interface AccounterTableProps<T, U> {
-    items: Array<T>;
-    columns: ColumnDef<T>[];
-    
-    highlightOnHover?: boolean;
-    striped?: boolean;
-    stickyHeader?: boolean;
-    moreInfo?: (item: T) => ReactNode;
-    showButton?: boolean;
-    rowContext?: (item: T) => U | undefined;
-  }
+  items: Array<T>;
+  columns: ColumnDef<T>[];
 
-export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOnHover, striped, showButton}: AccounterTableProps<T, U>) {
+  highlightOnHover?: boolean;
+  striped?: boolean;
+  stickyHeader?: boolean;
+  moreInfo?: (item: T) => ReactNode;
+  showButton?: boolean;
+  rowContext?: (item: T) => U | undefined;
+}
+
+export function Table<T, U>({
+  columns,
+  items,
+  stickyHeader,
+  moreInfo,
+  highlightOnHover,
+  striped,
+  showButton,
+}: AccounterTableProps<T, U>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [opened, setOpen] = useState<string | null>(null);
   const [isShowAll, setShowAll] = useState(false);
-
 
   const table = useReactTable({
     data: items,
@@ -41,23 +48,20 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOn
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     debugTable: true,
-  })
+  });
 
-  const tableContainerRef = useRef<HTMLDivElement>(null)
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const { rows } = table.getRowModel()
+  const { rows } = table.getRowModel();
   const rowVirtualizer = useVirtual({
     parentRef: tableContainerRef,
     size: rows.length,
     overscan: 5,
-  })
-  const { virtualItems: virtualRows, totalSize } = rowVirtualizer
+  });
+  const { virtualItems: virtualRows, totalSize } = rowVirtualizer;
 
-  const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0
-  const paddingBottom =
-    virtualRows.length > 0
-      ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
-      : 0
+  const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
+  const paddingBottom = virtualRows.length > 0 ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0) : 0;
 
   return (
     <>
@@ -76,25 +80,19 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOn
         <MantineTable striped={striped} highlightOnHover={highlightOnHover}>
           <thead style={stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
             {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}  className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+              <tr
+                key={headerGroup.id}
+                className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl"
+              >
                 {headerGroup.headers.map(header => {
                   return (
-                    <th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
-                    >
+                    <th key={header.id} colSpan={header.colSpan} style={{ width: header.getSize() }}>
                       {header.isPlaceholder ? null : (
                         <button
-                            className={ header.column.getCanSort()
-                              ? 'cursor-pointer select-none'
-                              : ''}
-                            onClick={header.column.getToggleSortingHandler()}
+                          className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                          onClick={header.column.getToggleSortingHandler()}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                           {{
                             asc: ' 🔼',
                             desc: ' 🔽',
@@ -102,7 +100,7 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOn
                         </button>
                       )}
                     </th>
-                  )
+                  );
                 })}
                 {moreInfo && <th>More Info</th>}
               </tr>
@@ -115,41 +113,36 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOn
               </tr>
             )}
             {virtualRows.map(virtualRow => {
-              const row = rows[virtualRow.index] as Row<T>
+              const row = rows[virtualRow.index] as Row<T>;
               return (
-                <>                
-                    <tr key={row.id}>
-                        {row.getVisibleCells().map(cell => {
-                            return (
-                            <td key={cell.id}>
-                                {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                                )}
-                            </td>
-                            )
-                        })}
-                        {moreInfo && (
-                            <td>
-                                <Button title="Ledger Info" onClick={() => {
-                                  setShowAll(false);
-                                  setOpen(opened === row.id ? null : row.id);
-                                  }} />
-                            </td>
-                        )}
-                    </tr>
-                    {(isShowAll || opened === row.id) && moreInfo && (
-                        <tr>
-                            <td colSpan={6}>
-                                <Paper style={{ width: '100%' }} withBorder shadow="lg">
-                                    {moreInfo(row.original)}
-                                </Paper>
-                            </td>
+                <>
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map(cell => {
+                      return <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>;
+                    })}
+                    {moreInfo && (
+                      <td>
+                        <Button
+                          title="Ledger Info"
+                          onClick={() => {
+                            setShowAll(false);
+                            setOpen(opened === row.id ? null : row.id);
+                          }}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                  {(isShowAll || opened === row.id) && moreInfo && (
+                    <tr>
+                      <td colSpan={6}>
+                        <Paper style={{ width: '100%' }} withBorder shadow="lg">
+                          {moreInfo(row.original)}
+                        </Paper>
+                      </td>
                     </tr>
                   )}
-                  </>
-
-              )
+                </>
+              );
             })}
             {paddingBottom > 0 && (
               <tr>
@@ -160,5 +153,5 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOn
         </MantineTable>
       </div>
     </>
-  )
+  );
 }
