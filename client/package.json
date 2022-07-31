@@ -10,31 +10,28 @@
     "generate": "cd ../ && yarn generate && cd client"
   },
   "dependencies": {
-    "@mantine/core": "4.2.11",
-    "@mantine/hooks": "4.2.11",
-    "@mantine/notifications": "4.2.11",
+    "@mantine/core": "5.0.2",
+    "@mantine/hooks": "5.0.2",
+    "@mantine/notifications": "5.0.2",
+    "@tanstack/react-query": "4.0.10",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-hook-form": "7.33.1",
-    "react-query": "3.39.1",
+    "react-hook-form": "7.34.0",
     "react-router-dom": "6.3.0",
-    "tabler-icons-react": "1.52.0"
+    "tabler-icons-react": "1.54.0"
   },
   "devDependencies": {
-    "@types/node": "18.0.0",
-    "@types/react": "18.0.14",
-    "@types/react-dom": "18.0.5",
-    "@vitejs/plugin-react": "1.3.2",
-    "autoprefixer": "10.4.7",
+    "@types/react": "18.0.15",
+    "@types/react-dom": "18.0.6",
+    "@vitejs/plugin-react": "2.0.0",
+    "autoprefixer": "10.4.8",
     "graphql-tag": "2.12.6",
     "postcss": "8.4.14",
-    "prettier": "2.7.1",
-    "tailwindcss": "3.1.4",
-    "typescript": "4.7.4",
-    "vite": "2.9.13"
+    "tailwindcss": "3.1.7",
+    "vite": "3.0.4"
   },
   "engines": {
-    "node": "18.6.0"
+    "node": "18.7.0"
   },
   "license": "MIT"
 }

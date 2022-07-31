@@ -1,7 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from 'react-query';
 
 const queryClient = new QueryClient();
 
