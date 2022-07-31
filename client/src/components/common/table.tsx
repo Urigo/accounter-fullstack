@@ -25,9 +25,11 @@ export interface AccounterTableProps<T, U> {
     rowContext?: (item: T) => U | undefined;
   }
 
-export function Table<T, U>({columns, items, stickyHeader, moreInfo}: AccounterTableProps<T, U>) {
+export function Table<T, U>({columns, items, stickyHeader, moreInfo, highlightOnHover, striped, showButton}: AccounterTableProps<T, U>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [opened, setOpen] = useState<string | null>(null);
+  const [isShowAll, setShowAll] = useState(false);
+
 
   const table = useReactTable({
     data: items,
@@ -58,10 +60,20 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo}: AccounterT
       : 0
 
   return (
-    <div className="p-2">
-      <div className="h-2" />
+    <>
+      {showButton === true ? (
+        <button
+          className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
+          type="button"
+          onClick={() => {
+            setShowAll(prev => !prev);
+          }}
+        >
+          {isShowAll ? 'Hide All' : 'Show All'}
+        </button>
+      ) : null}
       <div ref={tableContainerRef}>
-        <MantineTable>
+        <MantineTable striped={striped} highlightOnHover={highlightOnHover}>
           <thead style={stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}  className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
@@ -119,11 +131,14 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo}: AccounterT
                         })}
                         {moreInfo && (
                             <td>
-                                <Button title="Ledger Info" onClick={() => setOpen(opened === row.id ? null : row.id)} />
+                                <Button title="Ledger Info" onClick={() => {
+                                  setShowAll(false);
+                                  setOpen(opened === row.id ? null : row.id);
+                                  }} />
                             </td>
                         )}
                     </tr>
-                    {(opened === row.id) && moreInfo && (
+                    {(isShowAll || opened === row.id) && moreInfo && (
                         <tr>
                             <td colSpan={6}>
                                 <Paper style={{ width: '100%' }} withBorder shadow="lg">
@@ -144,6 +159,6 @@ export function Table<T, U>({columns, items, stickyHeader, moreInfo}: AccounterT
           </tbody>
         </MantineTable>
       </div>
-    </div>
+    </>
   )
 }
