@@ -128,7 +128,6 @@ export const AllCharges = () => {
           highlightOnHover
           stickyHeader
           items={allCharges}
-          rowContext={generateRowContext}
           columns={[
             {
               header: 'Date',
@@ -173,7 +172,7 @@ export const AllCharges = () => {
             },
             {
               header: 'More Info',
-              cell: data => (
+              cell: (data) => (
                 <div>
                   <p>Ledger Records: {data.row.original.ledgerRecords.length}</p>
                   <p>Documents: {data.row.original.additionalDocuments.length}</p>
@@ -183,7 +182,7 @@ export const AllCharges = () => {
             {
               header: 'Edit',
               cell: data => (
-                <EditMiniButton onClick={() => setEditCharge(data.row.original as EditChargeFieldsFragment)} />
+                <EditMiniButton onClick={() => setEditCharge(data.row.original)} />
               ),
             },
           ]}

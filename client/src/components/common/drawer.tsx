@@ -1,31 +1,19 @@
-import { Drawer } from '@mantine/core';
-import { CSSProperties, PropsWithChildren, ReactElement } from 'react';
+import { Drawer, DrawerProps } from '@mantine/core';
+import { PropsWithChildren, ReactElement } from 'react';
 
-export interface Props {
-  ButtonDisplay?: ReactElement;
-  style?: CSSProperties;
-  title?: ReactElement;
+export interface Props extends DrawerProps {
   modalSize?: string;
-  opened?: boolean;
-  padding?: number;
-  onClose?: () => void;
-  position?: 'left' | 'right' | 'top' | 'bottom';
-  withOverlay?: boolean;
-  withCloseButton?: boolean;
-  lockScroll?: boolean;
 }
 
 export const PopUpDrawer = ({
   children,
-  position,
-  title,
   withOverlay = false,
   withCloseButton = true,
   lockScroll = false,
   opened = false,
   onClose = () => null,
-  padding,
   modalSize,
+  ...props
 }: PropsWithChildren<Props>): ReactElement => {
   return (
     <Drawer
@@ -33,12 +21,10 @@ export const PopUpDrawer = ({
       lockScroll={lockScroll}
       withCloseButton={withCloseButton}
       withOverlay={withOverlay}
-      position={position}
       opened={opened}
       onClose={onClose}
-      title={title}
-      padding={padding}
       size={modalSize}
+      {...props}
     >
       {children}
     </Drawer>

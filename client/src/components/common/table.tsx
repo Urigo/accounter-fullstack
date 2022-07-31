@@ -13,7 +13,7 @@ import { ReactNode, useRef, useState } from 'react';
 
 import { Button } from './button';
 
-export interface AccounterTableProps<T, U> {
+export interface AccounterTableProps<T> {
   items: Array<T>;
   columns: ColumnDef<T>[];
 
@@ -22,10 +22,9 @@ export interface AccounterTableProps<T, U> {
   stickyHeader?: boolean;
   moreInfo?: (item: T) => ReactNode;
   showButton?: boolean;
-  rowContext?: (item: T) => U | undefined;
 }
 
-export function Table<T, U>({
+export function Table<T>({
   columns,
   items,
   stickyHeader,
@@ -33,7 +32,7 @@ export function Table<T, U>({
   highlightOnHover,
   striped,
   showButton,
-}: AccounterTableProps<T, U>) {
+}: AccounterTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [opened, setOpen] = useState<string | null>(null);
   const [isShowAll, setShowAll] = useState(false);
