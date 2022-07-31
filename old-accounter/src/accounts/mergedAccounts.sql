@@ -5,7 +5,7 @@ FROM
 WHERE
   account_number IN ('466803', '1074', '1082')
 ORDER BY
-  event_date :: TEXT :: date,
+  event_date::TEXT::date,
   event_number;
 
 SELECT
@@ -19,7 +19,7 @@ FROM
 WHERE
   AT.account_number IN ('466803', '1074', '1082')
 ORDER BY
-  AT.event_date :: TEXT :: date,
+  AT.event_date::TEXT::date,
   AT.event_number,
   GREATEST(pils.serial_number);
 
@@ -118,8 +118,8 @@ SELECT
   tax_invoice_date,
   tax_category,
   'ILS' AS currency_code,
-  event_date :: TEXT :: date,
-  event_date :: TEXT :: date AS debit_date,
+  event_date::TEXT::date,
+  event_date::TEXT::date AS debit_date,
   (
     CASE
       WHEN event_activity_type_code = 2 THEN (event_amount * -1)
@@ -141,7 +141,7 @@ SELECT
   'checking_ils' AS account_type,
   (activity_type_code = 142) AS is_conversion,
   0 AS currency_rate,
-  NULL :: INTEGER AS contra_currency_code,
+  NULL::INTEGER AS contra_currency_code,
   -- maybe if I'll do a transfer it will also show up?
   activity_description AS bank_description,
   withholding_tax,
@@ -168,8 +168,8 @@ SELECT
   tax_invoice_date,
   tax_category,
   'USD' AS currency_code,
-  executing_date :: TEXT :: date,
-  value_date :: TEXT :: date AS debit_date,
+  executing_date::TEXT::date,
+  value_date::TEXT::date AS debit_date,
   (
     CASE
       WHEN event_activity_type_code = 2 THEN (event_amount * -1)
@@ -215,8 +215,8 @@ SELECT
   tax_invoice_date,
   tax_category,
   'EUR' AS currency_code,
-  executing_date :: TEXT :: date,
-  value_date :: TEXT :: date AS debit_date,
+  executing_date::TEXT::date,
+  value_date::TEXT::date AS debit_date,
   (
     CASE
       WHEN event_activity_type_code = 2 THEN (event_amount * -1)

@@ -14,10 +14,10 @@ SELECT
     END
   ) AS currency_code,
   CASE
-    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound :: TEXT :: date
-    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date :: TEXT :: date
+    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound::TEXT::date
+    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date::TEXT::date
   END AS event_date,
-  full_payment_date :: TEXT :: date AS debit_date,
+  full_payment_date::TEXT::date AS debit_date,
   CASE
     WHEN payment_sum IS NULL THEN (payment_sum_outbound * -1)
     WHEN payment_sum_outbound IS NULL THEN (payment_sum * -1)
@@ -37,7 +37,7 @@ SELECT
   'creditcard' AS account_type,
   FALSE AS is_conversion,
   0 AS currency_rate,
-  NULL :: INTEGER AS contra_currency_code,
+  NULL::INTEGER AS contra_currency_code,
   CASE
     WHEN full_supplier_name_outbound IS NULL THEN full_supplier_name_heb
     WHEN full_supplier_name_heb IS NULL THEN (

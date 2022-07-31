@@ -15,11 +15,11 @@ WITH
               event_date DESC
             LIMIT
               1
-          ) :: TIMESTAMP --         ,now()::timestamp
+          )::TIMESTAMP --         ,now()::timestamp
 ,
-          '1 day' :: INTERVAL
+          '1 day'::INTERVAL
         )
-      ) :: date dt
+      )::date dt
     FROM
       accounter_schema.exchange_rates
   ),
@@ -32,29 +32,31 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) eur_rate, (
+      ) eur_rate,
+      (
         SELECT
           t1.usd
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) usd_rate, (
+      ) usd_rate,
+      (
         SELECT
           t1.gbp
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -76,7 +78,7 @@ WITH
             FROM
               all_exchange_dates
             WHERE
-              all_exchange_dates.exchange_date = COALESCE(debit_date :: TEXT :: date, event_date)
+              all_exchange_dates.exchange_date = COALESCE(debit_date::TEXT::date, event_date)
           )
           WHEN currency_code = 'EUR' THEN event_amount * (
             (
@@ -85,14 +87,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'GBP' THEN event_amount * (
@@ -102,14 +104,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'USD' THEN event_amount
@@ -124,7 +126,7 @@ WITH
             FROM
               all_exchange_dates
             WHERE
-              all_exchange_dates.exchange_date = COALESCE(debit_date :: TEXT :: date, event_date)
+              all_exchange_dates.exchange_date = COALESCE(debit_date::TEXT::date, event_date)
           )
           WHEN currency_code = 'EUR' THEN (event_amount - COALESCE(vat, 0)) * (
             (
@@ -133,14 +135,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'GBP' THEN (event_amount - COALESCE(vat, 0)) * (
@@ -150,14 +152,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
@@ -172,7 +174,7 @@ WITH
             FROM
               all_exchange_dates
             WHERE
-              all_exchange_dates.exchange_date = COALESCE(debit_date :: TEXT :: date, event_date)
+              all_exchange_dates.exchange_date = COALESCE(debit_date::TEXT::date, event_date)
           )
           WHEN currency_code = 'EUR' THEN COALESCE(vat, 0) * (
             (
@@ -181,14 +183,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'GBP' THEN COALESCE(vat, 0) * (
@@ -198,14 +200,14 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             ) / (
               SELECT
                 all_exchange_dates.usd_rate
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
           )
           WHEN currency_code = 'USD' THEN COALESCE(vat, 0)
@@ -331,7 +333,7 @@ WITH
         account_number = 2733
         OR account_number = 61066
       )
-      AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+      AND event_date::date >= '2019-12-01'::TIMESTAMP
       AND financial_accounts_to_balance IN ('no', 'dotan', 'uri', 'training_fund', 'pension')
     ORDER BY
       event_date,
@@ -424,7 +426,7 @@ WITH
         account_number = 2733
         OR account_number = 61066
       )
-      AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+      AND event_date::date >= '2019-12-01'::TIMESTAMP
       AND financial_accounts_to_balance = 'no'
     ORDER BY
       event_date,
@@ -589,7 +591,7 @@ WITH
         account_number = 2733
         OR account_number = 61066
       )
-      AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+      AND event_date::date >= '2019-12-01'::TIMESTAMP
     ORDER BY
       event_date,
       event_amount,
@@ -609,7 +611,7 @@ WITH
             WHEN financial_entity = 'VAT' THEN (event_amount_in_usd * -1)
             ELSE (event_vat_amount_in_usd * -1)
           END
-        ) :: NUMERIC(9, 2)
+        )::NUMERIC(9, 2)
       ) OVER (
         ORDER BY
           event_date,
@@ -630,7 +632,7 @@ WITH
         AND vat <> 0
         OR financial_entity = 'VAT'
       )
-      AND event_date :: TEXT :: date >= '2019-01-01' --        AND event_date::text::date <= '2019-12-31'
+      AND event_date::TEXT::date >= '2019-01-01' --        AND event_date::text::date <= '2019-12-31'
       OR event_date IS NULL
     ORDER BY
       event_date,
@@ -734,128 +736,139 @@ WITH
         FROM
           ils_business_balance t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           event_date DESC
         LIMIT
           1
-      ) ils_business_balance, (
+      ) ils_business_balance,
+      (
         SELECT
           t1.current_balance
         FROM
           ils_personal_balance t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           event_date DESC
         LIMIT
           1
-      ) ils_personal_balance, (
+      ) ils_personal_balance,
+      (
         SELECT
           t1.current_balance
         FROM
           usd_business_balance t1
         WHERE
-          date_trunc('day', t1.executing_date) :: date <= times_table.dt
+          date_trunc('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
           1
-      ) usd_business_balance, (
+      ) usd_business_balance,
+      (
         SELECT
           t1.current_balance
         FROM
           usd_personal_balance t1
         WHERE
-          date_trunc('day', t1.executing_date) :: date <= times_table.dt
+          date_trunc('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
           1
-      ) usd_personal_balance, (
+      ) usd_personal_balance,
+      (
         SELECT
           t1.current_balance
         FROM
           euro_business_balance t1
         WHERE
-          date_trunc('day', t1.executing_date) :: date <= times_table.dt
+          date_trunc('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
           1
-      ) eur_business_balance, (
+      ) eur_business_balance,
+      (
         SELECT
           t1.current_balance
         FROM
           euro_personal_balance t1
         WHERE
-          date_trunc('day', t1.executing_date) :: date <= times_table.dt
+          date_trunc('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
           1
-      ) eur_personal_balance, (
+      ) eur_personal_balance,
+      (
         SELECT
           t1.balance
         FROM
           usd_interactive_brokers_personal_balance t1
         WHERE
-          date_trunc('day', t1.date) :: date <= times_table.dt
+          date_trunc('day', t1.date)::date <= times_table.dt
         ORDER BY
           date DESC
         LIMIT
           1
-      ) interative_brokers_personal, (
+      ) interative_brokers_personal,
+      (
         SELECT
           t1.eur
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) eur_rate, (
+      ) eur_rate,
+      (
         SELECT
           t1.gbp
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) gbp_rate, (
+      ) gbp_rate,
+      (
         SELECT
           t1.usd
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) usd_rate, (
+      ) usd_rate,
+      (
         SELECT
           t1.amount
         FROM
           accounter_schema.dotan_debt t1
         WHERE
-          date_trunc('day', t1.debt_date) :: date <= times_table.dt
+          date_trunc('day', t1.debt_date)::date <= times_table.dt
         ORDER BY
           t1.debt_date DESC
         LIMIT
           1
-      ) dotan_old_dept, (
+      ) dotan_old_dept,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -864,13 +877,14 @@ WITH
           t1.account_number
         LIMIT
           1
-      ) dotan_dept, (
+      ) dotan_dept,
+      (
         SELECT
           t1.pension_sum_till_this_point
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -879,13 +893,14 @@ WITH
           t1.account_number
         LIMIT
           1
-      ) pension, (
+      ) pension,
+      (
         SELECT
           t1.training_fund_sum_till_this_point
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -894,13 +909,14 @@ WITH
           t1.account_number
         LIMIT
           1
-      ) training_fund, (
+      ) training_fund,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           new_business_account_transactions t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -909,13 +925,14 @@ WITH
           t1.account_number
         LIMIT
           1
-      ) new_business_account_transactions, (
+      ) new_business_account_transactions,
+      (
         SELECT
           t1.user_description
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -924,61 +941,66 @@ WITH
           t1.account_number
         LIMIT
           1
-      ) dotan_event, (
+      ) dotan_event,
+      (
         SELECT
           t1.VAT_status
         FROM
           current_vat_status t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.bank_reference DESC
         LIMIT
           1
-      ) VAT, (
+      ) VAT,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           this_month_private_creditcard t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC
         LIMIT
           1
-      ) this_month_private_creditcard, (
+      ) this_month_private_creditcard,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           this_month_business_creditcard t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC
         LIMIT
           1
-      ) this_month_business_creditcard, (
+      ) this_month_business_creditcard,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           future_balance t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           user_description DESC
         LIMIT
           1
-      ) future_transactions, (
+      ) future_transactions,
+      (
         SELECT
           t1.sum_till_this_point
         FROM
           dotan_future_dept t1
         WHERE
-          date_trunc('day', t1.event_date) :: date <= times_table.dt
+          date_trunc('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           user_description DESC

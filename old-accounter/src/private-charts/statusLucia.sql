@@ -2,14 +2,14 @@
 SELECT
   --        event_date, financial_entity, (event_amount_in_usd_with_vat_if_exists)::numeric(9, 2), user_description
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   )
 FROM
   formatted_merged_tables
 WHERE
   event_amount > 0
-  AND event_date :: TEXT :: date >= '2019-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2019-12-31' :: TEXT :: date
+  AND event_date::TEXT::date >= '2019-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2019-12-31'::TEXT::date
   AND personal_category <> 'conversion'
   AND financial_entity <> 'VAT'
   AND financial_entity <> 'Tax Shuma'
@@ -23,20 +23,20 @@ WHERE
   ) -- GROUP BY financial_entity
   -- ORDER BY event_amount_in_usd_with_vat_if_exists::numeric(9, 2) desc NULLS LAST;
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) DESC NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) DESC NULLS LAST;
 
 -- Overall income this year
 SELECT
   --        event_date, financial_entity, (event_amount_in_usd_with_vat_if_exists)::numeric(9, 2), user_description
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   )
 FROM
   formatted_merged_tables
 WHERE
   event_amount > 0
-  AND event_date :: TEXT :: date >= '2020-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2020-10-08' :: TEXT :: date
+  AND event_date::TEXT::date >= '2020-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2020-10-08'::TEXT::date
   AND personal_category <> 'conversion'
   AND financial_entity <> 'VAT'
   AND financial_entity <> 'Tax Shuma'
@@ -46,21 +46,21 @@ WHERE
     OR account_number = 61066
   ) -- GROUP BY financial_entity
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) DESC NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) DESC NULLS LAST;
 
 -- ORDER BY event_amount_in_usd_with_vat_if_exists::numeric(9, 2) desc NULLS LAST;
 -- Overall expenses last year
 SELECT
   --        event_date, financial_entity, (event_amount_in_usd_with_vat_if_exists)::numeric(9, 2), user_description
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   )
 FROM
   formatted_merged_tables
 WHERE
   event_amount < 0
-  AND event_date :: TEXT :: date >= '2019-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2019-12-31' :: TEXT :: date
+  AND event_date::TEXT::date >= '2019-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2019-12-31'::TEXT::date
   AND financial_entity <> 'Dotan Simha'
   AND personal_category <> 'conversion'
   AND financial_entity <> 'Uri Goldshtein Hoz'
@@ -82,14 +82,14 @@ WHERE
 SELECT
   --        event_date, financial_entity, (event_amount_in_usd_with_vat_if_exists)::numeric(9, 2), user_description
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   )
 FROM
   formatted_merged_tables
 WHERE
   event_amount < 0
-  AND event_date :: TEXT :: date >= '2020-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2020-10-08' :: TEXT :: date
+  AND event_date::TEXT::date >= '2020-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2020-10-08'::TEXT::date
   AND personal_category <> 'conversion'
   AND financial_entity <> 'Uri Goldshtein Hoz'
   AND financial_entity <> 'Tax'
@@ -103,13 +103,13 @@ WHERE
     OR account_number = 61066
   ) -- GROUP BY financial_entity
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) DESC NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) DESC NULLS LAST;
 
 -- ORDER BY event_amount_in_usd_with_vat_if_exists::numeric(9, 2) NULLS LAST;
 -- top private expenses this year
 SELECT
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   ),
   personal_category
 FROM
@@ -131,4 +131,4 @@ WHERE
 GROUP BY
   personal_category
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) NULLS LAST;

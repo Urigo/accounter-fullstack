@@ -5,9 +5,9 @@ FROM
 WHERE
   account_number = '61066'
   AND hashavshevet_id IS NULL
-  AND event_date :: TEXT :: date >= '2019-12-31'
+  AND event_date::TEXT::date >= '2019-12-31'
 ORDER BY
-  event_date :: TEXT :: date,
+  event_date::TEXT::date,
   event_number;
 
 SELECT
@@ -18,4 +18,4 @@ FROM
 WHERE
   full_supplier_name_heb = 'חברת פרטנר תקשורת בע'
 ORDER BY
-  full_purchase_date :: TEXT :: date;
+  full_purchase_date::TEXT::date;

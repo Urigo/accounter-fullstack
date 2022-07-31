@@ -66,8 +66,8 @@ FROM
   formatted_merged_tables
 WHERE
   personal_category = 'food'
-  AND event_date >= '2020-10-01' :: date
-  AND event_date <= '2020-10-30' :: date
+  AND event_date >= '2020-10-01'::date
+  AND event_date <= '2020-10-30'::date
 ORDER BY
   event_amount;
 
@@ -77,8 +77,8 @@ SELECT
 FROM
   formatted_merged_tables
 WHERE
-  event_date >= '2020-10-01' :: date
-  AND event_date <= '2020-10-30' :: date
+  event_date >= '2020-10-01'::date
+  AND event_date <= '2020-10-30'::date
 GROUP BY
   personal_category
 ORDER BY
@@ -89,8 +89,8 @@ SELECT
 FROM
   formatted_merged_tables
 WHERE
-  event_date >= '2020-10-01' :: date
-  AND event_date <= '2020-10-30' :: date
+  event_date >= '2020-10-01'::date
+  AND event_date <= '2020-10-30'::date
   AND personal_category IS NULL
 ORDER BY
   event_amount_in_usd;
@@ -109,9 +109,9 @@ FROM
 WHERE
   event_amount > 0
   AND account_number = 61066
-  AND event_date >= '2020-07-01' :: date
+  AND event_date >= '2020-07-01'::date
   AND financial_entity != 'VAT'
   AND financial_entity != 'Isracard'
   AND financial_entity != 'Poalim'
 ORDER BY
-  event_date :: date;
+  event_date::date;

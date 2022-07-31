@@ -7,7 +7,7 @@ CREATE
 OR REPLACE VIEW top_private_expenses_with_business_account AS
 SELECT
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   ),
   personal_category
 FROM
@@ -26,4 +26,4 @@ WHERE
 GROUP BY
   personal_category
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) NULLS LAST;
