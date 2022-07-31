@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
-import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { businesses, suggestedCharge } from '../../helpers';
 import { EditMiniButton } from '../common';
-import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
+import { Table } from '../common/table';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
 import { Account } from './cells/account';
@@ -114,7 +114,7 @@ export const AllCharges = () => {
         <div className="flex flex-col text-center w-full mb-1">
           <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">All Charges</h1>
         </div>
-        <AccounterTable
+        <Table
           showButton={true}
           moreInfo={item => (
             <ChargeExtendedInfo
@@ -131,60 +131,60 @@ export const AllCharges = () => {
           rowContext={generateRowContext}
           columns={[
             {
-              title: 'Date',
-              value: data => <Date data={data.transactions[0]} />,
+              header: 'Date',
+              cell: data => <Date data={data.row.original.transactions[0]} />,
             },
             {
-              title: 'Amount',
-              value: data => <Amount data={data.transactions[0]} />,
+              header: 'Amount',
+              cell: data => <Amount data={data.row.original.transactions[0]} />,
             },
             {
-              title: 'Entity',
-              value: (data, alternativeCharge) => (
-                <Entity data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+              header: 'Entity',
+              cell: data => (
+                <Entity data={data.row.original} alternativeCharge={generateRowContext(data.row.original)} />
               ),
             },
             {
-              title: 'Account',
-              value: data => <Account data={data.transactions[0]} />,
+              header: 'Account',
+              cell: data => <Account data={data.row.original.transactions[0]} />,
             },
             {
-              title: 'Description',
-              value: (data, alternativeCharge) => (
+              header: 'Description',
+              cell: (data) => (
                 <Description
-                  data={data.transactions[0]}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                  data={data.row.original.transactions[0]}
+                  alternativeCharge={generateRowContext(data.row.original)}
                 />
               ),
             },
             {
-              title: 'Tags',
-              value: (data, alternativeCharge) => (
-                <Tags data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+              header: 'Tags',
+              cell: (data) => (
+                <Tags data={data.row.original} alternativeCharge={generateRowContext(data.row.original)} />
               ),
             },
             {
-              title: 'Share With',
-              value: (data, alternativeCharge) => (
+              header: 'Share With',
+              cell: (data) => (
                 <ShareWith
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                  data={data.row.original}
+                  alternativeCharge={generateRowContext(data.row.original)}
                   isBusiness={isBusiness}
                 />
               ),
             },
             {
-              title: 'More Info',
-              value: data => (
+              header: 'More Info',
+              cell: data => (
                 <div>
-                  <p>Ledger Records: {data.ledgerRecords.length}</p>
-                  <p>Documents: {data.additionalDocuments.length}</p>
+                  <p>Ledger Records: {data.row.original.ledgerRecords.length}</p>
+                  <p>Documents: {data.row.original.additionalDocuments.length}</p>
                 </div>
               ),
             },
             {
-              title: 'Edit',
-              value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
+              header: 'Edit',
+              cell: data => <EditMiniButton onClick={() => setEditCharge(data.row.original as EditChargeFieldsFragment)} />,
             },
           ]}
         />

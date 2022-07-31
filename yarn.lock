@@ -517,6 +517,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.16.7":
+  version "7.18.9"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.9.tgz#b4fcfce55db3d2e5e080d2490f608a3b9f407f4a"
+  integrity sha512-lkqXDcvlFT5rvEjiu6+QYO+1GXrEHRo2LOtS7E4GtX5ESIZOgepqsZBVIj6Pv+a6zqsya9VCgiK1KAK4BvJDAw==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/runtime@^7.8.7":
   version "7.18.3"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.3.tgz#c7b654b57f6f63cf7f8b418ac9ca04408c4579f4"
@@ -1473,6 +1480,11 @@
   dependencies:
     "@babel/runtime" "^7.13.10"
 
+"@reach/observe-rect@^1.1.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@reach/observe-rect/-/observe-rect-1.2.0.tgz#d7a6013b8aafcc64c778a0ccb83355a11204d3b2"
+  integrity sha512-Ba7HmkFgfQxZqqaeIWWkNK0rEhpxVQHIoVyW1YDSkGsGIXzcaW4deC8B0pZrNSSyLTdIk7y+5olKt5+g0GmFIQ==
+
 "@repeaterjs/repeater@^3.0.4":
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/@repeaterjs/repeater/-/repeater-3.0.4.tgz#a04d63f4d1bf5540a41b01a921c9a7fddc3bd1ca"
@@ -1509,6 +1521,26 @@
   integrity sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==
   dependencies:
     defer-to-connect "^1.0.1"
+
+"@tanstack/react-table@8.5.2":
+  version "8.5.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-table/-/react-table-8.5.2.tgz#1e547649b8f057eddbe769b04612914a2efa5d09"
+  integrity sha512-CbNOay5FZHjU5EKiqik+Q8/gkUJfzH07KzYnnpGyqbfeocGZZckDblw7YwGMQ5/8Y0jgmobTYrMSqd27wtPdrA==
+  dependencies:
+    "@tanstack/table-core" "8.5.2"
+
+"@tanstack/react-virtual@3.0.0-alpha.0":
+  version "3.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-virtual/-/react-virtual-3.0.0-alpha.0.tgz#2ca5a75fa609eca2b2ba622024d3aa3ee097bc30"
+  integrity sha512-WpHU/dt34NwZZ8qtiE05TF+nX/b1W6qrWZarO+s8jJFpPVicrTbJKp5Bjt4eSJuk7aYw272oEfsH3ABBRgj+3A==
+  dependencies:
+    "@babel/runtime" "^7.16.7"
+    "@reach/observe-rect" "^1.1.0"
+
+"@tanstack/table-core@8.5.2":
+  version "8.5.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/table-core/-/table-core-8.5.2.tgz#097d88131bdf72eca0d4554270922e250e944a92"
+  integrity sha512-uhmhqeSNL2un0ssO5fZFtuwgvloBZdc2NFu8Rodzp4uPc1LfEWPhvrfoG9/L7FLRHC2ImlkmQgpVOakNZk9zgQ==
 
 "@theguild/eslint-config@0.0.1":
   version "0.0.1"
