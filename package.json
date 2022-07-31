@@ -32,8 +32,7 @@
     "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\""
   },
   "dependencies": {
-    "graphql": "16.5.0",
-    "modern-poalim-scraper": "0.3.14"
+    "graphql": "16.5.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "2.6.4",
