@@ -1,4 +1,4 @@
-import { Paper, Table } from '@mantine/core';
+import { Pagination, PaginationProps, Paper, Table } from '@mantine/core';
 import { ReactNode, useState } from 'react';
 
 import { Button } from './button';
@@ -15,6 +15,7 @@ export interface AccounterTableProps<T, U> {
   moreInfo?: (item: T) => ReactNode;
   showButton?: boolean;
   rowContext?: (item: T) => U | undefined;
+  pagination?: PaginationProps;
 }
 
 export interface AccountTableRow<T, U> {
@@ -66,17 +67,20 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
 
   return (
     <>
-      {props.showButton === true ? (
-        <button
-          className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
-          type="button"
-          onClick={() => {
-            setShowAll(prev => !prev);
-          }}
-        >
-          {isShowAll ? 'Hide All' : 'Show All'}
-        </button>
-      ) : null}
+      <div className="flex flex-row justify-between w-full">
+        {props.pagination && <Pagination className="flex-auto" {...props.pagination} />}
+        {props.showButton === true ? (
+          <button
+            className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
+            type="button"
+            onClick={() => {
+              setShowAll(prev => !prev);
+            }}
+          >
+            {isShowAll ? 'Hide All' : 'Show All'}
+          </button>
+        ) : null}
+      </div>
       <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>
         <thead style={props.stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
           <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">

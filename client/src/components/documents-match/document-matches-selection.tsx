@@ -54,19 +54,26 @@ gql`
   fragment DocumentMatchChargesFields on Query {
     financialEntity(id: $financialEntityId) {
       id
-      charges {
-        id
-        totalAmount {
-          raw
-          formatted
-          currency
+      charges(page: $page, limit: $limit) {
+        nodes {
+          id
+          totalAmount {
+            raw
+            formatted
+            currency
+          }
+          counterparty {
+            name
+          }
+          transactions {
+            createdAt
+            description
+          }
         }
-        counterparty {
-          name
-        }
-        transactions {
-          createdAt
-          description
+        pageInfo {
+          totalPages
+          currentage
+          pageSize
         }
       }
     }

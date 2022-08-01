@@ -4,6 +4,7 @@ import { AllChargesAccountFieldsFragment } from '../../../__generated__/types';
 
 gql`
   fragment AllChargesAccountFields on Charge {
+    id
     transactions {
       id
       account {

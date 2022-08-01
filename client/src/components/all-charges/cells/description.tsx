@@ -8,6 +8,7 @@ import { ConfirmMiniButton } from '../../common';
 
 gql`
   fragment AllChargesDescriptionFields on Charge {
+    id
     transactions {
       id
       userNote

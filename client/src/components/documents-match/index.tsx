@@ -7,7 +7,7 @@ import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';
 
 gql`
-  query DocumentsToMatch($financialEntityId: ID!) {
+  query DocumentsToMatch($financialEntityId: ID!, $page: Int, $limit: Int) {
     documents {
       id
       charge {

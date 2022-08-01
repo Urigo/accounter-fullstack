@@ -10,7 +10,7 @@ import { AccounterBasicTable } from '../../common/accounter-basic-table';
 import { TransactionRow } from './transaction-row';
 
 gql`
-  query FinancialEntityOld($financialEntityId: ID!) {
+  query FinancialEntityOld($financialEntityId: ID!, $page: Int, $limit: Int) {
     financialEntity(id: $financialEntityId) {
       ...Charges
     }
