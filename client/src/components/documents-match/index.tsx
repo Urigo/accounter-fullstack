@@ -7,7 +7,7 @@ import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';
 
 gql`
-  query DocumentsToMatch($financialEntityId: ID!) {
+  query DocumentsToMatch($financialEntityId: ID!, $page: Int, $limit: Int) {
     documents {
       id
       charge {
@@ -67,7 +67,7 @@ export function DocumentsMatch() {
             <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
             <DocumentHandler
               document={documents[activeDocumentIndex - 1]}
-              charges={data?.financialEntity?.charges ?? []}
+              charges={data?.financialEntity?.charges.nodes ?? []}
               skipDocument={removeDocument}
             />
           </div>

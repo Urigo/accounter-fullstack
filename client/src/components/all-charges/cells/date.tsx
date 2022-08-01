@@ -5,6 +5,7 @@ import { AllChargesDateFieldsFragment } from '../../../__generated__/types';
 
 gql`
   fragment AllChargesDateFields on Charge {
+    id
     transactions {
       id
       effectiveDate

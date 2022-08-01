@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 
-import { IUpdateChargeParams } from './__generated__/charges.types.mjs';
+import { IGetChargesByFinancialEntityIdsResult, IUpdateChargeParams } from './__generated__/charges.types.mjs';
 import {
   IGetAllDocumentsResult,
   IInsertDocumentsParams,
@@ -85,20 +85,29 @@ const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinanci
     const accounts = await getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
     return accounts;
   },
-  charges: async (DbBusiness, { filter }) => {
+  charges: async (DbBusiness, { filter, page, limit }) => {
+    const charges: IGetChargesByFinancialEntityIdsResult[] = [];
     if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
-      return charges;
+      const newCharges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
+      charges.push(...newCharges);
+    } else {
+      const newCharges = await getChargesByFinancialEntityIds.run(
+        {
+          financialEntityIds: [DbBusiness.id],
+          fromDate: filter?.fromDate,
+          toDate: filter?.toDate,
+        },
+        pool
+      );
+      charges.push(...newCharges);
     }
-    const charges = await getChargesByFinancialEntityIds.run(
-      {
-        financialEntityIds: [DbBusiness.id],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
+    return {
+      __typename: 'PaginatedCharges',
+      nodes: charges.slice(page * limit - limit, page * limit),
+      pageInfo: {
+        totalPages: Math.ceil(charges.length / limit),
       },
-      pool
-    );
-    return charges;
+    };
   },
   linkedEntities: () => [], // TODO: implement
   documents: async DbBusiness => {

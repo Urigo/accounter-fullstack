@@ -17,23 +17,28 @@ import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
 gql`
-  query AllCharges($financialEntityId: ID!) {
+  query AllCharges($financialEntityId: ID!, $page: Int, $limit: Int) {
     financialEntity(id: $financialEntityId) {
       ...SuggestedCharge
       id
-      charges {
-        id
-        # ...ChargesFields
-        ...AllChargesAccountFields
-        ...AllChargesAmountFields
-        ...AllChargesDateFields
-        ...AllChargesDescriptionFields
-        ...AllChargesEntityFields
-        ...AllChargesTagsFields
-        ...AllChargesShareWithFields
-        ...TableLedgerRecordsFields
-        ...DocumentsGalleryFields
-        ...EditChargeFields
+      charges(page: $page, limit: $limit) {
+        nodes {
+          id
+          # ...ChargesFields
+          ...AllChargesAccountFields
+          ...AllChargesAmountFields
+          ...AllChargesDateFields
+          ...AllChargesDescriptionFields
+          ...AllChargesEntityFields
+          ...AllChargesTagsFields
+          ...AllChargesShareWithFields
+          ...TableLedgerRecordsFields
+          ...DocumentsGalleryFields
+          ...EditChargeFields
+        }
+        pageInfo {
+          totalPages
+        }
       }
     }
   }
@@ -43,26 +48,28 @@ gql`
   fragment SuggestedCharge on FinancialEntity {
     id
     __typename
-    charges {
-      id
-      transactions {
+    charges(page: $page, limit: $limit) {
+      nodes {
         id
-        __typename
-        amount {
+        transactions {
+          id
+          __typename
+          amount {
+            raw
+          }
+          userNote
+          referenceNumber
+          description
+        }
+        counterparty {
+          name
+        }
+        vat {
           raw
         }
-        userNote
-        referenceNumber
-        description
-      }
-      counterparty {
-        name
-      }
-      vat {
-        raw
-      }
-      tags {
-        name
+        tags {
+          name
+        }
       }
     }
   }
@@ -75,6 +82,7 @@ export const AllCharges = () => {
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [activePage, setPage] = useState(1);
 
   // TODO: improve the ID logic
   const financialEntityId =
@@ -86,16 +94,18 @@ export const AllCharges = () => {
 
   const { data, isLoading } = useAllChargesQuery({
     financialEntityId,
+    page: activePage,
+    limit: 100,
   });
 
   const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
-  const allCharges = data?.financialEntity?.charges ?? [];
+  const allCharges = data?.financialEntity?.charges.nodes ?? [];
 
   if (isLoading) {
     return <AccounterLoader />;
   }
 
-  function generateRowContext(charge: AllChargesQuery['financialEntity']['charges'][0]) {
+  function generateRowContext(charge: AllChargesQuery['financialEntity']['charges']['nodes'][0]) {
     if (
       !charge.counterparty?.name ||
       !charge.transactions[0]?.userNote?.trim() ||
@@ -187,6 +197,11 @@ export const AllCharges = () => {
               value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
             },
           ]}
+          pagination={{
+            page: activePage,
+            onChange: setPage,
+            total: data?.financialEntity?.charges.pageInfo.totalPages ?? 1,
+          }}
         />
       </div>
       {editCharge && (

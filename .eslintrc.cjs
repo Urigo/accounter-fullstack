@@ -42,6 +42,8 @@ module.exports = {
                 'DateRange',
                 'FinancialAmount',
                 'NamedCounterparty',
+                'PageInfo',
+                'PaginatedCharges',
               ],
             },
           },

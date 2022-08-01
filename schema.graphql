@@ -280,7 +280,7 @@ type LtdFinancialEntity implements FinancialEntity {
   phoneNumber: String
 
   accounts: [FinancialAccount!]!
-  charges(filter: ChargeFilter): [Charge!]!
+  charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   linkedEntities: [FinancialEntity!]!
   documents: [Document]
 }
@@ -292,7 +292,7 @@ type PersonalFinancialEntity implements FinancialEntity {
   email: String!
 
   accounts: [FinancialAccount!]!
-  charges(filter: ChargeFilter): [Charge!]!
+  charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
 
   linkedEntities: [FinancialEntity!]!
   documents: [Document]
@@ -302,7 +302,7 @@ type PersonalFinancialEntity implements FinancialEntity {
 interface FinancialEntity {
   id: ID!
   accounts: [FinancialAccount!]!
-  charges(filter: ChargeFilter): [Charge!]!
+  charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
 
   linkedEntities: [FinancialEntity!]!
   documents: [Document]
@@ -649,4 +649,17 @@ type CardFinancialAccount implements FinancialAccount {
   " the external identifier of the card "
   number: String!
   fourDigits: String!
+}
+
+" meta info for page pagination "
+type PageInfo {
+  totalPages: Int!
+  currentage: Int
+  pageSize: Int
+}
+
+" response for paginated charges "
+type PaginatedCharges {
+  nodes: [Charge!]!
+  pageInfo: PageInfo!
 }

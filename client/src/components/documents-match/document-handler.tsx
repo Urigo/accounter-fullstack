@@ -26,7 +26,7 @@ gql`
 
 interface Props {
   document: DocumentHandlerFieldsFragment;
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges'];
+  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'];
   skipDocument: () => void;
 }
 

@@ -10,6 +10,7 @@ import { UnlinkDocumentButton } from './unlink-document-button';
 
 gql`
   fragment DocumentsGalleryFields on Charge {
+    id
     additionalDocuments {
       ...EditDocumentFields
       id
