@@ -16,7 +16,7 @@ SELECT
 FROM
   formatted_merged_tables
 WHERE
-  event_date :: date >= '2019-12-01' :: TIMESTAMP
+  event_date::date >= '2019-12-01'::TIMESTAMP
   AND financial_accounts_to_balance = 'lucia'
 ORDER BY
   event_date,

@@ -24,7 +24,7 @@ WHERE
     account_number = 2733
     OR account_number = 61066
   )
-  AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+  AND event_date::date >= '2019-12-01'::TIMESTAMP
   AND financial_accounts_to_balance = 'no'
 ORDER BY
   event_date DESC,
@@ -64,7 +64,7 @@ WHERE
     account_number = 2733
     OR account_number = 61066
   )
-  AND event_date :: date >= '2019-12-31' :: TIMESTAMP
+  AND event_date::date >= '2019-12-31'::TIMESTAMP
   AND financial_entity = 'Dotan Simha'
 ORDER BY
   event_date,
@@ -137,7 +137,7 @@ WHERE
     account_number = 2733
     OR account_number = 61066
   )
-  AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+  AND event_date::date >= '2019-12-01'::TIMESTAMP
   AND financial_accounts_to_balance = 'no'
 ORDER BY
   event_date,
@@ -170,7 +170,7 @@ WHERE
     OR account_number = 466803
     OR account_number = 1074
   )
-  AND event_date :: date >= '2019-12-01' :: TIMESTAMP
+  AND event_date::date >= '2019-12-01'::TIMESTAMP
   AND personal_category <> 'conversion'
   AND financial_entity <> 'Isracard' --           AND financial_accounts_to_balance = 'no'
 ORDER BY

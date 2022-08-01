@@ -6,7 +6,7 @@ FROM
 CREATE
 OR REPLACE VIEW top_income_all_time AS
 SELECT
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2),
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2),
   financial_entity
 FROM
   formatted_merged_tables
@@ -29,4 +29,4 @@ WHERE
 GROUP BY
   financial_entity
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) DESC NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) DESC NULLS LAST;

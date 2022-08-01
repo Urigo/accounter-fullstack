@@ -55,7 +55,7 @@ CREATE
 OR REPLACE VIEW top_expense_all_time AS
 SELECT
   ABS(
-    SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2)
+    SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
   ),
   financial_entity
 FROM
@@ -73,12 +73,12 @@ WHERE
   AND financial_entity <> 'Dotan Simha'
   AND financial_entity <> 'Isracard'
   AND event_amount < 0
-  AND event_date :: TEXT :: date >= '2020-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2020-12-31' :: TEXT :: date --        OR event_date IS NULL
+  AND event_date::TEXT::date >= '2020-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2020-12-31'::TEXT::date --        OR event_date IS NULL
 GROUP BY
   financial_entity
 ORDER BY
-  SUM(event_amount_in_usd_with_vat_if_exists) :: NUMERIC(9, 2) NULLS LAST;
+  SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2) NULLS LAST;
 
 -- Business and private income, expense and overall by month or year
 WITH
@@ -128,7 +128,7 @@ SELECT
       ) THEN event_amount_in_usd
       ELSE 0
     END
-  ) :: float4 AS business_income,
+  )::float4 AS business_income,
   sum(
     CASE
       WHEN (
@@ -143,7 +143,7 @@ SELECT
       ) THEN event_amount_in_usd
       ELSE 0
     END
-  ) :: float4 AS business_expenses,
+  )::float4 AS business_expenses,
   sum(
     CASE
       WHEN (
@@ -157,7 +157,7 @@ SELECT
       ) THEN event_amount_in_usd
       ELSE 0
     END
-  ) :: float4 AS overall_business_profit,
+  )::float4 AS overall_business_profit,
   sum(
     CASE
       WHEN (
@@ -171,7 +171,7 @@ SELECT
       ) THEN event_amount_in_usd / 2
       ELSE 0
     END
-  ) :: float4 AS business_profit_share --     sum(
+  )::float4 AS business_profit_share --     sum(
   --         case when (event_amount < 0 and personal_category <> 'business') then event_amount_in_usd else 0 end
   --     )::float4 as private_expenses
   --     sum(case when personal_category <> 'business' then event_amount_in_usd else 0 end)::float4 as overall_private
@@ -211,12 +211,12 @@ WITH
   )
 SELECT
   personal_category,
-  sum(event_amount_in_usd) :: float4 AS overall_sum
+  sum(event_amount_in_usd)::float4 AS overall_sum
 FROM
   transactions_exclude
 WHERE
-  event_date :: TEXT :: date >= '2021-01-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2021-01-31' :: TEXT :: date --   and personal_category = 'family'
+  event_date::TEXT::date >= '2021-01-01'::TEXT::date
+  AND event_date::TEXT::date <= '2021-01-31'::TEXT::date --   and personal_category = 'family'
 GROUP BY
   personal_category
 ORDER BY
@@ -253,22 +253,22 @@ SELECT
 FROM
   transactions_exclude
 WHERE
-  event_date :: TEXT :: date >= '2020-12-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2020-12-31' :: TEXT :: date
+  event_date::TEXT::date >= '2020-12-01'::TEXT::date
+  AND event_date::TEXT::date <= '2020-12-31'::TEXT::date
 ORDER BY
   event_amount_in_usd;
 
 SELECT
   sum(
-    formatted_invoice_amount_in_ils_with_vat_if_exists :: float4
-  ) :: float4 AS invoice_sum,
+    formatted_invoice_amount_in_ils_with_vat_if_exists::float4
+  )::float4 AS invoice_sum,
   sum(
-    formatted_event_amount_in_ils_with_vat_if_exist :: float4
-  ) :: float4 AS event_sum
+    formatted_event_amount_in_ils_with_vat_if_exist::float4
+  )::float4 AS event_sum
 FROM
   formatted_merged_tables
 WHERE
   account_number = 466803
   AND event_amount > 0
-  AND event_date :: TEXT :: date >= '2020-12-01' :: TEXT :: date
-  AND event_date :: TEXT :: date <= '2020-12-31' :: TEXT :: date
+  AND event_date::TEXT::date >= '2020-12-01'::TEXT::date
+  AND event_date::TEXT::date <= '2020-12-31'::TEXT::date

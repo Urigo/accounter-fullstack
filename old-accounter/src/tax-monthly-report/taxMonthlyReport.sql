@@ -26,7 +26,7 @@ FROM
   accounter_schema.ledger hashavshevet
 WHERE
   origin = 'manual_salary'
-  AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01' :: date);
+  AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date);
 
 UPDATE
   accounter_schema.isracard_creditcard_transactions
@@ -83,7 +83,7 @@ FROM
 WHERE
   full_purchase_date_outbound IS NOT NULL
 ORDER BY
-  full_purchase_date_outbound :: date;
+  full_purchase_date_outbound::date;
 
 SELECT
   hashavshevet.*
@@ -93,10 +93,10 @@ FROM
 WHERE
   (
     hashavshevet.original_id IS NULL
-    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01' :: date)
+    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01'::date)
     AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') <= (
-      date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-    ) :: date
+      date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+    )::date
   )
   OR (
     bank.business_trip IS NULL
@@ -111,10 +111,10 @@ WHERE
           OR bank.financial_entity IS NULL
         )
         AND bank.account_type != 'creditcard'
-        AND bank.event_date :: TEXT :: date >= date_trunc('month', '2020-09-01' :: date)
-        AND bank.event_date :: TEXT :: date <= (
-          date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-        ) :: date
+        AND bank.event_date::TEXT::date >= date_trunc('month', '2020-09-01'::date)
+        AND bank.event_date::TEXT::date <= (
+          date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+        )::date
         OR bank.event_date IS NULL
       )
       OR (
@@ -123,14 +123,14 @@ WHERE
           OR bank.financial_entity = 'Isracard'
         )
         AND (
-          bank.debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-09-01') :: date
-          AND bank.debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-09-01') :: date
+          bank.debit_date::TEXT::date <= get_creditcard_charge_date('2020-09-01')::date
+          AND bank.debit_date::TEXT::date > get_creditcard_charge_date_former_month('2020-09-01')::date
           OR (
             bank.debit_date IS NULL
-            AND bank.event_date :: TEXT :: date >= date_trunc('month', '2020-09-01' :: date)
-            AND bank.event_date :: TEXT :: date <= (
-              date_trunc('month', '2020-09-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-            ) :: date
+            AND bank.event_date::TEXT::date >= date_trunc('month', '2020-09-01'::date)
+            AND bank.event_date::TEXT::date <= (
+              date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+            )::date
           )
         )
       )
@@ -567,7 +567,7 @@ FROM
           '2020-06-20',
           'נסעחול31',
           TRUE,
-          ('2020-02-17' :: date - '2020-02-07' :: date + 1) + ('2020-03-03' :: date - '2020-02-22' :: date + 1) + ('2020-06-20' :: date - '2020-03-07' :: date + 1),
+          ('2020-02-17'::date - '2020-02-07'::date + 1) + ('2020-03-03'::date - '2020-02-22'::date + 1) + ('2020-06-20'::date - '2020-03-07'::date + 1),
           0
         )
     )
@@ -628,10 +628,10 @@ WITH
             OR financial_entity IS NULL
           )
           AND account_type != 'creditcard'
-          AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
-          AND event_date :: TEXT :: date <= (
-            date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-          ) :: date
+          AND event_date::TEXT::date >= date_trunc('month', '2020-08-01'::date)
+          AND event_date::TEXT::date <= (
+            date_trunc('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+          )::date
           OR event_date IS NULL
         )
         OR (
@@ -640,14 +640,14 @@ WITH
             OR financial_entity = 'Isracard'
           )
           AND (
-            debit_date :: TEXT :: date <= get_creditcard_charge_date('2020-08-01') :: date
-            AND debit_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-08-01') :: date
+            debit_date::TEXT::date <= get_creditcard_charge_date('2020-08-01')::date
+            AND debit_date::TEXT::date > get_creditcard_charge_date_former_month('2020-08-01')::date
             OR (
               debit_date IS NULL
-              AND event_date :: TEXT :: date >= date_trunc('month', '2020-08-01' :: date)
-              AND event_date :: TEXT :: date <= (
-                date_trunc('month', '2020-08-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-              ) :: date
+              AND event_date::TEXT::date >= date_trunc('month', '2020-08-01'::date)
+              AND event_date::TEXT::date <= (
+                date_trunc('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+              )::date
             )
           )
         )
@@ -657,15 +657,15 @@ SELECT
   (
     (
       sum(
-        formatted_invoice_amount_in_ils_with_vat_if_exists :: FLOAT
+        formatted_invoice_amount_in_ils_with_vat_if_exists::FLOAT
       ) / 100
     ) * 3.5
-  ) :: INT advance,
+  )::INT advance,
   (
     sum(
-      formatted_invoice_amount_in_ils_with_vat_if_exists :: FLOAT
+      formatted_invoice_amount_in_ils_with_vat_if_exists::FLOAT
     )
-  ) :: INT total
+  )::INT total
 FROM
   this_month_business
 WHERE

@@ -1,7 +1,7 @@
 /*
- make sure that other then monthly balance and CASH ADVANCE all transactions
- has full_purchase_date or full_purchase_date_outbound
- (result should be empty)
+make sure that other then monthly balance and CASH ADVANCE all transactions
+has full_purchase_date or full_purchase_date_outbound
+(result should be empty)
  */
 SELECT
   *
@@ -14,9 +14,9 @@ WHERE
   AND full_purchase_date_outbound IS NULL;
 
 /*
- make sure that other then monthly balance and CASH ADVANCE all transactions
- has payment_sum or payment_sum_outbound
- (result should be empty)
+make sure that other then monthly balance and CASH ADVANCE all transactions
+has payment_sum or payment_sum_outbound
+(result should be empty)
  */
 SELECT
   *
@@ -29,9 +29,9 @@ WHERE
   AND payment_sum_outbound IS NULL;
 
 /*
- make sure that other then monthly balance and CASH ADVANCE all transactions
- has voucher_number
- (result should be empty)
+make sure that other then monthly balance and CASH ADVANCE all transactions
+has voucher_number
+(result should be empty)
  */
 SELECT
   *
@@ -43,7 +43,7 @@ WHERE
   AND voucher_number IS NULL;
 
 /*
- make sure that there are no duplicates in creditcards
+make sure that there are no duplicates in creditcards
  */
 WITH
   all_creditcard_transactions AS (

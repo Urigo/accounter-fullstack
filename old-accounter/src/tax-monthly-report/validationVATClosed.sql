@@ -5,7 +5,7 @@ SELECT
         WHEN credit_amount_2 = '' THEN '0'
         ELSE credit_amount_2
       END
-    ) :: NUMERIC
+    )::NUMERIC
   ),
   SUM(
     (
@@ -13,7 +13,7 @@ SELECT
         WHEN debit_amount_2 = '' THEN '0'
         ELSE debit_amount_2
       END
-    ) :: NUMERIC
+    )::NUMERIC
   )
 FROM
   get_tax_report_of_month('2020-03-01');

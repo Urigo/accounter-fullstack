@@ -18,18 +18,19 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) eur_rate, (
+      ) eur_rate,
+      (
         SELECT
           t1.usd
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -79,16 +80,16 @@ SELECT
       WHEN financial_entity = 'Yaacov Matri' THEN 'יעקב'
       WHEN financial_entity = 'Tax' THEN (
         CASE
-          WHEN event_date :: TEXT :: date <= '2019-11-30' THEN 'מקדמות19'
+          WHEN event_date::TEXT::date <= '2019-11-30' THEN 'מקדמות19'
           WHEN (
-            event_date :: TEXT :: date <= '2020-01-31'
-            AND event_date :: TEXT :: date > '2019-11-30'
+            event_date::TEXT::date <= '2020-01-31'
+            AND event_date::TEXT::date > '2019-11-30'
           ) THEN 'מקדמותל'
           WHEN (
-            event_date :: TEXT :: date <= '2021-01-31'
-            AND event_date :: TEXT :: date > '2020-11-30'
+            event_date::TEXT::date <= '2021-01-31'
+            AND event_date::TEXT::date > '2020-11-30'
           ) THEN 'מקדמות20'
-          WHEN event_date :: TEXT :: date > '2021-01-31' THEN 'מקדמות21'
+          WHEN event_date::TEXT::date > '2021-01-31' THEN 'מקדמות21'
         END
       )
       WHEN financial_entity = 'Tax Deductions' THEN 'מהני'
@@ -110,9 +111,9 @@ SELECT
   to_char(debit_date, 'DD/MM/YYYY') AS formatted_debit_date,
   (
     CASE
-      WHEN tax_category = 'פלאפון' THEN ((vat :: FLOAT / 3) * 2)
-      WHEN tax_category = 'ציוד' THEN ((vat :: FLOAT / 3) * 2)
-      WHEN tax_category = 'מידע' THEN ((vat :: FLOAT / 3) * 2)
+      WHEN tax_category = 'פלאפון' THEN ((vat::FLOAT / 3) * 2)
+      WHEN tax_category = 'ציוד' THEN ((vat::FLOAT / 3) * 2)
+      WHEN tax_category = 'מידע' THEN ((vat::FLOAT / 3) * 2)
       ELSE vat
     END
   ) AS real_vat,
@@ -124,7 +125,7 @@ SELECT
         FROM
           accounter_schema.exchange_rates
         WHERE
-          exchange_date = debit_date :: TEXT :: date
+          exchange_date = debit_date::TEXT::date
       )
       WHEN currency_code = 'EUR' THEN event_amount * (
         (
@@ -133,14 +134,14 @@ SELECT
           FROM
             all_exchange_dates
           WHERE
-            all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+            all_exchange_dates.exchange_date = debit_date::TEXT::date
         ) / (
           SELECT
             all_exchange_dates.usd_rate
           FROM
             all_exchange_dates
           WHERE
-            all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+            all_exchange_dates.exchange_date = debit_date::TEXT::date
         )
       )
       WHEN currency_code = 'USD' THEN event_amount
@@ -155,7 +156,7 @@ SELECT
         FROM
           all_exchange_dates
         WHERE
-          all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+          all_exchange_dates.exchange_date = debit_date::TEXT::date
       )
       WHEN currency_code = 'EUR' THEN (event_amount - COALESCE(vat, 0)) * (
         (
@@ -164,14 +165,14 @@ SELECT
           FROM
             all_exchange_dates
           WHERE
-            all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+            all_exchange_dates.exchange_date = debit_date::TEXT::date
         ) / (
           SELECT
             all_exchange_dates.usd_rate
           FROM
             all_exchange_dates
           WHERE
-            all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+            all_exchange_dates.exchange_date = debit_date::TEXT::date
         )
       )
       WHEN currency_code = 'USD' THEN event_amount - COALESCE(vat, 0)
@@ -190,7 +191,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             WHEN currency_code = 'USD' THEN event_amount * (
               SELECT
@@ -198,7 +199,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             ELSE -99999999999
           END
@@ -219,7 +220,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             WHEN currency_code = 'USD' THEN event_amount * (
               SELECT
@@ -227,7 +228,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             ELSE -99999999999
           END
@@ -267,9 +268,9 @@ SELECT
                 ) THEN tax_invoice_amount - COALESCE(
                   (
                     CASE
-                      WHEN tax_category = 'פלאפון' THEN ((vat :: FLOAT / 3) * 2)
-                      WHEN tax_category = 'ציוד' THEN ((vat :: FLOAT / 3) * 2)
-                      WHEN tax_category = 'מידע' THEN ((vat :: FLOAT / 3) * 2)
+                      WHEN tax_category = 'פלאפון' THEN ((vat::FLOAT / 3) * 2)
+                      WHEN tax_category = 'ציוד' THEN ((vat::FLOAT / 3) * 2)
+                      WHEN tax_category = 'מידע' THEN ((vat::FLOAT / 3) * 2)
                       ELSE vat
                     END
                   ),
@@ -298,8 +299,8 @@ SELECT
                     WHEN (
                       tax_invoice_date IS NOT NULL
                       AND account_type != 'creditcard'
-                    ) THEN tax_invoice_date :: TEXT :: date
-                    ELSE debit_date :: TEXT :: date
+                    ) THEN tax_invoice_date::TEXT::date
+                    ELSE debit_date::TEXT::date
                   END
                 )
             )
@@ -323,8 +324,8 @@ SELECT
                     WHEN (
                       tax_invoice_date IS NOT NULL
                       AND account_type != 'creditcard'
-                    ) THEN tax_invoice_date :: TEXT :: date
-                    ELSE debit_date :: TEXT :: date
+                    ) THEN tax_invoice_date::TEXT::date
+                    ELSE debit_date::TEXT::date
                   END
                 )
             )
@@ -350,9 +351,9 @@ SELECT
                 ELSE event_amount - COALESCE(
                   (
                     CASE
-                      WHEN tax_category = 'פלאפון' THEN ((vat :: FLOAT / 3) * 2)
-                      WHEN tax_category = 'ציוד' THEN ((vat :: FLOAT / 3) * 2)
-                      WHEN tax_category = 'מידע' THEN ((vat :: FLOAT / 3) * 2)
+                      WHEN tax_category = 'פלאפון' THEN ((vat::FLOAT / 3) * 2)
+                      WHEN tax_category = 'ציוד' THEN ((vat::FLOAT / 3) * 2)
+                      WHEN tax_category = 'מידע' THEN ((vat::FLOAT / 3) * 2)
                       ELSE vat
                     END
                   ),
@@ -380,8 +381,8 @@ SELECT
                     WHEN (
                       tax_invoice_date IS NOT NULL
                       AND account_type != 'creditcard'
-                    ) THEN tax_invoice_date :: TEXT :: date
-                    ELSE debit_date :: TEXT :: date
+                    ) THEN tax_invoice_date::TEXT::date
+                    ELSE debit_date::TEXT::date
                   END
                 )
             )
@@ -405,8 +406,8 @@ SELECT
                     WHEN (
                       tax_invoice_date IS NOT NULL
                       AND account_type != 'creditcard'
-                    ) THEN tax_invoice_date :: TEXT :: date
-                    ELSE debit_date :: TEXT :: date
+                    ) THEN tax_invoice_date::TEXT::date
+                    ELSE debit_date::TEXT::date
                   END
                 )
             )
@@ -429,7 +430,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             WHEN currency_code = 'USD' THEN (event_amount - COALESCE(vat, 0)) * (
               SELECT
@@ -437,7 +438,7 @@ SELECT
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date = debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date = debit_date::TEXT::date
             )
             ELSE -99999999999
           END
@@ -493,7 +494,7 @@ SELECT
         FROM
           all_exchange_dates
         WHERE
-          all_exchange_dates.exchange_date = tax_invoice_date :: TEXT :: date
+          all_exchange_dates.exchange_date = tax_invoice_date::TEXT::date
       )
       WHEN currency_code = 'EUR' THEN vat * (
         SELECT
@@ -501,7 +502,7 @@ SELECT
         FROM
           all_exchange_dates
         WHERE
-          all_exchange_dates.exchange_date = tax_invoice_date :: TEXT :: date
+          all_exchange_dates.exchange_date = tax_invoice_date::TEXT::date
       )
     END
   ) AS formatted_foreign_vat_in_ils

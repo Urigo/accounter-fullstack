@@ -4,12 +4,12 @@ FROM
   accounter_schema.all_transactions
 WHERE
   account_number IN ('2733', '61066')
-  AND event_date :: TEXT :: date >= (
+  AND event_date::TEXT::date >= (
     date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD'))
-  ) :: date
-  AND event_date :: TEXT :: date <= (
+  )::date
+  AND event_date::TEXT::date <= (
     date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
-  ) :: date
+  )::date
   AND vat > 0;
 
 SELECT
@@ -25,8 +25,8 @@ WHERE
 SELECT
   *,
   CASE
-    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound :: TEXT :: date
-    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date :: TEXT :: date
+    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound::TEXT::date
+    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date::TEXT::date
   END AS event_date INTO TABLE accounter_schema.test3
 FROM
   accounter_schema.isracard_creditcard_transactions;
@@ -48,14 +48,14 @@ FROM
 WHERE
   (
     (
-      full_payment_date :: TEXT :: date <= get_creditcard_charge_date('2020-07-01') :: date
-      AND full_payment_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-07-01') :: date
+      full_payment_date::TEXT::date <= get_creditcard_charge_date('2020-07-01')::date
+      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month('2020-07-01')::date
     )
     OR (
-      event_date :: TEXT :: date >= date_trunc('month', '2020-07-01' :: date)
-      AND event_date :: TEXT :: date <= (
-        date_trunc('month', '2020-07-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-      ) :: date
+      event_date::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+      AND event_date::TEXT::date <= (
+        date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+      )::date
     )
   )
   AND (
@@ -82,10 +82,10 @@ SELECT
     END
   ) AS currency_code,
   CASE
-    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound :: TEXT :: date
-    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date :: TEXT :: date
+    WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound::TEXT::date
+    WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date::TEXT::date
   END AS event_date,
-  full_payment_date :: TEXT :: date AS debit_date,
+  full_payment_date::TEXT::date AS debit_date,
   CASE
     WHEN payment_sum IS NULL THEN (payment_sum_outbound * -1)
     WHEN payment_sum_outbound IS NULL THEN (payment_sum * -1)
@@ -105,7 +105,7 @@ SELECT
   'creditcard' AS account_type,
   FALSE AS is_conversion,
   0 AS currency_rate,
-  NULL :: INTEGER AS contra_currency_code,
+  NULL::INTEGER AS contra_currency_code,
   CASE
     WHEN full_supplier_name_outbound IS NULL THEN full_supplier_name_heb
     WHEN full_supplier_name_heb IS NULL THEN (
@@ -124,23 +124,23 @@ FROM
 WHERE
   (
     (
-      full_payment_date :: TEXT :: date <= get_creditcard_charge_date('2020-07-01') :: date
-      AND full_payment_date :: TEXT :: date > get_creditcard_charge_date_former_month('2020-07-01') :: date
+      full_payment_date::TEXT::date <= get_creditcard_charge_date('2020-07-01')::date
+      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month('2020-07-01')::date
     )
     OR (
       full_payment_date IS NULL
       AND (
         full_purchase_date IS NULL
-        AND full_purchase_date_outbound :: TEXT :: date >= date_trunc('month', '2020-07-01' :: date)
-        AND full_purchase_date_outbound :: TEXT :: date <= (
-          date_trunc('month', '2020-07-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-        ) :: date
+        AND full_purchase_date_outbound::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+        AND full_purchase_date_outbound::TEXT::date <= (
+          date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+        )::date
       )
       OR full_purchase_date_outbound IS NULL
-      AND full_purchase_date :: TEXT :: date >= date_trunc('month', '2020-07-01' :: date)
-      AND full_purchase_date :: TEXT :: date <= (
-        date_trunc('month', '2020-07-01' :: date) + INTERVAL '1 month' - INTERVAL '1 day'
-      ) :: date
+      AND full_purchase_date::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+      AND full_purchase_date::TEXT::date <= (
+        date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+      )::date
     )
   )
   AND (

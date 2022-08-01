@@ -8,29 +8,31 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) eur_rate, (
+      ) eur_rate,
+      (
         SELECT
           t1.usd
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
           1
-      ) usd_rate, (
+      ) usd_rate,
+      (
         SELECT
           t1.gbp
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date) :: date <= times_table.dt
+          date_trunc('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -52,7 +54,7 @@ WITH
             FROM
               all_exchange_dates
             WHERE
-              all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+              all_exchange_dates.exchange_date <= debit_date::TEXT::date
             ORDER BY
               all_exchange_dates.exchange_date DESC
             LIMIT
@@ -65,7 +67,7 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date <= debit_date::TEXT::date
               ORDER BY
                 all_exchange_dates.exchange_date DESC
               LIMIT
@@ -76,7 +78,7 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date <= debit_date::TEXT::date
               ORDER BY
                 all_exchange_dates.exchange_date DESC
               LIMIT
@@ -90,7 +92,7 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date <= debit_date::TEXT::date
               ORDER BY
                 all_exchange_dates.exchange_date DESC
               LIMIT
@@ -101,7 +103,7 @@ WITH
               FROM
                 all_exchange_dates
               WHERE
-                all_exchange_dates.exchange_date <= debit_date :: TEXT :: date
+                all_exchange_dates.exchange_date <= debit_date::TEXT::date
               ORDER BY
                 all_exchange_dates.exchange_date DESC
               LIMIT
@@ -161,7 +163,7 @@ SELECT
       ) THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0
     END
-  ) :: float4 AS business_income,
+  )::float4 AS business_income,
   sum(
     CASE
       WHEN (
@@ -176,7 +178,7 @@ SELECT
       ) THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0
     END
-  ) :: float4 AS business_expenses,
+  )::float4 AS business_expenses,
   sum(
     CASE
       WHEN (
@@ -190,7 +192,7 @@ SELECT
       ) THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0
     END
-  ) :: float4 AS overall_business_profit,
+  )::float4 AS overall_business_profit,
   sum(
     CASE
       WHEN (
@@ -204,7 +206,7 @@ SELECT
       ) THEN event_amount_in_usd_with_vat_if_exists / 2
       ELSE 0
     END
-  ) :: float4 AS business_profit_share,
+  )::float4 AS business_profit_share,
   sum(
     CASE
       WHEN (
@@ -213,20 +215,20 @@ SELECT
       ) THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0
     END
-  ) :: float4 AS private_expenses,
+  )::float4 AS private_expenses,
   sum(
     CASE
       WHEN personal_category <> 'business' THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0
     END
-  ) :: float4 AS overall_private
+  )::float4 AS overall_private
 FROM
   transactions_exclude -- where
   --     account_number in (select account_number
   --                        from accounter_schema.financial_accounts accounts
   --                        where accounts.private_business = 'business')
 WHERE
-  event_date :: TEXT :: date >= '2020-10-01' :: TEXT :: date
+  event_date::TEXT::date >= '2020-10-01'::TEXT::date
 GROUP BY
   date
 ORDER BY
