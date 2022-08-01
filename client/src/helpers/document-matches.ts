@@ -7,11 +7,14 @@ import {
 import { getStandardDeviation } from './statistics';
 import { stringComparer } from './strings-manipulations';
 
-type ChargeMatchScore = { score: number; charge: DocumentMatchChargesFieldsFragment['financialEntity']['charges'][0] };
+type ChargeMatchScore = {
+  score: number;
+  charge: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'][0];
+};
 
 export const rateOptionalMatches = (
   document: DocumentMatchFieldsFragment,
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']
+  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes']
 ): ChargeMatchScore[] => {
   /* create diffs dictionary */
   const comparisonDict: Record<string, Record<string, number>> = {

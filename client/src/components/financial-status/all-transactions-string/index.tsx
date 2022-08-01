@@ -81,7 +81,8 @@ export const AllTransactionsString = () => {
                 index={i}
                 key={row.id}
                 charge={
-                  data?.financialEntity?.charges && data.financialEntity.charges.find(charge => charge.id === row.id)
+                  data?.financialEntity?.charges.nodes &&
+                  data.financialEntity.charges.nodes.find(charge => charge.id === row.id)
                 }
               />
             ))}

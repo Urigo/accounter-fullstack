@@ -82,7 +82,7 @@ gql`
 
 interface Props {
   document: DocumentMatchFieldsFragment;
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges'];
+  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'];
   setReadyForNextStep: (ready: boolean) => void;
   setSelectedChargeId: (id: string) => void;
 }

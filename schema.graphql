@@ -651,12 +651,14 @@ type CardFinancialAccount implements FinancialAccount {
   fourDigits: String!
 }
 
+" meta info for page pagination "
 type PageInfo {
   totalPages: Int!
   currentage: Int
   pageSize: Int
 }
 
+" response for paginated charges "
 type PaginatedCharges {
   nodes: [Charge!]!
   pageInfo: PageInfo!
