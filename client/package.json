@@ -10,9 +10,9 @@
     "generate": "cd ../ && yarn generate && cd client"
   },
   "dependencies": {
-    "@mantine/core": "5.0.2",
-    "@mantine/hooks": "5.0.2",
-    "@mantine/notifications": "5.0.2",
+    "@mantine/core": "4.2.12",
+    "@mantine/hooks": "4.2.12",
+    "@mantine/notifications": "4.2.12",
     "@tanstack/react-query": "4.0.10",
     "react": "18.2.0",
     "react-dom": "18.2.0",
