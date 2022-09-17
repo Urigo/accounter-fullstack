@@ -43,7 +43,7 @@ export const reportToReview = async (query: any): Promise<string> => {
     pool.query(`
       select *
       from accounter_schema.all_transactions
-      where account_number in ('466803', '1082', '1074')
+      where account_number in ('466803', '1082', '1074', '5972')
       order by event_date desc;
     `),
   ]);

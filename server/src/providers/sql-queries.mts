@@ -12,7 +12,7 @@ export const getLastInvoiceNumbers = sql<IGetLastInvoiceNumbersQuery>`
     event_date
     FROM accounter_schema.all_transactions
     WHERE
-    (account_number in ('466803', '1074', '1082')) AND
+    (account_number in ('466803', '1074', '1082', '5972')) AND
     event_amount > 0 AND
     (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
     ORDER BY event_date DESC;`;

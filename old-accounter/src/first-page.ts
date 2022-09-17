@@ -19,6 +19,7 @@ function isBusiness(transaction: any) {
       transaction.account_number == 2733 ||
       transaction.account_number == 466803 ||
       transaction.account_number == 1082 ||
+      transaction.account_number == 5972 ||
       transaction.account_number == 1074) &&
     !entitiesWithoutInvoice.includes(transaction.financial_entity)
   );
@@ -94,7 +95,7 @@ export const lastInvoiceNumbersQuery = `
     event_date
   FROM accounter_schema.all_transactions
   WHERE
-    (account_number in ('466803', '1074', '1082')) AND
+    (account_number in ('466803', '1074', '1082', '5972')) AND
     event_amount > 0 AND
     (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
   ORDER BY event_date DESC;
@@ -178,7 +179,7 @@ export const financialStatus = async (query: any): Promise<string> => {
     pool.query(`
       select *
       from accounter_schema.all_transactions
-      -- where account_number in ('466803', '1074', '1082')
+      -- where account_number in ('466803', '1074', '1082', '5972')
       order by event_date desc
       limit 2550;
     `),

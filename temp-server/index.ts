@@ -35,7 +35,7 @@ app.get('/getLastInvoiceNumbers', async (_req: Request, res: Response) => {
       event_date
     FROM accounter_schema.all_transactions
     WHERE
-      (account_number in ('466803', '1074', '1082')) AND
+      (account_number in ('466803', '1074', '1082', '5972')) AND
       event_amount > 0 AND
       (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
     ORDER BY event_date DESC;`);
@@ -306,7 +306,7 @@ app.post('/getAllTransactions', async (req: Request, res: Response) => {
   const financialEntity = req.body?.financialEntity;
   let accountsToFetch = '';
   if (financialEntity == 'Guild') {
-    accountsToFetch = `where account_number in ('466803', '1074', '1082')`;
+    accountsToFetch = `where account_number in ('466803', '1074', '1082', '5972')`;
   } else if (financialEntity == 'UriLTD') {
     accountsToFetch = `where account_number in ('61066', '2733')`;
   } else if (financialEntity == 'Uri') {

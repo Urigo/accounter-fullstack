@@ -81,7 +81,7 @@ export async function saveTransactionsToDB(
       // TODO: Check if we want to save it to DB
       optionalTransactionKeys = ['data0ExpectedRepaymentSwitch'];
     } else if (accountType == 'isracard') {
-      optionalTransactionKeys = ['clientIpAddress'];
+      optionalTransactionKeys = ['clientIpAddress', 'bcKey'];
     }
     optionalTransactionKeys = optionalTransactionKeys.concat(['id']);
     findMissingTransactionKeys(transaction, columnNamesResult, optionalTransactionKeys, accountType);

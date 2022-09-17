@@ -376,7 +376,7 @@ async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newI
   }
   const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *'];
+  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
     wantedCreditCards.includes(transaction.card)
   );
