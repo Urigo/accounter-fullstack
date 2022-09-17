@@ -52,22 +52,70 @@ function getVATTransaction(
 
   return {
     transactionsByInvoiceDate: `
-      SELECT *
-      FROM accounter_schema.all_transactions
-      WHERE
-        account_number in (${getCurrentBusinessAccountsQuery}) AND
-        tax_invoice_date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
-        tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
-        (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
+    SELECT 
+      docs.date as tax_invoice_date,
+      docs.serial_number as tax_invoice_number,
+      docs.total_amount as tax_invoice_amount,
+      docs.currency_code as currency_code,
+      docs.image_url as proforma_invoice_file,
+      transactions.tax_category as tax_category,
+      transactions.event_date as event_date,
+      transactions.debit_date as debit_date,
+      transactions.event_amount as event_amount,
+      transactions.financial_entity as financial_entity,
+      transactions.vat as vat,
+      transactions.user_description as user_description,
+      transactions.bank_description as bank_description,
+      transactions.withholding_tax as withholding_tax,
+      transactions.interest as interest,
+      transactions.id as id,
+      transactions.detailed_bank_description as detailed_bank_description,
+      transactions.receipt_number as receipt_number,
+      transactions.business_trip as business_trip,
+      transactions.personal_category as personal_category,
+      transactions.financial_accounts_to_balance as financial_accounts_to_balance,
+      transactions.bank_reference as bank_reference,
+      transactions.event_number as event_number,
+      transactions.account_number as account_number,
+      transactions.account_type as account_type,
+      transactions.is_conversion as is_conversion,
+      transactions.currency_rate as currency_rate,
+      transactions.contra_currency_code as contra_currency_code,
+      transactions.original_id as original_id,
+      transactions.reviewed as reviewed,
+      transactions.hashavshevet_id as hashavshevet_id,
+      transactions.current_balance as current_balance,
+      transactions.tax_invoice_file as tax_invoice_file,
+      transactions.links as links,
+      transactions.receipt_image as receipt_image,
+      transactions.receipt_url as receipt_url,
+      transactions.receipt_date as receipt_date,
+      transactions.is_property as is_property,
+      transactions.tax_invoice_currency as tax_invoice_currency
+      -- transactions.*
+    FROM (
+      select *
+      from accounter_schema.all_transactions
+      where
+        account_number in ${getCurrentBusinessAccountsQuery} 
+        AND (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
         AND financial_entity <> 'Social Security Deductions'
         AND financial_entity <> 'Tax'
         AND financial_entity <> 'VAT'
         AND financial_entity <> 'Dotan Simha Dividend'
-        -- AND id not in (select transaction_id from accounter_schema.taxes_transactions)
-        order by tax_invoice_date;	    
-    `,
+    ) as "transactions"
+    inner join (
+      select *
+      from accounter_schema.documents
+      where
+        date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
+        date <= date_trunc('month', to_date('${moment(month).format(
+          'YYYY-MM-DD'
+        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+    ) as "docs"
+    on transactions.id = docs.charge_id
+    order by docs.date;   
+  `,
     transactionsByEventDate: `
       (SELECT *
       FROM accounter_schema.all_transactions
@@ -167,16 +215,43 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   `;
 
   const getAllIncomeTransactionsQuery = `
-      SELECT *
-      FROM accounter_schema.all_transactions
-      WHERE
-        account_number in (${getCurrentBusinessAccountsQuery}) AND
-        tax_invoice_date >= date_trunc('month', to_date('${moment(month).format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
-        tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
-        event_amount > 0 and is_conversion is false
-        order by event_date;	
+      SELECT 
+        docs.date as tax_invoice_date,
+        docs.serial_number as tax_invoice_number,
+        docs.total_amount as tax_invoice_amount,
+        docs.currency_code as currency_code,
+        docs.image_url as proforma_invoice_file,
+        transactions.tax_category as tax_category,
+        transactions.event_date as event_date,
+        transactions.debit_date as debit_date,
+        transactions.event_amount as event_amount,
+        transactions.financial_entity as financial_entity,
+        transactions.vat as vat,
+        transactions.user_description as user_description,
+        transactions.bank_description as bank_description,
+        transactions.withholding_tax as withholding_tax,
+        transactions.interest as interest,
+        transactions.id as id,
+        transactions.detailed_bank_description as detailed_bank_description
+      FROM (
+        select *
+        from accounter_schema.all_transactions
+        where
+          account_number in (${getCurrentBusinessAccountsQuery}) 
+          and event_amount > 0 
+          and is_conversion is false
+      ) as "transactions"
+      inner join (
+        select *
+        from accounter_schema.documents
+        where
+          date >= date_trunc('month', to_date('${moment(month).format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
+          date <= date_trunc('month', to_date('${moment(month).format(
+            'YYYY-MM-DD'
+          )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+      ) as "docs"
+      on transactions.id = docs.charge_id
+      order by event_date;	
     `;
 
   const monthIncomeTransactions: any = await pool.query(getAllIncomeTransactionsQuery);
@@ -185,7 +260,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   let incomeSum = 0;
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
-  const advancePercentageRate = 8.2;
+  const advancePercentageRate = 15;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows ?? []) {
     if (monthIncomeTransaction.tax_invoice_currency) {
       const originalCurrency = monthIncomeTransaction.currency_code;
@@ -322,7 +397,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   </table>  
 `;
   // console.log('SUM to tax ------ ', incomeSum);
-  // console.log('Advance sum ------ ', (incomeSum / 100) * advancePercentageRate); // TODO: Move 8.2 to read from table
+  // console.log('Advance sum ------ ', (incomeSum / 100) * advancePercentageRate); // TODO: Move 15 to read from table
   // console.log('VAT free SUM ------ ', VATFreeIncomeSum);
   // console.log('VAT income SUM ------ ', VATIncomeSum);
 

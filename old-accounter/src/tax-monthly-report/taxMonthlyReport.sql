@@ -1,4 +1,151 @@
 SELECT
+  docs.date as tax_invoice_date,
+  docs.serial_number as tax_invoice_number,
+  docs.total_amount as tax_invoice_amount,
+  docs.currency_code as currency_code,
+  docs.image_url as proforma_invoice_file,
+  transactions.* --, docs.*
+FROM
+  (
+    select
+      *
+    from
+      accounter_schema.all_transactions
+    where
+      account_number in (
+        (
+          select
+            account_number
+          from
+            accounter_schema.financial_accounts
+          where
+            owner = (
+              select
+                id
+              from
+                accounter_schema.businesses
+              where
+                name = $$Software Products Guilda Ltd.$$
+            )
+        )
+      )
+      and -- (vat >= 0 or vat is null) and event_amount > 0
+      (
+        vat < 0
+        or vat is null
+      )
+      AND financial_entity <> 'Social Security Deductions'
+      AND financial_entity <> 'Tax'
+      AND financial_entity <> 'VAT'
+      AND financial_entity <> 'Dotan Simha Dividend'
+  ) as "transactions"
+  inner join (
+    select
+      *
+    from
+      accounter_schema.documents
+    where
+      date >= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD'))
+      AND date <= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+  ) as "docs" on transactions.id = docs.charge_id
+order by
+  docs.date;
+
+SELECT
+  docs.date as tax_invoice_date,
+  docs.serial_number as tax_invoice_number,
+  docs.total_amount as tax_invoice_amount,
+  docs.currency_code as currency_code,
+  docs.image_url as proforma_invoice_file,
+  transactions.tax_category as tax_category,
+  transactions.event_date as event_date,
+  transactions.debit_date as debit_date,
+  transactions.event_amount as event_amount,
+  transactions.financial_entity as financial_entity,
+  transactions.vat as vat,
+  transactions.user_description as user_description,
+  transactions.bank_description as bank_description,
+  transactions.withholding_tax as withholding_tax,
+  transactions.interest as interest,
+  transactions.id as id,
+  transactions.detailed_bank_description as detailed_bank_description
+from
+  (
+    select
+      *
+    from
+      accounter_schema.all_transactions
+    where
+      account_number in (
+        (
+          select
+            account_number
+          from
+            accounter_schema.financial_accounts
+          where
+            owner = (
+              select
+                id
+              from
+                accounter_schema.businesses
+              where
+                name = $$Software Products Guilda Ltd.$$
+            )
+        )
+      )
+      and event_amount > 0
+      and is_conversion is false
+  ) as "transactions"
+  inner join (
+    select
+      *
+    from
+      accounter_schema.documents
+    where
+      date >= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD'))
+      AND date <= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+  ) as "docs" on transactions.id = docs.charge_id
+order by
+  event_date;
+
+INSERT INTO
+  accounter_schema.documents (
+    id,
+    image_url,
+    file_url,
+    type,
+    created_at,
+    modified_at,
+    serial_number,
+    date,
+    total_amount,
+    currency_code,
+    vat_amount,
+    charge_id,
+    debtor,
+    creditor,
+    is_reviewed
+  )
+VALUES
+  (
+    DEFAULT,
+    'https://res.cloudinary.com/urigo/image/upload/v1663435950/HashDoc_172_9324_egv8gb.jpg',
+    'https://mail.google.com/mail/u/0/?zx=58r49lk0p98i#inbox/1829bac35a49c6db',
+    'INVOICE_RECEIPT'::document_type,
+    DEFAULT,
+    DEFAULT,
+    '11533',
+    '2022-08-11',
+    -7810.00,
+    'ILS'::currency,
+    -1134.79,
+    '93ea590a-adf3-4eab-90ca-bd5305308f33',
+    null,
+    'Yahel Mor',
+    false
+  );
+
+SELECT
   *
 FROM
   accounter_schema.ledger
