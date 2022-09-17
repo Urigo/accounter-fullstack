@@ -77,6 +77,12 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   if (transactionDescription?.includes(`רכישת מט"ח`)) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
+  if (transactionDescription?.includes(`מטח-מכירה`)) {
+    return { financialEntity: 'Poalim', personalCategory: 'conversion' };
+  }
+  if (transactionDescription?.includes(`המרת מט"ח`)) {
+    return { financialEntity: 'Poalim', personalCategory: 'conversion' };
+  }
   if (transactionDescription?.includes('חשבונית ירוקה')) {
     return {
       financialEntity: 'Green Invoice',
@@ -108,28 +114,45 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'financial',
     };
   }
-  if (transactionDescription?.includes('דותן שמחה')) {
+  if (transactionDescription?.includes('י.י. יעוץ והשקעות')) {
+    return {
+      financialEntity: 'Yossi Yaron',
+      userDescription: `Tax benefits consultation`,
+      personalCategory: 'business',
+      financialAccountsToBalance: 'no',
+    };
+  }
+  if (transactionDescription?.includes('דותן שמחה') || transactionDescription?.includes('שמחה דותן')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Dotan Employee',
-      userDescription: '02/2022 Salary',
+      userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'dotan',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('גולדשטין אורי')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Uri Employee',
-      userDescription: '02/2022 Salary',
+      userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'uri',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('גרדוש')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Gil Employee',
-      userDescription: '02/2022 Salary',
+      userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
@@ -144,55 +167,73 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       vat: formatFinancialAmount(0),
     };
   }
-  if (transactionDescription?.includes('תובל שמחה')) {
+  if (transactionDescription?.includes('תובל')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Tuval Employee',
-      userDescription: '02/2022 Salary',
+      userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מנורה מבטחים פנס')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'מנורה פנסיה',
-      userDescription: 'Pension 02/22',
+      userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('פניקס אקסלנס')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'פניקס השתלמות',
-      userDescription: 'Training Fund 02/22',
+      userDescription: `Training Fund ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מיטב דש גמל ופנס')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'איילון פנסיה',
-      userDescription: 'Pension 02/22',
+      userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מגדל מקפת')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'מגדל פנסיה',
-      userDescription: 'Training Fund 02/22',
+      userDescription: `Training Fund ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מגדל השתלמות')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'מגדל השתלמות',
-      userDescription: 'Training Fund 02/22',
+      userDescription: `Training Fund ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
@@ -228,9 +269,12 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     };
   }
   if (transactionDescription?.includes('ביטוח לאומי')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Social Security Deductions',
-      userDescription: 'Salaries of Uri Dotan and Gil March 2021',
+      userDescription: `Social Security Deductions for Salaries ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
     };
@@ -403,6 +447,13 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'transportation',
     };
   }
+  if (transactionDescription?.includes('קאר 2 גו')) {
+    return {
+      financialEntity: 'קאר 2 גו',
+      userDescription: 'Car rental',
+      personalCategory: 'transportation',
+    };
+  }
   if (transactionDescription?.includes('CARPOOL')) {
     return {
       financialEntity: 'Google Waze',
@@ -489,8 +540,12 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     };
   }
   if (transactionDescription?.includes('LANCE GLOBAL')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       financialEntity: 'Lance Global Inc',
+      userDescription: `The Guild Enterprise Support - ${previousMonth} 2022`,
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
     };
@@ -587,6 +642,17 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'business',
     };
   }
+  if (charge.transactions[0]?.amount.raw == -12000) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+    return {
+      financialEntity: 'Saihajpreet Singh',
+      financialAccountsToBalance: 'no',
+      userDescription: `${previousMonth}/2022`,
+      personalCategory: 'business',
+    };
+  }
   if (transactionDescription?.includes('Vignesh')) {
     return {
       financialEntity: 'Vignesh T.V.',
@@ -612,25 +678,34 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   }
   if (transactionDescription?.includes('מס הכנסה')) {
     const flag = transactionDescription?.includes('מס הכנסה ני');
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       financialEntity: flag ? 'Tax Deductions' : 'Tax',
-      userDescription: flag ? 'Tax for employees for March-April 2021' : 'Advance Tax for April 2021',
+      userDescription: flag ? `Tax for employees for ${previousMonth}/2022` : `Advance Tax for ${previousMonth}/2022`,
     };
   }
   if (transactionDescription?.includes('גורניצקי')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Gornitzky & Co., Advocates',
-      userDescription: '10-11/21 lawyer support',
+      userDescription: `${previousMonth}/2022 lawyer support`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('המכס ומעמ-גביי תשלום') || transactionDescription?.includes('CUSTOM + V.A.T')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'VAT',
-      userDescription: 'VAT for March-April 2021',
+      userDescription: `VAT for ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
     };
@@ -728,6 +803,17 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
+  if (transactionDescription?.includes('ETANA')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: 'long' });
+    return {
+      financialEntity: 'The Graph Foundation',
+      userDescription: `The Guild Enterprise Support - ${previousMonth} 2022`,
+      personalCategory: 'business',
+      financialAccountsToBalance: 'no',
+    };
+  }
   if (transactionDescription?.includes('OUTREACH')) {
     return {
       financialEntity: 'Outreach Corporation',
@@ -745,6 +831,9 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     };
   }
   if (transactionDescription?.includes('deel')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Deel Germany GmbH',
       userDescription: 'Laurin Salary',
