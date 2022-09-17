@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
-import { businesses, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { businesses, entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
@@ -90,6 +90,8 @@ export const AllCharges = () => {
       ? businesses['Software Products Guilda Ltd.']
       : financialEntityName === 'UriLTD'
       ? businesses['Uri Goldshtein LTD']
+      : financialEntityName === 'Uri'
+      ? businesses['Uri Goldshtein']
       : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
   const { data, isLoading } = useAllChargesQuery({
@@ -187,8 +189,19 @@ export const AllCharges = () => {
               title: 'More Info',
               value: data => (
                 <div>
-                  <p>Ledger Records: {data.ledgerRecords.length}</p>
-                  <p>Documents: {data.additionalDocuments.length}</p>
+                  <p style={data.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>
+                    Ledger Records: {data.ledgerRecords.length}
+                  </p>
+                  <p
+                    style={
+                      data.additionalDocuments.length > 0 ||
+                      (data.counterparty && entitiesWithoutInvoice.includes(data.counterparty.name))
+                        ? {}
+                        : { backgroundColor: 'rgb(236, 207, 57)' }
+                    }
+                  >
+                    Documents: {data.additionalDocuments.length}
+                  </p>
                 </div>
               ),
             },
