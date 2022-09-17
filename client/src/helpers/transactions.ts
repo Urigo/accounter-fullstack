@@ -361,6 +361,9 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
   if (transaction.detailed_bank_description.includes('CARPOOL')) {
     return { financialEntity: 'Google Waze', userDescription: 'Waze Carpool', personalCategory: 'transportation' };
   }
+  if (transaction.detailed_bank_description.includes('קאר 2 גו')) {
+    return { financialEntity: 'קאר 2 גו', userDescription: 'Car rental', personalCategory: 'transportation' };
+  }
   if (transaction.detailed_bank_description.includes('UBER')) {
     return { financialEntity: 'Uber', userDescription: 'Taxi', personalCategory: 'transportation' };
   }
@@ -506,7 +509,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     transaction.detailed_bank_description.includes('העברת מט"ח') &&
     (transaction.detailed_bank_description.includes('fbv') || transaction.detailed_bank_description.includes('fv'))
   ) {
-    return { financialEntity: 'Kamil Kisiela', financialAccountsToBalance: 'no', personalCategory: 'business' };
+    return {
+      financialEntity: 'Jelly JS Kamil Kisiela',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
+    };
   }
   if (transaction.detailed_bank_description.includes('Vignesh')) {
     return { financialEntity: 'Vignesh T.V.', financialAccountsToBalance: 'no', personalCategory: 'business' };
@@ -842,6 +849,7 @@ export const isBusiness = (transaction: TransactionType) => {
       transaction.account_number == 2733 ||
       transaction.account_number == 466803 ||
       transaction.account_number == 1082 ||
+      transaction.account_number == 5972 ||
       transaction.account_number == 1074) &&
     !entitiesWithoutInvoice.includes(transaction.financial_entity ?? '')
   );
