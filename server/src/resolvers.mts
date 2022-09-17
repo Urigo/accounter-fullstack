@@ -135,7 +135,10 @@ const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancia
   },
 };
 const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
-  const key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
+  let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
+  if (key == 'Invoice_receipt') {
+    key = 'InvoiceReceipt';
+  }
   return DocumentType[key as keyof typeof DocumentType];
 };
 
@@ -544,6 +547,21 @@ export const resolvers: Resolvers = {
         }
         if (!charge.account_number) {
           throw new Error(`Charge ID="${chargeId}" has no account number`);
+        }
+        const docs = await getDocumentsByChargeIdLoader.load(chargeId);
+        const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'].includes(d.type ?? ''));
+        if (invoices.length > 1) {
+          console.log(`Charge ${chargeId} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
+        }
+        let mainInvoice = invoices.shift() ?? null;
+
+        if (mainInvoice) {
+          console.log(mainInvoice);
+          charge.tax_invoice_date = mainInvoice.date;
+          charge.tax_invoice_amount = mainInvoice.total_amount ? mainInvoice.total_amount.toString() : null;
+          charge.tax_invoice_number = mainInvoice.serial_number;
+        } else {
+          throw new Error(`Charge ID="${chargeId}" has no invoices`);
         }
 
         const account = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
