@@ -110,8 +110,8 @@ function getVATTransaction(
       where
         date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
         date <= date_trunc('month', to_date('${moment(month).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+      'YYYY-MM-DD'
+    )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
     ) as "docs"
     on transactions.id = docs.charge_id
     order by docs.date;   
@@ -122,14 +122,14 @@ function getVATTransaction(
       WHERE
         account_number in (${getCurrentBusinessAccountsQuery}) AND
         event_date >= date_trunc('month', to_date('${moment(month)
-          .subtract(1, 'months')
-          .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
+        .subtract(1, 'months')
+        .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
         event_date <= date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
         (tax_invoice_date < date_trunc('month', to_date('${moment(month)
-          .subtract(1, 'months')
-          .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) OR
+        .subtract(1, 'months')
+        .format('YYYY-MM-DD')}', 'YYYY-MM-DD')) OR
         tax_invoice_date > date_trunc('month', to_date('${moment(month).format(
           'YYYY-MM-DD'
         )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' ) AND        
@@ -161,8 +161,8 @@ function getVATTransaction(
         account_number in (${getCurrentBusinessAccountsQuery}) AND
         tax_invoice_date >= date_trunc('month', to_date('${initialMonth}', 'YYYY-MM-DD')) AND
         tax_invoice_date <= date_trunc('month', to_date('${moment(month).format(
-          'YYYY-MM-DD'
-        )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
+      'YYYY-MM-DD'
+    )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day' AND
         (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
         AND financial_entity <> 'Social Security Deductions'
         AND financial_entity <> 'Tax'
@@ -247,8 +247,8 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
         where
           date >= date_trunc('month', to_date('${moment(month).format('YYYY-MM-DD')}', 'YYYY-MM-DD')) AND
           date <= date_trunc('month', to_date('${moment(month).format(
-            'YYYY-MM-DD'
-          )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
+    'YYYY-MM-DD'
+  )}', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
       ) as "docs"
       on transactions.id = docs.charge_id
       order by event_date;	
@@ -260,7 +260,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   let incomeSum = 0;
   let VATFreeIncomeSum = 0;
   let VATIncomeSum = 0;
-  const advancePercentageRate = 15;
+  const advancePercentageRate = 7;
   for (const monthIncomeTransaction of monthIncomeTransactions?.rows ?? []) {
     if (monthIncomeTransaction.tax_invoice_currency) {
       const originalCurrency = monthIncomeTransaction.currency_code;
@@ -356,8 +356,8 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
         <td>${monthIncomeTransaction.event_amount} ${monthIncomeTransaction.currency_code}</td>
         <td>${monthIncomeTransaction.vat}</td>
         <td>${stringNumberRounded(
-          getILSForDate(monthIncomeTransaction, invoiceExchangeRates).vatAfterDiductionILS
-        )}</td>
+        getILSForDate(monthIncomeTransaction, invoiceExchangeRates).vatAfterDiductionILS
+      )}</td>
         <td>${monthIncomeTransaction.amountBeforeVAT}</td>
         <td>${stringNumberRounded(getILSForDate(monthIncomeTransaction, invoiceExchangeRates).amountBeforeVATILS)}</td>
         <td>${stringNumberRounded(getILSForDate(monthIncomeTransaction, invoiceExchangeRates).eventAmountILS)}</td>
@@ -397,7 +397,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
   </table>  
 `;
   // console.log('SUM to tax ------ ', incomeSum);
-  // console.log('Advance sum ------ ', (incomeSum / 100) * advancePercentageRate); // TODO: Move 15 to read from table
+  // console.log('Advance sum ------ ', (incomeSum / 100) * advancePercentageRate); // TODO: Move 7 to read from table
   // console.log('VAT free SUM ------ ', VATFreeIncomeSum);
   // console.log('VAT income SUM ------ ', VATIncomeSum);
 
@@ -574,8 +574,8 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
       <td>${stringNumberRounded(getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates).eventAmountILS)}</td>
       <td>${stringNumberRounded(monthIncomeVATTransaction.vat)}</td>
       <td>${stringNumberRounded(
-        getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates).vatAfterDiductionILS
-      )}</td>
+          getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates).vatAfterDiductionILS
+        )}</td>
       <td>${stringNumberRounded(monthIncomeVATTransaction.vatAfterDiduction)}</td>
       <td>${roundedVATToAdd}</td>
       <td>${parseIntRound((expensesVATSum + Number.EPSILON) * 100) / 100}</td>
@@ -666,16 +666,14 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
       overallVATHTMLTemplate = overallVATHTMLTemplate.concat(`
             <tr>
               <td>${moment(month).format('MM/YYYY')}</td>
-              <td>${
-                transactionType == TransactionType.Expenses
-                  ? hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null)
-                  : hashVATIndexes.vatOutputsIndex
-              }</td>
-              <td>${
-                transactionType == TransactionType.Expenses
-                  ? hashVATIndexes.vatInputsIndex
-                  : hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null)
-              }</td>
+              <td>${transactionType == TransactionType.Expenses
+          ? hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null)
+          : hashVATIndexes.vatOutputsIndex
+        }</td>
+              <td>${transactionType == TransactionType.Expenses
+          ? hashVATIndexes.vatInputsIndex
+          : hashAccounts('VAT', null, hashBusinessIndexes, hashVATIndexes, null, null, null)
+        }</td>
               <td>${hashNumberRounded(expensesVATSum)}</td>
             </tr>
     `);
