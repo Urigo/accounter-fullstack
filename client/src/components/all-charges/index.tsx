@@ -11,6 +11,7 @@ import { AccounterLoader } from '../common/loader';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
 import { Account } from './cells/account';
+import { Vat } from './cells/vat';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
@@ -32,6 +33,7 @@ gql`
           ...AllChargesEntityFields
           ...AllChargesTagsFields
           ...AllChargesShareWithFields
+          ...AllChargesVatFields
           ...TableLedgerRecordsFields
           ...DocumentsGalleryFields
           ...EditChargeFields
@@ -149,6 +151,10 @@ export const AllCharges = () => {
             {
               title: 'Amount',
               value: data => <Amount data={data.transactions[0]} />,
+            },
+            {
+              title: 'Vat',
+              value: data => <Vat data={data} />,
             },
             {
               title: 'Entity',
