@@ -1,7 +1,11 @@
 import { GraphQLError } from 'graphql';
 
-import { IGetChargesByFinancialEntityIdsResult, IUpdateChargeParams } from './__generated__/charges.types.mjs';
-import {
+import type {
+  IGetChargesByFinancialEntityIdsResult,
+  IGetChargesByIdsResult,
+  IUpdateChargeParams,
+} from './__generated__/charges.types.mjs';
+import type {
   IGetAllDocumentsResult,
   IInsertDocumentsParams,
   IUpdateDocumentParams,
@@ -229,6 +233,15 @@ export const resolvers: Resolvers = {
   Mutation: {
     updateDocument: async (_, { fields, documentId }) => {
       try {
+        let charge: IGetChargesByIdsResult | undefined;
+
+        if (fields.chargeId) {
+          charge = await getChargeByIdLoader.load(fields.chargeId);
+          if (!charge) {
+            throw new Error(`Charge ID="${fields.chargeId}" not valid`);
+          }
+        }
+
         const adjustedFields: IUpdateDocumentParams = {
           documentId,
           chargeId: fields.chargeId ?? null,
@@ -246,8 +259,59 @@ export const resolvers: Resolvers = {
         if (!res || res.length === 0) {
           throw new Error(`Document ID="${documentId}" not found`);
         }
+
+        const updatedDoc = res[0];
+
+        if (charge?.id && !charge.vat && updatedDoc.vat_amount) {
+          const adjustedFields: IUpdateChargeParams = {
+            accountNumber: null,
+            accountType: null,
+            bankDescription: null,
+            bankReference: null,
+            businessTrip: null,
+            contraCurrencyCode: null,
+            currencyCode: null,
+            currencyRate: null,
+            currentBalance: null,
+            debitDate: null,
+            detailedBankDescription: null,
+            eventAmount: null,
+            eventDate: null,
+            eventNumber: null,
+            financialAccountsToBalance: null,
+            financialEntity: null,
+            hashavshevetId: null,
+            interest: null,
+            isConversion: null,
+            isProperty: null,
+            links: null,
+            originalId: null,
+            personalCategory: null,
+            proformaInvoiceFile: null,
+            receiptDate: null,
+            receiptImage: null,
+            receiptNumber: null,
+            receiptUrl: null,
+            reviewed: null,
+            taxCategory: null,
+            taxInvoiceAmount: null,
+            taxInvoiceCurrency: null,
+            taxInvoiceDate: null,
+            taxInvoiceFile: null,
+            taxInvoiceNumber: null,
+            userDescription: null,
+            vat: updatedDoc.vat_amount,
+            withholdingTax: null,
+            chargeId: charge.id,
+          };
+          const res = await updateCharge.run(adjustedFields, pool);
+          if (!res || res.length === 0) {
+            throw new Error(`Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`);
+          }
+        }
+
         return {
-          document: res[0],
+          document: updatedDoc,
         };
       } catch (e) {
         return {
@@ -553,7 +617,7 @@ export const resolvers: Resolvers = {
         if (invoices.length > 1) {
           console.log(`Charge ${chargeId} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
         }
-        let mainInvoice = invoices.shift() ?? null;
+        const mainInvoice = invoices.shift() ?? null;
 
         if (mainInvoice) {
           console.log(mainInvoice);
