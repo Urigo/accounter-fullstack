@@ -225,7 +225,7 @@ export const AllCharges = () => {
       </div>
       {editCharge && (
         <PopUpDrawer
-          modalSize="40%"
+          modalSize="fit-content"
           position="bottom"
           title={
             <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
