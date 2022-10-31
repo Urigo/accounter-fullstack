@@ -20,7 +20,7 @@ gql`
 type Props = {
   data: AllChargesVatFieldsFragment;
   isBusiness: boolean;
-  financialEntity?: string;
+  financialEntity?: string | null;
 };
 
 export const Vat = ({ data, isBusiness, financialEntity = '' }: Props) => {
@@ -29,8 +29,8 @@ export const Vat = ({ data, isBusiness, financialEntity = '' }: Props) => {
   const vatIssueFlag =
     (!vat &&
       isBusiness &&
-      !businessesWithoutVAT.includes(financialEntity) &&
-      !businessesWithoutTaxCategory.includes(financialEntity) &&
+      !businessesWithoutVAT.includes(financialEntity ?? '') &&
+      !businessesWithoutTaxCategory.includes(financialEntity ?? '') &&
       totalAmount?.currency == Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
