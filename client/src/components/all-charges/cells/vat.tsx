@@ -35,5 +35,7 @@ export const Vat = ({ data, isBusiness, financialEntity = '' }: Props) => {
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
 
-  return <div style={{ color: vatIssueFlag ? 'red' : 'green' }}>{vat ? vat.formatted : 'Missing'}</div>;
+  return (
+    <div style={{ color: vatIssueFlag ? 'red' : 'green' }}>{vat ? vat.formatted : vatIssueFlag ? 'Missing' : null}</div>
+  );
 };
