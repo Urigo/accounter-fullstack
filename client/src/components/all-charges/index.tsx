@@ -11,6 +11,7 @@ import { AccounterLoader } from '../common/loader';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
 import { Account } from './cells/account';
+import { Vat } from './cells/vat';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { InsertDocument } from './documents/insert-document';
 import { EditCharge } from './edit-charge';
@@ -32,6 +33,7 @@ gql`
           ...AllChargesEntityFields
           ...AllChargesTagsFields
           ...AllChargesShareWithFields
+          ...AllChargesVatFields
           ...TableLedgerRecordsFields
           ...DocumentsGalleryFields
           ...EditChargeFields
@@ -151,6 +153,10 @@ export const AllCharges = () => {
               value: data => <Amount data={data.transactions[0]} />,
             },
             {
+              title: 'Vat',
+              value: data => <Vat data={data} isBusiness={isBusiness} financialEntity={financialEntityName} />,
+            },
+            {
               title: 'Entity',
               value: (data, alternativeCharge) => (
                 <Entity data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
@@ -219,7 +225,7 @@ export const AllCharges = () => {
       </div>
       {editCharge && (
         <PopUpDrawer
-          modalSize="40%"
+          modalSize="fit-content"
           position="bottom"
           title={
             <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
