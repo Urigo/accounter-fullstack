@@ -154,7 +154,7 @@ export const AllCharges = () => {
             },
             {
               title: 'Vat',
-              value: data => <Vat data={data} />,
+              value: data => <Vat data={data} isBusiness={isBusiness} financialEntity={financialEntityName} />,
             },
             {
               title: 'Entity',
