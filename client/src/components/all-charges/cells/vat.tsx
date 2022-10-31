@@ -14,23 +14,25 @@ gql`
       raw
       currency
     }
+    counterparty {
+      name
+    }
   }
 `;
 
 type Props = {
   data: AllChargesVatFieldsFragment;
   isBusiness: boolean;
-  financialEntity?: string | null;
 };
 
-export const Vat = ({ data, isBusiness, financialEntity = '' }: Props) => {
-  const { vat, totalAmount } = data;
+export const Vat = ({ data, isBusiness }: Props) => {
+  const { vat, totalAmount, counterparty } = data;
 
   const vatIssueFlag =
     (!vat &&
       isBusiness &&
-      !businessesWithoutVAT.includes(financialEntity ?? '') &&
-      !businessesWithoutTaxCategory.includes(financialEntity ?? '') &&
+      !businessesWithoutVAT.includes(counterparty?.name ?? '') &&
+      !businessesWithoutTaxCategory.includes(counterparty?.name ?? '') &&
       totalAmount?.currency == Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
