@@ -592,6 +592,10 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
           monthIncomeVATTransaction,
           invoiceExchangeRates
         ).vatAfterDiductionILS;
+        monthIncomeVATTransaction.tax_invoice_amount = `${monthIncomeVATTransaction.tax_invoice_amount}`;
+        if (!monthIncomeVATTransaction.vatNumber) {
+          monthIncomeVATTransaction.vatNumber = null;
+        }
         // monthIncomeVATTransaction.amountBeforeFullVAT = getILSForDate(
         //   monthIncomeVATTransaction,
         //   invoiceExchangeRates
