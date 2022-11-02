@@ -833,7 +833,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   if (transactionDescription?.includes('deel')) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
-    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+    // const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'Deel Germany GmbH',
       userDescription: 'Laurin Salary',

@@ -17,6 +17,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
+    getValues,
     setValue,
     watch,
   } = useForm<InsertDocumentInput>();
@@ -33,7 +34,9 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     }
   };
 
-  setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
+  if (!getValues('documentType')) {
+    setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
+  }
 
   // auto update vat currency according to amount currency
   useEffect(() => {
