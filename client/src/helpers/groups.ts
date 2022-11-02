@@ -38,6 +38,8 @@ export const businessesWithoutVAT = [
   'Halman Aldubi Pension',
   'Social Security Deductions',
   'Tax Deductions',
+  'Poalim',
+  'Isracard',
 ];
 
 export const privateBusinessExpenses = [
