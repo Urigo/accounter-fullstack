@@ -2,10 +2,7 @@ import pgQuery from '@pgtyped/query';
 import { format } from 'date-fns';
 
 import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
-import type {
-  IGetExchangeRatesByDatesQuery,
-  IGetExchangeRatesByDatesResult,
-} from '../__generated__/exchange.types.mjs';
+import type { IGetExchangeRatesByDatesQuery } from '../__generated__/exchange.types.mjs';
 import { pool } from '../providers/db.mjs';
 
 const { sql } = pgQuery;
@@ -18,7 +15,7 @@ async function getExchangeRates(date: Date) {
     order by exchange_date desc limit 1;
   `;
 
-  let formattedDate = format(date, 'yyyy-MM-dd');
+  const formattedDate = format(date, 'yyyy-MM-dd');
   try {
     const result = await getExchangeRatesByDates.run({ date: formattedDate }, pool);
     return result[0];
