@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
-import { DocumentType, InsertDocumentInput } from '../../../__generated__/types';
+import { Currency, DocumentType, InsertDocumentInput } from '../../../__generated__/types';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
 import { SimpleGrid } from '../../common/simple-grid';
 import { ModifyDocumentFields } from './modify-document-fields';
@@ -25,6 +25,16 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
 
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
     if (data && Object.keys(data).length > 0) {
+      if (data.vat) {
+        if (!data.amount?.currency) {
+          showNotification({
+            title: 'Error!',
+            message: "Couldn't figure out the currency of the document",
+          });
+          return;
+        }
+        data.vat.currency = data.amount.currency;
+      }
       mutate({
         record: { ...data, chargeId },
       });
@@ -47,7 +57,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     <div className=" px-5 w-max h-max justify-items-center">
       <form onSubmit={handleSubmit(onSubmit)}>
         <SimpleGrid cols={5}>
-          <ModifyDocumentFields control={control} watch={watch} />
+          <ModifyDocumentFields control={control} watch={watch} defaultCurrency={Currency.Ils} />
         </SimpleGrid>
         <div className="flex justify-center gap-5 mt-5">
           <button
