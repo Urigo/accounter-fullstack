@@ -20,9 +20,10 @@ export interface Props {
   document?: EditDocumentFieldsFragment;
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
   watch: UseFormWatch<UpdateDocumentFieldsInput | InsertDocumentInput>;
+  defaultCurrency?: Currency;
 }
 
-export const ModifyDocumentFields = ({ document, control, watch }: Props) => {
+export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency }: Props) => {
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
 
   const isDocumentProcessed =
@@ -120,7 +121,7 @@ export const ModifyDocumentFields = ({ document, control, watch }: Props) => {
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : undefined}
+                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -142,7 +143,7 @@ export const ModifyDocumentFields = ({ document, control, watch }: Props) => {
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={isDocumentProcessed ? document?.amount?.currency : undefined}
+                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency}
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
