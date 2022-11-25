@@ -52,6 +52,7 @@ import {
   commonFinancialEntityFields,
   commonTransactionFields,
 } from './common-fields.mjs';
+import { uploadDocument } from './document-handling.mjs';
 import { fetchEmailDocument } from './email-handling.mjs';
 
 export const resolvers: Resolvers = {
@@ -76,6 +77,7 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
+    uploadDocument,
     fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }) => {
       try {
