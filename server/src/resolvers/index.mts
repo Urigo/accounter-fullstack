@@ -1,213 +1,58 @@
 import { GraphQLError } from 'graphql';
 
-import type {
-  IGetChargesByFinancialEntityIdsResult,
-  IGetChargesByIdsResult,
-  IUpdateChargeParams,
-} from './__generated__/charges.types.mjs';
-import type {
-  IGetAllDocumentsResult,
-  IInsertDocumentsParams,
-  IUpdateDocumentParams,
-} from './__generated__/documents.types.mjs';
+import type { IGetChargesByIdsResult, IUpdateChargeParams } from '../__generated__/charges.types.mjs';
+import type { IInsertDocumentsParams, IUpdateDocumentParams } from '../__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
-} from './__generated__/ledger-records.types.mjs';
-import {
-  BankFinancialAccountResolvers,
-  CardFinancialAccountResolvers,
-  CommonTransactionResolvers,
-  ConversionTransactionResolvers,
-  Currency,
-  DocumentResolvers,
-  DocumentType,
-  FeeTransactionResolvers,
-  InvoiceReceiptResolvers,
-  InvoiceResolvers,
-  LtdFinancialEntityResolvers,
-  PersonalFinancialEntityResolvers,
-  ProformaResolvers,
-  ReceiptResolvers,
-  Resolver,
-  Resolvers,
-  TransactionDirection,
-  WireTransactionResolvers,
-} from './__generated__/types.mjs';
-import { formatFinancialAmount } from './helpers/amount.mjs';
-import { ENTITIES_WITHOUT_ACCOUNTING } from './helpers/constants.mjs';
-import { getILSForDate } from './helpers/exchange.mjs';
+} from '../__generated__/ledger-records.types.mjs';
+import { Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
+import { formatFinancialAmount } from '../helpers/amount.mjs';
+import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
+import { getILSForDate } from '../helpers/exchange.mjs';
 import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
   hashavshevetFormat,
   parseDate,
-} from './helpers/hashavshevet.mjs';
-import { buildLedgerEntries, decorateCharge, effectiveDateSuplement } from './helpers/misc.mjs';
-import {
-  getChargeByFinancialAccountNumberLoader,
-  getChargeByFinancialEntityIdLoader,
-  getChargeByIdLoader,
-  getChargesByFinancialAccountNumbers,
-  getChargesByFinancialEntityIds,
-  getConversionOtherSide,
-  updateCharge,
-} from './providers/charges.mjs';
-import { pool } from './providers/db.mjs';
+} from '../helpers/hashavshevet.mjs';
+import { buildLedgerEntries, decorateCharge } from '../helpers/misc.mjs';
+import { getChargeByIdLoader, getConversionOtherSide, updateCharge } from '../providers/charges.mjs';
+import { pool } from '../providers/db.mjs';
 import {
   deleteDocument,
   getAllDocuments,
   getDocumentsByChargeIdLoader,
-  getDocumentsByFinancialEntityIds,
   insertDocuments,
   updateDocument,
-} from './providers/documents.mjs';
-import { getExchangeRates } from './providers/exchange.mjs';
+} from '../providers/documents.mjs';
+import { getExchangeRates } from '../providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
-} from './providers/financial-accounts.mjs';
-import { getFinancialEntityByIdLoader } from './providers/financial-entities.mjs';
+} from '../providers/financial-accounts.mjs';
+import { getFinancialEntityByIdLoader } from '../providers/financial-entities.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
   getHashavshevetVatIndexes,
-} from './providers/hashavshevet.mjs';
+} from '../providers/hashavshevet.mjs';
 import {
   getLedgerRecordsByChargeIdLoader,
   insertLedgerRecords,
   updateLedgerRecord,
-} from './providers/ledger-records.mjs';
-import { TimelessDateScalar } from './scalars/timeless-date.mjs';
-
-const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
-  id: DbBusiness => DbBusiness.id,
-  accounts: async DbBusiness => {
-    // TODO: add functionality for linkedEntities data
-    const accounts = await getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
-    return accounts;
-  },
-  charges: async (DbBusiness, { filter, page, limit }) => {
-    const charges: IGetChargesByFinancialEntityIdsResult[] = [];
-    if (!filter || Object.keys(filter).length === 0) {
-      const newCharges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
-      charges.push(...newCharges);
-    } else {
-      const newCharges = await getChargesByFinancialEntityIds.run(
-        {
-          financialEntityIds: [DbBusiness.id],
-          fromDate: filter?.fromDate,
-          toDate: filter?.toDate,
-        },
-        pool
-      );
-      charges.push(...newCharges);
-    }
-    return {
-      __typename: 'PaginatedCharges',
-      nodes: charges.slice(page * limit - limit, page * limit),
-      pageInfo: {
-        totalPages: Math.ceil(charges.length / limit),
-      },
-    };
-  },
-  linkedEntities: () => [], // TODO: implement
-  documents: async DbBusiness => {
-    const documents = await getDocumentsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
-    return documents;
-  },
-};
-
-const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
-  id: DbAccount => DbAccount.id,
-  charges: async (DbAccount, { filter }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
-      return charges;
-    }
-    const charges = await getChargesByFinancialAccountNumbers.run(
-      {
-        financialAccountNumbers: [DbAccount.account_number],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      },
-      pool
-    );
-    return charges;
-  },
-};
-const documentType: Resolver<DocumentType, IGetAllDocumentsResult, any, Record<string, unknown>> = documentRoot => {
-  let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  if (key == 'Invoice_receipt') {
-    key = 'InvoiceReceipt';
-  }
-  return DocumentType[key as keyof typeof DocumentType];
-};
-
-const commonDocumentsFields: DocumentResolvers = {
-  id: documentRoot => documentRoot.id,
-  charge: async documentRoot => {
-    if (!documentRoot.charge_id) {
-      return null;
-    }
-    const charge = await getChargeByIdLoader.load(documentRoot.charge_id);
-    return charge ?? null;
-  },
-  image: documentRoot => documentRoot.image_url,
-  file: documentRoot => documentRoot.file_url,
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
-  isReviewed: documentRoot => documentRoot.is_reviewed,
-  documentType,
-};
-
-const commonFinancialDocumentsFields:
-  | InvoiceResolvers
-  | ReceiptResolvers
-  | InvoiceReceiptResolvers
-  | ProformaResolvers = {
-  serialNumber: documentRoot => documentRoot.serial_number ?? '',
-  date: documentRoot => documentRoot.date,
-  amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
-  vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
-};
-
-const commonTransactionFields:
-  | ConversionTransactionResolvers
-  | FeeTransactionResolvers
-  | WireTransactionResolvers
-  | CommonTransactionResolvers = {
-  id: DbTransaction => DbTransaction.id,
-  referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
-  createdAt: DbTransaction => DbTransaction.event_date,
-  effectiveDate: DbTransaction => effectiveDateSuplement(DbTransaction),
-  direction: DbTransaction =>
-    parseFloat(DbTransaction.event_amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
-  amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
-  description: DbTransaction => `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
-  userNote: DbTransaction => DbTransaction.user_description,
-  account: async DbTransaction => {
-    // TODO: enhance logic to be based on ID instead of account_number
-    if (!DbTransaction.account_number) {
-      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
-    }
-    const account = await getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
-    if (!account) {
-      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
-    }
-    return account;
-  },
-  balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
-  accountantApproval: DbTransaction => ({
-    approved: DbTransaction.reviewed ?? false,
-    remark: 'Missing', // TODO: missing in DB
-  }),
-  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id,
-};
+} from '../providers/ledger-records.mjs';
+import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
+import {
+  commonDocumentsFields,
+  commonFinancialAccountFields,
+  commonFinancialDocumentsFields,
+  commonFinancialEntityFields,
+  commonTransactionFields,
+} from './common-fields.mjs';
+import { fetchEmailDocument } from './email-handling.mjs';
 
 export const resolvers: Resolvers = {
   Query: {
@@ -231,6 +76,7 @@ export const resolvers: Resolvers = {
     },
   },
   Mutation: {
+    fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }) => {
       try {
         let charge: IGetChargesByIdsResult | undefined;
