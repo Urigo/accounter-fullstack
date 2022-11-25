@@ -92,9 +92,9 @@ export const resolvers: Resolvers = {
           documentId,
           chargeId: fields.chargeId ?? null,
           currencyCode: fields.amount?.currency ?? null,
-          date: fields.date ?? null,
-          fileUrl: fields.file ?? null,
-          imageUrl: fields.image ?? null,
+          date: fields.date ? new Date(fields.date) : null,
+          fileUrl: fields.file ? fields.file.toString() : null,
+          imageUrl: fields.image ? fields.image.toString() : null,
           serialNumber: fields.serialNumber ?? null,
           totalAmount: fields.amount?.raw ?? null,
           type: fields.documentType ?? null,
@@ -363,8 +363,8 @@ export const resolvers: Resolvers = {
         }
 
         const newDocument: IInsertDocumentsParams['document']['0'] = {
-          image: record.image ?? null,
-          file: record.file ?? null,
+          image: record.image ? record.image.toString() : null,
+          file: record.file ? record.file.toString() : null,
           documentType: record.documentType ?? DocumentType.Unprocessed,
           serialNumber: record.serialNumber ?? null,
           date: record.date ?? null,

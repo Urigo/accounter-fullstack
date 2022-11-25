@@ -12,6 +12,8 @@ scalar Percentage
 scalar Rate
 " URL "
 scalar URL
+" File "
+scalar File
 
 # Common Types
 
@@ -100,6 +102,7 @@ type Mutation {
   updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
   deleteDocument(documentId: ID!): Boolean!
   fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
+  uploadDocument(file: File!, chargeId: ID): UploadDocumentResult!
 }
 
 " input variables for updateDocument "
@@ -267,6 +270,14 @@ union FetchEmailDocumentResult = FetchEmailDocumentSuccessfulResult | CommonErro
 
 " result type for fetchEmailDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type FetchEmailDocumentSuccessfulResult {
+  document: Document
+}
+
+" result type for uploadDocument "
+union UploadDocumentResult = UploadDocumentSuccessfulResult | CommonError
+
+" result type for uploadDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type UploadDocumentSuccessfulResult {
   document: Document
 }
 
