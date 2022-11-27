@@ -31,11 +31,14 @@ function isCurrency(value?: string): value is Currency {
 }
 
 export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'] = async (_, { file, chargeId }) => {
-  const stringifiedFile = await toBase64(file).catch(err => {
-    throw new Error(`Failed to convert file to base64: ${err.message}`);
-  });
   try {
+    const stringifiedFile = await toBase64(file).catch(err => {
+      throw new Error(`Failed to convert file to base64: ${err.message}`);
+    });
+
     const data = await GreenInvoice.addExpenseDraftByFile_mutation({ input: { file: stringifiedFile } });
+
+    console.log(`/n/n/n${JSON.stringify(data.addExpenseDraftByFile, null, 2)}/n/n/n`);
 
     if (!data.addExpenseDraftByFile) {
       throw new Error('No data returned from Green Invoice');
@@ -57,9 +60,10 @@ export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'
     const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
     return { document: res[0] };
   } catch (e) {
+    const message = (e as Error)?.message ?? 'Unknown error';
     return {
       __typename: 'CommonError',
-      message: (e as Error)?.message ?? 'Unknown error',
+      message: `Error uploading document: ${message}`,
     };
   }
 };

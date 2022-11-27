@@ -29,6 +29,10 @@ import {
 } from '../providers/charges.mjs';
 import { pool } from '../providers/db.mjs';
 import { getDocumentsByFinancialEntityIds } from '../providers/documents.mjs';
+import {
+  getFinancialAccountByAccountNumberLoader,
+  getFinancialAccountsByFinancialEntityIdLoader,
+} from '../providers/financial-accounts.mjs';
 
 export const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
@@ -109,8 +113,8 @@ export const commonDocumentsFields: DocumentResolvers = {
     const charge = await getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
   },
-  image: documentRoot => documentRoot.image_url,
-  file: documentRoot => documentRoot.file_url,
+  image: documentRoot => (documentRoot.image_url ? new URL(documentRoot.image_url) : null),
+  file: documentRoot => (documentRoot.file_url ? new URL(documentRoot.file_url) : null),
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,

@@ -6,6 +6,7 @@ import type {
 } from '../__generated__/charges.types.mjs';
 import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
+import { TimelessDateString } from '../scalars/index.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 
@@ -217,10 +218,10 @@ export function numberRounded(number: number): number {
 
 export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccountNumbersResult) {
   if (transaction.debit_date) {
-    return format(transaction.debit_date, 'yyyy-MM-dd');
+    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
   }
   if (transaction.currency_code === 'ILS' && transaction.event_date && transaction.account_type === 'creditcard') {
-    return format(transaction.event_date, 'yyyy-MM-dd');
+    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
   }
   return null;
 }
