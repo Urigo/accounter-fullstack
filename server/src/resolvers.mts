@@ -64,7 +64,7 @@ import {
   insertDocuments,
   updateDocument,
 } from './providers/documents.mjs';
-import { getChargeExchangeRates } from './providers/exchange.mjs';
+import { getExchangeRates } from './providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
@@ -625,7 +625,9 @@ export const resolvers: Resolvers = {
           charge.tax_invoice_amount = mainInvoice.total_amount ? mainInvoice.total_amount.toString() : null;
           charge.tax_invoice_number = mainInvoice.serial_number;
         } else {
-          throw new Error(`Charge ID="${chargeId}" has no invoices`);
+          if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+            throw new Error(`Charge ID="${chargeId}" has no invoices`);
+          }
         }
 
         const account = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
@@ -647,9 +649,27 @@ export const resolvers: Resolvers = {
         );
         const hashVATIndexes = await getHashavshevetVatIndexes(owner.id);
         const isracardHashIndex = await getHashavshevetIsracardIndex(charge);
-        const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge);
+        if (charge.financial_entity == 'Isracard') {
+          charge.tax_category = isracardHashIndex;
+        } else {
+          charge.tax_category = hashBusinessIndexes.auto_tax_category;
+        }
 
-        const decoratedCharge = decorateCharge(charge, hashBusinessIndexes.auto_tax_category);
+        if (charge.account_type == 'creditcard' && charge.currency_code == 'ILS') {
+          charge.debit_date = charge.event_date;
+        }
+
+        if (!charge.debit_date) {
+          throw new Error(`Charge ID=${charge.id} has no debit date`);
+        }
+        const debitExchangeRates = await getExchangeRates(charge.debit_date);
+
+        if (!charge.tax_invoice_date) {
+          charge.tax_invoice_date = charge.debit_date;
+        }
+        const invoiceExchangeRates = await getExchangeRates(charge.tax_invoice_date);
+
+        const decoratedCharge = decorateCharge(charge);
 
         const { entryForFinancialAccount, entryForAccounting } = await buildLedgerEntries(
           decoratedCharge,
