@@ -15,10 +15,8 @@ export type VatExtendedCharge = IGetChargesByIdsResult & {
   amountBeforeFullVAT: number;
 };
 
-export function decorateCharge(charge: IGetChargesByIdsResult, autoTaxCategory?: string | null): VatExtendedCharge {
+export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharge {
   const decoreatedCharge: Partial<VatExtendedCharge> = { ...charge };
-
-  decoreatedCharge.tax_category = autoTaxCategory ?? decoreatedCharge.tax_category;
 
   // If foriegn transaction, can use receipt as invoice
   if (

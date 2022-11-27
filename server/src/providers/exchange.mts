@@ -7,7 +7,7 @@ import { pool } from '../providers/db.mjs';
 
 const { sql } = pgQuery;
 
-async function getExchangeRates(date: Date) {
+export async function getExchangeRates(date: Date) {
   const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
     select *
     from accounter_schema.exchange_rates

@@ -340,7 +340,8 @@ export function generateEntryForFinancialAccountValues(
     charge.bank_description
   );
   const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] = hashavshevetFormat.number(
-    entryForFinancialAccount.creditAmountILS
+    entryForFinancialAccount.creditAmountILS,
+    { abs: true }
   );
   const foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] = !isILS
     ? hashavshevetFormat.number(entryForFinancialAccount.creditAmount, { abs: true })
