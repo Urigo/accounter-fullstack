@@ -44,7 +44,7 @@ import {
   insertLedgerRecords,
   updateLedgerRecord,
 } from '../providers/ledger-records.mjs';
-import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
+import { TimelessDateScalar, TimelessDateString } from '../scalars/timeless-date.mjs';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -369,7 +369,7 @@ export const resolvers: Resolvers = {
           file: record.file ? record.file.toString() : null,
           documentType: record.documentType ?? DocumentType.Unprocessed,
           serialNumber: record.serialNumber ?? null,
-          date: record.date ?? null,
+          date: record.date ? new Date(record.date) : null,
           amount: record.amount?.raw ?? null,
           currencyCode: record.amount?.currency ?? null,
           vat: record.vat?.raw ?? null,
@@ -407,7 +407,7 @@ export const resolvers: Resolvers = {
         // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         currentBalance:
           fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
-        debitDate: fields.effectiveDate,
+        debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
         detailedBankDescription: null,
         // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         eventAmount:
@@ -729,7 +729,7 @@ export const resolvers: Resolvers = {
   },
   Charge: {
     id: DbCharge => DbCharge.id,
-    createdAt: () => null ?? 'There is not Date value', // TODO: missing in DB
+    createdAt: () => new Date('1900-01-01'), // TODO: missing in DB
     additionalDocuments: async DbCharge => {
       if (!DbCharge.id) {
         return [];
@@ -909,7 +909,7 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.foreign_debit_amount_1 ?? DbLedgerRecord.debit_amount_1,
         DbLedgerRecord.currency
       ),
-    date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date),
+    date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date) as TimelessDateString,
     description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,

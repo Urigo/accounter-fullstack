@@ -225,3 +225,37 @@ export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccoun
   }
   return null;
 }
+
+function isTimelessDateString(date: string): date is TimelessDateString {
+  const parts = date.split('-');
+  if (parts.length !== 3) {
+    return false;
+  }
+  const [year, month, day] = parts;
+  //year
+  const yearNum = Number(year);
+  if (Number.isNaN(yearNum) || yearNum < 2000 || yearNum > 2049) {
+    return false;
+  }
+  // month
+  const monthNum = Number(month);
+  if (Number.isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+    return false;
+  }
+  // day
+  const dayNum = Number(day);
+  if (Number.isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+    return false;
+  }
+  return true;
+}
+
+export function dateFormatValidation(date: Date | string) {
+  if (typeof date === 'string') {
+    if (isTimelessDateString(date)) {
+      return date;
+    }
+    return null;
+  }
+  return date;
+}

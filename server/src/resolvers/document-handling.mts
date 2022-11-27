@@ -1,3 +1,5 @@
+import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
+
 import { IInsertDocumentsParams } from '../__generated__/documents.types.mjs';
 import { Currency, Resolvers } from '../__generated__/types.mjs';
 import { normalizeDocumentType } from '../helpers/green-invoice.mjs';
@@ -44,17 +46,21 @@ export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'
       throw new Error('No data returned from Green Invoice');
     }
 
+    if ('errorMessage' in data.addExpenseDraftByFile || 'errorCode_' in data.addExpenseDraftByFile) {
+      throw new Error(`Green Invoice Error: ${data.addExpenseDraftByFile.errorMessage}`);
+    }
+
+    const draft = data.addExpenseDraftByFile as GetExpenseDraft;
+
     const newDocument: IInsertDocumentsParams['document']['0'] = {
-      image: data.addExpenseDraftByFile.thumbnail ?? null,
-      file: data.addExpenseDraftByFile.url,
-      documentType: normalizeDocumentType(data.addExpenseDraftByFile.expense?.documentType),
-      serialNumber: data.addExpenseDraftByFile.expense?.number ?? null,
-      date: data.addExpenseDraftByFile.expense?.date ? new Date(data.addExpenseDraftByFile.expense.date) : null,
-      amount: data.addExpenseDraftByFile.expense?.amount ?? null,
-      currencyCode: isCurrency(data.addExpenseDraftByFile.expense?.currency)
-        ? data.addExpenseDraftByFile.expense!.currency
-        : null,
-      vat: data.addExpenseDraftByFile.expense?.vat ?? null,
+      image: draft.thumbnail ?? null,
+      file: draft.url,
+      documentType: normalizeDocumentType(draft.expense?.documentType),
+      serialNumber: draft.expense?.number ?? null,
+      date: draft.expense?.date ? new Date(draft.expense.date) : null,
+      amount: draft.expense?.amount ?? null,
+      currencyCode: isCurrency(draft.expense?.currency) ? draft.expense!.currency : null,
+      vat: draft.expense?.vat ?? null,
       chargeId: chargeId ?? null,
     };
     const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);

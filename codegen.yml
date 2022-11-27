@@ -7,7 +7,7 @@ config:
     TimelessDate: 'Date | TimelessDateString'
     IBAN: string
     Percentage: number
-    URL: 'URL'
+    URL: 'URL | string'
     File: 'File | Blob'
 generates:
   server/src/__generated__/types.mts:

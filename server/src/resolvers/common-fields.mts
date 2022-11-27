@@ -113,8 +113,8 @@ export const commonDocumentsFields: DocumentResolvers = {
     const charge = await getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
   },
-  image: documentRoot => (documentRoot.image_url ? new URL(documentRoot.image_url) : null),
-  file: documentRoot => (documentRoot.file_url ? new URL(documentRoot.file_url) : null),
+  image: documentRoot => documentRoot.image_url ?? null,
+  file: documentRoot => documentRoot.file_url ?? null,
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,
