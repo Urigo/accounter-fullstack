@@ -6282,10 +6282,10 @@ mkdirp@1.0.4:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-modern-poalim-scraper@0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.5.1.tgz#f81b6dd76ae5028a117741d00de964cb8a117662"
-  integrity sha512-ZPVpQ0Ojbfb5SCjwebmPzXaIrnQ1IwSxNrhbhtcfwkgl/+wUH+7rLrq8Ug0gr+KDTD1ha3p8aP5YSuMpbzUBYg==
+modern-poalim-scraper@0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.5.2.tgz#09584f7c10393b554f4e210c053404bb3a2c4049"
+  integrity sha512-he4B55riaNzb5H5Rv349VuB0TjlJ6J9yGEtbzCKJvh4T7fZrTEkqJPkxNYLi1pnN/QvZLp3wZ9JpXymsuW5Y0w==
   dependencies:
     ajv "8.11.0"
     ajv-formats "2.1.1"
