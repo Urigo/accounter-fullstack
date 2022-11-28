@@ -1,4 +1,4 @@
-import { FileInput } from '@mantine/core';
+import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useCallback, useState } from 'react';
 import { useMutation } from 'urql';
@@ -56,8 +56,8 @@ export const UploadDocument = ({ chargeId, closeModal }: Props) => {
   }, [mutate, closeModal, value, chargeId]);
 
   return (
-    <div className=" px-5 w-max h-max justify-items-center">
-      <FileInput value={value} onChange={setValue} clearable label="File Upload" />
+    <div className="px-5 w-max h-max justify-items-center">
+      <FileInput icon={res.fetching && <Loader />} value={value} onChange={setValue} clearable label="File Upload" />
       <div className="flex justify-center gap-5 mt-5">
         <button
           type="submit"
