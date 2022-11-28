@@ -6,6 +6,7 @@ import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { EditMiniButton } from '../../common';
 import { PopUpDrawer } from '../../common/drawer';
 import { CreditAccount, Date, DebitAccount } from './cells';
+import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
 import { EditLedgerRecord } from './edit-ledger-record';
 
 gql`
@@ -88,11 +89,12 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
         modalSize="40%"
         position="bottom"
         title={
-          <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+          <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
             <h1 className="sm:text-2xl font-small text-gray-900">Edit Ledger Record:</h1>
             <a href="/#" className="pt-1">
               ID: {editLedgerId}
             </a>
+            {editLedgerId && <DeleteLedgerRecordButton ledgerRecordId={editLedgerId} />}
           </div>
         }
         opened={!!editLedgerId}
