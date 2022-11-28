@@ -9,6 +9,7 @@
   ],
   "type": "module",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "yarn --cwd old-accounter start",
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
     "client:build": "yarn --cwd client build",
@@ -32,15 +33,17 @@
     "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\""
   },
   "dependencies": {
-    "graphql": "16.5.0"
+    "graphql": "16.6.0",
+    "graphql-scalars": "1.20.1"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "2.11.3",
-    "@graphql-codegen/introspection": "2.2.0",
-    "@graphql-codegen/typescript": "2.7.2",
-    "@graphql-codegen/typescript-operations": "2.5.2",
-    "@graphql-codegen/typescript-react-query": "4.0.0",
-    "@graphql-codegen/typescript-resolvers": "2.7.2",
+    "@graphql-codegen/add": "3.2.1",
+    "@graphql-codegen/cli": "2.14.1",
+    "@graphql-codegen/introspection": "2.2.1",
+    "@graphql-codegen/typescript": "2.8.2",
+    "@graphql-codegen/typescript-operations": "2.5.7",
+    "@graphql-codegen/typescript-react-query": "4.0.6",
+    "@graphql-codegen/typescript-resolvers": "2.7.7",
     "@graphql-eslint/eslint-plugin": "3.10.7",
     "@theguild/eslint-config": "0.0.1",
     "@theguild/prettier-config": "0.0.2",

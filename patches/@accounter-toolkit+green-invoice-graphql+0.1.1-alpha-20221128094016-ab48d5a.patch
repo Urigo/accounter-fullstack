@@ -1,0 +1,16 @@
+diff --git a/node_modules/@accounter-toolkit/green-invoice-graphql/esm/index.js b/node_modules/@accounter-toolkit/green-invoice-graphql/esm/index.js
+index 8a86484..6df3ba6 100644
+--- a/node_modules/@accounter-toolkit/green-invoice-graphql/esm/index.js
++++ b/node_modules/@accounter-toolkit/green-invoice-graphql/esm/index.js
+@@ -1,4 +1,4 @@
+-import { getMeshSDK } from '../.mesh/index.js';
++import { getMeshSDK } from '../.mesh/index.mjs';
+ export const init = async (id, secret) => {
+     const authParams = {
+         id,
+@@ -14,4 +14,4 @@ export const init = async (id, secret) => {
+     const sdk = await getMeshSDK({ authToken: greenInvoiceToken });
+     return { sdk };
+ };
+-export * from '../.mesh/index.js';
++export * from '../.mesh/index.mjs';

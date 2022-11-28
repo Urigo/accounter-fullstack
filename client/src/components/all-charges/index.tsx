@@ -14,6 +14,7 @@ import { Account } from './cells/account';
 import { Vat } from './cells/vat';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { InsertDocument } from './documents/insert-document';
+import { UploadDocument } from './documents/upload-document';
 import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
@@ -84,6 +85,7 @@ export const AllCharges = () => {
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
   const [activePage, setPage] = useState(1);
 
   // TODO: improve the ID logic
@@ -136,6 +138,7 @@ export const AllCharges = () => {
               setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
+              setUploadDocument={setUploadDocument}
             />
           )}
           striped
@@ -279,6 +282,24 @@ export const AllCharges = () => {
           onClose={() => setInsertDocument(undefined)}
         >
           <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
+        </PopUpDrawer>
+      )}
+      {uploadDocument && (
+        <PopUpDrawer
+          modalSize="40%"
+          position="bottom"
+          title={
+            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
+              <h1 className="sm:text-2xl font-small text-gray-900">Upload Document:</h1>
+              <a href="/#" className="pt-1">
+                Charge ID: {uploadDocument}
+              </a>
+            </div>
+          }
+          opened={!!uploadDocument}
+          onClose={() => setUploadDocument(undefined)}
+        >
+          <UploadDocument chargeId={uploadDocument} closeModal={() => setUploadDocument(undefined)} />
         </PopUpDrawer>
       )}
       {matchDocuments && (

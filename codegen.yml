@@ -1,6 +1,14 @@
 overwrite: true
 schema: './**/*.graphql'
 documents: './client/src/**/*.tsx'
+config:
+  scalars:
+    Date: 'Date'
+    TimelessDate: 'Date | TimelessDateString'
+    IBAN: string
+    Percentage: number
+    URL: 'URL | string'
+    File: 'File | Blob'
 generates:
   server/src/__generated__/types.mts:
     config:
@@ -24,6 +32,8 @@ generates:
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
     plugins:
+      - add:
+          content: "import { TimelessDateString } from '../scalars'"
       - 'typescript'
       - 'typescript-resolvers'
   client/src/__generated__/types.ts:

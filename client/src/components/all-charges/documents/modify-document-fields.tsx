@@ -164,7 +164,13 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         control={control}
         defaultValue={document?.image}
         render={({ field, fieldState }) => (
-          <TextInput {...field} error={fieldState.error?.message} isDirty={fieldState.isDirty} label="Image URL" />
+          <TextInput
+            {...field}
+            value={field.value?.toString()}
+            error={fieldState.error?.message}
+            isDirty={fieldState.isDirty}
+            label="Image URL"
+          />
         )}
       />
       <Controller
@@ -176,6 +182,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             <TextInput
               className="grow"
               {...field}
+              value={field.value?.toString()}
               error={fieldState.error?.message}
               isDirty={fieldState.isDirty}
               label="File URL"

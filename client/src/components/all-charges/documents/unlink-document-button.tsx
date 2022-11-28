@@ -28,7 +28,7 @@ export function UnlinkDocumentButton({ documentId }: Props) {
         onConfirm={onUnlink}
         title="Are you sure you want to unlink this document from the charge?"
       />
-      <ActionIcon variant="hover" onClick={() => setOpened(true)}>
+      <ActionIcon onClick={() => setOpened(true)}>
         <PlugConnectedX size={20} />
       </ActionIcon>
     </>

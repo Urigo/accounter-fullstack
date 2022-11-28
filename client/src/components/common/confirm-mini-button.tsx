@@ -1,9 +1,9 @@
-import { ActionIcon, ActionIconProps } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
 import { Check } from 'tabler-icons-react';
 
-export function ConfirmMiniButton(props: ActionIconProps<'button'>) {
+export function ConfirmMiniButton(props: React.ComponentProps<typeof ActionIcon>) {
   return (
-    <ActionIcon variant="hover" color="green" {...props}>
+    <ActionIcon color="green" {...props}>
       <Check size={20} />
     </ActionIcon>
   );

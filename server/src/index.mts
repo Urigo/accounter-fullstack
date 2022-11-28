@@ -1,23 +1,34 @@
 import { config } from 'dotenv';
+import { createYoga } from 'graphql-yoga';
+import { createServer } from 'node:http';
 
-import { buildApp } from './fastify.mjs';
+import { initCloudinary } from './providers/cloudinary.mjs';
+import { initGreenInvoice } from './providers/green-invoice.mjs';
+import { getSchema } from './schema.mjs';
 
 config();
 
 async function main() {
-  const app = await buildApp(true);
+  // initiate providers
+  try {
+    await Promise.all([initCloudinary(), initGreenInvoice()]);
+  } catch (e) {
+    console.error(`Error initiating providers: ${e}`);
+  }
+  const schema = await getSchema();
 
-  app
-    .listen({
+  const yoga = createYoga({ schema });
+
+  const app = createServer(yoga);
+
+  app.listen(
+    {
       port: 4000,
-    })
-    .then(serverUrl => {
-      app.log.info(`GraphQL API located at ${serverUrl}/graphql`);
-    })
-    .catch(err => {
-      app.log.error(err);
-      process.exit(1);
-    });
+    },
+    () => {
+      console.log('GraphQL API located at http://localhost:4000/graphql');
+    }
+  );
 }
 
 main();

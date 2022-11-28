@@ -1,9 +1,9 @@
-import { ActionIcon, ActionIconProps } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
 import { InfoCircle } from 'tabler-icons-react';
 
-export function InfoMiniButton(props: ActionIconProps<'button'>) {
+export function InfoMiniButton(props: React.ComponentProps<typeof ActionIcon>) {
   return (
-    <ActionIcon variant="hover" {...props}>
+    <ActionIcon {...props}>
       <InfoCircle size={20} />
     </ActionIcon>
   );
