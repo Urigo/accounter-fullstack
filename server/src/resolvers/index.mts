@@ -472,10 +472,8 @@ export const resolvers: Resolvers = {
           charge.tax_invoice_date = mainInvoice.date;
           charge.tax_invoice_amount = mainInvoice.total_amount ? mainInvoice.total_amount.toString() : null;
           charge.tax_invoice_number = mainInvoice.serial_number;
-        } else {
-          if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
-            throw new Error(`Charge ID="${chargeId}" has no invoices`);
-          }
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+          throw new Error(`Charge ID="${chargeId}" has no invoices`);
         }
 
         const account = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
