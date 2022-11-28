@@ -69,12 +69,12 @@ export function BeneficiariesInput({ label, formManager }: Props) {
                 )}
               />
             </div>
-            <ActionIcon variant="hover">
+            <ActionIcon>
               <TrashX size={20} onClick={() => remove(index)} />
             </ActionIcon>
           </div>
         ))}
-        <ActionIcon variant="hover">
+        <ActionIcon>
           <PlaylistAdd size={20} onClick={() => append({ percentage: 0, counterparty: { name: '' } })} />
         </ActionIcon>
         {errors.beneficiaries?.message && <p className="text-red-500 text-xs italic">{errors.beneficiaries.message}</p>}

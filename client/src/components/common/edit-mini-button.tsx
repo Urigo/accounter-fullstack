@@ -1,9 +1,9 @@
-import { ActionIcon, ActionIconProps } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
 import { Edit } from 'tabler-icons-react';
 
-export function EditMiniButton(props: ActionIconProps<'button'>) {
+export function EditMiniButton(props: React.ComponentProps<typeof ActionIcon>) {
   return (
-    <ActionIcon variant="hover" {...props}>
+    <ActionIcon {...props}>
       <Edit size={20} />
     </ActionIcon>
   );

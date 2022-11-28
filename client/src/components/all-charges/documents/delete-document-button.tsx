@@ -27,7 +27,7 @@ export function DeleteDocumentButton({ documentId }: Props) {
         onConfirm={onDelete}
         title="Are you sure you want to delete this document?"
       />
-      <ActionIcon color="red" variant="hover" onClick={() => setOpened(true)}>
+      <ActionIcon color="red" onClick={() => setOpened(true)}>
         <Trash size={20} />
       </ActionIcon>
     </>
