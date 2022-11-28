@@ -1,11 +1,14 @@
-// import { FileInput } from '@mantine/core';
+import { FileInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { useEffect } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useCallback, useState } from 'react';
+import { useMutation } from 'urql';
 
-import { DocumentType, InsertDocumentInput } from '../../../__generated__/types';
-import { useInsertDocument } from '../../../hooks/use-insert-document';
-// import { SimpleGrid } from '../../common/simple-grid';
+import {
+  CommonError,
+  UploadDocumentDocument,
+  UploadDocumentMutation,
+  UploadDocumentMutationVariables,
+} from '../../../__generated__/types';
 
 type Props = {
   chargeId: string;
@@ -13,91 +16,68 @@ type Props = {
 };
 
 export const UploadDocument = ({ chargeId, closeModal }: Props) => {
-  const {
-    // control,
-    handleSubmit,
-    formState: { dirtyFields },
-    getValues,
-    setValue,
-    watch,
-  } = useForm<InsertDocumentInput>();
-  const { mutate, isLoading, isError, isSuccess } = useInsertDocument();
+  const [res, mutate] = useMutation<UploadDocumentMutation, UploadDocumentMutationVariables>(UploadDocumentDocument);
+  const [value, setValue] = useState<File | null>(null);
 
-  const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
-    if (data && Object.keys(data).length > 0) {
-      if (data.vat) {
-        if (!data.amount?.currency) {
+  const onSubmit = useCallback(async () => {
+    if (value) {
+      mutate({
+        file: value,
+        chargeId,
+      })
+        .then(res => {
+          if (res.error || res.data?.uploadDocument.__typename === 'CommonError') {
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            console.error(
+              `Error uploading document: ${res.error?.message || (res.data?.uploadDocument as CommonError).message}`
+            );
+          } else if (res.data) {
+            showNotification({
+              title: 'Upload Success!',
+              message: 'Hey there, you add new document!',
+            });
+            console.log(res.data.uploadDocument);
+            if (closeModal) {
+              closeModal();
+            }
+          }
+        })
+        .catch(e => {
           showNotification({
             title: 'Error!',
-            message: "Couldn't figure out the currency of the document",
+            message: 'Oh no!, we have an error! 🤥',
           });
-          return;
-        }
-        data.vat.currency = data.amount.currency;
-      }
-      mutate({
-        record: { ...data, chargeId },
-      });
+          console.error(`Error uploading document: ${(e as Error)?.message}`);
+        });
       if (closeModal) {
         closeModal();
       }
     }
-  };
-
-  if (!getValues('documentType')) {
-    setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
-  }
-
-  // auto update vat currency according to amount currency
-  useEffect(() => {
-    setValue('vat.currency', watch('amount.currency'));
-  }, [setValue, watch('amount.currency')]);
+  }, [mutate, closeModal, value, chargeId]);
 
   return (
     <div className=" px-5 w-max h-max justify-items-center">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {/* <SimpleGrid cols={5}>
-          <Controller
-            name="documentType"
-            control={control}
-            rules={{ required: 'Required' }}
-            defaultValue={DocumentType.Unprocessed}
-            render={({ field, fieldState }) => (
-              <FileInput {...field} error={fieldState.error?.message} label="arherGeg" />
-            )}
-          />
-        </SimpleGrid> */}
-        <div className="flex justify-center gap-5 mt-5">
-          <button
-            type="submit"
-            className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-            disabled={isLoading || Object.keys(dirtyFields).length === 0}
-            onClick={() => {
-              if (isError) {
-                showNotification({
-                  title: 'Error!',
-                  message: 'Oh no!, we have an error! 🤥',
-                });
-              }
-              if (isSuccess) {
-                showNotification({
-                  title: 'Update Success!',
-                  message: 'Hey there, you add new document!',
-                });
-              }
-            }}
-          >
-            Accept
-          </button>
-          <button
-            type="button"
-            className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <FileInput value={value} onChange={setValue} clearable label="File Upload" />
+      <div className="flex justify-center gap-5 mt-5">
+        <button
+          type="submit"
+          className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+          disabled={res.fetching || !value}
+          onClick={onSubmit}
+        >
+          Accept
+        </button>
+        <button
+          type="button"
+          className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+          onClick={closeModal}
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 };

@@ -9,19 +9,10 @@ import { GreenInvoice } from '../providers/green-invoice.mjs';
 
 const toBase64 = (file: File | Blob): Promise<string> =>
   new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      if (!reader.result) {
-        reject(new Error('No file data'));
-      } else if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        const enc = new TextDecoder('utf-8');
-        resolve(enc.decode(reader.result));
-      }
-    };
-    reader.onerror = error => reject(error);
+    file
+      .text()
+      .then(resolve)
+      .catch(e => reject(e));
   });
 
 function isCurrency(value?: string): value is Currency {
