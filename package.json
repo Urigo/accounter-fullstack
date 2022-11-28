@@ -9,6 +9,7 @@
   ],
   "type": "module",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "yarn --cwd old-accounter start",
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
     "client:build": "yarn --cwd client build",
