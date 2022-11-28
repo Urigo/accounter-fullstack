@@ -2,6 +2,7 @@ import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 
 import {
+  IDeleteLedgerRecordQuery,
   IGetLedgerRecordsByChargeIdsQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsQuery,
@@ -213,4 +214,10 @@ export const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   WHERE
     id = $ledgerRecordId
   RETURNING *;
+`;
+
+export const deleteLedgerRecord = sql<IDeleteLedgerRecordQuery>`
+  DELETE FROM accounter_schema.ledger
+  WHERE id = $ledgerRecordId
+  RETURNING id;
 `;

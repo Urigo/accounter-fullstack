@@ -40,6 +40,7 @@ import {
   getHashavshevetVatIndexes,
 } from '../providers/hashavshevet.mjs';
 import {
+  deleteLedgerRecord,
   getLedgerRecordsByChargeIdLoader,
   insertLedgerRecords,
   updateLedgerRecord,
@@ -353,6 +354,15 @@ export const resolvers: Resolvers = {
           message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
         };
       }
+    },
+    deleteLedgerRecord: async (_, { ledgerRecordId }) => {
+      const res = await deleteLedgerRecord.run({ ledgerRecordId }, pool);
+      if (res.length === 1) {
+        return true;
+      }
+      throw new GraphQLError(
+        res.length === 0 ? 'Ledger record not found' : `More than one ledger records found and deleted: ${res}`
+      );
     },
     insertDocument: async (_, { record }) => {
       try {
