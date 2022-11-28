@@ -5,7 +5,7 @@ const secret = process.env['GREEN_INVOICE_SECRET'] as string;
 
 let app: Sdk;
 
-async function start() {
+export async function initGreenInvoice() {
   try {
     if (!app) {
       app = (await init(id, secret)).sdk;
@@ -15,6 +15,5 @@ async function start() {
     console.error(`Green Invoice initiation error:\n${err}`);
   }
 }
-start();
 
 export { app as GreenInvoice };

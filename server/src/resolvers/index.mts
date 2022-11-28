@@ -900,6 +900,12 @@ export const resolvers: Resolvers = {
       return 'InsertDocumentSuccessfulResult';
     },
   },
+  UploadDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UploadDocumentSuccessfulResult';
+    },
+  },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
     creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_1,

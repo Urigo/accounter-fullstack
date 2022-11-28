@@ -52,9 +52,6 @@ export const UploadDocument = ({ chargeId, closeModal }: Props) => {
           });
           console.error(`Error uploading document: ${(e as Error)?.message}`);
         });
-      if (closeModal) {
-        closeModal();
-      }
     }
   }, [mutate, closeModal, value, chargeId]);
 
