@@ -1,11 +1,10 @@
-import { Badge } from '@mantine/core';
 import gql from 'graphql-tag';
 import { useState } from 'react';
 
 import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { EditMiniButton } from '../../common';
 import { PopUpDrawer } from '../../common/drawer';
-import { CreditAccount, Date, DebitAccount } from './cells';
+import { AccountantApproval, CreditAccount, Date, DebitAccount } from './cells';
 import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
 import { EditLedgerRecord } from './edit-ledger-record';
 
@@ -74,9 +73,7 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
             {/* <Description data={i} /> */}
             <td>{i.description}</td>
             {/* <AccountantApproval data={i} /> */}
-            <td>
-              {i.accountantApproval.approved == true ? <Badge color="green">YES</Badge> : <Badge color="red">NO</Badge>}
-            </td>
+            <AccountantApproval ledgerRecordId={i.id} approved={i.accountantApproval.approved} />
             {/* <HashavshevetId data={i} /> */}
             <td>{i.hashavshevetId}</td>
             <td>
