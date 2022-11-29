@@ -97,6 +97,7 @@ type Mutation {
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
+  toggleLedgerRecordAccountantApproval(ledgerRecordId: ID!, approved: Boolean!): Boolean!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
   deleteLedgerRecord(ledgerRecordId: ID!): Boolean!
   insertDocument(record: InsertDocumentInput!): InsertDocumentResult!

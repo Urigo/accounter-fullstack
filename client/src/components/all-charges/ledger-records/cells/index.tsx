@@ -1,4 +1,4 @@
-// export { AccountantApproval } from './accountant-approval';
+export { AccountantApproval } from './accountant-approval';
 export { CreditAccount } from './credit-account';
 export { Date } from './date';
 export { DebitAccount } from './debit-account';
