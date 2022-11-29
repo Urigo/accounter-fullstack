@@ -23,8 +23,8 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   }
   if (transactionDescription?.includes('CLOUDFLARE')) {
     return {
-      financialEntity: 'Cloudflare',
-      userDescription: 'Domain Registration',
+      financialEntity: 'Cloudflare, Inc.',
+      userDescription: 'Web Hosting',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
     };
@@ -636,8 +636,12 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     transactionDescription?.includes('העברת מט"ח') &&
     (transactionDescription?.includes('fbv') || transactionDescription?.includes('fv'))
   ) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
-      financialEntity: 'Kamil Kisiela',
+      financialEntity: 'Jelly JS Kamil Kisiela',
+      userDescription: `${previousMonth}/22`,
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
     };
@@ -790,6 +794,15 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     return {
       financialEntity: 'GoDaddy',
       userDescription: 'Domain',
+      personalCategory: 'business',
+      financialAccountsToBalance: 'no',
+      vat: formatFinancialAmount(0),
+    };
+  }
+  if (transactionDescription?.includes('AHREFS')) {
+    return {
+      financialEntity: 'Ahrefs Pte. Ltd.',
+      userDescription: 'Websites SEO',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
