@@ -217,11 +217,20 @@ export function numberRounded(number: number): number {
 }
 
 export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccountNumbersResult) {
-  if (transaction.debit_date) {
-    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (transaction.currency_code === 'ILS' && transaction.event_date && transaction.account_type === 'creditcard') {
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  if (transaction.account_type != 'creditcard') {
+    if (transaction.debit_date) {
+      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+    } else {
+      return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+    }
+  } else {
+    if (transaction.debit_date) {
+      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+    } else if (transaction.currency_code == 'ILS') {
+      return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+    } else {
+      return null;
+    }
   }
   return null;
 }
