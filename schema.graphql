@@ -149,6 +149,10 @@ input UpdateLedgerRecordInput {
   debitAccount: CounterpartyInput
   originalAmount: FinancialAmountInput
   date: TimelessDate
+  " Temporary. should be removed "
+  valueDate: TimelessDate
+  " Temporary. should be removed "
+  date3: TimelessDate
   description: String
   accountantApproval: AccountantApprovalInput
   " in shekels at the moment"
@@ -162,13 +166,15 @@ input InsertLedgerRecordInput {
   debitAccount: CounterpartyInput
   originalAmount: FinancialAmountInput
   date: TimelessDate #invoiceDate
+  " Temporary. should be removed "
+  valueDate: TimelessDate
+  " Temporary. should be removed "
+  date3: TimelessDate
   description: String
   accountantApproval: AccountantApprovalInput
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
   hashavshevetId: Int
-  valueDate: TimelessDate
-  date3: TimelessDate #TODO: better naming
 }
 
 " input variables for insertDocument "
@@ -630,6 +636,10 @@ type LedgerRecord {
   debitAccount: Counterparty
   originalAmount: FinancialAmount!
   date: TimelessDate!
+  " Temporary. should be removed "
+  valueDate: TimelessDate!
+  " Temporary. should be removed "
+  date3: TimelessDate!
   description: String!
 }
 

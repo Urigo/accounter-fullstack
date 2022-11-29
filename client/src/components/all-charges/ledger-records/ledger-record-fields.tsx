@@ -123,6 +123,7 @@ export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="valueDate"
         control={control}
+        defaultValue={ledgerRecord.valueDate}
         rules={{
           required: 'Required',
           pattern: {
@@ -145,6 +146,7 @@ export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="date3"
         control={control}
+        defaultValue={ledgerRecord.date3}
         rules={{
           required: 'Required',
           pattern: {

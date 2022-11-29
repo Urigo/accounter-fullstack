@@ -1,7 +1,8 @@
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
-import { DateResolver, DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
+import { DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
 
 import { Resolvers } from '../__generated__/types.mjs';
+import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
 
 function vlidatePercentage(value: number) {
   if (value >= 0 && value <= 1) return value;
@@ -32,8 +33,8 @@ export const Percentage = new GraphQLScalarType({
 
 export const resolvers: Partial<Resolvers> = {
   Date: DateTimeResolver,
-  TimelessDate: DateResolver,
   IBAN: IBANResolver,
   Percentage,
   URL: URLResolver,
+  TimelessDate: TimelessDateScalar,
 };

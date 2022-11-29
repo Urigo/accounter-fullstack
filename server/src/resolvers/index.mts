@@ -45,7 +45,7 @@ import {
   insertLedgerRecords,
   updateLedgerRecord,
 } from '../providers/ledger-records.mjs';
-import { TimelessDateScalar, TimelessDateString } from '../scalars/timeless-date.mjs';
+import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -58,6 +58,12 @@ import { fetchEmailDocument } from './email-handling.mjs';
 
 export const resolvers: Resolvers = {
   Query: {
+    // documents
+    documents: async () => {
+      const dbDocs = await getAllDocuments.run(void 0, pool);
+      return dbDocs;
+    },
+    // financial entities
     financialEntity: async (_, { id }) => {
       const dbFe = await getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
@@ -65,10 +71,8 @@ export const resolvers: Resolvers = {
       }
       return dbFe;
     },
-    documents: async () => {
-      const dbDocs = await getAllDocuments.run(void 0, pool);
-      return dbDocs;
-    },
+    // financial accounts
+    // charges / transactions
     chargeById: async (_, { id }) => {
       const dbCharge = await getChargeByIdLoader.load(id);
       if (!dbCharge) {
@@ -76,8 +80,11 @@ export const resolvers: Resolvers = {
       }
       return dbCharge;
     },
+    // ledger records
+    // counterparties
   },
   Mutation: {
+    // documents
     uploadDocument,
     fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }) => {
@@ -178,6 +185,49 @@ export const resolvers: Resolvers = {
         res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`
       );
     },
+    insertDocument: async (_, { record }) => {
+      try {
+        if (record.chargeId) {
+          const charge = await getChargeByIdLoader.load(record.chargeId);
+
+          if (!charge) {
+            throw new Error(`Charge ID='${record.chargeId}' not found`);
+          }
+        }
+
+        const newDocument: IInsertDocumentsParams['document']['0'] = {
+          image: record.image ? record.image.toString() : null,
+          file: record.file ? record.file.toString() : null,
+          documentType: record.documentType ?? DocumentType.Unprocessed,
+          serialNumber: record.serialNumber ?? null,
+          date: record.date ? new Date(record.date) : null,
+          amount: record.amount?.raw ?? null,
+          currencyCode: record.amount?.currency ?? null,
+          vat: record.vat?.raw ?? null,
+          chargeId: record.chargeId ?? null,
+        };
+        const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
+        }
+
+        if (record.chargeId) {
+          /* clear cache */
+          getDocumentsByChargeIdLoader.clear(record.chargeId);
+        }
+
+        return { document: res[0] };
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
+        };
+      }
+    },
+    // financial entities
+    // financial accounts
+    // charges / transactions
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
         ? JSON.stringify(fields.beneficiaries.map(b => ({ name: b.counterparty.name, percentage: b.percentage })))
@@ -237,6 +287,64 @@ export const resolvers: Resolvers = {
         };
       }
     },
+    updateTransaction: async (_, { transactionId, fields }) => {
+      const adjustedFields: IUpdateChargeParams = {
+        accountNumber: null,
+        accountType: null,
+        bankDescription: null,
+        bankReference: fields.referenceNumber,
+        businessTrip: null,
+        contraCurrencyCode: null,
+        currencyCode: null,
+        currencyRate: null,
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+        currentBalance:
+          fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
+        debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
+        detailedBankDescription: null,
+        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+        eventAmount:
+          fields.amount?.currency && fields.amount.currency !== Currency.Ils ? null : fields.amount?.raw?.toFixed(2),
+        eventDate: null,
+        eventNumber: null,
+        financialAccountsToBalance: null,
+        financialEntity: null,
+        hashavshevetId: fields.hashavshevetId,
+        interest: null,
+        isConversion: null,
+        isProperty: null,
+        links: null,
+        originalId: null,
+        personalCategory: null,
+        proformaInvoiceFile: null,
+        receiptDate: null,
+        receiptImage: null,
+        receiptNumber: null,
+        receiptUrl: null,
+        reviewed: fields.accountantApproval?.approved,
+        taxCategory: null,
+        taxInvoiceAmount: null,
+        taxInvoiceCurrency: null,
+        taxInvoiceDate: null,
+        taxInvoiceFile: null,
+        taxInvoiceNumber: null,
+        userDescription: fields.userNote,
+        vat: null,
+        withholdingTax: null,
+        chargeId: transactionId,
+      };
+      try {
+        getChargeByIdLoader.clear(transactionId);
+        const res = await updateCharge.run({ ...adjustedFields }, pool);
+        return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    // ledger records
     updateLedgerRecord: async (_, { ledgerRecordId, fields }) => {
       const currency =
         fields.originalAmount?.currency || fields.localCurrencyAmount?.currency
@@ -251,7 +359,7 @@ export const resolvers: Resolvers = {
         creditAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
-        date3: null,
+        date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null, // Temporary. this field shouldn't exist
         debitAccount1: fields.debitAccount?.name ?? null,
         debitAccount2: null,
         debitAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
@@ -270,7 +378,7 @@ export const resolvers: Resolvers = {
         reference1: null,
         reference2: null,
         reviewed: fields.accountantApproval?.approved ?? null,
-        valueDate: null,
+        valueDate: fields.valueDate ? hashavshevetFormat.date(fields.valueDate) : null, // Temporary. this field shouldn't exist
       };
       try {
         const res = await updateLedgerRecord.run({ ...adjustedFields }, pool);
@@ -317,7 +425,7 @@ export const resolvers: Resolvers = {
           creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           creditAmount2: null,
           currency,
-          date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
+          date3: record.date3 ? hashavshevetFormat.date(record.date3) : null, // Temporary. this field shouldn't exist
           debitAccount1: record.debitAccount?.name ?? null,
           debitAccount2: null,
           debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
@@ -336,7 +444,7 @@ export const resolvers: Resolvers = {
           reference1: null,
           reference2: null,
           reviewed: record.accountantApproval?.approved ?? null,
-          valueDate: record.valueDate ? hashavshevetFormat.date(record.valueDate) : null,
+          valueDate: record.valueDate ? hashavshevetFormat.date(record.valueDate) : null, // Temporary. this field shouldn't exist
         };
         const res = await insertLedgerRecords.run({ ledgerRecord: [{ ...newLedgerRecord }] }, pool);
 
@@ -405,103 +513,6 @@ export const resolvers: Resolvers = {
         getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
       }
       return res[0].reviewed || false;
-    },
-    insertDocument: async (_, { record }) => {
-      try {
-        if (record.chargeId) {
-          const charge = await getChargeByIdLoader.load(record.chargeId);
-
-          if (!charge) {
-            throw new Error(`Charge ID='${record.chargeId}' not found`);
-          }
-        }
-
-        const newDocument: IInsertDocumentsParams['document']['0'] = {
-          image: record.image ? record.image.toString() : null,
-          file: record.file ? record.file.toString() : null,
-          documentType: record.documentType ?? DocumentType.Unprocessed,
-          serialNumber: record.serialNumber ?? null,
-          date: record.date ? new Date(record.date) : null,
-          amount: record.amount?.raw ?? null,
-          currencyCode: record.amount?.currency ?? null,
-          vat: record.vat?.raw ?? null,
-          chargeId: record.chargeId ?? null,
-        };
-        const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
-
-        if (!res || res.length === 0) {
-          throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
-        }
-
-        if (record.chargeId) {
-          /* clear cache */
-          getDocumentsByChargeIdLoader.clear(record.chargeId);
-        }
-
-        return { document: res[0] };
-      } catch (e) {
-        return {
-          __typename: 'CommonError',
-          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
-        };
-      }
-    },
-    updateTransaction: async (_, { transactionId, fields }) => {
-      const adjustedFields: IUpdateChargeParams = {
-        accountNumber: null,
-        accountType: null,
-        bankDescription: null,
-        bankReference: fields.referenceNumber,
-        businessTrip: null,
-        contraCurrencyCode: null,
-        currencyCode: null,
-        currencyRate: null,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
-        debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
-        detailedBankDescription: null,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Ils ? null : fields.amount?.raw?.toFixed(2),
-        eventDate: null,
-        eventNumber: null,
-        financialAccountsToBalance: null,
-        financialEntity: null,
-        hashavshevetId: fields.hashavshevetId,
-        interest: null,
-        isConversion: null,
-        isProperty: null,
-        links: null,
-        originalId: null,
-        personalCategory: null,
-        proformaInvoiceFile: null,
-        receiptDate: null,
-        receiptImage: null,
-        receiptNumber: null,
-        receiptUrl: null,
-        reviewed: fields.accountantApproval?.approved,
-        taxCategory: null,
-        taxInvoiceAmount: null,
-        taxInvoiceCurrency: null,
-        taxInvoiceDate: null,
-        taxInvoiceFile: null,
-        taxInvoiceNumber: null,
-        userDescription: fields.userNote,
-        vat: null,
-        withholdingTax: null,
-        chargeId: transactionId,
-      };
-      try {
-        getChargeByIdLoader.clear(transactionId);
-        const res = await updateCharge.run({ ...adjustedFields }, pool);
-        return res[0];
-      } catch (e) {
-        return {
-          __typename: 'CommonError',
-          message: (e as Error)?.message ?? 'Unknown error',
-        };
-      }
     },
     generateLedgerRecords: async (_, { chargeId }) => {
       try {
@@ -707,6 +718,26 @@ export const resolvers: Resolvers = {
         };
       }
     },
+    // counterparties
+  },
+  // documents
+  UpdateDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UpdateDocumentSuccessfulResult';
+    },
+  },
+  InsertDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'InsertDocumentSuccessfulResult';
+    },
+  },
+  UploadDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UploadDocumentSuccessfulResult';
+    },
   },
   Invoice: {
     __isTypeOf(documentRoot) {
@@ -740,7 +771,7 @@ export const resolvers: Resolvers = {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
-
+  // financial entities
   LtdFinancialEntity: {
     __isTypeOf: () => true,
     ...commonFinancialEntityFields,
@@ -771,12 +802,14 @@ export const resolvers: Resolvers = {
     country: () => '', // TODO: missing in DB
     name: DbAccount => DbAccount.account_number.toString(),
   },
+  // financial accounts
   CardFinancialAccount: {
     __isTypeOf: DbAccount => !DbAccount.bank_number,
     ...commonFinancialAccountFields,
     number: DbAccount => DbAccount.account_number.toString(),
     fourDigits: DbAccount => DbAccount.account_number.toString(),
   },
+  // charges / transactions
   Charge: {
     id: DbCharge => DbCharge.id,
     createdAt: () => new Date('1900-01-01'), // TODO: missing in DB
@@ -914,16 +947,17 @@ export const resolvers: Resolvers = {
     }),
     property: DbCharge => DbCharge.is_property,
   },
-  UpdateLedgerRecordResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'LedgerRecord';
-    },
-  },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';
+    },
+  },
+  // ledger records
+  UpdateLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'LedgerRecord';
     },
   },
   InsertLedgerRecordResult: {
@@ -938,24 +972,6 @@ export const resolvers: Resolvers = {
       return 'Charge';
     },
   },
-  UpdateDocumentResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'UpdateDocumentSuccessfulResult';
-    },
-  },
-  InsertDocumentResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'InsertDocumentSuccessfulResult';
-    },
-  },
-  UploadDocumentResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'UploadDocumentSuccessfulResult';
-    },
-  },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
     creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_1,
@@ -966,6 +982,8 @@ export const resolvers: Resolvers = {
         DbLedgerRecord.currency
       ),
     date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date) as TimelessDateString,
+    valueDate: DbLedgerRecord => parseDate(DbLedgerRecord.value_date) as TimelessDateString,
+    date3: DbLedgerRecord => parseDate(DbLedgerRecord.date_3) as TimelessDateString,
     description: DbLedgerRecord => DbLedgerRecord.details ?? '',
     accountantApproval: DbLedgerRecord => ({
       approved: DbLedgerRecord.reviewed ?? false,
@@ -974,6 +992,7 @@ export const resolvers: Resolvers = {
     localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
   },
+  // counterparties
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
     name: parent => parent ?? '',
@@ -998,5 +1017,4 @@ export const resolvers: Resolvers = {
     __isTypeOf: () => true,
     ...commonTransactionFields,
   },
-  TimelessDate: TimelessDateScalar,
 };
