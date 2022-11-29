@@ -1,13 +1,14 @@
 import gql from 'graphql-tag';
-import moment from 'moment';
 
 import { AllChargesDateFieldsFragment } from '../../../__generated__/types';
+import { clearTimeFromDate } from '../../../helpers';
 
 gql`
   fragment AllChargesDateFields on Charge {
     id
     transactions {
       id
+      createdAt
       effectiveDate
     }
   }
@@ -18,7 +19,16 @@ type Props = {
 };
 
 export const Date = ({ data }: Props) => {
-  const { effectiveDate } = data;
+  const { effectiveDate, createdAt } = data;
+  const timelessCreatedAt = clearTimeFromDate(createdAt);
+  const timelessEffectiveDate = clearTimeFromDate(effectiveDate);
 
-  return <div style={{ fontSize: '12px', color: 'gray' }}>{moment(effectiveDate).format('YYYY-MM-DD')}</div>;
+  return (
+    <div>
+      <div style={{ fontSize: '12px', color: 'gray' }}>{timelessCreatedAt}</div>
+      {timelessEffectiveDate && timelessEffectiveDate !== timelessCreatedAt && (
+        <div style={{ fontSize: '10px', color: 'darkGray' }}>{timelessEffectiveDate}</div>
+      )}
+    </div>
+  );
 };

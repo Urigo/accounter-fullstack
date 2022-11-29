@@ -54,7 +54,10 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                       <h2 className="text-gray-900 text-lg title-font font-medium">
                         {'documentType' in doc ? doc.documentType : 'Unprocessed'}
                       </h2>
-                      <Image src={doc.image} className="max-w-[100%] text-gray-900 text-lg title-font font-medium" />
+                      <Image
+                        src={doc.image ? doc.image.toString() : null}
+                        className="max-w-[100%] text-gray-900 text-lg title-font font-medium"
+                      />
                     </div>
                   </button>
                   {openModal === doc.id && (
