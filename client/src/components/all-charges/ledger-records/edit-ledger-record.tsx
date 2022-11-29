@@ -18,6 +18,8 @@ gql`
       name
     }
     date
+    date3
+    valueDate
     description
     localCurrencyAmount {
       raw
