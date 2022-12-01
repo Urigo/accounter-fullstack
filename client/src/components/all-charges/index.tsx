@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
 import { businesses, entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
-import { EditMiniButton } from '../common';
+import { EditMiniButton, NavBar } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
@@ -126,10 +126,8 @@ export const AllCharges = () => {
 
   return (
     <div className="text-gray-600 body-font">
-      <div className="container px-5 py-12 mx-auto">
-        <div className="flex flex-col text-center w-full mb-1">
-          <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">All Charges</h1>
-        </div>
+      <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
+        <NavBar header="All Charges" />
         <AccounterTable
           showButton={true}
           moreInfo={item => (

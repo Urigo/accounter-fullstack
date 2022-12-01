@@ -3,4 +3,5 @@ export * from './confirm-mini-button';
 export * from './confirmation-modal';
 export * from './edit-mini-button';
 export * from './info-mini-button';
+export * from './nav-bar';
 export * from './update-button';
