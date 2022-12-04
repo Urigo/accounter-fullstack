@@ -89,6 +89,9 @@ type Query {
   financialEntity(id: ID!): FinancialEntity!
   documents: [Document!]!
   chargeById(id: ID!): Charge!
+  getAllCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
+  " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
+  getAllFinancialEntities: [FinancialEntity!]!
 }
 
 " mutation root "
@@ -329,6 +332,7 @@ type PersonalFinancialEntity implements FinancialEntity {
 " represent a financial entity of any type that may hold financial accounts (company, business, individual) "
 interface FinancialEntity {
   id: ID!
+  name: String!
   accounts: [FinancialAccount!]!
   charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
 
@@ -350,6 +354,22 @@ input ChargeFilter {
   fromDate: String
   " Include only charges occured before this date "
   toDate: String
+  " Include only charges related to specific financial entities "
+  byFinancialEntities: [ID!]
+  " Include only charges related to specific financial accounts "
+  byFinancialAccounts: [ID!]
+  sortBy: ChargeSortBy
+}
+
+input ChargeSortBy {
+  field: ChargeSortByField!
+  asc: Boolean
+}
+
+enum ChargeSortByField {
+  date
+  amount
+  absAmount
 }
 
 " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
@@ -371,6 +391,8 @@ type Charge {
   tags: [Tag!]!
   " a list of beneficiaries and their part in the charge "
   beneficiaries: [BeneficiaryCounterparty!]!
+  " the financial entity that created the charge "
+  financialEntity: FinancialEntity!
 }
 
 " defines a tag / category for charge arrangement" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this

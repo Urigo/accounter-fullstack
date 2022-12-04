@@ -2,6 +2,7 @@ import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 
 import {
+  IGetChargesByFiltersQuery,
   IGetChargesByFinancialAccountNumbersQuery,
   IGetChargesByFinancialEntityIdsQuery,
   IGetChargesByIdsQuery,
@@ -283,3 +284,20 @@ export const updateCharge = sql<IUpdateChargeQuery>`
     id = $chargeId
   RETURNING *;
 `;
+
+export const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
+    SELECT at.*, fa.owner as financial_entity_id, ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount
+    FROM accounter_schema.all_transactions at
+    LEFT JOIN accounter_schema.financial_accounts fa
+    ON  at.account_number = fa.account_number
+    WHERE 
+    ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+    AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY
+    CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN at.event_date  END ASC,
+    CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN at.event_date  END DESC,
+    CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN at.event_amount  END ASC,
+    CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN at.event_amount  END DESC,
+    CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(at.event_amount as DECIMAL))  END ASC,
+    CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC;`;

@@ -111,7 +111,12 @@ export const EditDocument = ({ documentData }: Props) => {
           <form onSubmit={handleSubmit(onSubmit)}>
             <SimpleGrid cols={4}>
               <ModifyDocumentFields document={documentData} watch={watch} control={control} />
-              <ButtonWithLabel target="_blank" textLabel="File" url={documentData?.file} title="Open Link" />
+              <ButtonWithLabel
+                target="_blank"
+                textLabel="File"
+                url={documentData?.file?.toString()}
+                title="Open Link"
+              />
             </SimpleGrid>
             <div className="flex justify-center mt-5">
               <button
@@ -141,8 +146,8 @@ export const EditDocument = ({ documentData }: Props) => {
         <div className=" w-1/5 h-max flex flex-col ">
           <div className="flex justify-center">
             <Image
-              onClick={() => setOpenModal(documentData.image)}
-              src={documentData?.image}
+              onClick={() => setOpenModal(documentData.image?.toString() ?? null)}
+              src={documentData?.image?.toString()}
               className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit	 max-w-fit"
             />
           </div>

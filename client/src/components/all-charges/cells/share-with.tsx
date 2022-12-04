@@ -24,18 +24,21 @@ gql`
     counterparty {
       name
     }
+    financialEntity {
+      __typename
+    }
   }
 `;
 
 export interface Props {
   data: AllChargesShareWithFieldsFragment;
   alternativeCharge?: SuggestedCharge;
-  isBusiness: boolean;
 }
 
-export const ShareWith = ({ data, alternativeCharge, isBusiness }: Props) => {
+export const ShareWith = ({ data, alternativeCharge }: Props) => {
   const { beneficiaries, counterparty, id: chargeId } = data;
   const financialEntityName = counterparty?.name ?? '';
+  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
 
   const { mutate, isLoading } = useUpdateCharge();
 

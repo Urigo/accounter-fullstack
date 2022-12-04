@@ -1,13 +1,17 @@
 import { GraphQLError } from 'graphql';
 
-import type { IGetChargesByIdsResult, IUpdateChargeParams } from '../__generated__/charges.types.mjs';
+import type {
+  IGetChargesByFiltersResult,
+  IGetChargesByIdsResult,
+  IUpdateChargeParams,
+} from '../__generated__/charges.types.mjs';
 import type { IInsertDocumentsParams, IUpdateDocumentParams } from '../__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
-import { Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
+import { ChargeSortByField, Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
 import { formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
@@ -19,7 +23,12 @@ import {
   parseDate,
 } from '../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from '../helpers/misc.mjs';
-import { getChargeByIdLoader, getConversionOtherSide, updateCharge } from '../providers/charges.mjs';
+import {
+  getChargeByIdLoader,
+  getChargesByFilters,
+  getConversionOtherSide,
+  updateCharge,
+} from '../providers/charges.mjs';
 import { pool } from '../providers/db.mjs';
 import {
   deleteDocument,
@@ -33,7 +42,11 @@ import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
 } from '../providers/financial-accounts.mjs';
-import { getFinancialEntityByIdLoader } from '../providers/financial-entities.mjs';
+import {
+  getAllFinancialEntities,
+  getFinancialEntityByChargeIdsLoader,
+  getFinancialEntityByIdLoader,
+} from '../providers/financial-entities.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
@@ -71,6 +84,9 @@ export const resolvers: Resolvers = {
       }
       return dbFe;
     },
+    getAllFinancialEntities: async () => {
+      return getAllFinancialEntities.run(undefined, pool);
+    },
     // financial accounts
     // charges / transactions
     chargeById: async (_, { id }) => {
@@ -79,6 +95,46 @@ export const resolvers: Resolvers = {
         throw new Error(`Charge ID="${id}" not found`);
       }
       return dbCharge;
+    },
+    getAllCharges: async (_, { filters, page, limit }) => {
+      // handle sort column
+      let sortColumn: keyof IGetChargesByFiltersResult = 'event_date';
+      switch (filters?.sortBy?.field) {
+        case ChargeSortByField.Amount:
+          sortColumn = 'event_amount';
+          break;
+        case ChargeSortByField.AbsAmount:
+          sortColumn = 'abs_event_amount';
+          break;
+        case ChargeSortByField.Date:
+          sortColumn = 'event_date';
+          break;
+      }
+
+      const isFinancialEntityIds = filters?.byFinancialEntities?.length ?? 0;
+
+      const charges = await getChargesByFilters
+        .run(
+          {
+            financialEntityIds: filters?.byFinancialEntities?.length ? filters.byFinancialEntities : [null],
+            isFinancialEntityIds,
+            fromDate: filters?.fromDate,
+            toDate: filters?.toDate,
+            sortColumn,
+            asc: filters?.sortBy?.asc !== false,
+          },
+          pool
+        )
+        .catch(e => {
+          throw new Error(e.message);
+        });
+      return {
+        __typename: 'PaginatedCharges',
+        nodes: charges.slice(page * limit - limit, page * limit),
+        pageInfo: {
+          totalPages: Math.ceil(charges.length / limit),
+        },
+      };
     },
     // ledger records
     // counterparties
@@ -946,6 +1002,13 @@ export const resolvers: Resolvers = {
       remark: 'Missing', // TODO: missing in DB
     }),
     property: DbCharge => DbCharge.is_property,
+    financialEntity: DbCharge =>
+      getFinancialEntityByChargeIdsLoader.load(DbCharge.id).then(res => {
+        if (!res) {
+          throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);
+        }
+        return res;
+      }),
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
