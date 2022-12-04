@@ -84,7 +84,7 @@ export const resolvers: Resolvers = {
       }
       return dbFe;
     },
-    getAllFinancialEntities: async () => {
+    allFinancialEntities: async () => {
       return getAllFinancialEntities.run(undefined, pool);
     },
     // financial accounts
@@ -96,7 +96,7 @@ export const resolvers: Resolvers = {
       }
       return dbCharge;
     },
-    getAllCharges: async (_, { filters, page, limit }) => {
+    allCharges: async (_, { filters, page, limit }) => {
       // handle sort column
       let sortColumn: keyof IGetChargesByFiltersResult = 'event_date';
       switch (filters?.sortBy?.field) {

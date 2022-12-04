@@ -89,9 +89,9 @@ type Query {
   financialEntity(id: ID!): FinancialEntity!
   documents: [Document!]!
   chargeById(id: ID!): Charge!
-  getAllCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
+  allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
-  getAllFinancialEntities: [FinancialEntity!]!
+  allFinancialEntities: [FinancialEntity!]!
 }
 
 " mutation root "
@@ -362,15 +362,17 @@ input ChargeFilter {
   sortBy: ChargeSortBy
 }
 
+" input variables for sorting charges "
 input ChargeSortBy {
   field: ChargeSortByField!
   asc: Boolean
 }
 
+" fields that can be used to sort charges "
 enum ChargeSortByField {
-  date
-  amount
-  absAmount
+  DATE
+  AMOUNT
+  ABS_AMOUNT
 }
 
 " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
