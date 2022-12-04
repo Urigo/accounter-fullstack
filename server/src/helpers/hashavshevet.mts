@@ -469,7 +469,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
       ? numberRounded(getILSForDate(charge, debitExchangeRates).eventAmountILS) -
           numberRounded(getILSForDate(charge, invoiceExchangeRates).eventAmountILS)
       : entryForFinancialAccount.debitAmountILS ?? 0 - entryForAccounting.debitAmountILS,
-    { abs: someNameFlag }
+    { abs: false }
   );
 
   const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] = unformattedInvoiceDate
