@@ -83,6 +83,9 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   if (transactionDescription?.includes(`המרת מט"ח`)) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
+  if (transactionDescription?.includes(`קונברסיה`)) {
+    return { financialEntity: 'Poalim', personalCategory: 'conversion' };
+  }
   if (transactionDescription?.includes('חשבונית ירוקה')) {
     return {
       financialEntity: 'Green Invoice',
