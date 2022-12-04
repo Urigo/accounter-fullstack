@@ -8,9 +8,7 @@ import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
-import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
-import { Account } from './cells/account';
-import { Vat } from './cells/vat';
+import { Account, AccountantApproval, Amount, Date, Description, Entity, ShareWith, Tags, Vat } from './cells';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
@@ -25,6 +23,7 @@ gql`
         id
         # ...ChargesFields
         ...AllChargesAccountFields
+        ...AllChargesAccountantApprovalFields
         ...AllChargesAmountFields
         ...AllChargesDateFields
         ...AllChargesDescriptionFields
@@ -184,6 +183,10 @@ export const AllCharges = () => {
                   </p>
                 </div>
               ),
+            },
+            {
+              title: 'Accountant Approval',
+              value: data => <AccountantApproval data={data} />,
             },
             {
               title: 'Edit',

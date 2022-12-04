@@ -400,6 +400,60 @@ export const resolvers: Resolvers = {
         };
       }
     },
+    toggleChargeAccountantApproval: async (_, { chargeId, approved }) => {
+      const adjustedFields: IUpdateChargeParams = {
+        accountNumber: null,
+        accountType: null,
+        bankDescription: null,
+        bankReference: null,
+        businessTrip: null,
+        contraCurrencyCode: null,
+        currencyCode: null,
+        currencyRate: null,
+        currentBalance: null,
+        debitDate: null,
+        detailedBankDescription: null,
+        eventAmount: null,
+        eventDate: null,
+        eventNumber: null,
+        financialAccountsToBalance: null,
+        financialEntity: null,
+        hashavshevetId: null,
+        interest: null,
+        isConversion: null,
+        isProperty: null,
+        links: null,
+        originalId: null,
+        personalCategory: null,
+        proformaInvoiceFile: null,
+        receiptDate: null,
+        receiptImage: null,
+        receiptNumber: null,
+        receiptUrl: null,
+        reviewed: approved,
+        taxCategory: null,
+        taxInvoiceAmount: null,
+        taxInvoiceCurrency: null,
+        taxInvoiceDate: null,
+        taxInvoiceFile: null,
+        taxInvoiceNumber: null,
+        userDescription: null,
+        vat: null,
+        withholdingTax: null,
+        chargeId,
+      };
+      const res = await updateCharge.run({ ...adjustedFields }, pool);
+
+      if (!res || res.length === 0) {
+        throw new Error(`Failed to update charge ID='${chargeId}'`);
+      }
+
+      /* clear cache */
+      if (res[0].original_id) {
+        getChargeByIdLoader.clear(res[0].original_id);
+      }
+      return res[0].reviewed || false;
+    },
     // ledger records
     updateLedgerRecord: async (_, { ledgerRecordId, fields }) => {
       const currency =
