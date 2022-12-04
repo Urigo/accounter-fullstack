@@ -87,7 +87,7 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
 
 function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFormProps) {
   const { control, handleSubmit, watch } = useForm<ChargeFilter>({ defaultValues: { ...filter } });
-  const [asc, setAsc] = useState(filter.sortBy?.asc);
+  const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(Boolean(filter.sortBy?.field));
   const { data, isLoading, isError: financialEntitiesError } = useAllFinancialEntitiesQuery();
 
@@ -138,8 +138,13 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
-              data={data?.allFinancialEntities.map(entity => ({ value: entity.id, label: entity.name })) ?? []}
-              value={field.value ?? undefined}
+              data={
+                data?.allFinancialEntities.map(entity => ({
+                  value: entity.id,
+                  label: entity.name,
+                })) ?? []
+              }
+              value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
               disabled={isLoading}
               label="Financial Entities"
               placeholder="Scroll to see all options"
@@ -190,7 +195,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
         <Controller
           name="sortBy.field"
           control={control}
-          defaultValue={undefined}
+          defaultValue={ChargeSortByField.Date}
           render={({ field, fieldState }) => (
             <Select
               {...field}
@@ -204,6 +209,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           )}
         />
         <Switch
+          defaultChecked={false}
           checked={asc ?? false}
           disabled={!enableAsc}
           onChange={event => setAsc(event.currentTarget.checked)}
