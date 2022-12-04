@@ -13,7 +13,7 @@ import { TextInput } from '../common/inputs';
 
 gql`
   query AllFinancialEntities {
-    getAllFinancialEntities {
+    allFinancialEntities {
       id
       name
     }
@@ -138,7 +138,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
-              data={data?.getAllFinancialEntities.map(entity => ({ value: entity.id, label: entity.name })) ?? []}
+              data={data?.allFinancialEntities.map(entity => ({ value: entity.id, label: entity.name })) ?? []}
               value={field.value ?? undefined}
               disabled={isLoading}
               label="Financial Entities"

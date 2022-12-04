@@ -8,9 +8,7 @@ import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
-import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
-import { Account } from './cells/account';
-import { Vat } from './cells/vat';
+import { Account, AccountantApproval, Amount, Date, Description, Entity, ShareWith, Tags, Vat } from './cells';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
@@ -20,11 +18,12 @@ import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
 gql`
   query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
-    getAllCharges(page: $page, limit: $limit, filters: $filters) {
+    allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
         # ...ChargesFields
         ...AllChargesAccountFields
+        ...AllChargesAccountantApprovalFields
         ...AllChargesAmountFields
         ...AllChargesDateFields
         ...AllChargesDescriptionFields
@@ -88,7 +87,7 @@ export const AllCharges = () => {
     return <AccounterLoader />;
   }
 
-  function generateRowContext(charge: AllChargesQuery['getAllCharges']['nodes'][0]) {
+  function generateRowContext(charge: AllChargesQuery['allCharges']['nodes'][0]) {
     if (
       !charge.counterparty?.name ||
       !charge.transactions[0]?.userNote?.trim() ||
@@ -119,7 +118,7 @@ export const AllCharges = () => {
           striped
           highlightOnHover
           stickyHeader
-          items={data?.getAllCharges?.nodes ?? []}
+          items={data?.allCharges?.nodes ?? []}
           rowContext={generateRowContext}
           columns={[
             {
@@ -186,6 +185,10 @@ export const AllCharges = () => {
               ),
             },
             {
+              title: 'Accountant Approval',
+              value: data => <AccountantApproval data={data} />,
+            },
+            {
               title: 'Edit',
               value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
             },
@@ -193,7 +196,7 @@ export const AllCharges = () => {
           pagination={{
             page: activePage,
             onChange: setPage,
-            total: data?.getAllCharges?.pageInfo.totalPages ?? 1,
+            total: data?.allCharges?.pageInfo.totalPages ?? 1,
           }}
         />
       </div>

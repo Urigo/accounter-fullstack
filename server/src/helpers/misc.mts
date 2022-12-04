@@ -220,17 +220,14 @@ export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccoun
   if (transaction.account_type != 'creditcard') {
     if (transaction.debit_date) {
       return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-    } else {
-      return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
     }
-  } else {
-    if (transaction.debit_date) {
-      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-    } else if (transaction.currency_code == 'ILS') {
-      return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
-    } else {
-      return null;
-    }
+    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  }
+  if (transaction.debit_date) {
+    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+  }
+  if (transaction.currency_code == 'ILS') {
+    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
   }
   return null;
 }
