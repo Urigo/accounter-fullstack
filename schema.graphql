@@ -89,6 +89,9 @@ type Query {
   financialEntity(id: ID!): FinancialEntity!
   documents: [Document!]!
   chargeById(id: ID!): Charge!
+  getAllCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
+  " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
+  getAllFinancialEntities: [FinancialEntity!]!
 }
 
 " mutation root "
@@ -350,6 +353,26 @@ input ChargeFilter {
   fromDate: String
   " Include only charges occured before this date "
   toDate: String
+  " Include only charges related to specific financial entities "
+  byFinancialEntities: [ID!]
+  " Include only charges related to specific financial accounts "
+  byFinancialAccounts: [ID!]
+  sortBy: ChargeSortBy
+}
+
+input ChargeSortBy {
+  field: ChargeSortByField!
+  direction: SortDirection
+}
+
+enum ChargeSortByField {
+  date
+  amount
+}
+
+enum SortDirection {
+  ASC
+  DESC
 }
 
 " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "

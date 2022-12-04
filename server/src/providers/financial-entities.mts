@@ -2,6 +2,7 @@ import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
 
 import {
+  IGetAllFinancialEntitiesQuery,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
 } from '../__generated__/financial-entities.types.mjs';
@@ -42,3 +43,7 @@ async function batchFinancialEntitiesByNames(names: readonly string[]) {
 }
 
 export const getFinancialEntityByNameLoader = new DataLoader(batchFinancialEntitiesByNames, { cache: false });
+
+export const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
+    SELECT *
+    FROM accounter_schema.businesses;`;

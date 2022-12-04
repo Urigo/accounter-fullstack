@@ -1,13 +1,17 @@
 import { GraphQLError } from 'graphql';
 
-import type { IGetChargesByIdsResult, IUpdateChargeParams } from '../__generated__/charges.types.mjs';
+import type {
+  IGetChargesByFiltersResult,
+  IGetChargesByIdsResult,
+  IUpdateChargeParams,
+} from '../__generated__/charges.types.mjs';
 import type { IInsertDocumentsParams, IUpdateDocumentParams } from '../__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
-import { Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
+import { ChargeSortByField, Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
 import { formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
@@ -19,7 +23,12 @@ import {
   parseDate,
 } from '../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from '../helpers/misc.mjs';
-import { getChargeByIdLoader, getConversionOtherSide, updateCharge } from '../providers/charges.mjs';
+import {
+  getChargeByIdLoader,
+  getChargesByFilters,
+  getConversionOtherSide,
+  updateCharge,
+} from '../providers/charges.mjs';
 import { pool } from '../providers/db.mjs';
 import {
   deleteDocument,
@@ -33,7 +42,7 @@ import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
 } from '../providers/financial-accounts.mjs';
-import { getFinancialEntityByIdLoader } from '../providers/financial-entities.mjs';
+import { getAllFinancialEntities, getFinancialEntityByIdLoader } from '../providers/financial-entities.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
@@ -71,6 +80,9 @@ export const resolvers: Resolvers = {
       }
       return dbFe;
     },
+    getAllFinancialEntities: async () => {
+      return getAllFinancialEntities.run(undefined, pool);
+    },
     // financial accounts
     // charges / transactions
     chargeById: async (_, { id }) => {
@@ -79,6 +91,37 @@ export const resolvers: Resolvers = {
         throw new Error(`Charge ID="${id}" not found`);
       }
       return dbCharge;
+    },
+    getAllCharges: async (_, { filters, page, limit }) => {
+      // handle sort column
+      let sortColumn: keyof IGetChargesByFiltersResult = 'event_date';
+      switch (filters?.sortBy?.field) {
+        case ChargeSortByField.Amount:
+          sortColumn = 'event_amount';
+          break;
+        case ChargeSortByField.Date:
+          sortColumn = 'event_date';
+          break;
+      }
+
+      const charges = await getChargesByFilters.run(
+        {
+          financialEntityIds: filters?.byFinancialEntities ?? [],
+          isFinancialEntityIds: filters?.byFinancialEntities?.length ?? 0,
+          fromDate: filters?.fromDate,
+          toDate: filters?.toDate,
+          sortColumn,
+          asc: filters?.sortBy?.direction === 'DESC',
+        },
+        pool
+      );
+      return {
+        __typename: 'PaginatedCharges',
+        nodes: charges.slice(page * limit - limit, page * limit),
+        pageInfo: {
+          totalPages: Math.ceil(charges.length / limit),
+        },
+      };
     },
     // ledger records
     // counterparties
