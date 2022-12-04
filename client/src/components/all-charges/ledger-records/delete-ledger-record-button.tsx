@@ -1,7 +1,6 @@
-import { ActionIcon } from '@mantine/core';
 import { useState } from 'react';
+import { ActionIcon } from '@mantine/core';
 import { Trash } from 'tabler-icons-react';
-
 import { useDeleteLedgerRecord } from '../../../hooks/use-delete-ledger-record';
 import { ConfirmationModal } from '../../common';
 

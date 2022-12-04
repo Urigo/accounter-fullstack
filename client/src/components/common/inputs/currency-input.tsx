@@ -1,5 +1,4 @@
 import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
-
 import { Currency } from '../../../__generated__/types';
 import { NumberInput } from './number-input';
 

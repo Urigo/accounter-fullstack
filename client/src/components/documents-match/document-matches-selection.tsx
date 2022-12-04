@@ -1,8 +1,7 @@
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import gql from 'graphql-tag';
-import { useEffect, useState } from 'react';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
-
 import { DocumentMatchChargesFieldsFragment, DocumentMatchFieldsFragment } from '../../__generated__/types';
 import { rateOptionalMatches } from '../../helpers/document-matches';
 
@@ -92,7 +91,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
   const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
 
   useEffect(() => {
-    setReadyForNextStep(!!selectedCharge);
+    setReadyForNextStep(Boolean(selectedCharge));
   }, [selectedCharge, setReadyForNextStep]);
 
   if (
@@ -120,7 +119,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
     return (
       documentAmount >= Math.floor(chargeAmount) &&
       documentAmount <= Math.ceil(chargeAmount + fee) &&
-      Math.abs(documentDate - chargeDate) < 5184000000
+      Math.abs(documentDate - chargeDate) < 5_184_000_000
     );
   });
 
@@ -178,7 +177,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                 </li>
                 {extandedInfoFlag ? (
                   <>
-                    <li></li>
+                    <li />
                     <li>
                       <button
                         onClick={() => setExtandedInfoFlag(false)}
@@ -248,7 +247,7 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
                   </li>
                   {extandedInfoFlag ? (
                     <>
-                      <li></li>
+                      <li />
                       <li>
                         <button
                           onClick={() => setExtandedInfoFlag(false)}

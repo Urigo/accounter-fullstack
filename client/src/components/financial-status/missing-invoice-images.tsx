@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import { MissingInvoice } from '../../models/types';

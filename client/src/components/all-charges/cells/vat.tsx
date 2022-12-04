@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { AllChargesVatFieldsFragment, Currency } from '../../../__generated__/types';
 import { businessesWithoutTaxCategory, businessesWithoutVAT } from '../../../helpers';
 

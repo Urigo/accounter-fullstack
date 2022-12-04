@@ -1,11 +1,10 @@
+import { useEffect, useState } from 'react';
 import { ActionIcon, MultiSelect, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import gql from 'graphql-tag';
-import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-
 import { ChargeFilter, ChargeSortByField, useAllFinancialEntitiesQuery } from '../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import { PopUpModal } from '../common';

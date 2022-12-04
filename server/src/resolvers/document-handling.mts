@@ -1,5 +1,4 @@
 import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
-
 import { IGetAllDocumentsResult, IInsertDocumentsParams } from '../__generated__/documents.types.mjs';
 import { Currency, Resolvers } from '../__generated__/types.mjs';
 import { normalizeDocumentType } from '../helpers/green-invoice.mjs';

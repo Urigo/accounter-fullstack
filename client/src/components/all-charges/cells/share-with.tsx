@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useCallback } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesShareWithFieldsFragment, BeneficiaryInput } from '../../../__generated__/types';
 import {
   businessesNotToShare,

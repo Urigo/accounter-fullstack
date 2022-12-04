@@ -1,7 +1,6 @@
 import { Switch } from '@mantine/core';
 import gql from 'graphql-tag';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-
 import {
   Currency,
   EditChargeFieldsFragment,

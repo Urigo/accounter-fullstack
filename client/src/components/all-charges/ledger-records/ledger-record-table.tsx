@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useState } from 'react';
-
+import gql from 'graphql-tag';
 import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { EditMiniButton } from '../../common';
 import { PopUpDrawer } from '../../common/drawer';
@@ -94,7 +93,7 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
             {editLedgerId && <DeleteLedgerRecordButton ledgerRecordId={editLedgerId} />}
           </div>
         }
-        opened={!!editLedgerId}
+        opened={Boolean(editLedgerId)}
         onClose={() => setEditLedgerId(undefined)}
       >
         {ledgerRecords.some(r => r.id === editLedgerId) && (

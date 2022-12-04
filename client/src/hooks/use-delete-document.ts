@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   DeleteDocumentMutation,
   DeleteDocumentMutationVariables,
   useDeleteDocumentMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation DeleteDocument($documentId: ID!) {

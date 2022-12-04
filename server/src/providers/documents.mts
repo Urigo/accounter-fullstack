@@ -1,6 +1,5 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-
 import {
   IDeleteDocumentQuery,
   IGetAllDocumentsQuery,

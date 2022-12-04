@@ -1,9 +1,10 @@
+import { ReactElement } from 'react';
 import { Modal, ModalProps } from '@mantine/core';
-import { PropsWithChildren } from 'react';
 
 interface Props extends ModalProps {
   labels?: { cancel?: string; confirm?: string };
   onConfirm: () => void;
+  children?: ReactElement | ReactElement[];
 }
 
 export function ConfirmationModal({
@@ -12,12 +13,14 @@ export function ConfirmationModal({
   onConfirm,
   children,
   ...props
-}: PropsWithChildren<Props>) {
+}: Props) {
   return (
     <Modal closeOnEscape withCloseButton={false} {...props}>
       <div className="flex flex-wrap -mx-4 -mb-10 text-center">
         <div className="mb-10 px-4">
-          {title && <h3 className="title-font text-2xl font-medium text-gray-900 mt-6 mb-3">{title}</h3>}
+          {title && (
+            <h3 className="title-font text-2xl font-medium text-gray-900 mt-6 mb-3">{title}</h3>
+          )}
           {children}
           <div className="flex mx-auto flex-row justify-evenly">
             <button

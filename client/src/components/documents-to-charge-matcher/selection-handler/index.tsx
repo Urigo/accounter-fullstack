@@ -1,7 +1,6 @@
+import { useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useMemo, useState } from 'react';
-
 import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { Button } from '../../common/button';
@@ -123,7 +122,7 @@ export function SelectionHandler({ charge, documents, onDone }: Props) {
         return (
           documentAmount >= Math.floor(chargeAmount) &&
           documentAmount <= Math.ceil(chargeAmount + fee) &&
-          Math.abs(documentDate - chargeDate) < 5184000000
+          Math.abs(documentDate - chargeDate) < 5_184_000_000
         );
       }),
     [coarsedFilteredDocuments, charge]

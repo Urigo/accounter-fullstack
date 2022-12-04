@@ -1,5 +1,4 @@
 import pgQuery from '@pgtyped/query';
-
 import { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import { IGetHashavshevetBusinessIndexesQuery, IGetHashGovIndexesQuery } from '../__generated__/hashavshevet.types.mjs';
 import { pool } from '../providers/db.mjs';

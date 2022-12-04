@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   UpdateLedgerRecordMutation,
   UpdateLedgerRecordMutationVariables,
   useUpdateLedgerRecordMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation UpdateLedgerRecord($ledgerRecordId: ID!, $fields: UpdateLedgerRecordInput!) {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Control, Controller, UseFormWatch } from 'react-hook-form';
-
 import {
   Currency,
   DocumentType,
@@ -36,7 +35,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
   useEffect(() => {
     const type = watch('documentType');
     setShowExtendedFields(
-      !!type &&
+      Boolean(type) &&
         (type === DocumentType.Invoice ||
           type === DocumentType.Receipt ||
           type === DocumentType.InvoiceReceipt ||

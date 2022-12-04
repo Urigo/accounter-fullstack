@@ -1,6 +1,5 @@
-import { Image } from '@mantine/core';
 import { useState } from 'react';
-
+import { Image } from '@mantine/core';
 import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
 import { AccounterTable } from '../../common/accounter-table';
 import { Button } from '../../common/button';
@@ -22,7 +21,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
         <PopUpModal
           modalSize="45%"
           content={<Image src={openedImage} />}
-          opened={!!openedImage}
+          opened={Boolean(openedImage)}
           onClose={() => setOpenedImage(null)}
         />
       )}

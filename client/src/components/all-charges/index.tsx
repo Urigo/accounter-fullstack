@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useState } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesQuery, ChargeFilter, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
 import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton, NavBar } from '../common';
@@ -212,7 +211,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!editCharge}
+          opened={Boolean(editCharge)}
           onClose={() => setEditCharge(undefined)}
         >
           <EditCharge
@@ -234,7 +233,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!insertLedger}
+          opened={Boolean(insertLedger)}
           onClose={() => setInsertLedger(undefined)}
         >
           <InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />
@@ -252,7 +251,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!insertDocument}
+          opened={Boolean(insertDocument)}
           onClose={() => setInsertDocument(undefined)}
         >
           <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
@@ -270,7 +269,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!uploadDocument}
+          opened={Boolean(uploadDocument)}
           onClose={() => setUploadDocument(undefined)}
         >
           <UploadDocument chargeId={uploadDocument} closeModal={() => setUploadDocument(undefined)} />
@@ -288,7 +287,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!matchDocuments}
+          opened={Boolean(matchDocuments)}
           onClose={() => setMatchDocuments(undefined)}
         >
           <DocumentsToChargeMatcher chargeId={matchDocuments} onDone={() => setMatchDocuments(undefined)} />

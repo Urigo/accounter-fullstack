@@ -1,8 +1,8 @@
+import { ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { multipartFetchExchange } from '@urql/exchange-multipart-fetch';
-import { ReactNode } from 'react';
 import { createClient, Provider } from 'urql';
 
 const queryClient = new QueryClient();

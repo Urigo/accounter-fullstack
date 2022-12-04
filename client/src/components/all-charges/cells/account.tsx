@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { AllChargesAccountFieldsFragment } from '../../../__generated__/types';
 
 gql`

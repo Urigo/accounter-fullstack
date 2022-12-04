@@ -1,7 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Stepper } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useEffect, useState } from 'react';
-
 import { DocumentHandlerFieldsFragment, DocumentMatchChargesFieldsFragment } from '../../__generated__/types';
 import { EditDocument } from '../all-charges/documents/edit-document';
 import { DocumentMatchCompleted } from './document-match-completed';

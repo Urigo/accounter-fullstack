@@ -1,6 +1,5 @@
 import pgQuery from '@pgtyped/query';
 import { format } from 'date-fns';
-
 import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import type { IGetExchangeRatesByDatesQuery } from '../__generated__/exchange.types.mjs';
 import { pool } from '../providers/db.mjs';

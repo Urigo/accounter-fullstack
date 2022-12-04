@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import type { ThisMonthPrivateExpensesType } from '../../models/types';

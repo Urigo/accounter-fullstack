@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   GenerateLedgerRecordsMutation,
   GenerateLedgerRecordsMutationVariables,
   useGenerateLedgerRecordsMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation GenerateLedgerRecords($chargeId: ID!) {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { useSql } from '../../hooks/use-sql';
 import type { LedgerEntity } from '../../models/types';
 import { AccounterBasicTable } from '../common/accounter-basic-table';

@@ -1,6 +1,5 @@
 import { loadFiles } from '@graphql-tools/load-files';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-
 // import { addMocksToSchema } from '@graphql-tools/mock';
 import { resolvers } from './resolvers/index.mjs';
 

@@ -1,6 +1,5 @@
-import moment from 'moment';
 import { CSSProperties } from 'react';
-
+import { format } from 'date-fns';
 import type { TransactionType } from '../../../../models/types';
 
 type Props = {
@@ -11,9 +10,11 @@ type Props = {
 export const Date = ({ transaction, style }: Props) => {
   return (
     <td style={{ ...style }}>
-      {moment(transaction.event_date).format('DD/MM/YY')}
+      {format(transaction.event_date, 'dd/MM/yy')}
       {transaction.debit_date && (
-        <div style={{ fontSize: '12px', color: 'gray' }}>{moment(transaction.debit_date).format('DD/MM/YY')}</div>
+        <div style={{ fontSize: '12px', color: 'gray' }}>
+          {format(transaction.debit_date, 'dd/MM/yy')}
+        </div>
       )}
     </td>
   );

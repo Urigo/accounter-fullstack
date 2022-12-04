@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { suggestedTransaction } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
@@ -10,7 +9,7 @@ type Props = {
 };
 
 export const Entity = ({ transaction, style }: Props) => {
-  const isFinancialEntity = !!transaction.financial_entity;
+  const isFinancialEntity = Boolean(transaction.financial_entity);
   const cellText = transaction.financial_entity ?? suggestedTransaction(transaction)?.financialEntity;
 
   return (

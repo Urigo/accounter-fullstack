@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { shareWithDotan, suggestedTransaction } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';

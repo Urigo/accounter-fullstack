@@ -1,8 +1,7 @@
+import { useCallback, useState } from 'react';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { useCallback, useState } from 'react';
 import { useMutation } from 'urql';
-
 import {
   CommonError,
   UploadDocumentDocument,

@@ -1,7 +1,6 @@
 import { ActionIcon } from '@mantine/core';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-
 import { UpdateChargeInput } from '../../../__generated__/types';
 import { TextInput } from './text-input';
 
@@ -22,7 +21,7 @@ export function TagsInput({ label, formManager }: Props) {
       <label className="block text-sm pb-1 font-medium text-gray-700">{label ?? 'Tags'}</label>
       <div className="h-full flex flex-col overflow-hidden">
         {fields?.map((tag, index) => (
-          <div key={`${tag.id}`} className=" flex items-center gap-2 text-gray-600 mb-2">
+          <div key={String(tag.id)} className=" flex items-center gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-sm">
               <Controller
                 control={control}

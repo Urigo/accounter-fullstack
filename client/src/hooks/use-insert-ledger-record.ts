@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   InsertLedgerRecordMutation,
   InsertLedgerRecordMutationVariables,
   useInsertLedgerRecordMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation InsertLedgerRecord($chargeId: ID!, $record: InsertLedgerRecordInput!) {

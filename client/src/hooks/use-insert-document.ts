@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   InsertDocumentMutation,
   InsertDocumentMutationVariables,
   useInsertDocumentMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation InsertDocument($record: InsertDocumentInput!) {

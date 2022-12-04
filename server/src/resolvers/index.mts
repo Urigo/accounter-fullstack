@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-
 import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
@@ -901,7 +900,7 @@ export const resolvers: Resolvers = {
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => !!DbAccount.bank_number,
+    __isTypeOf: DbAccount => Boolean(DbAccount.bank_number),
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number.toString(),
     bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
@@ -1111,7 +1110,7 @@ export const resolvers: Resolvers = {
   },
   // counterparties
   NamedCounterparty: {
-    __isTypeOf: parent => !!parent,
+    __isTypeOf: parent => Boolean(parent),
     name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {

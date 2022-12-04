@@ -1,6 +1,5 @@
 import { FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
 import { useSql } from '../hooks/use-sql';
 import type { LedgerEntity } from '../models/types';
 import { AccounterBasicTable } from './common/accounter-basic-table';
@@ -55,21 +54,21 @@ const TransactionTable = ({ transactions }: Props) => {
           </thead>
           <tbody>
             <tr>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
+              <td />
               <td>0.00</td>
-              <td></td>
-              <td></td>
+              <td />
+              <td />
               <td>0.00</td>
             </tr>
             {transactions.map(transaction => {

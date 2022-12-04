@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';

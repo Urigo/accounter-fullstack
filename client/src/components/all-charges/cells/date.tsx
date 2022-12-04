@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { AllChargesDateFieldsFragment } from '../../../__generated__/types';
 import { clearTimeFromDate } from '../../../helpers';
 

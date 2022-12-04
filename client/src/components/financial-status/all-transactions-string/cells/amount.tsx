@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { currencyCodeToSymbol } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 

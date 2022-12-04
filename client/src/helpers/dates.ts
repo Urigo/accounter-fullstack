@@ -1,4 +1,5 @@
-import moment from 'moment';
+// import moment from 'moment';
+import { format } from 'date-fns';
 
 export const parseMonth = (month?: string): string | undefined => {
   if (!month) {
@@ -31,9 +32,9 @@ export const parseYear = (year?: string): string | undefined => {
 };
 
 export function hashDateFormat(date: Date): string {
-  return moment(date).format('DD/MM/YYYY');
+  return format(new Date(date), 'yyyy/MM/dd');
 }
 
 export function clearTimeFromDate(date: Date): string {
-  return moment(date).format('YYYY-MM-DD');
+  return format(new Date(date), 'yyyy-MM-dd');
 }

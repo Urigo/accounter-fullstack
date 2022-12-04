@@ -1,4 +1,4 @@
-import { businesses } from '../helpers';
+import { businesses } from '../helpers/index.js';
 import type {
   LastInvoiceNumber,
   LedgerEntity,

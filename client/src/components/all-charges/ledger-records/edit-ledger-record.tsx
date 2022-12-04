@@ -1,7 +1,6 @@
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
-
 import { EditLedgerRecordsFieldsFragment, UpdateLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';

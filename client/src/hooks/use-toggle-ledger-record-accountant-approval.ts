@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   ToggleLedgerRecordAccountantApprovalMutation,
   ToggleLedgerRecordAccountantApprovalMutationVariables,
   useToggleLedgerRecordAccountantApprovalMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation ToggleLedgerRecordAccountantApproval($ledgerRecordId: ID!, $approved: Boolean!) {

@@ -1,7 +1,6 @@
+import { useState } from 'react';
 import { Switch } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useState } from 'react';
-
 import { AllChargesAccountantApprovalFieldsFragment } from '../../../__generated__/types';
 import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-charge-accountant-approval';
 

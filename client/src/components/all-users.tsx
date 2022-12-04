@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { businesses } from '../helpers';
 import { useSql } from '../hooks/use-sql';
 import { AccounterTable } from './common/accounter-table';

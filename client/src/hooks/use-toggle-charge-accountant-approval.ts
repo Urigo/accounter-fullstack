@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   ToggleChargeAccountantApprovalMutation,
   ToggleChargeAccountantApprovalMutationVariables,
   useToggleChargeAccountantApprovalMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation ToggleChargeAccountantApproval($chargeId: ID!, $approved: Boolean!) {

@@ -1,7 +1,6 @@
-import { format } from 'date-fns';
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
-
 import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
 import { rateOptionalDocumentsMatches } from '../../../helpers/document-matches';
 
@@ -65,7 +64,7 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
             </li>
             {extandedInfoFlag ? (
               <>
-                <li></li>
+                <li />
                 <li>
                   <button
                     onClick={() => setExtandedInfoFlag(false)}
@@ -133,7 +132,7 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
               </li>
               {extandedInfoFlag ? (
                 <>
-                  <li></li>
+                  <li />
                   <li>
                     <button
                       onClick={() => setExtandedInfoFlag(false)}

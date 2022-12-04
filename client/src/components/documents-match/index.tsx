@@ -1,7 +1,6 @@
+import { useState } from 'react';
 import { Pagination } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useState } from 'react';
-
 import { DocumentsToMatchQuery, useDocumentsToMatchQuery } from '../../__generated__/types';
 import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';

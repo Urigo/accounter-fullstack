@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useCallback, useState } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesDescriptionFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';

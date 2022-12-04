@@ -1,9 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Image } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
-import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-
 import { EditDocumentFieldsFragment, UpdateDocumentFieldsInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';

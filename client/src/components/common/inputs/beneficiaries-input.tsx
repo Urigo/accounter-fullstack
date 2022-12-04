@@ -1,8 +1,7 @@
-import { ActionIcon } from '@mantine/core';
 import { useEffect } from 'react';
+import { ActionIcon } from '@mantine/core';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-
 import { UpdateChargeInput } from '../../../__generated__/types';
 import { PercentageInput } from './percentage-input';
 import { TextInput } from './text-input';

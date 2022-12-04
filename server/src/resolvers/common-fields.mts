@@ -94,7 +94,7 @@ export const commonFinancialAccountFields: CardFinancialAccountResolvers | BankF
 export const documentType: Resolver<
   DocumentType,
   IGetAllDocumentsResult,
-  any,
+  unknown,
   Record<string, unknown>
 > = documentRoot => {
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();

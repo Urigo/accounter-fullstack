@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   DeleteLedgerRecordMutation,
   DeleteLedgerRecordMutationVariables,
   useDeleteLedgerRecordMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation DeleteLedgerRecord($ledgerRecordId: ID!) {

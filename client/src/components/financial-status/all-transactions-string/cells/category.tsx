@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { suggestedTransaction } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { ConfirmButton, UpdateButton } from '../../../common';
@@ -10,7 +9,7 @@ type Props = {
 };
 
 export const Category = ({ transaction, style }: Props) => {
-  const isPersonalCategory = !!transaction.personal_category;
+  const isPersonalCategory = Boolean(transaction.personal_category);
   const cellText = transaction.personal_category ?? suggestedTransaction(transaction)?.personalCategory;
 
   return (

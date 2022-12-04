@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   UpdateTransactionMutation,
   UpdateTransactionMutationVariables,
   useUpdateTransactionMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation UpdateTransaction($transactionId: ID!, $fields: UpdateTransactionInput!) {

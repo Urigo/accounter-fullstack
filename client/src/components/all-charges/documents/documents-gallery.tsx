@@ -1,7 +1,6 @@
+import { useState } from 'react';
 import { Badge, Image } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useState } from 'react';
-
 import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
 import { PopUpDrawer } from '../../common/drawer';
 import { DeleteDocumentButton } from './delete-document-button';

@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { useDocumentsToChargeMatcherQuery } from '../../__generated__/types';
 import { AccounterLoader } from '../common/loader';
 import { SelectionHandler } from './selection-handler';

@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { LedgerRecordsCreditAccountFieldsFragment } from '../../../../__generated__/types';
 
 gql`
