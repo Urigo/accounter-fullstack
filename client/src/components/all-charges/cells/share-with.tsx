@@ -26,6 +26,7 @@ gql`
     }
     financialEntity {
       __typename
+      id
     }
   }
 `;
