@@ -17,16 +17,19 @@ gql`
     counterparty {
       name
     }
+    financialEntity {
+      __typename
+    }
   }
 `;
 
 type Props = {
   data: AllChargesVatFieldsFragment;
-  isBusiness: boolean;
 };
 
-export const Vat = ({ data, isBusiness }: Props) => {
+export const Vat = ({ data }: Props) => {
   const { vat, totalAmount, counterparty } = data;
+  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
 
   const vatIssueFlag =
     (!vat &&

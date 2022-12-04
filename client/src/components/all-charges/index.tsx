@@ -1,9 +1,8 @@
 import gql from 'graphql-tag';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
-import { AllChargesQuery, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
-import { businesses, entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { AllChargesQuery, ChargeFilter, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
+import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton, NavBar } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
@@ -13,105 +12,83 @@ import { Amount, Date, Description, Entity, ShareWith, Tags } from './cells';
 import { Account } from './cells/account';
 import { Vat } from './cells/vat';
 import { ChargeExtendedInfo } from './charge-extended-info';
+import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
 import { UploadDocument } from './documents/upload-document';
 import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
 gql`
-  query AllCharges($financialEntityId: ID!, $page: Int, $limit: Int) {
-    financialEntity(id: $financialEntityId) {
-      ...SuggestedCharge
-      id
-      charges(page: $page, limit: $limit) {
-        nodes {
-          id
-          # ...ChargesFields
-          ...AllChargesAccountFields
-          ...AllChargesAmountFields
-          ...AllChargesDateFields
-          ...AllChargesDescriptionFields
-          ...AllChargesEntityFields
-          ...AllChargesTagsFields
-          ...AllChargesShareWithFields
-          ...AllChargesVatFields
-          ...TableLedgerRecordsFields
-          ...DocumentsGalleryFields
-          ...EditChargeFields
-        }
-        pageInfo {
-          totalPages
-        }
+  query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
+    getAllCharges(page: $page, limit: $limit, filters: $filters) {
+      nodes {
+        id
+        # ...ChargesFields
+        ...AllChargesAccountFields
+        ...AllChargesAmountFields
+        ...AllChargesDateFields
+        ...AllChargesDescriptionFields
+        ...AllChargesEntityFields
+        ...AllChargesTagsFields
+        ...AllChargesShareWithFields
+        ...AllChargesVatFields
+        ...TableLedgerRecordsFields
+        ...DocumentsGalleryFields
+        ...EditChargeFields
+        ...SuggestedCharge
+      }
+      pageInfo {
+        totalPages
       }
     }
   }
 `;
 
 gql`
-  fragment SuggestedCharge on FinancialEntity {
+  fragment SuggestedCharge on Charge {
     id
-    __typename
-    charges(page: $page, limit: $limit) {
-      nodes {
-        id
-        transactions {
-          id
-          __typename
-          amount {
-            raw
-          }
-          userNote
-          referenceNumber
-          description
-        }
-        counterparty {
-          name
-        }
-        vat {
-          raw
-        }
-        tags {
-          name
-        }
+    transactions {
+      id
+      __typename
+      amount {
+        raw
       }
+      userNote
+      referenceNumber
+      description
+    }
+    counterparty {
+      name
+    }
+    vat {
+      raw
+    }
+    tags {
+      name
     }
   }
 `;
 
 export const AllCharges = () => {
-  const [searchParams] = useSearchParams();
-  const financialEntityName = searchParams.get('financialEntity');
   const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
+  const [filter, setFilter] = useState<ChargeFilter>({});
   const [activePage, setPage] = useState(1);
 
-  // TODO: improve the ID logic
-  const financialEntityId =
-    financialEntityName === 'Guild'
-      ? businesses['Software Products Guilda Ltd.']
-      : financialEntityName === 'UriLTD'
-      ? businesses['Uri Goldshtein LTD']
-      : financialEntityName === 'Uri'
-      ? businesses['Uri Goldshtein']
-      : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
-
   const { data, isLoading } = useAllChargesQuery({
-    financialEntityId,
+    filters: filter,
     page: activePage,
     limit: 100,
   });
-
-  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
-  const allCharges = data?.financialEntity?.charges.nodes ?? [];
 
   if (isLoading) {
     return <AccounterLoader />;
   }
 
-  function generateRowContext(charge: AllChargesQuery['financialEntity']['charges']['nodes'][0]) {
+  function generateRowContext(charge: AllChargesQuery['getAllCharges']['nodes'][0]) {
     if (
       !charge.counterparty?.name ||
       !charge.transactions[0]?.userNote?.trim() ||
@@ -127,7 +104,7 @@ export const AllCharges = () => {
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar header="All Charges" />
+        <NavBar header="All Charges" filters={<ChargesFilters filter={filter} setFilter={setFilter} />} />
         <AccounterTable
           showButton={true}
           moreInfo={item => (
@@ -142,7 +119,7 @@ export const AllCharges = () => {
           striped
           highlightOnHover
           stickyHeader
-          items={allCharges}
+          items={data?.getAllCharges?.nodes ?? []}
           rowContext={generateRowContext}
           columns={[
             {
@@ -155,7 +132,7 @@ export const AllCharges = () => {
             },
             {
               title: 'Vat',
-              value: data => <Vat data={data} isBusiness={isBusiness} />,
+              value: data => <Vat data={data} />,
             },
             {
               title: 'Entity',
@@ -185,11 +162,7 @@ export const AllCharges = () => {
             {
               title: 'Share With',
               value: (data, alternativeCharge) => (
-                <ShareWith
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-                  isBusiness={isBusiness}
-                />
+                <ShareWith data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
               ),
             },
             {
@@ -220,7 +193,7 @@ export const AllCharges = () => {
           pagination={{
             page: activePage,
             onChange: setPage,
-            total: data?.financialEntity?.charges.pageInfo.totalPages ?? 1,
+            total: data?.getAllCharges?.pageInfo.totalPages ?? 1,
           }}
         />
       </div>

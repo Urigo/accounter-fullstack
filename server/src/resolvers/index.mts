@@ -42,7 +42,11 @@ import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
 } from '../providers/financial-accounts.mjs';
-import { getAllFinancialEntities, getFinancialEntityByIdLoader } from '../providers/financial-entities.mjs';
+import {
+  getAllFinancialEntities,
+  getFinancialEntityByChargeIdsLoader,
+  getFinancialEntityByIdLoader,
+} from '../providers/financial-entities.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
@@ -99,22 +103,31 @@ export const resolvers: Resolvers = {
         case ChargeSortByField.Amount:
           sortColumn = 'event_amount';
           break;
+        case ChargeSortByField.AbsAmount:
+          sortColumn = 'abs_event_amount';
+          break;
         case ChargeSortByField.Date:
           sortColumn = 'event_date';
           break;
       }
 
-      const charges = await getChargesByFilters.run(
-        {
-          financialEntityIds: filters?.byFinancialEntities ?? [],
-          isFinancialEntityIds: filters?.byFinancialEntities?.length ?? 0,
-          fromDate: filters?.fromDate,
-          toDate: filters?.toDate,
-          sortColumn,
-          asc: filters?.sortBy?.direction === 'DESC',
-        },
-        pool
-      );
+      const isFinancialEntityIds = filters?.byFinancialEntities?.length ?? 0;
+
+      const charges = await getChargesByFilters
+        .run(
+          {
+            financialEntityIds: filters?.byFinancialEntities?.length ? filters.byFinancialEntities : [null],
+            isFinancialEntityIds,
+            fromDate: filters?.fromDate,
+            toDate: filters?.toDate,
+            sortColumn,
+            asc: filters?.sortBy?.asc !== false,
+          },
+          pool
+        )
+        .catch(e => {
+          throw new Error(e.message);
+        });
       return {
         __typename: 'PaginatedCharges',
         nodes: charges.slice(page * limit - limit, page * limit),
@@ -989,6 +1002,13 @@ export const resolvers: Resolvers = {
       remark: 'Missing', // TODO: missing in DB
     }),
     property: DbCharge => DbCharge.is_property,
+    financialEntity: DbCharge =>
+      getFinancialEntityByChargeIdsLoader.load(DbCharge.id).then(res => {
+        if (!res) {
+          throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);
+        }
+        return res;
+      }),
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {

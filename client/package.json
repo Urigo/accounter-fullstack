@@ -17,6 +17,7 @@
     "@mantine/notifications": "5.8.3",
     "@tanstack/react-query": "4.0.10",
     "@urql/exchange-multipart-fetch": "1.0.1",
+    "deep-equal": "2.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "7.34.0",
@@ -25,6 +26,7 @@
     "urql": "3.0.3"
   },
   "devDependencies": {
+    "@types/deep-equal": "1.0.1",
     "@types/react": "18.0.15",
     "@types/react-dom": "18.0.6",
     "@vitejs/plugin-react": "2.0.0",

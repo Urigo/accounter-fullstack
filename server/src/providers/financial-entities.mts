@@ -3,6 +3,7 @@ import DataLoader from 'dataloader';
 
 import {
   IGetAllFinancialEntitiesQuery,
+  IGetFinancialEntitiesByChargeIdsQuery,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
 } from '../__generated__/financial-entities.types.mjs';
@@ -47,3 +48,24 @@ export const getFinancialEntityByNameLoader = new DataLoader(batchFinancialEntit
 export const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     SELECT *
     FROM accounter_schema.businesses;`;
+
+export const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
+SELECT at.id as transaction_id, bu.*
+FROM accounter_schema.all_transactions at
+LEFT JOIN accounter_schema.financial_accounts fa
+ON  at.account_number = fa.account_number
+LEFT JOIN accounter_schema.businesses bu
+ON  fa.owner = bu.id
+WHERE at.id IN $$chargeIds;`;
+
+async function batchFinancialEntitiesByChargeIds(chargeIds: readonly string[]) {
+  const financialEntities = await getFinancialEntitiesByChargeIds.run(
+    {
+      chargeIds,
+    },
+    pool
+  );
+  return chargeIds.map(chargeId => financialEntities.find(fe => fe.transaction_id === chargeId) ?? null);
+}
+
+export const getFinancialEntityByChargeIdsLoader = new DataLoader(batchFinancialEntitiesByChargeIds, { cache: false });
