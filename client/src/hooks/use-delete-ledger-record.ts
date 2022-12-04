@@ -17,11 +17,13 @@ export const useDeleteLedgerRecord = () => {
 
   const onError = async (e: unknown, { ledgerRecordId }: DeleteLedgerRecordMutationVariables) => {
     console.error(e);
-    return new Error(`Error deleting ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error deleting ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (
     data: DeleteLedgerRecordMutation,
-    { ledgerRecordId }: DeleteLedgerRecordMutationVariables
+    { ledgerRecordId }: DeleteLedgerRecordMutationVariables,
   ) => {
     if (!data.deleteLedgerRecord) {
       throw new Error(`Error deleting ledger record ID [${ledgerRecordId}]`);

@@ -23,7 +23,11 @@ export const ReceiptNumber = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.receipt_number ?? 'null'}
-      <UpdateButton transaction={transaction} propertyName="receipt_number" promptText="New Receipt Number:" />
+      <UpdateButton
+        transaction={transaction}
+        propertyName="receipt_number"
+        promptText="New Receipt Number:"
+      />
     </td>
   );
 };

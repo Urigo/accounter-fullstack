@@ -21,7 +21,11 @@ export function AccountantApproval({ ledgerRecordId, approved: initialApprovedSt
 
   return (
     <td>
-      <Switch color="green" checked={checked} onChange={event => onToggle(event.currentTarget.checked)} />
+      <Switch
+        color="green"
+        checked={checked}
+        onChange={event => onToggle(event.currentTarget.checked)}
+      />
     </td>
   );
 }

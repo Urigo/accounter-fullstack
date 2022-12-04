@@ -15,7 +15,9 @@ type Props = {
 };
 
 export const UploadDocument = ({ chargeId, closeModal }: Props) => {
-  const [res, mutate] = useMutation<UploadDocumentMutation, UploadDocumentMutationVariables>(UploadDocumentDocument);
+  const [res, mutate] = useMutation<UploadDocumentMutation, UploadDocumentMutationVariables>(
+    UploadDocumentDocument,
+  );
   const [value, setValue] = useState<File | null>(null);
 
   const onSubmit = useCallback(async () => {
@@ -31,7 +33,9 @@ export const UploadDocument = ({ chargeId, closeModal }: Props) => {
               message: 'Oh no!, we have an error! 🤥',
             });
             console.error(
-              `Error uploading document: ${res.error?.message || (res.data?.uploadDocument as CommonError).message}`
+              `Error uploading document: ${
+                res.error?.message || (res.data?.uploadDocument as CommonError).message
+              }`,
             );
           } else if (res.data) {
             showNotification({
@@ -56,7 +60,13 @@ export const UploadDocument = ({ chargeId, closeModal }: Props) => {
 
   return (
     <div className="px-5 w-max h-max justify-items-center">
-      <FileInput icon={res.fetching && <Loader />} value={value} onChange={setValue} clearable label="File Upload" />
+      <FileInput
+        icon={res.fetching && <Loader />}
+        value={value}
+        onChange={setValue}
+        clearable
+        label="File Upload"
+      />
       <div className="flex justify-center gap-5 mt-5">
         <button
           type="submit"

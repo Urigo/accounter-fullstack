@@ -20,12 +20,14 @@ async function batchFinancialEntitiesByIds(ids: readonly string[]) {
     {
       ids,
     },
-    pool
+    pool,
   );
   return ids.map(id => financialEntities.find(fe => fe.id === id));
 }
 
-export const getFinancialEntityByIdLoader = new DataLoader(batchFinancialEntitiesByIds, { cache: false });
+export const getFinancialEntityByIdLoader = new DataLoader(batchFinancialEntitiesByIds, {
+  cache: false,
+});
 
 const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
     SELECT *
@@ -37,12 +39,14 @@ async function batchFinancialEntitiesByNames(names: readonly string[]) {
     {
       names,
     },
-    pool
+    pool,
   );
   return names.map(name => financialEntities.find(fe => fe.name === name));
 }
 
-export const getFinancialEntityByNameLoader = new DataLoader(batchFinancialEntitiesByNames, { cache: false });
+export const getFinancialEntityByNameLoader = new DataLoader(batchFinancialEntitiesByNames, {
+  cache: false,
+});
 
 export const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     SELECT *
@@ -62,9 +66,14 @@ async function batchFinancialEntitiesByChargeIds(chargeIds: readonly string[]) {
     {
       chargeIds,
     },
-    pool
+    pool,
   );
-  return chargeIds.map(chargeId => financialEntities.find(fe => fe.transaction_id === chargeId) ?? null);
+  return chargeIds.map(
+    chargeId => financialEntities.find(fe => fe.transaction_id === chargeId) ?? null,
+  );
 }
 
-export const getFinancialEntityByChargeIdsLoader = new DataLoader(batchFinancialEntitiesByChargeIds, { cache: false });
+export const getFinancialEntityByChargeIdsLoader = new DataLoader(
+  batchFinancialEntitiesByChargeIds,
+  { cache: false },
+);

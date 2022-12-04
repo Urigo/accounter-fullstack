@@ -15,7 +15,9 @@ export const monthlyReport = async (query: any): Promise<string> => {
     from get_tax_report_of_month($monthTaxReportDate);
   `;
 
-  const monthlyTaxesReport: any = await pool.query(monthlyTaxesReportSQL, [`$$${monthTaxReportDate}$$`]);
+  const monthlyTaxesReport: any = await pool.query(monthlyTaxesReportSQL, [
+    `$$${monthTaxReportDate}$$`,
+  ]);
 
   let monthlyReportsHTMLTemplate = '';
   for (const transaction of monthlyTaxesReport) {

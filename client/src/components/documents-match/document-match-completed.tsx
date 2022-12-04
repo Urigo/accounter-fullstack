@@ -16,7 +16,7 @@ export function DocumentMatchCompleted({ chargeId, documentId }: Props) {
         documentId,
         fields: { chargeId },
       }),
-    []
+    [],
   );
 
   return (

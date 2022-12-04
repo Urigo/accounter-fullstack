@@ -23,7 +23,11 @@ export const InvoiceFile = ({ transaction, style }: Props) => {
           yes
         </a>
       )}
-      <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" />
+      <UpdateButton
+        transaction={transaction}
+        propertyName="tax_invoice_file"
+        promptText="New Invoice path:"
+      />
     </td>
   );
 };

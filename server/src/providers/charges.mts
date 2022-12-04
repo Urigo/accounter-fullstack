@@ -22,7 +22,7 @@ async function batchChargesByIds(ids: readonly string[]) {
     {
       cahrgeIds: ids,
     },
-    pool
+    pool,
   );
   return ids.map(id => charges.find(charge => charge.id === id));
 }
@@ -44,16 +44,19 @@ async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: re
       fromDate: null,
       toDate: null,
     },
-    pool
+    pool,
   );
   return financialAccountNumbers.map(accountNumber =>
-    charges.filter(charge => charge.account_number === accountNumber)
+    charges.filter(charge => charge.account_number === accountNumber),
   );
 }
 
-export const getChargeByFinancialAccountNumberLoader = new DataLoader(batchChargesByFinancialAccountNumbers, {
-  cache: false,
-});
+export const getChargeByFinancialAccountNumberLoader = new DataLoader(
+  batchChargesByFinancialAccountNumbers,
+  {
+    cache: false,
+  },
+);
 
 export const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT at.*, fa.owner as financial_entity_id
@@ -72,12 +75,14 @@ async function batchChargesByFinancialEntityIds(financialEntityIds: readonly str
       fromDate: null,
       toDate: null,
     },
-    pool
+    pool,
   );
   return financialEntityIds.map(id => charges.filter(charge => charge.financial_entity_id === id));
 }
 
-export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds, { cache: false });
+export const getChargeByFinancialEntityIdLoader = new DataLoader(batchChargesByFinancialEntityIds, {
+  cache: false,
+});
 
 export const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
     SELECT event_amount, currency_code

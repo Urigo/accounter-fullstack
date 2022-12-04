@@ -6,7 +6,9 @@ import { AccounterBasicTable } from '../common/accounter-basic-table';
 
 export const ThisMonthPrivateExpensesTable = () => {
   const { getThisMonthPrivateExpenses } = useSql();
-  const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<ThisMonthPrivateExpensesType[]>([]);
+  const [thisMonthPrivateExpenses, setThisMonthPrivateExpenses] = useState<
+    ThisMonthPrivateExpensesType[]
+  >([]);
 
   useEffect(() => {
     getThisMonthPrivateExpenses().then(setThisMonthPrivateExpenses);

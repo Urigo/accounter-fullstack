@@ -44,5 +44,5 @@ root.render(
         </Routes>
       </BrowserRouter>
     </Providers>
-  </StrictMode>
+  </StrictMode>,
 );

@@ -34,7 +34,9 @@ import {
   getFinancialAccountsByFinancialEntityIdLoader,
 } from '../providers/financial-accounts.mjs';
 
-export const commonFinancialEntityFields: LtdFinancialEntityResolvers | PersonalFinancialEntityResolvers = {
+export const commonFinancialEntityFields:
+  | LtdFinancialEntityResolvers
+  | PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
   accounts: async DbBusiness => {
     // TODO: add functionality for linkedEntities data
@@ -53,7 +55,7 @@ export const commonFinancialEntityFields: LtdFinancialEntityResolvers | Personal
           fromDate: filter?.fromDate,
           toDate: filter?.toDate,
         },
-        pool
+        pool,
       );
       charges.push(...newCharges);
     }
@@ -67,12 +69,17 @@ export const commonFinancialEntityFields: LtdFinancialEntityResolvers | Personal
   },
   linkedEntities: () => [], // TODO: implement
   documents: async DbBusiness => {
-    const documents = await getDocumentsByFinancialEntityIds.run({ financialEntityIds: [DbBusiness.id] }, pool);
+    const documents = await getDocumentsByFinancialEntityIds.run(
+      { financialEntityIds: [DbBusiness.id] },
+      pool,
+    );
     return documents;
   },
 };
 
-export const commonFinancialAccountFields: CardFinancialAccountResolvers | BankFinancialAccountResolvers = {
+export const commonFinancialAccountFields:
+  | CardFinancialAccountResolvers
+  | BankFinancialAccountResolvers = {
   id: DbAccount => DbAccount.id,
   charges: async (DbAccount, { filter }) => {
     if (!filter || Object.keys(filter).length === 0) {
@@ -85,7 +92,7 @@ export const commonFinancialAccountFields: CardFinancialAccountResolvers | BankF
         fromDate: filter?.fromDate,
         toDate: filter?.toDate,
       },
-      pool
+      pool,
     );
     return charges;
   },
@@ -128,8 +135,10 @@ export const commonFinancialDocumentsFields:
   | ProformaResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
   date: documentRoot => documentRoot.date,
-  amount: documentRoot => formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
-  vat: documentRoot => (documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null),
+  amount: documentRoot =>
+    formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
+  vat: documentRoot =>
+    documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null,
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
 };
@@ -144,16 +153,22 @@ export const commonTransactionFields:
   createdAt: DbTransaction => DbTransaction.event_date,
   effectiveDate: DbTransaction => effectiveDateSuplement(DbTransaction),
   direction: DbTransaction =>
-    parseFloat(DbTransaction.event_amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
-  amount: DbTransaction => formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
-  description: DbTransaction => `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
+    parseFloat(DbTransaction.event_amount) > 0
+      ? TransactionDirection.Credit
+      : TransactionDirection.Debit,
+  amount: DbTransaction =>
+    formatFinancialAmount(DbTransaction.event_amount, DbTransaction.currency_code),
+  description: DbTransaction =>
+    `${DbTransaction.bank_description} ${DbTransaction.detailed_bank_description}`,
   userNote: DbTransaction => DbTransaction.user_description,
   account: async DbTransaction => {
     // TODO: enhance logic to be based on ID instead of account_number
     if (!DbTransaction.account_number) {
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
-    const account = await getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
+    const account = await getFinancialAccountByAccountNumberLoader.load(
+      DbTransaction.account_number,
+    );
     if (!account) {
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }

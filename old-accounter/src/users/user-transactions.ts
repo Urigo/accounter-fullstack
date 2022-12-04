@@ -54,7 +54,7 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
       from accounter_schema.ledger
       where business = '${currrentCompany}' and '${userName}' in (debit_account_1, debit_account_2, credit_account_1, credit_account_2)
       order by to_date(date_3, 'DD/MM/YYYY') asc, original_id, details, debit_account_1, id;
-      `
+      `,
   );
 
   if (results.rows?.length) {
@@ -74,20 +74,36 @@ export const userTransactions = async (query: { id?: string; name?: string }): P
       let counterAccount = '';
       if (transaction.credit_account_1 === userName) {
         direction = 1;
-        amountNis = transaction.credit_amount_1 ? (amountNis = Number(transaction.credit_amount_1)) : 0;
-        amountForeign = transaction.foreign_credit_amount_1 ? Number(transaction.foreign_credit_amount_1) : 0;
+        amountNis = transaction.credit_amount_1
+          ? (amountNis = Number(transaction.credit_amount_1))
+          : 0;
+        amountForeign = transaction.foreign_credit_amount_1
+          ? Number(transaction.foreign_credit_amount_1)
+          : 0;
       } else if (transaction.credit_account_2 === userName) {
         direction = 1;
-        amountNis = transaction.credit_amount_2 ? (amountNis = Number(transaction.credit_amount_2)) : 0;
-        amountForeign = transaction.foreign_credit_amount_2 ? Number(transaction.foreign_credit_amount_2) : 0;
+        amountNis = transaction.credit_amount_2
+          ? (amountNis = Number(transaction.credit_amount_2))
+          : 0;
+        amountForeign = transaction.foreign_credit_amount_2
+          ? Number(transaction.foreign_credit_amount_2)
+          : 0;
       } else if (transaction.debit_account_1 === userName) {
         direction = -1;
-        amountNis = transaction.debit_amount_1 ? (amountNis = Number(transaction.debit_amount_1)) : 0;
-        amountForeign = transaction.foreign_debit_amount_1 ? Number(transaction.foreign_debit_amount_1) : 0;
+        amountNis = transaction.debit_amount_1
+          ? (amountNis = Number(transaction.debit_amount_1))
+          : 0;
+        amountForeign = transaction.foreign_debit_amount_1
+          ? Number(transaction.foreign_debit_amount_1)
+          : 0;
       } else if (transaction.debit_account_2 === userName) {
         direction = -1;
-        amountNis = transaction.debit_amount_2 ? (amountNis = Number(transaction.debit_amount_2)) : 0;
-        amountForeign = transaction.foreign_debit_amount_2 ? Number(transaction.foreign_debit_amount_2) : 0;
+        amountNis = transaction.debit_amount_2
+          ? (amountNis = Number(transaction.debit_amount_2))
+          : 0;
+        amountForeign = transaction.foreign_debit_amount_2
+          ? Number(transaction.foreign_debit_amount_2)
+          : 0;
       } else {
         continue;
       }

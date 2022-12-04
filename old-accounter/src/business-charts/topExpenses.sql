@@ -1,4 +1,4 @@
--- Not to include (create a function)
+ -- Not to include (create a function)
 -- personal_category <> 'conversion'
 -- financial_entity <> 'Isracard'
 -- Taxes entities
@@ -33,8 +33,8 @@
 --      from accounter_schema.financial_accounts accounts
 --      where accounts.private_business = 'business')
 -- Personal Categories
-SELECT
-  DISTINCT ON (personal_category) personal_category
+SELECT DISTINCT
+  ON (personal_category) personal_category
 FROM
   formatted_merged_tables;
 
@@ -51,8 +51,8 @@ SELECT
 FROM
   top_expense_all_time;
 
-CREATE
-OR REPLACE VIEW top_expense_all_time AS
+CREATE OR REPLACE VIEW
+  top_expense_all_time AS
 SELECT
   ABS(
     SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)

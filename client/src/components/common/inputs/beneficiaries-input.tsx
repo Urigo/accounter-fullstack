@@ -37,7 +37,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
           'beneficiaries',
           sum === 100
             ? { type: undefined, message: undefined }
-            : { type: 'custom', message: 'Sum of percentages must be 100' }
+            : { type: 'custom', message: 'Sum of percentages must be 100' },
         );
       }
     }
@@ -53,8 +53,13 @@ export function BeneficiariesInput({ label, formManager }: Props) {
               <Controller
                 control={control}
                 name={`beneficiaries.${index}.counterparty.name`}
-                rules={{ required: 'Required', minLength: { value: 2, message: 'Minimum 2 characters' } }}
-                render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} />}
+                rules={{
+                  required: 'Required',
+                  minLength: { value: 2, message: 'Minimum 2 characters' },
+                }}
+                render={({ field, fieldState }) => (
+                  <TextInput {...field} error={fieldState.error?.message} />
+                )}
               />
             </div>
             <p>:</p>
@@ -64,7 +69,11 @@ export function BeneficiariesInput({ label, formManager }: Props) {
                 name={`beneficiaries.${index}.percentage`}
                 rules={{ required: 'Required', max: 100, min: 0 }}
                 render={({ field, fieldState }) => (
-                  <PercentageInput {...field} error={fieldState.error?.message} isDirty={fieldState.isDirty} />
+                  <PercentageInput
+                    {...field}
+                    error={fieldState.error?.message}
+                    isDirty={fieldState.isDirty}
+                  />
                 )}
               />
             </div>
@@ -74,9 +83,14 @@ export function BeneficiariesInput({ label, formManager }: Props) {
           </div>
         ))}
         <ActionIcon>
-          <PlaylistAdd size={20} onClick={() => append({ percentage: 0, counterparty: { name: '' } })} />
+          <PlaylistAdd
+            size={20}
+            onClick={() => append({ percentage: 0, counterparty: { name: '' } })}
+          />
         </ActionIcon>
-        {errors.beneficiaries?.message && <p className="text-red-500 text-xs italic">{errors.beneficiaries.message}</p>}
+        {errors.beneficiaries?.message && (
+          <p className="text-red-500 text-xs italic">{errors.beneficiaries.message}</p>
+        )}
       </div>
     </div>
   );

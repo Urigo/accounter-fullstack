@@ -18,7 +18,10 @@ export const AllUsers = () => {
   return users.length ? (
     <>
       <h1>User Accounts List</h1>
-      <AccounterTable items={users ?? []} columns={[{ title: 'שם חשבון', value: user => user.username }]} />
+      <AccounterTable
+        items={users ?? []}
+        columns={[{ title: 'שם חשבון', value: user => user.username }]}
+      />
     </>
   ) : (
     <p>No user accounts found</p>

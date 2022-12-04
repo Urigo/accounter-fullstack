@@ -2,7 +2,7 @@ import { Currency, FinancialAmount } from '../__generated__/types.mjs';
 
 export const formatFinancialAmount = (
   rawAmount?: number | string | null,
-  rawCurrency?: string | null
+  rawCurrency?: string | null,
 ): FinancialAmount => {
   const amount = formatAmount(rawAmount);
   const currency = formatCurrency(rawCurrency);

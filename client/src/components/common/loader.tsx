@@ -14,7 +14,12 @@ export const AccounterLoader = () => {
       }}
     >
       <Icon name="logo" />
-      <Loader style={{ alignSelf: 'center', display: 'flex' }} color="dark" size="xl" variant="dots" />
+      <Loader
+        style={{ alignSelf: 'center', display: 'flex' }}
+        color="dark"
+        size="xl"
+        variant="dots"
+      />
     </div>
   );
 };

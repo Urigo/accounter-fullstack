@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import gql from 'graphql-tag';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
-import { DocumentMatchChargesFieldsFragment, DocumentMatchFieldsFragment } from '../../__generated__/types';
+import {
+  DocumentMatchChargesFieldsFragment,
+  DocumentMatchFieldsFragment,
+} from '../../__generated__/types';
 import { rateOptionalMatches } from '../../helpers/document-matches';
 
 gql`
@@ -86,7 +89,12 @@ interface Props {
   setSelectedChargeId: (id: string) => void;
 }
 
-export function DocumentMatchesSelection({ document, charges, setReadyForNextStep, setSelectedChargeId }: Props) {
+export function DocumentMatchesSelection({
+  document,
+  charges,
+  setReadyForNextStep,
+  setSelectedChargeId,
+}: Props) {
   const [selectedCharge, setSelectedCharge] = useState<string | null>(null);
   const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
 
@@ -141,7 +149,9 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
             <div className="flex-1">
               <h3 className="text-l font-semibold text-neutral-600">{document.documentType}</h3>
               <p className="flex items-baseline mt-4 text-neutral-600">
-                <span className="text-5xl font-extrabold tracking-tight">{document.amount.formatted}</span>
+                <span className="text-5xl font-extrabold tracking-tight">
+                  {document.amount.formatted}
+                </span>
               </p>
               <p className="mt-6 text-gray-500">{document.creditor}</p>
               <ul className="pt-6 mt-6 space-y-6 border-t">
@@ -209,7 +219,9 @@ export function DocumentMatchesSelection({ document, charges, setReadyForNextSte
               <div className="relative flex-1">
                 <h3 className="text-xl font-semibold text-white">Charge</h3>
                 <p className="flex items-baseline mt-4 text-white">
-                  <span className="text-5xl font-extrabold tracking-tight">{charge.totalAmount?.formatted}</span>
+                  <span className="text-5xl font-extrabold tracking-tight">
+                    {charge.totalAmount?.formatted}
+                  </span>
                 </p>
                 <p className="mt-6 text-gray-300">{charge.counterparty?.name}</p>
                 <ul className="pt-6 mt-6 space-y-6 border-t">

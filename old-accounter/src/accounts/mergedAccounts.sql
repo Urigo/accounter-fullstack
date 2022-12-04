@@ -36,7 +36,9 @@ ADD
   );
 
 ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions DROP CONSTRAINT data_0_renewal_description_enum;
+  accounter_schema.poalim_deposits_account_transactions
+DROP
+  CONSTRAINT data_0_renewal_description_enum;
 
 ALTER TABLE
   accounter_schema.poalim_deposits_account_transactions
@@ -75,7 +77,9 @@ ADD
   CONSTRAINT data_0_interest_payment_description_enum CHECK (data_0_interest_payment_description IN ('תחנה'));
 
 ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions DROP CONSTRAINT data_0_lien_description_enum;
+  accounter_schema.poalim_deposits_account_transactions
+DROP
+  CONSTRAINT data_0_lien_description_enum;
 
 ALTER TABLE
   accounter_schema.poalim_deposits_account_transactions
@@ -90,7 +94,9 @@ ADD
   CONSTRAINT data_0_time_unit_description_enum CHECK (data_0_time_unit_description IN ('ימים'));
 
 ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions DROP CONSTRAINT data_0_renewal_date_explanation_enum;
+  accounter_schema.poalim_deposits_account_transactions
+DROP
+  CONSTRAINT data_0_renewal_date_explanation_enum;
 
 ALTER TABLE
   accounter_schema.poalim_deposits_account_transactions
@@ -107,8 +113,8 @@ ADD
 DROP VIEW
   merged_tables CASCADE;
 
-CREATE
-OR REPLACE VIEW merged_tables AS
+CREATE OR REPLACE VIEW
+  merged_tables AS
 SELECT
   *
 FROM

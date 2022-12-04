@@ -3,8 +3,8 @@ SELECT
 FROM
   top_income_all_time;
 
-CREATE
-OR REPLACE VIEW top_income_all_time AS
+CREATE OR REPLACE VIEW
+  top_income_all_time AS
 SELECT
   SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2),
   financial_entity

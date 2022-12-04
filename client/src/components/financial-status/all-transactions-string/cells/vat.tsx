@@ -34,7 +34,9 @@ export const Vat = ({ transaction, style }: Props) => {
       }}
     >
       {cellText ?? 'undefined'}
-      {!transaction.vat && <ConfirmButton transaction={transaction} propertyName="vat" value={cellText?.toString()} />}
+      {!transaction.vat && (
+        <ConfirmButton transaction={transaction} propertyName="vat" value={cellText?.toString()} />
+      )}
       <UpdateButton transaction={transaction} propertyName="vat" promptText="New VAT:" />
     </td>
   );

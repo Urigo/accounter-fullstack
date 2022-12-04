@@ -26,7 +26,7 @@ async function main() {
     },
     () => {
       console.log('GraphQL API located at http://localhost:4000/graphql');
-    }
+    },
   );
 }
 

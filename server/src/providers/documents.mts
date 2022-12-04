@@ -31,7 +31,9 @@ async function batchDocumentsByChargeIds(chargeIds: readonly string[]) {
   return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
 }
 
-export const getDocumentsByChargeIdLoader = new DataLoader(batchDocumentsByChargeIds, { cache: false });
+export const getDocumentsByChargeIdLoader = new DataLoader(batchDocumentsByChargeIds, {
+  cache: false,
+});
 
 export const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
   SELECT *

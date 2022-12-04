@@ -51,16 +51,18 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
         });
       }
     },
-    [chargeId, mutate]
+    [chargeId, mutate],
   );
 
   const hasBeneficiariesd = beneficiaries.length > 0;
   const shareWithDotanFlag =
     !hasBeneficiariesd &&
     (!(isBusiness && !entitiesWithoutInvoice.includes(financialEntityName)) ||
-      [...privateBusinessExpenses, ...businessesNotToShare, ...businessesWithoutTaxCategory].includes(
-        financialEntityName
-      ));
+      [
+        ...privateBusinessExpenses,
+        ...businessesNotToShare,
+        ...businessesWithoutTaxCategory,
+      ].includes(financialEntityName));
 
   return (
     <div className="text-gray-600 body-font">
@@ -72,7 +74,9 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
               className="sm:w-1/4"
               style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
             >
-              <h2 className="title-font font-medium sm:text-base text-gray-900">{beneficiary.counterparty.name}</h2>
+              <h2 className="title-font font-medium sm:text-base text-gray-900">
+                {beneficiary.counterparty.name}
+              </h2>
               <p className="leading-relaxed">{beneficiary.percentage}%</p>
             </div>
           ))}

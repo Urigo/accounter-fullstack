@@ -29,5 +29,11 @@ export function AccountantApproval({ data }: Props) {
     });
   }
 
-  return <Switch color="green" checked={checked} onChange={event => onToggle(event.currentTarget.checked)} />;
+  return (
+    <Switch
+      color="green"
+      checked={checked}
+      onChange={event => onToggle(event.currentTarget.checked)}
+    />
+  );
 }

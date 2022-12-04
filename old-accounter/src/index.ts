@@ -42,7 +42,10 @@ async function main() {
       const query = url_parts.query;
       const responseHTML = await financialStatus(query);
       response.end(responseHTML);
-    } else if (request.url == '/monthly-report' || (request.url && request.url.startsWith('/monthly-report?month='))) {
+    } else if (
+      request.url == '/monthly-report' ||
+      (request.url && request.url.startsWith('/monthly-report?month='))
+    ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);
@@ -256,7 +259,11 @@ async function main() {
         const data = JSON.parse(bufferData.toString());
         console.log('Data: ', data);
 
-        const result = await updateBankTransactionAttribute(data.transactionId, data.attribute, data.value);
+        const result = await updateBankTransactionAttribute(
+          data.transactionId,
+          data.attribute,
+          data.value,
+        );
 
         console.log(result);
 
@@ -291,7 +298,10 @@ async function main() {
           // console.log('nothing');
         }
       });
-    } else if (request.url == '/user-transactions' || (request.url && request.url.startsWith('/user-transactions?'))) {
+    } else if (
+      request.url == '/user-transactions' ||
+      (request.url && request.url.startsWith('/user-transactions?'))
+    ) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const url_parts = parse(request.url, true);

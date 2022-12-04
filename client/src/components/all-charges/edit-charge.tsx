@@ -87,7 +87,10 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
   };
 
   const onTransactionSubmit: SubmitHandler<UpdateTransactionInput> = data => {
-    const dataToUpdate = relevantDataPicker(data, dirtyTransactionFields as MakeBoolean<typeof data>);
+    const dataToUpdate = relevantDataPicker(
+      data,
+      dirtyTransactionFields as MakeBoolean<typeof data>,
+    );
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       mutateTransaction({
         transactionId: transaction.id,
@@ -107,16 +110,27 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
             name="userNote"
             control={transactionControl}
             defaultValue={transaction.userNote}
-            rules={{ required: 'Required', minLength: { value: 2, message: 'Must be at least 2 characters' } }}
+            rules={{
+              required: 'Required',
+              minLength: { value: 2, message: 'Must be at least 2 characters' },
+            }}
             render={({ field: { value, ...field }, fieldState }) => (
-              <TextInput {...field} value={value ?? undefined} error={fieldState.error?.message} label="Description" />
+              <TextInput
+                {...field}
+                value={value ?? undefined}
+                error={fieldState.error?.message}
+                label="Description"
+              />
             )}
           />
           <Controller
             name="counterparty.name"
             control={chargeControl}
             defaultValue={charge.counterparty?.name}
-            rules={{ required: 'Required', minLength: { value: 2, message: 'Minimum 2 characters' } }}
+            rules={{
+              required: 'Required',
+              minLength: { value: 2, message: 'Minimum 2 characters' },
+            }}
             render={({ field, fieldState }) => (
               <TextInput {...field} error={fieldState.error?.message} label="Counterparty" />
             )}

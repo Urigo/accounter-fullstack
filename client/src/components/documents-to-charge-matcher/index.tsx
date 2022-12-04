@@ -51,12 +51,18 @@ export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
         )}
         {errorMessage && (
           <div className="flex flex-col text-center w-full mb-1">
-            <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">{errorMessage}</h3>
+            <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">
+              {errorMessage}
+            </h3>
           </div>
         )}
         {!errorMessage && (
           <div className="flex flex-col gap-3">
-            <SelectionHandler charge={data!.chargeById} documents={data?.documents ?? []} onDone={onDone} />
+            <SelectionHandler
+              charge={data!.chargeById}
+              documents={data?.documents ?? []}
+              onDone={onDone}
+            />
           </div>
         )}
       </div>

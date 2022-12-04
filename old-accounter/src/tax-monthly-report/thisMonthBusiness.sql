@@ -1,5 +1,5 @@
 CREATE
-OR REPLACE FUNCTION this_month_business(month_input VARCHAR) RETURNS SETOF formatted_merged_tables LANGUAGE SQL AS $$
+OR REPLACE FUNCTION this_month_business (month_input VARCHAR) RETURNS SETOF formatted_merged_tables LANGUAGE SQL AS $$
 
 
 SELECT *

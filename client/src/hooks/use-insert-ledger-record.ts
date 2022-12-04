@@ -25,7 +25,9 @@ export const useInsertLedgerRecord = () => {
 
   const onError = async (e: unknown, { chargeId }: InsertLedgerRecordMutationVariables) => {
     console.log(e);
-    return new Error(`Error inserting ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error inserting ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (data: InsertLedgerRecordMutation) => {
     if (data.insertLedgerRecord.__typename === 'CommonError') {

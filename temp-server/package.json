@@ -2,15 +2,15 @@
   "name": "temp-server",
   "version": "0.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "concurrently \"tsc -w\" \"nodemon -q dist/index.js\""
-  },
-  "keywords": [],
   "author": "",
   "license": "ISC",
+  "main": "index.js",
+  "keywords": [],
+  "scripts": {
+    "build": "tsc",
+    "dev": "concurrently \"tsc -w\" \"nodemon -q dist/index.js\"",
+    "start": "node dist/index.js"
+  },
   "dependencies": {
     "dotenv": "16.0.1",
     "express": "4.18.1",

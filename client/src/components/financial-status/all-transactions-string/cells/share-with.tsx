@@ -10,7 +10,8 @@ type Props = {
 
 export const ShareWith = ({ transaction, style }: Props) => {
   const cellText =
-    transaction.financial_accounts_to_balance ?? suggestedTransaction(transaction)?.financialAccountsToBalance;
+    transaction.financial_accounts_to_balance ??
+    suggestedTransaction(transaction)?.financialAccountsToBalance;
 
   return (
     <td
@@ -21,7 +22,11 @@ export const ShareWith = ({ transaction, style }: Props) => {
     >
       {cellText ?? 'undefined'}
       {!transaction.financial_accounts_to_balance && (
-        <ConfirmButton transaction={transaction} propertyName="financial_accounts_to_balance" value={cellText} />
+        <ConfirmButton
+          transaction={transaction}
+          propertyName="financial_accounts_to_balance"
+          value={cellText}
+        />
       )}
       <UpdateButton
         transaction={transaction}

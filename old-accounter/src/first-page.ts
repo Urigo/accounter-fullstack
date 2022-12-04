@@ -157,7 +157,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         from missing_invoice_dates($1)
         order by event_date;
       `,
-      [`$$${monthTaxReport}$$`]
+      [`$$${monthTaxReport}$$`],
     ),
     pool.query(
       `
@@ -165,7 +165,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         from missing_invoice_numbers($1)
         order by event_date;
       `,
-      [`$$${monthTaxReport}$$`]
+      [`$$${monthTaxReport}$$`],
     ),
     pool.query(lastInvoiceNumbersQuery),
     // pool.query(currentVATStatusQuery),
@@ -174,7 +174,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         select *
         from get_vat_for_month($1);
       `,
-      [`$$${monthTaxReport}$$`]
+      [`$$${monthTaxReport}$$`],
     ),
     pool.query(`
       select *
@@ -189,7 +189,7 @@ export const financialStatus = async (query: any): Promise<string> => {
         from missing_invoice_images($1)
         order by event_date;
       `,
-      [`$$${monthTaxReport}$$`]
+      [`$$${monthTaxReport}$$`],
     ),
     pool.query(readFileSync('src/monthlyCharts.sql', 'utf8')),
     pool.query(`
@@ -455,7 +455,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           }>${
         transaction.financial_entity
           ? transaction.financial_entity
-          : `${suggestedTransaction(transaction)?.financialEntity} <button type="button" onClick='printElement(this, "${
+          : `${
+              suggestedTransaction(transaction)?.financialEntity
+            } <button type="button" onClick='printElement(this, "${
               suggestedTransaction(transaction)?.financialEntity
             }");'>V</button>`
       }
@@ -466,7 +468,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           }>${
         transaction.user_description
           ? transaction.user_description
-          : `${suggestedTransaction(transaction)?.userDescription} <button type="button" onClick='printElement(this, "${
+          : `${
+              suggestedTransaction(transaction)?.userDescription
+            } <button type="button" onClick='printElement(this, "${
               suggestedTransaction(transaction)?.userDescription
             }");'>V</button>`
       }
@@ -499,7 +503,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           ${
             transaction.vat || transaction.vat == 0
               ? transaction.vat
-              : `${suggestedTransaction(transaction)?.vat} <button type="button" onClick='printElement(this, "${
+              : `${
+                  suggestedTransaction(transaction)?.vat
+                } <button type="button" onClick='printElement(this, "${
                   suggestedTransaction(transaction)?.vat
                 }");'>V</button>`
           }
@@ -539,7 +545,9 @@ export const financialStatus = async (query: any): Promise<string> => {
             isBusiness(transaction) && !transaction.tax_invoice_date
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
-          }>${transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''}
+          }>${
+        transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''
+      }
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_number" ${
@@ -557,16 +565,26 @@ export const financialStatus = async (query: any): Promise<string> => {
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${transaction.tax_invoice_file ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>` : ''}
+            ${
+              transaction.tax_invoice_file
+                ? `<a href="${transaction.tax_invoice_file}" target="_blank">yes</a>`
+                : ''
+            }
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
 
           <td class="receipt_image" ${
-            isBusiness(transaction) && !transaction.receipt_image && !transaction.proforma_invoice_file
+            isBusiness(transaction) &&
+            !transaction.receipt_image &&
+            !transaction.proforma_invoice_file
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${transaction.receipt_image ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>` : ''}
+            ${
+              transaction.receipt_image
+                ? `<a href="${transaction.receipt_image}" target="_blank">yes</a>`
+                : ''
+            }
             <button type="button" onClick='printElement(this, prompt("New Invoice Photo:"));'>&#x270f;</button>
           </td>
           <td class="receipt_date" ${
@@ -592,7 +610,11 @@ export const financialStatus = async (query: any): Promise<string> => {
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>
-            ${transaction.receipt_url ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>` : ''}
+            ${
+              transaction.receipt_url
+                ? `<a href="${transaction.receipt_url}" target="_blank">yes</a>`
+                : ''
+            }
             <button type="button" onClick='printElement(this, prompt("New Invoice path:"));'>&#x270f;</button>
           </td>
           
@@ -600,7 +622,9 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="links">
             ${transaction.links ? 'yes' : ''}
             <button type="button" onClick='printElement(this, prompt("New links:"));'>&#x270f;</button>
-            <button type="button" onClick='updateClipboard("${transaction.links}");'>&#9986;</button>
+            <button type="button" onClick='updateClipboard("${
+              transaction.links
+            }");'>&#9986;</button>
           </td>          
         </tr>
         <!--

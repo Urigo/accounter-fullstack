@@ -72,7 +72,8 @@ const TransactionTable = ({ transactions }: Props) => {
               <td>0.00</td>
             </tr>
             {transactions.map(transaction => {
-              transaction.balanceForeign = balanceForeign + transaction.direction * transaction.amountForeign;
+              transaction.balanceForeign =
+                balanceForeign + transaction.direction * transaction.amountForeign;
               setBalanceForeign(current => current + transaction.balanceForeign);
 
               transaction.balanceNis = balanceNis + transaction.direction * transaction.amountNis;
@@ -176,7 +177,7 @@ export const UserTransactions = () => {
       });
       return modifiedArray;
     },
-    [username]
+    [username],
   );
 
   const onUsernameChanged: FormEventHandler<HTMLFormElement> = event => {
@@ -198,7 +199,7 @@ export const UserTransactions = () => {
   // on transactions change, modify new data
   const modifiedTransactions = useMemo(
     () => transactions.reduce(modifyLedgerTransaction, []),
-    [transactions, modifyLedgerTransaction]
+    [transactions, modifyLedgerTransaction],
   );
 
   return (
@@ -206,7 +207,11 @@ export const UserTransactions = () => {
       <form onSubmit={onUsernameChanged}>
         <label>
           User Name:
-          <input type="text" value={inputValue} onChange={event => setInputValue(event.target.value)} />
+          <input
+            type="text"
+            value={inputValue}
+            onChange={event => setInputValue(event.target.value)}
+          />
         </label>
         <input type="submit" value="Search" />
       </form>

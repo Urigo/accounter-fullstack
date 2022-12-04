@@ -1,10 +1,10 @@
 SELECT
   *
 FROM
-  all_vat_transactions();
+  all_vat_transactions ();
 
 CREATE
-OR REPLACE FUNCTION all_vat_transactions() RETURNS TABLE (
+OR REPLACE FUNCTION all_vat_transactions () RETURNS TABLE (
   vat NUMERIC(9, 2),
   user_description VARCHAR,
   event_date date

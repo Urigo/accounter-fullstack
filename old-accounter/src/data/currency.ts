@@ -17,7 +17,7 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
       await page.goto(url);
       // await page.screenshot({ path: 'example.png' });
       let textRes = (await page.evaluate(
-        'document.getElementById("webkit-xml-viewer-source-xml").innerHTML'
+        'document.getElementById("webkit-xml-viewer-source-xml").innerHTML',
       )) as string;
       textRes = textRes.replace(/(\r\n|\n|\r)/gm, '').replaceAll(' ', '');
 
@@ -144,7 +144,11 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
             (exchange_date, usd, eur) VALUES ($1, $2, $3) RETURNING *
           `;
 
-          const values = [format(currentDate, 'yyyy-MM-dd'), currencyRates.dollarRate, currencyRates.euroRate];
+          const values = [
+            format(currentDate, 'yyyy-MM-dd'),
+            currencyRates.dollarRate,
+            currencyRates.euroRate,
+          ];
 
           try {
             const res = await pool.query(text, values);
@@ -158,7 +162,8 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
         } else if (
           parseFloat(currencyRates.dollarRate.toString()).toFixed(4) ==
             parseFloat(existingRate.rows[0].usd).toFixed(4) &&
-          parseFloat(currencyRates.euroRate.toString()).toFixed(4) == parseFloat(existingRate.rows[0].eur).toFixed(4)
+          parseFloat(currencyRates.euroRate.toString()).toFixed(4) ==
+            parseFloat(existingRate.rows[0].eur).toFixed(4)
         ) {
           console.log(`Same for ${format(currentDate, 'yyyy-MM-dd')}`);
         } else {

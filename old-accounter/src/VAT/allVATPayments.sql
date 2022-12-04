@@ -1,10 +1,10 @@
 SELECT
   *
 FROM
-  all_vat_payments();
+  all_vat_payments ();
 
 CREATE
-OR REPLACE FUNCTION all_vat_payments() RETURNS TABLE (
+OR REPLACE FUNCTION all_vat_payments () RETURNS TABLE (
   event_date date,
   event_amount NUMERIC(9, 2),
   bank_reference INTEGER,

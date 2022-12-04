@@ -56,7 +56,11 @@ export const TransactionRow = ({ transaction, columns, index, charge }: Props) =
 
   return (
     <>
-      <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+      <tr
+        style={rowStyle({ hover, index })}
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+      >
         {columns.map(column => {
           switch (column) {
             case 'Date': {

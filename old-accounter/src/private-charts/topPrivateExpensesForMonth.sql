@@ -1,19 +1,19 @@
 SELECT
-  top_private_expenses_for_month('2020-01-01'),
-  top_private_expenses_for_month('2020-02-01'),
-  top_private_expenses_for_month('2020-03-01'),
-  top_private_expenses_for_month('2020-04-01'),
-  top_private_expenses_for_month('2020-05-01'),
-  top_private_expenses_for_month('2020-06-01'),
-  top_private_expenses_for_month('2020-07-01'),
-  top_private_expenses_for_month('2020-08-01'),
-  top_private_expenses_for_month('2020-09-01'),
-  top_private_expenses_for_month('2020-10-01'),
-  top_private_expenses_for_month('2020-11-01'),
-  top_private_expenses_for_month('2020-12-01');
+  top_private_expenses_for_month ('2020-01-01'),
+  top_private_expenses_for_month ('2020-02-01'),
+  top_private_expenses_for_month ('2020-03-01'),
+  top_private_expenses_for_month ('2020-04-01'),
+  top_private_expenses_for_month ('2020-05-01'),
+  top_private_expenses_for_month ('2020-06-01'),
+  top_private_expenses_for_month ('2020-07-01'),
+  top_private_expenses_for_month ('2020-08-01'),
+  top_private_expenses_for_month ('2020-09-01'),
+  top_private_expenses_for_month ('2020-10-01'),
+  top_private_expenses_for_month ('2020-11-01'),
+  top_private_expenses_for_month ('2020-12-01');
 
 CREATE
-OR REPLACE FUNCTION top_private_expenses_for_month(month_input VARCHAR) RETURNS TABLE (sum NUMERIC(9, 2), category VARCHAR) LANGUAGE SQL AS $$
+OR REPLACE FUNCTION top_private_expenses_for_month (month_input VARCHAR) RETURNS TABLE (sum NUMERIC(9, 2), category VARCHAR) LANGUAGE SQL AS $$
 
 SELECT ABS(SUM(event_amount_in_usd_with_vat_if_exists)::numeric(9, 2)),
        personal_category
@@ -32,10 +32,10 @@ $$;
 SELECT
   *
 FROM
-  expenses_by_category_for_month('2020-10-01', 'food');
+  expenses_by_category_for_month ('2020-10-01', 'food');
 
 CREATE
-OR REPLACE FUNCTION expenses_by_category_for_month(
+OR REPLACE FUNCTION expenses_by_category_for_month (
   month_input VARCHAR,
   personal_category_input VARCHAR
 ) RETURNS TABLE (sum NUMERIC(9, 2), description VARCHAR) LANGUAGE SQL AS $$

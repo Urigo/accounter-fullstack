@@ -25,7 +25,9 @@ export const useUpdateLedgerRecord = () => {
 
   const onError = async (e: unknown, { ledgerRecordId }: UpdateLedgerRecordMutationVariables) => {
     console.log(e);
-    return new Error(`Error updating ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error updating ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (data: UpdateLedgerRecordMutation) => {
     if (data.updateLedgerRecord.__typename === 'CommonError') {

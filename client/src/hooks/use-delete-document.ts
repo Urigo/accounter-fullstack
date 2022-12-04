@@ -19,7 +19,10 @@ export const useDeleteDocument = () => {
     console.error(e);
     return new Error(`Error deleting document ID [${documentId}]: ${(e as Error)?.message}`);
   };
-  const onSuccess = async (data: DeleteDocumentMutation, { documentId }: DeleteDocumentMutationVariables) => {
+  const onSuccess = async (
+    data: DeleteDocumentMutation,
+    { documentId }: DeleteDocumentMutationVariables,
+  ) => {
     if (!data.deleteDocument) {
       throw new Error(`Error deleting document ID [${documentId}]`);
     }

@@ -30,7 +30,10 @@ export async function getChargeExchangeRates(charge: IGetChargesByIdsResult) {
   if (!charge.tax_invoice_date) {
     throw new Error(`Charge ID=${charge.id} has no tax invoice date`);
   }
-  const results = await Promise.all([getExchangeRates(charge.debit_date), getExchangeRates(charge.tax_invoice_date)]);
+  const results = await Promise.all([
+    getExchangeRates(charge.debit_date),
+    getExchangeRates(charge.tax_invoice_date),
+  ]);
   return {
     debitExchangeRates: results[0],
     invoiceExchangeRates: results[1],

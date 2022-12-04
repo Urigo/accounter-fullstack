@@ -13,7 +13,7 @@ export const initCloudinary = () => {
 };
 
 export const uploadInvoiceToCloudinary = async (
-  base64string: string
+  base64string: string,
 ): Promise<{ fileUrl: string; imageUrl: string }> => {
   try {
     const res = await cloudinary.uploader.upload(base64string);
@@ -24,6 +24,8 @@ export const uploadInvoiceToCloudinary = async (
 
     return { fileUrl, imageUrl };
   } catch (e) {
-    throw new Error(`Error on uploading file to cloudinary: ${typeof e === 'string' ? e : (e as Error)?.message}`);
+    throw new Error(
+      `Error on uploading file to cloudinary: ${typeof e === 'string' ? e : (e as Error)?.message}`,
+    );
   }
 };

@@ -29,7 +29,7 @@ export function DocumentsMatch() {
         setDocuments(data.documents.filter(doc => !doc.charge));
         return data;
       },
-    }
+    },
   );
 
   const [documents, setDocuments] = useState<DocumentsToMatchQuery['documents']>([]);
@@ -50,20 +50,28 @@ export function DocumentsMatch() {
     <div className="text-gray-600 body-font">
       <div className="container px-5 py-12 mx-auto">
         <div className="flex flex-col text-center w-full mb-1">
-          <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">Document Matches</h1>
+          <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">
+            Document Matches
+          </h1>
         </div>
         {documents?.length === 0 && (
           <div className="flex flex-col text-center w-full mb-1">
             {isLoading ? (
               <AccounterLoader />
             ) : (
-              <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">No Document Found</h3>
+              <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">
+                No Document Found
+              </h3>
             )}
           </div>
         )}
         {documents?.length > 0 && (
           <div className="flex flex-col gap-3">
-            <Pagination page={activeDocumentIndex} onChange={setActiveDocumentIndex} total={documents.length} />
+            <Pagination
+              page={activeDocumentIndex}
+              onChange={setActiveDocumentIndex}
+              total={documents.length}
+            />
             <DocumentHandler
               document={documents[activeDocumentIndex - 1]}
               charges={data?.financialEntity?.charges.nodes ?? []}

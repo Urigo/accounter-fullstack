@@ -1,8 +1,8 @@
 DROP VIEW
   all_creditcard_transactions CASCADE;
 
-CREATE
-OR REPLACE VIEW all_creditcard_transactions AS
+CREATE OR REPLACE VIEW
+  all_creditcard_transactions AS
 SELECT
   tax_invoice_date,
   tax_category,

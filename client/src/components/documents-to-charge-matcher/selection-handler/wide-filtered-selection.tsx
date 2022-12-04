@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Image } from '@mantine/core';
-import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
+import {
+  ChargeToMatchDocumentsFieldsFragment,
+  DocumentsToMatchFieldsFragment,
+} from '../../../__generated__/types';
 import { AccounterTable } from '../../common/accounter-table';
 import { Button } from '../../common/button';
 import { PopUpModal } from '../../common/modal';
@@ -43,10 +46,16 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
           },
           {
             title: 'File',
-            value: doc => doc.file && <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />,
+            value: doc =>
+              doc.file && (
+                <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />
+              ),
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },
-          { title: 'Serial Number', value: doc => ('serialNumber' in doc ? doc.serialNumber : null) },
+          {
+            title: 'Serial Number',
+            value: doc => ('serialNumber' in doc ? doc.serialNumber : null),
+          },
           { title: 'Amount', value: doc => doc.amount?.formatted ?? null },
           { title: 'Provider', value: doc => doc.creditor ?? null },
           {

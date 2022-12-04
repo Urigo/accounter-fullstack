@@ -9,7 +9,7 @@ type Props = {
 
 export const SelectInput = forwardRef<HTMLSelectElement, Props>(function SelectInput(
   { selectionEnum, label, error, ...props },
-  ref
+  ref,
 ) {
   return (
     <div>

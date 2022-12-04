@@ -39,7 +39,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'Tami4', userDescription: 'Water', personalCategory: 'food' };
   }
   if (transaction.detailed_bank_description.includes('חומוס פול התימני')) {
-    return { financialEntity: 'חומוס פול התימני', userDescription: 'Food', personalCategory: 'food' };
+    return {
+      financialEntity: 'חומוס פול התימני',
+      userDescription: 'Food',
+      personalCategory: 'food',
+    };
   }
   if (
     transaction.detailed_bank_description.includes('אי אם פי אם') ||
@@ -51,7 +55,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'סופר יודה', userDescription: 'Groceries', personalCategory: 'food' };
   }
   if (transaction.detailed_bank_description.includes('הצרכניה-צמרת')) {
-    return { financialEntity: 'הצרכניה-צמרת', userDescription: 'Groceries', personalCategory: 'food' };
+    return {
+      financialEntity: 'הצרכניה-צמרת',
+      userDescription: 'Groceries',
+      personalCategory: 'food',
+    };
   }
   if (transaction.detailed_bank_description.includes('מטח-קניה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
@@ -72,7 +80,8 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     transaction.detailed_bank_description == `ע' העברת מט"ח` ||
     (transaction.detailed_bank_description.includes(`העברת מט"ח`) &&
       Math.abs(Number(transaction.event_amount)) < 400) ||
-    (transaction.detailed_bank_description.includes('מטח') && Math.abs(Number(transaction.event_amount)) < 400) ||
+    (transaction.detailed_bank_description.includes('מטח') &&
+      Math.abs(Number(transaction.event_amount)) < 400) ||
     transaction.detailed_bank_description.includes('F.C.COM') ||
     transaction.detailed_bank_description.includes('ע.מפעולות-ישיר') ||
     transaction.detailed_bank_description.includes('ריבית חובה') ||
@@ -85,7 +94,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description.includes('ריבית זכות')) {
-    return { financialEntity: 'Poalim', userDescription: 'Interest fees on Euro plus', personalCategory: 'financial' };
+    return {
+      financialEntity: 'Poalim',
+      userDescription: 'Interest fees on Euro plus',
+      personalCategory: 'financial',
+    };
   }
   if (transaction.detailed_bank_description.includes('דותן שמחה')) {
     return {
@@ -181,16 +194,28 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     transaction.detailed_bank_description == 'הוט נט שרותי אינטרנט' ||
     transaction.detailed_bank_description == 'HOT'
   ) {
-    return { financialEntity: 'HOT', userDescription: `Internet Provider`, personalCategory: 'computer' };
+    return {
+      financialEntity: 'HOT',
+      userDescription: `Internet Provider`,
+      personalCategory: 'computer',
+    };
   }
   if (transaction.detailed_bank_description.includes('סלקום')) {
-    return { financialEntity: 'Celcom', userDescription: `Internet Provider`, personalCategory: 'computer' };
+    return {
+      financialEntity: 'Celcom',
+      userDescription: `Internet Provider`,
+      personalCategory: 'computer',
+    };
   }
   if (
     transaction.detailed_bank_description.includes('יורוקארד') ||
     transaction.detailed_bank_description.includes('ISRACARD')
   ) {
-    return { financialEntity: 'Isracard', userDescription: 'Creditcard charge', personalCategory: 'creditcard' };
+    return {
+      financialEntity: 'Isracard',
+      userDescription: 'Creditcard charge',
+      personalCategory: 'creditcard',
+    };
   }
   if (transaction.detailed_bank_description.includes('MEETUP')) {
     return {
@@ -279,10 +304,18 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
-    return { financialEntity: 'Poalim', userDescription: 'Bank creditcard fees', personalCategory: 'financial' };
+    return {
+      financialEntity: 'Poalim',
+      userDescription: 'Bank creditcard fees',
+      personalCategory: 'financial',
+    };
   }
   if (transaction.detailed_bank_description == 'מוניטור') {
-    return { financialEntity: 'Monitor', userDescription: 'Personal Finance App', personalCategory: 'financial' };
+    return {
+      financialEntity: 'Monitor',
+      userDescription: 'Personal Finance App',
+      personalCategory: 'financial',
+    };
   }
   if (transaction.detailed_bank_description.includes('G.CO')) {
     return {
@@ -299,7 +332,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'פפואה', userDescription: 'Coffee', personalCategory: 'food' };
   }
   if (transaction.detailed_bank_description.includes('סופר פארם')) {
-    return { financialEntity: 'SuperPharm', userDescription: 'Personal care', personalCategory: 'health' };
+    return {
+      financialEntity: 'SuperPharm',
+      userDescription: 'Personal care',
+      personalCategory: 'health',
+    };
   }
   if (transaction.detailed_bank_description == 'חברת פרטנר תקשורת בע') {
     return { financialEntity: 'Partner', personalCategory: 'family' };
@@ -308,7 +345,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     transaction.detailed_bank_description.includes('העברה מחו"ל') &&
     transaction.detailed_bank_description.includes('SDI PROCUREMEN')
   ) {
-    return { financialEntity: 'sdi procurement solutions', taxCategory: 'הכנפט1', personalCategory: 'business' };
+    return {
+      financialEntity: 'sdi procurement solutions',
+      taxCategory: 'הכנפט1',
+      personalCategory: 'business',
+    };
   }
   if (transaction.detailed_bank_description.includes('ZOOM')) {
     return {
@@ -359,10 +400,18 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'Sonol', userDescription: 'Gas', personalCategory: 'transportation' };
   }
   if (transaction.detailed_bank_description.includes('CARPOOL')) {
-    return { financialEntity: 'Google Waze', userDescription: 'Waze Carpool', personalCategory: 'transportation' };
+    return {
+      financialEntity: 'Google Waze',
+      userDescription: 'Waze Carpool',
+      personalCategory: 'transportation',
+    };
   }
   if (transaction.detailed_bank_description.includes('קאר 2 גו')) {
-    return { financialEntity: 'קאר 2 גו', userDescription: 'Car rental', personalCategory: 'transportation' };
+    return {
+      financialEntity: 'קאר 2 גו',
+      userDescription: 'Car rental',
+      personalCategory: 'transportation',
+    };
   }
   if (transaction.detailed_bank_description.includes('UBER')) {
     return { financialEntity: 'Uber', userDescription: 'Taxi', personalCategory: 'transportation' };
@@ -400,7 +449,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description.includes('קרן מכבי- חיוב')) {
-    return { financialEntity: 'Maccabi', userDescription: 'Monthly health bill', personalCategory: 'health' };
+    return {
+      financialEntity: 'Maccabi',
+      userDescription: 'Monthly health bill',
+      personalCategory: 'health',
+    };
   }
   if (transaction.detailed_bank_description.includes('MSFT AZURE')) {
     return {
@@ -435,7 +488,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description.includes('LANCE GLOBAL')) {
-    return { financialEntity: 'Lance Global Inc', financialAccountsToBalance: 'no', personalCategory: 'business' };
+    return {
+      financialEntity: 'Lance Global Inc',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
+    };
   }
   if (transaction.detailed_bank_description.includes('CRISP')) {
     return {
@@ -462,19 +519,35 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description.includes('הוק האוס אוף קופי')) {
-    return { financialEntity: 'HOC - House Of Coffee', userDescription: 'Coffee', personalCategory: 'food' };
+    return {
+      financialEntity: 'HOC - House Of Coffee',
+      userDescription: 'Coffee',
+      personalCategory: 'food',
+    };
   }
   if (transaction.detailed_bank_description.includes('מנטנטו')) {
-    return { financialEntity: 'Men Tenten Ramen Bar', userDescription: 'Food', personalCategory: 'food' };
+    return {
+      financialEntity: 'Men Tenten Ramen Bar',
+      userDescription: 'Food',
+      personalCategory: 'food',
+    };
   }
   if (transaction.detailed_bank_description.includes('משק ברזילי בע"מ')) {
-    return { financialEntity: 'Meshek Barzilay', userDescription: 'Food', personalCategory: 'food' };
+    return {
+      financialEntity: 'Meshek Barzilay',
+      userDescription: 'Food',
+      personalCategory: 'food',
+    };
   }
   if (transaction.detailed_bank_description.includes('טל יהלום')) {
     return { financialEntity: 'Tal Yahalom', userDescription: 'gift', personalCategory: 'family' };
   }
   if (transaction.detailed_bank_description.includes('רוני שפירא')) {
-    return { financialEntity: 'Roney Shapira', userDescription: 'gift', personalCategory: 'family' };
+    return {
+      financialEntity: 'Roney Shapira',
+      userDescription: 'gift',
+      personalCategory: 'family',
+    };
   }
   if (
     transaction.detailed_bank_description.includes('הלמן-אלדובי') &&
@@ -507,7 +580,8 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
   }
   if (
     transaction.detailed_bank_description.includes('העברת מט"ח') &&
-    (transaction.detailed_bank_description.includes('fbv') || transaction.detailed_bank_description.includes('fv'))
+    (transaction.detailed_bank_description.includes('fbv') ||
+      transaction.detailed_bank_description.includes('fv'))
   ) {
     return {
       financialEntity: 'Jelly JS Kamil Kisiela',
@@ -516,7 +590,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (transaction.detailed_bank_description.includes('Vignesh')) {
-    return { financialEntity: 'Vignesh T.V.', financialAccountsToBalance: 'no', personalCategory: 'business' };
+    return {
+      financialEntity: 'Vignesh T.V.',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
+    };
   }
   if (transaction.detailed_bank_description.includes('sof0')) {
     return {
@@ -702,7 +780,11 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'The Block', userDescription: 'Party', personalCategory: 'fun' };
   }
   if (transaction.detailed_bank_description.includes('EVENTBUZZ TICKETS')) {
-    return { financialEntity: 'EVENTBUZZ TICKETS', userDescription: 'Party', personalCategory: 'fun' };
+    return {
+      financialEntity: 'EVENTBUZZ TICKETS',
+      userDescription: 'Party',
+      personalCategory: 'fun',
+    };
   }
   if (transaction.detailed_bank_description.includes('סלון ברלין')) {
     return { financialEntity: 'סלון ברלין', userDescription: 'Bar', personalCategory: 'fun' };
@@ -729,16 +811,32 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'Netflix', userDescription: 'TV', personalCategory: 'fun' };
   }
   if (transaction.detailed_bank_description.includes('תורגמן יצחק ואברהם')) {
-    return { financialEntity: 'תורגמן יצחק ואברהם', userDescription: 'טמבוריה', personalCategory: 'house' };
+    return {
+      financialEntity: 'תורגמן יצחק ואברהם',
+      userDescription: 'טמבוריה',
+      personalCategory: 'house',
+    };
   }
   if (transaction.detailed_bank_description.includes('אריה קריסטל')) {
-    return { financialEntity: 'Arye Kristal', userDescription: 'Water bill for 04-2022', personalCategory: 'house' };
+    return {
+      financialEntity: 'Arye Kristal',
+      userDescription: 'Water bill for 04-2022',
+      personalCategory: 'house',
+    };
   }
   if (transaction.detailed_bank_description.includes('קאופמן מנעולים')) {
-    return { financialEntity: 'קאופמן מנעולים', userDescription: 'טמבוריה', personalCategory: 'house' };
+    return {
+      financialEntity: 'קאופמן מנעולים',
+      userDescription: 'טמבוריה',
+      personalCategory: 'house',
+    };
   }
   if (transaction.detailed_bank_description.includes("חב' חשמל דן חשבונות")) {
-    return { financialEntity: 'חב חשמל דן חשבונות', userDescription: 'Electricity bill', personalCategory: 'house' };
+    return {
+      financialEntity: 'חב חשמל דן חשבונות',
+      userDescription: 'Electricity bill',
+      personalCategory: 'house',
+    };
   }
   if (transaction.detailed_bank_description.includes('EUFYLIFE')) {
     return { financialEntity: 'Eufy', userDescription: 'Home Camera', personalCategory: 'house' };
@@ -800,10 +898,18 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return { financialEntity: 'לה קפה', userDescription: 'Coffeee', personalCategory: 'food' };
   }
   if (transaction.detailed_bank_description.includes('ספסל בן גוריון')) {
-    return { financialEntity: 'ספסל בן גוריון', userDescription: 'Coffee', personalCategory: 'food' };
+    return {
+      financialEntity: 'ספסל בן גוריון',
+      userDescription: 'Coffee',
+      personalCategory: 'food',
+    };
   }
   if (transaction.detailed_bank_description.includes('גולדשטיין בן_עמי')) {
-    return { financialEntity: 'Benami Goldshtein', userDescription: 'Rent for 09-2021', personalCategory: 'house' };
+    return {
+      financialEntity: 'Benami Goldshtein',
+      userDescription: 'Rent for 09-2021',
+      personalCategory: 'house',
+    };
   }
   if (transaction.detailed_bank_description.includes('CALENDLY')) {
     return {
@@ -858,7 +964,9 @@ export const isBusiness = (transaction: TransactionType) => {
 export const shareWithDotan = (transaction: TransactionType) => {
   if (
     !transaction.financial_accounts_to_balance ||
-    ['no', ' ', 'yes', 'pension', 'training_fund'].includes(transaction.financial_accounts_to_balance)
+    ['no', ' ', 'yes', 'pension', 'training_fund'].includes(
+      transaction.financial_accounts_to_balance,
+    )
   ) {
     return false;
   }

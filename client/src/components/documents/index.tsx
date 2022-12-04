@@ -165,10 +165,16 @@ export const DocumentsReport = () => {
           },
           {
             title: 'File',
-            value: doc => doc.file && <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />,
+            value: doc =>
+              doc.file && (
+                <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />
+              ),
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },
-          { title: 'Serial Number', value: doc => ('serialNumber' in doc ? doc.serialNumber : null) },
+          {
+            title: 'Serial Number',
+            value: doc => ('serialNumber' in doc ? doc.serialNumber : null),
+          },
           { title: 'VAT', value: doc => ('vat' in doc ? doc.vat?.formatted : null) },
           { title: 'Amount', value: doc => doc.charge?.transactions[0].amount.formatted ?? null },
           { title: 'Creditor', value: doc => doc.creditor ?? null },

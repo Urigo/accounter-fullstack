@@ -3,7 +3,10 @@ import { Image } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { EditDocumentFieldsFragment, UpdateDocumentFieldsInput } from '../../../__generated__/types';
+import {
+  EditDocumentFieldsFragment,
+  UpdateDocumentFieldsInput,
+} from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel } from '../../common/button-with-label';
@@ -154,7 +157,9 @@ export const EditDocument = ({ documentData }: Props) => {
       </div>
       {openModal === documentData.image && (
         <PopUpModal
-          content={<Image src={documentData.image} className=" bg-gray-300 p-5 mr-5 max-h-fit	 max-w-fit" />}
+          content={
+            <Image src={documentData.image} className=" bg-gray-300 p-5 mr-5 max-h-fit	 max-w-fit" />
+          }
           modalSize="50%"
           onClose={() => setOpenModal(null)}
           opened={openModal === documentData.image}

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Stepper } from '@mantine/core';
 import gql from 'graphql-tag';
-import { DocumentHandlerFieldsFragment, DocumentMatchChargesFieldsFragment } from '../../__generated__/types';
+import {
+  DocumentHandlerFieldsFragment,
+  DocumentMatchChargesFieldsFragment,
+} from '../../__generated__/types';
 import { EditDocument } from '../all-charges/documents/edit-document';
 import { DocumentMatchCompleted } from './document-match-completed';
 import { DocumentMatchesSelection } from './document-matches-selection';
@@ -53,7 +56,9 @@ export function DocumentHandler({ document, charges, skipDocument }: Props) {
     <>
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
         <Stepper.Step label="Supplement" description="Complete Missing Data">
-          {active === 0 && <EditStep document={document} setReadyForNextStep={setReadyForNextStep} />}
+          {active === 0 && (
+            <EditStep document={document} setReadyForNextStep={setReadyForNextStep} />
+          )}
         </Stepper.Step>
         <Stepper.Step label="Match" description="Select Matching Charge">
           <DocumentMatchesSelection

@@ -1,5 +1,7 @@
 {
   "name": "accounter-monorepo",
+  "type": "module",
+  "license": "MIT",
   "private": true,
   "workspaces": [
     "client",
@@ -7,30 +9,32 @@
     "old-accounter",
     "temp-server"
   ],
-  "type": "module",
+  "engines": {
+    "node": "18.12.1"
+  },
   "scripts": {
-    "postinstall": "patch-package",
-    "start": "yarn --cwd old-accounter start",
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
     "client:build": "yarn --cwd client build",
-    "server:build": "yarn --cwd server build",
-    "temp-server:build": "yarn --cwd temp-server build",
-    "old-accounter:build": "yarn --cwd old-accounter build",
-    "dev": "yarn --cwd old-accounter dev",
     "client:dev": "yarn --cwd client dev",
-    "server:dev": "yarn --cwd server dev",
-    "temp-server:dev": "yarn --cwd temp-server dev",
-    "old-accounterdev": "yarn --cwd old-accounter dev",
-    "scrape": "yarn --cwd old-accounter scrape",
-    "month": "yarn --cwd old-accounter month",
-    "get": "yarn --cwd old-accounter get",
-    "deploy": "git push heroku master",
-    "lint": "eslint --ignore-path .gitignore .",
-    "prettier": "prettier --ignore-path .gitignore --write --list-different .",
-    "lint:prettier": "prettier --ignore-path .gitignore --check .",
-    "sqlgen": "npx pgtyped -c pgTypedConfig.json",
     "codegen": "graphql-codegen --config codegen.yml",
-    "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\""
+    "deploy": "git push heroku master",
+    "dev": "yarn --cwd old-accounter dev",
+    "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\"",
+    "get": "yarn --cwd old-accounter get",
+    "lint": "eslint --ignore-path .gitignore .",
+    "lint:prettier": "prettier --ignore-path .gitignore --check .",
+    "month": "yarn --cwd old-accounter month",
+    "old-accounter:build": "yarn --cwd old-accounter build",
+    "old-accounterdev": "yarn --cwd old-accounter dev",
+    "postinstall": "patch-package",
+    "prettier": "prettier --ignore-path .gitignore --write --list-different .",
+    "scrape": "yarn --cwd old-accounter scrape",
+    "server:build": "yarn --cwd server build",
+    "server:dev": "yarn --cwd server dev",
+    "sqlgen": "npx pgtyped -c pgTypedConfig.json",
+    "start": "yarn --cwd old-accounter start",
+    "temp-server:build": "yarn --cwd temp-server build",
+    "temp-server:dev": "yarn --cwd temp-server dev"
   },
   "dependencies": {
     "graphql": "16.6.0",
@@ -56,9 +60,5 @@
     "prettier": "2.8.0",
     "prettier-plugin-sql": "0.12.1",
     "typescript": "4.9.3"
-  },
-  "engines": {
-    "node": "18.12.1"
-  },
-  "license": "MIT"
+  }
 }

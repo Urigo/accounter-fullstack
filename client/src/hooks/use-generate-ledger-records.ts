@@ -28,7 +28,9 @@ export const useGenerateLedgerRecords = () => {
 
   const onError = async (e: unknown, { chargeId }: GenerateLedgerRecordsMutationVariables) => {
     console.log(e);
-    return new Error(`Error generating ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error generating ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (data: GenerateLedgerRecordsMutation) => {
     if (data.generateLedgerRecords.__typename === 'CommonError') {

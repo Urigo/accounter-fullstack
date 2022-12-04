@@ -26,7 +26,10 @@ export function TagsInput({ label, formManager }: Props) {
               <Controller
                 control={control}
                 name={`tags.${index}.name`}
-                rules={{ required: 'Required', minLength: { value: 2, message: 'Minimum 2 characters' } }}
+                rules={{
+                  required: 'Required',
+                  minLength: { value: 2, message: 'Minimum 2 characters' },
+                }}
                 render={({ field, fieldState }) => (
                   <TextInput className="w-full" {...field} error={fieldState.error?.message} />
                 )}

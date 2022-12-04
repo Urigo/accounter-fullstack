@@ -1,6 +1,10 @@
 import { pool } from '..';
 
-export async function updateBankTransactionAttribute(transactionId: string, attribute: string, value: string) {
+export async function updateBankTransactionAttribute(
+  transactionId: string,
+  attribute: string,
+  value: string,
+) {
   const updateQuery = `
           update accounter_schema.ledger
           set ${attribute} = $1
