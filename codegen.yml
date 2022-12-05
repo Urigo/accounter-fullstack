@@ -1,6 +1,6 @@
 overwrite: true
 schema: './**/*.graphql'
-documents: './client/src/**/*.tsx'
+documents: ['./client/src/**/*.tsx', './client/src/**/*.ts']
 config:
   scalars:
     Date: 'Date'
