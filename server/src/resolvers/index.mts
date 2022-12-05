@@ -14,7 +14,7 @@ import {
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
 import { ChargeSortByField, Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
-import { formatFinancialAmount } from '../helpers/amount.mjs';
+import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -1325,32 +1325,28 @@ export const resolvers: Resolvers = {
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
 
     /* next fields are temporary, to resemble the DB entity */
-    business: DbLedgerRexcord => DbLedgerRexcord.business,
-    charge_id: DbLedgerRexcord => DbLedgerRexcord.charge_id,
-    credit_account_1: DbLedgerRexcord => DbLedgerRexcord.credit_account_1,
-    credit_account_2: DbLedgerRexcord => DbLedgerRexcord.credit_account_2,
-    credit_amount_1: DbLedgerRexcord => DbLedgerRexcord.credit_amount_1,
-    credit_amount_2: DbLedgerRexcord => DbLedgerRexcord.credit_amount_2,
-    currency: DbLedgerRexcord => DbLedgerRexcord.currency,
-    debit_account_1: DbLedgerRexcord => DbLedgerRexcord.debit_account_1,
-    debit_account_2: DbLedgerRexcord => DbLedgerRexcord.debit_account_2,
-    debit_amount_1: DbLedgerRexcord => DbLedgerRexcord.debit_amount_1,
-    debit_amount_2: DbLedgerRexcord => DbLedgerRexcord.debit_amount_2,
-    details: DbLedgerRexcord => DbLedgerRexcord.details,
-    foreign_credit_amount_1: DbLedgerRexcord => DbLedgerRexcord.foreign_credit_amount_1,
-    foreign_credit_amount_2: DbLedgerRexcord => DbLedgerRexcord.foreign_credit_amount_2,
-    foreign_debit_amount_1: DbLedgerRexcord => DbLedgerRexcord.foreign_debit_amount_1,
-    foreign_debit_amount_2: DbLedgerRexcord => DbLedgerRexcord.foreign_debit_amount_2,
-    hashavshevet_id: DbLedgerRexcord => DbLedgerRexcord.hashavshevet_id,
-    invoice_date: DbLedgerRexcord => DbLedgerRexcord.invoice_date,
-    movement_type: DbLedgerRexcord => DbLedgerRexcord.movement_type,
-    origin: DbLedgerRexcord => DbLedgerRexcord.origin,
-    original_id: DbLedgerRexcord => DbLedgerRexcord.original_id,
-    proforma_invoice_file: DbLedgerRexcord => DbLedgerRexcord.proforma_invoice_file,
-    reference_1: DbLedgerRexcord => DbLedgerRexcord.reference_1,
-    reference_2: DbLedgerRexcord => DbLedgerRexcord.reference_2,
-    reviewed: DbLedgerRexcord => DbLedgerRexcord.reviewed,
-    value_date: DbLedgerRexcord => DbLedgerRexcord.value_date,
+    charge_id: DbLedgerRecord => DbLedgerRecord.charge_id,
+    credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_1,
+    credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_2,
+    credit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_1),
+    credit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_2),
+    currency: DbLedgerRecord => formatCurrency(DbLedgerRecord.currency),
+    debit_account_1: DbLedgerRecord => DbLedgerRecord.debit_account_1,
+    debit_account_2: DbLedgerRecord => DbLedgerRecord.debit_account_2,
+    debit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_1),
+    debit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_2),
+    details: DbLedgerRecord => DbLedgerRecord.details,
+    foreign_credit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.foreign_credit_amount_1),
+    foreign_credit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.foreign_credit_amount_2),
+    foreign_debit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.foreign_debit_amount_1),
+    foreign_debit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.foreign_debit_amount_2),
+    hashavshevet_id: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
+    invoice_date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date) as TimelessDateString,
+    movement_type: DbLedgerRecord => DbLedgerRecord.movement_type,
+    reference_1: DbLedgerRecord => DbLedgerRecord.reference_1,
+    reference_2: DbLedgerRecord => DbLedgerRecord.reference_2,
+    reviewed: DbLedgerRecord => DbLedgerRecord.reviewed,
+    value_date: DbLedgerRecord => parseDate(DbLedgerRecord.value_date) as TimelessDateString,
   },
   // counterparties
   NamedCounterparty: {
