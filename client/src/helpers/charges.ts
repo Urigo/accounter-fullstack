@@ -760,7 +760,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('RAINTANK INC') || transactionDescription?.includes('GRAFANA')) {
+  if (
+    transactionDescription?.includes('RAINTANK INC') ||
+    transactionDescription?.includes('GRAFANA')
+  ) {
     return {
       financialEntity: 'Raintank Inc dba Grafana Labs',
       userDescription: 'Grafana Cloud',
