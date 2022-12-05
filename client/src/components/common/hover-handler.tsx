@@ -1,10 +1,11 @@
-import { PropsWithChildren, ReactElement, useState } from 'react';
+import { ReactElement, useState } from 'react';
 
 interface Props {
   hoverElement: ReactElement;
+  children?: ReactElement | ReactElement[];
 }
 
-export const HoverHandler = ({ children, hoverElement }: PropsWithChildren<Props>) => {
+export const HoverHandler = ({ children, hoverElement }: Props) => {
   const [isHover, setIsHover] = useState(false);
 
   return (

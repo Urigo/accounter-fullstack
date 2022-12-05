@@ -78,7 +78,7 @@ export function updateClipboard(newClip: string) {
     },
     () => {
       console.log('clipboard failed');
-    }
+    },
   );
 }
 
@@ -86,7 +86,7 @@ export function editTransactionAttribute(
   movementOrBank: boolean,
   transactionId: string,
   attribute: string,
-  value: string
+  value: string,
 ) {
   const changeRequest = { movementOrBank, transactionId, attribute, value };
   console.log(changeRequest);

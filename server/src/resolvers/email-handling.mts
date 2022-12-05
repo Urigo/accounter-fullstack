@@ -1,6 +1,9 @@
 import { Resolvers } from '../__generated__/types.mjs';
 
-export const fetchEmailDocument: NonNullable<Resolvers['Mutation']>['fetchEmailDocument'] = async (_, { url }) => {
+export const fetchEmailDocument: NonNullable<Resolvers['Mutation']>['fetchEmailDocument'] = async (
+  _,
+  { url },
+) => {
   // TODO: implement
-  return url as any;
+  return url as unknown;
 };

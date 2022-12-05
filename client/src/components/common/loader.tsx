@@ -1,5 +1,4 @@
 import { Loader } from '@mantine/core';
-
 import { Icon } from './icon';
 
 export const AccounterLoader = () => {
@@ -15,7 +14,12 @@ export const AccounterLoader = () => {
       }}
     >
       <Icon name="logo" />
-      <Loader style={{ alignSelf: 'center', display: 'flex' }} color="dark" size="xl" variant="dots" />
+      <Loader
+        style={{ alignSelf: 'center', display: 'flex' }}
+        color="dark"
+        size="xl"
+        variant="dots"
+      />
     </div>
   );
 };

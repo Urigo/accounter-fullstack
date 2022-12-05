@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Link } from 'tabler-icons-react';
-
 import { useUpdateDocument } from '../../hooks/use-update-document';
 
 interface Props {
@@ -17,7 +16,7 @@ export function DocumentMatchCompleted({ chargeId, documentId }: Props) {
         documentId,
         fields: { chargeId },
       }),
-    []
+    [],
   );
 
   return (

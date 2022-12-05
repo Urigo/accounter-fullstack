@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
@@ -24,7 +23,11 @@ export const ReceiptNumber = ({ transaction, style }: Props) => {
       }}
     >
       {transaction.receipt_number ?? 'null'}
-      <UpdateButton transaction={transaction} propertyName="receipt_number" promptText="New Receipt Number:" />
+      <UpdateButton
+        transaction={transaction}
+        propertyName="receipt_number"
+        promptText="New Receipt Number:"
+      />
     </td>
   );
 };

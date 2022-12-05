@@ -43,12 +43,14 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
   const ILSTransactions = await newScraperIstance.getILSTransactions(account);
   console.log(
     `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
-    ILSTransactions.isValid
+    ILSTransactions.isValid,
   );
   if (!ILSTransactions.isValid) {
     console.log(
-      `newScraperIstance.getILSTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
-      ILSTransactions.errors
+      `newScraperIstance.getILSTransactions ${JSON.stringify(
+        account.accountNumber,
+      )} schema error: `,
+      ILSTransactions.errors,
     );
   }
 
@@ -64,7 +66,7 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
     `);
   } else {
     console.log(
-      `Saving ILS for ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`
+      `Saving ILS for ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
     );
     await saveTransactionsToDB(
       ILSTransactions.data.transactions,
@@ -74,14 +76,16 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
         branchNumber: ILSTransactions.data.retrievalTransactionData.branchNumber,
         bankNumber: ILSTransactions.data.retrievalTransactionData.bankNumber,
       },
-      pool
+      pool,
     );
     console.log(
-      `Saved ILS for ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`
+      `Saved ILS for ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
     );
 
     const date = new Date();
-    const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .split('T')[0];
 
     fs.writeFile(
       `../archived_data/POALIM_original_checking_bank_dump_${dateString}_${account.accountNumber}.json`,
@@ -89,18 +93,25 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
       'utf8',
       () => {
         console.log('done dumping original checking dump file');
-      }
+      },
     );
   }
 }
 
-async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+async function getForeignTransactionsfromBankAndSave(
+  newScraperIstance: any,
+  account: any,
+  pool: pg.Pool,
+) {
   const foreignTransactions = await newScraperIstance.getForeignTransactions(account);
-  console.log(`finished getting foreignTransactions ${account.accountNumber}`, foreignTransactions.isValid);
+  console.log(
+    `finished getting foreignTransactions ${account.accountNumber}`,
+    foreignTransactions.isValid,
+  );
   if (!foreignTransactions.isValid) {
     console.log(
       `getForeignTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
-      foreignTransactions.errors
+      foreignTransactions.errors,
     );
   }
 
@@ -124,7 +135,7 @@ async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, acc
       }
       if (accountCurrency) {
         console.log(
-          `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+          `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
         );
         await saveTransactionsToDB(
           foreignAccountsArray.transactions,
@@ -134,13 +145,13 @@ async function getForeignTransactionsfromBankAndSave(newScraperIstance: any, acc
             branchNumber: foreignAccountsArray.branchNumber,
             bankNumber: foreignAccountsArray.bankNumber,
           },
-          pool
+          pool,
         );
         console.log(
-          `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`
+          `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
         );
       }
-    })
+    }),
   );
 }
 
@@ -155,7 +166,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     {
       validateSchema: true,
       isBusiness: true,
-    }
+    },
   );
   console.log('getting accounts');
   const accounts = await newPoalimInstance.getAccountsData();
@@ -196,7 +207,9 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       const camelCaseColumnName = camelCase(dBcolumn.column_name);
       if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
         let actualCondition = '';
-        const isNotNull = typeof account[camelCaseColumnName] !== 'undefined' && account[camelCaseColumnName] != null;
+        const isNotNull =
+          typeof account[camelCaseColumnName] !== 'undefined' &&
+          account[camelCaseColumnName] != null;
 
         whereClause = whereClause.concat('  ' + dBcolumn.column_name);
 
@@ -222,7 +235,8 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           actualCondition = `= ` + account[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
           const firstKey = Object.keys(account[camelCaseColumnName])[0];
-          actualCondition = `->> '` + firstKey + `' = '` + account[camelCaseColumnName][firstKey] + `'`;
+          actualCondition =
+            `->> '` + firstKey + `' = '` + account[camelCaseColumnName][firstKey] + `'`;
           if (Object.keys(account[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(account[camelCaseColumnName]));
@@ -234,7 +248,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
 
         whereClause = whereClause.concat(
           ` ${isNotNull ? actualCondition : 'IS NULL'} AND
-             `
+             `,
         );
       }
     }
@@ -258,7 +272,9 @@ async function getBankData(pool: pg.Pool, scraper: any) {
           ${columnNames.map((x: any) => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
-        text = text.substring(0, lastIndexOfComma).concat(text.substring(lastIndexOfComma + 1, text.length));
+        text = text
+          .substring(0, lastIndexOfComma)
+          .concat(text.substring(lastIndexOfComma + 1, text.length));
 
         const arrayKeys = columnNames.keys();
         let denseKeys = [...arrayKeys];
@@ -305,8 +321,10 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool),
         getDepositsAndSave(newPoalimInstance, account, pool),
       ]);
-      console.log(`got and saved ILS and Foreign for ${account.accountNumber} - ${JSON.stringify(results)}`);
-    })
+      console.log(
+        `got and saved ILS and Foreign for ${account.accountNumber} - ${JSON.stringify(results)}`,
+      );
+    }),
   );
   console.log('finish iterating over bank accounts');
   // await newScraper.close();
@@ -318,10 +336,17 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
   const deposits = await newScraperIstance.getDeposits(account);
   console.log(`finished getting deposits ${account.accountNumber}`, deposits.isValid);
   if (!deposits.isValid) {
-    console.log(`getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `, deposits.errors);
+    console.log(
+      `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
+      deposits.errors,
+    );
   }
 
-  if (account.accountNumber != 410915 && account.accountNumber != 61066 && account.accountNumber != 466803) {
+  if (
+    account.accountNumber != 410915 &&
+    account.accountNumber != 61066 &&
+    account.accountNumber != 466803
+  ) {
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
   } else {
     console.log(`Saving deposits for ${account.accountNumber}`);
@@ -352,7 +377,7 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
             branchNumber: account.branchNumber,
             bankNumber: account.bankNumber,
           },
-          pool
+          pool,
         );
       }
     }
@@ -360,14 +385,19 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
   }
 }
 
-async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newIsracardInstance: any, id: any) {
+async function getCreditCardTransactionsAndSave(
+  month: Date,
+  pool: pg.Pool,
+  newIsracardInstance: any,
+  id: any,
+) {
   console.log(`Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   const monthTransactions = await newIsracardInstance.getMonthTransactions(month);
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
     console.log(
       `newIsracardInstance.getMonthTransactions ${JSON.stringify(id)} schema error: `,
-      monthTransactions.errors
+      monthTransactions.errors,
     );
   }
   if (monthTransactions?.data?.Header?.Status != '1') {
@@ -378,7 +408,7 @@ async function getCreditCardTransactionsAndSave(month: Date, pool: pg.Pool, newI
 
   const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
-    wantedCreditCards.includes(transaction.card)
+    wantedCreditCards.includes(transaction.card),
   );
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
@@ -399,7 +429,7 @@ async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) 
     },
     {
       validateSchema: true,
-    }
+    },
   );
 
   let monthToFetch = subYears(new Date(), 2);
@@ -413,8 +443,13 @@ async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) 
 
   await Promise.allSettled(
     allMonthsToFetch.map(async currentMonthToFetch => {
-      await getCreditCardTransactionsAndSave(currentMonthToFetch, pool, newIsracardInstance, credentials.ID);
-    })
+      await getCreditCardTransactionsAndSave(
+        currentMonthToFetch,
+        pool,
+        newIsracardInstance,
+        credentials.ID,
+      );
+    }),
   );
   console.log(`after all creditcard months - ${credentials.ID}`);
 }

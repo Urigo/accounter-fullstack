@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { useSql } from '../../hooks/use-sql';
 import type { VatTransaction } from '../../models/types';
 import { AccounterBasicTable } from '../common/accounter-basic-table';
@@ -35,7 +34,9 @@ export const VatTransactionsString = ({ monthTaxReport }: Props) => {
               <tr key={i}>
                 <td>{row.overall_vat_status}</td>
                 <td>{row.vat}</td>
-                <td>{new Date(row.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+                <td>
+                  {new Date(row.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}
+                </td>
                 <td>{row.event_amount}</td>
                 <td>{row.financial_entity}</td>
                 <td>{row.user_description}</td>

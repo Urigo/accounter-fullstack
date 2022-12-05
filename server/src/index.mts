@@ -1,7 +1,6 @@
+import { createServer } from 'node:http';
 import { config } from 'dotenv';
 import { createYoga } from 'graphql-yoga';
-import { createServer } from 'node:http';
-
 import { initCloudinary } from './providers/cloudinary.mjs';
 import { initGreenInvoice } from './providers/green-invoice.mjs';
 import { getSchema } from './schema.mjs';
@@ -27,7 +26,7 @@ async function main() {
     },
     () => {
       console.log('GraphQL API located at http://localhost:4000/graphql');
-    }
+    },
   );
 }
 

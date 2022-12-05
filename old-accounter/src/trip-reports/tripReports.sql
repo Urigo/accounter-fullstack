@@ -1,8 +1,8 @@
--- Budapest 04/2019
+ -- Budapest 04/2019
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-05-20',
     'נסעחול16',
     FALSE,
@@ -14,7 +14,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-05-20',
     'נסעחול23',
     TRUE,
@@ -26,7 +26,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-10-15',
     'נסעחול25',
     TRUE,
@@ -38,7 +38,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-10-03',
     'נסעחול26',
     TRUE,
@@ -50,7 +50,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-11-21',
     'נסעחול27',
     TRUE,
@@ -63,7 +63,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-12-09',
     'נסעחול28',
     FALSE,
@@ -74,7 +74,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-12-09',
     'נסעחול28',
     TRUE,
@@ -86,7 +86,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2019-12-14',
     'נסעחול29',
     TRUE,
@@ -98,7 +98,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2020-01-16',
     'נסעחול30',
     TRUE,
@@ -110,7 +110,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2020-02-21',
     'נסעחול32',
     TRUE,
@@ -122,7 +122,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2020-03-06',
     'נסעחול33',
     TRUE,
@@ -134,7 +134,7 @@ FROM
 SELECT
   *
 FROM
-  trip_report(
+  trip_report (
     '2020-06-20',
     'נסעחול31',
     TRUE,
@@ -146,11 +146,11 @@ FROM
 SELECT
   *
 FROM
-  trip_report('2020-03-02', 'נסעחול34', TRUE, 0, 0);
+  trip_report ('2020-03-02', 'נסעחול34', TRUE, 0, 0);
 
 SELECT
   *,
-  gen_random_uuid() AS id,
+  gen_random_uuid () AS id,
   (
     SELECT
       t1.reviewed
@@ -184,7 +184,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-03-01')
+        get_tax_report_of_month ('2020-03-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -194,7 +194,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-04-01')
+        get_tax_report_of_month ('2020-04-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -204,7 +204,7 @@ FROM
       SELECT
         *
       FROM
-        trip_report(
+        trip_report (
           '2020-02-21',
           'נסעחול33',
           TRUE,
@@ -234,7 +234,7 @@ DROP FUNCTION
 
 -- TODO: Send year as a parameter and adjust to it
 CREATE
-OR REPLACE FUNCTION trip_report(
+OR REPLACE FUNCTION trip_report (
   last_date_input VARCHAR,
   trip_name VARCHAR,
   is_higher_country BOOLEAN,

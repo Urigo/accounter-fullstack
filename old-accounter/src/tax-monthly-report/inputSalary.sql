@@ -1,7 +1,7 @@
 SELECT
   * INTO TABLE accounter_schema.narkis_review
 FROM
-  get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+  get_unified_tax_report_of_month ('2020-01-01', '2020-11-01')
 ORDER BY
   to_date(date_3, 'DD/MM/YYYY'),
   original_id,
@@ -17,7 +17,7 @@ FROM
 SELECT
   *
 FROM
-  get_unified_tax_report_of_month('2020-01-01', '2020-11-01')
+  get_unified_tax_report_of_month ('2020-01-01', '2020-11-01')
 ORDER BY
   to_date(date_3, 'DD/MM/YYYY'),
   original_id,
@@ -28,13 +28,13 @@ ORDER BY
 SELECT
   *
 FROM
-  input_salary('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
+  input_salary ('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
 
 DROP FUNCTION
-  report_to_hashavshevet_by_month(salary_transaction uuid);
+  report_to_hashavshevet_by_month (salary_transaction uuid);
 
 CREATE
-OR REPLACE FUNCTION input_salary(salary_transaction_id uuid) RETURNS TABLE(
+OR REPLACE FUNCTION input_salary (salary_transaction_id uuid) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,

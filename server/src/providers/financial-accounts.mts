@@ -1,6 +1,5 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-
 import {
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByFinancialEntityIdsQuery,
@@ -19,14 +18,16 @@ async function batchFinancialAccountsByFinancialEntityIds(financialEntityIds: re
     {
       financialEntityIds,
     },
-    pool
+    pool,
   );
-  return financialEntityIds.map(financialEntityId => accounts.filter(charge => charge.owner === financialEntityId));
+  return financialEntityIds.map(financialEntityId =>
+    accounts.filter(charge => charge.owner === financialEntityId),
+  );
 }
 
 export const getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
   batchFinancialAccountsByFinancialEntityIds,
-  { cache: false }
+  { cache: false },
 );
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
@@ -39,11 +40,16 @@ async function batchFinancialAccountsByAccountNumbers(accountNumbers: readonly n
     {
       accountNumbers,
     },
-    pool
+    pool,
   );
-  return accountNumbers.map(accountNumber => accounts.find(charge => charge.account_number === accountNumber));
+  return accountNumbers.map(accountNumber =>
+    accounts.find(charge => charge.account_number === accountNumber),
+  );
 }
 
-export const getFinancialAccountByAccountNumberLoader = new DataLoader(batchFinancialAccountsByAccountNumbers, {
-  cache: false,
-});
+export const getFinancialAccountByAccountNumberLoader = new DataLoader(
+  batchFinancialAccountsByAccountNumbers,
+  {
+    cache: false,
+  },
+);

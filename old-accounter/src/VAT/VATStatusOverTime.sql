@@ -1,10 +1,10 @@
 SELECT
   *
 FROM
-  current_vat_transactions_status();
+  current_vat_transactions_status ();
 
 CREATE
-OR REPLACE FUNCTION current_vat_transactions_status() RETURNS TABLE (
+OR REPLACE FUNCTION current_vat_transactions_status () RETURNS TABLE (
   event_date date,
   event_amount NUMERIC(9, 2),
   bank_reference INTEGER,

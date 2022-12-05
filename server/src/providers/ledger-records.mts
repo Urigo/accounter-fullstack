@@ -1,6 +1,5 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-
 import {
   IDeleteLedgerRecordQuery,
   IGetLedgerRecordsByChargeIdsQuery,
@@ -22,12 +21,14 @@ async function batchLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
     {
       chargeIds,
     },
-    pool
+    pool,
   );
   return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
 }
 
-export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds, { cache: false });
+export const getLedgerRecordsByChargeIdLoader = new DataLoader(batchLedgerRecordsByChargeIds, {
+  cache: false,
+});
 
 export const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`
     SELECT *

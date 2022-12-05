@@ -3,9 +3,9 @@ import {
   DocumentMatchChargesFieldsFragment,
   DocumentMatchFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../__generated__/types';
-import { getStandardDeviation } from './statistics';
-import { stringComparer } from './strings-manipulations';
+} from '../__generated__/types.js';
+import { getStandardDeviation } from './statistics.js';
+import { stringComparer } from './strings-manipulations.js';
 
 type ChargeMatchScore = {
   score: number;
@@ -14,7 +14,7 @@ type ChargeMatchScore = {
 
 export const rateOptionalMatches = (
   document: DocumentMatchFieldsFragment,
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes']
+  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'],
 ): ChargeMatchScore[] => {
   /* create diffs dictionary */
   const comparisonDict: Record<string, Record<string, number>> = {
@@ -25,19 +25,27 @@ export const rateOptionalMatches = (
 
   for (const charge of charges) {
     const dateDiff =
-      new Date(charge.transactions[0].createdAt).getTime() - new Date((document as { date: string }).date).getTime();
+      new Date(charge.transactions[0].createdAt).getTime() -
+      new Date((document as { date: string }).date).getTime();
     comparisonDict.dateDiffs[charge.id] = Math.abs(dateDiff);
 
-    const amountDiff = (charge.totalAmount?.raw ?? 0) - (document as { amount: { raw: number } }).amount!.raw;
+    const amountDiff =
+      (charge.totalAmount?.raw ?? 0) - (document as { amount: { raw: number } }).amount!.raw;
     comparisonDict.amountDiffs[charge.id] = Math.abs(amountDiff);
 
     const providerIdent = stringComparer(document.creditor ?? '', charge.counterparty?.name ?? '');
-    const providerIdent2 = stringComparer(document.creditor ?? '', charge.transactions[0].description);
-    comparisonDict.providerIdents[charge.id] = providerIdent > providerIdent2 ? providerIdent : providerIdent2;
+    const providerIdent2 = stringComparer(
+      document.creditor ?? '',
+      charge.transactions[0].description,
+    );
+    comparisonDict.providerIdents[charge.id] =
+      providerIdent > providerIdent2 ? providerIdent : providerIdent2;
   }
 
   /* calculate STD for scoring the match */
-  const providerIdentsStd: number = getStandardDeviation(Object.values(comparisonDict.providerIdents));
+  const providerIdentsStd: number = getStandardDeviation(
+    Object.values(comparisonDict.providerIdents),
+  );
   const dateDiffsStd: number = getStandardDeviation(Object.values(comparisonDict.dateDiffs));
   const amountDiffsStd: number = getStandardDeviation(Object.values(comparisonDict.amountDiffs));
 
@@ -50,13 +58,16 @@ export const rateOptionalMatches = (
       (!dateDiffsStd
         ? 0
         : Math.abs(
-            (comparisonDict.dateDiffs[charge.id] - Math.min(...Object.values(comparisonDict.dateDiffs))) / dateDiffsStd
+            (comparisonDict.dateDiffs[charge.id] -
+              Math.min(...Object.values(comparisonDict.dateDiffs))) /
+              dateDiffsStd,
           )) +
       (!amountDiffsStd
         ? 0
         : Math.abs(
-            (comparisonDict.amountDiffs[charge.id] - Math.min(...Object.values(comparisonDict.amountDiffs))) /
-              amountDiffsStd
+            (comparisonDict.amountDiffs[charge.id] -
+              Math.min(...Object.values(comparisonDict.amountDiffs))) /
+              amountDiffsStd,
           )) +
       (!providerIdentsStd
         ? 0
@@ -83,7 +94,7 @@ type DocumentMatchScore = {
 
 export const rateOptionalDocumentsMatches = (
   charge: ChargeToMatchDocumentsFieldsFragment,
-  documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[]
+  documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[],
 ): DocumentMatchScore[] => {
   /* create diffs dictionary */
   const comparisonDict: Record<string, Record<string, number>> = {
@@ -94,19 +105,27 @@ export const rateOptionalDocumentsMatches = (
 
   for (const document of documents) {
     const dateDiff =
-      new Date(charge.transactions[0].createdAt).getTime() - new Date((document as { date: string }).date).getTime();
+      new Date(charge.transactions[0].createdAt).getTime() -
+      new Date((document as { date: string }).date).getTime();
     comparisonDict.dateDiffs[charge.id] = Math.abs(dateDiff);
 
-    const amountDiff = (charge.totalAmount?.raw ?? 0) - (document as { amount: { raw: number } }).amount!.raw;
+    const amountDiff =
+      (charge.totalAmount?.raw ?? 0) - (document as { amount: { raw: number } }).amount!.raw;
     comparisonDict.amountDiffs[charge.id] = Math.abs(amountDiff);
 
     const providerIdent = stringComparer(document.creditor ?? '', charge.counterparty?.name ?? '');
-    const providerIdent2 = stringComparer(document.creditor ?? '', charge.transactions[0].description);
-    comparisonDict.providerIdents[charge.id] = providerIdent > providerIdent2 ? providerIdent : providerIdent2;
+    const providerIdent2 = stringComparer(
+      document.creditor ?? '',
+      charge.transactions[0].description,
+    );
+    comparisonDict.providerIdents[charge.id] =
+      providerIdent > providerIdent2 ? providerIdent : providerIdent2;
   }
 
   /* calculate STD for scoring the match */
-  const providerIdentsStd: number = getStandardDeviation(Object.values(comparisonDict.providerIdents));
+  const providerIdentsStd: number = getStandardDeviation(
+    Object.values(comparisonDict.providerIdents),
+  );
   const dateDiffsStd: number = getStandardDeviation(Object.values(comparisonDict.dateDiffs));
   const amountDiffsStd: number = getStandardDeviation(Object.values(comparisonDict.amountDiffs));
 
@@ -119,13 +138,16 @@ export const rateOptionalDocumentsMatches = (
       (!dateDiffsStd
         ? 0
         : Math.abs(
-            (comparisonDict.dateDiffs[charge.id] - Math.min(...Object.values(comparisonDict.dateDiffs))) / dateDiffsStd
+            (comparisonDict.dateDiffs[charge.id] -
+              Math.min(...Object.values(comparisonDict.dateDiffs))) /
+              dateDiffsStd,
           )) +
       (!amountDiffsStd
         ? 0
         : Math.abs(
-            (comparisonDict.amountDiffs[charge.id] - Math.min(...Object.values(comparisonDict.amountDiffs))) /
-              amountDiffsStd
+            (comparisonDict.amountDiffs[charge.id] -
+              Math.min(...Object.values(comparisonDict.amountDiffs))) /
+              amountDiffsStd,
           )) +
       (!providerIdentsStd
         ? 0

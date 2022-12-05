@@ -1,13 +1,13 @@
 SELECT
   *
 FROM
-  get_vat_for_month('2020-12-01');
+  get_vat_for_month ('2020-12-01');
 
 DROP FUNCTION
-  get_vat_for_month(month_input VARCHAR);
+  get_vat_for_month (month_input VARCHAR);
 
 CREATE
-OR REPLACE FUNCTION get_vat_for_month(month_input VARCHAR) RETURNS TABLE (
+OR REPLACE FUNCTION get_vat_for_month (month_input VARCHAR) RETURNS TABLE (
   overall_VAT_status NUMERIC(9, 2),
   vat NUMERIC(9, 2),
   event_date date,

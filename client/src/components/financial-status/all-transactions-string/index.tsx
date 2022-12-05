@@ -1,7 +1,6 @@
-import gql from 'graphql-tag';
 import { useEffect, useState } from 'react';
+import gql from 'graphql-tag';
 import { useSearchParams } from 'react-router-dom';
-
 import { useFinancialEntityOldQuery } from '../../../__generated__/types';
 import { businesses } from '../../../helpers';
 import { useSql } from '../../../hooks/use-sql';

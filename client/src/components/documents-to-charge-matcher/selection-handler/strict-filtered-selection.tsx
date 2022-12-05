@@ -1,8 +1,10 @@
-import { format } from 'date-fns';
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
-
-import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
+import {
+  ChargeToMatchDocumentsFieldsFragment,
+  DocumentsToMatchFieldsFragment,
+} from '../../../__generated__/types';
 import { rateOptionalDocumentsMatches } from '../../../helpers/document-matches';
 
 interface Props {
@@ -12,7 +14,12 @@ interface Props {
   selectedDocuments: string[];
 }
 
-export function StrictFilteredSelection({ charge, documents, toggleDocument, selectedDocuments }: Props) {
+export function StrictFilteredSelection({
+  charge,
+  documents,
+  toggleDocument,
+  selectedDocuments,
+}: Props) {
   const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
 
   const ratedMatches = rateOptionalDocumentsMatches(charge, documents);
@@ -27,7 +34,9 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
         <div className="flex-1">
           <h3 className="text-l font-semibold text-neutral-600">Charge</h3>
           <p className="flex items-baseline mt-4 text-neutral-600">
-            <span className="text-5xl font-extrabold tracking-tight">{charge.totalAmount?.formatted}</span>
+            <span className="text-5xl font-extrabold tracking-tight">
+              {charge.totalAmount?.formatted}
+            </span>
           </p>
           <p className="mt-6 text-gray-500">{charge.counterparty?.name}</p>
           <ul className="pt-6 mt-6 space-y-6 border-t">
@@ -65,7 +74,7 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
             </li>
             {extandedInfoFlag ? (
               <>
-                <li></li>
+                <li />
                 <li>
                   <button
                     onClick={() => setExtandedInfoFlag(false)}
@@ -97,7 +106,9 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
           <div className="relative flex-1">
             <h3 className="text-xl font-semibold text-white">{document.documentType}</h3>
             <p className="flex items-baseline mt-4 text-white">
-              <span className="text-5xl font-extrabold tracking-tight">{document.amount?.formatted}</span>
+              <span className="text-5xl font-extrabold tracking-tight">
+                {document.amount?.formatted}
+              </span>
             </p>
             <p className="mt-6 text-gray-300">{document.creditor}</p>
             <ul className="pt-6 mt-6 space-y-6 border-t">
@@ -133,7 +144,7 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
               </li>
               {extandedInfoFlag ? (
                 <>
-                  <li></li>
+                  <li />
                   <li>
                     <button
                       onClick={() => setExtandedInfoFlag(false)}
@@ -165,7 +176,9 @@ export function StrictFilteredSelection({ charge, documents, toggleDocument, sel
                 toggleDocument(document.id);
               }}
               className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white"
-              style={selectedDocuments.includes(document.id) ? { backgroundColor: 'lightGreen' } : {}}
+              style={
+                selectedDocuments.includes(document.id) ? { backgroundColor: 'lightGreen' } : {}
+              }
             >
               Match
             </button>

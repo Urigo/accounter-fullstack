@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction } from 'react';
-
 import { AllChargesQuery } from '../../__generated__/types';
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { Button } from '../common/button';

@@ -1,5 +1,4 @@
 import { useSearchParams } from 'react-router-dom';
-
 import { parseMonth, parseYear } from '../../helpers/dates';
 import { AllTransactionsString } from './all-transactions-string';
 import { LastInvoiceNumbers } from './last-invoice-numbers';

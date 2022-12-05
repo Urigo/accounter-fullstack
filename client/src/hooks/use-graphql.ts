@@ -1,6 +1,6 @@
 export const useGraphql = <TData, TVariables>(
   query: string,
-  options: RequestInit['headers'] = {}
+  options: RequestInit['headers'] = {},
 ): ((variables?: TVariables) => Promise<TData>) => {
   const url = 'http://localhost:4000/graphql';
 

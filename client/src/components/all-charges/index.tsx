@@ -1,14 +1,28 @@
-import gql from 'graphql-tag';
 import { useState } from 'react';
-
-import { AllChargesQuery, ChargeFilter, EditChargeFieldsFragment, useAllChargesQuery } from '../../__generated__/types';
+import gql from 'graphql-tag';
+import {
+  AllChargesQuery,
+  ChargeFilter,
+  EditChargeFieldsFragment,
+  useAllChargesQuery,
+} from '../../__generated__/types';
 import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton, NavBar } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { PopUpDrawer } from '../common/drawer';
 import { AccounterLoader } from '../common/loader';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
-import { Account, AccountantApproval, Amount, Date, Description, Entity, ShareWith, Tags, Vat } from './cells';
+import {
+  Account,
+  AccountantApproval,
+  Amount,
+  Date,
+  Description,
+  Entity,
+  ShareWith,
+  Tags,
+  Vat,
+} from './cells';
 import { ChargeExtendedInfo } from './charge-extended-info';
 import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
@@ -103,7 +117,10 @@ export const AllCharges = () => {
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar header="All Charges" filters={<ChargesFilters filter={filter} setFilter={setFilter} />} />
+        <NavBar
+          header="All Charges"
+          filters={<ChargesFilters filter={filter} setFilter={setFilter} />}
+        />
         <AccounterTable
           showButton={true}
           moreInfo={item => (
@@ -136,7 +153,10 @@ export const AllCharges = () => {
             {
               title: 'Entity',
               value: (data, alternativeCharge) => (
-                <Entity data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+                <Entity
+                  data={data}
+                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                />
               ),
             },
             {
@@ -155,20 +175,30 @@ export const AllCharges = () => {
             {
               title: 'Tags',
               value: (data, alternativeCharge) => (
-                <Tags data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+                <Tags
+                  data={data}
+                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                />
               ),
             },
             {
               title: 'Share With',
               value: (data, alternativeCharge) => (
-                <ShareWith data={data} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
+                <ShareWith
+                  data={data}
+                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+                />
               ),
             },
             {
               title: 'More Info',
               value: data => (
                 <div>
-                  <p style={data.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>
+                  <p
+                    style={
+                      data.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }
+                    }
+                  >
                     Ledger Records: {data.ledgerRecords.length}
                   </p>
                   <p
@@ -190,7 +220,9 @@ export const AllCharges = () => {
             },
             {
               title: 'Edit',
-              value: data => <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />,
+              value: data => (
+                <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />
+              ),
             },
           ]}
           pagination={{
@@ -212,7 +244,7 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!editCharge}
+          opened={Boolean(editCharge)}
           onClose={() => setEditCharge(undefined)}
         >
           <EditCharge
@@ -234,10 +266,13 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!insertLedger}
+          opened={Boolean(insertLedger)}
           onClose={() => setInsertLedger(undefined)}
         >
-          <InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />
+          <InsertLedgerRecord
+            chargeId={insertLedger}
+            closeModal={() => setInsertLedger(undefined)}
+          />
         </PopUpDrawer>
       )}
       {insertDocument && (
@@ -252,10 +287,13 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!insertDocument}
+          opened={Boolean(insertDocument)}
           onClose={() => setInsertDocument(undefined)}
         >
-          <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
+          <InsertDocument
+            chargeId={insertDocument}
+            closeModal={() => setInsertDocument(undefined)}
+          />
         </PopUpDrawer>
       )}
       {uploadDocument && (
@@ -270,10 +308,13 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!uploadDocument}
+          opened={Boolean(uploadDocument)}
           onClose={() => setUploadDocument(undefined)}
         >
-          <UploadDocument chargeId={uploadDocument} closeModal={() => setUploadDocument(undefined)} />
+          <UploadDocument
+            chargeId={uploadDocument}
+            closeModal={() => setUploadDocument(undefined)}
+          />
         </PopUpDrawer>
       )}
       {matchDocuments && (
@@ -288,10 +329,13 @@ export const AllCharges = () => {
               </a>
             </div>
           }
-          opened={!!matchDocuments}
+          opened={Boolean(matchDocuments)}
           onClose={() => setMatchDocuments(undefined)}
         >
-          <DocumentsToChargeMatcher chargeId={matchDocuments} onDone={() => setMatchDocuments(undefined)} />
+          <DocumentsToChargeMatcher
+            chargeId={matchDocuments}
+            onDone={() => setMatchDocuments(undefined)}
+          />
         </PopUpDrawer>
       )}
     </div>

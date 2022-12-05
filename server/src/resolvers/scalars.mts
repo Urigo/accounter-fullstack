@@ -1,6 +1,5 @@
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
 import { DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
-
 import { Resolvers } from '../__generated__/types.mjs';
 import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
 

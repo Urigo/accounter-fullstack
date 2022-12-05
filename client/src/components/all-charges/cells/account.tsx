@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 import { AllChargesAccountFieldsFragment } from '../../../__generated__/types';
 
 gql`
@@ -35,7 +34,8 @@ export const Account = ({ data }: Props) => {
       : account.__typename === 'CardFinancialAccount'
       ? 'Card'
       : undefined;
-  const accountNumber = account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
+  const accountNumber =
+    account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
 
   return (
     <div className="flex flex-col gap-2 items-center">

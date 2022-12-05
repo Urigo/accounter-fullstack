@@ -1,6 +1,7 @@
 import { ButtonHTMLAttributes, CSSProperties, DetailedHTMLProps, MouseEventHandler } from 'react';
 
-export interface Props extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> {
+export interface Props
+  extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> {
   onClick?: MouseEventHandler<HTMLButtonElement>;
   herf?: string;
   type?: 'submit' | 'button';
@@ -11,7 +12,16 @@ export interface Props extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButton
   url?: string;
 }
 
-export const Button = ({ title, herf, style, target, rel, type = 'button', onClick, ...props }: Props) => {
+export const Button = ({
+  title,
+  herf,
+  style,
+  target,
+  rel,
+  type = 'button',
+  onClick,
+  ...props
+}: Props) => {
   return (
     <button
       style={style}

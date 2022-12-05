@@ -1,6 +1,5 @@
 import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
-
 import { Currency, InsertLedgerRecordInput } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record';

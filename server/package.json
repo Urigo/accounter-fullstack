@@ -1,22 +1,21 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
   "type": "module",
-  "main": "./server/src/index.mts",
+  "description": "",
   "license": "MIT",
-  "scripts": {
-    "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
-    "start": "node dist/index.mjs",
-    "prestart": "yarn build",
-    "build": "tsc",
-    "sqlgen": "dotenv yarn pgtyped",
-    "pgtyped": "pgtyped -c pgconfig.json",
-    "generate": "cd .. && yarn codegen && cd server && yarn sqlgen"
+  "engines": {
+    "node": "18.12.1"
   },
-  "devDependencies": {
-    "nodemon": "2.0.19",
-    "pino-pretty": "8.1.0"
+  "main": "./server/src/index.mts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "generate": "cd .. && yarn codegen && cd server && yarn sqlgen",
+    "pgtyped": "pgtyped -c pgconfig.json",
+    "prestart": "yarn build",
+    "sqlgen": "dotenv yarn pgtyped",
+    "start": "node dist/index.mjs"
   },
   "dependencies": {
     "@accounter-toolkit/green-invoice-graphql": "0.1.1-alpha-20221128094016-ab48d5a",
@@ -37,7 +36,8 @@
     "graphql-yoga": "3.1.0",
     "pg": "8.7.3"
   },
-  "engines": {
-    "node": "18.12.1"
+  "devDependencies": {
+    "nodemon": "2.0.19",
+    "pino-pretty": "8.1.0"
   }
 }

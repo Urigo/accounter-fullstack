@@ -1,11 +1,13 @@
 import { GraphQLError } from 'graphql';
-
 import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../__generated__/charges.types.mjs';
-import type { IInsertDocumentsParams, IUpdateDocumentParams } from '../__generated__/documents.types.mjs';
+import type {
+  IInsertDocumentsParams,
+  IUpdateDocumentParams,
+} from '../__generated__/documents.types.mjs';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -116,14 +118,16 @@ export const resolvers: Resolvers = {
       const charges = await getChargesByFilters
         .run(
           {
-            financialEntityIds: filters?.byFinancialEntities?.length ? filters.byFinancialEntities : [null],
+            financialEntityIds: filters?.byFinancialEntities?.length
+              ? filters.byFinancialEntities
+              : [null],
             isFinancialEntityIds,
             fromDate: filters?.fromDate,
             toDate: filters?.toDate,
             sortColumn,
             asc: filters?.sortBy?.asc !== false,
           },
-          pool
+          pool,
         )
         .catch(e => {
           throw new Error(e.message);
@@ -218,7 +222,9 @@ export const resolvers: Resolvers = {
           };
           const res = await updateCharge.run(adjustedFields, pool);
           if (!res || res.length === 0) {
-            throw new Error(`Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`);
+            throw new Error(
+              `Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`,
+            );
           }
         }
 
@@ -238,7 +244,9 @@ export const resolvers: Resolvers = {
         return true;
       }
       throw new GraphQLError(
-        res.length === 0 ? 'Document not found' : `More than one document found and deleted: ${res}`
+        res.length === 0
+          ? 'Document not found'
+          : `More than one document found and deleted: ${res}`,
       );
     },
     insertDocument: async (_, { record }) => {
@@ -277,7 +285,9 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
+          message: `Error inserting new ledger record:\n  ${
+            (e as Error)?.message ?? 'Unknown error'
+          }`,
         };
       }
     },
@@ -286,7 +296,12 @@ export const resolvers: Resolvers = {
     // charges / transactions
     updateCharge: async (_, { chargeId, fields }) => {
       const financialAccountsToBalance = fields.beneficiaries
-        ? JSON.stringify(fields.beneficiaries.map(b => ({ name: b.counterparty.name, percentage: b.percentage })))
+        ? JSON.stringify(
+            fields.beneficiaries.map(b => ({
+              name: b.counterparty.name,
+              percentage: b.percentage,
+            })),
+          )
         : null;
       const adjustedFields: IUpdateChargeParams = {
         accountNumber: null,
@@ -355,12 +370,16 @@ export const resolvers: Resolvers = {
         currencyRate: null,
         // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Ils ? null : fields.balance?.raw?.toFixed(2),
+          fields.balance?.currency && fields.balance.currency !== Currency.Ils
+            ? null
+            : fields.balance?.raw?.toFixed(2),
         debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
         detailedBankDescription: null,
         // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
         eventAmount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Ils ? null : fields.amount?.raw?.toFixed(2),
+          fields.amount?.currency && fields.amount.currency !== Currency.Ils
+            ? null
+            : fields.amount?.raw?.toFixed(2),
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
@@ -458,7 +477,9 @@ export const resolvers: Resolvers = {
     updateLedgerRecord: async (_, { ledgerRecordId, fields }) => {
       const currency =
         fields.originalAmount?.currency || fields.localCurrencyAmount?.currency
-          ? hashavshevetFormat.currency(fields.originalAmount?.currency ?? fields.localCurrencyAmount?.currency ?? '')
+          ? hashavshevetFormat.currency(
+              fields.originalAmount?.currency ?? fields.localCurrencyAmount?.currency ?? '',
+            )
           : null;
 
       const adjustedFields: IUpdateLedgerRecordParams = {
@@ -505,7 +526,9 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: `Error executing updateLedgerRecord:\n${(e as Error)?.message ?? 'Unknown error'}`,
+          message: `Error executing updateLedgerRecord:\n${
+            (e as Error)?.message ?? 'Unknown error'
+          }`,
         };
       }
     },
@@ -517,7 +540,9 @@ export const resolvers: Resolvers = {
           throw new Error(`Charge ID='${chargeId}' not found`);
         }
 
-        const financialAccount = await getFinancialAccountByAccountNumberLoader.load(charge.account_number);
+        const financialAccount = await getFinancialAccountByAccountNumberLoader.load(
+          charge.account_number,
+        );
 
         if (!financialAccount || !financialAccount.owner) {
           throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
@@ -525,7 +550,9 @@ export const resolvers: Resolvers = {
 
         const currency =
           record.originalAmount?.currency || record.localCurrencyAmount?.currency
-            ? hashavshevetFormat.currency(record.originalAmount?.currency ?? record.localCurrencyAmount?.currency ?? '')
+            ? hashavshevetFormat.currency(
+                record.originalAmount?.currency ?? record.localCurrencyAmount?.currency ?? '',
+              )
             : null;
 
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
@@ -569,7 +596,9 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: `Error inserting new ledger record:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
+          message: `Error inserting new ledger record:\n  ${
+            (e as Error)?.message ?? 'Unknown error'
+          }`,
         };
       }
     },
@@ -579,7 +608,9 @@ export const resolvers: Resolvers = {
         return true;
       }
       throw new GraphQLError(
-        res.length === 0 ? 'Ledger record not found' : `More than one ledger records found and deleted: ${res}`
+        res.length === 0
+          ? 'Ledger record not found'
+          : `More than one ledger records found and deleted: ${res}`,
       );
     },
     toggleLedgerRecordAccountantApproval: async (_, { ledgerRecordId, approved }) => {
@@ -634,16 +665,24 @@ export const resolvers: Resolvers = {
           throw new Error(`Charge ID="${chargeId}" has no account number`);
         }
         const docs = await getDocumentsByChargeIdLoader.load(chargeId);
-        const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'].includes(d.type ?? ''));
+        const invoices = docs.filter(d =>
+          ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'].includes(d.type ?? ''),
+        );
         if (invoices.length > 1) {
-          console.log(`Charge ${chargeId} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
+          console.log(
+            `Charge ${chargeId} has more than one invoices: [${invoices
+              .map(r => `"${r.id}"`)
+              .join(', ')}]`,
+          );
         }
         const mainInvoice = invoices.shift() ?? null;
 
         if (mainInvoice) {
           console.log(mainInvoice);
           charge.tax_invoice_date = mainInvoice.date;
-          charge.tax_invoice_amount = mainInvoice.total_amount ? mainInvoice.total_amount.toString() : null;
+          charge.tax_invoice_amount = mainInvoice.total_amount
+            ? mainInvoice.total_amount.toString()
+            : null;
           charge.tax_invoice_number = mainInvoice.serial_number;
         } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
           throw new Error(`Charge ID="${chargeId}" has no invoices`);
@@ -664,7 +703,7 @@ export const resolvers: Resolvers = {
 
         const [hashBusinessIndexes] = await getHashavshevetBusinessIndexes.run(
           { financialEntityName: charge.financial_entity, ownerId: owner.id },
-          pool
+          pool,
         );
         const hashVATIndexes = await getHashavshevetVatIndexes(owner.id);
         const isracardHashIndex = await getHashavshevetIsracardIndex(charge);
@@ -693,7 +732,7 @@ export const resolvers: Resolvers = {
         const { entryForFinancialAccount, entryForAccounting } = await buildLedgerEntries(
           decoratedCharge,
           parseFloat(charge.event_amount),
-          hashVATIndexes
+          hashVATIndexes,
         );
 
         const createdLedgerRecords: IInsertLedgerRecordsResult[] = [];
@@ -708,9 +747,12 @@ export const resolvers: Resolvers = {
               hashBusinessIndexes,
               hashVATIndexes,
               isracardHashIndex,
-              owner
+              owner,
             );
-            const updateResult = await insertLedgerRecords.run({ ledgerRecord: [entryForAccountingValues] }, pool);
+            const updateResult = await insertLedgerRecords.run(
+              { ledgerRecord: [entryForAccountingValues] },
+              pool,
+            );
             if (updateResult.length === 0) {
               throw new Error('Failed to insert accounting ledger record');
             }
@@ -725,7 +767,7 @@ export const resolvers: Resolvers = {
         const conversionOtherSide = (
           await getConversionOtherSide.run(
             { chargeId: decoratedCharge.id, bankReference: decoratedCharge.bank_reference },
-            pool
+            pool,
           )
         ).shift();
 
@@ -739,9 +781,12 @@ export const resolvers: Resolvers = {
             hashVATIndexes,
             isracardHashIndex,
             owner,
-            conversionOtherSide
+            conversionOtherSide,
           );
-          const updateResult = await insertLedgerRecords.run({ ledgerRecord: [entryForFinancialAccountValues] }, pool);
+          const updateResult = await insertLedgerRecords.run(
+            { ledgerRecord: [entryForFinancialAccountValues] },
+            pool,
+          );
           if (updateResult.length === 0) {
             throw new Error('Failed to insert financial account ledger record');
           }
@@ -758,19 +803,20 @@ export const resolvers: Resolvers = {
         ) {
           console.log('שערררררררר של different currencies');
           try {
-            const entryForExchangeRatesDifferenceValues = generateEntryForExchangeRatesDifferenceValues(
-              decoratedCharge,
-              entryForFinancialAccount,
-              entryForAccounting,
-              account,
-              hashBusinessIndexes,
-              hashVATIndexes,
-              isracardHashIndex,
-              owner
-            );
+            const entryForExchangeRatesDifferenceValues =
+              generateEntryForExchangeRatesDifferenceValues(
+                decoratedCharge,
+                entryForFinancialAccount,
+                entryForAccounting,
+                account,
+                hashBusinessIndexes,
+                hashVATIndexes,
+                isracardHashIndex,
+                owner,
+              );
             const updateResult = await insertLedgerRecords.run(
               { ledgerRecord: [entryForExchangeRatesDifferenceValues] },
-              pool
+              pool,
             );
             if (updateResult.length === 0) {
               throw new Error('Failed to insert exchange rates difference ledger record');
@@ -790,22 +836,23 @@ export const resolvers: Resolvers = {
         ) {
           console.log('שערררררררר');
           try {
-            const entryForExchangeRatesDifferenceValues = generateEntryForExchangeRatesDifferenceValues(
-              decoratedCharge,
-              entryForFinancialAccount,
-              entryForAccounting,
-              account,
-              hashBusinessIndexes,
-              hashVATIndexes,
-              isracardHashIndex,
-              owner,
-              true,
-              debitExchangeRates,
-              invoiceExchangeRates
-            );
+            const entryForExchangeRatesDifferenceValues =
+              generateEntryForExchangeRatesDifferenceValues(
+                decoratedCharge,
+                entryForFinancialAccount,
+                entryForAccounting,
+                account,
+                hashBusinessIndexes,
+                hashVATIndexes,
+                isracardHashIndex,
+                owner,
+                true,
+                debitExchangeRates,
+                invoiceExchangeRates,
+              );
             const updateResult = await insertLedgerRecords.run(
               { ledgerRecord: [entryForExchangeRatesDifferenceValues] },
-              pool
+              pool,
             );
             if (updateResult.length === 0) {
               throw new Error('Failed to insert exchange rates difference ledger record');
@@ -901,7 +948,7 @@ export const resolvers: Resolvers = {
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => !!DbAccount.bank_number,
+    __isTypeOf: DbAccount => Boolean(DbAccount.bank_number),
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number.toString(),
     bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
@@ -991,7 +1038,7 @@ export const resolvers: Resolvers = {
           {
             // case Guild account
             const guildAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
-              '6a20aa69-57ff-446e-8d6a-1e96d095e988'
+              '6a20aa69-57ff-446e-8d6a-1e96d095e988',
             );
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number)) {
@@ -1009,7 +1056,7 @@ export const resolvers: Resolvers = {
 
             // case UriLTD account
             const uriAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
-              'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
+              'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
             );
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number)) {
@@ -1024,11 +1071,16 @@ export const resolvers: Resolvers = {
           return [];
       }
     },
-    vat: DbCharge => (DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat, DbCharge.currency_code) : null),
+    vat: DbCharge =>
+      DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat, DbCharge.currency_code) : null,
     withholdingTax: DbCharge =>
-      DbCharge.withholding_tax != null ? formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code) : null,
+      DbCharge.withholding_tax != null
+        ? formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code)
+        : null,
     totalAmount: DbCharge =>
-      DbCharge.event_amount != null ? formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code) : null,
+      DbCharge.event_amount != null
+        ? formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code)
+        : null,
     invoice: async DbCharge => {
       if (!DbCharge.id) {
         return null;
@@ -1036,7 +1088,11 @@ export const resolvers: Resolvers = {
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
       const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (invoices.length > 1) {
-        console.log(`Charge ${DbCharge.id} has more than one invoices: [${invoices.map(r => `"${r.id}"`).join(', ')}]`);
+        console.log(
+          `Charge ${DbCharge.id} has more than one invoices: [${invoices
+            .map(r => `"${r.id}"`)
+            .join(', ')}]`,
+        );
       }
       return invoices.shift() ?? null;
     },
@@ -1047,7 +1103,11 @@ export const resolvers: Resolvers = {
       const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
       const receipts = docs.filter(d => ['RECEIPT', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (receipts.length > 1) {
-        console.log(`Charge ${DbCharge.id} has more than one receipt: [${receipts.map(r => `"${r.id}"`).join(', ')}]`);
+        console.log(
+          `Charge ${DbCharge.id} has more than one receipt: [${receipts
+            .map(r => `"${r.id}"`)
+            .join(', ')}]`,
+        );
       }
       return receipts.shift() ?? null;
     },
@@ -1096,7 +1156,7 @@ export const resolvers: Resolvers = {
     originalAmount: DbLedgerRecord =>
       formatFinancialAmount(
         DbLedgerRecord.foreign_debit_amount_1 ?? DbLedgerRecord.debit_amount_1,
-        DbLedgerRecord.currency
+        DbLedgerRecord.currency,
       ),
     date: DbLedgerRecord => parseDate(DbLedgerRecord.invoice_date) as TimelessDateString,
     valueDate: DbLedgerRecord => parseDate(DbLedgerRecord.value_date) as TimelessDateString,
@@ -1106,12 +1166,13 @@ export const resolvers: Resolvers = {
       approved: DbLedgerRecord.reviewed ?? false,
       remark: 'Missing', // TODO: missing in DB
     }),
-    localCurrencyAmount: DbLedgerRecord => formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
+    localCurrencyAmount: DbLedgerRecord =>
+      formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
   },
   // counterparties
   NamedCounterparty: {
-    __isTypeOf: parent => !!parent,
+    __isTypeOf: parent => Boolean(parent),
     name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {

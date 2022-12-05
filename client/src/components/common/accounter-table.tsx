@@ -1,6 +1,5 @@
-import { Pagination, PaginationProps, Paper, Table } from '@mantine/core';
 import { ReactNode, useState } from 'react';
-
+import { Pagination, PaginationProps, Paper, Table } from '@mantine/core';
 import { Button } from './button';
 
 export interface AccounterTableProps<T, U> {

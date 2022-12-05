@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   InsertLedgerRecordMutation,
   InsertLedgerRecordMutationVariables,
   useInsertLedgerRecordMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation InsertLedgerRecord($chargeId: ID!, $record: InsertLedgerRecordInput!) {
@@ -26,7 +25,9 @@ export const useInsertLedgerRecord = () => {
 
   const onError = async (e: unknown, { chargeId }: InsertLedgerRecordMutationVariables) => {
     console.log(e);
-    return new Error(`Error inserting ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error inserting ledger record to charge ID [${chargeId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (data: InsertLedgerRecordMutation) => {
     if (data.insertLedgerRecord.__typename === 'CommonError') {

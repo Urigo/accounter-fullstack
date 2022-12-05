@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-
 import type {
   IGetChargesByFinancialAccountNumbersResult,
   IGetChargesByIdsResult,
@@ -49,9 +48,13 @@ export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharg
   }
 
   const amountToUse = parseFloat(
-    (decoreatedCharge.tax_invoice_amount ? decoreatedCharge.tax_invoice_amount : decoreatedCharge.event_amount) ?? '0'
+    (decoreatedCharge.tax_invoice_amount
+      ? decoreatedCharge.tax_invoice_amount
+      : decoreatedCharge.event_amount) ?? '0',
   );
-  decoreatedCharge.vatAfterDiduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(decoreatedCharge.tax_category ?? '')
+  decoreatedCharge.vatAfterDiduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
+    decoreatedCharge.tax_category ?? '',
+  )
     ? decoreatedCharge.vat ?? 0
     : ((decoreatedCharge.vat ?? 0) / 3) * 2;
 
@@ -95,7 +98,7 @@ export interface EntryForAccounting {
 export async function buildLedgerEntries(
   charge: VatExtendedCharge,
   originalAmount: number,
-  hashVATIndexes: Record<VatIndexesKeys, string>
+  hashVATIndexes: Record<VatIndexesKeys, string>,
 ): Promise<{
   entryForFinancialAccount: EntryForFinancialAccount;
   entryForAccounting: EntryForAccounting;
@@ -116,9 +119,8 @@ export async function buildLedgerEntries(
 
   const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge);
 
-  entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS = charge.debit_date
-    ? getILSForDate(charge, debitExchangeRates).eventAmountILS
-    : null;
+  entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
+    charge.debit_date ? getILSForDate(charge, debitExchangeRates).eventAmountILS : null;
 
   // entryForAccounting setup
   const entryForAccounting: Partial<EntryForAccounting> = {};
@@ -134,15 +136,22 @@ export async function buildLedgerEntries(
 
   entryForAccounting.creditAmountILS = entryForAccounting.debitAmountILS = getILSForDate(
     charge,
-    charge.account_type == 'creditcard' ? debitExchangeRates : invoiceExchangeRates
+    charge.account_type == 'creditcard' ? debitExchangeRates : invoiceExchangeRates,
   ).eventAmountILS;
 
   if (charge.vatAfterDiduction && charge.vatAfterDiduction != 0) {
     entryForAccounting.secondAccountCreditAmount = charge.vatAfterDiduction;
-    entryForAccounting.secondAccountCreditAmountILS = getILSForDate(charge, debitExchangeRates).vatAfterDiductionILS;
+    entryForAccounting.secondAccountCreditAmountILS = getILSForDate(
+      charge,
+      debitExchangeRates,
+    ).vatAfterDiductionILS;
     entryForAccounting.creditAmount = charge.amountBeforeVAT;
-    entryForAccounting.creditAmountILS = getILSForDate(charge, debitExchangeRates).amountBeforeVATILS;
-    entryForAccounting.secondAccountDebitAmount = entryForAccounting.secondAccountDebitAmountILS = 0;
+    entryForAccounting.creditAmountILS = getILSForDate(
+      charge,
+      debitExchangeRates,
+    ).amountBeforeVATILS;
+    entryForAccounting.secondAccountDebitAmount =
+      entryForAccounting.secondAccountDebitAmountILS = 0;
     entryForAccounting.movementType = hashVATIndexes.vatIncomesMovementTypeIndex;
     if (chargeAmount > 0) {
       entryForAccounting.creditAccount = hashVATIndexes.vatIncomesIndex;
@@ -157,7 +166,8 @@ export async function buildLedgerEntries(
 
   // more setup for both
   if (charge.tax_invoice_currency) {
-    entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS = originalAmount;
+    entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
+      originalAmount;
   }
   entryForAccounting.reference2 = entryForFinancialAccount.reference2 = charge.bank_reference;
   entryForAccounting.reference1 = entryForFinancialAccount.reference1 = charge.tax_invoice_number;
@@ -168,7 +178,11 @@ export async function buildLedgerEntries(
     swapObjectKeys(entryForAccounting, 'creditAmount', 'debitAmount');
     swapObjectKeys(entryForAccounting, 'creditAmountILS', 'debitAmountILS');
     swapObjectKeys(entryForAccounting, 'secondAccountCreditAmount', 'secondAccountDebitAmount');
-    swapObjectKeys(entryForAccounting, 'secondAccountCreditAmountILS', 'secondAccountDebitAmountILS');
+    swapObjectKeys(
+      entryForAccounting,
+      'secondAccountCreditAmountILS',
+      'secondAccountDebitAmountILS',
+    );
     swapObjectKeys(entryForAccounting, 'reference1', 'reference2');
     swapObjectKeys(entryForFinancialAccount, 'creditAccount', 'debitAccount');
     swapObjectKeys(entryForFinancialAccount, 'creditAmount', 'debitAmount');
@@ -199,7 +213,7 @@ export async function buildLedgerEntries(
 export function swapObjectKeys(
   obj: Record<string | number | symbol, unknown>,
   key1: string | number | symbol,
-  key2: string | number | symbol
+  key2: string | number | symbol,
 ) {
   [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
 }

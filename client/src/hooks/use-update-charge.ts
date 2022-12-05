@@ -1,6 +1,9 @@
 import { gql } from 'graphql-tag';
-
-import { UpdateChargeMutation, UpdateChargeMutationVariables, useUpdateChargeMutation } from '../__generated__/types';
+import {
+  UpdateChargeMutation,
+  UpdateChargeMutationVariables,
+  useUpdateChargeMutation,
+} from '../__generated__/types.js';
 
 gql`
   mutation UpdateCharge($chargeId: ID!, $fields: UpdateChargeInput!) {

@@ -1,6 +1,8 @@
 import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
-
-import { IGetAllDocumentsResult, IInsertDocumentsParams } from '../__generated__/documents.types.mjs';
+import {
+  IGetAllDocumentsResult,
+  IInsertDocumentsParams,
+} from '../__generated__/documents.types.mjs';
 import { Currency, Resolvers } from '../__generated__/types.mjs';
 import { normalizeDocumentType } from '../helpers/green-invoice.mjs';
 import { uploadInvoiceToCloudinary } from '../providers/cloudinary.mjs';
@@ -21,7 +23,10 @@ function isCurrency(value?: string | null): value is Currency {
   return keys.includes(value);
 }
 
-export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'] = async (_, { file, chargeId }) => {
+export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'] = async (
+  _,
+  { file, chargeId },
+) => {
   try {
     const base64string = await toBase64(file).catch(err => {
       throw new Error(`Failed to convert file to base64: ${err.message}`);
@@ -29,13 +34,18 @@ export const uploadDocument: NonNullable<Resolvers['Mutation']>['uploadDocument'
 
     const { fileUrl, imageUrl } = await uploadInvoiceToCloudinary(base64string);
 
-    const data = await GreenInvoice.addExpenseDraftByFile_mutation({ input: { file: base64string } });
+    const data = await GreenInvoice.addExpenseDraftByFile_mutation({
+      input: { file: base64string },
+    });
 
     if (!data.addExpenseDraftByFile) {
       throw new Error('No data returned from Green Invoice');
     }
 
-    if ('errorMessage' in data.addExpenseDraftByFile || 'errorCode_' in data.addExpenseDraftByFile) {
+    if (
+      'errorMessage' in data.addExpenseDraftByFile ||
+      'errorCode_' in data.addExpenseDraftByFile
+    ) {
       throw new Error(`Green Invoice Error: ${data.addExpenseDraftByFile.errorMessage}`);
     }
 

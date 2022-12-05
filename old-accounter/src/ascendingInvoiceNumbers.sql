@@ -1,10 +1,10 @@
 SELECT
   *
 FROM
-  acending_invoice_numbers();
+  acending_invoice_numbers ();
 
 CREATE
-OR REPLACE FUNCTION acending_invoice_numbers() RETURNS TABLE (
+OR REPLACE FUNCTION acending_invoice_numbers () RETURNS TABLE (
   tax_invoice_number CHARACTER VARYING,
   user_description VARCHAR,
   financial_entity VARCHAR,

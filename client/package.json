@@ -2,12 +2,16 @@
   "name": "client",
   "version": "0.0.0",
   "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": "18.12.1"
+  },
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
+    "dev": "vite",
+    "generate": "cd ../ && yarn generate && cd client",
     "preview": "vite preview",
-    "server:dev": "cd ../temp-server && yarn dev",
-    "generate": "cd ../ && yarn generate && cd client"
+    "server:dev": "cd ../temp-server && yarn dev"
   },
   "dependencies": {
     "@emotion/react": "11.10.5",
@@ -35,9 +39,5 @@
     "postcss": "8.4.14",
     "tailwindcss": "3.1.7",
     "vite": "3.0.4"
-  },
-  "engines": {
-    "node": "18.12.1"
-  },
-  "license": "MIT"
+  }
 }

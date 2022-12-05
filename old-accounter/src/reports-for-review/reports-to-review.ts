@@ -220,26 +220,26 @@ export const reportToReview = async (query: any): Promise<string> => {
         </td>
         <td>${addHoverEditButton(
           'debit_account_1',
-          generateGoToUserTransactionsFunctionCall(transaction.debit_account_1)
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_1),
         )}</td>
         <td>${addHoverEditButton('debit_amount_1')}</td>
         <td>${addHoverEditButton('foreign_debit_amount_1')}</td>
         <td>${addHoverEditButton('currency')}</td>
         <td>${addHoverEditButton(
           'credit_account_1',
-          generateGoToUserTransactionsFunctionCall(transaction.credit_account_1)
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_1),
         )}</td>
         <td>${addHoverEditButton('credit_amount_1')}</td>
         <td>${addHoverEditButton('foreign_credit_amount_1')}</td>
         <td>${addHoverEditButton(
           'debit_account_2',
-          generateGoToUserTransactionsFunctionCall(transaction.debit_account_2)
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_2),
         )}</td>
         <td>${addHoverEditButton('debit_amount_2')}</td>
         <td>${addHoverEditButton('foreign_debit_amount_2')}</td>
         <td>${addHoverEditButton(
           'credit_account_2',
-          generateGoToUserTransactionsFunctionCall(transaction.credit_account_2)
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_2),
         )}</td>
         <td>${addHoverEditButton('credit_amount_2')}</td>
         <td>${addHoverEditButton('foreign_credit_amount_2')}</td>
@@ -258,7 +258,11 @@ export const reportToReview = async (query: any): Promise<string> => {
         <button type="button"
           ${movementOrBank ? generateTaxFunctionCall : sendToHashavshevetFunctionCall}>e
         </button>
-        ${movementOrBank ? '' : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`}
+        ${
+          movementOrBank
+            ? ''
+            : `<button type="button" onClick='deleteTaxMovements("${transaction.id}");'>D</button>`
+        }
         </td>
       </tr>
       `);
@@ -320,7 +324,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   const taxReportHTML = await createTaxEntriesForMonth(
     moment(reportMonthToReview, 'YYYY-MM-DD').toDate(),
     currrentCompany,
-    pool
+    pool,
   );
 
   return `

@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useCallback, useState } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesTagsFieldsFragment } from '../../../__generated__/types';
 import { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
@@ -38,7 +37,7 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
         fields: { tags: [{ name: value! }] },
       });
     },
-    [chargeId, mutate]
+    [chargeId, mutate],
   );
 
   return (
@@ -46,12 +45,17 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
       {tags.map((tag, i) => (
         <li
           key={tag.name}
-          className={`w-full px-4 py-2 ${i === tags.length - 1 ? '' : 'border-b'} border-gray-200 rounded-t-lg`}
+          className={`w-full px-4 py-2 ${
+            i === tags.length - 1 ? '' : 'border-b'
+          } border-gray-200 rounded-t-lg`}
           style={isPersonalCategory ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}
         >
           {tag.name}
           {!isPersonalCategory && alternativeCharge?.personalCategory && (
-            <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.personalCategory)} disabled={isLoading} />
+            <ConfirmMiniButton
+              onClick={() => updateTag(alternativeCharge.personalCategory)}
+              disabled={isLoading}
+            />
           )}
         </li>
       ))}

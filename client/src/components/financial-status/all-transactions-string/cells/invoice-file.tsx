@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
@@ -24,7 +23,11 @@ export const InvoiceFile = ({ transaction, style }: Props) => {
           yes
         </a>
       )}
-      <UpdateButton transaction={transaction} propertyName="tax_invoice_file" promptText="New Invoice path:" />
+      <UpdateButton
+        transaction={transaction}
+        propertyName="tax_invoice_file"
+        promptText="New Invoice path:"
+      />
     </td>
   );
 };

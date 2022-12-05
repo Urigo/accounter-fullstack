@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-
 import { writeToClipboard } from '../../../../helpers/clipboard';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';

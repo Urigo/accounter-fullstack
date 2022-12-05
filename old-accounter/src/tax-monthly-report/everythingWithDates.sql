@@ -48,8 +48,8 @@ FROM
 WHERE
   (
     (
-      full_payment_date::TEXT::date <= get_creditcard_charge_date('2020-07-01')::date
-      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month('2020-07-01')::date
+      full_payment_date::TEXT::date <= get_creditcard_charge_date ('2020-07-01')::date
+      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-07-01')::date
     )
     OR (
       event_date::TEXT::date >= date_trunc('month', '2020-07-01'::date)
@@ -124,8 +124,8 @@ FROM
 WHERE
   (
     (
-      full_payment_date::TEXT::date <= get_creditcard_charge_date('2020-07-01')::date
-      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month('2020-07-01')::date
+      full_payment_date::TEXT::date <= get_creditcard_charge_date ('2020-07-01')::date
+      AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-07-01')::date
     )
     OR (
       full_payment_date IS NULL

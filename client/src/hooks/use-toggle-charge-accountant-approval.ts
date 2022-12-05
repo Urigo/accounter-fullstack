@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   ToggleChargeAccountantApprovalMutation,
   ToggleChargeAccountantApprovalMutationVariables,
   useToggleChargeAccountantApprovalMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation ToggleChargeAccountantApproval($chargeId: ID!, $approved: Boolean!) {
@@ -16,9 +15,14 @@ export const useToggleChargeAccountantApproval = () => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const onError = async (e: unknown, { chargeId }: ToggleChargeAccountantApprovalMutationVariables) => {
+  const onError = async (
+    e: unknown,
+    { chargeId }: ToggleChargeAccountantApprovalMutationVariables,
+  ) => {
     console.log(e);
-    return new Error(`Error updating accountant approval of charge ID [${chargeId}]: ${(e as Error)?.message}`);
+    return new Error(
+      `Error updating accountant approval of charge ID [${chargeId}]: ${(e as Error)?.message}`,
+    );
   };
   const onSuccess = async (data: ToggleChargeAccountantApprovalMutation) => {
     return data.toggleChargeAccountantApproval;

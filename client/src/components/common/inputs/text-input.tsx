@@ -1,8 +1,9 @@
-import { ComponentProps, forwardRef, PropsWithChildren } from 'react';
-
+import { ComponentProps, forwardRef, ReactElement } from 'react';
 import { Input } from './input';
 
-type Props = PropsWithChildren<Omit<ComponentProps<typeof Input>, 'type' | 'showControl' | 'precision'>>;
+type Props = Omit<ComponentProps<typeof Input>, 'type' | 'showControl' | 'precision'> & {
+  children?: ReactElement | ReactElement[];
+};
 
 export const TextInput = forwardRef<HTMLInputElement, Props>(function TextInput(props) {
   return <Input {...props} type="text" />;

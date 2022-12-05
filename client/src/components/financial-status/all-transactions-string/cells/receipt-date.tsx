@@ -1,6 +1,5 @@
-import moment from 'moment';
 import { CSSProperties } from 'react';
-
+import { format } from 'date-fns';
 import { isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
@@ -20,8 +19,12 @@ export const ReceiptDate = ({ transaction, style }: Props) => {
         ...style,
       }}
     >
-      {transaction.receipt_date && moment(transaction.receipt_date).format('DD/MM/YY')}
-      <UpdateButton transaction={transaction} propertyName="receipt_date" promptText="New Receipt Date:" />
+      {transaction.receipt_date && format(new Date(transaction.receipt_date), 'dd/MM/yy')}
+      <UpdateButton
+        transaction={transaction}
+        propertyName="receipt_date"
+        promptText="New Receipt Date:"
+      />
     </td>
   );
 };

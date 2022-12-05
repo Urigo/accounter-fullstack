@@ -1,4 +1,4 @@
-uuid_generate_v4();
+uuid_generate_v4 ();
 
 SELECT
   usd,
@@ -37,23 +37,23 @@ INSERT INTO
 SELECT
   *
 FROM
-  get_tax_report_of_transaction('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade')
+  get_tax_report_of_transaction ('7e81e7c7-6fce-4e6f-8a9f-cccec8185ade')
 RETURNING
   *;
 
 SELECT
   * INTO TABLE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 FROM
-  get_tax_report_of_transaction('21b53e78-ef11-4edc-8a68-1e2357d90ca8')
+  get_tax_report_of_transaction ('21b53e78-ef11-4edc-8a68-1e2357d90ca8')
 ORDER BY
   to_date(date_3, 'DD/MM/YYYY'),
   original_id;
 
 DROP FUNCTION
-  get_tax_report_of_transaction(transaction_id uuid);
+  get_tax_report_of_transaction (transaction_id uuid);
 
 CREATE
-OR REPLACE FUNCTION get_tax_report_of_transaction(transaction_id uuid) RETURNS TABLE(
+OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id uuid) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,

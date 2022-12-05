@@ -1,12 +1,15 @@
+import { useEffect, useState } from 'react';
 import { ActionIcon, MultiSelect, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import gql from 'graphql-tag';
-import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-
-import { ChargeFilter, ChargeSortByField, useAllFinancialEntitiesQuery } from '../../__generated__/types';
+import {
+  ChargeFilter,
+  ChargeSortByField,
+  useAllFinancialEntitiesQuery,
+} from '../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import { PopUpModal } from '../common';
 import { TextInput } from '../common/inputs';
@@ -256,7 +259,7 @@ export function ChargesFilters({ filter, setFilter }: ChargesFiltersProps) {
 
   function isFilterApplied(filter: ChargeFilter) {
     const changed = Object.entries(filter ?? {}).filter(
-      ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0
+      ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
@@ -274,9 +277,19 @@ export function ChargesFilters({ filter, setFilter }: ChargesFiltersProps) {
       <PopUpModal
         opened={opened}
         onClose={() => setOpened(false)}
-        content={<ChargesFiltersForm filter={filter} setFilter={onSetFilter} closeModal={() => setOpened(false)} />}
+        content={
+          <ChargesFiltersForm
+            filter={filter}
+            setFilter={onSetFilter}
+            closeModal={() => setOpened(false)}
+          />
+        }
       />
-      <ActionIcon variant="outline" color={isFiltered ? 'red' : 'gray'} onClick={() => setOpened(true)}>
+      <ActionIcon
+        variant="outline"
+        color={isFiltered ? 'red' : 'gray'}
+        onClick={() => setOpened(true)}
+      >
         <Filter size={20} />
       </ActionIcon>
     </>

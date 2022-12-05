@@ -1,8 +1,10 @@
+import { useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
 import gql from 'graphql-tag';
-import { useMemo, useState } from 'react';
-
-import { ChargeToMatchDocumentsFieldsFragment, DocumentsToMatchFieldsFragment } from '../../../__generated__/types';
+import {
+  ChargeToMatchDocumentsFieldsFragment,
+  DocumentsToMatchFieldsFragment,
+} from '../../../__generated__/types';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { Button } from '../../common/button';
 import { StrictFilteredSelection } from './strict-filtered-selection';
@@ -103,7 +105,7 @@ export function SelectionHandler({ charge, documents, onDone }: Props) {
         if (a.date > b.date) return -1;
         return 0;
       }),
-    [documents]
+    [documents],
   );
 
   const strictFilteredDocuments = useMemo(
@@ -123,10 +125,10 @@ export function SelectionHandler({ charge, documents, onDone }: Props) {
         return (
           documentAmount >= Math.floor(chargeAmount) &&
           documentAmount <= Math.ceil(chargeAmount + fee) &&
-          Math.abs(documentDate - chargeDate) < 5184000000
+          Math.abs(documentDate - chargeDate) < 5_184_000_000
         );
       }),
-    [coarsedFilteredDocuments, charge]
+    [coarsedFilteredDocuments, charge],
   );
 
   const [filterSuggestions, setFilterSuggestions] = useState(strictFilteredDocuments.length > 0);
@@ -148,7 +150,7 @@ export function SelectionHandler({ charge, documents, onDone }: Props) {
       mutate({
         documentId,
         fields: { chargeId: charge.id },
-      })
+      }),
     );
     onDone();
   };

@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   UpdateDocumentMutation,
   UpdateDocumentMutationVariables,
   useUpdateDocumentMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation UpdateDocument($documentId: ID!, $fields: UpdateDocumentFieldsInput!) {

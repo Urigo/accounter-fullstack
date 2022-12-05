@@ -1,4 +1,10 @@
-import { ChangeEvent, DetailedHTMLProps, forwardRef, InputHTMLAttributes, PropsWithChildren } from 'react';
+import {
+  ChangeEvent,
+  DetailedHTMLProps,
+  forwardRef,
+  InputHTMLAttributes,
+  ReactElement,
+} from 'react';
 
 type Props = Omit<
   DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>,
@@ -7,16 +13,17 @@ type Props = Omit<
   label?: string;
   error?: string;
   name: string;
-  onChange: (...event: any[]) => void;
+  onChange: (...event: unknown[]) => void;
   showControls?: boolean;
   isDirty?: boolean;
   rightPadding?: string;
   precision?: number;
   type?: 'text' | 'number';
   className?: string;
+  children?: ReactElement | ReactElement[];
 };
 
-export const Input = forwardRef<HTMLInputElement, PropsWithChildren<Props>>(function Input({
+export const Input = forwardRef<HTMLInputElement, Props>(function Input({
   type = 'text',
   label,
   error,

@@ -58,7 +58,7 @@ app.post('/getMissingInvoiceDates', async (req: Request, res: Response) => {
       from missing_invoice_dates($1)
       order by event_date;
     `,
-    [`$$${monthTaxReport}$$`]
+    [`$$${monthTaxReport}$$`],
   );
   res.send(queryRes.rows);
 });
@@ -79,7 +79,7 @@ app.post('/getMissingInvoiceImages', async (req: Request, res: Response) => {
       from missing_invoice_images($1)
       order by event_date;
     `,
-    [`$$${monthTaxReport}$$`]
+    [`$$${monthTaxReport}$$`],
   );
 
   res.send(queryRes.rows);
@@ -101,7 +101,7 @@ app.post('/getMissingInvoiceNumbers', async (req: Request, res: Response) => {
       from missing_invoice_numbers($1)
       order by event_date;
     `,
-    [`$$${monthTaxReport}$$`]
+    [`$$${monthTaxReport}$$`],
   );
 
   res.send(queryRes.rows);
@@ -294,7 +294,7 @@ app.post('/getVatTransactions', async (req: Request, res: Response) => {
       select *
       from get_vat_for_month($1);
     `,
-    [`$$${monthTaxReport}$$`]
+    [`$$${monthTaxReport}$$`],
   );
 
   res.send(queryRes.rows);
@@ -337,7 +337,7 @@ app.post('/getMonthlyTaxesReport', async (req: Request, res: Response) => {
       select *
       from get_tax_report_of_month($1);
     `,
-    [`$$${monthTaxReport}$$`]
+    [`$$${monthTaxReport}$$`],
   );
 
   res.send(queryRes.rows);
@@ -358,7 +358,7 @@ app.post('/getTopPrivateNotCategorized', async (req: Request, res: Response) => 
       select *
       from top_expenses_not_categorized($1);
     `,
-    [`$$${startingDate}$$`]
+    [`$$${startingDate}$$`],
   );
 
   res.send(queryRes.rows);
@@ -386,7 +386,7 @@ app.post('/updateBankTransactionAttribute', async (req: Request, res: Response) 
         set ${attribute} = $1
         where id = $2;
       `,
-    [value, transactionId]
+    [value, transactionId],
   );
 
   res.send(queryRes.rows);
@@ -414,7 +414,7 @@ app.post('/editTransaction', async (req: Request, res: Response) => {
       WHERE id = $2
       RETURNING ${propertyToChange};
     `,
-    [newValue, id]
+    [newValue, id],
   );
 
   res.send(queryRes.rows);
@@ -436,7 +436,7 @@ app.post('/deleteTaxMovement', async (req: Request, res: Response) => {
     where id = $1
     returning *;
     `,
-    [`$$${transactionId}$$`]
+    [`$$${transactionId}$$`],
   );
 
   res.send(queryRes.rows);
@@ -463,7 +463,7 @@ app.post('/reviewTransaction', async (req: Request, res: Response) => {
       WHERE id = $2
       RETURNING *;
     `,
-    [`$$${reviewed}$$`, `$$${id}$$`]
+    [`$$${reviewed}$$`, `$$${id}$$`],
   );
 
   res.send(queryRes.rows);
@@ -480,7 +480,7 @@ app.post('/getAllUsers', async (req: Request, res: Response) => {
         column =>
           `select ${column} as userName from accounter_schema.ledger${
             currrentCompany ? ` where business = '${currrentCompany}'` : ''
-          }`
+          }`,
       )
       .join(' union ') + ' order by userName';
 
@@ -509,7 +509,7 @@ app.post('/getUserTransactions', async (req: Request, res: Response) => {
       where business = '${companyId}' and $1 in (debit_account_1, debit_account_2, credit_account_1, credit_account_2)
       order by to_date(date_3, 'DD/MM/YYYY') asc, original_id, details, debit_account_1, id;
     `,
-    [`$$${userName}$$`]
+    [`$$${userName}$$`],
   );
 
   res.send(queryRes.rows);
@@ -548,7 +548,7 @@ app.post('/getReportToReview', async (req: Request, res: Response) => {
       from get_unified_tax_report_of_month($1, '2020-01-01', $2)
       order by to_date(date_3, 'DD/MM/YYYY') desc, original_id, details, debit_account_1, id;
     `,
-    [`$$${company}$$`, `$$${reportMonthToReview}$$`]
+    [`$$${company}$$`, `$$${reportMonthToReview}$$`],
   );
 
   res.send(queryRes.rows);

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Control, Controller, UseFormWatch } from 'react-hook-form';
-
 import {
   Currency,
   DocumentType,
@@ -36,11 +35,11 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
   useEffect(() => {
     const type = watch('documentType');
     setShowExtendedFields(
-      !!type &&
+      Boolean(type) &&
         (type === DocumentType.Invoice ||
           type === DocumentType.Receipt ||
           type === DocumentType.InvoiceReceipt ||
-          type === DocumentType.Proforma)
+          type === DocumentType.Proforma),
     );
   }, [watch('documentType')]);
 
@@ -52,7 +51,12 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         rules={{ required: 'Required' }}
         defaultValue={DocumentType.Unprocessed}
         render={({ field, fieldState }) => (
-          <SelectInput {...field} selectionEnum={DocumentType} error={fieldState.error?.message} label="Type" />
+          <SelectInput
+            {...field}
+            selectionEnum={DocumentType}
+            error={fieldState.error?.message}
+            label="Type"
+          />
         )}
       />
       {showExtendedFields && (
@@ -68,7 +72,12 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
               },
             }}
             render={({ field, fieldState }) => (
-              <TextInput {...field} error={fieldState.error?.message} isDirty={fieldState.isDirty} label="Date" />
+              <TextInput
+                {...field}
+                error={fieldState.error?.message}
+                isDirty={fieldState.isDirty}
+                label="Date"
+              />
             )}
           />
           <Controller
@@ -121,7 +130,9 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency}
+                defaultValue={
+                  isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
+                }
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
@@ -143,7 +154,9 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency}
+                defaultValue={
+                  isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
+                }
                 render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"

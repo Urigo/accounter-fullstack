@@ -113,18 +113,19 @@ INSERT INTO
     id,
     image_url,
     file_url,
-    type,
-    created_at,
-    modified_at,
-    serial_number,
-    date,
-    total_amount,
-    currency_code,
-    vat_amount,
-    charge_id,
-    debtor,
-    creditor,
-    is_reviewed
+    type
+,
+      created_at,
+      modified_at,
+      serial_number,
+      date,
+      total_amount,
+      currency_code,
+      vat_amount,
+      charge_id,
+      debtor,
+      creditor,
+      is_reviewed
   )
 VALUES
   (
@@ -270,8 +271,8 @@ WHERE
           OR bank.financial_entity = 'Isracard'
         )
         AND (
-          bank.debit_date::TEXT::date <= get_creditcard_charge_date('2020-09-01')::date
-          AND bank.debit_date::TEXT::date > get_creditcard_charge_date_former_month('2020-09-01')::date
+          bank.debit_date::TEXT::date <= get_creditcard_charge_date ('2020-09-01')::date
+          AND bank.debit_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-09-01')::date
           OR (
             bank.debit_date IS NULL
             AND bank.event_date::TEXT::date >= date_trunc('month', '2020-09-01'::date)
@@ -290,37 +291,37 @@ ORDER BY
   debit_account_1;
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 SELECT
-  gen_random_uuid();
+  gen_random_uuid ();
 
 UPDATE
   accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 SET
-  id = gen_random_uuid()
+  id = gen_random_uuid ()
 WHERE
   id IS NULL;
 
 SELECT
   *
 FROM
-  report_to_hashavshevet_by_month('2020-09-01');
+  report_to_hashavshevet_by_month ('2020-09-01');
 
 SELECT
   *
@@ -333,10 +334,10 @@ ORDER BY
   (to_date(date_3, 'DD/MM/YYYY'));
 
 DROP FUNCTION
-  report_to_hashavshevet_by_month(month_report VARCHAR);
+  report_to_hashavshevet_by_month (month_report VARCHAR);
 
 CREATE
-OR REPLACE FUNCTION report_to_hashavshevet_by_month(month_report VARCHAR) RETURNS TABLE(
+OR REPLACE FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
@@ -394,7 +395,7 @@ $$;
 SELECT
   *
 FROM
-  get_unified_tax_report_of_month(
+  get_unified_tax_report_of_month (
     'Software Products Guilda Ltd.',
     '2020-01-01',
     '2021-05-01'
@@ -410,11 +411,11 @@ DROP FUNCTION
   get_unified_tax_report_of_month;
 
 CREATE
-OR REPLACE FUNCTION get_unified_tax_report_of_month(
+OR REPLACE FUNCTION get_unified_tax_report_of_month (
   business_name TEXT,
   month_start VARCHAR,
   month_end VARCHAR
-) RETURNS TABLE(
+) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
@@ -579,7 +580,7 @@ WHERE
 -- Merge and insert new transactions into existing table
 SELECT
   *,
-  gen_random_uuid() AS id,
+  gen_random_uuid () AS id,
   (
     SELECT
       t1.reviewed
@@ -640,7 +641,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-03-01')
+        get_tax_report_of_month ('2020-03-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -650,7 +651,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-04-01')
+        get_tax_report_of_month ('2020-04-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -660,7 +661,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-05-01')
+        get_tax_report_of_month ('2020-05-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -670,7 +671,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-06-01')
+        get_tax_report_of_month ('2020-06-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -680,7 +681,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-07-01')
+        get_tax_report_of_month ('2020-07-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -690,7 +691,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-08-01')
+        get_tax_report_of_month ('2020-08-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -700,7 +701,7 @@ FROM
       SELECT
         *
       FROM
-        get_tax_report_of_month('2020-09-01')
+        get_tax_report_of_month ('2020-09-01')
       ORDER BY
         to_date(date_3, 'DD/MM/YYYY'),
         original_id
@@ -710,7 +711,7 @@ FROM
       SELECT
         *
       FROM
-        trip_report(
+        trip_report (
           '2020-06-20',
           'נסעחול31',
           TRUE,
@@ -787,8 +788,8 @@ WITH
             OR financial_entity = 'Isracard'
           )
           AND (
-            debit_date::TEXT::date <= get_creditcard_charge_date('2020-08-01')::date
-            AND debit_date::TEXT::date > get_creditcard_charge_date_former_month('2020-08-01')::date
+            debit_date::TEXT::date <= get_creditcard_charge_date ('2020-08-01')::date
+            AND debit_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-08-01')::date
             OR (
               debit_date IS NULL
               AND event_date::TEXT::date >= date_trunc('month', '2020-08-01'::date)
@@ -858,21 +859,21 @@ INSERT INTO
   )
 SELECT
   *,
-  gen_random_uuid() -- into table accounter_schema.saved_tax_reports_2020_03_04
+  gen_random_uuid () -- into table accounter_schema.saved_tax_reports_2020_03_04
 FROM
-  get_tax_report_of_month('2020-12-01') -- order by to_date(date_3, 'DD/MM/YYYY'), original_id
+  get_tax_report_of_month ('2020-12-01') -- order by to_date(date_3, 'DD/MM/YYYY'), original_id
 ;
 
 SELECT
   *
 FROM
-  get_tax_report_of_month('2020-12-01');
+  get_tax_report_of_month ('2020-12-01');
 
 DROP FUNCTION
-  get_tax_report_of_month(month_input VARCHAR);
+  get_tax_report_of_month (month_input VARCHAR);
 
 CREATE
-OR REPLACE FUNCTION get_tax_report_of_month(month_input VARCHAR) RETURNS TABLE(
+OR REPLACE FUNCTION get_tax_report_of_month (month_input VARCHAR) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,

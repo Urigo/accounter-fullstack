@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { CSSProperties, useState } from 'react';
-
+import gql from 'graphql-tag';
 import { ChargesFragment } from '../../../__generated__/types';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import {
@@ -57,7 +56,11 @@ export const TransactionRow = ({ transaction, columns, index, charge }: Props) =
 
   return (
     <>
-      <tr style={rowStyle({ hover, index })} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+      <tr
+        style={rowStyle({ hover, index })}
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+      >
         {columns.map(column => {
           switch (column) {
             case 'Date': {

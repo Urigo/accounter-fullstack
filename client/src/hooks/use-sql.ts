@@ -1,4 +1,4 @@
-import { businesses } from '../helpers';
+import { businesses } from '../helpers/index.js';
 import type {
   LastInvoiceNumber,
   LedgerEntity,
@@ -15,7 +15,9 @@ const serverUrl = 'http://localhost:4001';
 
 export const useSql = () => {
   const onGetLastInvoiceNumbers = async () => {
-    const lastInvoiceNumbers = await fetch(`${serverUrl}/getLastInvoiceNumbers`).then(res => res.json());
+    const lastInvoiceNumbers = await fetch(`${serverUrl}/getLastInvoiceNumbers`).then(res =>
+      res.json(),
+    );
 
     return (lastInvoiceNumbers ?? []) as LastInvoiceNumber[];
   };
@@ -63,7 +65,9 @@ export const useSql = () => {
   };
 
   const onGetThisMonthPrivateExpenses = async () => {
-    const thisMonthPrivateExpenses = await fetch(`${serverUrl}/getThisMonthPrivateExpenses`).then(res => res.json());
+    const thisMonthPrivateExpenses = await fetch(`${serverUrl}/getThisMonthPrivateExpenses`).then(
+      res => res.json(),
+    );
 
     return (thisMonthPrivateExpenses ?? []) as ThisMonthPrivateExpensesType[];
   };
@@ -105,18 +109,24 @@ export const useSql = () => {
   };
 
   const onGetTopPrivateNotCategorized = async (startingDate = '2020-01-01') => {
-    const topPrivateNotCategorizedExpenses = await fetch(`${serverUrl}/getTopPrivateNotCategorized`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const topPrivateNotCategorizedExpenses = await fetch(
+      `${serverUrl}/getTopPrivateNotCategorized`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ startingDate }),
       },
-      body: JSON.stringify({ startingDate }),
-    }).then(res => res.json());
+    ).then(res => res.json());
 
     return (topPrivateNotCategorizedExpenses ?? []) as TopPrivateNotCategorizedExpense[];
   };
 
-  const onUpdateBankTransactionAttribute = async <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+  const onUpdateBankTransactionAttribute = async <
+    K extends keyof TransactionType,
+    T = TransactionType[K],
+  >(data: {
     transactionId: string;
     attribute: K;
     value: T;
@@ -132,7 +142,10 @@ export const useSql = () => {
     return result;
   };
 
-  const onEditTransactionProperty = async <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+  const onEditTransactionProperty = async <
+    K extends keyof TransactionType,
+    T = TransactionType[K],
+  >(data: {
     propertyToChange: K;
     newValue: T;
     id: string;
@@ -173,7 +186,11 @@ export const useSql = () => {
     }
   };
 
-  const onReviewTransaction = async (data: { reviewed: boolean; id: string; accountType?: string }) => {
+  const onReviewTransaction = async (data: {
+    reviewed: boolean;
+    id: string;
+    accountType?: string;
+  }) => {
     try {
       const result = await fetch(`${serverUrl}/reviewTransaction`, {
         method: 'POST',
@@ -204,7 +221,7 @@ export const useSql = () => {
 
   const onGetUserTransactions = async (
     userName: string,
-    companyId: string = businesses['Software Products Guilda Ltd.']
+    companyId: string = businesses['Software Products Guilda Ltd.'],
   ) => {
     const transactions = await fetch(`${serverUrl}/getUserTransactions`, {
       method: 'POST',
@@ -222,7 +239,10 @@ export const useSql = () => {
     return undefined;
   };
 
-  const onGetReportToReview = async (company = 'Software Products Guilda Ltd.', reportMonthToReview = '2020-12-01') => {
+  const onGetReportToReview = async (
+    company = 'Software Products Guilda Ltd.',
+    reportMonthToReview = '2020-12-01',
+  ) => {
     const transactions = await fetch(`${serverUrl}/getReportToReview`, {
       method: 'POST',
       headers: {
@@ -238,14 +258,19 @@ export const useSql = () => {
     getLastInvoiceNumbers: () => onGetLastInvoiceNumbers(),
     getMissingInvoiceDates: (monthTaxReport: string) => onGetMissingInvoiceDates(monthTaxReport),
     getMissingInvoiceImages: (monthTaxReport: string) => onGetMissingInvoiceImages(monthTaxReport),
-    getMissingInvoiceNumbers: (monthTaxReport: string) => onGetMissingInvoiceNumbers(monthTaxReport),
+    getMissingInvoiceNumbers: (monthTaxReport: string) =>
+      onGetMissingInvoiceNumbers(monthTaxReport),
     getProfitTable: () => onGetProfitTable(),
     getThisMonthPrivateExpenses: () => onGetThisMonthPrivateExpenses(),
     getVatTransactions: (monthTaxReport: string) => onGetVatTransactions(monthTaxReport),
     getAllTransactions: (financialEntity: string | null) => onGetAllTransactions(financialEntity),
     getMonthlyTaxesReport: (monthTaxReport: string) => onGetMonthlyTaxesReport(monthTaxReport),
-    getTopPrivateNotCategorized: (startingDate?: string) => onGetTopPrivateNotCategorized(startingDate),
-    updateBankTransactionAttribute: <K extends keyof TransactionType, T = TransactionType[K]>(data: {
+    getTopPrivateNotCategorized: (startingDate?: string) =>
+      onGetTopPrivateNotCategorized(startingDate),
+    updateBankTransactionAttribute: <
+      K extends keyof TransactionType,
+      T = TransactionType[K],
+    >(data: {
       transactionId: string;
       attribute: K;
       value: T;
@@ -258,9 +283,11 @@ export const useSql = () => {
     deleteTaxMovement: (transactionId: string) => {
       onDeleteTaxMovement(transactionId);
     },
-    reviewTransaction: (data: { reviewed: boolean; id: string; accountType?: string }) => onReviewTransaction(data),
+    reviewTransaction: (data: { reviewed: boolean; id: string; accountType?: string }) =>
+      onReviewTransaction(data),
     getAllUsers: (companyId?: string) => onGetAllUsers(companyId),
-    getUserTransactions: (userName: string, companyId?: string) => onGetUserTransactions(userName, companyId),
+    getUserTransactions: (userName: string, companyId?: string) =>
+      onGetUserTransactions(userName, companyId),
     generateTaxMovement: (transactionId: string) => onGenerateTaxMovement(transactionId),
     getReportToReview: (currentCompany?: string, reportMonthToReview?: string) =>
       onGetReportToReview(currentCompany, reportMonthToReview),

@@ -1,5 +1,5 @@
-CREATE
-OR REPLACE VIEW dotan_dept AS
+CREATE OR REPLACE VIEW
+  dotan_dept AS
 SELECT
   event_date,
   event_amount,
@@ -73,8 +73,8 @@ ORDER BY
   bank_reference,
   account_number;
 
-CREATE
-OR REPLACE VIEW dotan_future_dept AS
+CREATE OR REPLACE VIEW
+  dotan_future_dept AS
 SELECT
   event_date,
   event_amount,

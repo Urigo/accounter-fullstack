@@ -6,8 +6,8 @@ FROM
 DROP VIEW
   formatted_merged_tables CASCADE;
 
-CREATE
-OR REPLACE VIEW formatted_merged_tables AS
+CREATE OR REPLACE VIEW
+  formatted_merged_tables AS
 WITH
   all_exchange_dates AS (
     SELECT
@@ -180,7 +180,7 @@ SELECT
     END
   ) AS event_amount_in_usd_with_vat_if_exists,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -209,7 +209,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -238,7 +238,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils_with_interest,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -255,7 +255,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_invoice_amount_if_exists,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -337,7 +337,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_invoice_amount_in_ils_with_vat_if_exists,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -419,7 +419,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_invoice_amount_in_ils_if_exists,
   to_char(
-    float8(
+    float8 (
       ABS(
         (
           CASE
@@ -448,7 +448,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils_with_vat_if_exist,
   to_char(
-    float8(
+    float8 (
       CASE
         WHEN currency_code != 'ILS' THEN ABS(event_amount) --                 ELSE NULL
       END
@@ -456,7 +456,7 @@ SELECT
     'FM999999999.00'
   ) AS formatted_foreign_amount_if_exist,
   to_char(
-    float8(
+    float8 (
       CASE
         WHEN currency_code != 'ILS' THEN ABS(
           (

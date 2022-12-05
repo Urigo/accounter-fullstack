@@ -16,7 +16,7 @@ export const getAllUsers = async (): Promise<string> => {
         column =>
           `select ${column} as userName from accounter_schema.ledger${
             currrentCompany ? ` where business = '${currrentCompany}'` : ''
-          }`
+          }`,
       )
       .join(' union ') + ' order by userName';
   const results: any = await pool.query(query);

@@ -3,7 +3,7 @@ WITH
     SELECT
       date_trunc(
         'day',
-        generate_series (
+        generate_series(
           min(exchange_date) --'2018-02-15'::timestamp
 ,
           (
@@ -641,8 +641,8 @@ WITH
       account_number
   ),
   ils_business_balance AS (
-    SELECT
-      DISTINCT ON (event_date) event_date,
+    SELECT DISTINCT
+      ON (event_date) event_date,
       current_balance,
       account_number
     FROM
@@ -654,8 +654,8 @@ WITH
       expanded_event_date DESC
   ),
   ils_personal_balance AS (
-    SELECT
-      DISTINCT ON (event_date) event_date,
+    SELECT DISTINCT
+      ON (event_date) event_date,
       current_balance,
       account_number
     FROM
@@ -667,8 +667,8 @@ WITH
       expanded_event_date DESC
   ),
   usd_business_balance AS (
-    SELECT
-      DISTINCT ON (executing_date) executing_date,
+    SELECT DISTINCT
+      ON (executing_date) executing_date,
       current_balance,
       account_number
     FROM
@@ -680,8 +680,8 @@ WITH
       event_number DESC
   ),
   usd_personal_balance AS (
-    SELECT
-      DISTINCT ON (executing_date) executing_date,
+    SELECT DISTINCT
+      ON (executing_date) executing_date,
       current_balance,
       account_number
     FROM
@@ -693,8 +693,8 @@ WITH
       event_number DESC
   ),
   euro_business_balance AS (
-    SELECT
-      DISTINCT ON (executing_date) executing_date,
+    SELECT DISTINCT
+      ON (executing_date) executing_date,
       current_balance,
       account_number
     FROM
@@ -706,8 +706,8 @@ WITH
       event_number DESC
   ),
   euro_personal_balance AS (
-    SELECT
-      DISTINCT ON (executing_date) executing_date,
+    SELECT DISTINCT
+      ON (executing_date) executing_date,
       current_balance,
       account_number
     FROM
@@ -719,8 +719,8 @@ WITH
       event_number DESC
   ),
   usd_interactive_brokers_personal_balance AS (
-    SELECT
-      DISTINCT ON (date) date,
+    SELECT DISTINCT
+      ON (date) date,
       balance
     FROM
       accounter_schema.interactive_broker_account

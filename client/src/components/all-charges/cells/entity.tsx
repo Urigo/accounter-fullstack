@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useCallback } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesEntityFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
@@ -43,14 +42,19 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
         });
       }
     },
-    [chargeId, mutate]
+    [chargeId, mutate],
   );
 
   return (
     <div className="flex flex-wrap">
-      <p style={isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>{cellText ?? 'undefined'}</p>
+      <p style={isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>
+        {cellText ?? 'undefined'}
+      </p>
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
-        <ConfirmMiniButton onClick={() => updateTag(alternativeCharge.financialEntity)} disabled={isLoading} />
+        <ConfirmMiniButton
+          onClick={() => updateTag(alternativeCharge.financialEntity)}
+          disabled={isLoading}
+        />
       )}
     </div>
   );

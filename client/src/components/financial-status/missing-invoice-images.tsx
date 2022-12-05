@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import { MissingInvoice } from '../../models/types';
@@ -33,7 +32,9 @@ export const MissingInvoiceImages = ({ monthTaxReport }: Props) => {
           <tbody>
             {missingInvoiceImages.map((row, i) => (
               <tr key={i}>
-                <td>{new Date(row.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</td>
+                <td>
+                  {new Date(row.event_date).toISOString().replace(/T/, ' ').replace(/\..+/, '')}
+                </td>
                 <td>
                   {row.event_amount}${currencyCodeToSymbol(row.currency_code)}
                 </td>

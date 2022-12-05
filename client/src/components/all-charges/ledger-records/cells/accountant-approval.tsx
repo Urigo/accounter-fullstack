@@ -1,6 +1,5 @@
-import { Switch } from '@mantine/core';
 import { useState } from 'react';
-
+import { Switch } from '@mantine/core';
 import { useToggleLedgerRecordAccountantApproval } from '../../../../hooks/use-toggle-ledger-record-accountant-approval';
 
 interface Props {
@@ -22,7 +21,11 @@ export function AccountantApproval({ ledgerRecordId, approved: initialApprovedSt
 
   return (
     <td>
-      <Switch color="green" checked={checked} onChange={event => onToggle(event.currentTarget.checked)} />
+      <Switch
+        color="green"
+        checked={checked}
+        onChange={event => onToggle(event.currentTarget.checked)}
+      />
     </td>
   );
 }

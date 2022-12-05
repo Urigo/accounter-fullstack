@@ -1,5 +1,4 @@
 import pgQuery from '@pgtyped/query';
-
 import { IGetLastInvoiceNumbersQuery } from '../__generated__/sql-queries.types.mjs';
 
 const { sql } = pgQuery;

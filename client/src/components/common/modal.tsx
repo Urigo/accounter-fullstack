@@ -1,5 +1,5 @@
+import { CSSProperties, ReactElement, ReactNode } from 'react';
 import { Modal } from '@mantine/core';
-import { CSSProperties, PropsWithChildren, ReactElement, ReactNode } from 'react';
 
 export interface ModalProps {
   ButtonDisplay?: ReactElement;
@@ -9,6 +9,7 @@ export interface ModalProps {
   modalSize?: string;
   opened?: boolean;
   onClose?: () => void;
+  children?: ReactElement | ReactElement[];
 }
 
 export const PopUpModal = ({
@@ -17,7 +18,7 @@ export const PopUpModal = ({
   opened = false,
   onClose = () => null,
   modalSize,
-}: PropsWithChildren<ModalProps>): ReactElement => {
+}: ModalProps): ReactElement => {
   return (
     <Modal size={modalSize} opened={opened} onClose={onClose} title={title}>
       {content}

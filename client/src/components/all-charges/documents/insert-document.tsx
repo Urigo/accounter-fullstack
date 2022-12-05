@@ -1,7 +1,6 @@
-import { showNotification } from '@mantine/notifications';
 import { useEffect } from 'react';
+import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
-
 import { Currency, DocumentType, InsertDocumentInput } from '../../../__generated__/types';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
 import { SimpleGrid } from '../../common/simple-grid';

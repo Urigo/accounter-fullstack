@@ -98,7 +98,10 @@ type Query {
 type Mutation {
   updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
-  updateLedgerRecord(ledgerRecordId: ID!, fields: UpdateLedgerRecordInput!): UpdateLedgerRecordResult!
+  updateLedgerRecord(
+    ledgerRecordId: ID!
+    fields: UpdateLedgerRecordInput!
+  ): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
   toggleLedgerRecordAccountantApproval(ledgerRecordId: ID!, approved: Boolean!): Boolean!
   toggleChargeAccountantApproval(chargeId: ID!, approved: Boolean!): Boolean!

@@ -1,10 +1,9 @@
 import { gql } from 'graphql-tag';
-
 import {
   ToggleLedgerRecordAccountantApprovalMutation,
   ToggleLedgerRecordAccountantApprovalMutationVariables,
   useToggleLedgerRecordAccountantApprovalMutation,
-} from '../__generated__/types';
+} from '../__generated__/types.js';
 
 gql`
   mutation ToggleLedgerRecordAccountantApproval($ledgerRecordId: ID!, $approved: Boolean!) {
@@ -16,10 +15,15 @@ export const useToggleLedgerRecordAccountantApproval = () => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const onError = async (e: unknown, { ledgerRecordId }: ToggleLedgerRecordAccountantApprovalMutationVariables) => {
+  const onError = async (
+    e: unknown,
+    { ledgerRecordId }: ToggleLedgerRecordAccountantApprovalMutationVariables,
+  ) => {
     console.log(e);
     return new Error(
-      `Error updating accountant approval of ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`
+      `Error updating accountant approval of ledger record ID [${ledgerRecordId}]: ${
+        (e as Error)?.message
+      }`,
     );
   };
   const onSuccess = async (data: ToggleLedgerRecordAccountantApprovalMutation) => {

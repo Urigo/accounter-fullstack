@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { useSql } from '../../hooks/use-sql';
 import type { LedgerEntity } from '../../models/types';
 import { AccounterBasicTable } from '../common/accounter-basic-table';
@@ -20,7 +19,12 @@ const EditElement = ({ transaction, attribute }: EditElementProps) => {
 
   return (
     <div className="editor">
-      <input type="text" defaultValue={defaultValue} value={value} onChange={e => setValue(e.target.value)} />
+      <input
+        type="text"
+        defaultValue={defaultValue}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+      />
       <br />
       {/* TODO: Cannot use updateBankTransactionAttribute to update ledger */}
       {/* <button
@@ -98,23 +102,35 @@ const TransactionRow = ({ transaction, index, setSelected, isSelected }: Transac
         <img className="invoiceImage" src={transaction.proforma_invoice_file} alt="Invoice" />
       </td>
       <td>
-        {addHoverEditButton('debit_account_1', generateGoToUserTransactionsFunctionCall(transaction.debit_account_1))}
+        {addHoverEditButton(
+          'debit_account_1',
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_1),
+        )}
       </td>
       <td>{addHoverEditButton('debit_amount_1')}</td>
       <td>{addHoverEditButton('foreign_debit_amount_1')}</td>
       <td>{addHoverEditButton('currency')}</td>
       <td>
-        {addHoverEditButton('credit_account_1', generateGoToUserTransactionsFunctionCall(transaction.credit_account_1))}
+        {addHoverEditButton(
+          'credit_account_1',
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_1),
+        )}
       </td>
       <td>{addHoverEditButton('credit_amount_1')}</td>
       <td>{addHoverEditButton('foreign_credit_amount_1')}</td>
       <td>
-        {addHoverEditButton('debit_account_2', generateGoToUserTransactionsFunctionCall(transaction.debit_account_2))}
+        {addHoverEditButton(
+          'debit_account_2',
+          generateGoToUserTransactionsFunctionCall(transaction.debit_account_2),
+        )}
       </td>
       <td>{addHoverEditButton('debit_amount_2')}</td>
       <td>{addHoverEditButton('foreign_debit_amount_2')}</td>
       <td>
-        {addHoverEditButton('credit_account_2', generateGoToUserTransactionsFunctionCall(transaction.credit_account_2))}
+        {addHoverEditButton(
+          'credit_account_2',
+          generateGoToUserTransactionsFunctionCall(transaction.credit_account_2),
+        )}
       </td>
       <td>{addHoverEditButton('credit_amount_2')}</td>
       <td>{addHoverEditButton('foreign_credit_amount_2')}</td>
@@ -193,7 +209,7 @@ export const ReportToReview = ({ reportMonthToReview, currrentCompany }: ReportT
       }
       return [income, outcome, vatIn, vatOut];
     },
-    [0, 0, 0, 0]
+    [0, 0, 0, 0],
   );
 
   return (

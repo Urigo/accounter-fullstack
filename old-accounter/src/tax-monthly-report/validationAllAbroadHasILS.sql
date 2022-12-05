@@ -1,7 +1,7 @@
 SELECT
   *
 FROM
-  get_tax_report_of_month('2020-03-01')
+  get_tax_report_of_month ('2020-03-01')
 WHERE
   (
     (

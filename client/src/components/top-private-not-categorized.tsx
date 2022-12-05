@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import { currencyCodeToSymbol } from '../helpers';
 import { useSql } from '../hooks/use-sql';
 import type { TopPrivateNotCategorizedExpense } from '../models/types';

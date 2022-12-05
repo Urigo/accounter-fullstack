@@ -1,6 +1,5 @@
-import gql from 'graphql-tag';
 import { useCallback, useState } from 'react';
-
+import gql from 'graphql-tag';
 import { AllChargesDescriptionFieldsFragment } from '../../../__generated__/types';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
@@ -39,7 +38,7 @@ export const Description = ({ data, alternativeCharge }: Props) => {
         });
       }
     },
-    [transactionId, mutate]
+    [transactionId, mutate],
   );
 
   return (
@@ -50,7 +49,10 @@ export const Description = ({ data, alternativeCharge }: Props) => {
         </div>
         <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
         {!isDescription && alternativeCharge?.userDescription && (
-          <ConfirmMiniButton onClick={() => updateUserNote(alternativeCharge.userDescription)} disabled={isLoading} />
+          <ConfirmMiniButton
+            onClick={() => updateUserNote(alternativeCharge.userDescription)}
+            disabled={isLoading}
+          />
         )}
       </div>
       {toggleDescription && fullDescription}

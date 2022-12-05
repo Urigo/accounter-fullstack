@@ -1,6 +1,5 @@
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-
 import {
   EditLedgerRecordsFieldsFragment,
   InsertLedgerRecordInput,
@@ -11,7 +10,7 @@ import { CurrencyInput, NumberInput, TextInput } from '../../common/inputs';
 
 type Props = {
   ledgerRecord: Partial<EditLedgerRecordsFieldsFragment>;
-  control: Control<UpdateLedgerRecordInput | InsertLedgerRecordInput, any>;
+  control: Control<UpdateLedgerRecordInput | InsertLedgerRecordInput, unknown>;
 };
 
 export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
@@ -46,7 +45,9 @@ export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Date" />}
+        render={({ field, fieldState }) => (
+          <TextInput {...field} error={fieldState.error?.message} label="Date" />
+        )}
       />
 
       <Controller
@@ -154,7 +155,9 @@ export const LedgerRecordFields = ({ ledgerRecord, control }: Props) => {
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }) => <TextInput {...field} error={fieldState.error?.message} label="Date3" />}
+        render={({ field, fieldState }) => (
+          <TextInput {...field} error={fieldState.error?.message} label="Date3" />
+        )}
       />
     </>
   );

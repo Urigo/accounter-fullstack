@@ -1,6 +1,5 @@
-import moment from 'moment';
 import { CSSProperties } from 'react';
-
+import { format } from 'date-fns';
 import { isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
@@ -20,8 +19,12 @@ export const InvoiceDate = ({ transaction, style }: Props) => {
         ...style,
       }}
     >
-      {transaction.tax_invoice_date && moment(transaction.tax_invoice_date).format('DD/MM/YY')}
-      <UpdateButton transaction={transaction} propertyName="tax_invoice_date" promptText="New Invoice Date:" />
+      {transaction.tax_invoice_date && format(transaction.tax_invoice_date, 'dd/MM/yy')}
+      <UpdateButton
+        transaction={transaction}
+        propertyName="tax_invoice_date"
+        promptText="New Invoice Date:"
+      />
     </td>
   );
 };

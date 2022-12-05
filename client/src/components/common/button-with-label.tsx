@@ -11,7 +11,16 @@ export interface Props {
   textLabel?: string;
 }
 
-export const ButtonWithLabel = ({ title, url, style, target, textLabel, rel, type = 'button', onClick }: Props) => {
+export const ButtonWithLabel = ({
+  title,
+  url,
+  style,
+  target,
+  textLabel,
+  rel,
+  type = 'button',
+  onClick,
+}: Props) => {
   return (
     <div>
       <label className="text-sm font-medium text-gray-700">{textLabel}</label>

@@ -1,13 +1,13 @@
 SELECT
   *
 FROM
-  top_expenses_not_categorized('2020-10-01');
+  top_expenses_not_categorized ('2020-10-01');
 
 DROP FUNCTION
   top_expenses_not_categorized;
 
 CREATE
-OR REPLACE FUNCTION top_expenses_not_categorized(month_input VARCHAR) RETURNS TABLE (
+OR REPLACE FUNCTION top_expenses_not_categorized (month_input VARCHAR) RETURNS TABLE (
   amount NUMERIC,
   date date,
   description TEXT,

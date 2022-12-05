@@ -1,5 +1,5 @@
-import { FinancialAmount, SuggestedChargeFragment } from '../__generated__/types';
-import { formatFinancialAmount } from './vat';
+import { FinancialAmount, SuggestedChargeFragment } from '../__generated__/types.js';
+import { formatFinancialAmount } from './vat.js';
 
 export interface SuggestedCharge {
   financialEntity: string;
@@ -50,7 +50,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'food',
     };
   }
-  if (transactionDescription?.includes('אי אם פי אם') || transactionDescription?.includes('איי.אם.פי.אם')) {
+  if (
+    transactionDescription?.includes('אי אם פי אם') ||
+    transactionDescription?.includes('איי.אם.פי.אם')
+  ) {
     return {
       financialEntity: 'AmPm',
       userDescription: 'Groceries',
@@ -97,8 +100,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   }
   if (
     transactionDescription?.includes(`ע' העברת מט"ח`) ||
-    (transactionDescription?.includes(`העברת מט"ח`) && Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
-    (transactionDescription?.includes('מטח') && Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
+    (transactionDescription?.includes(`העברת מט"ח`) &&
+      Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
+    (transactionDescription?.includes('מטח') &&
+      Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
     transactionDescription?.includes('F.C.COM') ||
     transactionDescription?.includes('ע.מפעולות-ישיר') ||
     transactionDescription?.includes('ריבית חובה') ||
@@ -125,7 +130,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('דותן שמחה') || transactionDescription?.includes('שמחה דותן')) {
+  if (
+    transactionDescription?.includes('דותן שמחה') ||
+    transactionDescription?.includes('שמחה דותן')
+  ) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -242,7 +250,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       vat: formatFinancialAmount(0),
     };
   }
-  if (transactionDescription?.includes('הוט נט שרותי אינטרנט') || transactionDescription?.includes('HOT')) {
+  if (
+    transactionDescription?.includes('הוט נט שרותי אינטרנט') ||
+    transactionDescription?.includes('HOT')
+  ) {
     return {
       financialEntity: 'HOT',
       userDescription: `Internet Provider`,
@@ -256,7 +267,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'computer',
     };
   }
-  if (transactionDescription?.includes('יורוקארד') || transactionDescription?.includes('ISRACARD')) {
+  if (
+    transactionDescription?.includes('יורוקארד') ||
+    transactionDescription?.includes('ISRACARD')
+  ) {
     return {
       financialEntity: 'Isracard',
       userDescription: 'Creditcard charge',
@@ -398,7 +412,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
   if (transactionDescription?.includes('חברת פרטנר תקשורת בע')) {
     return { financialEntity: 'Partner', personalCategory: 'family' };
   }
-  if (transactionDescription?.includes('העברה מחו"ל') && transactionDescription?.includes('SDI PROCUREMEN')) {
+  if (
+    transactionDescription?.includes('העברה מחו"ל') &&
+    transactionDescription?.includes('SDI PROCUREMEN')
+  ) {
     return {
       financialEntity: 'sdi procurement solutions',
       taxCategory: 'הכנפט1',
@@ -612,7 +629,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'family',
     };
   }
-  if (transactionDescription?.includes('הלמן-אלדובי') && transactionDescription?.includes('השתלמות')) {
+  if (
+    transactionDescription?.includes('הלמן-אלדובי') &&
+    transactionDescription?.includes('השתלמות')
+  ) {
     return {
       financialEntity: 'Halman Aldubi Training Fund',
       financialAccountsToBalance: 'training_fund',
@@ -649,7 +669,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'business',
     };
   }
-  if (charge.transactions[0]?.amount.raw == -12000) {
+  if (charge.transactions[0]?.amount.raw == -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -692,7 +712,9 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       financialEntity: flag ? 'Tax Deductions' : 'Tax',
-      userDescription: flag ? `Tax for employees for ${previousMonth}/2022` : `Advance Tax for ${previousMonth}/2022`,
+      userDescription: flag
+        ? `Tax for employees for ${previousMonth}/2022`
+        : `Advance Tax for ${previousMonth}/2022`,
     };
   }
   if (transactionDescription?.includes('גורניצקי')) {
@@ -706,7 +728,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('המכס ומעמ-גביי תשלום') || transactionDescription?.includes('CUSTOM + V.A.T')) {
+  if (
+    transactionDescription?.includes('המכס ומעמ-גביי תשלום') ||
+    transactionDescription?.includes('CUSTOM + V.A.T')
+  ) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -735,7 +760,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('RAINTANK INC') || transactionDescription?.includes('GRAFANA')) {
+  if (
+    transactionDescription?.includes('RAINTANK INC') ||
+    transactionDescription?.includes('GRAFANA')
+  ) {
     return {
       financialEntity: 'Raintank Inc dba Grafana Labs',
       userDescription: 'Grafana Cloud',
@@ -783,7 +811,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
-  if (transactionDescription?.includes('יהל-מור') || transactionDescription?.includes('רווה רביד')) {
+  if (
+    transactionDescription?.includes('יהל-מור') ||
+    transactionDescription?.includes('רווה רביד')
+  ) {
     return {
       financialEntity: 'Raveh Ravid & Co',
       userDescription: 'Accountancy with Narkis',
@@ -1002,7 +1033,10 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('GSUITE') || transactionDescription?.includes('GOOGLE CLOUD')) {
+  if (
+    transactionDescription?.includes('GSUITE') ||
+    transactionDescription?.includes('GOOGLE CLOUD')
+  ) {
     return {
       financialEntity: 'Google Ireland Limited',
       userDescription: 'G Suite for The Guild',

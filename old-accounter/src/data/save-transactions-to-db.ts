@@ -9,7 +9,7 @@ export async function saveTransactionsToDB(
   transactions: any,
   accountType: AccountTypes,
   accountObject: any,
-  pool: pg.Pool
+  pool: pg.Pool,
 ) {
   if (accountObject) {
     transactions = transactions.map((transaction: any) => ({
@@ -84,7 +84,12 @@ export async function saveTransactionsToDB(
       optionalTransactionKeys = ['clientIpAddress', 'bcKey'];
     }
     optionalTransactionKeys = optionalTransactionKeys.concat(['id']);
-    findMissingTransactionKeys(transaction, columnNamesResult, optionalTransactionKeys, accountType);
+    findMissingTransactionKeys(
+      transaction,
+      columnNamesResult,
+      optionalTransactionKeys,
+      accountType,
+    );
 
     const additionalColumnsToExcludeFromTransactionComparison = [];
     additionalColumnsToExcludeFromTransactionComparison.push('cardIndex'); // If you get a new creditcard, all indexes will change and you could get duplicates
@@ -96,14 +101,14 @@ export async function saveTransactionsToDB(
         'validityDate',
         'formattedDate',
         'validityTime',
-        'formattedValidityTime'
+        'formattedValidityTime',
       );
     }
     const whereClause = createWhereClause(
       transaction,
       columnNamesResult,
       `accounter_schema.` + tableName,
-      additionalColumnsToExcludeFromTransactionComparison
+      additionalColumnsToExcludeFromTransactionComparison,
     );
 
     try {
@@ -122,7 +127,9 @@ export async function saveTransactionsToDB(
           ${columnNames.map((x: any) => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
-        text = text.substring(0, lastIndexOfComma).concat(text.substring(lastIndexOfComma + 1, text.length));
+        text = text
+          .substring(0, lastIndexOfComma)
+          .concat(text.substring(lastIndexOfComma + 1, text.length));
 
         const arrayKeys = columnNames.keys();
         let denseKeys = [...arrayKeys];
@@ -140,7 +147,10 @@ export async function saveTransactionsToDB(
         try {
           if (transaction.transactionType == 'TODAY') {
             console.log('Today transaction - ', transaction);
-          } else if (accountType == 'ils' && moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2) {
+          } else if (
+            accountType == 'ils' &&
+            moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
+          ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
           } else if (
             (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') &&
@@ -152,29 +162,32 @@ export async function saveTransactionsToDB(
             ((transaction.fullPurchaseDate != null &&
               moment(transaction.fullPurchaseDate, 'DD/MM/YYYY').diff(moment(), 'months') > 2) ||
               (transaction.fullPurchaseDateOutbound != null &&
-                moment(transaction.fullPurchaseDateOutbound, 'DD/MM/YYYY').diff(moment(), 'months') > 3))
+                moment(transaction.fullPurchaseDateOutbound, 'DD/MM/YYYY').diff(
+                  moment(),
+                  'months',
+                ) > 3))
           ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
           } else {
             const res = await pool.query(text, values);
             if (res.rows[0].event_amount) {
               console.log(
-                `success in insert to ${accountType} - ${transaction.accountNumber} - ${res.rows[0].activity_description} - ${res.rows[0].event_amount} - ${res.rows[0].event_date}`
+                `success in insert to ${accountType} - ${transaction.accountNumber} - ${res.rows[0].activity_description} - ${res.rows[0].event_amount} - ${res.rows[0].event_date}`,
               );
             } else if (res.rows[0].original_amount) {
               console.log(
                 `success in insert to ${accountType}-${transaction.cardNumber} - `,
-                res.rows[0].original_amount
+                res.rows[0].original_amount,
               );
             } else if (res.rows[0].card) {
               console.log(
                 `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${res.rows[0].supplier_name} - ${res.rows[0].supplier_name_outbound} - ${res.rows[0].full_purchase_date_outbound}`,
-                res.rows[0].full_purchase_date
+                res.rows[0].full_purchase_date,
               );
             } else if (res.rows[0].source) {
               console.log(
                 `success in insert to ${res.rows[0].source} - ${res.rows[0].amount} - ${res.rows[0].validityDate}`,
-                res.rows[0].data_0_product_free_text
+                res.rows[0].data_0_product_free_text,
               );
             } else {
               // console.log('saved', JSON.stringify(res));
@@ -183,7 +196,9 @@ export async function saveTransactionsToDB(
           // console.log('nothing');
         } catch (error) {
           // TODO: Log important checks
-          console.log(`error in insert - ${error} - ${text} - ${values} - ${JSON.stringify(transaction)}`);
+          console.log(
+            `error in insert - ${error} - ${text} - ${values} - ${JSON.stringify(transaction)}`,
+          );
           // console.log('nothing');
         }
       }
@@ -195,13 +210,20 @@ export async function saveTransactionsToDB(
 }
 
 function normalizeBeneficiaryDetailsData(transaction: any) {
-  if (typeof transaction.beneficiaryDetailsData !== 'undefined' && transaction.beneficiaryDetailsData != null) {
+  if (
+    typeof transaction.beneficiaryDetailsData !== 'undefined' &&
+    transaction.beneficiaryDetailsData != null
+  ) {
     transaction.beneficiaryDetailsDataPartyName = transaction.beneficiaryDetailsData.partyName;
-    transaction.beneficiaryDetailsDataMessageHeadline = transaction.beneficiaryDetailsData.messageHeadline;
-    transaction.beneficiaryDetailsDataPartyHeadline = transaction.beneficiaryDetailsData.partyHeadline;
-    transaction.beneficiaryDetailsDataMessageDetail = transaction.beneficiaryDetailsData.messageDetail;
+    transaction.beneficiaryDetailsDataMessageHeadline =
+      transaction.beneficiaryDetailsData.messageHeadline;
+    transaction.beneficiaryDetailsDataPartyHeadline =
+      transaction.beneficiaryDetailsData.partyHeadline;
+    transaction.beneficiaryDetailsDataMessageDetail =
+      transaction.beneficiaryDetailsData.messageDetail;
     transaction.beneficiaryDetailsDataTableNumber = transaction.beneficiaryDetailsData.tableNumber;
-    transaction.beneficiaryDetailsDataRecordNumber = transaction.beneficiaryDetailsData.recordNumber;
+    transaction.beneficiaryDetailsDataRecordNumber =
+      transaction.beneficiaryDetailsData.recordNumber;
 
     transaction.beneficiaryDetailsData = null;
   } else {
@@ -214,9 +236,16 @@ function normalizeBeneficiaryDetailsData(transaction: any) {
   }
 }
 
-function findMissingTransactionKeys(transaction: any, columnNames: any, knownOptionals: string[], accountType: string) {
+function findMissingTransactionKeys(
+  transaction: any,
+  columnNames: any,
+  knownOptionals: string[],
+  accountType: string,
+) {
   const allKeys = Object.keys(transaction);
-  const fixedExistingKeys: string[] = columnNames.rows.map((column: any) => camelCase(column.column_name));
+  const fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
+    camelCase(column.column_name),
+  );
 
   const InTransactionNotInDB = allKeys.filter(x => !fixedExistingKeys.includes(x));
   const inDBNotInTransaction = fixedExistingKeys.filter(x => !allKeys.includes(x));
@@ -236,7 +265,7 @@ function createWhereClause(
   transaction: any,
   checkingColumnNames: any,
   tableName: string,
-  extraColumnsToExcludeFromComparison: string[]
+  extraColumnsToExcludeFromComparison: string[],
 ) {
   let whereClause = `
   SELECT * FROM ${tableName}
@@ -250,22 +279,31 @@ function createWhereClause(
   ];
 
   if (extraColumnsToExcludeFromComparison.length > 0) {
-    columnNamesToExcludeFromComparison = columnNamesToExcludeFromComparison.concat(extraColumnsToExcludeFromComparison);
+    columnNamesToExcludeFromComparison = columnNamesToExcludeFromComparison.concat(
+      extraColumnsToExcludeFromComparison,
+    );
   }
   for (const dBcolumn of checkingColumnNames.rows) {
     const camelCaseColumnName = camelCase(dBcolumn.column_name);
     if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
       let actualCondition = '';
       const isNotNull =
-        typeof transaction[camelCaseColumnName] !== 'undefined' && transaction[camelCaseColumnName] != null;
+        typeof transaction[camelCaseColumnName] !== 'undefined' &&
+        transaction[camelCaseColumnName] != null;
 
       if (dBcolumn.column_name == 'more_info') {
         actualCondition = `${dBcolumn.column_name} IS NULL`;
         if (isNotNull) {
           actualCondition = `
             ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName]}$$ OR 
-            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace('הנחה', 'צבירת')}$$ OR 
-            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace('צבירת', 'הנחה')}$$
+            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace(
+            'הנחה',
+            'צבירת',
+          )}$$ OR 
+            ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace(
+            'צבירת',
+            'הנחה',
+          )}$$
           `;
         }
         whereClause = whereClause.concat(`  (${actualCondition}) AND  `);
@@ -294,7 +332,8 @@ function createWhereClause(
           actualCondition = `= ` + transaction[camelCaseColumnName];
         } else if (isNotNull && dBcolumn.data_type == 'json') {
           const firstKey = Object.keys(transaction[camelCaseColumnName])[0];
-          actualCondition = `->> '` + firstKey + `' = '` + transaction[camelCaseColumnName][firstKey] + `'`;
+          actualCondition =
+            `->> '` + firstKey + `' = '` + transaction[camelCaseColumnName][firstKey] + `'`;
           if (Object.keys(transaction[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(transaction[camelCaseColumnName]));
@@ -306,7 +345,7 @@ function createWhereClause(
 
         whereClause = whereClause.concat(
           ` ${isNotNull ? actualCondition : 'IS NULL'} AND
-           `
+           `,
         );
       }
     }
@@ -319,19 +358,28 @@ function createWhereClause(
 
 function normalizeForeignTransactionMetadata(transaction: any) {
   if (typeof transaction.metadata !== 'undefined' && transaction.metadata != null) {
-    if (typeof transaction.metadata.attributes !== 'undefined' && transaction.metadata.attributes != null) {
-      transaction.metadataAttributesOriginalEventKey = transaction.metadata.attributes.originalEventKey;
-      transaction.metadataAttributesContraBranchNumber = transaction.metadata.attributes.contraBranchNumber;
-      transaction.metadataAttributesContraAccountNumber = transaction.metadata.attributes.contraAccountNumber;
-      transaction.metadataAttributesContraBankNumber = transaction.metadata.attributes.contraBankNumber;
+    if (
+      typeof transaction.metadata.attributes !== 'undefined' &&
+      transaction.metadata.attributes != null
+    ) {
+      transaction.metadataAttributesOriginalEventKey =
+        transaction.metadata.attributes.originalEventKey;
+      transaction.metadataAttributesContraBranchNumber =
+        transaction.metadata.attributes.contraBranchNumber;
+      transaction.metadataAttributesContraAccountNumber =
+        transaction.metadata.attributes.contraAccountNumber;
+      transaction.metadataAttributesContraBankNumber =
+        transaction.metadata.attributes.contraBankNumber;
       transaction.metadataAttributesContraAccountFieldNameLable =
         transaction.metadata.attributes.contraAccountFieldNameLable;
       transaction.metadataAttributesDataGroupCode = transaction.metadata.attributes.dataGroupCode;
       transaction.metadataAttributesCurrencyRate = transaction.metadata.attributes.currencyRate;
-      transaction.metadataAttributesContraCurrencyCode = transaction.metadata.attributes.contraCurrencyCode;
+      transaction.metadataAttributesContraCurrencyCode =
+        transaction.metadata.attributes.contraCurrencyCode;
       transaction.metadataAttributesRateFixingCode = transaction.metadata.attributes.rateFixingCode;
       transaction.metadataAttributesCurrencyRate = transaction.metadata.attributes.currencyRate;
-      transaction.metadataAttributesContraCurrencyCode = transaction.metadata.attributes.contraCurrencyCode;
+      transaction.metadataAttributesContraCurrencyCode =
+        transaction.metadata.attributes.contraCurrencyCode;
       transaction.metadataAttributesRateFixingCode = transaction.metadata.attributes.rateFixingCode;
 
       // transaction.beneficiaryDetailsData = null;

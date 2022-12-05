@@ -1,12 +1,13 @@
+import { ReactElement } from 'react';
 import { SimpleGrid as Grid } from '@mantine/core';
-import { PropsWithChildren, ReactElement } from 'react';
 
 export interface SimpleGridProps {
   cols: number;
   spacing?: number;
+  children?: ReactElement | ReactElement[];
 }
 
-export const SimpleGrid = ({ cols, spacing, children }: PropsWithChildren<SimpleGridProps>): ReactElement => {
+export const SimpleGrid = ({ cols, spacing, children }: SimpleGridProps): ReactElement => {
   return (
     <Grid
       cols={cols}

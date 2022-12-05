@@ -1,5 +1,5 @@
-import clsx from 'clsx';
 import { ComponentProps, ReactElement } from 'react';
+import clsx from 'clsx';
 
 export const Input = ({
   className,
@@ -43,7 +43,7 @@ export const Input = ({
           error
             ? 'border-red-500  bg-gray-200 focus:ring-black-500'
             : 'border-transparent bg-gray-200 focus:border-black-800',
-          className
+          className,
         )}
         {...props}
       />

@@ -1,5 +1,4 @@
 import { ComponentProps } from 'react';
-
 import { NumberInput } from './number-input';
 
 type Props = ComponentProps<typeof NumberInput>;
