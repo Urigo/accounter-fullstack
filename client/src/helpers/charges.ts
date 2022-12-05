@@ -224,7 +224,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       financialEntity: 'מגדל פנסיה',
-      userDescription: `Training Fund ${previousMonth}/2022`,
+      userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       vat: formatFinancialAmount(0),
@@ -735,7 +735,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment['charges'][0]): 
       financialAccountsToBalance: 'no',
     };
   }
-  if (transactionDescription?.includes('RAINTANK INC')) {
+  if (transactionDescription?.includes('RAINTANK INC') || transactionDescription?.includes('GRAFANA')) {
     return {
       financialEntity: 'Raintank Inc dba Grafana Labs',
       userDescription: 'Grafana Cloud',

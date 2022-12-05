@@ -26,7 +26,7 @@
     "dotenv": "16.0.1",
     "graphql": "16.6.0",
     "lodash": "4.17.21",
-    "modern-poalim-scraper": "0.5.2",
+    "modern-poalim-scraper": "0.5.3",
     "moment": "2.29.4",
     "pg": "8.7.3",
     "pixl-xml": "1.0.13",
