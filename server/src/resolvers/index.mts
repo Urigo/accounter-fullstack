@@ -602,6 +602,160 @@ export const resolvers: Resolvers = {
         };
       }
     },
+    updateDbLedgerRecord: async (_, { ledgerRecordId, fields }) => {
+      /* TEMPORARY: this is a temporary solution to update the ledger record in the DB. */
+      const adjustedFields: IUpdateLedgerRecordParams = {
+        ledgerRecordId,
+        business: null,
+        creditAccount1: fields.credit_account_1 ?? null,
+        creditAccount2: fields.credit_account_2 ?? null,
+        creditAmount1: Number.isNaN(fields.credit_amount_1)
+          ? null
+          : fields.credit_amount_1?.toFixed(2),
+        creditAmount2: Number.isNaN(fields.credit_amount_2)
+          ? null
+          : fields.credit_amount_2?.toFixed(2),
+        currency: hashavshevetFormat.currency(fields.currency ?? ''),
+        date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null,
+        debitAccount1: fields.debit_account_1 ?? null,
+        debitAccount2: fields.debit_account_2 ?? null,
+        debitAmount1: Number.isNaN(fields.debit_amount_1)
+          ? null
+          : fields.debit_amount_1?.toFixed(2),
+        debitAmount2: Number.isNaN(fields.debit_amount_2)
+          ? null
+          : fields.debit_amount_2?.toFixed(2),
+        details: fields.details ?? null,
+        foreignCreditAmount1: Number.isNaN(fields.foreign_credit_amount_1)
+          ? null
+          : fields.foreign_credit_amount_1?.toFixed(2),
+        foreignCreditAmount2: Number.isNaN(fields.foreign_credit_amount_2)
+          ? null
+          : fields.foreign_credit_amount_2?.toFixed(2),
+        foreignDebitAmount1: Number.isNaN(fields.foreign_debit_amount_1)
+          ? null
+          : fields.foreign_debit_amount_1?.toFixed(2),
+        foreignDebitAmount2: Number.isNaN(fields.foreign_debit_amount_2)
+          ? null
+          : fields.foreign_debit_amount_2?.toFixed(2),
+        hashavshevetId: Number.isInteger(fields.hashavshevet_id) ? fields.hashavshevet_id : null,
+        invoiceDate: fields.invoice_date
+          ? hashavshevetFormat.date(new Date(fields.invoice_date))
+          : null,
+        movementType: fields.movement_type ?? null,
+        origin: null,
+        originalId: null,
+        proformaInvoiceFile: null,
+        reference1: fields.reference_1 ?? null,
+        reference2: fields.reference_2 ?? null,
+        reviewed: fields.reviewed ?? false,
+        valueDate: fields.value_date ? hashavshevetFormat.date(new Date(fields.value_date)) : null,
+      };
+      try {
+        const res = await updateLedgerRecord.run({ ...adjustedFields }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to update ledger record ID='${ledgerRecordId}'`);
+        }
+
+        /* clear cache */
+        if (res[0].original_id) {
+          getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
+        }
+        return res[0];
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Error executing updateLedgerRecord:\n${
+            (e as Error)?.message ?? 'Unknown error'
+          }`,
+        };
+      }
+    },
+    insertDbLedgerRecord: async (_, { chargeId, record }) => {
+      /* TEMPORARY: this is a temporary solution to insert a ledger record to the DB. */
+      try {
+        const charge = await getChargeByIdLoader.load(chargeId);
+
+        if (!charge) {
+          throw new Error(`Charge ID='${chargeId}' not found`);
+        }
+
+        const financialAccount = await getFinancialAccountByAccountNumberLoader.load(
+          charge.account_number,
+        );
+
+        if (!financialAccount || !financialAccount.owner) {
+          throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
+        }
+
+        const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
+          business: financialAccount.owner,
+          creditAccount1: record.credit_account_1 ?? null,
+          creditAccount2: record.credit_account_2 ?? null,
+          creditAmount1: Number.isNaN(record.credit_amount_1)
+            ? null
+            : record.credit_amount_1?.toFixed(2),
+          creditAmount2: Number.isNaN(record.credit_amount_2)
+            ? null
+            : record.credit_amount_2?.toFixed(2),
+          currency: hashavshevetFormat.currency(record.currency ?? ''),
+          date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
+          debitAccount1: record.debit_account_1 ?? null,
+          debitAccount2: record.debit_account_2 ?? null,
+          debitAmount1: Number.isNaN(record.debit_amount_1)
+            ? null
+            : record.debit_amount_1?.toFixed(2),
+          debitAmount2: Number.isNaN(record.debit_amount_2)
+            ? null
+            : record.debit_amount_2?.toFixed(2),
+          details: record.details ?? null,
+          foreignCreditAmount1: Number.isNaN(record.foreign_credit_amount_1)
+            ? null
+            : record.foreign_credit_amount_1?.toFixed(2),
+          foreignCreditAmount2: Number.isNaN(record.foreign_credit_amount_2)
+            ? null
+            : record.foreign_credit_amount_2?.toFixed(2),
+          foreignDebitAmount1: Number.isNaN(record.foreign_debit_amount_1)
+            ? null
+            : record.foreign_debit_amount_1?.toFixed(2),
+          foreignDebitAmount2: Number.isNaN(record.foreign_debit_amount_2)
+            ? null
+            : record.foreign_debit_amount_2?.toFixed(2),
+          hashavshevetId: Number.isInteger(record.hashavshevet_id) ? record.hashavshevet_id : null,
+          invoiceDate: record.invoice_date
+            ? hashavshevetFormat.date(new Date(record.invoice_date))
+            : null,
+          movementType: record.movement_type ?? null,
+          origin: 'manual',
+          originalId: chargeId,
+          proformaInvoiceFile: null,
+          reference1: record.reference_1 ?? null,
+          reference2: record.reference_2 ?? null,
+          reviewed: record.reviewed ?? false,
+          valueDate: record.value_date
+            ? hashavshevetFormat.date(new Date(record.value_date))
+            : null,
+        };
+        const res = await insertLedgerRecords.run({ ledgerRecord: [{ ...newLedgerRecord }] }, pool);
+
+        if (!res || res.length === 0) {
+          throw new Error(`Failed to insert ledger record to charge ID='${chargeId}'`);
+        }
+
+        /* clear cache */
+        getLedgerRecordsByChargeIdLoader.clear(chargeId);
+
+        return charge;
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Error inserting new ledger record:\n  ${
+            (e as Error)?.message ?? 'Unknown error'
+          }`,
+        };
+      }
+    },
     deleteLedgerRecord: async (_, { ledgerRecordId }) => {
       const res = await deleteLedgerRecord.run({ ledgerRecordId }, pool);
       if (res.length === 1) {
@@ -1169,6 +1323,34 @@ export const resolvers: Resolvers = {
     localCurrencyAmount: DbLedgerRecord =>
       formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
+
+    /* next fields are temporary, to resemble the DB entity */
+    business: DbLedgerRexcord => DbLedgerRexcord.business,
+    charge_id: DbLedgerRexcord => DbLedgerRexcord.charge_id,
+    credit_account_1: DbLedgerRexcord => DbLedgerRexcord.credit_account_1,
+    credit_account_2: DbLedgerRexcord => DbLedgerRexcord.credit_account_2,
+    credit_amount_1: DbLedgerRexcord => DbLedgerRexcord.credit_amount_1,
+    credit_amount_2: DbLedgerRexcord => DbLedgerRexcord.credit_amount_2,
+    currency: DbLedgerRexcord => DbLedgerRexcord.currency,
+    debit_account_1: DbLedgerRexcord => DbLedgerRexcord.debit_account_1,
+    debit_account_2: DbLedgerRexcord => DbLedgerRexcord.debit_account_2,
+    debit_amount_1: DbLedgerRexcord => DbLedgerRexcord.debit_amount_1,
+    debit_amount_2: DbLedgerRexcord => DbLedgerRexcord.debit_amount_2,
+    details: DbLedgerRexcord => DbLedgerRexcord.details,
+    foreign_credit_amount_1: DbLedgerRexcord => DbLedgerRexcord.foreign_credit_amount_1,
+    foreign_credit_amount_2: DbLedgerRexcord => DbLedgerRexcord.foreign_credit_amount_2,
+    foreign_debit_amount_1: DbLedgerRexcord => DbLedgerRexcord.foreign_debit_amount_1,
+    foreign_debit_amount_2: DbLedgerRexcord => DbLedgerRexcord.foreign_debit_amount_2,
+    hashavshevet_id: DbLedgerRexcord => DbLedgerRexcord.hashavshevet_id,
+    invoice_date: DbLedgerRexcord => DbLedgerRexcord.invoice_date,
+    movement_type: DbLedgerRexcord => DbLedgerRexcord.movement_type,
+    origin: DbLedgerRexcord => DbLedgerRexcord.origin,
+    original_id: DbLedgerRexcord => DbLedgerRexcord.original_id,
+    proforma_invoice_file: DbLedgerRexcord => DbLedgerRexcord.proforma_invoice_file,
+    reference_1: DbLedgerRexcord => DbLedgerRexcord.reference_1,
+    reference_2: DbLedgerRexcord => DbLedgerRexcord.reference_2,
+    reviewed: DbLedgerRexcord => DbLedgerRexcord.reviewed,
+    value_date: DbLedgerRexcord => DbLedgerRexcord.value_date,
   },
   // counterparties
   NamedCounterparty: {

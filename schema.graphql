@@ -103,6 +103,13 @@ type Mutation {
     fields: UpdateLedgerRecordInput!
   ): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
+  " TEMPORARY: to enable direct full update of the record "
+  updateDbLedgerRecord(
+    ledgerRecordId: ID!
+    fields: UpdateDbLedgerRecordInput!
+  ): UpdateLedgerRecordResult!
+  " TEMPORARY: to enable direct full update of the record "
+  insertDbLedgerRecord(chargeId: ID!, record: InsertDbLedgerRecordInput!): InsertLedgerRecordResult!
   toggleLedgerRecordAccountantApproval(ledgerRecordId: ID!, approved: Boolean!): Boolean!
   toggleChargeAccountantApproval(chargeId: ID!, approved: Boolean!): Boolean!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
@@ -182,6 +189,60 @@ input InsertLedgerRecordInput {
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
   hashavshevetId: Int
+}
+
+" TEMPORARY: input variables for updateDbLedgerRecord "
+input UpdateDbLedgerRecordInput {
+  charge_id: String
+  credit_account_1: String
+  credit_account_2: String
+  credit_amount_1: Float
+  credit_amount_2: Float
+  currency: Currency
+  date3: TimelessDate
+  debit_account_1: String
+  debit_account_2: String
+  debit_amount_1: Float
+  debit_amount_2: Float
+  details: String
+  foreign_credit_amount_1: Float
+  foreign_credit_amount_2: Float
+  foreign_debit_amount_1: Float
+  foreign_debit_amount_2: Float
+  hashavshevet_id: Int
+  invoice_date: TimelessDate
+  movement_type: String
+  reference_1: String
+  reference_2: String
+  reviewed: Boolean
+  value_date: TimelessDate
+}
+
+" TEMPORARY: input variables for insertDbLedgerRecord "
+input InsertDbLedgerRecordInput {
+  charge_id: String
+  credit_account_1: String
+  credit_account_2: String
+  credit_amount_1: Float
+  credit_amount_2: Float
+  currency: Currency
+  date3: TimelessDate
+  debit_account_1: String
+  debit_account_2: String
+  debit_amount_1: Float
+  debit_amount_2: Float
+  details: String
+  foreign_credit_amount_1: Float
+  foreign_credit_amount_2: Float
+  foreign_debit_amount_1: Float
+  foreign_debit_amount_2: Float
+  hashavshevet_id: Int
+  invoice_date: TimelessDate!
+  movement_type: String
+  reference_1: String
+  reference_2: String
+  reviewed: Boolean
+  value_date: TimelessDate!
 }
 
 " input variables for insertDocument "
@@ -669,6 +730,33 @@ type LedgerRecord {
   " Temporary. should be removed "
   date3: TimelessDate!
   description: String!
+}
+
+extend type LedgerRecord {
+  " TEMPORARY: extension to reflect original DB fields "
+  charge_id: String
+  credit_account_1: String
+  credit_account_2: String
+  credit_amount_1: Float
+  credit_amount_2: Float
+  currency: Currency
+  " date_3: String! "
+  debit_account_1: String
+  debit_account_2: String
+  debit_amount_1: Float
+  debit_amount_2: Float
+  details: String
+  foreign_credit_amount_1: Float
+  foreign_credit_amount_2: Float
+  foreign_debit_amount_1: Float
+  foreign_debit_amount_2: Float
+  hashavshevet_id: Int
+  invoice_date: TimelessDate!
+  movement_type: String
+  reference_1: String
+  reference_2: String
+  reviewed: Boolean
+  value_date: TimelessDate!
 }
 
 " represent a counterparty with a name "
