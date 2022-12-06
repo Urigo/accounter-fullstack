@@ -21,11 +21,22 @@ export function AccountantApproval({ ledgerRecordId, approved: initialApprovedSt
 
   return (
     <td>
-      <Switch
-        color="green"
-        checked={checked}
-        onChange={event => onToggle(event.currentTarget.checked)}
-      />
+      <div className="flex flex-row justify-center">
+        <Switch
+          color="green"
+          checked={checked}
+          onChange={event => onToggle(event.currentTarget.checked)}
+          styles={{
+            root: { cursor: 'pointer' },
+            body: { cursor: 'pointer' },
+            input: { cursor: 'pointer' },
+            track: { cursor: 'pointer' },
+            thumb: { cursor: 'pointer' },
+            trackLabel: { cursor: 'pointer' },
+            labelWrapper: { cursor: 'pointer' },
+          }}
+        />
+      </div>
     </td>
   );
 }
