@@ -11,7 +11,7 @@ gql`
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       id
-      ...LedgerRecordsDateFields
+      # ...LedgerRecordsDateFields
       # ...LedgerRecordsCreditAccountFields
       # ...LedgerRecordsDebitAccountFields
       # ...LedgerRecordsLocalAmountFields
