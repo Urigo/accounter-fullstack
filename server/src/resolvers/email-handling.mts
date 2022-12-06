@@ -1,6 +1,6 @@
 import { Resolvers } from '../__generated__/types.mjs';
 
-export const fetchEmailDocument: NonNullable<Resolvers['Mutation']>['fetchEmailDocument'] = async (
+export const fetchEmailDocument: NonNullable<Resolvers['Mutation']>['fetchEmailDocument'] = (
   _,
   { url },
 ) => {

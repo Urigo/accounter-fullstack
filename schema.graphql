@@ -103,6 +103,13 @@ type Mutation {
     fields: UpdateLedgerRecordInput!
   ): UpdateLedgerRecordResult!
   insertLedgerRecord(chargeId: ID!, record: InsertLedgerRecordInput!): InsertLedgerRecordResult!
+  " TEMPORARY: to enable direct full update of the record "
+  updateDbLedgerRecord(
+    ledgerRecordId: ID!
+    fields: UpdateDbLedgerRecordInput!
+  ): UpdateLedgerRecordResult!
+  " TEMPORARY: to enable direct full update of the record "
+  insertDbLedgerRecord(chargeId: ID!, record: InsertDbLedgerRecordInput!): InsertLedgerRecordResult!
   toggleLedgerRecordAccountantApproval(ledgerRecordId: ID!, approved: Boolean!): Boolean!
   toggleChargeAccountantApproval(chargeId: ID!, approved: Boolean!): Boolean!
   generateLedgerRecords(chargeId: ID!): GenerateLedgerRecordsResult!
@@ -182,6 +189,98 @@ input InsertLedgerRecordInput {
   " in shekels at the moment"
   localCurrencyAmount: FinancialAmountInput
   hashavshevetId: Int
+}
+
+" TEMPORARY: input variables for updateDbLedgerRecord "
+input UpdateDbLedgerRecordInput {
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  charge_id: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_2: Float
+  currency: Currency
+  date3: TimelessDate
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_2: Float
+  details: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  hashavshevet_id: Int
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  invoice_date: TimelessDate
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  movement_type: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_2: String
+  reviewed: Boolean
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  value_date: TimelessDate
+}
+
+" TEMPORARY: input variables for insertDbLedgerRecord "
+input InsertDbLedgerRecordInput {
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  charge_id: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_2: Float
+  currency: Currency
+  date3: TimelessDate
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_2: Float
+  details: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  hashavshevet_id: Int
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  invoice_date: TimelessDate!
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  movement_type: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_2: String
+  reviewed: Boolean
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  value_date: TimelessDate!
 }
 
 " input variables for insertDocument "
@@ -669,6 +768,52 @@ type LedgerRecord {
   " Temporary. should be removed "
   date3: TimelessDate!
   description: String!
+}
+
+extend type LedgerRecord {
+  " TEMPORARY: extension to reflect original DB fields "
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  charge_id: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  credit_amount_2: Float
+  currency: Currency
+  " date_3: String! "
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_account_2: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  debit_amount_2: Float
+  details: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_credit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_1: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  foreign_debit_amount_2: Float
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  hashavshevet_id: Int
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  invoice_date: TimelessDate!
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  movement_type: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_1: String
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  reference_2: String
+  reviewed: Boolean
+  # eslint-disable-next-line @graphql-eslint/naming-convention
+  value_date: TimelessDate!
 }
 
 " represent a counterparty with a name "

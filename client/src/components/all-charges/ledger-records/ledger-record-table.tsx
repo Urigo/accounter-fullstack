@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
 import { EditMiniButton } from '../../common';
 import { PopUpDrawer } from '../../common/drawer';
-import { AccountantApproval, CreditAccount, Date, DebitAccount } from './cells';
+import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
 import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
 import { EditLedgerRecord } from './edit-ledger-record';
 
@@ -11,14 +11,16 @@ gql`
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       id
-      ...LedgerRecordsDateFields
-      ...LedgerRecordsCreditAccountFields
-      ...LedgerRecordsDebitAccountFields
+      # ...LedgerRecordsDateFields
+      # ...LedgerRecordsCreditAccountFields
+      # ...LedgerRecordsDebitAccountFields
       # ...LedgerRecordsLocalAmountFields
       # ...LedgerRecordsOriginalAmountFields
       # ...LedgerRecordsDescriptionFields
       # ...LedgerRecordsAccountantApprovalFields
       # ...LedgerRecordsHashavshevetIdFields
+      ...LedgerRecordsAccountDetailsFields
+      ...LedgerRecordsGeneralDateFields
       ...EditLedgerRecordsFields
       originalAmount {
         formatted
@@ -34,6 +36,10 @@ gql`
       }
       description
       hashavshevetId
+      # TEMPORARY: next types used to show the DB current record, should be later removed
+      reference_1
+      reference_2
+      movement_type
     }
   }
 `;
@@ -48,33 +54,53 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
     <table style={{ width: '100%', height: '100%' }}>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Credit Account</th>
-          <th>Debit Account</th>
-          <th>Local Amount</th>
-          <th>Original Amount</th>
-          <th>Description</th>
-          <th>Accountant Approval</th>
+          {/* <th>Date</th> */}
+          <th>Invoice Date</th>
+          <th>Value Date</th>
+          <th>Date3</th>
+          {/* <th>Credit Account</th> */}
+          {/* <th>Debit Account</th> */}
+          <th>Credit Account1</th>
+          <th>Credit Account2</th>
+          <th>Debit Account1</th>
+          <th>Debit Account2</th>
+          {/* <th>Local Amount</th>
+          <th>Original Amount</th> */}
+          <th>Details</th>
+          <th>Ref1</th>
+          <th>Ref2</th>
+          <th>Type</th>
           <th>Hashavshevet ID</th>
+          <th>Accountant Approval</th>
           <th>Edit</th>
         </tr>
       </thead>
       <tbody>
         {ledgerRecords.map(i => (
           <tr key={i.id}>
-            <Date data={i} />
-            <CreditAccount data={i} />
-            <DebitAccount data={i} />
+            {/* <Date data={i} /> */}
+            <GeneralDate data={i} type={1} />
+            <GeneralDate data={i} type={2} />
+            <GeneralDate data={i} type={3} />
+            {/* <CreditAccount data={i} />
+            <DebitAccount data={i} /> */}
             {/* <LocalAmount data={i} /> */}
-            <td>{i.localCurrencyAmount.formatted ?? 'Missing Amount'}</td>
+            <AccountDetails data={i} cred={true} first={true} />
+            <AccountDetails data={i} cred={false} first={true} />
+            <AccountDetails data={i} cred={true} first={false} />
+            <AccountDetails data={i} cred={false} first={false} />
+            {/* <td>{i.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
             {/* <OriginalAmount data={i} /> */}
-            <td>{i.originalAmount.formatted}</td>
+            {/* <td>{i.originalAmount.formatted}</td> */}
             {/* <Description data={i} /> */}
             <td>{i.description}</td>
+            <td>{i.reference_1}</td>
+            <td>{i.reference_2}</td>
             {/* <AccountantApproval data={i} /> */}
-            <AccountantApproval ledgerRecordId={i.id} approved={i.accountantApproval.approved} />
             {/* <HashavshevetId data={i} /> */}
+            <td>{i.movement_type}</td>
             <td>{i.hashavshevetId}</td>
+            <AccountantApproval ledgerRecordId={i.id} approved={i.accountantApproval.approved} />
             <td>
               <EditMiniButton onClick={() => setEditLedgerId(i.id)} />
             </td>
@@ -96,13 +122,13 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
         opened={Boolean(editLedgerId)}
         onClose={() => setEditLedgerId(undefined)}
       >
-        {ledgerRecords.some(r => r.id === editLedgerId) && (
+        {ledgerRecords.some(r => r.id === editLedgerId) ? (
           <EditLedgerRecord
             ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!}
             onAccept={() => setEditLedgerId(undefined)}
             onCancel={() => setEditLedgerId(undefined)}
           />
-        )}
+        ) : undefined}
       </PopUpDrawer>
     </table>
   );

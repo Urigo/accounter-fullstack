@@ -1,14 +1,14 @@
-import gql from 'graphql-tag';
+// import gql from 'graphql-tag';
 import { LedgerRecordsDebitAccountFieldsFragment } from '../../../../__generated__/types';
 
-gql`
-  fragment LedgerRecordsDebitAccountFields on LedgerRecord {
-    id
-    debitAccount {
-      name
-    }
-  }
-`;
+// gql`
+//   fragment LedgerRecordsDebitAccountFields on LedgerRecord {
+//     id
+//     debitAccount {
+//       name
+//     }
+//   }
+// `;
 
 type Props = {
   data: LedgerRecordsDebitAccountFieldsFragment;

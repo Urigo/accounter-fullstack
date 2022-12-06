@@ -1,12 +1,12 @@
-import gql from 'graphql-tag';
+// import gql from 'graphql-tag';
 import { LedgerRecordsDateFieldsFragment } from '../../../../__generated__/types';
 
-gql`
-  fragment LedgerRecordsDateFields on LedgerRecord {
-    id
-    date
-  }
-`;
+// gql`
+//   fragment LedgerRecordsDateFields on LedgerRecord {
+//     id
+//     date
+//   }
+// `;
 
 type Props = {
   data: LedgerRecordsDateFieldsFragment;
