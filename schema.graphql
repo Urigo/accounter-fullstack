@@ -194,8 +194,6 @@ input InsertLedgerRecordInput {
 " TEMPORARY: input variables for updateDbLedgerRecord "
 input UpdateDbLedgerRecordInput {
   # eslint-disable-next-line @graphql-eslint/naming-convention
-  charge_id: String
-  # eslint-disable-next-line @graphql-eslint/naming-convention
   credit_account_1: String
   # eslint-disable-next-line @graphql-eslint/naming-convention
   credit_account_2: String
@@ -239,8 +237,6 @@ input UpdateDbLedgerRecordInput {
 
 " TEMPORARY: input variables for insertDbLedgerRecord "
 input InsertDbLedgerRecordInput {
-  # eslint-disable-next-line @graphql-eslint/naming-convention
-  charge_id: String
   # eslint-disable-next-line @graphql-eslint/naming-convention
   credit_account_1: String
   # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -772,8 +768,6 @@ type LedgerRecord {
 
 extend type LedgerRecord {
   " TEMPORARY: extension to reflect original DB fields "
-  # eslint-disable-next-line @graphql-eslint/naming-convention
-  charge_id: String
   # eslint-disable-next-line @graphql-eslint/naming-convention
   credit_account_1: String
   # eslint-disable-next-line @graphql-eslint/naming-convention

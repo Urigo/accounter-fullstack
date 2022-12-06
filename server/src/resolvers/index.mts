@@ -1325,7 +1325,6 @@ export const resolvers: Resolvers = {
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
 
     /* next fields are temporary, to resemble the DB entity */
-    charge_id: DbLedgerRecord => DbLedgerRecord.charge_id,
     credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_1,
     credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_2,
     credit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_1),
