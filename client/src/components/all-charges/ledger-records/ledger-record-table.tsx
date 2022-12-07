@@ -21,7 +21,8 @@ gql`
       # ...LedgerRecordsHashavshevetIdFields
       ...LedgerRecordsAccountDetailsFields
       ...LedgerRecordsGeneralDateFields
-      ...EditLedgerRecordsFields
+      # ...EditLedgerRecordsFields
+      ...EditDbLedgerRecordsFields
       originalAmount {
         formatted
       }

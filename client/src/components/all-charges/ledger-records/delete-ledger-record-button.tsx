@@ -16,6 +16,7 @@ export function DeleteLedgerRecordButton({ ledgerRecordId }: Props) {
     mutate({
       ledgerRecordId,
     });
+    setOpened(false);
   }
 
   return (

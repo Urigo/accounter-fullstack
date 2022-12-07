@@ -1,26 +1,19 @@
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-import {
-  Currency,
-  EditLedgerRecordsFieldsFragment,
-  InsertLedgerRecordInput,
-  UpdateLedgerRecordInput,
-} from '../../../__generated__/types';
+import { Currency, InsertLedgerRecordInput } from '../../../__generated__/types';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import { CurrencyInput, NumberInput, TextInput } from '../../common/inputs';
 
 type Props = {
-  ledgerRecord: Partial<EditLedgerRecordsFieldsFragment>;
-  control: Control<UpdateLedgerRecordInput | InsertLedgerRecordInput, unknown>;
+  control: Control<InsertLedgerRecordInput, unknown>;
 };
 
-export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
+export const InsertLedgerRecordFields = ({ control }: Props) => {
   return (
     <>
       <Controller
         name="creditAccount.name"
         control={control}
-        defaultValue={ledgerRecord.creditAccount?.name}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (
           <TextInput {...field} error={fieldState.error?.message} label="Credit Account" />
@@ -29,7 +22,6 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="debitAccount.name"
         control={control}
-        defaultValue={ledgerRecord.debitAccount?.name}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (
           <TextInput {...field} error={fieldState.error?.message} label="Debit Account" />
@@ -38,7 +30,6 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="date"
         control={control}
-        defaultValue={ledgerRecord.date}
         rules={{
           required: 'Required',
           pattern: {
@@ -54,7 +45,6 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="description"
         control={control}
-        defaultValue={ledgerRecord.description}
         render={({ field, fieldState }) => (
           <TextInput
             {...field}
@@ -68,12 +58,11 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="localCurrencyAmount.raw"
         control={control}
-        defaultValue={ledgerRecord.localCurrencyAmount?.raw}
         render={({ field: amountField, fieldState: amountFieldState }) => (
           <Controller
             name="localCurrencyAmount.currency"
             control={control}
-            defaultValue={ledgerRecord.localCurrencyAmount?.currency ?? Currency.Ils}
+            defaultValue={Currency.Ils}
             render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
               <CurrencyInput
                 {...amountField}
@@ -88,12 +77,10 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="originalAmount.raw"
         control={control}
-        defaultValue={ledgerRecord.originalAmount?.raw}
         render={({ field: amountField, fieldState: amountFieldState }) => (
           <Controller
             name="originalAmount.currency"
             control={control}
-            defaultValue={ledgerRecord.originalAmount?.currency}
             render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
               <CurrencyInput
                 {...amountField}
@@ -108,7 +95,6 @@ export const InsertLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
       <Controller
         name="hashavshevetId"
         control={control}
-        defaultValue={ledgerRecord.hashavshevetId}
         render={({ field: { value, ...field }, fieldState }) => {
           const adjustedValue = value ?? undefined;
           return (

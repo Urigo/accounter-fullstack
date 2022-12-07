@@ -246,7 +246,7 @@ input InsertDbLedgerRecordInput {
   # eslint-disable-next-line @graphql-eslint/naming-convention
   credit_amount_2: Float
   currency: Currency
-  date3: TimelessDate
+  date3: TimelessDate!
   # eslint-disable-next-line @graphql-eslint/naming-convention
   debit_account_1: String
   # eslint-disable-next-line @graphql-eslint/naming-convention
