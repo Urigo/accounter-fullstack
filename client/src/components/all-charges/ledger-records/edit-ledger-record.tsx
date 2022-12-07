@@ -2,41 +2,69 @@ import { showNotification } from '@mantine/notifications';
 import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import {
-  EditLedgerRecordsFieldsFragment,
-  UpdateLedgerRecordInput,
+  EditDbLedgerRecordsFieldsFragment,
+  UpdateDbLedgerRecordInput,
 } from '../../../__generated__/types';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
-import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record';
+import { useUpdateDbLedgerRecord } from '../../../hooks/use-update-db-ledger-record';
 import { SimpleGrid } from '../../common/simple-grid';
-import { LedgerRecordFields } from './ledger-record-fields';
+import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
+
+// gql`
+//   fragment EditLedgerRecordsFields on LedgerRecord {
+//     id
+//     creditAccount {
+//       name
+//     }
+//     debitAccount {
+//       name
+//     }
+//     date
+//     date3
+//     valueDate
+//     description
+//     localCurrencyAmount {
+//       raw
+//       currency
+//     }
+//     originalAmount {
+//       raw
+//       currency
+//     }
+//     hashavshevetId
+//   }
+// `;
 
 gql`
-  fragment EditLedgerRecordsFields on LedgerRecord {
+  fragment EditDbLedgerRecordsFields on LedgerRecord {
     id
-    creditAccount {
-      name
-    }
-    debitAccount {
-      name
-    }
-    date
+    credit_account_1
+    credit_account_2
+    credit_amount_1
+    credit_amount_2
+    currency
     date3
-    valueDate
-    description
-    localCurrencyAmount {
-      raw
-      currency
-    }
-    originalAmount {
-      raw
-      currency
-    }
-    hashavshevetId
+    debit_account_1
+    debit_account_2
+    debit_amount_1
+    debit_amount_2
+    details
+    foreign_credit_amount_1
+    foreign_credit_amount_2
+    foreign_debit_amount_1
+    foreign_debit_amount_2
+    hashavshevet_id
+    invoice_date
+    movement_type
+    reference_1
+    reference_2
+    reviewed
+    value_date
   }
 `;
 
 type Props = {
-  ledgerRecord: EditLedgerRecordsFieldsFragment;
+  ledgerRecord: EditDbLedgerRecordsFieldsFragment;
   onAccept?: () => void;
   onCancel?: () => void;
 };
@@ -46,10 +74,13 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<UpdateLedgerRecordInput>({ defaultValues: ledgerRecord });
-  const { mutate, isLoading, isError, isSuccess } = useUpdateLedgerRecord();
+    setValue,
+    unregister,
+    watch,
+  } = useForm<UpdateDbLedgerRecordInput>({ defaultValues: ledgerRecord });
+  const { mutate, isLoading, isError, isSuccess } = useUpdateDbLedgerRecord();
 
-  const onSubmit: SubmitHandler<UpdateLedgerRecordInput> = data => {
+  const onSubmit: SubmitHandler<UpdateDbLedgerRecordInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       mutate({
@@ -67,7 +98,15 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
       <div className="px-5 h-max justify-items-center">
         <form onSubmit={handleSubmit(onSubmit)}>
           <SimpleGrid cols={5}>
-            <LedgerRecordFields ledgerRecord={ledgerRecord} control={control} />
+            {/* <EditLedgerRecordFields ledgerRecord={ledgerRecord} control={control} /> */}
+            {/* TEMPORARY: the form is replaced to represent full DB record. should be reverted after DB is updated. */}
+            <EditDbLedgerRecordFields
+              ledgerRecord={ledgerRecord}
+              control={control}
+              setValue={setValue}
+              unregister={unregister}
+              watch={watch}
+            />
           </SimpleGrid>
           <div className="flex justify-center gap-5">
             <button
