@@ -1,10 +1,9 @@
 import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { Currency, InsertLedgerRecordInput } from '../../../__generated__/types';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers';
-import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record';
+import { InsertDbLedgerRecordInput } from '../../../__generated__/types';
+import { useInsertDbLedgerRecord } from '../../../hooks/use-insert-db-ledger-record';
 import { SimpleGrid } from '../../common/simple-grid';
-import { InsertLedgerRecordFields } from './insert-ledger-record-fields';
+import { InsertDbLedgerRecordFields } from './insert-db-ledger-record-fields';
 
 type Props = {
   chargeId: string;
@@ -15,33 +14,43 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
   const {
     control,
     handleSubmit,
+    watch,
+    setValue,
+    unregister,
     formState: { dirtyFields },
-  } = useForm<InsertLedgerRecordInput>();
-  const { mutate, isLoading, isError, isSuccess } = useInsertLedgerRecord();
+  } = useForm<InsertDbLedgerRecordInput>();
+  const { mutate, isLoading, isError, isSuccess } = useInsertDbLedgerRecord();
 
-  const onSubmit: SubmitHandler<InsertLedgerRecordInput> = data => {
-    const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
-    if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      const record = dataToUpdate;
-      // NOTE: manually add dummy local currency (required by schema)
-      if (record.localCurrencyAmount) {
-        record.localCurrencyAmount.currency = Currency.Ils;
-      }
-      mutate({
-        chargeId,
-        record,
-      });
-      if (closeModal) {
-        closeModal();
-      }
+  const onSubmit: SubmitHandler<InsertDbLedgerRecordInput> = data => {
+    // const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
+    // if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
+    //   const record = dataToUpdate;
+    // // NOTE: manually add dummy local currency (required by schema)
+    // if (record.localCurrencyAmount) {
+    //   record.localCurrencyAmount.currency = Currency.Ils;
+    // }
+    mutate({
+      chargeId,
+      record: data,
+    });
+    if (closeModal) {
+      closeModal();
     }
+    // }
   };
 
   return (
     <div className=" px-5 w-max h-max justify-items-center">
       <form onSubmit={handleSubmit(onSubmit)}>
         <SimpleGrid cols={5}>
-          <InsertLedgerRecordFields ledgerRecord={{}} control={control} />
+          {/* <InsertLedgerRecordFields control={control} /> */}
+          {/* TEMPORARY: the form is replaced to represent full DB record. should be reverted after DB is updated. */}
+          <InsertDbLedgerRecordFields
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            unregister={unregister}
+          />
         </SimpleGrid>
         <div className="flex justify-center gap-5">
           <button
