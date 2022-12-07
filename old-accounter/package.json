@@ -26,22 +26,22 @@
     "temp-server:dev": "cd temp-server && yarn dev"
   },
   "dependencies": {
-    "date-fns": "2.29.1",
-    "dotenv": "16.0.1",
+    "date-fns": "2.29.3",
+    "dotenv": "16.0.3",
     "graphql": "16.6.0",
     "lodash": "4.17.21",
     "modern-poalim-scraper": "0.5.3",
     "moment": "2.29.4",
-    "pg": "8.7.3",
+    "pg": "8.8.0",
     "pixl-xml": "1.0.13",
-    "uuid": "8.3.2"
+    "uuid": "9.0.0"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.182",
+    "@types/lodash": "4.14.191",
     "@types/pg": "8.6.5",
     "@types/pixl-xml": "1.0.2",
-    "@types/uuid": "8.3.4",
+    "@types/uuid": "9.0.0",
     "eslint": "8.29.0",
-    "nodemon": "2.0.19"
+    "nodemon": "2.0.20"
   }
 }
