@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import type { IGetChargesByFinancialEntityIdsResult } from '../__generated__/charges.types.mjs';
 import type { IGetAllDocumentsResult } from '../__generated__/documents.types.mjs';
 import {
@@ -33,6 +34,7 @@ import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
 } from '../providers/financial-accounts.mjs';
+import { TimelessDateString } from '../scalars/index.js';
 
 export const commonFinancialEntityFields:
   | LtdFinancialEntityResolvers
@@ -134,7 +136,8 @@ export const commonFinancialDocumentsFields:
   | InvoiceReceiptResolvers
   | ProformaResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
-  date: documentRoot => documentRoot.date,
+  date: documentRoot =>
+    documentRoot.date ? (format(documentRoot.date, 'yyyy-MM-dd') as TimelessDateString) : null,
   amount: documentRoot =>
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>

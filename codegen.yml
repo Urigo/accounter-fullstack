@@ -4,7 +4,7 @@ documents: ['./client/src/**/*.tsx', './client/src/**/*.ts']
 config:
   scalars:
     Date: 'Date'
-    TimelessDate: 'Date | TimelessDateString'
+    TimelessDate: 'TimelessDateString'
     IBAN: string
     Percentage: number
     URL: 'URL | string'
