@@ -165,9 +165,8 @@ type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
 type BusinessTransaction {
   amount: FinancialAmount!
   businessName: String!
-  foreignAmount: Float
+  foreignAmount: FinancialAmount
   invoiceDate: TimelessDate!
-  currency: Currency
 }
 
 " input variables for updateDocument "

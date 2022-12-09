@@ -222,9 +222,11 @@ export const resolvers: Resolvers = {
         const businessTransactions: BusinessTransaction[] = res.map(t => ({
           amount: formatFinancialAmount(t.amount, Currency.Ils),
           businessName: t.business_name ?? 'Missing',
-          foreignAmount: Number(t.foreign_amount ?? 0),
+          foreignAmount: formatFinancialAmount(
+            t.foreign_amount,
+            t.currency,
+          ),
           invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
-          currency: formatCurrency(t.currency),
         }));
 
         return {
