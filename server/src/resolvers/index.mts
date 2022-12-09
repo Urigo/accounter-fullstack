@@ -219,15 +219,20 @@ export const resolvers: Resolvers = {
 
         const res = await getBusinessTransactionsFromLedgerRecords.run(adjestedFilters, pool);
 
-        const businessTransactions: BusinessTransaction[] = res.map(t => ({
-          amount: formatFinancialAmount(t.amount, Currency.Ils),
-          businessName: t.business_name ?? 'Missing',
-          foreignAmount: formatFinancialAmount(
-            t.foreign_amount,
-            t.currency,
-          ),
-          invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
-        }));
+        const businessTransactions: BusinessTransaction[] = res.map(t => {
+          const direction = t.direction ?? 1;
+          return {
+            amount: formatFinancialAmount(
+              Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
+              Currency.Ils,
+            ),
+            businessName: t.business_name ?? 'Missing',
+            foreignAmount: Number.isNaN(t.foreign_amount)
+              ? null
+              : formatFinancialAmount(Number(t.foreign_amount) * direction, t.currency),
+            invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
+          };
+        });
 
         return {
           __typename: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult',
