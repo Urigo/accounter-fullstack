@@ -495,7 +495,7 @@ app.post('/getUserTransactions', async (req: Request, res: Response) => {
   const { userName, companyId } = req.body;
 
   // TODO: add format validation
-  if (!userName) {
+  if (!userName) {select distinct concat(ledger.debit_account_1, ledger.debit_account_2, ledger.credit_account_1, ledger.debit_account_2) as businesses from accounter_schema.ledger order by businesses
     throw new Error('userName is missing');
   }
   if (!companyId) {

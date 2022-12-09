@@ -92,6 +92,12 @@ type Query {
   allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
   allFinancialEntities: [FinancialEntity!]!
+  businessTransactionsSumFromLedgerRecords(
+    filters: BusinessTransactionsFilter
+  ): BusinessTransactionsSumFromLedgerRecordsResult!
+  businessTransactionsFromLedgerRecords(
+    filters: BusinessTransactionsFilter
+  ): BusinessTransactionsFromLedgerRecordsResult!
 }
 
 " mutation root "
@@ -119,6 +125,48 @@ type Mutation {
   deleteDocument(documentId: ID!): Boolean!
   fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
   uploadDocument(file: File!, chargeId: ID): UploadDocumentResult!
+}
+
+" input variables for businessTransactions "
+input BusinessTransactionsFilter {
+  businessName: String
+  financialEntityId: ID
+  fromDate: TimelessDate
+  toDate: TimelessDate
+}
+
+union BusinessTransactionsSumFromLedgerRecordsResult =
+    BusinessTransactionsSumFromLedgerRecordsSuccessfulResult
+  | CommonError
+
+type BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+  businessTransactionsSum: [BusinessTransactionSum!]!
+}
+
+type BusinessTransactionSum {
+  businessName: String!
+  credit: FinancialAmount!
+  debit: FinancialAmount!
+  foreign_credit: Float!
+  foreign_debit: Float!
+  foreign_total: Float!
+  total: FinancialAmount!
+}
+
+union BusinessTransactionsFromLedgerRecordsResult =
+    BusinessTransactionsFromLedgerRecordsSuccessfulResult
+  | CommonError
+
+type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
+  businessTransactions: [BusinessTransaction!]!
+}
+
+type BusinessTransaction {
+  amount: FinancialAmount!
+  businessName: String!
+  foreignAmount: Float
+  invoiceDate: TimelessDate!
+  currency: Currency
 }
 
 " input variables for updateDocument "

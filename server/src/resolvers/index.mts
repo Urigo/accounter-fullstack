@@ -1,4 +1,9 @@
 import { GraphQLError } from 'graphql';
+import { format } from 'date-fns';
+import {
+  IGetBusinessTransactionsFromLedgerRecordsParams,
+  IGetBusinessTransactionsSumFromLedgerRecordsParams,
+} from '../__generated__/business-transactions-from-ledger.types.mjs';
 import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
@@ -13,7 +18,14 @@ import {
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
-import { ChargeSortByField, Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
+import {
+  BusinessTransaction,
+  BusinessTransactionSum,
+  ChargeSortByField,
+  Currency,
+  DocumentType,
+  Resolvers,
+} from '../__generated__/types.mjs';
 import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
@@ -24,7 +36,11 @@ import {
   hashavshevetFormat,
   parseDate,
 } from '../helpers/hashavshevet.mjs';
-import { buildLedgerEntries, decorateCharge } from '../helpers/misc.mjs';
+import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../helpers/misc.mjs';
+import {
+  getBusinessTransactionsFromLedgerRecords,
+  getBusinessTransactionsSumFromLedgerRecords,
+} from '../providers/business-transactions-from-ledger.mjs';
 import {
   getChargeByIdLoader,
   getChargesByFilters,
@@ -142,6 +158,79 @@ export const resolvers: Resolvers = {
     },
     // ledger records
     // counterparties
+    // businessTransactions
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }) => {
+      try {
+        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
+          businessName: filters?.businessName ?? null,
+          financialEntityId: filters?.financialEntityId ?? null,
+          fromDate: isTimelessDateString(filters?.fromDate ?? '')
+            ? (filters!.fromDate as TimelessDateString)
+            : null,
+          toDate: isTimelessDateString(filters?.toDate ?? '')
+            ? (filters!.toDate as TimelessDateString)
+            : null,
+        };
+
+        const res = await getBusinessTransactionsSumFromLedgerRecords.run(adjestedFilters, pool);
+
+        const businessTransactionsSum: BusinessTransactionSum[] = res.map(t => ({
+          businessName: t.business_name ?? 'Missing',
+          credit: formatFinancialAmount(t.credit, Currency.Ils),
+          debit: formatFinancialAmount(t.debit, Currency.Ils),
+          foreign_credit: Number(t.foreign_credit ?? 0),
+          foreign_debit: Number(t.foreign_debit ?? 0),
+          foreign_total: Number(t.foreign_total ?? 0),
+          total: formatFinancialAmount(t.total, Currency.Ils),
+        }));
+
+        return {
+          __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
+          businessTransactionsSum,
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: 'Error fetching business transactions summary from ledger records',
+        };
+      }
+    },
+    businessTransactionsFromLedgerRecords: async (_, { filters }) => {
+      try {
+        const adjestedFilters: IGetBusinessTransactionsFromLedgerRecordsParams = {
+          businessName: filters?.businessName ?? null,
+          financialEntityId: filters?.financialEntityId ?? null,
+          fromDate: isTimelessDateString(filters?.fromDate ?? '')
+            ? (filters!.fromDate as TimelessDateString)
+            : null,
+          toDate: isTimelessDateString(filters?.toDate ?? '')
+            ? (filters!.toDate as TimelessDateString)
+            : null,
+        };
+
+        const res = await getBusinessTransactionsFromLedgerRecords.run(adjestedFilters, pool);
+
+        const businessTransactions: BusinessTransaction[] = res.map(t => ({
+          amount: formatFinancialAmount(t.amount, Currency.Ils),
+          businessName: t.business_name ?? 'Missing',
+          foreignAmount: Number(t.foreign_amount ?? 0),
+          invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
+          currency: formatCurrency(t.currency),
+        }));
+
+        return {
+          __typename: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult',
+          businessTransactions,
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: 'Error fetching business transactions from ledger records',
+        };
+      }
+    },
   },
   Mutation: {
     // documents
@@ -1030,6 +1119,7 @@ export const resolvers: Resolvers = {
       }
     },
     // counterparties
+    // businessTransactions
   },
   // documents
   UpdateDocumentResult: {
@@ -1372,4 +1462,5 @@ export const resolvers: Resolvers = {
     __isTypeOf: () => true,
     ...commonTransactionFields,
   },
+  // businessTransactions
 };
