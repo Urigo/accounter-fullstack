@@ -246,7 +246,7 @@ export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccoun
   return null;
 }
 
-function isTimelessDateString(date: string): date is TimelessDateString {
+export function isTimelessDateString(date: string): date is TimelessDateString {
   const parts = date.split('-');
   if (parts.length !== 3) {
     return false;

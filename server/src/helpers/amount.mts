@@ -1,5 +1,12 @@
 import { Currency, FinancialAmount } from '../__generated__/types.mjs';
 
+export const formatStringifyAmount = (rawAmount: number): string => {
+  const formattedParts = rawAmount.toFixed(2).split('.');
+  // add commas
+  formattedParts[0] = formattedParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return formattedParts.join('.');
+};
+
 export const formatFinancialAmount = (
   rawAmount?: number | string | null,
   rawCurrency?: string | null,
@@ -8,7 +15,7 @@ export const formatFinancialAmount = (
   const currency = formatCurrency(rawCurrency);
   return {
     raw: amount,
-    formatted: `${amount.toFixed(2)} ${currency}`,
+    formatted: `${formatStringifyAmount(amount)} ${currency}`,
     currency,
   };
 };

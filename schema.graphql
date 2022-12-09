@@ -92,6 +92,13 @@ type Query {
   allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
   allFinancialEntities: [FinancialEntity!]!
+  businessTransactionsSumFromLedgerRecords(
+    filters: BusinessTransactionsFilter
+  ): BusinessTransactionsSumFromLedgerRecordsResult!
+  businessTransactionsFromLedgerRecords(
+    filters: BusinessTransactionsFilter
+  ): BusinessTransactionsFromLedgerRecordsResult!
+  businessNamesFromLedgerRecords: [String!]!
 }
 
 " mutation root "
@@ -119,6 +126,53 @@ type Mutation {
   deleteDocument(documentId: ID!): Boolean!
   fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
   uploadDocument(file: File!, chargeId: ID): UploadDocumentResult!
+}
+
+" input variables for businessTransactions "
+input BusinessTransactionsFilter {
+  businessNames: [String!]
+  financialEntityIds: [ID!]
+  fromDate: TimelessDate
+  toDate: TimelessDate
+}
+
+" result type for businessTransactionsSumFromLedgerRecords "
+union BusinessTransactionsSumFromLedgerRecordsResult =
+    BusinessTransactionsSumFromLedgerRecordsSuccessfulResult
+  | CommonError
+
+" result type for businessTransactionsSumFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+  businessTransactionsSum: [BusinessTransactionSum!]!
+}
+
+" single business transaction summery " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type BusinessTransactionSum {
+  businessName: String!
+  credit: FinancialAmount!
+  debit: FinancialAmount!
+  foreignCredit: Float!
+  foreignDebit: Float!
+  foreignTotal: Float!
+  total: FinancialAmount!
+}
+
+" result type for businessTransactionsFromLedgerRecords "
+union BusinessTransactionsFromLedgerRecordsResult =
+    BusinessTransactionsFromLedgerRecordsSuccessfulResult
+  | CommonError
+
+" result type for businessTransactionsFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
+  businessTransactions: [BusinessTransaction!]!
+}
+
+" single business transaction info " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type BusinessTransaction {
+  amount: FinancialAmount!
+  businessName: String!
+  foreignAmount: FinancialAmount
+  invoiceDate: TimelessDate!
 }
 
 " input variables for updateDocument "

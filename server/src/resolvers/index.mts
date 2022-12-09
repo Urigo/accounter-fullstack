@@ -1,4 +1,6 @@
 import { GraphQLError } from 'graphql';
+import { format } from 'date-fns';
+import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../__generated__/business-transactions-from-ledger.types.mjs';
 import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
@@ -13,7 +15,14 @@ import {
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
-import { ChargeSortByField, Currency, DocumentType, Resolvers } from '../__generated__/types.mjs';
+import {
+  BusinessTransaction,
+  BusinessTransactionSum,
+  ChargeSortByField,
+  Currency,
+  DocumentType,
+  Resolvers,
+} from '../__generated__/types.mjs';
 import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
@@ -24,7 +33,12 @@ import {
   hashavshevetFormat,
   parseDate,
 } from '../helpers/hashavshevet.mjs';
-import { buildLedgerEntries, decorateCharge } from '../helpers/misc.mjs';
+import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../helpers/misc.mjs';
+import {
+  getBusinessTransactionsFromLedgerRecords,
+  getBusinessTransactionsSumFromLedgerRecords,
+  getLedgerRecordsDistinctBusinesses,
+} from '../providers/business-transactions-from-ledger.mjs';
 import {
   getChargeByIdLoader,
   getChargesByFilters,
@@ -142,6 +156,106 @@ export const resolvers: Resolvers = {
     },
     // ledger records
     // counterparties
+    // businessTransactions
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }) => {
+      try {
+        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
+        const isBusinessNames = filters?.businessNames?.length ?? 0;
+        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
+          isBusinessNames,
+          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
+          isFinancialEntityIds,
+          financialEntityIds:
+            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
+          fromDate: isTimelessDateString(filters?.fromDate ?? '')
+            ? (filters!.fromDate as TimelessDateString)
+            : null,
+          toDate: isTimelessDateString(filters?.toDate ?? '')
+            ? (filters!.toDate as TimelessDateString)
+            : null,
+        };
+
+        const res = await getBusinessTransactionsSumFromLedgerRecords.run(adjestedFilters, pool);
+
+        const businessTransactionsSum: BusinessTransactionSum[] = res.map(t => ({
+          businessName: t.business_name ?? 'Missing',
+          credit: formatFinancialAmount(t.credit, Currency.Ils),
+          debit: formatFinancialAmount(t.debit, Currency.Ils),
+          foreignCredit: Number(t.foreign_credit ?? 0),
+          foreignDebit: Number(t.foreign_debit ?? 0),
+          foreignTotal: Number(t.foreign_total ?? 0),
+          total: formatFinancialAmount(t.total, Currency.Ils),
+        }));
+
+        return {
+          __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
+          businessTransactionsSum,
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: 'Error fetching business transactions summary from ledger records',
+        };
+      }
+    },
+    businessTransactionsFromLedgerRecords: async (_, { filters }) => {
+      try {
+        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
+        const isBusinessNames = filters?.businessNames?.length ?? 0;
+        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
+          isBusinessNames,
+          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
+          isFinancialEntityIds,
+          financialEntityIds:
+            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
+          fromDate: isTimelessDateString(filters?.fromDate ?? '')
+            ? (filters!.fromDate as TimelessDateString)
+            : null,
+          toDate: isTimelessDateString(filters?.toDate ?? '')
+            ? (filters!.toDate as TimelessDateString)
+            : null,
+        };
+
+        const res = await getBusinessTransactionsFromLedgerRecords.run(adjestedFilters, pool);
+
+        const businessTransactions: BusinessTransaction[] = res.map(t => {
+          const direction = t.direction ?? 1;
+          return {
+            amount: formatFinancialAmount(
+              Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
+              Currency.Ils,
+            ),
+            businessName: t.business_name ?? 'Missing',
+            foreignAmount: Number.isNaN(t.foreign_amount)
+              ? null
+              : formatFinancialAmount(Number(t.foreign_amount) * direction, t.currency),
+            invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
+          };
+        });
+
+        return {
+          __typename: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult',
+          businessTransactions,
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: 'Error fetching business transactions from ledger records',
+        };
+      }
+    },
+    businessNamesFromLedgerRecords: async () => {
+      try {
+        return getLedgerRecordsDistinctBusinesses
+          .run(undefined, pool)
+          .then(res => res.map(r => r.business_name).filter(r => Boolean(r)) as string[]);
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    },
   },
   Mutation: {
     // documents
@@ -1030,6 +1144,7 @@ export const resolvers: Resolvers = {
       }
     },
     // counterparties
+    // businessTransactions
   },
   // documents
   UpdateDocumentResult: {
@@ -1372,4 +1487,5 @@ export const resolvers: Resolvers = {
     __isTypeOf: () => true,
     ...commonTransactionFields,
   },
+  // businessTransactions
 };

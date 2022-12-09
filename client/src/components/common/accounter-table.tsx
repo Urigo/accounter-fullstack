@@ -43,7 +43,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
             {moreInfoValue === null ? (
               <p>No Data Related</p>
             ) : (
-              <Button title="Ledger Info" onClick={() => setOpen(!opened)} />
+              <Button title="More Info" onClick={() => setOpen(!opened)} />
             )}
           </td>
         )}
