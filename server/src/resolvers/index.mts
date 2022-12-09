@@ -163,9 +163,10 @@ export const resolvers: Resolvers = {
         const isBusinessNames = filters?.businessNames?.length ?? 0;
         const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
           isBusinessNames,
-          businessNames: filters?.businessNames ?? [null],
+          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
           isFinancialEntityIds,
-          financialEntityIds: filters?.financialEntityIds ?? [null],
+          financialEntityIds:
+            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
           fromDate: isTimelessDateString(filters?.fromDate ?? '')
             ? (filters!.fromDate as TimelessDateString)
             : null,
@@ -204,9 +205,10 @@ export const resolvers: Resolvers = {
         const isBusinessNames = filters?.businessNames?.length ?? 0;
         const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
           isBusinessNames,
-          businessNames: filters?.businessNames ?? [null],
+          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
           isFinancialEntityIds,
-          financialEntityIds: filters?.financialEntityIds ?? [null],
+          financialEntityIds:
+            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
           fromDate: isTimelessDateString(filters?.fromDate ?? '')
             ? (filters!.fromDate as TimelessDateString)
             : null,
