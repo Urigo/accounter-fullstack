@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { AllUsers } from './components/all-users';
+import { BusinessTransactionsSummery } from './components/business-transactions';
 import { DocumentsReport } from './components/documents';
 import { DocumentsMatch } from './components/documents-match';
 import { FinancialStatus } from './components/financial-status';
@@ -33,6 +34,7 @@ root.render(
           <Route path="/user-transactions" element={<UserTransactions />} />
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/match-documents" element={<DocumentsMatch />} />
+          <Route path="/business-transactions" element={<BusinessTransactionsSummery />} />
           <Route
             path="*"
             element={
