@@ -98,6 +98,7 @@ type Query {
   businessTransactionsFromLedgerRecords(
     filters: BusinessTransactionsFilter
   ): BusinessTransactionsFromLedgerRecordsResult!
+  businessNamesFromLedgerRecords: [String!]!
 }
 
 " mutation root "
@@ -129,8 +130,8 @@ type Mutation {
 
 " input variables for businessTransactions "
 input BusinessTransactionsFilter {
-  businessName: String
-  financialEntityId: ID
+  businessNames: [String!]
+  financialEntityIds: [ID!]
   fromDate: TimelessDate
   toDate: TimelessDate
 }

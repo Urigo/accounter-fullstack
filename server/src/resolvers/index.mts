@@ -1,9 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { format } from 'date-fns';
-import {
-  IGetBusinessTransactionsFromLedgerRecordsParams,
-  IGetBusinessTransactionsSumFromLedgerRecordsParams,
-} from '../__generated__/business-transactions-from-ledger.types.mjs';
+import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../__generated__/business-transactions-from-ledger.types.mjs';
 import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
@@ -40,6 +37,7 @@ import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../hel
 import {
   getBusinessTransactionsFromLedgerRecords,
   getBusinessTransactionsSumFromLedgerRecords,
+  getLedgerRecordsDistinctBusinesses,
 } from '../providers/business-transactions-from-ledger.mjs';
 import {
   getChargeByIdLoader,
@@ -161,9 +159,13 @@ export const resolvers: Resolvers = {
     // businessTransactions
     businessTransactionsSumFromLedgerRecords: async (_, { filters }) => {
       try {
+        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
+        const isBusinessNames = filters?.businessNames?.length ?? 0;
         const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
-          businessName: filters?.businessName ?? null,
-          financialEntityId: filters?.financialEntityId ?? null,
+          isBusinessNames,
+          businessNames: filters?.businessNames ?? [],
+          isFinancialEntityIds,
+          financialEntityIds: filters?.financialEntityIds ?? [],
           fromDate: isTimelessDateString(filters?.fromDate ?? '')
             ? (filters!.fromDate as TimelessDateString)
             : null,
@@ -198,9 +200,13 @@ export const resolvers: Resolvers = {
     },
     businessTransactionsFromLedgerRecords: async (_, { filters }) => {
       try {
-        const adjestedFilters: IGetBusinessTransactionsFromLedgerRecordsParams = {
-          businessName: filters?.businessName ?? null,
-          financialEntityId: filters?.financialEntityId ?? null,
+        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
+        const isBusinessNames = filters?.businessNames?.length ?? 0;
+        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
+          isBusinessNames,
+          businessNames: filters?.businessNames ?? [],
+          isFinancialEntityIds,
+          financialEntityIds: filters?.financialEntityIds ?? [],
           fromDate: isTimelessDateString(filters?.fromDate ?? '')
             ? (filters!.fromDate as TimelessDateString)
             : null,
@@ -229,6 +235,16 @@ export const resolvers: Resolvers = {
           __typename: 'CommonError',
           message: 'Error fetching business transactions from ledger records',
         };
+      }
+    },
+    businessNamesFromLedgerRecords: async () => {
+      try {
+        return getLedgerRecordsDistinctBusinesses
+          .run(undefined, pool)
+          .then(res => res.map(r => r.business_name).filter(r => Boolean(r)) as string[]);
+      } catch (e) {
+        console.error(e);
+        return [];
       }
     },
   },

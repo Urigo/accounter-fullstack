@@ -27,10 +27,10 @@ SELECT credit_account_1, to_date(invoice_date, 'DD/MM/YYYY'), credit_amount_1, f
 UNION ALL
 SELECT credit_account_2, to_date(invoice_date, 'DD/MM/YYYY'), credit_amount_2, foreign_credit_amount_2, 1, business AS financial_entity_id, currency FROM accounter_schema.ledger) AS bu
 WHERE bu.business_name IS NOT NULL AND bu.business_name <> ''
-AND ($financialEntityId::UUID IS NULL OR bu.financial_entity_id = $financialEntityId)
+  AND ($isFinancialEntityIds = 0 OR bu.financial_entity_id IN $$financialEntityIds)
 AND ($fromDate::TEXT IS NULL OR bu.invoice_date >= $fromDate::DATE)
 AND ($toDate::TEXT IS NULL OR bu.invoice_date <= $toDate::DATE)
-AND ($businessName::TEXT IS NULL OR bu.business_name = $businessName)
+  AND ($isBusinessNames = 0 OR bu.business_name IN $$businessNames)
 ORDER BY bu.invoice_date;`;
 
 export const getBusinessTransactionsSumFromLedgerRecords = sql<IGetBusinessTransactionsSumFromLedgerRecordsQuery>`
@@ -49,9 +49,9 @@ FROM (SELECT debit_account_1 AS business_name, to_date(invoice_date, 'DD/MM/YYYY
   UNION ALL
   SELECT credit_account_2, to_date(invoice_date, 'DD/MM/YYYY'), credit_amount_2, foreign_credit_amount_2, 1, business AS financial_entity_id, currency FROM accounter_schema.ledger) AS bu
 WHERE bu.business_name IS NOT NULL AND bu.business_name <> ''
-  AND ($financialEntityId::UUID IS NULL OR bu.financial_entity_id = $financialEntityId)
+  AND ($isFinancialEntityIds = 0 OR bu.financial_entity_id IN $$financialEntityIds)
   AND ($fromDate::TEXT IS NULL OR bu.invoice_date >= $fromDate::DATE)
   AND ($toDate::TEXT IS NULL OR bu.invoice_date <= $toDate::DATE)
-  AND ($businessName::TEXT IS NULL OR bu.business_name = $businessName)
+  AND ($isBusinessNames = 0 OR bu.business_name IN $$businessNames)
 GROUP BY bu.business_name
 ORDER BY bu.business_name;`;
