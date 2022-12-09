@@ -181,9 +181,9 @@ export const resolvers: Resolvers = {
           businessName: t.business_name ?? 'Missing',
           credit: formatFinancialAmount(t.credit, Currency.Ils),
           debit: formatFinancialAmount(t.debit, Currency.Ils),
-          foreign_credit: Number(t.foreign_credit ?? 0),
-          foreign_debit: Number(t.foreign_debit ?? 0),
-          foreign_total: Number(t.foreign_total ?? 0),
+          foreignCredit: Number(t.foreign_credit ?? 0),
+          foreignDebit: Number(t.foreign_debit ?? 0),
+          foreignTotal: Number(t.foreign_total ?? 0),
           total: formatFinancialAmount(t.total, Currency.Ils),
         }));
 

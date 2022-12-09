@@ -22,9 +22,9 @@ gql`
           debit {
             formatted
           }
-          foreign_credit
-          foreign_debit
-          foreign_total
+          foreignCredit
+          foreignDebit
+          foreignTotal
           total {
             formatted
           }
@@ -87,15 +87,15 @@ export const BusinessTransactionsSummery = () => {
             },
             {
               title: 'Foreign Credit',
-              value: data => data.foreign_credit,
+              value: data => data.foreignCredit,
             },
             {
               title: 'Foreign Debit',
-              value: data => data.foreign_debit,
+              value: data => data.foreignDebit,
             },
             {
               title: 'Foreign Total',
-              value: data => data.foreign_total,
+              value: data => data.foreignTotal,
             },
           ]}
         />

@@ -136,32 +136,38 @@ input BusinessTransactionsFilter {
   toDate: TimelessDate
 }
 
+" result type for businessTransactionsSumFromLedgerRecords "
 union BusinessTransactionsSumFromLedgerRecordsResult =
     BusinessTransactionsSumFromLedgerRecordsSuccessfulResult
   | CommonError
 
+" result type for businessTransactionsSumFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
   businessTransactionsSum: [BusinessTransactionSum!]!
 }
 
+" single business transaction summery " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type BusinessTransactionSum {
   businessName: String!
   credit: FinancialAmount!
   debit: FinancialAmount!
-  foreign_credit: Float!
-  foreign_debit: Float!
-  foreign_total: Float!
+  foreignCredit: Float!
+  foreignDebit: Float!
+  foreignTotal: Float!
   total: FinancialAmount!
 }
 
+" result type for businessTransactionsFromLedgerRecords "
 union BusinessTransactionsFromLedgerRecordsResult =
     BusinessTransactionsFromLedgerRecordsSuccessfulResult
   | CommonError
 
+" result type for businessTransactionsFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
   businessTransactions: [BusinessTransaction!]!
 }
 
+" single business transaction info " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type BusinessTransaction {
   amount: FinancialAmount!
   businessName: String!
