@@ -14,7 +14,13 @@ gql`
             formatted
           }
           businessName
-          foreignAmount {
+          eurAmount {
+            formatted
+          }
+          gbpAmount {
+            formatted
+          }
+          usdAmount {
             formatted
           }
           invoiceDate
@@ -38,6 +44,15 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
     filters: { ...filter, businessNames: [businessName] },
   });
 
+  const items =
+    data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
+      ? []
+      : data?.businessTransactionsFromLedgerRecords.businessTransactions ?? [];
+
+  const isEur = items.some(item => Boolean(item.eurAmount));
+  const isUsd = items.some(item => Boolean(item.usdAmount));
+  const isGbp = items.some(item => Boolean(item.gbpAmount));
+
   return (
     <div className="flex flex-row gap-5">
       {isLoading ? (
@@ -47,11 +62,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
           striped
           highlightOnHover
           stickyHeader
-          items={
-            data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
-              ? []
-              : data?.businessTransactionsFromLedgerRecords.businessTransactions ?? []
-          }
+          items={items}
           columns={[
             {
               title: 'Business Name',
@@ -66,8 +77,19 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
               value: data => data.amount.formatted,
             },
             {
-              title: 'Foreign Amount',
-              value: data => data.foreignAmount?.formatted,
+              title: 'EUR Amount',
+              value: data => data.eurAmount?.formatted,
+              disabled: !isEur,
+            },
+            {
+              title: 'USD Amount',
+              value: data => data.usdAmount?.formatted,
+              disabled: !isUsd,
+            },
+            {
+              title: 'GBP Amount',
+              value: data => data.gbpAmount?.formatted,
+              disabled: !isGbp,
             },
           ]}
         />

@@ -8,6 +8,7 @@ export interface AccounterTableProps<T, U> {
   stickyHeader?: boolean;
   columns: Array<{
     title: string | ReactNode;
+    disabled?: boolean;
     value: (item: T, context?: U) => string | ReactNode;
   }>;
   items: Array<T>;
@@ -33,11 +34,13 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
   return (
     <>
       <tr>
-        {props.columns.map((c, index) => (
-          <td key={String(index)}>
-            {c.value(props.item, props.rowContext ? props.rowContext(props.item) : undefined)}
-          </td>
-        ))}
+        {props.columns.map((c, index) =>
+          c.disabled ? null : (
+            <td key={String(index)}>
+              {c.value(props.item, props.rowContext ? props.rowContext(props.item) : undefined)}
+            </td>
+          ),
+        )}
         {props.moreInfo && (
           <td>
             {moreInfoValue === null ? (
@@ -83,9 +86,9 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
       <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>
         <thead style={props.stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
           <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
-            {props.columns.map((c, index) => (
-              <th key={String(index)}>{c.title}</th>
-            ))}
+            {props.columns.map((c, index) =>
+              c.disabled ? null : <th key={String(index)}>{c.title}</th>,
+            )}
             {props.moreInfo && <th>More Info</th>}
           </tr>
         </thead>

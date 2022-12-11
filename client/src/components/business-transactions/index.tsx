@@ -22,11 +22,41 @@ gql`
           debit {
             formatted
           }
-          foreignCredit
-          foreignDebit
-          foreignTotal
           total {
             formatted
+          }
+          eurSum {
+            credit {
+              formatted
+            }
+            debit {
+              formatted
+            }
+            total {
+              formatted
+            }
+          }
+          gbpSum {
+            credit {
+              formatted
+            }
+            debit {
+              formatted
+            }
+            total {
+              formatted
+            }
+          }
+          usdSum {
+            credit {
+              formatted
+            }
+            debit {
+              formatted
+            }
+            total {
+              formatted
+            }
           }
         }
       }
@@ -86,16 +116,40 @@ export const BusinessTransactionsSummery = () => {
               value: data => data.total.formatted,
             },
             {
-              title: 'Foreign Credit',
-              value: data => data.foreignCredit,
+              title: 'EUR Credit',
+              value: data => data.eurSum?.credit?.formatted,
             },
             {
-              title: 'Foreign Debit',
-              value: data => data.foreignDebit,
+              title: 'EUR Debit',
+              value: data => data.eurSum?.debit?.formatted,
             },
             {
-              title: 'Foreign Total',
-              value: data => data.foreignTotal,
+              title: 'EUR Total',
+              value: data => data.eurSum?.total?.formatted,
+            },
+            {
+              title: 'USD Credit',
+              value: data => data.usdSum?.credit?.formatted,
+            },
+            {
+              title: 'USD Debit',
+              value: data => data.usdSum?.debit?.formatted,
+            },
+            {
+              title: 'USD Total',
+              value: data => data.usdSum?.total?.formatted,
+            },
+            {
+              title: 'GBP Credit',
+              value: data => data.gbpSum?.credit?.formatted,
+            },
+            {
+              title: 'GBP Debit',
+              value: data => data.gbpSum?.debit?.formatted,
+            },
+            {
+              title: 'GBP Total',
+              value: data => data.gbpSum?.total?.formatted,
             },
           ]}
         />
