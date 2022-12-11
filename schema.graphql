@@ -151,9 +151,16 @@ type BusinessTransactionSum {
   businessName: String!
   credit: FinancialAmount!
   debit: FinancialAmount!
-  foreignCredit: Float!
-  foreignDebit: Float!
-  foreignTotal: Float!
+  total: FinancialAmount!
+  eurSum: ForeignCurrencySum
+  gbpSum: ForeignCurrencySum
+  usdSum: ForeignCurrencySum
+}
+
+" summary of foreign currency business transactions " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+type ForeignCurrencySum {
+  credit: FinancialAmount!
+  debit: FinancialAmount!
   total: FinancialAmount!
 }
 
@@ -171,7 +178,9 @@ type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
 type BusinessTransaction {
   amount: FinancialAmount!
   businessName: String!
-  foreignAmount: FinancialAmount
+  eurAmount: FinancialAmount
+  gbpAmount: FinancialAmount
+  usdAmount: FinancialAmount
   invoiceDate: TimelessDate!
 }
 

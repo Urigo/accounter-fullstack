@@ -177,15 +177,99 @@ export const resolvers: Resolvers = {
 
         const res = await getBusinessTransactionsSumFromLedgerRecords.run(adjestedFilters, pool);
 
-        const businessTransactionsSum: BusinessTransactionSum[] = res.map(t => ({
-          businessName: t.business_name ?? 'Missing',
-          credit: formatFinancialAmount(t.credit, Currency.Ils),
-          debit: formatFinancialAmount(t.debit, Currency.Ils),
-          foreignCredit: Number(t.foreign_credit ?? 0),
-          foreignDebit: Number(t.foreign_debit ?? 0),
-          foreignTotal: Number(t.foreign_total ?? 0),
-          total: formatFinancialAmount(t.total, Currency.Ils),
-        }));
+        type CurrencySum = {
+          credit: number;
+          debit: number;
+          total: number;
+        };
+
+        const rawRes: Record<
+          string,
+          { ils: CurrencySum; eur: CurrencySum; gbp: CurrencySum; usd: CurrencySum }
+        > = {};
+
+        res.forEach(t => {
+          rawRes[t.business_name ?? ''] ??= {
+            ils: {
+              credit: 0,
+              debit: 0,
+              total: 0,
+            },
+            eur: {
+              credit: 0,
+              debit: 0,
+              total: 0,
+            },
+            gbp: {
+              credit: 0,
+              debit: 0,
+              total: 0,
+            },
+            usd: {
+              credit: 0,
+              debit: 0,
+              total: 0,
+            },
+          };
+
+          const business = rawRes[t.business_name ?? ''];
+          const currency =
+            t.currency === 'אירו'
+              ? 'eur'
+              : t.currency === '$'
+              ? 'usd'
+              : t.currency === 'לש'
+              ? 'gbp'
+              : 'ils';
+          const amount = Number.isNaN(t.amount) ? 0 : Number(t.amount);
+          const foreignAmount = Number.isNaN(t.foreign_amount) ? 0 : Number(t.foreign_amount);
+          const direction = (t.direction ?? 1) < 1 ? -1 : 1;
+
+          business.ils.credit += direction > 0 ? amount : 0;
+          business.ils.debit += direction < 0 ? amount : 0;
+          business.ils.total += direction * amount;
+
+          if (currency !== 'ils') {
+            const foreignInfo = business[currency];
+
+            foreignInfo.credit += direction > 0 ? foreignAmount : 0;
+            foreignInfo.debit += direction < 0 ? foreignAmount : 0;
+            foreignInfo.total += direction * foreignAmount;
+          }
+        });
+
+        const businessTransactionsSum: BusinessTransactionSum[] = Object.entries(rawRes).map(
+          ([businessName, info]) => ({
+            businessName,
+            credit: formatFinancialAmount(info.ils.credit, Currency.Ils),
+            debit: formatFinancialAmount(info.ils.debit, Currency.Ils),
+            total: formatFinancialAmount(info.ils.total, Currency.Ils),
+            eurSum:
+              info.eur.credit || info.eur.debit
+                ? {
+                    credit: formatFinancialAmount(info.eur.credit, Currency.Eur),
+                    debit: formatFinancialAmount(info.eur.debit, Currency.Eur),
+                    total: formatFinancialAmount(info.eur.total, Currency.Eur),
+                  }
+                : undefined,
+            gbpSum:
+              info.gbp.credit || info.gbp.debit
+                ? {
+                    credit: formatFinancialAmount(info.gbp.credit, Currency.Gbp),
+                    debit: formatFinancialAmount(info.gbp.debit, Currency.Gbp),
+                    total: formatFinancialAmount(info.gbp.total, Currency.Gbp),
+                  }
+                : undefined,
+            usdSum:
+              info.usd.credit | info.usd.debit
+                ? {
+                    credit: formatFinancialAmount(info.usd.credit, Currency.Usd),
+                    debit: formatFinancialAmount(info.usd.debit, Currency.Usd),
+                    total: formatFinancialAmount(info.usd.total, Currency.Usd),
+                  }
+                : undefined,
+          }),
+        );
 
         return {
           __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
@@ -227,9 +311,28 @@ export const resolvers: Resolvers = {
               Currency.Ils,
             ),
             businessName: t.business_name ?? 'Missing',
-            foreignAmount: Number.isNaN(t.foreign_amount)
-              ? null
-              : formatFinancialAmount(Number(t.foreign_amount) * direction, t.currency),
+            eurAmount:
+              t.currency === 'אירו'
+                ? formatFinancialAmount(
+                    Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
+                    Currency.Eur,
+                  )
+                : undefined,
+            gbpAmount:
+              t.currency === 'לש'
+                ? formatFinancialAmount(
+                    Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
+                    Currency.Gbp,
+                  )
+                : undefined,
+            usdAmount:
+              t.currency === '$'
+                ? formatFinancialAmount(
+                    Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
+                    Currency.Usd,
+                  )
+                : undefined,
+
             invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
           };
         });
