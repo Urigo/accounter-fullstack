@@ -62,8 +62,8 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
           {/* <th>Credit Account</th> */}
           {/* <th>Debit Account</th> */}
           <th>Credit Account1</th>
-          <th>Credit Account2</th>
           <th>Debit Account1</th>
+          <th>Credit Account2</th>
           <th>Debit Account2</th>
           {/* <th>Local Amount</th>
           <th>Original Amount</th> */}
