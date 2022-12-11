@@ -1,3 +1,4 @@
+import { Mark } from '@mantine/core';
 import gql from 'graphql-tag';
 import {
   BusinessTransactionsFilter,
@@ -12,16 +13,20 @@ gql`
         businessTransactions {
           amount {
             formatted
+            raw
           }
           businessName
           eurAmount {
             formatted
+            raw
           }
           gbpAmount {
             formatted
+            raw
           }
           usdAmount {
             formatted
+            raw
           }
           invoiceDate
         }
@@ -74,21 +79,47 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
             },
             {
               title: 'Amount',
-              value: data => data.amount.formatted,
+              value: data =>
+                data.amount.raw && data.amount.raw !== 0 ? (
+                  <Mark color={data.amount.raw > 0 ? 'green' : 'red'}>{data.amount.formatted}</Mark>
+                ) : (
+                  data.amount.formatted
+                ),
             },
             {
               title: 'EUR Amount',
-              value: data => data.eurAmount?.formatted,
+              value: data =>
+                data.eurAmount?.raw && data.eurAmount.raw !== 0 ? (
+                  <Mark color={data.eurAmount.raw > 0 ? 'green' : 'red'}>
+                    {data.eurAmount.formatted}
+                  </Mark>
+                ) : (
+                  data.eurAmount?.formatted
+                ),
               disabled: !isEur,
             },
             {
               title: 'USD Amount',
-              value: data => data.usdAmount?.formatted,
+              value: data =>
+                data.usdAmount?.raw && data.usdAmount.raw !== 0 ? (
+                  <Mark color={data.usdAmount.raw > 0 ? 'green' : 'red'}>
+                    {data.usdAmount.formatted}
+                  </Mark>
+                ) : (
+                  data.usdAmount?.formatted
+                ),
               disabled: !isUsd,
             },
             {
               title: 'GBP Amount',
-              value: data => data.gbpAmount?.formatted,
+              value: data =>
+                data.gbpAmount?.raw && data.gbpAmount.raw !== 0 ? (
+                  <Mark color={data.gbpAmount.raw > 0 ? 'green' : 'red'}>
+                    {data.gbpAmount.formatted}
+                  </Mark>
+                ) : (
+                  data.gbpAmount?.formatted
+                ),
               disabled: !isGbp,
             },
           ]}

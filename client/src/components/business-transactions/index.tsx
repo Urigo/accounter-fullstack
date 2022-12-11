@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Mark } from '@mantine/core';
 import gql from 'graphql-tag';
 import {
   BusinessTransactionsFilter,
@@ -24,6 +25,7 @@ gql`
           }
           total {
             formatted
+            raw
           }
           eurSum {
             credit {
@@ -34,6 +36,7 @@ gql`
             }
             total {
               formatted
+              raw
             }
           }
           gbpSum {
@@ -45,6 +48,7 @@ gql`
             }
             total {
               formatted
+              raw
             }
           }
           usdSum {
@@ -56,6 +60,7 @@ gql`
             }
             total {
               formatted
+              raw
             }
           }
         }
@@ -113,7 +118,12 @@ export const BusinessTransactionsSummery = () => {
             },
             {
               title: 'Total',
-              value: data => data.total.formatted,
+              value: data =>
+                data.total.raw && (data.total.raw < -0.0001 || data.total.raw > 0.0001) ? (
+                  <Mark color={data.total.raw > 0 ? 'green' : 'red'}>{data.total.formatted}</Mark>
+                ) : (
+                  data.total.formatted
+                ),
             },
             {
               title: 'EUR Credit',
@@ -125,7 +135,15 @@ export const BusinessTransactionsSummery = () => {
             },
             {
               title: 'EUR Total',
-              value: data => data.eurSum?.total?.formatted,
+              value: data =>
+                data.eurSum?.total?.raw &&
+                (data.eurSum.total.raw < -0.0001 || data.eurSum.total.raw > 0.0001) ? (
+                  <Mark color={data.eurSum.total.raw > 0 ? 'green' : 'red'}>
+                    {data.eurSum.total.formatted}
+                  </Mark>
+                ) : (
+                  data.eurSum?.total?.formatted
+                ),
             },
             {
               title: 'USD Credit',
@@ -137,7 +155,15 @@ export const BusinessTransactionsSummery = () => {
             },
             {
               title: 'USD Total',
-              value: data => data.usdSum?.total?.formatted,
+              value: data =>
+                data.usdSum?.total?.raw &&
+                (data.usdSum.total.raw < -0.0001 || data.usdSum.total.raw > 0.0001) ? (
+                  <Mark color={data.usdSum.total.raw > 0 ? 'green' : 'red'}>
+                    {data.usdSum.total.formatted}
+                  </Mark>
+                ) : (
+                  data.usdSum?.total?.formatted
+                ),
             },
             {
               title: 'GBP Credit',
@@ -149,7 +175,15 @@ export const BusinessTransactionsSummery = () => {
             },
             {
               title: 'GBP Total',
-              value: data => data.gbpSum?.total?.formatted,
+              value: data =>
+                data.gbpSum?.total?.raw &&
+                (data.gbpSum.total.raw < -0.0001 || data.gbpSum.total.raw > 0.0001) ? (
+                  <Mark color={data.gbpSum.total.raw > 0 ? 'green' : 'red'}>
+                    {data.gbpSum.total.formatted}
+                  </Mark>
+                ) : (
+                  data.gbpSum?.total?.formatted
+                ),
             },
           ]}
         />
