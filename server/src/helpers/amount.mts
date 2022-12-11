@@ -55,7 +55,7 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
       if (amount) {
         return amount;
       }
-      console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
+      console.warn(`Unknown string amount: "${rawAmount}". Using 0 instead.`);
       return 0;
     }
     default:
