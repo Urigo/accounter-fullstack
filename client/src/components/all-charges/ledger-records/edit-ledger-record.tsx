@@ -80,7 +80,28 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
   } = useForm<UpdateDbLedgerRecordInput>({ defaultValues: ledgerRecord });
   const { mutate, isLoading, isError, isSuccess } = useUpdateDbLedgerRecord();
 
+  function isAccountActive(account?: string | null) {
+    return Boolean(account && account !== '');
+  }
+
   const onSubmit: SubmitHandler<UpdateDbLedgerRecordInput> = data => {
+    if (isAccountActive(data.credit_account_1)) {
+      data.credit_amount_1 = undefined;
+      data.foreign_credit_amount_1 = undefined;
+    }
+    if (isAccountActive(data.credit_account_2)) {
+      data.credit_amount_2 = undefined;
+      data.foreign_credit_amount_2 = undefined;
+    }
+    if (isAccountActive(data.debit_account_1)) {
+      data.debit_amount_1 = undefined;
+      data.foreign_debit_amount_1 = undefined;
+    }
+    if (isAccountActive(data.debit_account_2)) {
+      data.debit_amount_2 = undefined;
+      data.foreign_debit_amount_2 = undefined;
+    }
+
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       mutate({

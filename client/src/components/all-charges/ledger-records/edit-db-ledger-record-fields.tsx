@@ -54,50 +54,22 @@ export const EditDbLedgerRecordFields = ({
     return Boolean(account && account !== '');
   }
 
-  // add amount fields to credit/debit account only when name exists
   useEffect(() => {
     const isActive = isAccountActive(formCreditAccount1);
-    !isActive && setValue('credit_account_1', undefined);
     setIsCredit1(isActive);
-    if (!isActive) {
-      setValue('credit_account_1', undefined);
-      setValue('credit_amount_1', undefined);
-      setValue('foreign_credit_amount_1', undefined);
-      unregister(['credit_amount_1', 'foreign_credit_amount_1']);
-    }
-  }, [formCreditAccount1, setValue, unregister]);
+  }, [formCreditAccount1]);
   useEffect(() => {
     const isActive = isAccountActive(formCreditAccount2);
-    !isActive && setValue('credit_account_2', undefined);
     setIsCredit2(isActive);
-    if (!isActive) {
-      setValue('credit_account_2', undefined);
-      setValue('credit_amount_2', undefined);
-      setValue('foreign_credit_amount_2', undefined);
-      unregister(['credit_amount_2', 'foreign_credit_amount_2']);
-    }
-  }, [formCreditAccount2, setValue, unregister]);
+  }, [formCreditAccount2]);
   useEffect(() => {
     const isActive = isAccountActive(formDebitAccount1);
-    !isActive && setValue('debit_account_1', undefined);
     setIsDebit1(isActive);
-    if (!isActive) {
-      setValue('debit_account_1', undefined);
-      setValue('debit_amount_1', undefined);
-      setValue('foreign_debit_amount_1', undefined);
-      unregister(['debit_amount_1', 'foreign_debit_amount_1']);
-    }
-  }, [formDebitAccount1, setValue, unregister]);
+  }, [formDebitAccount1]);
   useEffect(() => {
     const isActive = isAccountActive(formDebitAccount2);
     setIsDebit2(isActive);
-    if (!isActive) {
-      setValue('debit_account_2', undefined);
-      setValue('debit_amount_2', undefined);
-      setValue('foreign_debit_amount_2', undefined);
-      unregister(['debit_amount_2', 'foreign_debit_amount_2']);
-    }
-  }, [formDebitAccount2, setValue, unregister]);
+  }, [formDebitAccount2]);
 
   useEffect(() => {
     setCurrency(formCurrency ?? Currency.Ils);
@@ -144,48 +116,46 @@ export const EditDbLedgerRecordFields = ({
           />
         )}
       />
-      {isCredit1 && (
-        <Controller
-          name="credit_amount_1"
-          shouldUnregister={!isCredit1}
-          control={control}
-          defaultValue={ledgerRecord.credit_amount_1}
-          render={({ field: amountField, fieldState: amountFieldState }) => (
-            <CurrencyInput
-              {...amountField}
-              value={amountField.value ?? undefined}
-              error={amountFieldState.error?.message}
-              label="Credit Amount 1"
-              currencyCodeProps={{
-                value: Currency.Ils,
-                label: 'Currency',
-                disabled: true,
-              }}
-            />
-          )}
-        />
-      )}
-      {isCredit1 && currency && currency !== Currency.Ils && (
-        <Controller
-          name="foreign_credit_amount_1"
-          shouldUnregister={!(isCredit1 && formCurrency === Currency.Ils)}
-          control={control}
-          defaultValue={ledgerRecord.foreign_credit_amount_1}
-          render={({ field: amountField, fieldState: amountFieldState }) => (
-            <CurrencyInput
-              {...amountField}
-              value={amountField.value ?? undefined}
-              error={amountFieldState.error?.message}
-              label="Foreign Credit Amount 1"
-              currencyCodeProps={{
-                value: currency,
-                label: 'Currency',
-                disabled: true,
-              }}
-            />
-          )}
-        />
-      )}
+      <Controller
+        name="credit_amount_1"
+        shouldUnregister={!isCredit1}
+        control={control}
+        defaultValue={ledgerRecord.credit_amount_1}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isCredit1}
+            label="Credit Amount 1"
+            currencyCodeProps={{
+              value: Currency.Ils,
+              label: 'Currency',
+              disabled: true,
+            }}
+          />
+        )}
+      />
+      <Controller
+        name="foreign_credit_amount_1"
+        shouldUnregister={!(isCredit1 && formCurrency === Currency.Ils)}
+        control={control}
+        defaultValue={ledgerRecord.foreign_credit_amount_1}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isCredit1 || !currency || currency === Currency.Ils}
+            label="Foreign Credit Amount 1"
+            currencyCodeProps={{
+              value: currency,
+              label: 'Currency',
+              disabled: true,
+            }}
+          />
+        )}
+      />
 
       <Controller
         name="credit_account_2"
@@ -200,50 +170,46 @@ export const EditDbLedgerRecordFields = ({
           />
         )}
       />
-      {isCredit2 && (
-        <>
-          <Controller
-            name="credit_amount_2"
-            shouldUnregister={!isCredit2}
-            control={control}
-            defaultValue={ledgerRecord.credit_amount_2}
-            render={({ field: amountField, fieldState: amountFieldState }) => (
-              <CurrencyInput
-                {...amountField}
-                value={amountField.value ?? undefined}
-                error={amountFieldState.error?.message}
-                label="Credit Amount 2"
-                currencyCodeProps={{
-                  value: Currency.Ils,
-                  label: 'Currency',
-                  disabled: true,
-                }}
-              />
-            )}
+      <Controller
+        name="credit_amount_2"
+        shouldUnregister={!isCredit2}
+        control={control}
+        defaultValue={ledgerRecord.credit_amount_2}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isCredit2}
+            label="Credit Amount 2"
+            currencyCodeProps={{
+              value: Currency.Ils,
+              label: 'Currency',
+              disabled: true,
+            }}
           />
-          {currency && currency !== Currency.Ils && (
-            <Controller
-              name="foreign_credit_amount_2"
-              shouldUnregister={!(isCredit2 && formCurrency === Currency.Ils)}
-              control={control}
-              defaultValue={ledgerRecord.foreign_credit_amount_2}
-              render={({ field: amountField, fieldState: amountFieldState }) => (
-                <CurrencyInput
-                  {...amountField}
-                  value={amountField.value ?? undefined}
-                  error={amountFieldState.error?.message}
-                  label="Foreign Credit Amount 2"
-                  currencyCodeProps={{
-                    value: currency,
-                    label: 'Currency',
-                    disabled: true,
-                  }}
-                />
-              )}
-            />
-          )}
-        </>
-      )}
+        )}
+      />
+      <Controller
+        name="foreign_credit_amount_2"
+        shouldUnregister={!(isCredit2 && formCurrency === Currency.Ils)}
+        control={control}
+        defaultValue={ledgerRecord.foreign_credit_amount_2}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isCredit2 || !currency || currency === Currency.Ils}
+            label="Foreign Credit Amount 2"
+            currencyCodeProps={{
+              value: currency,
+              label: 'Currency',
+              disabled: true,
+            }}
+          />
+        )}
+      />
 
       <Controller
         name="debit_account_1"
@@ -258,50 +224,46 @@ export const EditDbLedgerRecordFields = ({
           />
         )}
       />
-      {isDebit1 && (
-        <>
-          <Controller
-            name="debit_amount_1"
-            shouldUnregister={!isDebit1}
-            control={control}
-            defaultValue={ledgerRecord.debit_amount_1}
-            render={({ field: amountField, fieldState: amountFieldState }) => (
-              <CurrencyInput
-                {...amountField}
-                value={amountField.value ?? undefined}
-                error={amountFieldState.error?.message}
-                label="Debit Amount 1"
-                currencyCodeProps={{
-                  value: Currency.Ils,
-                  label: 'Currency',
-                  disabled: true,
-                }}
-              />
-            )}
+      <Controller
+        name="debit_amount_1"
+        shouldUnregister={!isDebit1}
+        control={control}
+        defaultValue={ledgerRecord.debit_amount_1}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isDebit1}
+            label="Debit Amount 1"
+            currencyCodeProps={{
+              value: Currency.Ils,
+              label: 'Currency',
+              disabled: true,
+            }}
           />
-          {currency && currency !== Currency.Ils && (
-            <Controller
-              name="foreign_debit_amount_1"
-              shouldUnregister={!(isDebit1 && formCurrency === Currency.Ils)}
-              control={control}
-              defaultValue={ledgerRecord.foreign_debit_amount_1}
-              render={({ field: amountField, fieldState: amountFieldState }) => (
-                <CurrencyInput
-                  {...amountField}
-                  value={amountField.value ?? undefined}
-                  error={amountFieldState.error?.message}
-                  label="Foreign Debit Amount 1"
-                  currencyCodeProps={{
-                    value: currency,
-                    label: 'Currency',
-                    disabled: true,
-                  }}
-                />
-              )}
-            />
-          )}
-        </>
-      )}
+        )}
+      />
+      <Controller
+        name="foreign_debit_amount_1"
+        shouldUnregister={!(isDebit1 && formCurrency === Currency.Ils)}
+        control={control}
+        defaultValue={ledgerRecord.foreign_debit_amount_1}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isDebit1 || !currency || currency === Currency.Ils}
+            label="Foreign Debit Amount 1"
+            currencyCodeProps={{
+              value: currency,
+              label: 'Currency',
+              disabled: true,
+            }}
+          />
+        )}
+      />
 
       <Controller
         name="debit_account_2"
@@ -316,50 +278,46 @@ export const EditDbLedgerRecordFields = ({
           />
         )}
       />
-      {isDebit2 && (
-        <>
-          <Controller
-            name="debit_amount_2"
-            shouldUnregister={!isDebit2}
-            control={control}
-            defaultValue={ledgerRecord.debit_amount_2}
-            render={({ field: amountField, fieldState: amountFieldState }) => (
-              <CurrencyInput
-                {...amountField}
-                value={amountField.value ?? undefined}
-                error={amountFieldState.error?.message}
-                label="Debit Amount 2"
-                currencyCodeProps={{
-                  value: Currency.Ils,
-                  label: 'Currency',
-                  disabled: true,
-                }}
-              />
-            )}
+      <Controller
+        name="debit_amount_2"
+        shouldUnregister={!isDebit2}
+        control={control}
+        defaultValue={ledgerRecord.debit_amount_2}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isDebit2}
+            label="Debit Amount 2"
+            currencyCodeProps={{
+              value: Currency.Ils,
+              label: 'Currency',
+              disabled: true,
+            }}
           />
-          {currency && currency !== Currency.Ils && (
-            <Controller
-              name="foreign_debit_amount_2"
-              shouldUnregister={!(isDebit2 && formCurrency === Currency.Ils)}
-              control={control}
-              defaultValue={ledgerRecord.foreign_debit_amount_2}
-              render={({ field: amountField, fieldState: amountFieldState }) => (
-                <CurrencyInput
-                  {...amountField}
-                  value={amountField.value ?? undefined}
-                  error={amountFieldState.error?.message}
-                  label="Foreign Debit Amount 2"
-                  currencyCodeProps={{
-                    value: currency,
-                    label: 'Currency',
-                    disabled: true,
-                  }}
-                />
-              )}
-            />
-          )}
-        </>
-      )}
+        )}
+      />
+      <Controller
+        name="foreign_debit_amount_2"
+        shouldUnregister={!(isDebit2 && formCurrency === Currency.Ils)}
+        control={control}
+        defaultValue={ledgerRecord.foreign_debit_amount_2}
+        render={({ field: amountField, fieldState: amountFieldState }) => (
+          <CurrencyInput
+            {...amountField}
+            value={amountField.value ?? undefined}
+            error={amountFieldState.error?.message}
+            disabled={!isDebit2 || !currency || currency === Currency.Ils}
+            label="Foreign Debit Amount 2"
+            currencyCodeProps={{
+              value: currency,
+              label: 'Currency',
+              disabled: true,
+            }}
+          />
+        )}
+      />
 
       <Controller
         name="details"
