@@ -157,7 +157,7 @@ type BusinessTransactionSum {
   usdSum: ForeignCurrencySum
 }
 
-" summary of foreign currency business transactions "
+" summary of foreign currency business transactions " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
 type ForeignCurrencySum {
   credit: FinancialAmount!
   debit: FinancialAmount!
