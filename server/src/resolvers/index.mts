@@ -314,21 +314,27 @@ export const resolvers: Resolvers = {
             eurAmount:
               t.currency === 'אירו'
                 ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount) ? t.foreign_amount : Number(t.foreign_amount) * direction,
+                    Number.isNaN(t.foreign_amount)
+                      ? t.foreign_amount
+                      : Number(t.foreign_amount) * direction,
                     Currency.Eur,
                   )
                 : undefined,
             gbpAmount:
               t.currency === 'לש'
                 ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount) ? t.foreign_amount : Number(t.foreign_amount) * direction,
+                    Number.isNaN(t.foreign_amount)
+                      ? t.foreign_amount
+                      : Number(t.foreign_amount) * direction,
                     Currency.Gbp,
                   )
                 : undefined,
             usdAmount:
               t.currency === '$'
                 ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount) ? t.foreign_amount : Number(t.foreign_amount) * direction,
+                    Number.isNaN(t.foreign_amount)
+                      ? t.foreign_amount
+                      : Number(t.foreign_amount) * direction,
                     Currency.Usd,
                   )
                 : undefined,

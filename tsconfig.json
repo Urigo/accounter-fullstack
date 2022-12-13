@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "lib": ["esnext"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "declaration": true,
+
+    "suppressImplicitAnyIndexErrors": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+
+    "allowJs": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "strict": true,
+    "jsx": "preserve"
+  },
+  "include": ["./server", "./temp-server", "./old-accounter", "./client"],
+  "exclude": ["**/node_modules", "**/dist"]
+}
