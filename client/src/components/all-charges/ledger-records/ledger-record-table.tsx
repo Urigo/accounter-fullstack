@@ -11,9 +11,9 @@ import { EditLedgerRecord } from './edit-ledger-record';
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       id
-      # ...LedgerRecordsDateFields
-      # ...LedgerRecordsCreditAccountFields
-      # ...LedgerRecordsDebitAccountFields
+      ...LedgerRecordsDateFields
+      ...LedgerRecordsCreditAccountFields
+      ...LedgerRecordsDebitAccountFields
       # ...LedgerRecordsLocalAmountFields
       # ...LedgerRecordsOriginalAmountFields
       # ...LedgerRecordsDescriptionFields
