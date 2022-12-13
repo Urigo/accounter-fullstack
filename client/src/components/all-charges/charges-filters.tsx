@@ -4,11 +4,11 @@ import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import { PopUpModal } from '../common';
 import { TextInput } from '../common/inputs';
-import { useQuery } from 'urql';
 
 /* GraphQL */ `
   query AllFinancialEntities {
