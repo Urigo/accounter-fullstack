@@ -1,4 +1,3 @@
-/* eslint-disable @graphql-eslint/no-unused-fragments */
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
