@@ -10,8 +10,7 @@ import {
 import { MakeBoolean, relevantDataPicker } from '../../helpers';
 import { useUpdateCharge } from '../../hooks/use-update-charge';
 import { useUpdateTransaction } from '../../hooks/use-update-transaction';
-import { BeneficiariesInput, CurrencyInput, TagsInput, TextInput } from '../common/inputs';
-import { SimpleGrid } from '../common/simple-grid';
+import { BeneficiariesInput, CurrencyInput, SimpleGrid, TagsInput, TextInput } from '../common';
 
 /* GraphQL */ `
   fragment EditChargeFields on Charge {

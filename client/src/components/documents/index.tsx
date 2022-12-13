@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { Image } from '@mantine/core';
 import { useQuery } from 'urql';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
-import { AccounterTable } from '../common/accounter-table';
-import { Button } from '../common/button';
-import { AccounterLoader } from '../common/loader';
-import { PopUpModal } from '../common/modal';
+import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
 /* GraphQL */ `
   query Documents {

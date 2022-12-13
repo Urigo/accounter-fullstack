@@ -1,4 +1,4 @@
-import { AccounterBasicTable } from '../../common/accounter-basic-table';
+import { AccounterBasicTable } from '../../common';
 import { MonthTaxRow } from './month-tax-row';
 
 export interface MonthIncomeTransaction {

@@ -5,9 +5,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { EditDocumentFieldsFragmentDoc, UpdateDocumentFieldsInput } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
-import { ButtonWithLabel } from '../../common/button-with-label';
-import { PopUpModal } from '../../common/modal';
-import { SimpleGrid } from '../../common/simple-grid';
+import { ButtonWithLabel, PopUpModal, SimpleGrid } from '../../common';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 /* GraphQL */ `

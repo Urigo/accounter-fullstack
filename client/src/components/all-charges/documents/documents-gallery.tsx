@@ -3,7 +3,7 @@ import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
-import { PopUpDrawer } from '../../common/drawer';
+import { PopUpDrawer } from '../../common';
 import { DeleteDocumentButton } from './delete-document-button';
 import { EditDocument } from './edit-document';
 import { UnlinkDocumentButton } from './unlink-document-button';
@@ -57,8 +57,9 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
                     <button onClick={() => setOpenModal(doc.id)}>
                       <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
                         <Image
-                          src={doc.image ? doc.image.toString() : null}
+                          src={doc.image?.toString()}
                           className="max-w-[100%]"
+                          withPlaceholder
                         />
                       </div>
                     </button>

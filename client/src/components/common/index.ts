@@ -10,6 +10,7 @@ export * from './confirmation-modal.js';
 export * from './divider.js';
 export * from './drawer.js';
 export * from './edit-mini-button.js';
+export * from './hover-handler.js';
 export * from './info-mini-button.js';
 export * from './inputs/index.js';
 export * from './loader.js';

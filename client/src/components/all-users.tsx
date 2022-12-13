@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { businesses } from '../helpers';
 import { useSql } from '../hooks/use-sql';
-import { AccounterTable } from './common/accounter-table';
+import { AccounterTable } from './common';
 
 export const AllUsers = () => {
   const { getAllUsers } = useSql();

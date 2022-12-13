@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import type { ThisMonthPrivateExpensesType } from '../../models/types';
-import { AccounterBasicTable } from '../common/accounter-basic-table';
+import { AccounterBasicTable } from '../common';
 
 export const ThisMonthPrivateExpensesTable = () => {
   const { getThisMonthPrivateExpenses } = useSql();

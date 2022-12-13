@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../helpers';
 import { useSql } from '../hooks/use-sql';
 import type { TopPrivateNotCategorizedExpense } from '../models/types';
-import { AccounterTable } from './common/accounter-table';
+import { AccounterTable } from './common';
 
 export const TopPrivateNotCategorized = () => {
   const { getTopPrivateNotCategorized } = useSql();

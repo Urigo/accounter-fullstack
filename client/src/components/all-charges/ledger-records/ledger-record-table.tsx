@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql';
-import { EditMiniButton } from '../../common';
-import { PopUpDrawer } from '../../common/drawer';
+import { EditMiniButton, PopUpDrawer } from '../../common';
 import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
 import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
 import { EditLedgerRecord } from './edit-ledger-record';

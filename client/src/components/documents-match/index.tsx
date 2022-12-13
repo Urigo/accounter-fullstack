@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pagination } from '@mantine/core';
 import { useQuery } from 'urql';
 import { DocumentsToMatchDocument, DocumentsToMatchQuery } from '../../gql/graphql';
-import { AccounterLoader } from '../common/loader';
+import { AccounterLoader } from '../common';
 import { DocumentHandler } from './document-handler';
 
 /* GraphQL */ `

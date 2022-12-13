@@ -14,7 +14,7 @@ import {
   isDocumentProforma,
   isDocumentReceipt,
 } from '../../../helpers/documents';
-import { CurrencyInput, SelectInput, TextInput } from '../../common/inputs';
+import { CurrencyInput, SelectInput, TextInput } from '../../common';
 export interface Props {
   document?: EditDocumentFieldsFragment;
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;

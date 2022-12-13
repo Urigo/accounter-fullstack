@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Mark } from '@mantine/core';
 import { useQuery } from 'urql';
 import { BusinessTransactionsFilter, BusinessTransactionsSummeryDocument } from '../../gql/graphql';
-import { NavBar } from '../common';
-import { AccounterTable } from '../common/accounter-table';
-import { AccounterLoader } from '../common/loader';
+import { AccounterLoader, AccounterTable, NavBar } from '../common';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';
 

@@ -8,7 +8,7 @@ import {
   DocumentsToMatchFieldsFragmentDoc,
 } from '../../../gql/graphql';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
-import { Button } from '../../common/button';
+import { Button } from '../../common';
 import { StrictFilteredSelection } from './strict-filtered-selection';
 import { WideFilteredSelection } from './wide-filtered-selection';
 

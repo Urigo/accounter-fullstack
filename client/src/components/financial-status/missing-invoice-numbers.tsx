@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { currencyCodeToSymbol } from '../../helpers/currency';
 import { useSql } from '../../hooks/use-sql';
 import type { MissingInvoice } from '../../models/types';
-import { AccounterBasicTable } from '../common/accounter-basic-table';
+import { AccounterBasicTable } from '../common';
 
 interface MissingInvoiceNumberRowProps {
   data: MissingInvoice;

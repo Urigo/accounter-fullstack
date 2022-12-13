@@ -6,7 +6,7 @@ import {
 } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateDbLedgerRecord } from '../../../hooks/use-update-db-ledger-record';
-import { SimpleGrid } from '../../common/simple-grid';
+import { SimpleGrid } from '../../common';
 import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
 
 // /* GraphQL */`

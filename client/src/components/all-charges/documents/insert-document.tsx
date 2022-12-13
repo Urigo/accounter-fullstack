@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
-import { SimpleGrid } from '../../common/simple-grid';
+import { SimpleGrid } from '../../common';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {
@@ -47,10 +47,12 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
   }
 
+  const currency = watch('amount.currency');
+
   // auto update vat currency according to amount currency
   useEffect(() => {
-    setValue('vat.currency', watch('amount.currency'));
-  }, [setValue, watch('amount.currency')]);
+    setValue('vat.currency', currency);
+  }, [setValue, currency]);
 
   return (
     <div className=" px-5 w-max h-max justify-items-center">

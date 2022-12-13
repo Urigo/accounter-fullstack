@@ -11,8 +11,7 @@ import {
   BusinessTransactionsFilter,
 } from '../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
-import { PopUpModal } from '../common';
-import { TextInput } from '../common/inputs';
+import { PopUpModal, TextInput } from '../common';
 
 /* GraphQL */ `
   query AllBusinessesNames {

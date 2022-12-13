@@ -5,7 +5,7 @@ import { FinancialEntityOldDocument } from '../../../gql/graphql';
 import { businesses } from '../../../helpers';
 import { useSql } from '../../../hooks/use-sql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
-import { AccounterBasicTable } from '../../common/accounter-basic-table';
+import { AccounterBasicTable } from '../../common';
 import { TransactionRow } from './transaction-row';
 
 /* GraphQL */ `
