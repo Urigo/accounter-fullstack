@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
@@ -39,27 +40,29 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
   const [openModal, setOpenModal] = useState<string | null>(null);
 
   return (
-    <div className="text-gray-600 body-font">
-      <div className="container px-5 py-12 mx-auto">
-        {additionalDocuments.length > 0 ? (
-          <>
-            <div className="flex flex-col text-center w-full mb-5">
-              <h1 className="text-lg">Realted Documents</h1>
-            </div>
-            <div className="flex flex-wrap -m-4">
+    <div className="container px-3 py-3 mx-auto text-gray-600 body-font">
+      {additionalDocuments.length > 0 ? (
+        <>
+          <div className="flex flex-col text-center w-full mb-5">
+            <h1 className="text-lg">Realted Documents</h1>
+          </div>
+          <div className="flex flex-wrap -m-4">
+            <Carousel sx={{ maxWidth: 320 }} mx="auto" withIndicators height="100%">
               {additionalDocuments.map(doc => (
-                <div key={doc.id} className="p-4 md:w-2/4">
-                  <button onClick={() => setOpenModal(doc.id)}>
-                    <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
-                      <h2 className="text-gray-900 text-lg title-font font-medium">
-                        {'documentType' in doc ? doc.documentType : 'Unprocessed'}
-                      </h2>
-                      <Image
-                        src={doc.image ? doc.image.toString() : null}
-                        className="max-w-[100%] text-gray-900 text-lg title-font font-medium"
-                      />
-                    </div>
-                  </button>
+                <Carousel.Slide key={doc.id}>
+                  <h2 className="text-gray-900 text-lg title-font font-medium">
+                    {'documentType' in doc ? doc.documentType : 'Unprocessed'}
+                  </h2>
+                  <div key={doc.id} className="p-4 md:w-2/4">
+                    <button onClick={() => setOpenModal(doc.id)}>
+                      <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
+                        <Image
+                          src={doc.image ? doc.image.toString() : null}
+                          className="max-w-[100%]"
+                        />
+                      </div>
+                    </button>
+                  </div>
                   {openModal === doc.id && (
                     <PopUpDrawer
                       modalSize="40%"
@@ -80,14 +83,14 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
                       <EditDocument documentProps={doc} />
                     </PopUpDrawer>
                   )}
-                </div>
+                </Carousel.Slide>
               ))}
-            </div>
-          </>
-        ) : (
-          <Badge color="red">No Documents Related</Badge>
-        )}
-      </div>
+            </Carousel>
+          </div>
+        </>
+      ) : (
+        <Badge color="red">No Documents Related</Badge>
+      )}
     </div>
   );
 };
