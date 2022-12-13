@@ -1,6 +1,6 @@
 import { CSSProperties, MouseEventHandler } from 'react';
 
-export interface Props {
+export interface ButtonWithLabelProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
   type?: 'submit' | 'button';
   style?: CSSProperties;
@@ -20,7 +20,7 @@ export const ButtonWithLabel = ({
   rel,
   type = 'button',
   onClick,
-}: Props) => {
+}: ButtonWithLabelProps) => {
   return (
     <div>
       <label className="text-sm font-medium text-gray-700">{textLabel}</label>

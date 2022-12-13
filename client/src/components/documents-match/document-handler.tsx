@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Stepper } from '@mantine/core';
-import gql from 'graphql-tag';
+import { FragmentType, getFragmentData } from '../../gql';
 import {
-  DocumentHandlerFieldsFragment,
-  DocumentMatchChargesFieldsFragment,
-} from '../../__generated__/types';
+  DocumentHandlerFieldsFragmentDoc,
+  DocumentMatchChargesFieldsFragmentDoc,
+  EditDocumentFieldsFragmentDoc,
+} from '../../gql/graphql';
 import { EditDocument } from '../all-charges/documents/edit-document';
 import { DocumentMatchCompleted } from './document-match-completed';
 import { DocumentMatchesSelection } from './document-matches-selection';
 
 function EditStep({
-  document,
+  documentProps,
   setReadyForNextStep,
-}: Pick<Props, 'document'> & { setReadyForNextStep: (ready: boolean) => void }) {
+}: Pick<Props, 'documentProps'> & { setReadyForNextStep: (ready: boolean) => void }) {
   setReadyForNextStep(true);
-  return <EditDocument documentData={document} />;
+  return (
+    <EditDocument
+      documentProps={documentProps as FragmentType<typeof EditDocumentFieldsFragmentDoc>}
+    />
+  );
 }
 
-gql`
+/* GraphQL */ `
   fragment DocumentHandlerFields on Document {
     id
     isReviewed
@@ -27,12 +32,13 @@ gql`
 `;
 
 interface Props {
-  document: DocumentHandlerFieldsFragment;
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'];
+  documentProps: FragmentType<typeof DocumentHandlerFieldsFragmentDoc>;
+  chargesProps?: FragmentType<typeof DocumentMatchChargesFieldsFragmentDoc>;
   skipDocument: () => void;
 }
 
-export function DocumentHandler({ document, charges, skipDocument }: Props) {
+export function DocumentHandler({ documentProps, chargesProps, skipDocument }: Props) {
+  const document = getFragmentData(DocumentHandlerFieldsFragmentDoc, documentProps);
   const firstStep = document.isReviewed ? 1 : 0;
 
   const [active, setActive] = useState(firstStep);
@@ -50,21 +56,21 @@ export function DocumentHandler({ document, charges, skipDocument }: Props) {
     setTimeout(() => {
       setActive(firstStep);
     }, 1);
-  }, [document.id]);
+  }, [document.id, firstStep]);
 
   return (
     <>
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
         <Stepper.Step label="Supplement" description="Complete Missing Data">
           {active === 0 && (
-            <EditStep document={document} setReadyForNextStep={setReadyForNextStep} />
+            <EditStep documentProps={documentProps} setReadyForNextStep={setReadyForNextStep} />
           )}
         </Stepper.Step>
         <Stepper.Step label="Match" description="Select Matching Charge">
           <DocumentMatchesSelection
             setReadyForNextStep={setReadyForNextStep}
-            document={document}
-            charges={charges}
+            documentProps={document}
+            chargesProps={chargesProps}
             setSelectedChargeId={setSelectedChargeId}
           />
         </Stepper.Step>

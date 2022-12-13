@@ -1,37 +1,36 @@
-import gql from 'graphql-tag';
-import { LedgerRecordsFragment } from '../../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { LedgerRecordsFragmentDoc } from '../../../../gql/graphql';
 
-gql`
-  fragment LedgerRecords on Charge {
-    ledgerRecords {
-      id
-      date
-      originalAmount {
-        formatted
-      }
-      localCurrencyAmount {
-        formatted
-      }
-      creditAccount {
-        name
-      }
-      debitAccount {
-        name
-      }
-      accountantApproval {
-        approved
-      }
-      description
-      hashavshevetId
+/* GraphQL */ `
+  fragment LedgerRecords on LedgerRecord {
+    id
+    date
+    originalAmount {
+      formatted
     }
+    localCurrencyAmount {
+      formatted
+    }
+    creditAccount {
+      name
+    }
+    debitAccount {
+      name
+    }
+    accountantApproval {
+      approved
+    }
+    description
+    hashavshevetId
   }
 `;
 
 type Props = {
-  ledgerRecord: LedgerRecordsFragment['ledgerRecords']['0'];
+  data: FragmentType<typeof LedgerRecordsFragmentDoc>;
 };
 
-export const LedgerRecordRow = ({ ledgerRecord }: Props) => {
+export const LedgerRecordRow = ({ data }: Props) => {
+  const ledgerRecord = getFragmentData(LedgerRecordsFragmentDoc, data);
   return (
     <tr>
       <td>{ledgerRecord.creditAccount?.name}</td>

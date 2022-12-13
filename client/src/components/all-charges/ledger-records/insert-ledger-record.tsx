@@ -1,6 +1,5 @@
-import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { InsertDbLedgerRecordInput } from '../../../__generated__/types';
+import { InsertDbLedgerRecordInput } from '../../../gql/graphql';
 import { useInsertDbLedgerRecord } from '../../../hooks/use-insert-db-ledger-record';
 import { SimpleGrid } from '../../common/simple-grid';
 import { InsertDbLedgerRecordFields } from './insert-db-ledger-record-fields';
@@ -19,7 +18,7 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
     unregister,
     formState: { dirtyFields },
   } = useForm<InsertDbLedgerRecordInput>();
-  const { mutate, isLoading, isError, isSuccess } = useInsertDbLedgerRecord();
+  const { insertDbLedgerRecord, fetching } = useInsertDbLedgerRecord();
 
   const onSubmit: SubmitHandler<InsertDbLedgerRecordInput> = data => {
     // const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
@@ -29,7 +28,7 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
     // if (record.localCurrencyAmount) {
     //   record.localCurrencyAmount.currency = Currency.Ils;
     // }
-    mutate({
+    insertDbLedgerRecord({
       chargeId,
       record: data,
     });
@@ -56,21 +55,7 @@ export const InsertLedgerRecord = ({ chargeId, closeModal }: Props) => {
           <button
             type="submit"
             className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-            disabled={isLoading || Object.keys(dirtyFields).length === 0}
-            onClick={() => {
-              if (isError) {
-                showNotification({
-                  title: 'Error!',
-                  message: 'Oh no!, we have an error! 🤥',
-                });
-              }
-              if (isSuccess) {
-                showNotification({
-                  title: 'Update Success!',
-                  message: 'Hey there, you add new ledger!',
-                });
-              }
-            }}
+            disabled={fetching || Object.keys(dirtyFields).length === 0}
           >
             Accept
           </button>

@@ -1,7 +1,7 @@
 import { CSSProperties, ReactElement } from 'react';
 import { Drawer } from '@mantine/core';
 
-export interface Props {
+export interface PopUpDrawerProps {
   ButtonDisplay?: ReactElement;
   style?: CSSProperties;
   title?: ReactElement;
@@ -27,7 +27,7 @@ export const PopUpDrawer = ({
   onClose = () => null,
   padding,
   modalSize,
-}: Props): ReactElement => {
+}: PopUpDrawerProps): ReactElement => {
   return (
     <Drawer
       className="overflow-y-auto outline outline-2 outline-indigo-300"

@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import { ActionIcon, MultiSelect } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
-import gql from 'graphql-tag';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 import {
+  AllBusinessesNamesDocument,
+  AllFinancialEntitiesDocument,
   BusinessTransactionsFilter,
-  useAllBusinessesNamesQuery,
-  useAllFinancialEntitiesQuery,
-} from '../../__generated__/types';
+} from '../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import { PopUpModal } from '../common';
 import { TextInput } from '../common/inputs';
 
-gql`
+/* GraphQL */ `
   query AllBusinessesNames {
     businessNamesFromLedgerRecords
   }
@@ -34,8 +34,12 @@ function BusinessTransactionsFilterForm({
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
-  const { data: feData, isLoading: feLoading, isError: feError } = useAllFinancialEntitiesQuery();
-  const { data: bnData, isLoading: bnLoading, isError: bnError } = useAllBusinessesNamesQuery();
+  const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
+  const [{ data: bnData, fetching: bnLoading, error: bnError }] = useQuery({
+    query: AllBusinessesNamesDocument,
+  });
 
   useEffect(() => {
     if (feError) {

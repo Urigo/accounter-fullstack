@@ -3,7 +3,7 @@ import {
   DocumentMatchChargesFieldsFragment,
   DocumentMatchFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../__generated__/types.js';
+} from '../gql/graphql.js';
 import { getStandardDeviation } from './statistics.js';
 import { stringComparer } from './strings-manipulations.js';
 

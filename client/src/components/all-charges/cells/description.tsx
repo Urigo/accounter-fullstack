@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import gql from 'graphql-tag';
-import { AllChargesDescriptionFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesDescriptionFieldsFragmentDoc } from '../../../gql/graphql';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 import { ConfirmMiniButton, InfoMiniButton } from '../../common';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesDescriptionFields on Charge {
     id
     transactions {
@@ -17,28 +17,29 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesDescriptionFieldsFragment['transactions'][0];
+  data: FragmentType<typeof AllChargesDescriptionFieldsFragmentDoc>;
   alternativeCharge?: SuggestedCharge;
 };
 
 export const Description = ({ data, alternativeCharge }: Props) => {
-  const { userNote, id: transactionId, description: fullDescription } = data;
+  const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
+  const { userNote, id: transactionId, description: fullDescription } = charge.transactions[0];
   const isDescription = userNote && userNote.trim() !== '';
   const cellText = userNote?.trim() ?? alternativeCharge?.userDescription ?? 'undefined';
   const [toggleDescription, setToggleDescription] = useState(false);
 
-  const { mutate, isLoading } = useUpdateTransaction();
+  const { updateTransaction, fetching } = useUpdateTransaction();
 
   const updateUserNote = useCallback(
     (value?: string) => {
       if (value !== undefined) {
-        mutate({
+        updateTransaction({
           transactionId,
           fields: { userNote: value },
         });
       }
     },
-    [transactionId, mutate],
+    [transactionId, updateTransaction],
   );
 
   return (
@@ -51,7 +52,7 @@ export const Description = ({ data, alternativeCharge }: Props) => {
         {!isDescription && alternativeCharge?.userDescription && (
           <ConfirmMiniButton
             onClick={() => updateUserNote(alternativeCharge.userDescription)}
-            disabled={isLoading}
+            disabled={fetching}
           />
         )}
       </div>

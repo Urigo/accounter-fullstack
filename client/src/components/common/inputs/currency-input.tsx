@@ -1,5 +1,5 @@
 import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
-import { Currency } from '../../../__generated__/types';
+import { Currency } from '../../../gql/graphql';
 import { NumberInput } from './number-input';
 
 type CurrencyCodeProps = DetailedHTMLProps<

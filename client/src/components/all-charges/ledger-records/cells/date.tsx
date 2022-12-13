@@ -1,19 +1,19 @@
-// import gql from 'graphql-tag';
-import { LedgerRecordsDateFieldsFragment } from '../../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { LedgerRecordsDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
-// gql`
-//   fragment LedgerRecordsDateFields on LedgerRecord {
-//     id
-//     date
-//   }
-// `;
+/* GraphQL */ `
+  fragment LedgerRecordsDateFields on LedgerRecord {
+    id
+    date
+  }
+`;
 
 type Props = {
-  data: LedgerRecordsDateFieldsFragment;
+  data: FragmentType<typeof LedgerRecordsDateFieldsFragmentDoc>;
 };
 
 export const Date = ({ data }: Props) => {
-  const { date } = data;
+  const { date } = getFragmentData(LedgerRecordsDateFieldsFragmentDoc, data);
 
   return <td>{date ?? 'Missing Data'}</td>;
 };

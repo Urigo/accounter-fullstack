@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import gql from 'graphql-tag';
-import { AllChargesShareWithFieldsFragment, BeneficiaryInput } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesShareWithFieldsFragmentDoc, BeneficiaryInput } from '../../../gql/graphql';
 import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
@@ -11,7 +11,7 @@ import {
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton } from '../../common';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesShareWithFields on Charge {
     id
     beneficiaries {
@@ -31,27 +31,32 @@ gql`
 `;
 
 export interface Props {
-  data: AllChargesShareWithFieldsFragment;
+  data: FragmentType<typeof AllChargesShareWithFieldsFragmentDoc>;
   alternativeCharge?: SuggestedCharge;
 }
 
 export const ShareWith = ({ data, alternativeCharge }: Props) => {
-  const { beneficiaries, counterparty, id: chargeId } = data;
+  const {
+    beneficiaries,
+    counterparty,
+    id: chargeId,
+    financialEntity,
+  } = getFragmentData(AllChargesShareWithFieldsFragmentDoc, data);
   const financialEntityName = counterparty?.name ?? '';
-  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
+  const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
 
-  const { mutate, isLoading } = useUpdateCharge();
+  const { updateCharge, fetching } = useUpdateCharge();
 
   const updateTag = useCallback(
     (value?: string) => {
       if (value !== undefined) {
-        mutate({
+        updateCharge({
           chargeId,
           fields: { beneficiaries: value as unknown as BeneficiaryInput[] },
         });
       }
     },
-    [chargeId, mutate],
+    [chargeId, updateCharge],
   );
 
   const hasBeneficiariesd = beneficiaries.length > 0;
@@ -84,7 +89,7 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
             <div className="sm:w-1/4">
               <ConfirmMiniButton
                 onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
-                disabled={isLoading}
+                disabled={fetching}
               />
             </div>
           )}

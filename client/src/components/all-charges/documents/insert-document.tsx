@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { Currency, DocumentType, InsertDocumentInput } from '../../../__generated__/types';
+import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
 import { SimpleGrid } from '../../common/simple-grid';
 import { ModifyDocumentFields } from './modify-document-fields';
@@ -20,7 +20,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     setValue,
     watch,
   } = useForm<InsertDocumentInput>();
-  const { mutate, isLoading, isError, isSuccess } = useInsertDocument();
+  const { insertDocument, fetching } = useInsertDocument();
 
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
     if (data && Object.keys(data).length > 0) {
@@ -34,7 +34,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
         }
         data.vat.currency = data.amount.currency;
       }
-      mutate({
+      insertDocument({
         record: { ...data, chargeId },
       });
       if (closeModal) {
@@ -62,21 +62,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
           <button
             type="submit"
             className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-            disabled={isLoading || Object.keys(dirtyFields).length === 0}
-            onClick={() => {
-              if (isError) {
-                showNotification({
-                  title: 'Error!',
-                  message: 'Oh no!, we have an error! 🤥',
-                });
-              }
-              if (isSuccess) {
-                showNotification({
-                  title: 'Update Success!',
-                  message: 'Hey there, you add new document!',
-                });
-              }
-            }}
+            disabled={fetching || Object.keys(dirtyFields).length === 0}
           >
             Accept
           </button>

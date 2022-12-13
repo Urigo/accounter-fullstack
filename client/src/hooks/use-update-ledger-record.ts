@@ -1,11 +1,12 @@
-import { gql } from 'graphql-tag';
+import { showNotification } from '@mantine/notifications';
+import { useMutation } from 'urql';
 import {
+  UpdateLedgerRecordDocument,
   UpdateLedgerRecordMutation,
   UpdateLedgerRecordMutationVariables,
-  useUpdateLedgerRecordMutation,
-} from '../__generated__/types.js';
+} from '../gql/graphql.js';
 
-gql`
+/* GraphQL */ `
   mutation UpdateLedgerRecord($ledgerRecordId: ID!, $fields: UpdateLedgerRecordInput!) {
     updateLedgerRecord(ledgerRecordId: $ledgerRecordId, fields: $fields) {
       __typename
@@ -23,20 +24,51 @@ export const useUpdateLedgerRecord = () => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const onError = async (e: unknown, { ledgerRecordId }: UpdateLedgerRecordMutationVariables) => {
-    console.log(e);
-    return new Error(
-      `Error updating ledger record ID [${ledgerRecordId}]: ${(e as Error)?.message}`,
-    );
+  const [{ fetching }, mutate] = useMutation(UpdateLedgerRecordDocument);
+
+  return {
+    fetching,
+    UpdateLedgerRecord: (variables: UpdateLedgerRecordMutationVariables) =>
+      new Promise<
+        Extract<UpdateLedgerRecordMutation['updateLedgerRecord'], { __typename: 'LedgerRecord' }>
+      >((resolve, reject) =>
+        mutate(variables).then(res => {
+          if (res.error) {
+            console.error(
+              `Error updating ledger record ID [${variables.ledgerRecordId}]: ${res.error}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.error.message);
+          }
+          if (!res.data) {
+            console.error(
+              `Error updating ledger record ID [${variables.ledgerRecordId}]: No data returned`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject('No data returned');
+          }
+          if (res.data.updateLedgerRecord.__typename === 'CommonError') {
+            console.error(
+              `Error updating ledger record ID [${variables.ledgerRecordId}]: ${res.data.updateLedgerRecord.message}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.data.updateLedgerRecord.message);
+          }
+          showNotification({
+            title: 'Update Success!',
+            message: 'Hey there, your update is awesome!',
+          });
+          return resolve(res.data.updateLedgerRecord);
+        }),
+      ),
   };
-  const onSuccess = async (data: UpdateLedgerRecordMutation) => {
-    if (data.updateLedgerRecord.__typename === 'CommonError') {
-      throw new Error(data.updateLedgerRecord.message);
-    }
-    return data.updateLedgerRecord;
-  };
-  return useUpdateLedgerRecordMutation({
-    onError,
-    onSuccess,
-  });
 };

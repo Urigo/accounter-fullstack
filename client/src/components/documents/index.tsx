@@ -1,115 +1,13 @@
 import { useState } from 'react';
 import { Image } from '@mantine/core';
-import gql from 'graphql-tag';
-import { useDocumentsQuery } from '../../__generated__/types';
+import { useQuery } from 'urql';
+import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterTable } from '../common/accounter-table';
 import { Button } from '../common/button';
 import { AccounterLoader } from '../common/loader';
 import { PopUpModal } from '../common/modal';
 
-gql`
-  fragment UnprocessedFields on Unprocessed {
-    id
-    image
-    file
-    creditor
-    debtor
-  }
-  fragment InvoiceReceiptFields on Invoice {
-    id
-    image
-    file
-    creditor
-    debtor
-    vat {
-      raw
-      formatted
-      currency
-    }
-    serialNumber
-    date
-    amount {
-      raw
-      formatted
-      currency
-    }
-  }
-  fragment InvoiceFields on Invoice {
-    id
-    image
-    file
-    creditor
-    debtor
-    vat {
-      raw
-      formatted
-      currency
-    }
-    serialNumber
-    date
-    amount {
-      raw
-      formatted
-      currency
-    }
-  }
-  fragment ReceiptFields on Receipt {
-    id
-    image
-    file
-    creditor
-    debtor
-    vat {
-      raw
-      formatted
-      currency
-    }
-    serialNumber
-    date
-  }
-  fragment ProformaFields on Proforma {
-    id
-    image
-    file
-    creditor
-    debtor
-    vat {
-      raw
-      formatted
-      currency
-    }
-    serialNumber
-    date
-    amount {
-      raw
-      formatted
-      currency
-    }
-  }
-  fragment ChargeFields on Charge {
-    id
-    createdAt
-    description
-    __typename
-    tags {
-      name
-    }
-    vat {
-      formatted
-      __typename
-    }
-    transactions {
-      id
-      createdAt
-      description
-      effectiveDate
-      amount {
-        formatted
-        __typename
-      }
-      userNote
-    }
-  }
+/* GraphQL */ `
   query Documents {
     documents {
       id
@@ -118,23 +16,117 @@ gql`
       creditor
       debtor
       charge {
-        ...ChargeFields
+        id
+        createdAt
+        description
+        __typename
+        tags {
+          name
+        }
+        vat {
+          formatted
+          __typename
+        }
+        transactions {
+          id
+          createdAt
+          description
+          effectiveDate
+          amount {
+            formatted
+            __typename
+          }
+          userNote
+        }
       }
       __typename
-      ...UnprocessedFields
-      ...ProformaFields
-      ...ReceiptFields
-      ...InvoiceFields
-      ...InvoiceReceiptFields
+      ... on Unprocessed {
+        id
+        image
+        file
+        creditor
+        debtor
+      }
+      ... on Proforma {
+        id
+        image
+        file
+        creditor
+        debtor
+        vat {
+          raw
+          formatted
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          formatted
+          currency
+        }
+      }
+      ... on Receipt {
+        id
+        image
+        file
+        creditor
+        debtor
+        vat {
+          raw
+          formatted
+          currency
+        }
+        serialNumber
+        date
+      }
+      ... on Invoice {
+        id
+        image
+        file
+        creditor
+        debtor
+        vat {
+          raw
+          formatted
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          formatted
+          currency
+        }
+      }
+      ... on Invoice {
+        id
+        image
+        file
+        creditor
+        debtor
+        vat {
+          raw
+          formatted
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          formatted
+          currency
+        }
+      }
     }
   }
 `;
 
 export const DocumentsReport = () => {
-  const { data, isLoading } = useDocumentsQuery();
+  const [{ data, fetching }] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 
-  return isLoading ? (
+  return fetching ? (
     <AccounterLoader />
   ) : (
     <>
@@ -149,15 +141,15 @@ export const DocumentsReport = () => {
       <div style={{ fontSize: 40 }}>Documents</div>
       <AccounterTable
         stickyHeader={true}
-        items={data?.documents ?? []}
+        items={data?.documents ?? ([] as DocumentsQuery['documents'])}
         columns={[
           { title: 'Type', value: doc => doc.__typename },
           {
             title: 'Image',
             value: doc =>
               doc.image ? (
-                <button onClick={() => setOpenedImage(doc.image)}>
-                  <img alt="missing img" src={doc.image} height={80} width={80} />
+                <button onClick={() => setOpenedImage(doc.image ? doc.image.toString() : null)}>
+                  <img alt="missing img" src={doc.image?.toString()} height={80} width={80} />
                 </button>
               ) : (
                 'No image'
@@ -167,7 +159,12 @@ export const DocumentsReport = () => {
             title: 'File',
             value: doc =>
               doc.file && (
-                <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />
+                <Button
+                  target="_blank"
+                  rel="noreferrer"
+                  herf={doc.file?.toString()}
+                  title="Open Link"
+                />
               ),
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },

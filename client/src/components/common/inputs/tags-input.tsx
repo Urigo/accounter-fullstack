@@ -1,7 +1,7 @@
 import { ActionIcon } from '@mantine/core';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { UpdateChargeInput } from '../../../__generated__/types';
+import { UpdateChargeInput } from '../../../gql/graphql';
 import { TextInput } from './text-input';
 
 type Props = {

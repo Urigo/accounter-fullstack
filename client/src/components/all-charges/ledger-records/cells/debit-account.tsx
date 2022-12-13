@@ -1,21 +1,21 @@
-// import gql from 'graphql-tag';
-import { LedgerRecordsDebitAccountFieldsFragment } from '../../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
-// gql`
-//   fragment LedgerRecordsDebitAccountFields on LedgerRecord {
-//     id
-//     debitAccount {
-//       name
-//     }
-//   }
-// `;
+/* GraphQL */ `
+  fragment LedgerRecordsDebitAccountFields on LedgerRecord {
+    id
+    debitAccount {
+      name
+    }
+  }
+`;
 
 type Props = {
-  data: LedgerRecordsDebitAccountFieldsFragment;
+  data: FragmentType<typeof LedgerRecordsDebitAccountFieldsFragmentDoc>;
 };
 
 export const DebitAccount = ({ data }: Props) => {
-  const { debitAccount } = data;
+  const { debitAccount } = getFragmentData(LedgerRecordsDebitAccountFieldsFragmentDoc, data);
 
   return <td>{debitAccount?.name ?? 'Missing Account'}</td>;
 };

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pagination } from '@mantine/core';
-import gql from 'graphql-tag';
-import { DocumentsToMatchQuery, useDocumentsToMatchQuery } from '../../__generated__/types';
+import { useQuery } from 'urql';
+import { DocumentsToMatchDocument, DocumentsToMatchQuery } from '../../gql/graphql';
 import { AccounterLoader } from '../common/loader';
 import { DocumentHandler } from './document-handler';
 
-gql`
+/* GraphQL */ `
   query DocumentsToMatch($financialEntityId: ID!, $page: Int, $limit: Int) {
     documents {
       id
@@ -22,18 +22,21 @@ export function DocumentsMatch() {
   // TODO: improve the ID logic
   const financialEntityId = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
-  const { data, isLoading } = useDocumentsToMatchQuery(
-    { financialEntityId },
-    {
-      onSuccess: data => {
-        setDocuments(data.documents.filter(doc => !doc.charge));
-        return data;
-      },
-    },
-  );
+  const [{ data, fetching }] = useQuery({
+    query: DocumentsToMatchDocument,
+    variables: { financialEntityId },
+  });
 
   const [documents, setDocuments] = useState<DocumentsToMatchQuery['documents']>([]);
   const [activeDocumentIndex, setActiveDocumentIndex] = useState(1);
+
+  useEffect(() => {
+    if (data?.documents) {
+      setDocuments(data.documents.filter(doc => !doc.charge));
+    } else {
+      setDocuments([]);
+    }
+  }, [data?.documents]);
 
   function removeDocument(index?: number) {
     const indexToRemove = index ?? activeDocumentIndex - 1;
@@ -56,7 +59,7 @@ export function DocumentsMatch() {
         </div>
         {documents?.length === 0 && (
           <div className="flex flex-col text-center w-full mb-1">
-            {isLoading ? (
+            {fetching ? (
               <AccounterLoader />
             ) : (
               <h3 className="sm:text-2xl text-xl font-medium title-font mb-6 text-gray-900">
@@ -73,8 +76,8 @@ export function DocumentsMatch() {
               total={documents.length}
             />
             <DocumentHandler
-              document={documents[activeDocumentIndex - 1]}
-              charges={data?.financialEntity?.charges.nodes ?? []}
+              documentProps={documents[activeDocumentIndex - 1]}
+              chargesProps={data}
               skipDocument={removeDocument}
             />
           </div>

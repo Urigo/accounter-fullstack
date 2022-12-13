@@ -1,9 +1,9 @@
-import { LedgerRecordsFragment } from '../../../../__generated__/types';
+import { ChargeFieldsFragment } from '../../../../gql/graphql';
 import { AccounterBasicTable } from '../../../common/accounter-basic-table';
 import { LedgerRecordRow } from './ledger-record-row';
 
 type Props = {
-  ledgerRecords: LedgerRecordsFragment['ledgerRecords'];
+  ledgerRecords: ChargeFieldsFragment['ledgerRecords'];
 };
 
 export const LedgerRecordsTable = ({ ledgerRecords }: Props) => {
@@ -25,7 +25,7 @@ export const LedgerRecordsTable = ({ ledgerRecords }: Props) => {
           </thead>
           <tbody>
             {ledgerRecords.map(r => (
-              <LedgerRecordRow ledgerRecord={r} key={r.id} />
+              <LedgerRecordRow data={r} key={r.id} />
             ))}
           </tbody>
         </>

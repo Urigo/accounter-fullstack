@@ -1,11 +1,11 @@
-import { gql } from 'graphql-tag';
+import { showNotification } from '@mantine/notifications';
+import { useMutation } from 'urql';
 import {
-  ToggleChargeAccountantApprovalMutation,
+  ToggleChargeAccountantApprovalDocument,
   ToggleChargeAccountantApprovalMutationVariables,
-  useToggleChargeAccountantApprovalMutation,
-} from '../__generated__/types.js';
+} from '../gql/graphql.js';
 
-gql`
+/* GraphQL */ `
   mutation ToggleChargeAccountantApproval($chargeId: ID!, $approved: Boolean!) {
     toggleChargeAccountantApproval(chargeId: $chargeId, approved: $approved)
   }
@@ -15,20 +15,39 @@ export const useToggleChargeAccountantApproval = () => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const onError = async (
-    e: unknown,
-    { chargeId }: ToggleChargeAccountantApprovalMutationVariables,
-  ) => {
-    console.log(e);
-    return new Error(
-      `Error updating accountant approval of charge ID [${chargeId}]: ${(e as Error)?.message}`,
-    );
+  const [{ fetching }, mutate] = useMutation(ToggleChargeAccountantApprovalDocument);
+
+  return {
+    fetching,
+    toggleChargeAccountantApproval: (variables: ToggleChargeAccountantApprovalMutationVariables) =>
+      new Promise<boolean>((resolve, reject) =>
+        mutate(variables).then(res => {
+          if (res.error) {
+            console.error(
+              `Error toggling accountant approval to ledger record ID [${variables.chargeId}]: ${res.error}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.error.message);
+          }
+          if (!res.data) {
+            console.error(
+              `Error toggling accountant approval to ledger record ID [${variables.chargeId}]: No data returned`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject('No data returned');
+          }
+          showNotification({
+            title: 'Toggle Success!',
+            message: 'Accountant approval was updated! 🎉',
+          });
+          return resolve(res.data.toggleChargeAccountantApproval);
+        }),
+      ),
   };
-  const onSuccess = async (data: ToggleChargeAccountantApprovalMutation) => {
-    return data.toggleChargeAccountantApproval;
-  };
-  return useToggleChargeAccountantApprovalMutation({
-    onError,
-    onSuccess,
-  });
 };

@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement } from 'react';
+import { CSSProperties, ReactElement, ReactNode } from 'react';
 
 type JustifyContent =
   | 'flex-start'
@@ -87,7 +87,7 @@ export const FlexRow = ({
   alignContent,
   backgroundColor,
   style,
-}: PropsWithChildren<FlexProps>) => {
+}: FlexProps & { children?: ReactNode | undefined }) => {
   gap = gap ?? '0rem';
   return (
     <div
@@ -108,6 +108,9 @@ export const FlexRow = ({
   );
 };
 
-export const FlexColumn = ({ children, style }: PropsWithChildren<FlexProps>) => {
+export const FlexColumn = ({
+  children,
+  style,
+}: FlexProps & { children?: ReactNode | undefined }) => {
   return <div style={style && { display: 'flex', flexDirection: 'column' }}>{children}</div>;
 };

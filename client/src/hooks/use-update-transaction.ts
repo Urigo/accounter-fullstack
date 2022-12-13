@@ -1,11 +1,12 @@
-import { gql } from 'graphql-tag';
+import { showNotification } from '@mantine/notifications';
+import { useMutation } from 'urql';
 import {
+  UpdateTransactionDocument,
   UpdateTransactionMutation,
   UpdateTransactionMutationVariables,
-  useUpdateTransactionMutation,
-} from '../__generated__/types.js';
+} from '../gql/graphql.js';
 
-gql`
+/* GraphQL */ `
   mutation UpdateTransaction($transactionId: ID!, $fields: UpdateTransactionInput!) {
     updateTransaction(transactionId: $transactionId, fields: $fields) {
       __typename
@@ -23,18 +24,51 @@ export const useUpdateTransaction = () => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const onError = async (e: unknown, { transactionId }: UpdateTransactionMutationVariables) => {
-    console.log(e);
-    return new Error(`Error updating charge ID [${transactionId}]: ${(e as Error)?.message}`);
+  const [{ fetching }, mutate] = useMutation(UpdateTransactionDocument);
+
+  return {
+    fetching,
+    updateTransaction: (variables: UpdateTransactionMutationVariables) =>
+      new Promise<
+        Extract<UpdateTransactionMutation['updateTransaction'], { __typename: 'CommonTransaction' }>
+      >((resolve, reject) =>
+        mutate(variables).then(res => {
+          if (res.error) {
+            console.error(
+              `Error updating transaction ID [${variables.transactionId}]: ${res.error}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.error.message);
+          }
+          if (!res.data) {
+            console.error(
+              `Error updating transaction ID [${variables.transactionId}]: No data returned`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject('No data returned');
+          }
+          if (res.data.updateTransaction.__typename === 'CommonError') {
+            console.error(
+              `Error updating transaction ID [${variables.transactionId}]: ${res.data.updateTransaction.message}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.data.updateTransaction.message);
+          }
+          showNotification({
+            title: 'Update Success!',
+            message: 'Hey there, your update is awesome!',
+          });
+          return resolve(res.data.updateTransaction);
+        }),
+      ),
   };
-  const onSuccess = async (data: UpdateTransactionMutation) => {
-    if (data.updateTransaction.__typename === 'CommonError') {
-      throw new Error(data.updateTransaction.message);
-    }
-    return data.updateTransaction;
-  };
-  return useUpdateTransactionMutation({
-    onError,
-    onSuccess,
-  });
 };

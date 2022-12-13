@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { Mark } from '@mantine/core';
-import gql from 'graphql-tag';
-import {
-  BusinessTransactionsFilter,
-  useBusinessTransactionsSummeryQuery,
-} from '../../__generated__/types';
+import { useQuery } from 'urql';
+import { BusinessTransactionsFilter, BusinessTransactionsSummeryDocument } from '../../gql/graphql';
 import { NavBar } from '../common';
 import { AccounterTable } from '../common/accounter-table';
 import { AccounterLoader } from '../common/loader';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';
 
-gql`
+/* GraphQL */ `
   query BusinessTransactionsSummery($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
@@ -75,11 +72,14 @@ gql`
 
 export const BusinessTransactionsSummery = () => {
   const [filter, setFilter] = useState<BusinessTransactionsFilter>({});
-  const { data, isLoading } = useBusinessTransactionsSummeryQuery({
-    filters: filter,
+  const [{ data, fetching }] = useQuery({
+    query: BusinessTransactionsSummeryDocument,
+    variables: {
+      filters: filter,
+    },
   });
 
-  if (isLoading) {
+  if (fetching) {
     return <AccounterLoader />;
   }
 

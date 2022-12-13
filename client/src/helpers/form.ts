@@ -9,7 +9,7 @@ function isTheTruthOutThere(value: unknown) {
   }
   if (typeof value === 'object') {
     for (const key in value) {
-      if (isTheTruthOutThere(value[key])) {
+      if (isTheTruthOutThere((value as Record<string, unknown>)[key])) {
         return true;
       }
     }
@@ -34,7 +34,7 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
 
   const subset = Object.fromEntries(
     keysToHandle
-      .filter(key => key in values)
+      .filter(key => key in (values as Record<string, unknown>))
       .map(key => {
         const value =
           dirtyFields[key as keyof typeof values] === true

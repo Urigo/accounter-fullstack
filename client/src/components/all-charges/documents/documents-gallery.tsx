@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Badge, Image } from '@mantine/core';
-import gql from 'graphql-tag';
-import { DocumentsGalleryFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
 import { PopUpDrawer } from '../../common/drawer';
 import { DeleteDocumentButton } from './delete-document-button';
 import { EditDocument } from './edit-document';
 import { UnlinkDocumentButton } from './unlink-document-button';
 
-gql`
+/* GraphQL */ `
   fragment DocumentsGalleryFields on Charge {
     id
     additionalDocuments {
@@ -31,22 +31,23 @@ gql`
 `;
 
 type Props = {
-  additionalDocumentsData: DocumentsGalleryFieldsFragment['additionalDocuments'];
+  chargeProps: FragmentType<typeof DocumentsGalleryFieldsFragmentDoc>;
 };
 
-export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
+export const DocumentsGallery = ({ chargeProps }: Props) => {
+  const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
   const [openModal, setOpenModal] = useState<string | null>(null);
 
   return (
     <div className="text-gray-600 body-font">
       <div className="container px-5 py-12 mx-auto">
-        {additionalDocumentsData.length > 0 ? (
+        {additionalDocuments.length > 0 ? (
           <>
             <div className="flex flex-col text-center w-full mb-5">
               <h1 className="text-lg">Realted Documents</h1>
             </div>
             <div className="flex flex-wrap -m-4">
-              {additionalDocumentsData.map(doc => (
+              {additionalDocuments.map(doc => (
                 <div key={doc.id} className="p-4 md:w-2/4">
                   <button onClick={() => setOpenModal(doc.id)}>
                     <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
@@ -76,7 +77,7 @@ export const DocumentsGallery = ({ additionalDocumentsData }: Props) => {
                         </div>
                       }
                     >
-                      <EditDocument documentData={doc} />
+                      <EditDocument documentProps={doc} />
                     </PopUpDrawer>
                   )}
                 </div>

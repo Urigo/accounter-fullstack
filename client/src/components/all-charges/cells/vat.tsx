@@ -1,8 +1,8 @@
-import gql from 'graphql-tag';
-import { AllChargesVatFieldsFragment, Currency } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesVatFieldsFragmentDoc, Currency } from '../../../gql/graphql';
 import { businessesWithoutTaxCategory, businessesWithoutVAT } from '../../../helpers';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesVatFields on Charge {
     id
     vat {
@@ -24,12 +24,15 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesVatFieldsFragment;
+  data: FragmentType<typeof AllChargesVatFieldsFragmentDoc>;
 };
 
 export const Vat = ({ data }: Props) => {
-  const { vat, totalAmount, counterparty } = data;
-  const isBusiness = data?.financialEntity?.__typename === 'LtdFinancialEntity';
+  const { vat, totalAmount, counterparty, financialEntity } = getFragmentData(
+    AllChargesVatFieldsFragmentDoc,
+    data,
+  );
+  const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
 
   const vatIssueFlag =
     (!vat &&

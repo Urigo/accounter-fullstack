@@ -10,10 +10,10 @@ interface Props {
 
 export function UnlinkDocumentButton({ documentId }: Props) {
   const [opened, setOpened] = useState(false);
-  const { mutate } = useUpdateDocument();
+  const { updateDocument } = useUpdateDocument();
 
   function onUnlink() {
-    mutate({
+    updateDocument({
       documentId,
       fields: { chargeId: 'NULL' },
     });

@@ -1,13 +1,28 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import { Burger, Menu } from '@mantine/core';
 import { CodePlus, FileUpload, PlaylistAdd, Search } from 'tabler-icons-react';
-import { AllChargesQuery } from '../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../gql';
+import { ChargeExtendedInfoFieldsFragmentDoc } from '../../gql/graphql';
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 
+/* GraphQL */ `
+  fragment ChargeExtendedInfoFields on Charge {
+    id
+    ledgerRecords {
+      id
+    }
+    additionalDocuments {
+      id
+    }
+    ...DocumentsGalleryFields
+    ...TableLedgerRecordsFields
+  }
+`;
+
 interface Props {
-  charge: AllChargesQuery['allCharges']['nodes'][number];
+  chargeProps: FragmentType<typeof ChargeExtendedInfoFieldsFragmentDoc>;
   setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
@@ -15,17 +30,18 @@ interface Props {
 }
 
 export function ChargeExtendedInfo({
-  charge,
+  chargeProps,
   setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
 }: Props) {
+  const charge = getFragmentData(ChargeExtendedInfoFieldsFragmentDoc, chargeProps);
   return (
     <div className="flex flex-row gap-5">
       {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
         <div className="flex flex-row justify-start w-full max-w-7/8">
-          <LedgerRecordTable ledgerRecords={charge.ledgerRecords} />
+          <LedgerRecordTable ledgerRecordsProps={charge} />
         </div>
       )}
       <div className={`flex flex-col w-${charge.ledgerRecords.length > 0 ? '1/6' : 'full'}`}>
@@ -40,7 +56,7 @@ export function ChargeExtendedInfo({
         </div>
         {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
           <div className="flex flex-row justify-start">
-            <DocumentsGallery additionalDocumentsData={charge.additionalDocuments} />
+            <DocumentsGallery chargeProps={charge} />
           </div>
         )}
       </div>
@@ -64,7 +80,7 @@ function ChargeExtendedInfoMenu({
   setUploadDocument,
 }: ChargeExtendedInfoMenuProps) {
   const [opened, setOpened] = useState(false);
-  const { mutate: generateLedger, isLoading: generationRunning } = useGenerateLedgerRecords();
+  const { generateLedger, fetching: generationRunning } = useGenerateLedgerRecords();
 
   function closeMenu() {
     setOpened(false);

@@ -1,14 +1,14 @@
 import { Mark, Table } from '@mantine/core';
-import gql from 'graphql-tag';
+import { useQuery } from 'urql';
 import {
   BusinessTransactionsFilter,
+  BusinessTransactionsInfoDocument,
   BusinessTransactionsInfoQuery,
-  useBusinessTransactionsInfoQuery,
-} from '../../__generated__/types';
+} from '../../gql/graphql';
 import { formatStringifyAmount } from '../../helpers';
 import { AccounterLoader } from '../common';
 
-gql`
+/* GraphQL */ `
   query BusinessTransactionsInfo($filters: BusinessTransactionsFilter) {
     businessTransactionsFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsFromLedgerRecordsSuccessfulResult {
@@ -47,8 +47,11 @@ interface Props {
 }
 
 export function BusinessExtendedInfo({ businessName, filter }: Props) {
-  const { data, isLoading } = useBusinessTransactionsInfoQuery({
-    filters: { ...filter, businessNames: [businessName] },
+  const [{ data, fetching }] = useQuery({
+    query: BusinessTransactionsInfoDocument,
+    variables: {
+      filters: { ...filter, businessNames: [businessName] },
+    },
   });
 
   const transactions =
@@ -95,7 +98,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
 
   return (
     <div className="flex flex-row gap-5">
-      {isLoading ? (
+      {fetching ? (
         <AccounterLoader />
       ) : (
         <Table striped highlightOnHover>
