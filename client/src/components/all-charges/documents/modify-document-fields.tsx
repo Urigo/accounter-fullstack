@@ -6,7 +6,7 @@ import {
   EditDocumentFieldsFragment,
   InsertDocumentInput,
   UpdateDocumentFieldsInput,
-} from '../../../__generated__/types';
+} from '../../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import {
   isDocumentInvoice,
@@ -31,9 +31,10 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
     isDocumentInvoiceReceipt(document) ||
     isDocumentProforma(document);
 
+  const type = watch('documentType');
+
   // auto update vat currency according to amount currency
   useEffect(() => {
-    const type = watch('documentType');
     setShowExtendedFields(
       Boolean(type) &&
         (type === DocumentType.Invoice ||
@@ -41,7 +42,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
           type === DocumentType.InvoiceReceipt ||
           type === DocumentType.Proforma),
     );
-  }, [watch('documentType')]);
+  }, [type]);
 
   return (
     <>

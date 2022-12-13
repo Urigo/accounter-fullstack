@@ -1,11 +1,12 @@
-import { gql } from 'graphql-tag';
+import { showNotification } from '@mantine/notifications';
+import { useMutation } from 'urql';
 import {
+  InsertDocumentDocument,
   InsertDocumentMutation,
   InsertDocumentMutationVariables,
-  useInsertDocumentMutation,
-} from '../__generated__/types.js';
+} from '../gql/graphql.js';
 
-gql`
+/* GraphQL */ `
   mutation InsertDocument($record: InsertDocumentInput!) {
     insertDocument(record: $record) {
       __typename
@@ -25,21 +26,54 @@ export const useInsertDocument = () => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const onError = async (e: unknown, { record }: InsertDocumentMutationVariables) => {
-    console.log(e);
-    return new Error(
-      `Error inserting ledger record to charge ID [${record.chargeId}]: ${(e as Error)?.message}`,
-    );
+  const [{ fetching }, mutate] = useMutation(InsertDocumentDocument);
+
+  return {
+    fetching,
+    insertDocument: (variables: InsertDocumentMutationVariables) =>
+      new Promise<
+        Extract<
+          InsertDocumentMutation['insertDocument'],
+          { __typename: 'InsertDocumentSuccessfulResult' }
+        >
+      >((resolve, reject) =>
+        mutate(variables).then(res => {
+          if (res.error) {
+            console.error(
+              `Error inserting document to charge ID [${variables.record.chargeId}]: ${res.error}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.error.message);
+          }
+          if (!res.data) {
+            console.error(
+              `Error inserting document to charge ID [${variables.record.chargeId}]: No data returned`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject('No data returned');
+          }
+          if (res.data.insertDocument.__typename === 'CommonError') {
+            console.error(
+              `Error inserting document to charge ID [${variables.record.chargeId}]: ${res.data.insertDocument.message}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.data.insertDocument.message);
+          }
+          showNotification({
+            title: 'Insert Success!',
+            message: 'Your document was added! 🎉',
+          });
+          return resolve(res.data.insertDocument);
+        }),
+      ),
   };
-  const onSuccess = async (data: InsertDocumentMutation) => {
-    if (data.insertDocument.__typename === 'CommonError') {
-      throw new Error(data.insertDocument.message);
-    }
-    // TODO: if caching - update local data for charge
-    return data.insertDocument;
-  };
-  return useInsertDocumentMutation({
-    onError,
-    onSuccess,
-  });
 };

@@ -1,7 +1,7 @@
-import gql from 'graphql-tag';
-import { AllChargesAmountFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesAmountFieldsFragmentDoc } from '../../../gql/graphql';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesAmountFields on Charge {
     id
     transactions {
@@ -15,11 +15,12 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesAmountFieldsFragment['transactions']['0'];
+  data: FragmentType<typeof AllChargesAmountFieldsFragmentDoc>;
 };
 
 export const Amount = ({ data }: Props) => {
-  const { amount } = data;
+  const charge = getFragmentData(AllChargesAmountFieldsFragmentDoc, data);
+  const { amount } = charge.transactions[0];
 
   return <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red' }}>{amount.formatted}</div>;
 };

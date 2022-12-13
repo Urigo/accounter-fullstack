@@ -1,9 +1,9 @@
-import gql from 'graphql-tag';
-import { useDocumentsToChargeMatcherQuery } from '../../__generated__/types';
+import { useQuery } from 'urql';
+import { DocumentsToChargeMatcherDocument } from '../../gql/graphql';
 import { AccounterLoader } from '../common/loader';
 import { SelectionHandler } from './selection-handler';
 
-gql`
+/* GraphQL */ `
   query DocumentsToChargeMatcher($chargeId: ID!) {
     documents {
       id
@@ -29,7 +29,10 @@ interface Props {
 }
 
 export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
-  const { data, isLoading } = useDocumentsToChargeMatcherQuery({ chargeId });
+  const [{ data, fetching }] = useQuery({
+    query: DocumentsToChargeMatcherDocument,
+    variables: { chargeId },
+  });
 
   const errorMessage =
     (data?.documents.length === 0 && 'No Document Found') ||
@@ -44,7 +47,7 @@ export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
         {/* <div className="flex flex-col text-center w-full mb-1">
             <h1 className="sm:text-4xl text-3xl font-medium title-font mb-6 text-gray-900">Document Matches</h1>
         </div> */}
-        {isLoading && (
+        {fetching && (
           <div className="flex flex-col text-center w-full mb-1">
             <AccounterLoader />
           </div>
@@ -59,8 +62,8 @@ export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
         {!errorMessage && (
           <div className="flex flex-col gap-3">
             <SelectionHandler
-              charge={data!.chargeById}
-              documents={data?.documents ?? []}
+              chargeProps={data!.chargeById}
+              documentsProps={data}
               onDone={onDone}
             />
           </div>

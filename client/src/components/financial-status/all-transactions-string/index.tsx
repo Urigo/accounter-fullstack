@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
-import gql from 'graphql-tag';
 import { useSearchParams } from 'react-router-dom';
-import { useFinancialEntityOldQuery } from '../../../__generated__/types';
+import { useQuery } from 'urql';
+import { FinancialEntityOldDocument } from '../../../gql/graphql';
 import { businesses } from '../../../helpers';
 import { useSql } from '../../../hooks/use-sql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { AccounterBasicTable } from '../../common/accounter-basic-table';
 import { TransactionRow } from './transaction-row';
 
-gql`
+/* GraphQL */ `
   query FinancialEntityOld($financialEntityId: ID!, $page: Int, $limit: Int) {
     financialEntity(id: $financialEntityId) {
-      ...Charges
+      id
+      charges(page: $page, limit: $limit) {
+        nodes {
+          ...ChargeFields
+          id
+        }
+      }
     }
   }
 `;
@@ -28,8 +34,9 @@ export const AllTransactionsString = () => {
       ? businesses['Uri Goldshtein LTD']
       : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
-  const { data } = useFinancialEntityOldQuery({
-    financialEntityId,
+  const [{ data }] = useQuery({
+    query: FinancialEntityOldDocument,
+    variables: { financialEntityId },
   });
 
   const { getAllTransactions } = useSql();
@@ -79,10 +86,9 @@ export const AllTransactionsString = () => {
                 columns={columns}
                 index={i}
                 key={row.id}
-                charge={
-                  data?.financialEntity?.charges.nodes &&
-                  data.financialEntity.charges.nodes.find(charge => charge.id === row.id)
-                }
+                chargeProps={data?.financialEntity.charges.nodes.find(
+                  charge => charge.id === row.id,
+                )}
               />
             ))}
           </tbody>

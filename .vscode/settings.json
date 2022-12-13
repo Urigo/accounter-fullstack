@@ -7,5 +7,6 @@
       "tooltip": "Start dev environment"
     }
   ],
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "cSpell.words": ["mantine"]
 }

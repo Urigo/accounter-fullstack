@@ -1,6 +1,6 @@
 import { CSSProperties, useState } from 'react';
-import gql from 'graphql-tag';
-import { ChargesFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { ChargeFieldsFragmentDoc } from '../../../gql/graphql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import {
   Account,
@@ -25,17 +25,12 @@ import { ReceiptNumber } from './cells/receipt-number';
 import { ReceiptUrl } from './cells/receipt-url';
 import { LedgerRecordsTable } from './ledger-records/ledger-records-table';
 
-gql`
-  fragment Charges on FinancialEntity {
+/* GraphQL */ `
+  fragment ChargeFields on Charge {
     id
-    charges(page: $page, limit: $limit) {
-      nodes {
-        id
-        ...LedgerRecords
-      }
-      pageInfo {
-        totalPages
-      }
+    ledgerRecords {
+      id
+      ...LedgerRecords
     }
   }
 `;
@@ -44,14 +39,15 @@ type Props = {
   transaction: TransactionType;
   columns: TransactionColumn[];
   index: number;
-  charge?: ChargesFragment['charges']['0'];
+  chargeProps?: FragmentType<typeof ChargeFieldsFragmentDoc>;
 };
 
 const rowStyle = ({ hover, index }: { hover: boolean; index: number }): CSSProperties => ({
   backgroundColor: hover ? '#f5f5f5' : index % 2 == 0 ? '#CEE0CC' : undefined,
 });
 
-export const TransactionRow = ({ transaction, columns, index, charge }: Props) => {
+export const TransactionRow = ({ transaction, columns, index, chargeProps }: Props) => {
+  const charge = getFragmentData(ChargeFieldsFragmentDoc, chargeProps);
   const [hover, setHover] = useState(false);
 
   return (

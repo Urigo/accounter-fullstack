@@ -8,16 +8,14 @@ interface Props {
 }
 
 export function DocumentMatchCompleted({ chargeId, documentId }: Props) {
-  const { mutate } = useUpdateDocument();
+  const { updateDocument } = useUpdateDocument();
 
-  useEffect(
-    () =>
-      mutate({
-        documentId,
-        fields: { chargeId },
-      }),
-    [],
-  );
+  useEffect(() => {
+    updateDocument({
+      documentId,
+      fields: { chargeId },
+    });
+  }, [chargeId, documentId, updateDocument]);
 
   return (
     <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 md:px-12 lg:px-24 lg:py-24">

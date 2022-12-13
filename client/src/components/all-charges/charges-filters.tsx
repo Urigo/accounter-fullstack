@@ -2,19 +2,15 @@ import { useEffect, useState } from 'react';
 import { ActionIcon, MultiSelect, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
-import gql from 'graphql-tag';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import {
-  ChargeFilter,
-  ChargeSortByField,
-  useAllFinancialEntitiesQuery,
-} from '../../__generated__/types';
+import { useQuery } from 'urql';
+import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
 import { PopUpModal } from '../common';
 import { TextInput } from '../common/inputs';
 
-gql`
+/* GraphQL */ `
   query AllFinancialEntities {
     allFinancialEntities {
       id
@@ -92,7 +88,9 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
   const { control, handleSubmit, watch } = useForm<ChargeFilter>({ defaultValues: { ...filter } });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(Boolean(filter.sortBy?.field));
-  const { data, isLoading, isError: financialEntitiesError } = useAllFinancialEntitiesQuery();
+  const [{ data, fetching, error: financialEntitiesError }] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
 
   const sortByField = watch('sortBy.field');
 
@@ -131,7 +129,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
 
   return (
     <>
-      {isLoading ? <div>Loading...</div> : <div />}
+      {fetching ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* <SimpleGrid cols={4}> */}
         <Controller
@@ -148,7 +146,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
                 })) ?? []
               }
               value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
-              disabled={isLoading}
+              disabled={fetching}
               label="Financial Entities"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}

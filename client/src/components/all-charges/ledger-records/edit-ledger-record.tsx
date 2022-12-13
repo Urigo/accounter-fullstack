@@ -1,16 +1,15 @@
-import { showNotification } from '@mantine/notifications';
-import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { FragmentType, getFragmentData } from '../../../gql';
 import {
-  EditDbLedgerRecordsFieldsFragment,
+  EditDbLedgerRecordsFieldsFragmentDoc,
   UpdateDbLedgerRecordInput,
-} from '../../../__generated__/types';
+} from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateDbLedgerRecord } from '../../../hooks/use-update-db-ledger-record';
 import { SimpleGrid } from '../../common/simple-grid';
 import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
 
-// gql`
+// /* GraphQL */`
 //   fragment EditLedgerRecordsFields on LedgerRecord {
 //     id
 //     creditAccount {
@@ -35,7 +34,7 @@ import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
 //   }
 // `;
 
-gql`
+/* GraphQL */ `
   fragment EditDbLedgerRecordsFields on LedgerRecord {
     id
     credit_account_1
@@ -64,12 +63,13 @@ gql`
 `;
 
 type Props = {
-  ledgerRecord: EditDbLedgerRecordsFieldsFragment;
+  ledgerRecordProps: FragmentType<typeof EditDbLedgerRecordsFieldsFragmentDoc>;
   onAccept?: () => void;
   onCancel?: () => void;
 };
 
-export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) => {
+export const EditLedgerRecord = ({ ledgerRecordProps, onAccept, onCancel }: Props) => {
+  const ledgerRecord = getFragmentData(EditDbLedgerRecordsFieldsFragmentDoc, ledgerRecordProps);
   const {
     control,
     handleSubmit,
@@ -78,7 +78,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
     unregister,
     watch,
   } = useForm<UpdateDbLedgerRecordInput>({ defaultValues: ledgerRecord });
-  const { mutate, isLoading, isError, isSuccess } = useUpdateDbLedgerRecord();
+  const { updateDbLedgerRecord, fetching } = useUpdateDbLedgerRecord();
 
   function isAccountActive(account?: string | null) {
     return Boolean(account && account !== '');
@@ -104,7 +104,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
 
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      mutate({
+      updateDbLedgerRecord({
         ledgerRecordId: ledgerRecord.id,
         fields: dataToUpdate,
       });
@@ -122,7 +122,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
             {/* <EditLedgerRecordFields ledgerRecord={ledgerRecord} control={control} /> */}
             {/* TEMPORARY: the form is replaced to represent full DB record. should be reverted after DB is updated. */}
             <EditDbLedgerRecordFields
-              ledgerRecord={ledgerRecord}
+              ledgerRecordProps={ledgerRecordProps}
               control={control}
               setValue={setValue}
               unregister={unregister}
@@ -133,21 +133,7 @@ export const EditLedgerRecord = ({ ledgerRecord, onAccept, onCancel }: Props) =>
             <button
               type="submit"
               className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-              disabled={isLoading || Object.keys(dirtyFields).length === 0}
-              onClick={() => {
-                if (isError) {
-                  showNotification({
-                    title: 'Error!',
-                    message: 'Oh no!, we have an error! 🤥',
-                  });
-                }
-                if (isSuccess) {
-                  showNotification({
-                    title: 'Update Success!',
-                    message: 'Hey there, you add new ledger!',
-                  });
-                }
-              }}
+              disabled={fetching || Object.keys(dirtyFields).length === 0}
             >
               Accept
             </button>

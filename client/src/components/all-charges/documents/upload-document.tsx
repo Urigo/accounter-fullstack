@@ -2,12 +2,23 @@ import { useCallback, useState } from 'react';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMutation } from 'urql';
-import {
-  CommonError,
-  UploadDocumentDocument,
-  UploadDocumentMutation,
-  UploadDocumentMutationVariables,
-} from '../../../__generated__/types';
+import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
+
+/* GraphQL */ `
+  mutation UploadDocument($file: File!, $chargeId: ID) {
+    uploadDocument(file: $file, chargeId: $chargeId) {
+      __typename
+      ... on UploadDocumentSuccessfulResult {
+        document {
+          id
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+  }
+`;
 
 type Props = {
   chargeId: string;
@@ -15,9 +26,7 @@ type Props = {
 };
 
 export const UploadDocument = ({ chargeId, closeModal }: Props) => {
-  const [res, mutate] = useMutation<UploadDocumentMutation, UploadDocumentMutationVariables>(
-    UploadDocumentDocument,
-  );
+  const [res, mutate] = useMutation(UploadDocumentDocument);
   const [value, setValue] = useState<File | null>(null);
 
   const onSubmit = useCallback(async () => {

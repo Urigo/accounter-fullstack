@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Image } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import gql from 'graphql-tag';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
-  EditDocumentFieldsFragment,
-  UpdateDocumentFieldsInput,
-} from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { EditDocumentFieldsFragmentDoc, UpdateDocumentFieldsInput } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel } from '../../common/button-with-label';
@@ -14,7 +10,7 @@ import { PopUpModal } from '../../common/modal';
 import { SimpleGrid } from '../../common/simple-grid';
 import { ModifyDocumentFields } from './modify-document-fields';
 
-gql`
+/* GraphQL */ `
   fragment EditDocumentFields on Document {
     id
     image
@@ -76,10 +72,11 @@ gql`
 `;
 
 export interface Props {
-  documentData: EditDocumentFieldsFragment;
+  documentProps: FragmentType<typeof EditDocumentFieldsFragmentDoc>;
 }
 
-export const EditDocument = ({ documentData }: Props) => {
+export const EditDocument = ({ documentProps }: Props) => {
+  const documentData = getFragmentData(EditDocumentFieldsFragmentDoc, documentProps);
   const {
     control,
     handleSubmit,
@@ -89,22 +86,24 @@ export const EditDocument = ({ documentData }: Props) => {
   } = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...documentData } });
   const [openModal, setOpenModal] = useState<string | null>(null);
 
-  const { mutate, isLoading, isError, isSuccess } = useUpdateDocument();
+  const { updateDocument, fetching } = useUpdateDocument();
 
   const onSubmit: SubmitHandler<UpdateDocumentFieldsInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (Object.keys(dataToUpdate ?? {}).length > 0) {
-      mutate({
+      updateDocument({
         documentId: documentData.id,
         fields: dataToUpdate as UpdateDocumentFieldsInput,
       });
     }
   };
 
+  const amountCurrency = watch('amount.currency');
+
   // auto update vat currency according to amount currency
   useEffect(() => {
-    setValue('vat.currency', watch('amount.currency'));
-  }, [setValue, watch('amount.currency')]);
+    setValue('vat.currency', amountCurrency);
+  }, [setValue, amountCurrency]);
 
   return (
     <>
@@ -124,21 +123,7 @@ export const EditDocument = ({ documentData }: Props) => {
               <button
                 type="submit"
                 className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12  border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                disabled={isLoading || Object.keys(dirtyFields).length === 0}
-                onClick={() => {
-                  if (isError) {
-                    showNotification({
-                      title: 'Error!',
-                      message: 'Oh no!, we have an error! 🤥',
-                    });
-                  }
-                  if (isSuccess) {
-                    showNotification({
-                      title: 'Update Success!',
-                      message: 'Hey there, your update is awesome!',
-                    });
-                  }
-                }}
+                disabled={fetching || Object.keys(dirtyFields).length === 0}
               >
                 Save
               </button>

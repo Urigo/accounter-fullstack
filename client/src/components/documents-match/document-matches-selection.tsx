@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import gql from 'graphql-tag';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
+import { FragmentType, getFragmentData } from '../../gql';
 import {
-  DocumentMatchChargesFieldsFragment,
-  DocumentMatchFieldsFragment,
-} from '../../__generated__/types';
+  DocumentMatchChargesFieldsFragmentDoc,
+  DocumentMatchFieldsFragmentDoc,
+} from '../../gql/graphql';
 import { rateOptionalMatches } from '../../helpers/document-matches';
 
-gql`
+/* GraphQL */ `
   fragment DocumentMatchFields on Document {
     __typename
     id
@@ -53,6 +53,9 @@ gql`
       }
     }
   }
+`;
+
+/* GraphQL */ `
   fragment DocumentMatchChargesFields on Query {
     financialEntity(id: $financialEntityId) {
       id
@@ -83,20 +86,23 @@ gql`
 `;
 
 interface Props {
-  document: DocumentMatchFieldsFragment;
-  charges: DocumentMatchChargesFieldsFragment['financialEntity']['charges']['nodes'];
+  documentProps: FragmentType<typeof DocumentMatchFieldsFragmentDoc>;
+  chargesProps?: FragmentType<typeof DocumentMatchChargesFieldsFragmentDoc>;
   setReadyForNextStep: (ready: boolean) => void;
   setSelectedChargeId: (id: string) => void;
 }
 
 export function DocumentMatchesSelection({
-  document,
-  charges,
+  documentProps,
+  chargesProps,
   setReadyForNextStep,
   setSelectedChargeId,
 }: Props) {
+  const document = getFragmentData(DocumentMatchFieldsFragmentDoc, documentProps);
+  const chargesData = getFragmentData(DocumentMatchChargesFieldsFragmentDoc, chargesProps);
+  const charges = chargesData?.financialEntity.charges.nodes ?? [];
   const [selectedCharge, setSelectedCharge] = useState<string | null>(null);
-  const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
+  const [extendedInfoFlag, setExtendedInfoFlag] = useState(false);
 
   useEffect(() => {
     setReadyForNextStep(Boolean(selectedCharge));
@@ -185,12 +191,12 @@ export function DocumentMatchesSelection({
                   </div>
                   <span className="ml-3 text-neutral-600">{document.creditor}</span>
                 </li>
-                {extandedInfoFlag ? (
+                {extendedInfoFlag ? (
                   <>
                     <li />
                     <li>
                       <button
-                        onClick={() => setExtandedInfoFlag(false)}
+                        onClick={() => setExtendedInfoFlag(false)}
                         className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
                         title="read less"
                       >
@@ -202,7 +208,7 @@ export function DocumentMatchesSelection({
                 ) : (
                   <li>
                     <button
-                      onClick={() => setExtandedInfoFlag(true)}
+                      onClick={() => setExtendedInfoFlag(true)}
                       className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
                       title="read more"
                     >
@@ -257,12 +263,12 @@ export function DocumentMatchesSelection({
                     </div>
                     <span className="ml-3 text-white">{charge.transactions[0].description}</span>
                   </li>
-                  {extandedInfoFlag ? (
+                  {extendedInfoFlag ? (
                     <>
                       <li />
                       <li>
                         <button
-                          onClick={() => setExtandedInfoFlag(false)}
+                          onClick={() => setExtendedInfoFlag(false)}
                           className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
                           title="read less"
                         >
@@ -274,7 +280,7 @@ export function DocumentMatchesSelection({
                   ) : (
                     <li>
                       <button
-                        onClick={() => setExtandedInfoFlag(true)}
+                        onClick={() => setExtendedInfoFlag(true)}
                         className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
                         title="read more"
                       >

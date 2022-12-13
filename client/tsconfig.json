@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "composite": true,
     "module": "esnext",
     "target": "esnext",
     "strict": true,
@@ -19,6 +20,12 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "client/**/*", "server/**/*", "temp-server/index.ts"],
+  "include": [
+    "client/vite.config.ts",
+    "src/**/*",
+    "client/**/*",
+    "server/**/*",
+    "temp-server/index.ts"
+  ],
   "references": [{ "path": "tsconfig.node.json" }]
 }

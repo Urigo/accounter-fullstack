@@ -47,10 +47,8 @@
   "devDependencies": {
     "@graphql-codegen/add": "3.2.3",
     "@graphql-codegen/cli": "2.16.1",
-    "@graphql-codegen/introspection": "2.2.3",
+    "@graphql-codegen/client-preset": "1.2.3",
     "@graphql-codegen/typescript": "2.8.5",
-    "@graphql-codegen/typescript-operations": "2.5.10",
-    "@graphql-codegen/typescript-react-query": "4.0.6",
     "@graphql-codegen/typescript-resolvers": "2.7.10",
     "@graphql-eslint/eslint-plugin": "3.13.1",
     "@theguild/eslint-config": "0.3.1",

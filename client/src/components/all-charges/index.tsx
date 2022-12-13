@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import gql from 'graphql-tag';
+import { useQuery } from 'urql';
+import { FragmentType, getFragmentData } from '../../gql';
 import {
-  AllChargesQuery,
+  AllChargesDocument,
   ChargeFilter,
-  EditChargeFieldsFragment,
-  useAllChargesQuery,
-} from '../../__generated__/types';
+  EditChargeFieldsFragmentDoc,
+  SuggestedChargeFragmentDoc,
+} from '../../gql/graphql';
 import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton, NavBar } from '../common';
 import { AccounterTable } from '../common/accounter-table';
@@ -30,7 +31,7 @@ import { UploadDocument } from './documents/upload-document';
 import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
-gql`
+/* GraphQL */ `
   query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
@@ -45,10 +46,21 @@ gql`
         ...AllChargesTagsFields
         ...AllChargesShareWithFields
         ...AllChargesVatFields
-        ...TableLedgerRecordsFields
-        ...DocumentsGalleryFields
         ...EditChargeFields
         ...SuggestedCharge
+        ...ChargeExtendedInfoFields
+
+        # next are some fields for the temp columns:
+        ledgerRecords {
+          id
+        }
+        additionalDocuments {
+          id
+        }
+        counterparty {
+          name
+        }
+        ###
       }
       pageInfo {
         totalPages
@@ -57,7 +69,7 @@ gql`
   }
 `;
 
-gql`
+/* GraphQL */ `
   fragment SuggestedCharge on Charge {
     id
     transactions {
@@ -69,6 +81,11 @@ gql`
       userNote
       referenceNumber
       description
+    }
+    beneficiaries {
+      counterparty {
+        name
+      }
     }
     counterparty {
       name
@@ -83,7 +100,9 @@ gql`
 `;
 
 export const AllCharges = () => {
-  const [editCharge, setEditCharge] = useState<EditChargeFieldsFragment | undefined>(undefined);
+  const [editCharge, setEditCharge] = useState<
+    FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
+  >(undefined);
   const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
@@ -91,17 +110,21 @@ export const AllCharges = () => {
   const [filter, setFilter] = useState<ChargeFilter>({});
   const [activePage, setPage] = useState(1);
 
-  const { data, isLoading } = useAllChargesQuery({
-    filters: filter,
-    page: activePage,
-    limit: 100,
+  const [{ data, fetching }] = useQuery({
+    query: AllChargesDocument,
+    variables: {
+      filters: filter,
+      page: activePage,
+      limit: 100,
+    },
   });
 
-  if (isLoading) {
+  if (fetching) {
     return <AccounterLoader />;
   }
 
-  function generateRowContext(charge: AllChargesQuery['allCharges']['nodes'][0]) {
+  function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
+    const charge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
     if (
       !charge.counterparty?.name ||
       !charge.transactions[0]?.userNote?.trim() ||
@@ -125,7 +148,7 @@ export const AllCharges = () => {
           showButton={true}
           moreInfo={item => (
             <ChargeExtendedInfo
-              charge={item}
+              chargeProps={item}
               setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
@@ -140,11 +163,11 @@ export const AllCharges = () => {
           columns={[
             {
               title: 'Date',
-              value: data => <Date data={data.transactions[0]} />,
+              value: data => <Date data={data} />,
             },
             {
               title: 'Amount',
-              value: data => <Amount data={data.transactions[0]} />,
+              value: data => <Amount data={data} />,
             },
             {
               title: 'Vat',
@@ -161,13 +184,13 @@ export const AllCharges = () => {
             },
             {
               title: 'Account',
-              value: data => <Account data={data.transactions[0]} />,
+              value: data => <Account data={data} />,
             },
             {
               title: 'Description',
               value: (data, alternativeCharge) => (
                 <Description
-                  data={data.transactions[0]}
+                  data={data}
                   alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
                 />
               ),
@@ -220,9 +243,7 @@ export const AllCharges = () => {
             },
             {
               title: 'Edit',
-              value: data => (
-                <EditMiniButton onClick={() => setEditCharge(data as EditChargeFieldsFragment)} />
-              ),
+              value: data => <EditMiniButton onClick={() => setEditCharge(data)} />,
             },
           ]}
           pagination={{
@@ -240,7 +261,7 @@ export const AllCharges = () => {
             <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
               <h1 className="sm:text-2xl font-small text-gray-900">Edit Charge:</h1>
               <a href="/#" className="pt-1">
-                ID: {editCharge.id}
+                ID: {getFragmentData(EditChargeFieldsFragmentDoc, editCharge).id}
               </a>
             </div>
           }
@@ -248,7 +269,7 @@ export const AllCharges = () => {
           onClose={() => setEditCharge(undefined)}
         >
           <EditCharge
-            charge={editCharge}
+            chargeProps={editCharge}
             onAccept={() => setEditCharge(undefined)}
             onCancel={() => setEditCharge(undefined)}
           />

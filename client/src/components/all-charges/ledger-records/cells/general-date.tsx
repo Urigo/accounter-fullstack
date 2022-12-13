@@ -1,9 +1,9 @@
-import gql from 'graphql-tag';
-import { LedgerRecordsGeneralDateFieldsFragment } from '../../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* TEMPORARY: this component is used for temporary reasons */
 
-gql`
+/* GraphQL */ `
   fragment LedgerRecordsGeneralDateFields on LedgerRecord {
     id
     date
@@ -13,12 +13,15 @@ gql`
 `;
 
 type Props = {
-  data: LedgerRecordsGeneralDateFieldsFragment;
+  data: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc>;
   type: 1 | 2 | 3;
 };
 
 export const GeneralDate = ({ data, type }: Props) => {
-  const { date, value_date, date3 } = data;
+  const { date, value_date, date3 } = getFragmentData(
+    LedgerRecordsGeneralDateFieldsFragmentDoc,
+    data,
+  );
 
   const showDate = type === 1 ? date : type === 2 ? value_date : date3;
 

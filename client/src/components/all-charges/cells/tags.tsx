@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import gql from 'graphql-tag';
-import { AllChargesTagsFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesTagsFieldsFragmentDoc } from '../../../gql/graphql';
 import { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton } from '../../common';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesTagsFields on Charge {
     id
     tags {
@@ -15,13 +15,16 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesTagsFieldsFragment;
+  data: FragmentType<typeof AllChargesTagsFieldsFragmentDoc>;
   alternativeCharge?: SuggestedCharge;
 };
 
 export const Tags = ({ data, alternativeCharge }: Props) => {
-  const { mutate, isLoading } = useUpdateCharge();
-  const { tags: originalTags, id: chargeId } = data;
+  const { tags: originalTags, id: chargeId } = getFragmentData(
+    AllChargesTagsFieldsFragmentDoc,
+    data,
+  );
+  const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags);
   const isPersonalCategory = originalTags.length > 0;
 
@@ -32,12 +35,12 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
   const updateTag = useCallback(
     // NOTE: updating only first tag, due to DB current limitations
     (value?: string) => {
-      mutate({
+      updateCharge({
         chargeId,
         fields: { tags: [{ name: value! }] },
       });
     },
-    [chargeId, mutate],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -54,7 +57,7 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
           {!isPersonalCategory && alternativeCharge?.personalCategory && (
             <ConfirmMiniButton
               onClick={() => updateTag(alternativeCharge.personalCategory)}
-              disabled={isLoading}
+              disabled={fetching}
             />
           )}
         </li>

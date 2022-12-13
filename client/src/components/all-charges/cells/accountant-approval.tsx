@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Switch } from '@mantine/core';
-import gql from 'graphql-tag';
-import { AllChargesAccountantApprovalFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql';
 import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-charge-accountant-approval';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesAccountantApprovalFields on Charge {
     id
     accountantApproval {
@@ -14,17 +14,18 @@ gql`
 `;
 
 interface Props {
-  data: AllChargesAccountantApprovalFieldsFragment;
+  data: FragmentType<typeof AllChargesAccountantApprovalFieldsFragmentDoc>;
 }
 
 export function AccountantApproval({ data }: Props) {
-  const [checked, setChecked] = useState(data.accountantApproval.approved);
-  const { mutate } = useToggleChargeAccountantApproval();
+  const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
+  const [checked, setChecked] = useState(charge.accountantApproval.approved);
+  const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
 
   function onToggle(approved: boolean) {
     setChecked(approved);
-    mutate({
-      chargeId: data.id,
+    toggleChargeAccountantApproval({
+      chargeId: charge.id,
       approved,
     });
   }

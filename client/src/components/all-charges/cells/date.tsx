@@ -1,8 +1,8 @@
-import gql from 'graphql-tag';
-import { AllChargesDateFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesDateFieldsFragmentDoc } from '../../../gql/graphql';
 import { clearTimeFromDate } from '../../../helpers';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesDateFields on Charge {
     id
     transactions {
@@ -14,11 +14,12 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesDateFieldsFragment['transactions']['0'];
+  data: FragmentType<typeof AllChargesDateFieldsFragmentDoc>;
 };
 
 export const Date = ({ data }: Props) => {
-  const { effectiveDate, createdAt } = data;
+  const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
+  const { effectiveDate, createdAt } = charge.transactions[0];
   const timelessCreatedAt = clearTimeFromDate(createdAt);
   const timelessEffectiveDate = clearTimeFromDate(effectiveDate);
 

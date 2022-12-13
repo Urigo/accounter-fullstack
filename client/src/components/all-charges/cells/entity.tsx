@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import gql from 'graphql-tag';
-import { AllChargesEntityFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { AllChargesEntityFieldsFragmentDoc } from '../../../gql/graphql';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton } from '../../common';
 
-gql`
+/* GraphQL */ `
   fragment AllChargesEntityFields on Charge {
     id
     counterparty {
@@ -15,22 +15,22 @@ gql`
 `;
 
 type Props = {
-  data: AllChargesEntityFieldsFragment;
+  data: FragmentType<typeof AllChargesEntityFieldsFragmentDoc>;
   alternativeCharge?: SuggestedCharge;
 };
 
 export const Entity = ({ data, alternativeCharge }: Props) => {
-  const { counterparty, id: chargeId } = data;
+  const { counterparty, id: chargeId } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
   const { name } = counterparty || {};
   const isFinancialEntity = name && name !== '';
   const cellText = isFinancialEntity ? name : alternativeCharge?.financialEntity;
 
-  const { mutate, isLoading } = useUpdateCharge();
+  const { updateCharge, fetching } = useUpdateCharge();
 
   const updateTag = useCallback(
     (value?: string) => {
       if (value !== undefined) {
-        mutate({
+        updateCharge({
           chargeId,
           fields: {
             counterparty: value
@@ -42,7 +42,7 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
         });
       }
     },
-    [chargeId, mutate],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -53,7 +53,7 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
       {!isFinancialEntity && alternativeCharge?.financialEntity && (
         <ConfirmMiniButton
           onClick={() => updateTag(alternativeCharge.financialEntity)}
-          disabled={isLoading}
+          disabled={fetching}
         />
       )}
     </div>

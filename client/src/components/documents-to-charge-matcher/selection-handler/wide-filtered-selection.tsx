@@ -3,7 +3,7 @@ import { Image } from '@mantine/core';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../../../__generated__/types';
+} from '../../../gql/graphql';
 import { AccounterTable } from '../../common/accounter-table';
 import { Button } from '../../common/button';
 import { PopUpModal } from '../../common/modal';
@@ -37,8 +37,8 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
             title: 'Image',
             value: doc =>
               doc.image ? (
-                <button onClick={() => setOpenedImage(doc.image)}>
-                  <img alt="missing img" src={doc.image} height={80} width={80} />
+                <button onClick={() => setOpenedImage(doc.image?.toString() ?? null)}>
+                  <img alt="missing img" src={doc.image?.toString()} height={80} width={80} />
                 </button>
               ) : (
                 'No image'
@@ -48,7 +48,12 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
             title: 'File',
             value: doc =>
               doc.file && (
-                <Button target="_blank" rel="noreferrer" herf={doc.file} title="Open Link" />
+                <Button
+                  target="_blank"
+                  rel="noreferrer"
+                  herf={doc.file?.toString()}
+                  title="Open Link"
+                />
               ),
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },

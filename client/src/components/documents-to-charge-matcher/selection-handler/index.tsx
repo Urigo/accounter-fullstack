@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
-import gql from 'graphql-tag';
+import { FragmentType, getFragmentData } from '../../../gql';
 import {
-  ChargeToMatchDocumentsFieldsFragment,
+  ChargeToMatchDocumentsFieldsFragmentDoc,
+  DocumentsToChargeMatcherQuery,
   DocumentsToMatchFieldsFragment,
-} from '../../../__generated__/types';
+  DocumentsToMatchFieldsFragmentDoc,
+} from '../../../gql/graphql';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { Button } from '../../common/button';
 import { StrictFilteredSelection } from './strict-filtered-selection';
 import { WideFilteredSelection } from './wide-filtered-selection';
 
-gql`
+/* GraphQL */ `
   fragment ChargeToMatchDocumentsFields on Charge {
     id
     totalAmount {
@@ -27,6 +29,9 @@ gql`
       description
     }
   }
+`;
+
+/* GraphQL */ `
   fragment DocumentsToMatchFields on Document {
     id
     __typename
@@ -77,14 +82,23 @@ gql`
 `;
 
 interface Props {
-  charge: ChargeToMatchDocumentsFieldsFragment;
-  documents: DocumentsToMatchFieldsFragment[];
+  chargeProps: FragmentType<typeof ChargeToMatchDocumentsFieldsFragmentDoc>;
+  documentsProps?: DocumentsToChargeMatcherQuery;
+  // FragmentType<typeof DocumentsToMatchFieldsFragmentDoc>;
   onDone: () => void;
 }
 
-export function SelectionHandler({ charge, documents, onDone }: Props) {
+export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props) {
+  const charge = getFragmentData(ChargeToMatchDocumentsFieldsFragmentDoc, chargeProps);
+  const documents = useMemo(
+    () =>
+      documentsProps?.documents.map(d => getFragmentData(DocumentsToMatchFieldsFragmentDoc, d)) ??
+      [],
+    [documentsProps],
+  );
+
   const [selectedDocuments, setSelectedDocuments] = useState<Array<string>>([]);
-  const { mutate } = useUpdateDocument();
+  const { updateDocument } = useUpdateDocument();
 
   const coarsedFilteredDocuments = useMemo(
     () =>
@@ -147,7 +161,7 @@ export function SelectionHandler({ charge, documents, onDone }: Props) {
 
   const onExecuteMatch = () => {
     selectedDocuments.map(documentId =>
-      mutate({
+      updateDocument({
         documentId,
         fields: { chargeId: charge.id },
       }),

@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import gql from 'graphql-tag';
-import { TableLedgerRecordsFieldsFragment } from '../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../gql';
+import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql';
 import { EditMiniButton } from '../../common';
 import { PopUpDrawer } from '../../common/drawer';
 import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
 import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
 import { EditLedgerRecord } from './edit-ledger-record';
 
-gql`
+/* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       id
-      # ...LedgerRecordsDateFields
-      # ...LedgerRecordsCreditAccountFields
-      # ...LedgerRecordsDebitAccountFields
+      ...LedgerRecordsDateFields
+      ...LedgerRecordsCreditAccountFields
+      ...LedgerRecordsDebitAccountFields
       # ...LedgerRecordsLocalAmountFields
       # ...LedgerRecordsOriginalAmountFields
       # ...LedgerRecordsDescriptionFields
@@ -46,10 +46,14 @@ gql`
 `;
 
 type Props = {
-  ledgerRecords: TableLedgerRecordsFieldsFragment['ledgerRecords'];
+  ledgerRecordsProps: FragmentType<typeof TableLedgerRecordsFieldsFragmentDoc>;
 };
 
-export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
+export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
+  const { ledgerRecords } = getFragmentData(
+    TableLedgerRecordsFieldsFragmentDoc,
+    ledgerRecordsProps,
+  );
   const [editLedgerId, setEditLedgerId] = useState<string | undefined>(undefined);
   return (
     <table style={{ width: '100%', height: '100%' }}>
@@ -77,33 +81,36 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
         </tr>
       </thead>
       <tbody>
-        {ledgerRecords.map(i => (
-          <tr key={i.id}>
-            {/* <Date data={i} /> */}
-            <GeneralDate data={i} type={1} />
-            <GeneralDate data={i} type={2} />
-            <GeneralDate data={i} type={3} />
-            {/* <CreditAccount data={i} />
-            <DebitAccount data={i} /> */}
-            {/* <LocalAmount data={i} /> */}
-            <AccountDetails data={i} cred={true} first={true} />
-            <AccountDetails data={i} cred={false} first={true} />
-            <AccountDetails data={i} cred={true} first={false} />
-            <AccountDetails data={i} cred={false} first={false} />
-            {/* <td>{i.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
-            {/* <OriginalAmount data={i} /> */}
-            {/* <td>{i.originalAmount.formatted}</td> */}
-            {/* <Description data={i} /> */}
-            <td>{i.description}</td>
-            <td>{i.reference_1}</td>
-            <td>{i.reference_2}</td>
-            {/* <AccountantApproval data={i} /> */}
-            {/* <HashavshevetId data={i} /> */}
-            <td>{i.movement_type}</td>
-            <td>{i.hashavshevetId}</td>
-            <AccountantApproval ledgerRecordId={i.id} approved={i.accountantApproval.approved} />
+        {ledgerRecords.map(record => (
+          <tr key={record.id}>
+            {/* <Date data={record} /> */}
+            <GeneralDate data={record} type={1} />
+            <GeneralDate data={record} type={2} />
+            <GeneralDate data={record} type={3} />
+            {/* <CreditAccount data={record} />
+            <DebitAccount data={record} /> */}
+            {/* <LocalAmount data={record} /> */}
+            <AccountDetails data={record} cred={true} first={true} />
+            <AccountDetails data={record} cred={false} first={true} />
+            <AccountDetails data={record} cred={true} first={false} />
+            <AccountDetails data={record} cred={false} first={false} />
+            {/* <td>{record.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
+            {/* <OriginalAmount data={record} /> */}
+            {/* <td>{record.originalAmount.formatted}</td> */}
+            {/* <Description data={record} /> */}
+            <td>{record.description}</td>
+            <td>{record.reference_1}</td>
+            <td>{record.reference_2}</td>
+            {/* <AccountantApproval data={record} /> */}
+            {/* <HashavshevetId data={record} /> */}
+            <td>{record.movement_type}</td>
+            <td>{record.hashavshevetId}</td>
+            <AccountantApproval
+              ledgerRecordId={record.id}
+              approved={record.accountantApproval.approved}
+            />
             <td>
-              <EditMiniButton onClick={() => setEditLedgerId(i.id)} />
+              <EditMiniButton onClick={() => setEditLedgerId(record.id)} />
             </td>
           </tr>
         ))}
@@ -125,7 +132,7 @@ export const LedgerRecordTable = ({ ledgerRecords }: Props) => {
       >
         {ledgerRecords.some(r => r.id === editLedgerId) ? (
           <EditLedgerRecord
-            ledgerRecord={ledgerRecords.find(r => r.id === editLedgerId)!}
+            ledgerRecordProps={ledgerRecords.find(r => r.id === editLedgerId)!}
             onAccept={() => setEditLedgerId(undefined)}
             onCancel={() => setEditLedgerId(undefined)}
           />

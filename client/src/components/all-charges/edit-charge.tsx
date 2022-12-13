@@ -1,19 +1,19 @@
 import { Switch } from '@mantine/core';
-import gql from 'graphql-tag';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { FragmentType, getFragmentData } from '../../gql';
 import {
   Currency,
-  EditChargeFieldsFragment,
+  EditChargeFieldsFragmentDoc,
   UpdateChargeInput,
   UpdateTransactionInput,
-} from '../../__generated__/types';
+} from '../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../helpers';
 import { useUpdateCharge } from '../../hooks/use-update-charge';
 import { useUpdateTransaction } from '../../hooks/use-update-transaction';
 import { BeneficiariesInput, CurrencyInput, TagsInput, TextInput } from '../common/inputs';
 import { SimpleGrid } from '../common/simple-grid';
 
-gql`
+/* GraphQL */ `
   fragment EditChargeFields on Charge {
     id
     counterparty {
@@ -49,12 +49,13 @@ gql`
 `;
 
 type Props = {
-  charge: EditChargeFieldsFragment;
+  chargeProps: FragmentType<typeof EditChargeFieldsFragmentDoc>;
   onAccept?: () => void;
   onCancel?: () => void;
 };
 
-export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
+export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
+  const charge = getFragmentData(EditChargeFieldsFragmentDoc, chargeProps);
   const useFormManager = useForm<UpdateChargeInput>({
     defaultValues: { ...charge, vat: charge.vat?.raw, withholdingTax: charge.withholdingTax?.raw },
   });
@@ -72,14 +73,14 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
     formState: { dirtyFields: dirtyTransactionFields },
   } = useForm<UpdateTransactionInput>({ defaultValues: transaction });
 
-  const { mutate: mutateCharge, isLoading: isChargeLoading } = useUpdateCharge();
-  const { mutate: mutateTransaction, isLoading: isTransactionLoading } = useUpdateTransaction();
+  const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
+  const { updateTransaction, fetching: isTransactionLoading } = useUpdateTransaction();
 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
     handleTransactionSubmit(onTransactionSubmit)();
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      mutateCharge({
+      updateCharge({
         chargeId: charge.id,
         fields: dataToUpdate,
       });
@@ -92,7 +93,7 @@ export const EditCharge = ({ charge, onAccept, onCancel }: Props) => {
       dirtyTransactionFields as MakeBoolean<typeof data>,
     );
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      mutateTransaction({
+      updateTransaction({
         transactionId: transaction.id,
         fields: dataToUpdate,
       });

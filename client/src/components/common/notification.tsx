@@ -2,13 +2,13 @@ import { Notification } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { Check, X } from 'tabler-icons-react';
 
-export interface Props {
+export interface NotificationPopUpProps {
   title?: string;
   content?: string;
   state?: 'success' | 'error';
 }
 
-export const NotificationPopUp = ({ title, content, state }: Props) => {
+export const NotificationPopUp = ({ title, content, state }: NotificationPopUpProps) => {
   return (
     <Notification
       disallowClose

@@ -1,9 +1,9 @@
-import gql from 'graphql-tag';
-import { LedgerRecordsAccountDetailsFieldsFragment } from '../../../../__generated__/types';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { LedgerRecordsAccountDetailsFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* TEMPORARY: this component is used for temporary reasons */
 
-gql`
+/* GraphQL */ `
   fragment LedgerRecordsAccountDetailsFields on LedgerRecord {
     id
     credit_account_1
@@ -23,7 +23,7 @@ gql`
 `;
 
 type Props = {
-  data: LedgerRecordsAccountDetailsFieldsFragment;
+  data: FragmentType<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc>;
   cred: boolean;
   first: boolean;
 };
@@ -43,7 +43,7 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
     foreign_debit_amount_1,
     foreign_debit_amount_2,
     currency,
-  } = data;
+  } = getFragmentData(LedgerRecordsAccountDetailsFieldsFragmentDoc, data);
 
   const creditAccount = cred
     ? first

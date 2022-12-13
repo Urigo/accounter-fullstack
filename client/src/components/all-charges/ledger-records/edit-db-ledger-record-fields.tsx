@@ -7,16 +7,17 @@ import {
   UseFormUnregister,
   UseFormWatch,
 } from 'react-hook-form';
+import { FragmentType, getFragmentData } from '../../../gql';
 import {
   Currency,
-  EditDbLedgerRecordsFieldsFragment,
+  EditDbLedgerRecordsFieldsFragmentDoc,
   UpdateDbLedgerRecordInput,
-} from '../../../__generated__/types';
+} from '../../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../../common/inputs';
 
 type Props = {
-  ledgerRecord: Partial<EditDbLedgerRecordsFieldsFragment>;
+  ledgerRecordProps: FragmentType<typeof EditDbLedgerRecordsFieldsFragmentDoc>;
   control: Control<UpdateDbLedgerRecordInput, unknown>;
   watch: UseFormWatch<UpdateDbLedgerRecordInput>;
   unregister: UseFormUnregister<UpdateDbLedgerRecordInput>;
@@ -25,11 +26,12 @@ type Props = {
 
 export const EditDbLedgerRecordFields = ({
   control,
-  ledgerRecord,
+  ledgerRecordProps,
   setValue,
   unregister,
   watch,
 }: Props) => {
+  const ledgerRecord = getFragmentData(EditDbLedgerRecordsFieldsFragmentDoc, ledgerRecordProps);
   const [currency, setCurrency] = useState<Currency>(Currency.Ils);
   const [isCredit1, setIsCredit1] = useState(false);
   const [isCredit2, setIsCredit2] = useState(false);
