@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Image } from '@mantine/core';
+import { Drawer, Image } from '@mantine/core';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { EditDocumentFieldsFragmentDoc, UpdateDocumentFieldsInput } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
-import { ButtonWithLabel, PopUpModal, SimpleGrid } from '../../common';
+import { ButtonWithLabel, SimpleGrid } from '../../common';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 /* GraphQL */ `
@@ -82,7 +82,7 @@ export const EditDocument = ({ documentProps }: Props) => {
     setValue,
     watch,
   } = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...documentData } });
-  const [openModal, setOpenModal] = useState<string | null>(null);
+  const [openImage, setOpenImage] = useState<boolean>(false);
 
   const { updateDocument, fetching } = useUpdateDocument();
 
@@ -131,23 +131,34 @@ export const EditDocument = ({ documentProps }: Props) => {
         <div className=" w-1/5 h-max flex flex-col ">
           <div className="flex justify-center">
             <Image
-              onClick={() => setOpenModal(documentData.image?.toString() ?? null)}
+              onClick={() => setOpenImage(Boolean(documentData.image))}
               src={documentData?.image?.toString()}
-              className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit	 max-w-fit"
+              className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
             />
           </div>
         </div>
       </div>
-      {openModal === documentData.image && (
-        <PopUpModal
-          content={
-            <Image src={documentData.image} className=" bg-gray-300 p-5 mr-5 max-h-fit	 max-w-fit" />
-          }
-          modalSize="50%"
-          onClose={() => setOpenModal(null)}
-          opened={openModal === documentData.image}
-        />
-      )}
+      <Drawer
+        className="overflow-y-auto drop-shadow-lg"
+        withCloseButton
+        withOverlay={false}
+        position="right"
+        opened={openImage}
+        onClose={() => setOpenImage(false)}
+        // padding={padding}
+        size="30%"
+      >
+        <div className="m-2">
+          <Image
+            src={documentData.image?.toString()}
+            fit="contain"
+            height="100%"
+            width="100%"
+            withPlaceholder
+            className="drop-shadow-xl outline outline-gray-300"
+          />
+        </div>
+      </Drawer>
     </>
   );
 };
