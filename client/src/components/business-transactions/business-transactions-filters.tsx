@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActionIcon, MultiSelect } from '@mantine/core';
+import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -10,7 +10,8 @@ import {
   AllFinancialEntitiesDocument,
   BusinessTransactionsFilter,
 } from '../../gql/graphql';
-import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
+import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
 /* GraphQL */ `
@@ -56,7 +57,6 @@ function BusinessTransactionsFilterForm({
   }, [feError, bnError]);
 
   const onSubmit: SubmitHandler<BusinessTransactionsFilter> = data => {
-    console.log('filter: ', data);
     setFilter(data);
     closeModal();
   };
@@ -191,7 +191,8 @@ export function BusinessTransactionsFilters({
   setFilter,
 }: BusinessTransactionsFilterProps) {
   const [opened, setOpened] = useState(false);
-  const [isFiltered, setIsFiltered] = useState(false);
+  const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
+  const { get, set } = useUrlQuery();
 
   function isFilterApplied(filter: BusinessTransactionsFilter) {
     const changed = Object.entries(filter ?? {}).filter(
@@ -208,6 +209,15 @@ export function BusinessTransactionsFilters({
     }
   }
 
+  // update url on filter change
+  useEffect(() => {
+    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const oldFilter = get('transactionsFilters');
+    if (newFilter !== oldFilter) {
+      set('transactionsFilters', newFilter);
+    }
+  }, [filter, get, set]);
+
   return (
     <>
       <PopUpModal
@@ -221,13 +231,11 @@ export function BusinessTransactionsFilters({
           />
         }
       />
-      <ActionIcon
-        variant="outline"
-        color={isFiltered ? 'red' : 'gray'}
-        onClick={() => setOpened(true)}
-      >
-        <Filter size={20} />
-      </ActionIcon>
+      <Indicator inline size={16} disabled={!isFiltered}>
+        <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+          <Filter size={20} />
+        </ActionIcon>
+      </Indicator>
     </>
   );
 }
