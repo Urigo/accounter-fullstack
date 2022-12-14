@@ -173,7 +173,7 @@ export const commonTransactionFields:
       DbTransaction.account_number,
     );
     if (!account) {
-      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
+      throw new Error(`Account number "${DbTransaction.account_number}" is missing`);
     }
     return account;
   },
