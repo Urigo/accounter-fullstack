@@ -43,51 +43,55 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
     <div className="container px-3 py-3 mx-auto text-gray-600 body-font">
       {additionalDocuments.length > 0 ? (
         <>
-          <div className="flex flex-col text-center w-full mb-5">
+          <div className="flex flex-col text-center w-full">
             <h1 className="text-lg">Realted Documents</h1>
           </div>
-          <div className="flex flex-wrap -m-4">
-            <Carousel sx={{ maxWidth: 320 }} mx="auto" withIndicators height="100%">
+          <div className="flex flex-wrap">
+            <Carousel
+              sx={{ maxWidth: 320 }}
+              mx="auto"
+              align="center"
+              withControls={additionalDocuments.length > 1}
+              slideGap={0}
+              withIndicators
+              className="[&>*>.mantine-Carousel-indicator]:bg-gray-500"
+            >
               {additionalDocuments.map(doc => (
                 <Carousel.Slide key={doc.id}>
-                  <h2 className="text-gray-900 text-lg title-font font-medium">
-                    {'documentType' in doc ? doc.documentType : 'Unprocessed'}
-                  </h2>
-                  <div key={doc.id} className="p-4 md:w-2/4">
-                    <button onClick={() => setOpenModal(doc.id)}>
-                      <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
-                        <Image
-                          src={doc.image?.toString()}
-                          className="max-w-[100%]"
-                          withPlaceholder
-                        />
+                  <div className="flex flex-col items-center">
+                    <h2 className="text-gray-900 text-lg title-font font-medium">
+                      {'documentType' in doc ? doc.documentType : 'Unprocessed'}
+                    </h2>
+                    <button className="mx-10" onClick={() => setOpenModal(doc.id)}>
+                      <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
+                        <Image src={doc.image?.toString()} withPlaceholder />
                       </div>
                     </button>
                   </div>
-                  {openModal === doc.id && (
-                    <PopUpDrawer
-                      modalSize="40%"
-                      position="bottom"
-                      opened={openModal === doc.id}
-                      onClose={() => setOpenModal(null)}
-                      title={
-                        <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
-                          <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
-                          <a href="/#" className="pt-1">
-                            ID: {doc.id}
-                          </a>
-                          <UnlinkDocumentButton documentId={doc.id} />
-                          <DeleteDocumentButton documentId={doc.id} />
-                        </div>
-                      }
-                    >
-                      <EditDocument documentProps={doc} />
-                    </PopUpDrawer>
-                  )}
                 </Carousel.Slide>
               ))}
             </Carousel>
           </div>
+          {openModal && (
+            <PopUpDrawer
+              modalSize="40%"
+              position="bottom"
+              opened
+              onClose={() => setOpenModal(null)}
+              title={
+                <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
+                  <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
+                  <a href="/#" className="pt-1">
+                    ID: {openModal}
+                  </a>
+                  <UnlinkDocumentButton documentId={openModal} />
+                  <DeleteDocumentButton documentId={openModal} />
+                </div>
+              }
+            >
+              <EditDocument documentProps={additionalDocuments.find(d => d.id === openModal)!} />
+            </PopUpDrawer>
+          )}
         </>
       ) : (
         <Badge color="red">No Documents Related</Badge>
