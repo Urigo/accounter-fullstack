@@ -112,7 +112,7 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
       {isAccount && (
         <>
           <a href={getHref(creditAccount as string)} target="_blank" rel="noreferrer">
-            <NavLink label={creditAccount} />
+            <NavLink label={creditAccount} className="[&>*>.mantine-NavLink-label]:font-semibold" />
           </a>
           {isForeign && (
             <p>
