@@ -5,6 +5,7 @@ import {
   ChargeFilter,
   LedgerRecordsAccountDetailsFieldsFragmentDoc,
 } from '../../../../gql/graphql';
+import { formatStringifyAmount } from '../../../../helpers';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* TEMPORARY: this component is used for temporary reasons */
@@ -116,10 +117,10 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
           </a>
           {isForeign && (
             <p>
-              {foreignAmount} {currency}
+              {formatStringifyAmount(foreignAmount)} {currency}
             </p>
           )}
-          {localAmount != null && <p>{localAmount} ILS</p>}
+          {localAmount != null && <p>{formatStringifyAmount(localAmount)} ILS</p>}
         </>
       )}
     </td>
