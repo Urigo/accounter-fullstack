@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
@@ -25,5 +26,7 @@ export const GeneralDate = ({ data, type }: Props) => {
 
   const showDate = type === 1 ? date : type === 2 ? value_date : date3;
 
-  return <td>{showDate ?? 'Missing Data'}</td>;
+  const formattedDate = date ? format(new Date(showDate), 'dd/MM/yy') : 'Missing Data';
+
+  return <td>{formattedDate}</td>;
 };

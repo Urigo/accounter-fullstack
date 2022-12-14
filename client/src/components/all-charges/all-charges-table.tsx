@@ -11,7 +11,7 @@ import {
   Account,
   AccountantApproval,
   Amount,
-  Date,
+  DateCell,
   Description,
   Entity,
   ShareWith,
@@ -73,7 +73,7 @@ export const AllChargesTable = ({
       columns={[
         {
           title: 'Date',
-          value: data => <Date data={data} />,
+          value: data => <DateCell data={data} />,
         },
         {
           title: 'Amount',
