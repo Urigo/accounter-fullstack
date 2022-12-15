@@ -1,6 +1,6 @@
+import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDateFieldsFragmentDoc } from '../../../gql/graphql';
-import { clearTimeFromDate } from '../../../helpers';
 
 /* GraphQL */ `
   fragment AllChargesDateFields on Charge {
@@ -17,11 +17,11 @@ type Props = {
   data: FragmentType<typeof AllChargesDateFieldsFragmentDoc>;
 };
 
-export const Date = ({ data }: Props) => {
+export const DateCell = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
   const { effectiveDate, createdAt } = charge.transactions[0];
-  const timelessCreatedAt = clearTimeFromDate(createdAt);
-  const timelessEffectiveDate = clearTimeFromDate(effectiveDate);
+  const timelessCreatedAt = format(new Date(createdAt), 'dd/MM/yy');
+  const timelessEffectiveDate = format(new Date(effectiveDate), 'dd/MM/yy');
 
   return (
     <div>

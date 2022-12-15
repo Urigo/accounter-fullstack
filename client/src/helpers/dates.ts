@@ -34,7 +34,3 @@ export const parseYear = (year?: string): string | undefined => {
 export function hashDateFormat(date: Date): string {
   return format(new Date(date), 'yyyy/MM/dd');
 }
-
-export function clearTimeFromDate(date: Date): string {
-  return format(new Date(date), 'yyyy-MM-dd');
-}

@@ -1,4 +1,5 @@
 import { Mark, Table } from '@mantine/core';
+import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import {
   BusinessTransactionsFilter,
@@ -120,7 +121,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
             {extendedTransactions.map((row, index) => (
               <tr key={index}>
                 <td>{row.businessName}</td>
-                <td>{row.invoiceDate}</td>
+                <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td>
                   {row.amount.raw && row.amount.raw !== 0 ? (
                     <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>{row.amount.formatted}</Mark>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image } from '@mantine/core';
+import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
@@ -164,7 +165,11 @@ export const DocumentsReport = () => {
                 />
               ),
           },
-          { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },
+          {
+            title: 'Date',
+            value: doc =>
+              'date' in doc && doc.date ? format(new Date(doc.date), 'dd/MM/yy') : null,
+          },
           {
             title: 'Serial Number',
             value: doc => ('serialNumber' in doc ? doc.serialNumber : null),
@@ -186,11 +191,17 @@ export const DocumentsReport = () => {
                     },
                     {
                       title: 'Transaction Created At',
-                      value: transaction => transaction.createdAt,
+                      value: transaction =>
+                        transaction.createdAt
+                          ? format(new Date(transaction.createdAt), 'dd/MM/yy')
+                          : null,
                     },
                     {
                       title: 'Transaction Effective Date',
-                      value: transaction => transaction.effectiveDate,
+                      value: transaction =>
+                        transaction.effectiveDate
+                          ? format(new Date(transaction.effectiveDate), 'dd/MM/yy')
+                          : null,
                     },
                     {
                       title: 'Transaction Description',
