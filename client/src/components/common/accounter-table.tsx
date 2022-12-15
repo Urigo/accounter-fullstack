@@ -69,7 +69,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
 
   return (
     <>
-      <div className="flex flex-row justify-between w-full">
+      <div className="flex flex-row justify-end w-full">
         {props.pagination && <Pagination className="flex-auto" {...props.pagination} />}
         {props.showButton === true ? (
           <button

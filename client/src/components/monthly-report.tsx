@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { parseMonth, parseYear } from '../helpers';
 import { useSql } from '../hooks/use-sql';
 import type { MonthTaxReport } from '../models/types';
-import { AccounterTable } from './common/accounter-table';
+import { AccounterTable } from './common';
 
 export const MonthlyReport = () => {
   const [searchParams] = useSearchParams();

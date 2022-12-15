@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/use-sql';
 import type { LastInvoiceNumber } from '../../models/types';
-import { AccounterBasicTable } from '../common/accounter-basic-table';
+import { AccounterBasicTable } from '../common';
 
 export const LastInvoiceNumbers = () => {
   const { getLastInvoiceNumbers } = useSql();

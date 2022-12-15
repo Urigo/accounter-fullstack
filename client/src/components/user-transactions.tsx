@@ -2,7 +2,7 @@ import { FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } f
 import { useSearchParams } from 'react-router-dom';
 import { useSql } from '../hooks/use-sql';
 import type { LedgerEntity } from '../models/types';
-import { AccounterBasicTable } from './common/accounter-basic-table';
+import { AccounterBasicTable } from './common';
 
 interface ModifiedTransaction {
   counterAccount: string;

@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { ActionIcon, MultiSelect, Select, Switch } from '@mantine/core';
+import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
-import { TIMELESS_DATE_REGEX } from '../../helpers/consts';
-import { PopUpModal } from '../common';
-import { TextInput } from '../common/inputs';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
+import { useUrlQuery } from '../../hooks/use-url-query';
+import { PopUpModal, TextInput } from '../common';
 
 /* GraphQL */ `
   query AllFinancialEntities {
@@ -95,7 +95,6 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
   const sortByField = watch('sortBy.field');
 
   useEffect(() => {
-    console.log(sortByField);
     if (sortByField && !enableAsc) {
       setEnableAsc(true);
     } else if (!sortByField && enableAsc) {
@@ -116,7 +115,6 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
     if (asc != null && data.sortBy?.field) {
       data.sortBy.asc = asc;
     }
-    console.log('filter: ', data);
     setFilter(data);
     closeModal();
   };
@@ -135,7 +133,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
         <Controller
           name="byFinancialEntities"
           control={control}
-          defaultValue={undefined}
+          defaultValue={filter.byFinancialAccounts}
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
@@ -196,7 +194,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
         <Controller
           name="sortBy.field"
           control={control}
-          defaultValue={ChargeSortByField.Date}
+          defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
           render={({ field, fieldState }) => (
             <Select
               {...field}
@@ -210,7 +208,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           )}
         />
         <Switch
-          defaultChecked={false}
+          defaultChecked={filter.sortBy?.asc ?? false}
           checked={asc ?? false}
           disabled={!enableAsc}
           onChange={event => setAsc(event.currentTarget.checked)}
@@ -249,29 +247,55 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
 interface ChargesFiltersProps {
   filter: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;
+  activePage: number;
+  totalPages?: number;
+  setPage: Dispatch<SetStateAction<number>>;
 }
 
-export function ChargesFilters({ filter, setFilter }: ChargesFiltersProps) {
+export function ChargesFilters({
+  filter,
+  setFilter,
+  activePage,
+  setPage,
+  totalPages = 1,
+}: ChargesFiltersProps) {
   const [opened, setOpened] = useState(false);
-  const [isFiltered, setIsFiltered] = useState(false);
+  const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
+  const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: ChargeFilter) {
-    const changed = Object.entries(filter ?? {}).filter(
-      ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
-    );
-    return changed.length > 0;
-  }
-
-  function onSetFilter(newFilter: ChargeFilter) {
-    // looks for actual changes before triggering update
-    if (!equal(newFilter, filter)) {
-      setFilter(newFilter);
-      setIsFiltered(isFilterApplied(newFilter));
+  // update url on page change
+  useEffect(() => {
+    const newPage = activePage > 1 ? activePage.toFixed(0) : null;
+    const oldPage = get('page');
+    if (newPage !== oldPage) {
+      set('page', newPage);
     }
-  }
+  }, [activePage, get, set]);
+
+  // update url on filter change
+  useEffect(() => {
+    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const oldFilter = get('chargesFilters');
+    if (newFilter !== oldFilter) {
+      set('chargesFilters', newFilter);
+      set('page');
+      setPage(1);
+    }
+  }, [filter, get, set, setPage]);
+
+  const onSetFilter = useCallback(
+    (newFilter: ChargeFilter) => {
+      // looks for actual changes before triggering update
+      if (!equal(newFilter, filter)) {
+        setFilter(newFilter);
+        setIsFiltered(!isObjectEmpty(newFilter));
+      }
+    },
+    [filter, setFilter],
+  );
 
   return (
-    <>
+    <div className="flex flex-row gap-5 items-center">
       <PopUpModal
         opened={opened}
         onClose={() => setOpened(false)}
@@ -283,13 +307,14 @@ export function ChargesFilters({ filter, setFilter }: ChargesFiltersProps) {
           />
         }
       />
-      <ActionIcon
-        variant="outline"
-        color={isFiltered ? 'red' : 'gray'}
-        onClick={() => setOpened(true)}
-      >
-        <Filter size={20} />
-      </ActionIcon>
-    </>
+      {totalPages > 1 && (
+        <Pagination className="flex-auto" page={activePage} onChange={setPage} total={totalPages} />
+      )}
+      <Indicator inline size={16} disabled={!isFiltered}>
+        <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+          <Filter size={20} />
+        </ActionIcon>
+      </Indicator>
+    </div>
   );
 }

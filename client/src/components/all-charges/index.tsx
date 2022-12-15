@@ -1,30 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from 'urql';
 import { FragmentType, getFragmentData } from '../../gql';
-import {
-  AllChargesDocument,
-  ChargeFilter,
-  EditChargeFieldsFragmentDoc,
-  SuggestedChargeFragmentDoc,
-} from '../../gql/graphql';
-import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
-import { EditMiniButton, NavBar } from '../common';
-import { AccounterTable } from '../common/accounter-table';
-import { PopUpDrawer } from '../common/drawer';
-import { AccounterLoader } from '../common/loader';
+import { AllChargesDocument, ChargeFilter, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import { useUrlQuery } from '../../hooks/use-url-query';
+import { AccounterLoader, NavBar, PopUpDrawer } from '../common';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
-import {
-  Account,
-  AccountantApproval,
-  Amount,
-  Date,
-  Description,
-  Entity,
-  ShareWith,
-  Tags,
-  Vat,
-} from './cells';
-import { ChargeExtendedInfo } from './charge-extended-info';
+import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
 import { UploadDocument } from './documents/upload-document';
@@ -107,8 +88,13 @@ export const AllCharges = () => {
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
-  const [filter, setFilter] = useState<ChargeFilter>({});
-  const [activePage, setPage] = useState(1);
+  const { get } = useUrlQuery();
+  const [activePage, setPage] = useState(get('page') ? Number(get('page')) : 1);
+  const [filter, setFilter] = useState<ChargeFilter>(
+    get('chargesFilters')
+      ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
+      : {},
+  );
 
   const [{ data, fetching }] = useQuery({
     query: AllChargesDocument,
@@ -119,139 +105,33 @@ export const AllCharges = () => {
     },
   });
 
-  if (fetching) {
-    return <AccounterLoader />;
-  }
-
-  function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
-    const charge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
-    if (
-      !charge.counterparty?.name ||
-      !charge.transactions[0]?.userNote?.trim() ||
-      charge.tags?.length === 0 ||
-      !charge.vat?.raw ||
-      charge.beneficiaries?.length === 0
-    ) {
-      return suggestedCharge(charge);
-    }
-    return undefined;
-  }
-
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
         <NavBar
           header="All Charges"
-          filters={<ChargesFilters filter={filter} setFilter={setFilter} />}
-        />
-        <AccounterTable
-          showButton={true}
-          moreInfo={item => (
-            <ChargeExtendedInfo
-              chargeProps={item}
-              setInsertLedger={setInsertLedger}
-              setInsertDocument={setInsertDocument}
-              setMatchDocuments={setMatchDocuments}
-              setUploadDocument={setUploadDocument}
+          filters={
+            <ChargesFilters
+              filter={filter}
+              setFilter={setFilter}
+              activePage={activePage}
+              setPage={setPage}
+              totalPages={data?.allCharges?.pageInfo.totalPages}
             />
-          )}
-          striped
-          highlightOnHover
-          stickyHeader
-          items={data?.allCharges?.nodes ?? []}
-          rowContext={generateRowContext}
-          columns={[
-            {
-              title: 'Date',
-              value: data => <Date data={data} />,
-            },
-            {
-              title: 'Amount',
-              value: data => <Amount data={data} />,
-            },
-            {
-              title: 'Vat',
-              value: data => <Vat data={data} />,
-            },
-            {
-              title: 'Entity',
-              value: (data, alternativeCharge) => (
-                <Entity
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-                />
-              ),
-            },
-            {
-              title: 'Account',
-              value: data => <Account data={data} />,
-            },
-            {
-              title: 'Description',
-              value: (data, alternativeCharge) => (
-                <Description
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-                />
-              ),
-            },
-            {
-              title: 'Tags',
-              value: (data, alternativeCharge) => (
-                <Tags
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-                />
-              ),
-            },
-            {
-              title: 'Share With',
-              value: (data, alternativeCharge) => (
-                <ShareWith
-                  data={data}
-                  alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-                />
-              ),
-            },
-            {
-              title: 'More Info',
-              value: data => (
-                <div>
-                  <p
-                    style={
-                      data.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }
-                    }
-                  >
-                    Ledger Records: {data.ledgerRecords.length}
-                  </p>
-                  <p
-                    style={
-                      data.additionalDocuments.length > 0 ||
-                      (data.counterparty && entitiesWithoutInvoice.includes(data.counterparty.name))
-                        ? {}
-                        : { backgroundColor: 'rgb(236, 207, 57)' }
-                    }
-                  >
-                    Documents: {data.additionalDocuments.length}
-                  </p>
-                </div>
-              ),
-            },
-            {
-              title: 'Accountant Approval',
-              value: data => <AccountantApproval data={data} />,
-            },
-            {
-              title: 'Edit',
-              value: data => <EditMiniButton onClick={() => setEditCharge(data)} />,
-            },
-          ]}
-          pagination={{
-            page: activePage,
-            onChange: setPage,
-            total: data?.allCharges?.pageInfo.totalPages ?? 1,
-          }}
+          }
         />
+        {fetching ? (
+          <AccounterLoader />
+        ) : (
+          <AllChargesTable
+            setEditCharge={setEditCharge}
+            setInsertLedger={setInsertLedger}
+            setInsertDocument={setInsertDocument}
+            setMatchDocuments={setMatchDocuments}
+            setUploadDocument={setUploadDocument}
+            data={data}
+          />
+        )}
       </div>
       {editCharge && (
         <PopUpDrawer

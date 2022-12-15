@@ -3,23 +3,9 @@ import { Icon } from './icon';
 
 export const AccounterLoader = () => {
   return (
-    <div
-      style={{
-        gap: 10,
-        alignItems: 'center',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        display: 'flex',
-        marginTop: '20%',
-      }}
-    >
-      <Icon name="logo" />
-      <Loader
-        style={{ alignSelf: 'center', display: 'flex' }}
-        color="dark"
-        size="xl"
-        variant="dots"
-      />
+    <div className="flex flex-col justify-center items-center gap-10">
+      <Icon name="logo" className="max-w-xs" />
+      <Loader className="flex self-center" color="dark" size="xl" variant="dots" />
     </div>
   );
 };

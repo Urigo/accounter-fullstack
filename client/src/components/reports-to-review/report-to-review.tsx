@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/use-sql';
 import type { LedgerEntity } from '../../models/types';
-import { AccounterBasicTable } from '../common/accounter-basic-table';
-import { HoverHandler } from '../common/hover-handler';
+import { AccounterBasicTable, HoverHandler } from '../common';
 
 interface EditElementProps {
   transaction: LedgerEntity;

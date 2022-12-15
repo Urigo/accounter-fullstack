@@ -70,3 +70,15 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
 
   return subset;
 }
+
+export function isObjectEmpty(data: Record<string, unknown>): boolean {
+  const values = Object.values(data ?? {}).filter(
+    value =>
+      value !== undefined &&
+      (typeof value !== 'object' ||
+        (Array.isArray(value)
+          ? value.length > 0
+          : !isObjectEmpty(value as Record<string, unknown>))),
+  );
+  return values.length === 0;
+}

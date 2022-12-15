@@ -1,5 +1,5 @@
 import { ChargeFieldsFragment } from '../../../../gql/graphql';
-import { AccounterBasicTable } from '../../../common/accounter-basic-table';
+import { AccounterBasicTable } from '../../../common';
 import { LedgerRecordRow } from './ledger-record-row';
 
 type Props = {

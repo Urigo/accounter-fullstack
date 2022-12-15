@@ -4,9 +4,7 @@ import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
 } from '../../../gql/graphql';
-import { AccounterTable } from '../../common/accounter-table';
-import { Button } from '../../common/button';
-import { PopUpModal } from '../../common/modal';
+import { AccounterTable, Button, PopUpModal } from '../../common';
 
 interface Props {
   documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[];

@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
-import { PopUpDrawer } from '../../common/drawer';
+import { PopUpDrawer } from '../../common';
 import { DeleteDocumentButton } from './delete-document-button';
 import { EditDocument } from './edit-document';
 import { UnlinkDocumentButton } from './unlink-document-button';
@@ -39,55 +40,62 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
   const [openModal, setOpenModal] = useState<string | null>(null);
 
   return (
-    <div className="text-gray-600 body-font">
-      <div className="container px-5 py-12 mx-auto">
-        {additionalDocuments.length > 0 ? (
-          <>
-            <div className="flex flex-col text-center w-full mb-5">
-              <h1 className="text-lg">Realted Documents</h1>
-            </div>
-            <div className="flex flex-wrap -m-4">
+    <div className="container px-3 py-3 mx-auto text-gray-600 body-font">
+      {additionalDocuments.length > 0 ? (
+        <>
+          <div className="flex flex-col text-center w-full">
+            <h1 className="text-lg">Realted Documents</h1>
+          </div>
+          <div className="flex flex-wrap">
+            <Carousel
+              sx={{ maxWidth: 320 }}
+              mx="auto"
+              align="center"
+              withControls={additionalDocuments.length > 1}
+              slideGap={0}
+              withIndicators
+              className="[&>*>.mantine-Carousel-indicator]:bg-gray-500"
+            >
               {additionalDocuments.map(doc => (
-                <div key={doc.id} className="p-4 md:w-2/4">
-                  <button onClick={() => setOpenModal(doc.id)}>
-                    <div className="flex rounded-lg h-full bg-gray-100 p-8 flex-col">
-                      <h2 className="text-gray-900 text-lg title-font font-medium">
-                        {'documentType' in doc ? doc.documentType : 'Unprocessed'}
-                      </h2>
-                      <Image
-                        src={doc.image ? doc.image.toString() : null}
-                        className="max-w-[100%] text-gray-900 text-lg title-font font-medium"
-                      />
-                    </div>
-                  </button>
-                  {openModal === doc.id && (
-                    <PopUpDrawer
-                      modalSize="40%"
-                      position="bottom"
-                      opened={openModal === doc.id}
-                      onClose={() => setOpenModal(null)}
-                      title={
-                        <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
-                          <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
-                          <a href="/#" className="pt-1">
-                            ID: {doc.id}
-                          </a>
-                          <UnlinkDocumentButton documentId={doc.id} />
-                          <DeleteDocumentButton documentId={doc.id} />
-                        </div>
-                      }
-                    >
-                      <EditDocument documentProps={doc} />
-                    </PopUpDrawer>
-                  )}
-                </div>
+                <Carousel.Slide key={doc.id}>
+                  <div className="flex flex-col items-center">
+                    <h2 className="text-gray-900 text-lg title-font font-medium">
+                      {'documentType' in doc ? doc.documentType : 'Unprocessed'}
+                    </h2>
+                    <button className="mx-10" onClick={() => setOpenModal(doc.id)}>
+                      <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
+                        <Image src={doc.image?.toString()} withPlaceholder />
+                      </div>
+                    </button>
+                  </div>
+                </Carousel.Slide>
               ))}
-            </div>
-          </>
-        ) : (
-          <Badge color="red">No Documents Related</Badge>
-        )}
-      </div>
+            </Carousel>
+          </div>
+          {openModal && (
+            <PopUpDrawer
+              modalSize="40%"
+              position="bottom"
+              opened
+              onClose={() => setOpenModal(null)}
+              title={
+                <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
+                  <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
+                  <a href="/#" className="pt-1">
+                    ID: {openModal}
+                  </a>
+                  <UnlinkDocumentButton documentId={openModal} />
+                  <DeleteDocumentButton documentId={openModal} />
+                </div>
+              }
+            >
+              <EditDocument documentProps={additionalDocuments.find(d => d.id === openModal)!} />
+            </PopUpDrawer>
+          )}
+        </>
+      ) : (
+        <Badge color="red">No Documents Related</Badge>
+      )}
     </div>
   );
 };

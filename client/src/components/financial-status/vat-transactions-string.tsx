@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSql } from '../../hooks/use-sql';
 import type { VatTransaction } from '../../models/types';
-import { AccounterBasicTable } from '../common/accounter-basic-table';
+import { AccounterBasicTable } from '../common';
 
 interface Props {
   monthTaxReport: string;
