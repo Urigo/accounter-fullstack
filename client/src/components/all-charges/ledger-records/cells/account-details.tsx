@@ -1,5 +1,11 @@
+import { useCallback } from 'react';
+import { NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { LedgerRecordsAccountDetailsFieldsFragmentDoc } from '../../../../gql/graphql';
+import {
+  ChargeFilter,
+  LedgerRecordsAccountDetailsFieldsFragmentDoc,
+} from '../../../../gql/graphql';
+import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* TEMPORARY: this component is used for temporary reasons */
 
@@ -29,6 +35,7 @@ type Props = {
 };
 
 export const AccountDetails = ({ data, cred, first }: Props) => {
+  const { get } = useUrlQuery();
   const {
     credit_account_1,
     credit_account_2,
@@ -72,11 +79,41 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
   const isAccount = creditAccount || Number(localAmount) > 0 || Number(foreignAmount) > 0;
   const isForeign = foreignAmount != null && currency && currency !== 'ILS';
 
+  const encodedFilters = get('chargesFilters');
+
+  const getHref = useCallback(
+    (businessName: string) => {
+      const currentFilters = encodedFilters
+        ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
+        : {};
+      const encodedNewFilters = {
+        fromDate: currentFilters.fromDate
+          ? `%252C%2522fromDate%2522%253A%2522${currentFilters.fromDate}%2522`
+          : '',
+        toDate: currentFilters.toDate
+          ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
+          : '',
+        financialEntityIds:
+          currentFilters.byFinancialEntities && currentFilters.byFinancialEntities.length > 0
+            ? `%2522${currentFilters.byFinancialEntities.join('%2522%252C%2522')}%2522`
+            : '',
+      };
+      return `/business-transactions?transactionsFilters=%257B%2522financialEntityIds%2522%253A%255B${
+        encodedNewFilters.financialEntityIds
+      }%255D%252C%2522businessNames%2522%253A%255B%2522${encodeURIComponent(
+        businessName,
+      )}%2522%255D${encodedNewFilters.fromDate}${encodedNewFilters.toDate}%257D`;
+    },
+    [encodedFilters],
+  );
+
   return (
     <td>
       {isAccount && (
         <>
-          <p>{creditAccount}</p>
+          <a href={getHref(creditAccount as string)} target="_blank" rel="noreferrer">
+            <NavLink label={creditAccount} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+          </a>
           {isForeign && (
             <p>
               {foreignAmount} {currency}
