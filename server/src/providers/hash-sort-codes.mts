@@ -1,11 +1,11 @@
 import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
-import { IGetSortCodesQuery } from '../__generated__/sort-codes.types.mjs';
+import { IGetSortCodesByIdsQuery } from '../__generated__/hash-sort-codes.types.mjs';
 import { pool } from './db.mjs';
 
 const { sql } = pgQuery;
 
-export const getSortCodesByIds = sql<IGetSortCodesQuery>`
+export const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
     SELECT sc.*
     FROM accounter_schema.hash_sort_codes sc
     WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;

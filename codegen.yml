@@ -31,7 +31,7 @@ generates:
         CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
-        SortCode: ./sort-codes.types.mjs#IGetSortCodesResult
+        SortCode: ./hash-sort-codes.types.mjs#IGetSortCodesByIdsResult
         HashavshevetAccount: ./hash-account-cards.types.mjs#IGetAccountCardsBySortCodesResult
         BusinessTransactionSum: ../models/index.mjs#RawBusinessTransactionsSum
     plugins:
