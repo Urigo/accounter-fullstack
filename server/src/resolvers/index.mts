@@ -17,7 +17,6 @@ import {
 } from '../__generated__/ledger-records.types.mjs';
 import {
   BusinessTransaction,
-  BusinessTransactionSum,
   ChargeSortByField,
   Currency,
   DocumentType,
@@ -34,6 +33,7 @@ import {
   parseDate,
 } from '../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../helpers/misc.mjs';
+import { RawBusinessTransactionsSum } from '../models/index.mjs';
 import {
   getBusinessTransactionsFromLedgerRecords,
   getBusinessTransactionsSumFromLedgerRecords,
@@ -63,6 +63,11 @@ import {
   getFinancialEntityByChargeIdsLoader,
   getFinancialEntityByIdLoader,
 } from '../providers/financial-entities.mjs';
+import {
+  getAccountCardsByKeysLoader,
+  getAccountCardsBySortCodesLoader,
+} from '../providers/hash-account-cards.mjs';
+import { getSortCodesByIdLoader, getSortCodesByIds } from '../providers/hash-sort-codes.mjs';
 import {
   getHashavshevetBusinessIndexes,
   getHashavshevetIsracardIndex,
@@ -177,19 +182,13 @@ export const resolvers: Resolvers = {
 
         const res = await getBusinessTransactionsSumFromLedgerRecords.run(adjestedFilters, pool);
 
-        type CurrencySum = {
-          credit: number;
-          debit: number;
-          total: number;
-        };
-
-        const rawRes: Record<
-          string,
-          { ils: CurrencySum; eur: CurrencySum; gbp: CurrencySum; usd: CurrencySum }
-        > = {};
+        const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
         res.forEach(t => {
-          rawRes[t.business_name ?? ''] ??= {
+          if (!t.business_name) {
+            throw new GraphQLError('business_name is null');
+          }
+          rawRes[t.business_name] ??= {
             ils: {
               credit: 0,
               debit: 0,
@@ -210,6 +209,7 @@ export const resolvers: Resolvers = {
               debit: 0,
               total: 0,
             },
+            businessName: t.business_name,
           };
 
           const business = rawRes[t.business_name ?? ''];
@@ -238,43 +238,7 @@ export const resolvers: Resolvers = {
           }
         });
 
-        const businessTransactionsSum: BusinessTransactionSum[] = Object.entries(rawRes).map(
-          ([businessName, info]) => ({
-            businessName,
-            credit: formatFinancialAmount(info.ils.credit, Currency.Ils),
-            debit: formatFinancialAmount(info.ils.debit, Currency.Ils),
-            total: formatFinancialAmount(info.ils.total, Currency.Ils),
-            eurSum:
-              info.eur.credit || info.eur.debit
-                ? {
-                    credit: formatFinancialAmount(info.eur.credit, Currency.Eur),
-                    debit: formatFinancialAmount(info.eur.debit, Currency.Eur),
-                    total: formatFinancialAmount(info.eur.total, Currency.Eur),
-                  }
-                : undefined,
-            gbpSum:
-              info.gbp.credit || info.gbp.debit
-                ? {
-                    credit: formatFinancialAmount(info.gbp.credit, Currency.Gbp),
-                    debit: formatFinancialAmount(info.gbp.debit, Currency.Gbp),
-                    total: formatFinancialAmount(info.gbp.total, Currency.Gbp),
-                  }
-                : undefined,
-            usdSum:
-              info.usd.credit | info.usd.debit
-                ? {
-                    credit: formatFinancialAmount(info.usd.credit, Currency.Usd),
-                    debit: formatFinancialAmount(info.usd.debit, Currency.Usd),
-                    total: formatFinancialAmount(info.usd.total, Currency.Usd),
-                  }
-                : undefined,
-          }),
-        );
-
-        return {
-          __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
-          businessTransactionsSum,
-        };
+        return { businessTransactionsSum: Object.values(rawRes) };
       } catch (e) {
         console.error(e);
         return {
@@ -363,6 +327,21 @@ export const resolvers: Resolvers = {
       } catch (e) {
         console.error(e);
         return [];
+      }
+    },
+    // sort codes
+    allSortCodes: async () => {
+      try {
+        return await getSortCodesByIds.run(
+          {
+            isSortCodesIds: 0,
+            sortCodesIds: [null],
+          },
+          pool,
+        );
+      } catch (e) {
+        console.error('Error fetching sort codes', e);
+        throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
       }
     },
   },
@@ -1599,4 +1578,93 @@ export const resolvers: Resolvers = {
     ...commonTransactionFields,
   },
   // businessTransactions
+  BusinessTransactionsSumFromLedgerRecordsResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult';
+    },
+  },
+  BusinessTransactionSum: {
+    businessName: rawSum => rawSum.businessName,
+    credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
+    debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
+    total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
+    eurSum: rawSum =>
+      rawSum.eur.credit || rawSum.eur.debit
+        ? {
+            credit: formatFinancialAmount(rawSum.eur.credit, Currency.Eur),
+            debit: formatFinancialAmount(rawSum.eur.debit, Currency.Eur),
+            total: formatFinancialAmount(rawSum.eur.total, Currency.Eur),
+          }
+        : null,
+    gbpSum: rawSum =>
+      rawSum.gbp.credit || rawSum.gbp.debit
+        ? {
+            credit: formatFinancialAmount(rawSum.gbp.credit, Currency.Gbp),
+            debit: formatFinancialAmount(rawSum.gbp.debit, Currency.Gbp),
+            total: formatFinancialAmount(rawSum.gbp.total, Currency.Gbp),
+          }
+        : null,
+    usdSum: rawSum =>
+      rawSum.usd.credit | rawSum.usd.debit
+        ? {
+            credit: formatFinancialAmount(rawSum.usd.credit, Currency.Usd),
+            debit: formatFinancialAmount(rawSum.usd.debit, Currency.Usd),
+            total: formatFinancialAmount(rawSum.usd.total, Currency.Usd),
+          }
+        : null,
+    sortCode: rawSum =>
+      getAccountCardsByKeysLoader.load(rawSum.businessName).then(async card => {
+        if (!card) {
+          throw new GraphQLError(
+            `Hashavshevet account card not found for business "${rawSum.businessName}"`,
+          );
+        }
+        return await getSortCodesByIdLoader.load(card.sort_code).then(sortCode => {
+          if (!sortCode) {
+            throw new GraphQLError(
+              `Hashavshevet sort code not found for account card "${card.key}"`,
+            );
+          }
+          return sortCode;
+        });
+      }),
+  },
+  // sort codes
+  SortCode: {
+    id: dbSortCode => dbSortCode.key,
+    name: dbSortCode => dbSortCode.name,
+    accounts: async dbSortCode => {
+      if (!dbSortCode.key) {
+        return [];
+      }
+      try {
+        return getAccountCardsBySortCodesLoader.load(dbSortCode.key);
+      } catch (e) {
+        console.log(`Error fetching accounts for sort code ${dbSortCode.key}:`, e);
+        return [];
+      }
+    },
+  },
+  // hashavshevet account
+  HashavshevetAccount: {
+    id: dbHashAccount => dbHashAccount.id,
+    key: dbHashAccount => dbHashAccount.key,
+    sortCode: dbHashAccount => {
+      try {
+        return getSortCodesByIdLoader.load(dbHashAccount.sort_code).then(sortCode => {
+          if (!sortCode) {
+            throw new Error('Sort code not found');
+          }
+          return sortCode;
+        });
+      } catch (e) {
+        console.error(`Error sort code for Hashavshevet account card ${dbHashAccount.key}:`, e);
+        throw new GraphQLError(
+          `Error sort code for Hashavshevet account card ${dbHashAccount.key}: ${e}`,
+        );
+      }
+    },
+    name: dbHashAccount => dbHashAccount.name,
+  },
 };
