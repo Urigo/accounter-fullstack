@@ -8,6 +8,7 @@ import { DocumentsReport } from './components/documents';
 import { DocumentsMatch } from './components/documents-match';
 import { FinancialStatus } from './components/financial-status';
 import { MonthlyReport } from './components/monthly-report';
+import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { ReportsToReview } from './components/reports-to-review';
 import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
 import { UserTransactions } from './components/user-transactions';
@@ -35,6 +36,7 @@ root.render(
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/match-documents" element={<DocumentsMatch />} />
           <Route path="/business-transactions" element={<BusinessTransactionsSummery />} />
+          <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
           <Route
             path="*"
             element={

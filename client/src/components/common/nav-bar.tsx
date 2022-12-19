@@ -45,6 +45,15 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
                 Business Transactions
               </a>
             </li>
+            <li>
+              <a
+                href="/reports/trial-balance"
+                className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
+                aria-current="page"
+              >
+                Trial Balance Report
+              </a>
+            </li>
             {extraLinks?.map(link => (
               <li key={link.title}>
                 <a
