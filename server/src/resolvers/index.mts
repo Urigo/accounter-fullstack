@@ -1042,9 +1042,11 @@ export const resolvers: Resolvers = {
           throw new Error(`Charge ID="${chargeId}" has no account number`);
         }
         const docs = await getDocumentsByChargeIdLoader.load(chargeId);
-        const invoices = docs.filter(d =>
-          ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'].includes(d.type ?? ''),
-        );
+        let docTypes = ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'];
+        if (parseFloat(charge.event_amount) > 0) {
+          docTypes = ['INVOICE', 'INVOICE_RECEIPT'];
+        }
+        const invoices = docs.filter(d => docTypes.includes(d.type ?? ''));
         if (invoices.length > 1) {
           console.log(
             `Charge ${chargeId} has more than one invoices: [${invoices
