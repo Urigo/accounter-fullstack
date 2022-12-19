@@ -92,6 +92,7 @@ type Query {
   allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
   allFinancialEntities: [FinancialEntity!]!
+  allSortCodes: [SortCode!]!
   businessTransactionsSumFromLedgerRecords(
     filters: BusinessTransactionsFilter
   ): BusinessTransactionsSumFromLedgerRecordsResult!
@@ -155,6 +156,22 @@ type BusinessTransactionSum {
   eurSum: ForeignCurrencySum
   gbpSum: ForeignCurrencySum
   usdSum: ForeignCurrencySum
+  sortCode: SortCode
+}
+
+" Hashavshevet sort code "
+type SortCode {
+  id: Int!
+  name: String
+  accounts: [HashavshevetAccount!]!
+}
+
+" Hashavshevet account "
+type HashavshevetAccount {
+  id: ID!
+  key: String!
+  sortCode: SortCode!
+  name: String
 }
 
 " summary of foreign currency business transactions " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
