@@ -44,6 +44,7 @@ module.exports = {
                 'NamedCounterparty',
                 'PageInfo',
                 'PaginatedCharges',
+                'SortCode',
               ],
             },
           },
