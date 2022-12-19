@@ -86,6 +86,8 @@ function account(
       return financialAccounts.hashavshevet_account_usd;
     case 'checking_eur':
       return financialAccounts.hashavshevet_account_eur;
+    case 'checking_gbp':
+      return financialAccounts.hashavshevet_account_gbp;
     case 'creditcard':
       return getCreditcardAccount(financialAccounts, currency);
     case 'Isracard':
