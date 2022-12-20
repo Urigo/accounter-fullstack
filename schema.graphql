@@ -199,6 +199,10 @@ type BusinessTransaction {
   gbpAmount: FinancialAmount
   usdAmount: FinancialAmount
   invoiceDate: TimelessDate!
+  reference1: String
+  reference2: String
+  details: String
+  counterAccount: String
 }
 
 " input variables for updateDocument "
