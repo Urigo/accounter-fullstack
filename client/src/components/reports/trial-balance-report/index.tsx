@@ -272,10 +272,8 @@ export const TrialBalanceReport = () => {
                 );
               })}
               <tr className="bg-gray-100">
-                <td colSpan={2}>Group total:</td>
-                <td colSpan={1}>***</td>
-                <td colSpan={1}>{}</td>
-                <td colSpan={1}>{}</td>
+                <td colSpan={2}>Report total:</td>
+                <td colSpan={3}>{}</td>
                 <td colSpan={1}>
                   {formatStringifyAmount(
                     Object.values(extendedSortCodes).reduce((total, row) => total + row.sum, 0),
