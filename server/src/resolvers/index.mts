@@ -821,7 +821,7 @@ export const resolvers: Resolvers = {
         creditAmount2: Number.isNaN(fields.credit_amount_2)
           ? null
           : fields.credit_amount_2?.toFixed(2),
-        currency: hashavshevetFormat.currency(fields.currency ?? ''),
+        currency: fields.currency ? hashavshevetFormat.currency(fields.currency) : null,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null,
         debitAccount1: fields.debit_account_1 ?? null,
         debitAccount2: fields.debit_account_2 ?? null,
