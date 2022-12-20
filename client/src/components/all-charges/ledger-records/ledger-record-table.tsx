@@ -64,10 +64,10 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
           <th>Date3</th>
           {/* <th>Credit Account</th> */}
           {/* <th>Debit Account</th> */}
-          <th>Credit Account1</th>
           <th>Debit Account1</th>
-          <th>Credit Account2</th>
+          <th>Credit Account1</th>
           <th>Debit Account2</th>
+          <th>Credit Account2</th>
           {/* <th>Local Amount</th>
           <th>Original Amount</th> */}
           <th>Details</th>
@@ -89,10 +89,10 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
             {/* <CreditAccount data={record} />
             <DebitAccount data={record} /> */}
             {/* <LocalAmount data={record} /> */}
-            <AccountDetails data={record} cred={true} first={true} />
             <AccountDetails data={record} cred={false} first={true} />
-            <AccountDetails data={record} cred={true} first={false} />
+            <AccountDetails data={record} cred={true} first={true} />
             <AccountDetails data={record} cred={false} first={false} />
+            <AccountDetails data={record} cred={true} first={false} />
             {/* <td>{record.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
             {/* <OriginalAmount data={record} /> */}
             {/* <td>{record.originalAmount.formatted}</td> */}
