@@ -9,6 +9,7 @@ import {
 import { formatStringifyAmount } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader, NavBar } from '../../common';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
 /* GraphQL */ `
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
@@ -85,10 +86,7 @@ import { AccounterLoader, NavBar } from '../../common';
 
 export const TrialBalanceReport = () => {
   const { get } = useUrlQuery();
-  const [
-    filter,
-    // setFilter
-  ] = useState<BusinessTransactionsFilter>(
+  const [filter, setFilter] = useState<BusinessTransactionsFilter>(
     get('sortCodesReportFilters')
       ? (JSON.parse(
           decodeURIComponent(get('sortCodesReportFilters') as string),
@@ -128,7 +126,6 @@ export const TrialBalanceReport = () => {
                   TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
                   { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
                 >['businessTransactionsSum'][number];
-                // BusinessTransactionSum;
               }
             >;
             credit: number;
@@ -143,6 +140,8 @@ export const TrialBalanceReport = () => {
     > = {};
 
     sortCodes.map(sortCode => {
+      if (!sortCode.accounts.length) return;
+
       const group = roundNearest100(sortCode.id);
       adjustedSortCodes[group] ??= {
         sortCodes: [],
@@ -191,14 +190,12 @@ export const TrialBalanceReport = () => {
     return adjustedSortCodes;
   }, [sortCodes, businessTransactionsSum]);
 
-  console.log(extendedSortCodes);
-
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
         <NavBar
           header="Business Transactions Summery"
-          // filters={<BusinessTransactionsFilters filter={filter} setFilter={setFilter} />}
+          filters={<TrialBalanceReportFilters filter={filter} setFilter={setFilter} />}
         />
         {fetching ? (
           <AccounterLoader />
@@ -212,7 +209,6 @@ export const TrialBalanceReport = () => {
                 <th>Debit</th>
                 <th>Credit</th>
                 <th>Total</th>
-                <th>temp</th>
                 {/* <th>More Info</th> */}
               </tr>
             </thead>
@@ -239,25 +235,16 @@ export const TrialBalanceReport = () => {
                                 <td>{account.key}</td>
                                 <td>{account.name ?? undefined}</td>
                                 <td>
-                                  {rowTotal < 0
+                                  {rowTotal < -0.001
                                     ? formatStringifyAmount(-1 * (transactionsSum?.total.raw ?? 0))
                                     : undefined}
                                 </td>
                                 <td>
-                                  {rowTotal > 0
+                                  {rowTotal > 0.001
                                     ? formatStringifyAmount(transactionsSum?.total.raw ?? 0)
                                     : undefined}
                                 </td>
                                 <td>{}</td>
-                                <td>
-                                  <div>
-                                    {transactionsSum?.credit.formatted}
-                                    <br />
-                                    {transactionsSum?.debit.formatted}
-                                    <br />
-                                    {transactionsSum?.total.formatted}
-                                  </div>
-                                </td>
                                 {/* <td>More Info</td> */}
                               </tr>
                             );
