@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { FragmentType, getFragmentData } from '../../gql';
 import { AllChargesDocument, ChargeFilter, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
@@ -88,6 +90,7 @@ export const AllCharges = () => {
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
+  const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const { get } = useUrlQuery();
   const [activePage, setPage] = useState(get('page') ? Number(get('page')) : 1);
   const [filter, setFilter] = useState<ChargeFilter>(
@@ -111,13 +114,24 @@ export const AllCharges = () => {
         <NavBar
           header="All Charges"
           filters={
-            <ChargesFilters
-              filter={filter}
-              setFilter={setFilter}
-              activePage={activePage}
-              setPage={setPage}
-              totalPages={data?.allCharges?.pageInfo.totalPages}
-            />
+            <div className="flex flex-row gap-2">
+              <Tooltip label="Expand all accounts">
+                <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+                  {isAllOpened ? (
+                    <LayoutNavbarCollapse size={20} />
+                  ) : (
+                    <LayoutNavbarExpand size={20} />
+                  )}
+                </ActionIcon>
+              </Tooltip>
+              <ChargesFilters
+                filter={filter}
+                setFilter={setFilter}
+                activePage={activePage}
+                setPage={setPage}
+                totalPages={data?.allCharges?.pageInfo.totalPages}
+              />
+            </div>
           }
         />
         {fetching ? (
@@ -130,6 +144,7 @@ export const AllCharges = () => {
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
             data={data}
+            isAllOpened={isAllOpened}
           />
         )}
       </div>
