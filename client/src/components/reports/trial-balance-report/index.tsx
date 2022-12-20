@@ -11,6 +11,19 @@ import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader, NavBar } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
+type ExtendedAccount = TrialBalanceReportQuery['allSortCodes'][number]['accounts'][number] & {
+  transactionsSum?: Extract<
+    TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
+    { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
+  >['businessTransactionsSum'][number];
+};
+type ExtendedSortCode = Omit<TrialBalanceReportQuery['allSortCodes'][number], 'accounts'> & {
+  accounts: Array<ExtendedAccount>;
+  credit: number;
+  debit: number;
+  sum: number;
+};
+
 /* GraphQL */ `
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
     allSortCodes {
@@ -118,21 +131,7 @@ export const TrialBalanceReport = () => {
     const adjustedSortCodes: Record<
       number,
       {
-        sortCodes: Array<
-          TrialBalanceReportQuery['allSortCodes'][number] & {
-            accounts: Array<
-              TrialBalanceReportQuery['allSortCodes'][number]['accounts'][number] & {
-                transactionsSum?: Extract<
-                  TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
-                  { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
-                >['businessTransactionsSum'][number];
-              }
-            >;
-            credit: number;
-            debit: number;
-            sum: number;
-          }
-        >;
+        sortCodes: Array<ExtendedSortCode>;
         credit: number;
         debit: number;
         sum: number;
@@ -225,10 +224,7 @@ export const TrialBalanceReport = () => {
                             </td>
                           </tr>
                           {sortCode.accounts.map(account => {
-                            const transactionsSum = businessTransactionsSum.find(
-                              s => s.businessName === account.key,
-                            );
-                            const rowTotal = transactionsSum?.total?.raw ?? 0;
+                            const rowTotal = account.transactionsSum?.total?.raw ?? 0;
                             return (
                               <tr key={account.id}>
                                 <td>{sortCode.id}</td>
@@ -236,12 +232,14 @@ export const TrialBalanceReport = () => {
                                 <td>{account.name ?? undefined}</td>
                                 <td>
                                   {rowTotal < -0.001
-                                    ? formatStringifyAmount(-1 * (transactionsSum?.total.raw ?? 0))
+                                    ? formatStringifyAmount(
+                                        -1 * (account.transactionsSum?.total.raw ?? 0),
+                                      )
                                     : undefined}
                                 </td>
                                 <td>
                                   {rowTotal > 0.001
-                                    ? formatStringifyAmount(transactionsSum?.total.raw ?? 0)
+                                    ? formatStringifyAmount(account.transactionsSum?.total.raw ?? 0)
                                     : undefined}
                                 </td>
                                 <td>{}</td>
