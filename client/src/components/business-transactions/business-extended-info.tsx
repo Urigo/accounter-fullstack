@@ -32,6 +32,10 @@ import { AccounterLoader } from '../common';
             raw
           }
           invoiceDate
+          reference1
+          reference2
+          details
+          counterAccount
         }
       }
       ... on CommonError {
@@ -115,6 +119,10 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
               {isUsd && <th>USD Balance</th>}
               {isGbp && <th>GBP Amount</th>}
               {isGbp && <th>GBP Balance</th>}
+              <th>Reference1</th>
+              <th>Reference2</th>
+              <th>Details</th>
+              <th>Counter Account</th>
             </tr>
           </thead>
           <tbody>
@@ -204,6 +212,10 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                     )}
                   </td>
                 )}
+                <td>{row.reference1}</td>
+                <td>{row.reference2}</td>
+                <td>{row.details}</td>
+                <td>{row.counterAccount}</td>
               </tr>
             ))}
           </tbody>

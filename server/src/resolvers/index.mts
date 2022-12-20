@@ -304,6 +304,10 @@ export const resolvers: Resolvers = {
                 : undefined,
 
             invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
+            reference1: t.reference_1 ?? null,
+            reference2: t.reference_2 ?? null,
+            details: t.details ?? null,
+            counterAccount: t.counter_account ?? null,
           };
         });
 
