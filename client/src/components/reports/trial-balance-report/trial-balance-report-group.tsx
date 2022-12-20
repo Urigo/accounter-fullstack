@@ -1,6 +1,7 @@
-import { BusinessTransactionsFilter, TrialBalanceReportQuery } from '../../../gql/graphql';
+import { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { ExtendedAccount } from './trial-balance-report-account';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceReportSortCode } from './trial-balance-report-sort-code';
 
 export type ExtendedSortCode = Omit<TrialBalanceReportQuery['allSortCodes'][number], 'accounts'> & {
@@ -18,10 +19,11 @@ interface Props {
     sum: number;
   };
   group: string;
-  filter: BusinessTransactionsFilter;
+  filter: TrialBalanceReportFilters;
+  isAllOpened: boolean;
 }
 
-export const TrialBalanceReportGroup = ({ group, data, filter }: Props) => {
+export const TrialBalanceReportGroup = ({ group, data, filter, isAllOpened }: Props) => {
   return (
     <>
       {data.sortCodes.map((sortCode, i) => (
@@ -29,6 +31,7 @@ export const TrialBalanceReportGroup = ({ group, data, filter }: Props) => {
           key={`${sortCode.id} ${i}`}
           sortCode={sortCode}
           filter={filter}
+          isAllOpened={isAllOpened}
         />
       ))}
       <tr key={'group' + group} className="bg-gray-100">
