@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Table } from '@mantine/core';
+import { ActionIcon, Table, Tooltip } from '@mantine/core';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import {
-  BusinessTransactionsFilter,
-  TrialBalanceReportDocument,
-  TrialBalanceReportQuery,
-} from '../../../gql/graphql';
+import { BusinessTransactionsFilter, TrialBalanceReportDocument } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader, NavBar } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
+import { TrialBalanceReportGroup } from './trial-balance-report-group';
+import { ExtendedSortCode } from './trial-balance-report-sort-code';
 
 /* GraphQL */ `
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
@@ -85,6 +84,7 @@ import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 `;
 
 export const TrialBalanceReport = () => {
+  const [isExtended, setIsExtended] = useState(false);
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
     get('sortCodesReportFilters')
@@ -118,21 +118,7 @@ export const TrialBalanceReport = () => {
     const adjustedSortCodes: Record<
       number,
       {
-        sortCodes: Array<
-          TrialBalanceReportQuery['allSortCodes'][number] & {
-            accounts: Array<
-              TrialBalanceReportQuery['allSortCodes'][number]['accounts'][number] & {
-                transactionsSum?: Extract<
-                  TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
-                  { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
-                >['businessTransactionsSum'][number];
-              }
-            >;
-            credit: number;
-            debit: number;
-            sum: number;
-          }
-        >;
+        sortCodes: Array<ExtendedSortCode>;
         credit: number;
         debit: number;
         sum: number;
@@ -150,12 +136,20 @@ export const TrialBalanceReport = () => {
         sum: 0,
       };
 
-      const accounts = sortCode.accounts.map(account => {
-        return {
-          ...account,
-          transactionsSum: businessTransactionsSum.find(s => s.businessName === account.key),
-        };
-      });
+      const accounts = sortCode.accounts
+        .map(account => {
+          return {
+            ...account,
+            transactionsSum: businessTransactionsSum.find(s => s.businessName === account.key),
+          };
+        })
+        .filter(
+          account =>
+            isExtended ||
+            (account.transactionsSum?.total.raw &&
+              (account.transactionsSum.total.raw > 0.001 ||
+                account.transactionsSum.total.raw < -0.001)),
+        );
 
       const extendedSortCode = {
         ...sortCode,
@@ -188,14 +182,27 @@ export const TrialBalanceReport = () => {
     });
 
     return adjustedSortCodes;
-  }, [sortCodes, businessTransactionsSum]);
+  }, [sortCodes, businessTransactionsSum, isExtended]);
 
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
         <NavBar
           header="Business Transactions Summery"
-          filters={<TrialBalanceReportFilters filter={filter} setFilter={setFilter} />}
+          filters={
+            <>
+              <Tooltip label="Toggle zeroed rows">
+                <ActionIcon variant="default" onClick={() => setIsExtended(i => !i)} size={30}>
+                  {isExtended ? (
+                    <LayoutNavbarCollapse size={20} />
+                  ) : (
+                    <LayoutNavbarExpand size={20} />
+                  )}
+                </ActionIcon>
+              </Tooltip>
+              <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
+            </>
+          }
         />
         {fetching ? (
           <AccounterLoader />
@@ -213,71 +220,12 @@ export const TrialBalanceReport = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(extendedSortCodes).map(([group, data]) => {
-                return (
-                  <>
-                    {data.sortCodes.map(sortCode => {
-                      return sortCode.accounts.length > 0 ? (
-                        <>
-                          <tr>
-                            <td colSpan={7}>
-                              <span className="font-bold">{sortCode.name}</span>
-                            </td>
-                          </tr>
-                          {sortCode.accounts.map(account => {
-                            const transactionsSum = businessTransactionsSum.find(
-                              s => s.businessName === account.key,
-                            );
-                            const rowTotal = transactionsSum?.total?.raw ?? 0;
-                            return (
-                              <tr key={account.id}>
-                                <td>{sortCode.id}</td>
-                                <td>{account.key}</td>
-                                <td>{account.name ?? undefined}</td>
-                                <td>
-                                  {rowTotal < -0.001
-                                    ? formatStringifyAmount(-1 * (transactionsSum?.total.raw ?? 0))
-                                    : undefined}
-                                </td>
-                                <td>
-                                  {rowTotal > 0.001
-                                    ? formatStringifyAmount(transactionsSum?.total.raw ?? 0)
-                                    : undefined}
-                                </td>
-                                <td>{}</td>
-                                {/* <td>More Info</td> */}
-                              </tr>
-                            );
-                          })}
-                          <tr className="bg-gray-100">
-                            {sortCode.accounts.length > 1 ? (
-                              <>
-                                <td colSpan={2}>Group total:</td>
-                                <td colSpan={1}>{sortCode.id}</td>
-                                <td colSpan={1}>{formatStringifyAmount(sortCode.debit)}</td>
-                                <td colSpan={1}>{formatStringifyAmount(sortCode.credit)}</td>
-                                <td colSpan={1}>{formatStringifyAmount(sortCode.sum)}</td>
-                              </>
-                            ) : undefined}
-                          </tr>
-                        </>
-                      ) : undefined;
-                    })}
-                    <tr className="bg-gray-100">
-                      <td colSpan={2}>Group total:</td>
-                      <td colSpan={1}>{group.replaceAll('0', '*')}</td>
-                      <td colSpan={1}>{}</td>
-                      <td colSpan={1}>{}</td>
-                      <td colSpan={1}>{formatStringifyAmount(data.sum)}</td>
-                    </tr>
-                  </>
-                );
-              })}
+              {Object.entries(extendedSortCodes).map(([group, data]) => (
+                <TrialBalanceReportGroup key={group} data={data} group={group} filter={filter} />
+              ))}
               <tr className="bg-gray-100">
-                <td colSpan={2}>Group total:</td>
-                <td colSpan={1}>***</td>
-                <td colSpan={1}>{}</td>
-                <td colSpan={1}>{}</td>
+                <td colSpan={2}>Report total:</td>
+                <td colSpan={3}>{}</td>
                 <td colSpan={1}>
                   {formatStringifyAmount(
                     Object.values(extendedSortCodes).reduce((total, row) => total + row.sum, 0),

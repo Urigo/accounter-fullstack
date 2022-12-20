@@ -203,9 +203,9 @@ export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceRep
   // update url on filter change
   useEffect(() => {
     const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-    const oldFilter = get('transactionsFilters');
+    const oldFilter = get('sortCodesReportFilters');
     if (newFilter !== oldFilter) {
-      set('transactionsFilters', newFilter);
+      set('sortCodesReportFilters', newFilter);
     }
   }, [filter, get, set]);
 
