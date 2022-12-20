@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Table } from '@mantine/core';
+import { ActionIcon, Table, Tooltip } from '@mantine/core';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import {
   BusinessTransactionsFilter,
@@ -98,6 +99,7 @@ type ExtendedSortCode = Omit<TrialBalanceReportQuery['allSortCodes'][number], 'a
 `;
 
 export const TrialBalanceReport = () => {
+  const [isExtended, setIsExtended] = useState(false);
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
     get('sortCodesReportFilters')
@@ -149,12 +151,20 @@ export const TrialBalanceReport = () => {
         sum: 0,
       };
 
-      const accounts = sortCode.accounts.map(account => {
-        return {
-          ...account,
-          transactionsSum: businessTransactionsSum.find(s => s.businessName === account.key),
-        };
-      });
+      const accounts = sortCode.accounts
+        .map(account => {
+          return {
+            ...account,
+            transactionsSum: businessTransactionsSum.find(s => s.businessName === account.key),
+          };
+        })
+        .filter(
+          account =>
+            isExtended ||
+            (account.transactionsSum?.total.raw &&
+              (account.transactionsSum.total.raw > 0.001 ||
+                account.transactionsSum.total.raw < -0.001)),
+        );
 
       const extendedSortCode = {
         ...sortCode,
@@ -187,14 +197,27 @@ export const TrialBalanceReport = () => {
     });
 
     return adjustedSortCodes;
-  }, [sortCodes, businessTransactionsSum]);
+  }, [sortCodes, businessTransactionsSum, isExtended]);
 
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
         <NavBar
           header="Business Transactions Summery"
-          filters={<TrialBalanceReportFilters filter={filter} setFilter={setFilter} />}
+          filters={
+            <>
+              <Tooltip label="Toggle zeroed rows">
+                <ActionIcon variant="default" onClick={() => setIsExtended(i => !i)} size={30}>
+                  {isExtended ? (
+                    <LayoutNavbarCollapse size={20} />
+                  ) : (
+                    <LayoutNavbarExpand size={20} />
+                  )}
+                </ActionIcon>
+              </Tooltip>
+              <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
+            </>
+          }
         />
         {fetching ? (
           <AccounterLoader />
