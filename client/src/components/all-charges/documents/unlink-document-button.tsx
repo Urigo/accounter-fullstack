@@ -17,6 +17,7 @@ export function UnlinkDocumentButton({ documentId }: Props) {
       documentId,
       fields: { chargeId: 'NULL' },
     });
+    setOpened(false);
   }
 
   return (

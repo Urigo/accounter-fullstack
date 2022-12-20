@@ -16,6 +16,7 @@ export function DeleteDocumentButton({ documentId }: Props) {
     deleteDocument({
       documentId,
     });
+    setOpened(false);
   }
 
   return (
