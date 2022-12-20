@@ -6,6 +6,7 @@ import { EditDocumentFieldsFragmentDoc, UpdateDocumentFieldsInput } from '../../
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ButtonWithLabel, SimpleGrid } from '../../common';
+import { ImageMagnifier } from '../../common/image-magnifier';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 /* GraphQL */ `
@@ -143,19 +144,17 @@ export const EditDocument = ({ documentProps }: Props) => {
         withCloseButton
         withOverlay={false}
         position="right"
-        opened={openImage}
+        opened={Boolean(documentData.image) && openImage}
         onClose={() => setOpenImage(false)}
         // padding={padding}
         size="30%"
       >
         <div className="m-2">
-          <Image
-            src={documentData.image?.toString()}
-            fit="contain"
-            height="100%"
-            width="100%"
-            withPlaceholder
-            className="drop-shadow-xl outline outline-gray-300"
+          <ImageMagnifier
+            src={documentData.image!.toString()}
+            zoomLevel={3}
+            magnifierHeight={300}
+            magnifierWidth={300}
           />
         </div>
       </Drawer>
