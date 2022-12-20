@@ -9,11 +9,11 @@ interface Props {
 
 export function AccountantApproval({ ledgerRecordId, approved: initialApprovedState }: Props) {
   const [checked, setChecked] = useState(initialApprovedState);
-  const { mutate } = useToggleLedgerRecordAccountantApproval();
+  const { toggleLedgerRecordAccountantApproval } = useToggleLedgerRecordAccountantApproval();
 
   function onToggle(approved: boolean) {
     setChecked(approved);
-    mutate({
+    toggleLedgerRecordAccountantApproval({
       ledgerRecordId,
       approved,
     });

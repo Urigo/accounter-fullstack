@@ -10,10 +10,10 @@ interface Props {
 
 export function DeleteLedgerRecordButton({ ledgerRecordId }: Props) {
   const [opened, setOpened] = useState(false);
-  const { mutate } = useDeleteLedgerRecord();
+  const { deleteDocument } = useDeleteLedgerRecord();
 
   function onDelete() {
-    mutate({
+    deleteDocument({
       ledgerRecordId,
     });
     setOpened(false);

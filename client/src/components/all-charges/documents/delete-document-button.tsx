@@ -10,10 +10,10 @@ interface Props {
 
 export function DeleteDocumentButton({ documentId }: Props) {
   const [opened, setOpened] = useState(false);
-  const { mutate } = useDeleteDocument();
+  const { deleteDocument } = useDeleteDocument();
 
   function onDelete() {
-    mutate({
+    deleteDocument({
       documentId,
     });
   }
