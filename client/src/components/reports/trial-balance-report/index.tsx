@@ -113,7 +113,7 @@ export const TrialBalanceReport = () => {
   }, [data?.allSortCodes]);
 
   function roundNearest100(num: number) {
-    return Math.round(num / 100) * 100;
+    return Math.floor(num / 100) * 100;
   }
 
   const extendedSortCodes = useMemo(() => {
@@ -212,6 +212,7 @@ export const TrialBalanceReport = () => {
                 <th>Debit</th>
                 <th>Credit</th>
                 <th>Total</th>
+                <th>temp</th>
                 {/* <th>More Info</th> */}
               </tr>
             </thead>
@@ -238,12 +239,25 @@ export const TrialBalanceReport = () => {
                                 <td>{account.key}</td>
                                 <td>{account.name ?? undefined}</td>
                                 <td>
-                                  {rowTotal < 0 ? transactionsSum?.debit.formatted : undefined}
+                                  {rowTotal < 0
+                                    ? formatStringifyAmount(-1 * (transactionsSum?.total.raw ?? 0))
+                                    : undefined}
                                 </td>
                                 <td>
-                                  {rowTotal > 0 ? transactionsSum?.credit.formatted : undefined}
+                                  {rowTotal > 0
+                                    ? formatStringifyAmount(transactionsSum?.total.raw ?? 0)
+                                    : undefined}
                                 </td>
                                 <td>{}</td>
+                                <td>
+                                  <div>
+                                    {transactionsSum?.credit.formatted}
+                                    <br />
+                                    {transactionsSum?.debit.formatted}
+                                    <br />
+                                    {transactionsSum?.total.formatted}
+                                  </div>
+                                </td>
                                 {/* <td>More Info</td> */}
                               </tr>
                             );
@@ -253,21 +267,9 @@ export const TrialBalanceReport = () => {
                               <>
                                 <td colSpan={2}>Group total:</td>
                                 <td colSpan={1}>{sortCode.id}</td>
-                                <td colSpan={1}>
-                                  {sortCode.debit === 0
-                                    ? undefined
-                                    : formatStringifyAmount(sortCode.debit)}
-                                </td>
-                                <td colSpan={1}>
-                                  {sortCode.credit === 0
-                                    ? undefined
-                                    : formatStringifyAmount(sortCode.credit)}
-                                </td>
-                                <td colSpan={1}>
-                                  {sortCode.sum === 0
-                                    ? undefined
-                                    : formatStringifyAmount(sortCode.sum)}
-                                </td>
+                                <td colSpan={1}>{formatStringifyAmount(sortCode.debit)}</td>
+                                <td colSpan={1}>{formatStringifyAmount(sortCode.credit)}</td>
+                                <td colSpan={1}>{formatStringifyAmount(sortCode.sum)}</td>
                               </>
                             ) : undefined}
                           </tr>
@@ -276,16 +278,25 @@ export const TrialBalanceReport = () => {
                     })}
                     <tr className="bg-gray-100">
                       <td colSpan={2}>Group total:</td>
-                      <td colSpan={1}>{group}</td>
+                      <td colSpan={1}>{group.replaceAll('0', '*')}</td>
                       <td colSpan={1}>{}</td>
                       <td colSpan={1}>{}</td>
-                      <td colSpan={1}>
-                        {data.sum === 0 ? undefined : formatStringifyAmount(data.sum)}
-                      </td>
+                      <td colSpan={1}>{formatStringifyAmount(data.sum)}</td>
                     </tr>
                   </>
                 );
               })}
+              <tr className="bg-gray-100">
+                <td colSpan={2}>Group total:</td>
+                <td colSpan={1}>***</td>
+                <td colSpan={1}>{}</td>
+                <td colSpan={1}>{}</td>
+                <td colSpan={1}>
+                  {formatStringifyAmount(
+                    Object.values(extendedSortCodes).reduce((total, row) => total + row.sum, 0),
+                  )}
+                </td>
+              </tr>
             </tbody>
           </Table>
         )}
