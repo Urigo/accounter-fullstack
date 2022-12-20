@@ -1,4 +1,6 @@
 import { ReactNode } from 'react';
+import { NavLink } from '@mantine/core';
+import { useNavigate } from 'react-router-dom';
 
 interface props {
   header: string | ReactNode;
@@ -10,66 +12,60 @@ interface props {
 }
 
 export const NavBar = ({ header, extraLinks, filters }: props) => {
+  const navigate = useNavigate();
+
   return (
-    <nav className="border-gray-200 px-2 mb-10">
-      <div className="container mx-auto flex flex-wrap items-center justify-between">
-        {/* Logo */}
-        <span className="self-center text-lg font-semibold whitespace-nowrap">{header}</span>
-        {/* Links */}
-        <div className="flex justify-between items-center w-auto md:order-1">
-          <ul className="flex-row flex md:space-x-8 mt-0 text-sm font-medium">
-            <li>
+    <div className="container mx-auto flex flex-wrap items-center justify-between border-gray-200 px-2 mb-10">
+      {/* Logo */}
+      <span className="self-center text-lg font-semibold whitespace-nowrap">{header}</span>
+      {/* Links */}
+      <div className="flex justify-between items-center w-auto md:order-1">
+        <ul className="flex-row flex md:space-x-8 mt-0 text-sm font-medium">
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="All Charges"
+              onClick={() => navigate('/all-charges')}
+            />
+          </li>
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="Documents"
+              onClick={() => navigate('/documents')}
+            />
+          </li>
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="Business Transactions"
+              onClick={() => navigate('/business-transactions')}
+            />
+          </li>
+          <li>
+            <NavLink className="text-gray-700 rounded" label="Reports" childrenOffset={28}>
+              <NavLink
+                className="text-gray-700 rounded"
+                label="Trial Balance Report"
+                onClick={() => navigate('/reports/trial-balance')}
+              />
+            </NavLink>
+          </li>
+          {extraLinks?.map(link => (
+            <li key={link.title}>
               <a
-                href="/all-charges"
+                href={link.path}
                 className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
                 aria-current="page"
               >
-                All Charges
+                {link.title}
               </a>
             </li>
-            <li>
-              <a
-                href="/documents"
-                className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
-                aria-current="page"
-              >
-                Documents
-              </a>
-            </li>
-            <li>
-              <a
-                href="/business-transactions"
-                className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
-                aria-current="page"
-              >
-                Business Transactions
-              </a>
-            </li>
-            <li>
-              <a
-                href="/reports/trial-balance"
-                className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
-                aria-current="page"
-              >
-                Trial Balance Report
-              </a>
-            </li>
-            {extraLinks?.map(link => (
-              <li key={link.title}>
-                <a
-                  href={link.path}
-                  className="text-gray-700 border-0 block hover:text-blue-700 hover:bg-gray-50 p-1 rounded"
-                  aria-current="page"
-                >
-                  {link.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {/* Filters */}
-        <div className="flex order-2">{filters ?? null}</div>
+          ))}
+        </ul>
       </div>
-    </nav>
+      {/* Filters */}
+      <div className="flex order-2">{filters ?? null}</div>
+    </div>
   );
 };
