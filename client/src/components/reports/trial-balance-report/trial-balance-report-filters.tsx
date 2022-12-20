@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
+import { ActionIcon, Indicator, MultiSelect, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -14,9 +14,13 @@ import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../../common';
 
+export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
+  isShowZeroedAccounts?: boolean;
+};
+
 interface TrialBalanceReportFilterFormProps {
-  filter: BusinessTransactionsFilter;
-  setFilter: (filter: BusinessTransactionsFilter) => void;
+  filter: TrialBalanceReportFilters;
+  setFilter: (filter: TrialBalanceReportFilters) => void;
   closeModal: () => void;
 }
 
@@ -25,7 +29,8 @@ function TrialBalanceReportFilterForm({
   setFilter,
   closeModal,
 }: TrialBalanceReportFilterFormProps) {
-  const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
+  const [isShowZeroedAccounts, setIsShowZeroedAccounts] = useState<boolean>(false);
+  const { control, handleSubmit } = useForm<TrialBalanceReportFilters>({
     defaultValues: { ...filter },
   });
   const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
@@ -50,7 +55,8 @@ function TrialBalanceReportFilterForm({
     }
   }, [feError, bnError]);
 
-  const onSubmit: SubmitHandler<BusinessTransactionsFilter> = data => {
+  const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
+    data.isShowZeroedAccounts = isShowZeroedAccounts ?? false;
     setFilter(data);
     closeModal();
   };
@@ -148,6 +154,15 @@ function TrialBalanceReportFilterForm({
             />
           )}
         />
+        <Switch
+          defaultChecked={filter.isShowZeroedAccounts ?? false}
+          onChange={event => setIsShowZeroedAccounts(event.currentTarget.checked)}
+          color="gray"
+          onLabel={<p>show</p>}
+          offLabel={<p>remove</p>}
+          label="Show zeroed accounts"
+          labelPosition="left"
+        />
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
@@ -176,8 +191,8 @@ function TrialBalanceReportFilterForm({
 }
 
 interface TrialBalanceReportFilterProps {
-  filter: BusinessTransactionsFilter;
-  setFilter: (filter: BusinessTransactionsFilter) => void;
+  filter: TrialBalanceReportFilters;
+  setFilter: (filter: TrialBalanceReportFilters) => void;
 }
 
 export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceReportFilterProps) {
@@ -185,14 +200,14 @@ export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceRep
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: BusinessTransactionsFilter) {
+  function isFilterApplied(filter: TrialBalanceReportFilters) {
     const changed = Object.entries(filter ?? {}).filter(
       ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
 
-  function onSetFilter(newFilter: BusinessTransactionsFilter) {
+  function onSetFilter(newFilter: TrialBalanceReportFilters) {
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
@@ -203,9 +218,9 @@ export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceRep
   // update url on filter change
   useEffect(() => {
     const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-    const oldFilter = get('sortCodesReportFilters');
+    const oldFilter = get('trialBalanceReportFilters');
     if (newFilter !== oldFilter) {
-      set('sortCodesReportFilters', newFilter);
+      set('trialBalanceReportFilters', newFilter);
     }
   }, [filter, get, set]);
 

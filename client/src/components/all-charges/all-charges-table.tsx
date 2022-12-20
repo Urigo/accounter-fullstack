@@ -1,24 +1,8 @@
 import { Dispatch, SetStateAction } from 'react';
-import { FragmentType, getFragmentData } from '../../gql';
-import {
-  AllChargesQuery,
-  EditChargeFieldsFragmentDoc,
-  SuggestedChargeFragmentDoc,
-} from '../../gql/graphql';
-import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
-import { AccounterTable, EditMiniButton } from '../common';
-import {
-  Account,
-  AccountantApproval,
-  Amount,
-  DateCell,
-  Description,
-  Entity,
-  ShareWith,
-  Tags,
-  Vat,
-} from './cells';
-import { ChargeExtendedInfo } from './charge-extended-info';
+import { Table } from '@mantine/core';
+import { FragmentType } from '../../gql';
+import { AllChargesQuery, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import { AllChargesRow } from './all-charges-row';
 
 interface Props {
   setEditCharge: Dispatch<
@@ -29,6 +13,7 @@ interface Props {
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   data?: AllChargesQuery;
+  isAllOpened: boolean;
 }
 
 export const AllChargesTable = ({
@@ -38,124 +23,42 @@ export const AllChargesTable = ({
   setMatchDocuments,
   setUploadDocument,
   data,
+  isAllOpened,
 }: Props) => {
-  function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
-    const charge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
-    if (
-      !charge.counterparty?.name ||
-      !charge.transactions[0]?.userNote?.trim() ||
-      charge.tags?.length === 0 ||
-      !charge.vat?.raw ||
-      charge.beneficiaries?.length === 0
-    ) {
-      return suggestedCharge(charge);
-    }
-    return undefined;
-  }
+  const charges = data?.allCharges?.nodes ?? [];
 
   return (
-    <AccounterTable
-      showButton={true}
-      moreInfo={item => (
-        <ChargeExtendedInfo
-          chargeProps={item}
-          setInsertLedger={setInsertLedger}
-          setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
-        />
-      )}
-      striped
-      highlightOnHover
-      stickyHeader
-      items={data?.allCharges?.nodes ?? []}
-      rowContext={generateRowContext}
-      columns={[
-        {
-          title: 'Date',
-          value: data => <DateCell data={data} />,
-        },
-        {
-          title: 'Amount',
-          value: data => <Amount data={data} />,
-        },
-        {
-          title: 'Vat',
-          value: data => <Vat data={data} />,
-        },
-        {
-          title: 'Entity',
-          value: (data, alternativeCharge) => (
-            <Entity
-              data={data}
-              alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-            />
-          ),
-        },
-        {
-          title: 'Account',
-          value: data => <Account data={data} />,
-        },
-        {
-          title: 'Description',
-          value: (data, alternativeCharge) => (
-            <Description
-              data={data}
-              alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-            />
-          ),
-        },
-        {
-          title: 'Tags',
-          value: (data, alternativeCharge) => (
-            <Tags
-              data={data}
-              alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-            />
-          ),
-        },
-        {
-          title: 'Share With',
-          value: (data, alternativeCharge) => (
-            <ShareWith
-              data={data}
-              alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-            />
-          ),
-        },
-        {
-          title: 'More Info',
-          value: data => (
-            <div>
-              <p
-                style={
-                  data.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }
-                }
-              >
-                Ledger Records: {data.ledgerRecords.length}
-              </p>
-              <p
-                style={
-                  data.additionalDocuments.length > 0 ||
-                  (data.counterparty && entitiesWithoutInvoice.includes(data.counterparty.name))
-                    ? {}
-                    : { backgroundColor: 'rgb(236, 207, 57)' }
-                }
-              >
-                Documents: {data.additionalDocuments.length}
-              </p>
-            </div>
-          ),
-        },
-        {
-          title: 'Accountant Approval',
-          value: data => <AccountantApproval data={data} />,
-        },
-        {
-          title: 'Edit',
-          value: data => <EditMiniButton onClick={() => setEditCharge(data)} />,
-        },
-      ]}
-    />
+    <Table striped highlightOnHover>
+      <thead className="sticky top-0 z-20">
+        <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Vat</th>
+          <th>Entity</th>
+          <th>Account</th>
+          <th>Description</th>
+          <th>Tags</th>
+          <th>Share With</th>
+          <th>More Info</th>
+          <th>Accountant Approval</th>
+          <th>Edit</th>
+          <th>More Info</th>
+        </tr>
+      </thead>
+      <tbody>
+        {charges.map(charge => (
+          <AllChargesRow
+            key={charge.id}
+            charge={charge}
+            setEditCharge={setEditCharge}
+            setInsertLedger={setInsertLedger}
+            setInsertDocument={setInsertDocument}
+            setMatchDocuments={setMatchDocuments}
+            setUploadDocument={setUploadDocument}
+            isAllOpened={isAllOpened}
+          />
+        ))}
+      </tbody>
+    </Table>
   );
 };

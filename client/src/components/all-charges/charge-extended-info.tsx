@@ -72,7 +72,7 @@ interface ChargeExtendedInfoMenuProps {
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
 }
 
-function ChargeExtendedInfoMenu({
+export function ChargeExtendedInfoMenu({
   chargeId,
   setInsertLedger,
   setInsertDocument,

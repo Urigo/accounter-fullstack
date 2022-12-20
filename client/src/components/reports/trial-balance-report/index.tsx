@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActionIcon, Table, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { BusinessTransactionsFilter, TrialBalanceReportDocument } from '../../../gql/graphql';
+import { TrialBalanceReportDocument } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader, NavBar } from '../../common';
@@ -84,13 +84,13 @@ import { ExtendedSortCode } from './trial-balance-report-sort-code';
 `;
 
 export const TrialBalanceReport = () => {
-  const [isExtended, setIsExtended] = useState(false);
+  const [isAllOpened, setIsAllOpened] = useState(false);
   const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<BusinessTransactionsFilter>(
-    get('sortCodesReportFilters')
+  const [{ isShowZeroedAccounts, ...filter }, setFilter] = useState<TrialBalanceReportFilters>(
+    get('trialBalanceReportFilters')
       ? (JSON.parse(
-          decodeURIComponent(get('sortCodesReportFilters') as string),
-        ) as BusinessTransactionsFilter)
+          decodeURIComponent(get('trialBalanceReportFilters') as string),
+        ) as TrialBalanceReportFilters)
       : {},
   );
   const [{ data, fetching }] = useQuery({
@@ -145,7 +145,7 @@ export const TrialBalanceReport = () => {
         })
         .filter(
           account =>
-            isExtended ||
+            isShowZeroedAccounts ||
             (account.transactionsSum?.total.raw &&
               (account.transactionsSum.total.raw > 0.001 ||
                 account.transactionsSum.total.raw < -0.001)),
@@ -182,7 +182,7 @@ export const TrialBalanceReport = () => {
     });
 
     return adjustedSortCodes;
-  }, [sortCodes, businessTransactionsSum, isExtended]);
+  }, [sortCodes, businessTransactionsSum, isShowZeroedAccounts]);
 
   return (
     <div className="text-gray-600 body-font">
@@ -190,18 +190,21 @@ export const TrialBalanceReport = () => {
         <NavBar
           header="Business Transactions Summery"
           filters={
-            <>
-              <Tooltip label="Toggle zeroed rows">
-                <ActionIcon variant="default" onClick={() => setIsExtended(i => !i)} size={30}>
-                  {isExtended ? (
+            <div className="flex flex-row gap-2">
+              <Tooltip label="Expand all accounts">
+                <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+                  {isAllOpened ? (
                     <LayoutNavbarCollapse size={20} />
                   ) : (
                     <LayoutNavbarExpand size={20} />
                   )}
                 </ActionIcon>
               </Tooltip>
-              <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
-            </>
+              <TrialBalanceReportFilters
+                filter={{ ...filter, isShowZeroedAccounts }}
+                setFilter={setFilter}
+              />
+            </div>
           }
         />
         {fetching ? (
@@ -221,7 +224,13 @@ export const TrialBalanceReport = () => {
             </thead>
             <tbody>
               {Object.entries(extendedSortCodes).map(([group, data]) => (
-                <TrialBalanceReportGroup key={group} data={data} group={group} filter={filter} />
+                <TrialBalanceReportGroup
+                  key={group}
+                  data={data}
+                  group={group}
+                  filter={filter}
+                  isAllOpened={isAllOpened}
+                />
               ))}
               <tr className="bg-gray-100">
                 <td colSpan={2}>Report total:</td>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { BusinessTransactionsFilter, TrialBalanceReportQuery } from '../../../gql/graphql';
+import { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
 export type ExtendedAccount =
   TrialBalanceReportQuery['allSortCodes'][number]['accounts'][number] & {
@@ -16,11 +17,12 @@ export type ExtendedAccount =
 interface Props {
   account: ExtendedAccount;
   sortCodeId: number;
-  filter: BusinessTransactionsFilter;
+  filter: TrialBalanceReportFilters;
+  isAllOpened: boolean;
 }
 
-export const TrialBalanceReportAccount = ({ account, sortCodeId, filter }: Props) => {
-  const [isExtended, setIsExtended] = useState(false);
+export const TrialBalanceReportAccount = ({ account, sortCodeId, filter, isAllOpened }: Props) => {
+  const [isExtended, setIsExtended] = useState(isAllOpened);
   const rowTotal = account.transactionsSum?.total?.raw ?? 0;
   return (
     <>
@@ -42,12 +44,22 @@ export const TrialBalanceReportAccount = ({ account, sortCodeId, filter }: Props
         <td>
           <Tooltip label="Detailed records">
             <ActionIcon variant="default" onClick={() => setIsExtended(i => !i)} size={30}>
-              {isExtended ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
+              {isExtended || isAllOpened ? (
+                <LayoutNavbarCollapse size={20} />
+              ) : (
+                <LayoutNavbarExpand size={20} />
+              )}
             </ActionIcon>
           </Tooltip>
         </td>
       </tr>
-      {isExtended && <BusinessExtendedInfo businessName={account.key} filter={filter} />}
+      {(isExtended || isAllOpened) && (
+        <tr>
+          <td colSpan={7}>
+            <BusinessExtendedInfo businessName={account.key} filter={filter} />
+          </td>
+        </tr>
+      )}
     </>
   );
 };
