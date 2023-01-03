@@ -29,6 +29,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'business',
     };
   }
+  if (transactionDescription?.includes('CLICKHOUSE')) {
+    return {
+      financialEntity: 'ClickHouse, Inc.',
+      userDescription: 'DB Hosting',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
+    };
+  }
   if (transactionDescription?.includes('WOLT')) {
     return {
       financialEntity: 'Wolt',
@@ -543,6 +551,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'business',
     };
   }
+  if (transactionDescription?.includes('POSTMARKAPP')) {
+    return {
+      financialEntity: 'ActiveCampaign, LLC',
+      userDescription: 'Email Service',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
+    };
+  }
   if (transactionDescription?.includes('LOOM')) {
     return {
       financialEntity: 'Loom',
@@ -811,13 +827,20 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
-  if (
-    transactionDescription?.includes('יהל-מור') ||
-    transactionDescription?.includes('רווה רביד')
-  ) {
+  if (transactionDescription?.includes('יהל-מור')) {
+    return {
+      financialEntity: 'Yahel Mor',
+      userDescription: 'Bookkeeping with Narkis',
+      personalCategory: 'business',
+      taxCategory: 'הנחש',
+      financialAccountsToBalance: 'no',
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
+    };
+  }
+  if (transactionDescription?.includes('רווה רביד')) {
     return {
       financialEntity: 'Raveh Ravid & Co',
-      userDescription: 'Accountancy with Narkis',
+      userDescription: 'Accountants',
       personalCategory: 'business',
       taxCategory: 'הנחש',
       financialAccountsToBalance: 'no',
