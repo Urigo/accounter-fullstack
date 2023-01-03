@@ -28,6 +28,7 @@ import { getILSForDate } from '../helpers/exchange.mjs';
 import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
+  generateEntryForforeignTransferFeesValues,
   generateEntryForFinancialAccountValues,
   hashavshevetFormat,
   parseDate,
@@ -1072,7 +1073,9 @@ export const resolvers: Resolvers = {
         if (charge.financial_entity == 'Isracard') {
           charge.tax_category = isracardHashIndex;
         } else {
-          charge.tax_category = hashBusinessIndexes.auto_tax_category;
+          if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+            charge.tax_category = hashBusinessIndexes.auto_tax_category;
+          }
         }
 
         if (charge.account_type == 'creditcard' && charge.currency_code == 'ILS') {
@@ -1160,6 +1163,40 @@ export const resolvers: Resolvers = {
         }
 
         if (
+          !charge.vat &&
+          charge.tax_invoice_amount &&
+          parseFloat(charge.tax_invoice_amount) != parseFloat(charge.event_amount)
+        ) {
+          console.log('עמלת העברת מטח');
+          try {
+            const entryForgenerateEntryForforeignTransferFeesValues =
+              generateEntryForforeignTransferFeesValues(
+                decoratedCharge,
+                entryForFinancialAccount,
+                entryForAccounting,
+                account,
+                hashBusinessIndexes,
+                hashVATIndexes,
+                isracardHashIndex,
+                owner,
+                true,
+                debitExchangeRates,
+                invoiceExchangeRates,
+              );
+            const updateResult = await insertLedgerRecords.run(
+              { ledgerRecord: [entryForgenerateEntryForforeignTransferFeesValues] },
+              pool,
+            );
+            if (updateResult.length === 0) {
+              throw new Error('Failed to insert foreign transfer fees record');
+            }
+            console.log(JSON.stringify(updateResult[0]));
+            createdLedgerRecords.push(updateResult[0]);
+          } catch (error) {
+            // TODO: Log important checks
+            throw new Error(`error in foreign transfer fees insert - ${error}`);
+          }
+        } else if (
           charge.tax_invoice_currency &&
           entryForFinancialAccount.debitAmountILS != entryForAccounting.debitAmountILS
         ) {

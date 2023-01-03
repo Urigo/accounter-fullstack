@@ -120,7 +120,9 @@ export async function buildLedgerEntries(
   const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge);
 
   entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
-    charge.debit_date ? getILSForDate(charge, debitExchangeRates).eventAmountILS : null;
+    charge.debit_date
+      ? getILSForDate(charge, debitExchangeRates, chargeAmount).eventAmountILS
+      : null;
 
   // entryForAccounting setup
   const entryForAccounting: Partial<EntryForAccounting> = {};

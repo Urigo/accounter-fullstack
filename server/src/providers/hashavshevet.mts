@@ -34,7 +34,8 @@ export type VatIndexesKeys =
   | 'vatExpensesPropertyMovementTypeIndex'
   | 'vatIncomesIndex'
   | 'vatFreeIncomesIndex'
-  | 'hashCurrencyRatesDifferencesIndex';
+  | 'hashCurrencyRatesDifferencesIndex'
+  | 'foreignTransferBankFees';
 
 export async function getHashavshevetVatIndexes(ownerId: string) {
   const indexes = await getHashGovIndexes.run({ ownerId }, pool);
@@ -63,6 +64,8 @@ export async function getHashavshevetVatIndexes(ownerId: string) {
         return 'vatFreeIncomesIndex';
       case 'Currency_Rates_Differences':
         return 'hashCurrencyRatesDifferencesIndex';
+      case 'Foreign_Transfer_Bank_Fees':
+        return 'foreignTransferBankFees';
       default:
         throw new Error(`Unknown Hashavshevet VAT key: "${key}"`);
     }

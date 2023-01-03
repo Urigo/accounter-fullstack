@@ -582,4 +582,133 @@ export function generateEntryForExchangeRatesDifferenceValues(
   return ledger;
 }
 
+export function generateEntryForforeignTransferFeesValues(
+  charge: VatExtendedCharge,
+  entryForFinancialAccount: EntryForFinancialAccount,
+  entryForAccounting: EntryForAccounting,
+  financialAccount: IGetFinancialAccountsByAccountNumbersResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashVATIndexes: Record<VatIndexesKeys, string>,
+  isracardHashIndex: string | null,
+  owner: IGetFinancialEntitiesByIdsResult,
+  someNameFlag = false, // TODO: find suitable name for this flag
+  debitExchangeRates?: IGetExchangeRatesByDatesResult,
+  invoiceExchangeRates?: IGetExchangeRatesByDatesResult,
+): IInsertLedgerRecordsParams['ledgerRecord'][0] {
+  const credit = hashavshevetFormat.account(
+    parseFloat(charge.event_amount) < 0
+      ? entryForFinancialAccount.debitAccount
+      : entryForFinancialAccount.creditAccount,
+    financialAccount,
+    hashBusinessIndexes,
+    hashVATIndexes,
+    charge.currency_code,
+    isracardHashIndex,
+    charge.bank_description,
+  );
+
+  let invoiceInILSAmount = getILSForDate(charge, invoiceExchangeRates).eventAmountILS;
+  let eventAmountInILS = getILSForDate(
+    charge,
+    debitExchangeRates,
+    parseFloat(charge.event_amount),
+  ).eventAmountILS;
+  const amount = hashavshevetFormat.number(
+    numberRounded(numberRounded(invoiceInILSAmount) - eventAmountInILS),
+  );
+
+  const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] =
+    charge.event_date ? hashavshevetFormat.date(charge.event_date) : null;
+
+  const debitAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount1'] = someNameFlag
+    ? credit
+    : hashVATIndexes.foreignTransferBankFees;
+  const debitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount1'] = amount;
+  let foreignDebitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount1'] =
+    null;
+  let foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] =
+    null;
+
+  if (charge.tax_invoice_amount) {
+    foreignDebitAmount1 = hashavshevetFormat.number(
+      parseFloat(charge.tax_invoice_amount) - parseFloat(charge.event_amount),
+    );
+    foreignCreditAmount1 = hashavshevetFormat.number(
+      parseFloat(charge.tax_invoice_amount) - parseFloat(charge.event_amount),
+    );
+  }
+  const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] =
+    hashavshevetFormat.currency(charge.currency_code);
+  const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
+    someNameFlag ? hashVATIndexes.foreignTransferBankFees : credit;
+  const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] = amount;
+
+  const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] = null; // Check for interest transactions (הכנרבמ)
+  const debitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount2'] = null;
+  const foreignDebitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount2'] =
+    null;
+  const creditAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount2'] = null;
+  const creditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount2'] = null;
+  const foreignCreditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount2'] =
+    null;
+  const details: IInsertLedgerRecordsParams['ledgerRecord'][0]['details'] =
+    entryForFinancialAccount.description;
+  const reference1: IInsertLedgerRecordsParams['ledgerRecord'][0]['reference1'] =
+    entryForFinancialAccount.reference1
+      ? (entryForFinancialAccount.reference1?.match(/\d+/g) || []).join('').substr(-9)
+      : null; // add check on the db for it
+  const reference2: IInsertLedgerRecordsParams['ledgerRecord'][0]['reference2'] =
+    entryForFinancialAccount.reference2
+      ? (entryForFinancialAccount.reference2?.match(/\d+/g) || []).join('').substr(-9)
+      : null;
+  const movementType: IInsertLedgerRecordsParams['ledgerRecord'][0]['movementType'] = null;
+  const valueDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['valueDate'] =
+    charge.debit_date || charge.event_date
+      ? hashavshevetFormat.date(charge.debit_date ?? charge.event_date)
+      : null;
+  const date3: IInsertLedgerRecordsParams['ledgerRecord'][0]['date3'] = charge.event_date
+    ? hashavshevetFormat.date(charge.event_date)
+    : null;
+  const originalId: IInsertLedgerRecordsParams['ledgerRecord'][0]['originalId'] = charge.id;
+  const origin: IInsertLedgerRecordsParams['ledgerRecord'][0]['origin'] = someNameFlag
+    ? 'generated_invoice_rates_change'
+    : 'generated_invoice_rates_change_invoice_currency';
+  const proformaInvoiceFile: IInsertLedgerRecordsParams['ledgerRecord'][0]['proformaInvoiceFile'] =
+    charge.proforma_invoice_file;
+  const business: IInsertLedgerRecordsParams['ledgerRecord'][0]['business'] = owner.id;
+  const hashavshevetId: IInsertLedgerRecordsParams['ledgerRecord'][0]['hashavshevetId'] = null;
+  const reviewed: IInsertLedgerRecordsParams['ledgerRecord'][0]['reviewed'] = false;
+
+  const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
+    invoiceDate,
+    debitAccount1,
+    debitAmount1,
+    foreignDebitAmount1,
+    currency,
+    creditAccount1,
+    creditAmount1,
+    foreignCreditAmount1,
+    debitAccount2,
+    debitAmount2,
+    foreignDebitAmount2,
+    creditAccount2,
+    creditAmount2,
+    foreignCreditAmount2,
+    details,
+    reference1,
+    reference2,
+    movementType,
+    valueDate,
+    date3,
+    originalId,
+    origin,
+    proformaInvoiceFile,
+    business,
+    hashavshevetId,
+    reviewed,
+  };
+
+  return ledger;
+}
+
 //   uuidv4(),
