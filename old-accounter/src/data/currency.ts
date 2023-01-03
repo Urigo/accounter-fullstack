@@ -6,7 +6,10 @@ import puppeteer from 'puppeteer';
 // TODO: Compare to this library: https://github.com/TobiasNickel/tXml
 
 async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) {
-  const url = `https://www.boi.org.il/currency.xml?rdate=${format(currentDate, 'yyyyMMdd')}`;
+  const url = `https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS?startperiod=${format(
+    currentDate,
+    'yyyy-MM-dd',
+  )}&endperiod=${format(currentDate, 'yyyy-MM-dd')}`;
   // console.log(url);
   let dailyDollarRate = 0;
   let dailyEuroRate = 0;
@@ -19,14 +22,19 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
       let textRes = (await page.evaluate(
         'document.getElementById("webkit-xml-viewer-source-xml").innerHTML',
       )) as string;
-      textRes = textRes.replace(/(\r\n|\n|\r)/gm, '').replaceAll(' ', '');
 
       const currencyRates: any = XML.parse(textRes);
 
-      if (currencyRates.CURRENCY) {
-        dailyDollarRate = currencyRates.CURRENCY.find((x: any) => x.CURRENCYCODE === 'USD').RATE;
-        dailyEuroRate = currencyRates.CURRENCY.find((x: any) => x.CURRENCYCODE === 'EUR').RATE;
-        dailyGBPRate = currencyRates.CURRENCY.find((x: any) => x.CURRENCYCODE === 'GBP').RATE;
+      if (currencyRates['message:DataSet']) {
+        dailyDollarRate = currencyRates['message:DataSet'].Series.find(
+          (x: any) => x.BASE_CURRENCY === 'USD',
+        ).Obs.OBS_VALUE;
+        dailyEuroRate = currencyRates['message:DataSet'].Series.find(
+          (x: any) => x.BASE_CURRENCY === 'EUR',
+        ).Obs.OBS_VALUE;
+        dailyGBPRate = currencyRates['message:DataSet'].Series.find(
+          (x: any) => x.BASE_CURRENCY === 'GBP',
+        ).Obs.OBS_VALUE;
       } else if (
         currencyRates.ERROR1 == 'Requested date is invalid or' &&
         currencyRates.ERROR2 == 'No exchange rate published for this date' &&
@@ -45,8 +53,7 @@ async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) 
     } catch (error) {
       console.error('Error For - ', url);
       console.log(error);
-      const result = await getCurrencyRatesForDate(currentDate, page);
-      return result;
+      return undefined;
     }
   })();
 
