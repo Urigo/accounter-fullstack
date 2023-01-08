@@ -8,7 +8,10 @@
       "client",
       "server",
       "old-accounter",
-      "temp-server"
+      "temp-server",
+      "etherscan-scrapper",
+      "kraken-scrapper",
+      "etana-scrapper"
     ]
   },
   "engines": {

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["es2020"],
+    "module": "ES2020",
+    "moduleResolution": "Node",
+    "strict": true,
+    "sourceMap": true,
+    // Needed for CommonJS modules
+    "allowSyntheticDefaultImports": true, // (C)
+    //
+    "declaration": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["tsup.config.ts"],
+  "include": ["src/**/*.ts"]
+}
