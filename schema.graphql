@@ -537,10 +537,12 @@ input ChargeFilter {
   fromDate: String
   " Include only charges occured before this date "
   toDate: String
-  " Include only charges related to specific financial entities "
-  byFinancialEntities: [ID!]
+  " Include only charges related to specific owners financial entities "
+  byOwners: [ID!]
   " Include only charges related to specific financial accounts "
   byFinancialAccounts: [ID!]
+  " Include only charges including specific business "
+  byBusinesses: [ID!]
   sortBy: ChargeSortBy
 }
 

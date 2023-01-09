@@ -296,6 +296,7 @@ export const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     ON  at.account_number = fa.account_number
     WHERE 
     ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+    AND ($isBusinesses = 0 OR at.financial_entity IN $$businesses)
     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY

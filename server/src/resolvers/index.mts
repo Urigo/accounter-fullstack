@@ -28,8 +28,8 @@ import { getILSForDate } from '../helpers/exchange.mjs';
 import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
-  generateEntryForforeignTransferFeesValues,
   generateEntryForFinancialAccountValues,
+  generateEntryForforeignTransferFeesValues,
   hashavshevetFormat,
   parseDate,
 } from '../helpers/hashavshevet.mjs';
@@ -133,15 +133,27 @@ export const resolvers: Resolvers = {
           break;
       }
 
-      const isFinancialEntityIds = filters?.byFinancialEntities?.length ?? 0;
+      const isFinancialEntityIds = filters?.byOwners?.length ?? 0;
+
+      const businesses: Array<string | null> = [];
+      let isBusinesses = 0;
+      if (filters?.byBusinesses?.length) {
+        const businessNames = await Promise.all(
+          filters.byBusinesses.map(id => getFinancialEntityByIdLoader.load(id)),
+        );
+        businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
+        isBusinesses = 1;
+      } else {
+        businesses.push(null);
+      }
 
       const charges = await getChargesByFilters
         .run(
           {
-            financialEntityIds: filters?.byFinancialEntities?.length
-              ? filters.byFinancialEntities
-              : [null],
+            financialEntityIds: filters?.byOwners?.length ? filters.byOwners : [null],
             isFinancialEntityIds,
+            businesses,
+            isBusinesses,
             fromDate: filters?.fromDate,
             toDate: filters?.toDate,
             sortColumn,
@@ -1072,10 +1084,8 @@ export const resolvers: Resolvers = {
         const isracardHashIndex = await getHashavshevetIsracardIndex(charge);
         if (charge.financial_entity == 'Isracard') {
           charge.tax_category = isracardHashIndex;
-        } else {
-          if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
-            charge.tax_category = hashBusinessIndexes.auto_tax_category;
-          }
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+          charge.tax_category = hashBusinessIndexes.auto_tax_category;
         }
 
         if (charge.account_type == 'creditcard' && charge.currency_code == 'ILS') {
