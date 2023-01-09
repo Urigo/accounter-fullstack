@@ -131,9 +131,9 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* <SimpleGrid cols={4}> */}
         <Controller
-          name="byFinancialEntities"
+          name="byOwners"
           control={control}
-          defaultValue={filter.byFinancialAccounts}
+          defaultValue={filter.byOwners}
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
@@ -145,7 +145,30 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
               }
               value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
               disabled={fetching}
-              label="Financial Entities"
+              label="Owners"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          name="byBusinesses"
+          control={control}
+          defaultValue={filter.byBusinesses}
+          render={({ field, fieldState }) => (
+            <MultiSelect
+              {...field}
+              data={
+                data?.allFinancialEntities.map(entity => ({
+                  value: entity.id,
+                  label: entity.name,
+                })) ?? []
+              }
+              value={field.value ?? []}
+              disabled={fetching}
+              label="Main Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
