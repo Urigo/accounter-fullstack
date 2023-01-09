@@ -607,8 +607,8 @@ export function generateEntryForforeignTransferFeesValues(
     charge.bank_description,
   );
 
-  let invoiceInILSAmount = getILSForDate(charge, invoiceExchangeRates).eventAmountILS;
-  let eventAmountInILS = getILSForDate(
+  const invoiceInILSAmount = getILSForDate(charge, invoiceExchangeRates).eventAmountILS;
+  const eventAmountInILS = getILSForDate(
     charge,
     debitExchangeRates,
     parseFloat(charge.event_amount),
