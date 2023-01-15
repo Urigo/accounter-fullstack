@@ -43,7 +43,12 @@ export const EditLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           },
         }}
         render={({ field, fieldState }) => (
-          <TextInput {...field} error={fieldState.error?.message} label="Date" />
+          <TextInput
+            {...field}
+            value={field.value ?? undefined}
+            error={fieldState.error?.message}
+            label="Date"
+          />
         )}
       />
 
@@ -130,6 +135,9 @@ export const EditLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           },
           validate: value => {
             try {
+              if (!value) {
+                return 'Required';
+              }
               format(new Date(value), 'yyyy-MM-dd');
               return;
             } catch {
@@ -138,7 +146,12 @@ export const EditLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           },
         }}
         render={({ field, fieldState }) => (
-          <TextInput {...field} error={fieldState.error?.message} label="Value Date" />
+          <TextInput
+            {...field}
+            value={field.value ?? undefined}
+            error={fieldState.error?.message}
+            label="Value Date"
+          />
         )}
       />
       <Controller
@@ -153,7 +166,12 @@ export const EditLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
           },
         }}
         render={({ field, fieldState }) => (
-          <TextInput {...field} error={fieldState.error?.message} label="Date3" />
+          <TextInput
+            {...field}
+            value={field.value ?? undefined}
+            error={fieldState.error?.message}
+            label="Date3"
+          />
         )}
       />
     </>

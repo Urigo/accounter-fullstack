@@ -16,7 +16,7 @@ export interface TransactionType {
   financial_accounts_to_balance: string | null;
   bank_reference: string | null;
   event_number: string | null;
-  account_number: number;
+  account_number: string;
   account_type: string;
   is_conversion: boolean;
   currency_rate: number;

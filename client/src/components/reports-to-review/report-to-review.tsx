@@ -67,7 +67,7 @@ const TransactionRow = ({ transaction, index, setSelected, isSelected }: Transac
 
     return (
       <HoverHandler hoverElement={<EditElement transaction={transaction} attribute={attribute} />}>
-        {content}
+        <div>{content}</div>
       </HoverHandler>
     );
   };

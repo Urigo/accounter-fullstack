@@ -37,7 +37,7 @@ export const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAcc
     AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY event_date DESC;`;
 
-async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: readonly number[]) {
+async function batchChargesByFinancialAccountNumbers(financialAccountNumbers: readonly string[]) {
   const charges = await getChargesByFinancialAccountNumbers.run(
     {
       financialAccountNumbers,

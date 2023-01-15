@@ -75,6 +75,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             render={({ field, fieldState }) => (
               <TextInput
                 {...field}
+                value={field.value ?? undefined}
                 error={fieldState.error?.message}
                 isDirty={fieldState.isDirty}
                 label="Date"

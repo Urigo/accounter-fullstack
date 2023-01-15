@@ -129,7 +129,7 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value || field.value === 'Missing' ? '' : field.value}
+              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -148,7 +148,7 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value || field.value === 'Missing' ? '' : field.value}
+              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
               error={fieldState.error?.message}
               label="To Date"
             />

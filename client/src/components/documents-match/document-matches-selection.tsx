@@ -126,7 +126,7 @@ export function DocumentMatchesSelection({
     const chargeAmount = Math.abs(charge.totalAmount.raw);
     const documentAmount = Math.abs(document.amount!.raw);
     const chargeDate = new Date(charge.transactions[0].createdAt).getTime();
-    const documentDate = new Date(document.date).getTime();
+    const documentDate = new Date(document.date!).getTime();
 
     const fee = documentAmount > 3000 ? 30 : 0;
 
