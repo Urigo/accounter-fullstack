@@ -7000,10 +7000,10 @@ mkdirp@1.0.4:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-modern-poalim-scraper@0.5.3:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.5.3.tgz#fbc8c83b4ac26440251079ff5301d67a7e9a334f"
-  integrity sha512-HuypA7OBvRC1uFcEi7e31WlNH415UtncthwwTot3mXV5ZxYkXhaIkCddR5sPxENw3lmYzc/SBh2Q4nBN6R0SIw==
+modern-poalim-scraper@0.5.4:
+  version "0.5.4"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.5.4.tgz#fe08c284ae7d39b1e45c3cad1606c198a9906c6d"
+  integrity sha512-huEfNmalnLvGRdIiCTKAo+qMu2iGhJLhgx7mhRvQjx3QJKJOxdj2OKX7Lh1mpB/ULt9Psz2GkfIrQZpgAhwPJg==
   dependencies:
     ajv "8.11.2"
     ajv-formats "2.1.1"
