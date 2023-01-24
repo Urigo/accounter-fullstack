@@ -13,5 +13,8 @@ export const ENTITIES_WITHOUT_ACCOUNTING = [
   'Halman Aldubi Pension',
   'Uri Goldshtein Hoz',
   'Uri Goldshtein',
-  'מגדל פנסיה',
+  'Dotan Employee',
+  'Uri Employee',
+  'Gil Employee',
+  'Tuval Employee',
 ];
