@@ -95,8 +95,8 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
           ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
           : '',
         financialEntityIds:
-          currentFilters.byFinancialEntities && currentFilters.byFinancialEntities.length > 0
-            ? `%2522${currentFilters.byFinancialEntities.join('%2522%252C%2522')}%2522`
+          currentFilters.byOwners && currentFilters.byOwners.length > 0
+            ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
             : '',
       };
       return `/business-transactions?transactionsFilters=%257B%2522financialEntityIds%2522%253A%255B${

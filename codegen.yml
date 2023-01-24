@@ -44,3 +44,6 @@ generates:
     presetConfig:
       fragmentMasking:
         unmaskFunctionName: 'getFragmentData'
+    plugins:
+      - add:
+          content: "import { TimelessDateString } from '../helpers'"

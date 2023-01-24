@@ -21,7 +21,7 @@ export const DateCell = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
   const { effectiveDate, createdAt } = charge.transactions[0];
   const timelessCreatedAt = format(new Date(createdAt), 'dd/MM/yy');
-  const timelessEffectiveDate = format(new Date(effectiveDate), 'dd/MM/yy');
+  const timelessEffectiveDate = format(new Date(effectiveDate as string), 'dd/MM/yy');
 
   return (
     <div>

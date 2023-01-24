@@ -35,7 +35,7 @@ SELECT *
 FROM accounter_schema.financial_accounts
 WHERE account_number IN $$accountNumbers;`;
 
-async function batchFinancialAccountsByAccountNumbers(accountNumbers: readonly number[]) {
+async function batchFinancialAccountsByAccountNumbers(accountNumbers: readonly string[]) {
   const accounts = await getFinancialAccountsByAccountNumbers.run(
     {
       accountNumbers,

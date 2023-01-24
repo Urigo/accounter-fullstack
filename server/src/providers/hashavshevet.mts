@@ -84,7 +84,7 @@ export async function getHashavshevetVatIndexes(ownerId: string) {
 export async function getHashavshevetIsracardIndex(charge: IGetChargesByIdsResult) {
   if (charge.financial_entity === 'Isracard' && charge.bank_reference) {
     const hashCreditcardIndexResult = await getFinancialAccountByAccountNumberLoader.load(
-      parseInt(charge.bank_reference),
+      charge.bank_reference,
     );
     console.log('charge.bank_reference', charge.bank_reference);
     console.log('hashCreditcardIndexResult', hashCreditcardIndexResult);
