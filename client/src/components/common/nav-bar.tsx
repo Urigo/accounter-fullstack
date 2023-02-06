@@ -49,6 +49,11 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
                 label="Trial Balance Report"
                 onClick={() => navigate('/reports/trial-balance')}
               />
+              <NavLink
+                className="text-gray-700 rounded"
+                label="VAT Monthly Report"
+                onClick={() => navigate('/reports/vat-monthly')}
+              />
             </NavLink>
           </li>
           {extraLinks?.map(link => (

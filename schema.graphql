@@ -100,6 +100,7 @@ type Query {
     filters: BusinessTransactionsFilter
   ): BusinessTransactionsFromLedgerRecordsResult!
   businessNamesFromLedgerRecords: [String!]!
+  vatReport(filters: VatReportFilter): VatReportResult!
 }
 
 " mutation root "
@@ -164,6 +165,39 @@ type SortCode {
   id: Int!
   name: String
   accounts: [HashavshevetAccount!]!
+}
+
+" input variables for vatReportRecords "
+input VatReportFilter {
+  fromDate: TimelessDate!
+  toDate: TimelessDate!
+  financialEntityId: ID!
+}
+
+" vat report result "
+type VatReportResult {
+  expenses: [VatReportRecord!]!
+  income: [VatReportRecord!]!
+}
+
+" Vat report record "
+type VatReportRecord {
+  businessName: String
+  vatNumber: String
+  image: String
+  documentSerial: String
+  documentDate: TimelessDate
+  chargeDate: TimelessDate
+  amount: FinancialAmount!
+  localAmount: FinancialAmount
+  vat: FinancialAmount
+  vatAfterDeduction: FinancialAmount
+  localVatAfterDeduction: FinancialAmount
+  roundedLocalVatAfterDeduction: FinancialAmount # Int value
+  # cumulativeRoundedLocalVatAfterDeduction: FinancialAmount! # Int value
+  taxReducedLocalAmount: FinancialAmount
+  # cumulativeTaxableTaxReducedLocalAmount: FinancialAmount!
+  # cumulativeNonTaxableLocalAmount: FinancialAmount!
 }
 
 " Hashavshevet account "
@@ -534,9 +568,9 @@ input ChargeFilter {
   " Include only charges that doesn't have invoice document linked "
   withoutInvoice: Boolean
   " Include only charges occured after this date "
-  fromDate: String
+  fromDate: TimelessDate
   " Include only charges occured before this date "
-  toDate: String
+  toDate: TimelessDate
   " Include only charges related to specific owners financial entities "
   byOwners: [ID!]
   " Include only charges related to specific financial accounts "

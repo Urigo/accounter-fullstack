@@ -52,7 +52,7 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
       return rawAmount;
     case 'string': {
       const amount = parseFloat(rawAmount);
-      if (amount) {
+      if (!isNaN(amount)) {
         return amount;
       }
       console.warn(`Unknown string amount: "${rawAmount}". Using 0 instead.`);

@@ -1,14 +1,20 @@
-import pgQuery from '@pgtyped/query';
+import pgQuery, { TaggedQuery } from '@pgtyped/query';
+import { IDatabaseConnection } from '@pgtyped/query/lib/tag.js';
 import DataLoader from 'dataloader';
 import {
   IDeleteDocumentQuery,
   IGetAllDocumentsQuery,
   IGetDocumentsByChargeIdQuery,
+  IGetDocumentsByFiltersParams,
+  IGetDocumentsByFiltersQuery,
+  IGetDocumentsByFiltersResult,
   IGetDocumentsByFinancialEntityIdsQuery,
   IInsertDocumentsQuery,
   IUpdateDocumentQuery,
 } from '../__generated__/documents.types.mjs';
+import { Optional } from '../helpers/misc.mjs';
 import { pool } from '../providers/db.mjs';
+import { TimelessDateString } from '../scalars/timeless-date.mjs';
 
 const { sql } = pgQuery;
 
@@ -143,3 +149,44 @@ export const insertDocuments = sql<IInsertDocumentsQuery>`
       chargeId
     )
     RETURNING *;`;
+
+const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
+  SELECT d.*
+  FROM accounter_schema.documents d
+  WHERE
+    ($isIDs = 0 OR d.id IN $$IDs)
+    AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  ORDER BY created_at DESC;
+`;
+
+type IGetAdjustedDocumentsByFiltersParams = Optional<
+  Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate'>,
+  'IDs'
+> & {
+  fromDate?: TimelessDateString;
+  toDate?: TimelessDateString;
+};
+
+const getAdjustedDocumentsByFilters: Pick<
+  TaggedQuery<{
+    params: IGetAdjustedDocumentsByFiltersParams;
+    result: IGetDocumentsByFiltersResult;
+  }>,
+  'run'
+> = {
+  run(params: IGetAdjustedDocumentsByFiltersParams, dbConnection: IDatabaseConnection) {
+    const isIDs = Boolean(params?.IDs?.length);
+
+    const fullParams: IGetDocumentsByFiltersParams = {
+      isIDs: isIDs ? 1 : 0,
+      fromDate: null,
+      toDate: null,
+      ...params,
+      IDs: isIDs ? params.IDs! : [null],
+    };
+    return getDocumentsByFilters.run(fullParams, dbConnection);
+  },
+};
+
+export { getAdjustedDocumentsByFilters as getDocumentsByFilters };

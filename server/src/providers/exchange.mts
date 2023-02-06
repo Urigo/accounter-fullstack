@@ -1,13 +1,17 @@
 import pgQuery from '@pgtyped/query';
+import DataLoader from 'dataloader';
 import { format } from 'date-fns';
 import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
-import type { IGetExchangeRatesByDatesQuery } from '../__generated__/exchange.types.mjs';
+import type {
+  IGetExchangeRatesByDateQuery,
+  IGetExchangeRatesByDatesQuery,
+} from '../__generated__/exchange.types.mjs';
 import { pool } from '../providers/db.mjs';
 
 const { sql } = pgQuery;
 
 export async function getExchangeRates(date: Date) {
-  const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
+  const getExchangeRatesByDate = sql<IGetExchangeRatesByDateQuery>`
     select *
     from accounter_schema.exchange_rates
     where exchange_date <= to_date($date, 'YYYY-MM-DD') 
@@ -16,12 +20,45 @@ export async function getExchangeRates(date: Date) {
 
   const formattedDate = format(date, 'yyyy-MM-dd');
   try {
-    const result = await getExchangeRatesByDates.run({ date: formattedDate }, pool);
+    const result = await getExchangeRatesByDate.run({ date: formattedDate }, pool);
     return result[0];
   } catch (error) {
     console.log('error in DB - ', error);
   }
 }
+
+export const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
+    SELECT *
+    FROM accounter_schema.exchange_rates
+    WHERE
+      exchange_date BETWEEN (
+        SELECT exchange_date FROM accounter_schema.exchange_rates
+        WHERE exchange_date <= to_date($fromDate, 'YYYY-MM-DD')
+        ORDER BY exchange_date DESC LIMIT 1
+      )
+      AND to_date($toDate, 'YYYY-MM-DD') 
+    ORDER BY exchange_date DESC;
+  `;
+
+async function batchExchangeRatesByDates(dates: readonly Date[]) {
+  const fromDate = format(new Date(Math.min(...dates.map(d => d.getTime()))), 'yyyy-MM-dd');
+  const toDate = format(new Date(Math.max(...dates.map(d => d.getTime()))), 'yyyy-MM-dd');
+  const rates = await getExchangeRatesByDates.run(
+    {
+      fromDate,
+      toDate,
+    },
+    pool,
+  );
+  return dates.map(date => {
+    const stringifiedDate = format(date, 'yyyy-MM-dd');
+    return rates.find(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate);
+  });
+}
+
+export const getExchangeRatesByDatesLoader = new DataLoader(batchExchangeRatesByDates, {
+  cache: false,
+});
 
 export async function getChargeExchangeRates(charge: IGetChargesByIdsResult) {
   if (!charge.debit_date) {
@@ -31,8 +68,8 @@ export async function getChargeExchangeRates(charge: IGetChargesByIdsResult) {
     throw new Error(`Charge ID=${charge.id} has no tax invoice date`);
   }
   const results = await Promise.all([
-    getExchangeRates(charge.debit_date),
-    getExchangeRates(charge.tax_invoice_date),
+    getExchangeRatesByDatesLoader.load(charge.debit_date),
+    getExchangeRatesByDatesLoader.load(charge.tax_invoice_date),
   ]);
   return {
     debitExchangeRates: results[0],

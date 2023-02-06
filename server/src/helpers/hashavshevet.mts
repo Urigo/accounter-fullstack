@@ -308,8 +308,8 @@ export function generateEntryForFinancialAccountValues(
   const foreignBalance = null;
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] = charge.currency_code
     ? hashavshevetFormat.currency(charge.currency_code)
-    : null; // TODO(Uri): Check if it works for forgien creditcard in ILS
-  // TODO(Uri): comented code is a never-completed experiment
+    : null; // TODO(Uri): Check if it works for foreign creditcard in ILS
+  // TODO(Uri): commented code is a never-completed experiment
   //   if (charge.financial_entity == 'Isracard' && originalInvoicedAmountAndCurrency) {
   //     const originalInvoicedAmountAndCurrency: any = await pool.query(`
   //     select tax_invoice_amount, tax_invoice_currency
