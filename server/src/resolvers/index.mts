@@ -15,12 +15,14 @@ import {
   IInsertLedgerRecordsResult,
   IUpdateLedgerRecordParams,
 } from '../__generated__/ledger-records.types.mjs';
+import { IGetTaxTransactionsByIDsResult } from '../__generated__/tax-transactions.types.mjs';
 import {
   BusinessTransaction,
   ChargeSortByField,
   Currency,
   DocumentType,
   Resolvers,
+  ResolversTypes,
 } from '../__generated__/types.mjs';
 import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
@@ -34,6 +36,7 @@ import {
   parseDate,
 } from '../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../helpers/misc.mjs';
+import { adjustTaxRecords, mergeChargeDoc, RawVatReportRecord } from '../helpers/tax-report.mjs';
 import { RawBusinessTransactionsSum } from '../models/index.mjs';
 import {
   getBusinessTransactionsFromLedgerRecords,
@@ -51,10 +54,11 @@ import {
   deleteDocument,
   getAllDocuments,
   getDocumentsByChargeIdLoader,
+  getDocumentsByFilters,
   insertDocuments,
   updateDocument,
 } from '../providers/documents.mjs';
-import { getExchangeRates } from '../providers/exchange.mjs';
+import { getExchangeRates, getExchangeRatesByDates } from '../providers/exchange.mjs';
 import {
   getFinancialAccountByAccountNumberLoader,
   getFinancialAccountsByFinancialEntityIdLoader,
@@ -63,11 +67,13 @@ import {
   getAllFinancialEntities,
   getFinancialEntityByChargeIdsLoader,
   getFinancialEntityByIdLoader,
+  getFinancialEntityByNameLoader,
 } from '../providers/financial-entities.mjs';
 import {
   getAccountCardsByKeysLoader,
   getAccountCardsBySortCodesLoader,
 } from '../providers/hash-account-cards.mjs';
+import { getHashavshevetBusinessIndexesLoader } from '../providers/hash-business-indexes.mjs';
 import { getSortCodesByIdLoader, getSortCodesByIds } from '../providers/hash-sort-codes.mjs';
 import {
   getHashavshevetBusinessIndexes,
@@ -80,6 +86,7 @@ import {
   insertLedgerRecords,
   updateLedgerRecord,
 } from '../providers/ledger-records.mjs';
+import { getTaxTransactionsLoader } from '../providers/tax-transactions.mjs';
 import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import {
   commonDocumentsFields,
@@ -133,16 +140,12 @@ export const resolvers: Resolvers = {
           break;
       }
 
-      const isFinancialEntityIds = filters?.byOwners?.length ?? 0;
-
       const businesses: Array<string | null> = [];
-      let isBusinesses = 0;
       if (filters?.byBusinesses?.length) {
         const businessNames = await Promise.all(
           filters.byBusinesses.map(id => getFinancialEntityByIdLoader.load(id)),
         );
         businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
-        isBusinesses = 1;
       } else {
         businesses.push(null);
       }
@@ -150,10 +153,8 @@ export const resolvers: Resolvers = {
       const charges = await getChargesByFilters
         .run(
           {
-            financialEntityIds: filters?.byOwners?.length ? filters.byOwners : [null],
-            isFinancialEntityIds,
+            financialEntityIds: filters?.byOwners ?? undefined,
             businesses,
-            isBusinesses,
             fromDate: filters?.fromDate,
             toDate: filters?.toDate,
             sortColumn,
@@ -359,6 +360,110 @@ export const resolvers: Resolvers = {
       } catch (e) {
         console.error('Error fetching sort codes', e);
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
+      }
+    },
+    // reports
+    vatReport: async (_, { filters }) => {
+      try {
+        const emptyResponse = {
+          income: [],
+          expenses: [],
+        };
+
+        const documents = await getDocumentsByFilters.run(
+          { fromDate: filters?.fromDate, toDate: filters?.toDate },
+          pool,
+        );
+
+        if (documents.length === 0) {
+          console.log('No documents found for VAT report');
+          return emptyResponse;
+        }
+
+        const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
+        const EXCLUDED_BUSINESS_NAMES = [
+          'Social Security Deductions',
+          'Tax',
+          'VAT',
+          'Dotan Simha Dividend',
+        ];
+        const charges = await getChargesByFilters.run(
+          {
+            IDs: chargesIDs,
+            financialEntityIds: [filters?.financialEntityId],
+            notBusinesses: EXCLUDED_BUSINESS_NAMES,
+          },
+          pool,
+        );
+
+        if (charges.length === 0) {
+          console.log('No charges found for VAT report');
+          return emptyResponse;
+        }
+
+        // Get transactions that are batched into one invoice
+        const taxTransactions = await Promise.all(
+          chargesIDs.map(id => getTaxTransactionsLoader.load(id).then(res => ({ id, ref: res }))),
+        ).then(res =>
+          res.reduce(
+            (a: { [id: string]: IGetTaxTransactionsByIDsResult }, v) =>
+              v.ref ? { ...a, [v.id]: v.ref } : a,
+            {},
+          ),
+        );
+
+        const incomeRecords: Array<RawVatReportRecord> = [];
+        const expenseRecords: Array<RawVatReportRecord> = [];
+
+        // update tax category according to Hashavshevet
+        await Promise.all(
+          charges.map(async charge => {
+            if (filters?.financialEntityId && charge.financial_entity) {
+              const hashIndex = await getHashavshevetBusinessIndexesLoader.load({
+                financialEntityId: filters?.financialEntityId,
+                businessName: charge.financial_entity,
+              });
+              charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
+            }
+          }),
+        );
+
+        charges.map(charge => {
+          const matchDoc = documents.find(doc => doc.charge_id === charge.id);
+          if (matchDoc) {
+            if (charge.vat === null || charge.vat < 0) {
+              expenseRecords.push(mergeChargeDoc(charge, matchDoc));
+            }
+            if ((charge.vat === null || charge.vat >= 0) && Number(charge.event_amount) > 0) {
+              incomeRecords.push(mergeChargeDoc(charge, matchDoc));
+            }
+          } else {
+            console.log(
+              `For VAT report, for some weire reason no document found for charge ID=${charge.id}`,
+            );
+          }
+        });
+
+        const dates: Array<number> = [...incomeRecords, ...expenseRecords]
+          .filter(record => record.tax_invoice_date)
+          .map(record => record.tax_invoice_date!.getTime());
+        if (dates.length === 0) {
+          console.log("No dates found for VAT report's exchange rates");
+          return emptyResponse;
+        }
+        const fromDate = format(new Date(Math.min(...dates)), 'yyyy-MM-dd');
+        const toDate = format(new Date(Math.max(...dates)), 'yyyy-MM-dd');
+        const exchangeRates = await getExchangeRatesByDates.run({ fromDate, toDate }, pool);
+
+        const ret: ResolversTypes['VatReportResult'] = {
+          income: adjustTaxRecords(incomeRecords, taxTransactions, exchangeRates),
+          expenses: adjustTaxRecords(expenseRecords, taxTransactions, exchangeRates),
+        };
+
+        return ret;
+      } catch (e) {
+        console.error('Error fetching vat report records:', e);
+        throw new GraphQLError((e as Error)?.message ?? 'Error fetching vat report records');
       }
     },
   },
@@ -1286,6 +1391,7 @@ export const resolvers: Resolvers = {
     },
     // counterparties
     // businessTransactions
+    // reports
   },
   // documents
   UpdateDocumentResult: {
@@ -1717,5 +1823,36 @@ export const resolvers: Resolvers = {
       }
     },
     name: dbHashAccount => dbHashAccount.name,
+  },
+  // reports
+  VatReportRecord: {
+    amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
+    businessName: raw => raw.financial_entity,
+    chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
+    documentDate: raw =>
+      raw.tax_invoice_date
+        ? (format(raw.tax_invoice_date, 'yyyy-MM-dd') as TimelessDateString)
+        : null,
+    documentSerial: raw => raw.tax_invoice_number,
+    image: raw => raw.document_image_url,
+    localAmount: raw =>
+      raw.eventAmountILS ? formatFinancialAmount(raw.eventAmountILS, Currency.Ils) : null,
+    localVatAfterDeduction: raw =>
+      raw.vatAfterDeductionILS
+        ? formatFinancialAmount(raw.vatAfterDeductionILS, Currency.Ils)
+        : null,
+    roundedLocalVatAfterDeduction: raw =>
+      raw.roundedVATToAdd ? formatFinancialAmount(raw.roundedVATToAdd, Currency.Ils) : null,
+    taxReducedLocalAmount: raw =>
+      raw.amountBeforeVAT ? formatFinancialAmount(raw.amountBeforeVAT, Currency.Ils) : null,
+    vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),
+    vatAfterDeduction: raw =>
+      raw.vatAfterDeduction ? formatFinancialAmount(raw.vatAfterDeduction, Currency.Ils) : null,
+    vatNumber: raw =>
+      raw.financial_entity
+        ? getFinancialEntityByNameLoader
+            .load(raw.financial_entity)
+            .then(entity => entity?.vat_number ?? null)
+        : null,
   },
 };

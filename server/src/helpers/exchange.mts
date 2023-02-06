@@ -1,46 +1,81 @@
+import { format } from 'date-fns';
+import { currency } from '../__generated__/charges.types.mjs';
 import type { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
 import type { VatExtendedCharge } from './misc.mjs';
 
+export function getRateForCurrency(
+  currencyCode: currency,
+  exchangeRates: IGetExchangeRatesByDatesResult,
+) {
+  if (currencyCode == 'ILS') {
+    return 1;
+  }
+  if (currencyCode && ['USD', 'EUR', 'GBP'].includes(currencyCode)) {
+    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp';
+    const rate = parseFloat(exchangeRates[currencyKey] ?? '');
+    if (isNaN(rate)) {
+      throw new Error(
+        `Exchange rates for date ${exchangeRates.exchange_date}, currency ${currencyCode} not found`,
+      );
+    }
+    return rate;
+  }
+
+  throw new Error(`New account currency ${currencyCode}`);
+}
+
 export function getILSForDate(
-  charge: VatExtendedCharge,
-  exchageRates?: IGetExchangeRatesByDatesResult,
+  charge: Pick<
+    VatExtendedCharge,
+    | 'currency_code'
+    | 'event_amount'
+    | 'vatAfterDeduction'
+    | 'amountBeforeVAT'
+    | 'amountBeforeFullVAT'
+    | 'id'
+  > & {
+    tax_invoice_amount: number | string | null;
+  },
+  exchangeRates?: IGetExchangeRatesByDatesResult,
   amountToOverride?: number,
 ): {
   eventAmountILS: number;
-  vatAfterDiductionILS: number;
+  vatAfterDeductionILS: number;
   amountBeforeVATILS: number;
   amountBeforeFullVATILS: number;
 } {
-  let amountToUse = parseFloat(
-    charge.tax_invoice_amount ? charge.tax_invoice_amount : charge.event_amount,
-  );
-  if (amountToOverride) {
-    amountToUse = amountToOverride;
-  }
-  if (charge.currency_code && ['USD', 'EUR', 'GBP'].includes(charge.currency_code)) {
-    const currencyKey = charge.currency_code?.toLowerCase() as 'usd' | 'eur' | 'gbp';
-    const rate = parseFloat(exchageRates?.[currencyKey] ?? '');
-    if (isNaN(rate)) {
-      throw new Error(
-        `Exchange rates for date ${exchageRates?.exchange_date}, currency ${charge.currency_code} not found`,
-      );
-    }
-    return {
-      eventAmountILS: amountToUse * rate,
-      vatAfterDiductionILS: charge.vatAfterDiduction * rate,
-      amountBeforeVATILS: charge.amountBeforeVAT * rate,
-      amountBeforeFullVATILS: charge.amountBeforeFullVAT * rate,
-    };
-  }
-  if (charge.currency_code == 'ILS') {
-    return {
-      eventAmountILS: amountToUse,
-      vatAfterDiductionILS: charge.vatAfterDiduction,
-      amountBeforeVATILS: charge.amountBeforeVAT,
-      amountBeforeFullVATILS: charge.amountBeforeFullVAT,
-    };
+  const amountToUse =
+    amountToOverride ?? parseFloat(charge.tax_invoice_amount?.toString() ?? charge.event_amount);
+
+  if (!exchangeRates) {
+    throw new Error(`Exchange rates missing`);
   }
 
-  // TODO(Uri): Log important checks
-  throw new Error(`New account currency ${charge.currency_code} on charge ID=${charge.id} `);
+  const rate = getRateForCurrency(charge.currency_code, exchangeRates);
+  return {
+    eventAmountILS: amountToUse * rate,
+    vatAfterDeductionILS: charge.vatAfterDeduction * rate,
+    amountBeforeVATILS: charge.amountBeforeVAT * rate,
+    amountBeforeFullVATILS: charge.amountBeforeFullVAT * rate,
+  };
+}
+
+export function getClosestRateForDate(
+  date: string | Date,
+  rates: Array<IGetExchangeRatesByDatesResult>,
+) {
+  const sortedRates = rates.sort((a, b) => {
+    return (b.exchange_date?.getTime() ?? 0) - (a.exchange_date?.getTime() ?? 0);
+  });
+
+  const stringifiedDate = format(new Date(date), 'yyyy-MM-dd');
+
+  const exchageRate = sortedRates.find(
+    rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate,
+  );
+
+  if (!exchageRate) {
+    throw new Error(`No exchange rate for date ${stringifiedDate}`);
+  }
+  return exchageRate;
 }

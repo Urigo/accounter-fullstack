@@ -9,61 +9,63 @@ import { TimelessDateString } from '../scalars/index.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 
+export type Optional<T, Keys extends keyof T> = Omit<T, Keys> & Partial<Pick<T, Keys>>;
+
 export type VatExtendedCharge = IGetChargesByIdsResult & {
-  vatAfterDiduction: number;
+  vatAfterDeduction: number;
   amountBeforeVAT: number;
   amountBeforeFullVAT: number;
 };
 
 export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharge {
-  const decoreatedCharge: Partial<VatExtendedCharge> = { ...charge };
+  const decoratedCharge: Partial<VatExtendedCharge> = { ...charge };
 
   // If foriegn transaction, can use receipt as invoice
   if (
-    decoreatedCharge.currency_code != 'ILS' &&
-    !decoreatedCharge.tax_invoice_date &&
-    !decoreatedCharge.tax_invoice_number &&
-    !decoreatedCharge.tax_invoice_file &&
-    !decoreatedCharge.proforma_invoice_file &&
-    decoreatedCharge.receipt_number &&
-    decoreatedCharge.receipt_date &&
-    decoreatedCharge.receipt_url &&
-    decoreatedCharge.receipt_image
+    decoratedCharge.currency_code != 'ILS' &&
+    !decoratedCharge.tax_invoice_date &&
+    !decoratedCharge.tax_invoice_number &&
+    !decoratedCharge.tax_invoice_file &&
+    !decoratedCharge.proforma_invoice_file &&
+    decoratedCharge.receipt_number &&
+    decoratedCharge.receipt_date &&
+    decoratedCharge.receipt_url &&
+    decoratedCharge.receipt_image
   ) {
-    decoreatedCharge.tax_invoice_date = decoreatedCharge.receipt_date;
-    decoreatedCharge.tax_invoice_number = decoreatedCharge.receipt_number;
-    decoreatedCharge.tax_invoice_file = decoreatedCharge.receipt_url;
-    decoreatedCharge.proforma_invoice_file = decoreatedCharge.receipt_image;
+    decoratedCharge.tax_invoice_date = decoratedCharge.receipt_date;
+    decoratedCharge.tax_invoice_number = decoratedCharge.receipt_number;
+    decoratedCharge.tax_invoice_file = decoratedCharge.receipt_url;
+    decoratedCharge.proforma_invoice_file = decoratedCharge.receipt_image;
   }
 
   // what is happening here?
-  if (decoreatedCharge.tax_invoice_currency) {
-    decoreatedCharge.currency_code = decoreatedCharge.tax_invoice_currency;
-    decoreatedCharge.event_amount = decoreatedCharge.tax_invoice_amount ?? undefined;
-    if (decoreatedCharge.account_type == 'creditcard') {
-      decoreatedCharge.account_type = 'checking_usd';
+  if (decoratedCharge.tax_invoice_currency) {
+    decoratedCharge.currency_code = decoratedCharge.tax_invoice_currency;
+    decoratedCharge.event_amount = decoratedCharge.tax_invoice_amount ?? undefined;
+    if (decoratedCharge.account_type == 'creditcard') {
+      decoratedCharge.account_type = 'checking_usd';
     } else {
-      decoreatedCharge.debit_date = decoreatedCharge.tax_invoice_date;
+      decoratedCharge.debit_date = decoratedCharge.tax_invoice_date;
     }
   }
 
   const amountToUse = parseFloat(
-    (decoreatedCharge.tax_invoice_amount
-      ? decoreatedCharge.tax_invoice_amount
-      : decoreatedCharge.event_amount) ?? '0',
+    (decoratedCharge.tax_invoice_amount
+      ? decoratedCharge.tax_invoice_amount
+      : decoratedCharge.event_amount) ?? '0',
   );
-  decoreatedCharge.vatAfterDiduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
-    decoreatedCharge.tax_category ?? '',
+  decoratedCharge.vatAfterDeduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
+    decoratedCharge.tax_category ?? '',
   )
-    ? decoreatedCharge.vat ?? 0
-    : ((decoreatedCharge.vat ?? 0) / 3) * 2;
+    ? decoratedCharge.vat ?? 0
+    : ((decoratedCharge.vat ?? 0) / 3) * 2;
 
   // TODO(Uri): Add a check if there is vat and it's not equal for 17 percent, let us know
-  decoreatedCharge.amountBeforeVAT = amountToUse - decoreatedCharge.vatAfterDiduction;
+  decoratedCharge.amountBeforeVAT = amountToUse - decoratedCharge.vatAfterDeduction;
 
-  decoreatedCharge.amountBeforeFullVAT = amountToUse - (decoreatedCharge.vat ?? 0);
+  decoratedCharge.amountBeforeFullVAT = amountToUse - (decoratedCharge.vat ?? 0);
 
-  return decoreatedCharge as VatExtendedCharge;
+  return decoratedCharge as VatExtendedCharge;
 }
 
 export interface EntryForFinancialAccount {
@@ -141,12 +143,12 @@ export async function buildLedgerEntries(
     charge.account_type == 'creditcard' ? debitExchangeRates : invoiceExchangeRates,
   ).eventAmountILS;
 
-  if (charge.vatAfterDiduction && charge.vatAfterDiduction != 0) {
-    entryForAccounting.secondAccountCreditAmount = charge.vatAfterDiduction;
+  if (charge.vatAfterDeduction && charge.vatAfterDeduction != 0) {
+    entryForAccounting.secondAccountCreditAmount = charge.vatAfterDeduction;
     entryForAccounting.secondAccountCreditAmountILS = getILSForDate(
       charge,
       debitExchangeRates,
-    ).vatAfterDiductionILS;
+    ).vatAfterDeductionILS;
     entryForAccounting.creditAmount = charge.amountBeforeVAT;
     entryForAccounting.creditAmountILS = getILSForDate(
       charge,
@@ -190,7 +192,7 @@ export async function buildLedgerEntries(
     swapObjectKeys(entryForFinancialAccount, 'creditAmount', 'debitAmount');
     swapObjectKeys(entryForFinancialAccount, 'creditAmountILS', 'debitAmountILS');
     swapObjectKeys(entryForFinancialAccount, 'reference1', 'reference2');
-    if (charge.vatAfterDiduction && charge.vatAfterDiduction != 0) {
+    if (charge.vatAfterDeduction && charge.vatAfterDeduction != 0) {
       charge.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : charge.is_property

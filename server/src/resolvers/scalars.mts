@@ -3,7 +3,7 @@ import { DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
 import { Resolvers } from '../__generated__/types.mjs';
 import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
 
-function vlidatePercentage(value: number) {
+function validatePercentage(value: number) {
   if (value >= 0 && value <= 1) return value;
 
   throw new GraphQLError(`Percantage value must be between 0 and 1, but got a: ${value}`);
@@ -18,12 +18,12 @@ export const Percentage = new GraphQLScalarType({
   },
 
   parseValue(value: unknown) {
-    return vlidatePercentage(Number(value));
+    return validatePercentage(Number(value));
   },
 
   parseLiteral(ast: ValueNode) {
     if (ast.kind === Kind.FLOAT || ast.kind === Kind.INT) {
-      return vlidatePercentage(Number(ast.value));
+      return validatePercentage(Number(ast.value));
     }
 
     throw new GraphQLError(`Can only validate numbers as Percentage but got: ${ast.kind}`);
