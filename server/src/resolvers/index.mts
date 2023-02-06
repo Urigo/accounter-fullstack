@@ -146,8 +146,6 @@ export const resolvers: Resolvers = {
           filters.byBusinesses.map(id => getFinancialEntityByIdLoader.load(id)),
         );
         businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
-      } else {
-        businesses.push(null);
       }
 
       const charges = await getChargesByFilters

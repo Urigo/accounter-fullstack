@@ -21,7 +21,7 @@
     "codegen": "graphql-codegen --config codegen.yml",
     "deploy": "git push heroku master",
     "dev": "yarn --cwd old-accounter dev",
-    "generate": "concurrently \"yarn codegen\" \"yarn --cwd server sqlgen\"",
+    "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd server sqlgen\"",
     "get": "yarn --cwd old-accounter get",
     "lint": "eslint --ignore-path .gitignore .",
     "lint:prettier": "prettier --ignore-path .gitignore --check .",
