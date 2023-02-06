@@ -212,6 +212,7 @@ export const VatMonthlyReport = () => {
           <AccounterLoader />
         ) : (
           <div className="flex flex-col gap-4">
+            <span className="self-center text-lg font-semibold whitespace-nowrap">Income</span>
             <Table highlightOnHover>
               <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                 <tr className="bg-gray-300">
@@ -261,6 +262,7 @@ export const VatMonthlyReport = () => {
               </tbody>
             </Table>
 
+            <span className="self-center text-lg font-semibold whitespace-nowrap">Expenses</span>
             <Table highlightOnHover>
               <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                 <tr className="bg-gray-300">
