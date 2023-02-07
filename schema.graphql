@@ -188,6 +188,8 @@ input VatReportFilter {
 type VatReportResult {
   expenses: [VatReportRecord!]!
   income: [VatReportRecord!]!
+  missingInfo: [Charge!]!
+  differentMonthDoc: [Charge!]!
 }
 
 " Vat report record "
@@ -660,6 +662,19 @@ extend type Charge {
   accountantApproval: AccountantApproval!
   " פחת, ציוד  "
   property: Boolean
+  " missing info validation data "
+  validationData: ValidationData
+}
+
+" represent a validation data for missing info "
+type ValidationData {
+  counterparty: Boolean!
+  transactionDescription: Boolean!
+  tags: Boolean!
+  vat: Boolean!
+  invoices: Int!
+  receipts: Int!
+  ledgerRecords: Int!
 }
 
 extend type LedgerRecord {
