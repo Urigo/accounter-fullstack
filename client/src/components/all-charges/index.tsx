@@ -10,11 +10,10 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   InsertLedgerRecordModal,
+  MatchDocumentModal,
   NavBar,
-  PopUpDrawer,
   UploadDocumentModal,
 } from '../common';
-import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 
@@ -169,25 +168,7 @@ export const AllCharges = () => {
         />
       )}
       {matchDocuments && (
-        <PopUpDrawer
-          modalSize="80%"
-          position="bottom"
-          title={
-            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
-              <h1 className="sm:text-2xl font-small text-gray-900">Match Documents:</h1>
-              <a href="/#" className="pt-1">
-                Charge ID: {matchDocuments}
-              </a>
-            </div>
-          }
-          opened={Boolean(matchDocuments)}
-          onClose={() => setMatchDocuments(undefined)}
-        >
-          <DocumentsToChargeMatcher
-            chargeId={matchDocuments}
-            onDone={() => setMatchDocuments(undefined)}
-          />
-        </PopUpDrawer>
+        <MatchDocumentModal matchDocuments={matchDocuments} setMatchDocuments={setMatchDocuments} />
       )}
     </div>
   );
