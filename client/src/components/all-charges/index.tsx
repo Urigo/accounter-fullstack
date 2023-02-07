@@ -12,11 +12,11 @@ import {
   InsertLedgerRecordModal,
   NavBar,
   PopUpDrawer,
+  UploadDocumentModal,
 } from '../common';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
-import { UploadDocument } from './documents/upload-document';
 
 /* GraphQL */ `
   query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
@@ -163,25 +163,10 @@ export const AllCharges = () => {
         />
       )}
       {uploadDocument && (
-        <PopUpDrawer
-          modalSize="40%"
-          position="bottom"
-          title={
-            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
-              <h1 className="sm:text-2xl font-small text-gray-900">Upload Document:</h1>
-              <a href="/#" className="pt-1">
-                Charge ID: {uploadDocument}
-              </a>
-            </div>
-          }
-          opened={Boolean(uploadDocument)}
-          onClose={() => setUploadDocument(undefined)}
-        >
-          <UploadDocument
-            chargeId={uploadDocument}
-            closeModal={() => setUploadDocument(undefined)}
-          />
-        </PopUpDrawer>
+        <UploadDocumentModal
+          uploadDocument={uploadDocument}
+          setUploadDocument={setUploadDocument}
+        />
       )}
       {matchDocuments && (
         <PopUpDrawer
