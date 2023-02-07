@@ -7,6 +7,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader, NavBar } from '../../common';
 import { ExpensesTable } from './expenses-table';
 import { IncomeTable } from './income-table';
+import { MissingInfoTable } from './missing-info-table';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 
 /* GraphQL */ `
@@ -14,6 +15,7 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
     vatReport(filters: $filters) {
       ...VarReportIncomeFields
       ...VarReportExpensesFields
+      ...VarReportMissingInfoFields
     }
   }
 `;
@@ -56,6 +58,8 @@ export const VatMonthlyReport = () => {
             <IncomeTable data={data?.vatReport} />
 
             <ExpensesTable data={data?.vatReport} />
+
+            <MissingInfoTable data={data?.vatReport} />
           </div>
         )}
       </div>

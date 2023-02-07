@@ -24,7 +24,6 @@ import {
   DocumentType,
   Resolvers,
   ResolversTypes,
-  ValidationData,
 } from '../__generated__/types.mjs';
 import {
   formatAmount,

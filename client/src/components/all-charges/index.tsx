@@ -143,7 +143,7 @@ export const AllCharges = () => {
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
-            data={data}
+            data={data?.allCharges?.nodes}
             isAllOpened={isAllOpened}
           />
         )}
