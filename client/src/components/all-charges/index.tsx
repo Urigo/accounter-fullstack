@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { FragmentType, getFragmentData } from '../../gql';
+import { FragmentType } from '../../gql';
 import { AllChargesDocument, ChargeFilter, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
 import { useUrlQuery } from '../../hooks/use-url-query';
-import { AccounterLoader, NavBar, PopUpDrawer } from '../common';
+import { AccounterLoader, EditChargeModal, NavBar, PopUpDrawer } from '../common';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 import { InsertDocument } from './documents/insert-document';
 import { UploadDocument } from './documents/upload-document';
-import { EditCharge } from './edit-charge';
 import { InsertLedgerRecord } from './ledger-records/insert-ledger-record';
 
 /* GraphQL */ `
@@ -148,28 +147,7 @@ export const AllCharges = () => {
           />
         )}
       </div>
-      {editCharge && (
-        <PopUpDrawer
-          modalSize="fit-content"
-          position="bottom"
-          title={
-            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
-              <h1 className="sm:text-2xl font-small text-gray-900">Edit Charge:</h1>
-              <a href="/#" className="pt-1">
-                ID: {getFragmentData(EditChargeFieldsFragmentDoc, editCharge).id}
-              </a>
-            </div>
-          }
-          opened={Boolean(editCharge)}
-          onClose={() => setEditCharge(undefined)}
-        >
-          <EditCharge
-            chargeProps={editCharge}
-            onAccept={() => setEditCharge(undefined)}
-            onCancel={() => setEditCharge(undefined)}
-          />
-        </PopUpDrawer>
-      )}
+      {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
       {insertLedger && (
         <PopUpDrawer
           modalSize="40%"
