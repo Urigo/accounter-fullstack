@@ -45,6 +45,8 @@ module.exports = {
                 'PageInfo',
                 'PaginatedCharges',
                 'SortCode',
+                'VatReportResult',
+                'VatReportRecord',
               ],
             },
           },

@@ -24,7 +24,12 @@ import {
   Resolvers,
   ResolversTypes,
 } from '../__generated__/types.mjs';
-import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
+import {
+  formatAmount,
+  formatCurrency,
+  formatFinancialAmount,
+  formatFinancialIntAmount,
+} from '../helpers/amount.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -1813,6 +1818,8 @@ export const resolvers: Resolvers = {
   },
   // reports
   VatReportRecord: {
+    documentId: raw => raw.document_id,
+    chargeId: raw => raw.id,
     amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
     businessName: raw => raw.financial_entity,
     chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
@@ -1829,7 +1836,7 @@ export const resolvers: Resolvers = {
         ? formatFinancialAmount(raw.vatAfterDeductionILS, Currency.Ils)
         : null,
     roundedLocalVatAfterDeduction: raw =>
-      raw.roundedVATToAdd ? formatFinancialAmount(raw.roundedVATToAdd, Currency.Ils) : null,
+      raw.roundedVATToAdd ? formatFinancialIntAmount(raw.roundedVATToAdd, Currency.Ils) : null,
     taxReducedLocalAmount: raw =>
       raw.amountBeforeVAT ? formatFinancialAmount(raw.amountBeforeVAT, Currency.Ils) : null,
     vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),

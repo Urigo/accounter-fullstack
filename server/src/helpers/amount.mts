@@ -1,9 +1,15 @@
-import { Currency, FinancialAmount } from '../__generated__/types.mjs';
+import { Currency, FinancialAmount, FinancialIntAmount } from '../__generated__/types.mjs';
+
+export const addCommasToStringifiedInt = (rawAmount: string | number): string => {
+  // add commas
+  const formattedAmount = rawAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return formattedAmount;
+};
 
 export const formatStringifyAmount = (rawAmount: number): string => {
   const formattedParts = rawAmount.toFixed(2).split('.');
   // add commas
-  formattedParts[0] = formattedParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  formattedParts[0] = addCommasToStringifiedInt(formattedParts[0]);
   return formattedParts.join('.');
 };
 
@@ -15,7 +21,7 @@ export const formatFinancialAmount = (
   const currency = formatCurrency(rawCurrency);
   return {
     raw: amount,
-    formatted: `${formatStringifyAmount(amount)} ${currency}`,
+    formatted: `${formatStringifyAmount(amount)}${getCurrencySymbol(currency)}`,
     currency,
   };
 };
@@ -44,6 +50,39 @@ export const formatCurrency = (raw?: string | null): Currency => {
       console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
       return Currency.Ils;
   }
+};
+
+export function getCurrencySymbol(currency: Currency) {
+  switch (currency) {
+    case Currency.Gbp:
+      return '£';
+    case Currency.Usd:
+      return '$';
+    case Currency.Eur:
+      return '€';
+    case Currency.Ils:
+      return '₪';
+    default:
+      console.warn(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
+      return '₪';
+  }
+}
+
+export const formatFinancialIntAmount = (
+  rawAmount?: number | string | null,
+  rawCurrency?: string | null,
+): FinancialIntAmount => {
+  let amount = formatAmount(rawAmount);
+  if (!Number.isInteger(amount)) {
+    console.warn(`formatStringifyIntAmount got a non-integer amount${amount}. Rounding it.`);
+    amount = Math.round(formatAmount(amount));
+  }
+  const currency = formatCurrency(rawCurrency);
+  return {
+    raw: amount,
+    formatted: `${addCommasToStringifiedInt(amount)}${getCurrencySymbol(currency)}`,
+    currency,
+  };
 };
 
 export const formatAmount = (rawAmount?: number | string | null): number => {

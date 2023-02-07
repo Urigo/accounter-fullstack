@@ -54,6 +54,16 @@ type FinancialAmount {
   currency: Currency!
 }
 
+" Represent financial rounded amount with Int values "
+type FinancialIntAmount {
+  " the raw amount, for example: 19 "
+  raw: Int!
+  " formatted value with the currency symbol, like: 10$ "
+  formatted: String!
+  " currency of the amount "
+  currency: Currency!
+}
+
 " All possible currencies "
 enum Currency {
   USD
@@ -182,6 +192,8 @@ type VatReportResult {
 
 " Vat report record "
 type VatReportRecord {
+  chargeId: ID!
+  documentId: ID
   businessName: String
   vatNumber: String
   image: String
@@ -193,11 +205,9 @@ type VatReportRecord {
   vat: FinancialAmount
   vatAfterDeduction: FinancialAmount
   localVatAfterDeduction: FinancialAmount
-  roundedLocalVatAfterDeduction: FinancialAmount # Int value
-  # cumulativeRoundedLocalVatAfterDeduction: FinancialAmount! # Int value
+  " Int value"
+  roundedLocalVatAfterDeduction: FinancialIntAmount
   taxReducedLocalAmount: FinancialAmount
-  # cumulativeTaxableTaxReducedLocalAmount: FinancialAmount!
-  # cumulativeNonTaxableLocalAmount: FinancialAmount!
 }
 
 " Hashavshevet account "
