@@ -7,6 +7,13 @@ import {
   VarReportMissingInfoFieldsFragmentDoc,
 } from '../../../gql/graphql';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
+import {
+  EditChargeModal,
+  InsertDocumentModal,
+  InsertLedgerRecordModal,
+  MatchDocumentModal,
+  UploadDocumentModal,
+} from '../../common';
 
 /* GraphQL */ `
   fragment VarReportMissingInfoFields on VatReportResult {
@@ -52,7 +59,6 @@ export const MissingInfoTable = ({ data }: Props) => {
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
-  const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
@@ -66,15 +72,42 @@ export const MissingInfoTable = ({ data }: Props) => {
         Missing Info
       </span>
       {isOpened && chargesData && (
-        <AllChargesTable
-          setEditCharge={setEditCharge}
-          setInsertLedger={setInsertLedger}
-          setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
-          data={chargesData?.missingInfo}
-          isAllOpened={isAllOpened}
-        />
+        <>
+          <AllChargesTable
+            setEditCharge={setEditCharge}
+            setInsertLedger={setInsertLedger}
+            setInsertDocument={setInsertDocument}
+            setMatchDocuments={setMatchDocuments}
+            setUploadDocument={setUploadDocument}
+            data={chargesData?.missingInfo}
+            isAllOpened={false}
+          />
+          {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
+          {insertLedger && (
+            <InsertLedgerRecordModal
+              insertLedger={insertLedger}
+              setInsertLedger={setInsertLedger}
+            />
+          )}
+          {insertDocument && (
+            <InsertDocumentModal
+              insertDocument={insertDocument}
+              setInsertDocument={setInsertDocument}
+            />
+          )}
+          {uploadDocument && (
+            <UploadDocumentModal
+              uploadDocument={uploadDocument}
+              setUploadDocument={setUploadDocument}
+            />
+          )}
+          {matchDocuments && (
+            <MatchDocumentModal
+              matchDocuments={matchDocuments}
+              setMatchDocuments={setMatchDocuments}
+            />
+          )}
+        </>
       )}
     </>
   );
