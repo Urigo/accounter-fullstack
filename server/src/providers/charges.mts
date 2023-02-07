@@ -10,7 +10,12 @@ import {
   IGetChargesByIdsQuery,
   IGetConversionOtherSideQuery,
   IUpdateChargeQuery,
+  IValidateChargesParams,
+  IValidateChargesQuery,
+  IValidateChargesResult,
 } from '../__generated__/charges.types.mjs';
+import { ValidationData } from '../__generated__/types.mjs';
+import { extractValidationData } from '../helpers/charges.mjs';
 import { Optional } from '../helpers/misc.mjs';
 import { pool } from '../providers/db.mjs';
 import { TimelessDateString } from '../scalars/timeless-date.mjs';
@@ -369,4 +374,96 @@ const getAdjustedChargesByFilters: Pick<
   },
 };
 
-export { getAdjustedChargesByFilters as getChargesByFilters };
+const validateCharges = sql<IValidateChargesQuery>`
+  SELECT
+    at.*,
+    fa.owner as financial_entity_id,
+    (at.financial_entity IS NULL OR TRIM(at.financial_entity) = '') as is_financial_entity,
+    (at.user_description IS NULL OR TRIM(at.user_description) = '') as is_user_description,
+    (at.personal_category IS NULL OR TRIM(at.personal_category) = '') as is_personal_category,
+    (at.vat IS NULL) as is_vat,
+    (
+      SELECT COUNT(*)
+      FROM accounter_schema.documents d
+      WHERE d.charge_id = at.id
+        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
+    ) as invoices_count,
+    (
+      SELECT COUNT(*)
+      FROM accounter_schema.documents d
+      WHERE d.charge_id = at.id
+        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
+    ) as receipts_count,
+    (
+      SELECT COUNT(*)
+      FROM accounter_schema.ledger l
+      WHERE l.original_id = at.id
+    ) as ledger_records_count
+  FROM accounter_schema.all_transactions at
+  LEFT JOIN accounter_schema.financial_accounts fa
+  ON  at.account_number = fa.account_number
+  WHERE ($isFinancialEntityId = 0 OR fa.owner = $financialEntityId)
+    AND ($isIDs = 0 OR at.id IN $$IDs)
+    AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY at.event_date DESC;
+`;
+
+type IValidateChargesAdjustedParams = Optional<
+  Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityId'>,
+  'IDs' | 'toDate' | 'fromDate'
+> & {
+  toDate?: TimelessDateString | null;
+  fromDate?: TimelessDateString | null;
+};
+
+const validateChargesAdjusted: Pick<
+  TaggedQuery<{
+    params: IValidateChargesAdjustedParams;
+    result: IValidateChargesResult;
+  }>,
+  'run'
+> = {
+  run(params: IValidateChargesAdjustedParams, dbConnection: IDatabaseConnection) {
+    const isIDs = Boolean(params?.IDs?.length);
+
+    const fullParams: IValidateChargesParams = {
+      isIDs: isIDs ? 1 : 0,
+      isFinancialEntityId: 1,
+      ...params,
+      fromDate: params.fromDate ?? null,
+      toDate: params.toDate ?? null,
+      IDs: isIDs ? params.IDs! : [null],
+    };
+    return validateCharges.run(fullParams, dbConnection);
+  },
+};
+
+export {
+  getAdjustedChargesByFilters as getChargesByFilters,
+  validateChargesAdjusted as validateCharges,
+};
+
+async function batchValidateChargesByIds(ids: readonly string[]) {
+  const isIDs = Boolean(ids?.length);
+  const charges = await validateCharges.run(
+    {
+      isIDs: 1,
+      IDs: isIDs ? ids : [null],
+      fromDate: null,
+      toDate: null,
+      isFinancialEntityId: 0,
+      financialEntityId: null,
+    },
+    pool,
+  );
+  return ids.map(id => {
+    const data = charges.find(charge => charge.id === id);
+    return data ? extractValidationData(data) : null;
+  });
+}
+
+export const validateChargeByIdLoader = new DataLoader<string, ValidationData | null>(
+  batchValidateChargesByIds,
+  { cache: false },
+);

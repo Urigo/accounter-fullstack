@@ -7,9 +7,9 @@ import {
   UseFormUnregister,
   UseFormWatch,
 } from 'react-hook-form';
-import { Currency, InsertDbLedgerRecordInput } from '../../../gql/graphql';
-import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
-import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../../common';
+import { Currency, InsertDbLedgerRecordInput } from '../../../../gql/graphql';
+import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts';
+import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../..';
 
 type Props = {
   control: Control<InsertDbLedgerRecordInput, unknown>;

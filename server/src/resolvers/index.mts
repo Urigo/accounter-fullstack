@@ -5,6 +5,7 @@ import type {
   IGetChargesByFiltersResult,
   IGetChargesByIdsResult,
   IUpdateChargeParams,
+  IValidateChargesResult,
 } from '../__generated__/charges.types.mjs';
 import type {
   IInsertDocumentsParams,
@@ -24,7 +25,13 @@ import {
   Resolvers,
   ResolversTypes,
 } from '../__generated__/types.mjs';
-import { formatAmount, formatCurrency, formatFinancialAmount } from '../helpers/amount.mjs';
+import {
+  formatAmount,
+  formatCurrency,
+  formatFinancialAmount,
+  formatFinancialIntAmount,
+} from '../helpers/amount.mjs';
+import { extractValidationData } from '../helpers/charges.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -48,6 +55,8 @@ import {
   getChargesByFilters,
   getConversionOtherSide,
   updateCharge,
+  validateChargeByIdLoader,
+  validateCharges,
 } from '../providers/charges.mjs';
 import { pool } from '../providers/db.mjs';
 import {
@@ -363,10 +372,14 @@ export const resolvers: Resolvers = {
     // reports
     vatReport: async (_, { filters }) => {
       try {
-        const emptyResponse = {
+        const response: ResolversTypes['VatReportResult'] = {
           income: [],
           expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
         };
+
+        const includedChargeIDs = new Set<string>();
 
         const documents = await getDocumentsByFilters.run(
           { fromDate: filters?.fromDate, toDate: filters?.toDate },
@@ -375,90 +388,127 @@ export const resolvers: Resolvers = {
 
         if (documents.length === 0) {
           console.log('No documents found for VAT report');
-          return emptyResponse;
+        } else {
+          const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
+          const EXCLUDED_BUSINESS_NAMES = [
+            'Social Security Deductions',
+            'Tax',
+            'VAT',
+            'Dotan Simha Dividend',
+          ];
+          const charges = await getChargesByFilters.run(
+            {
+              IDs: chargesIDs,
+              financialEntityIds: [filters?.financialEntityId],
+              notBusinesses: EXCLUDED_BUSINESS_NAMES,
+            },
+            pool,
+          );
+
+          if (charges.length === 0) {
+            console.log('No charges found for VAT report');
+          } else {
+            // Get transactions that are batched into one invoice
+            const taxTransactions = await Promise.all(
+              chargesIDs.map(id =>
+                getTaxTransactionsLoader.load(id).then(res => ({ id, ref: res })),
+              ),
+            ).then(res =>
+              res.reduce(
+                (a: { [id: string]: IGetTaxTransactionsByIDsResult }, v) =>
+                  v.ref ? { ...a, [v.id]: v.ref } : a,
+                {},
+              ),
+            );
+
+            const incomeRecords: Array<RawVatReportRecord> = [];
+            const expenseRecords: Array<RawVatReportRecord> = [];
+
+            // update tax category according to Hashavshevet
+            await Promise.all(
+              charges.map(async charge => {
+                if (filters?.financialEntityId && charge.financial_entity) {
+                  const hashIndex = await getHashavshevetBusinessIndexesLoader.load({
+                    financialEntityId: filters?.financialEntityId,
+                    businessName: charge.financial_entity,
+                  });
+                  charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
+                }
+              }),
+            );
+
+            charges.map(charge => {
+              const matchDoc = documents.find(doc => doc.charge_id === charge.id);
+              if (matchDoc) {
+                if (charge.vat === null || charge.vat < 0) {
+                  includedChargeIDs.add(charge.id);
+                  expenseRecords.push(mergeChargeDoc(charge, matchDoc));
+                }
+                if ((charge.vat === null || charge.vat >= 0) && Number(charge.event_amount) > 0) {
+                  includedChargeIDs.add(charge.id);
+                  incomeRecords.push(mergeChargeDoc(charge, matchDoc));
+                }
+              } else {
+                console.log(
+                  `For VAT report, for some weire reason no document found for charge ID=${charge.id}`,
+                );
+              }
+            });
+
+            const dates: Array<number> = [...incomeRecords, ...expenseRecords]
+              .filter(record => record.tax_invoice_date)
+              .map(record => record.tax_invoice_date!.getTime());
+            if (dates.length === 0) {
+              console.log("No dates found for VAT report's exchange rates");
+            } else {
+              const fromDate = format(new Date(Math.min(...dates)), 'yyyy-MM-dd');
+              const toDate = format(new Date(Math.max(...dates)), 'yyyy-MM-dd');
+              const exchangeRates = await getExchangeRatesByDates.run({ fromDate, toDate }, pool);
+
+              response.income.push(
+                ...adjustTaxRecords(incomeRecords, taxTransactions, exchangeRates),
+              );
+              response.expenses.push(
+                ...adjustTaxRecords(expenseRecords, taxTransactions, exchangeRates),
+              );
+            }
+          }
         }
 
-        const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
-        const EXCLUDED_BUSINESS_NAMES = [
-          'Social Security Deductions',
-          'Tax',
-          'VAT',
-          'Dotan Simha Dividend',
-        ];
-        const charges = await getChargesByFilters.run(
+        const validationCharges = await validateCharges.run(
           {
-            IDs: chargesIDs,
-            financialEntityIds: [filters?.financialEntityId],
-            notBusinesses: EXCLUDED_BUSINESS_NAMES,
+            fromDate: filters?.fromDate,
+            toDate: filters?.toDate,
+            financialEntityId: filters?.financialEntityId,
           },
           pool,
         );
 
-        if (charges.length === 0) {
-          console.log('No charges found for VAT report');
-          return emptyResponse;
-        }
-
-        // Get transactions that are batched into one invoice
-        const taxTransactions = await Promise.all(
-          chargesIDs.map(id => getTaxTransactionsLoader.load(id).then(res => ({ id, ref: res }))),
-        ).then(res =>
-          res.reduce(
-            (a: { [id: string]: IGetTaxTransactionsByIDsResult }, v) =>
-              v.ref ? { ...a, [v.id]: v.ref } : a,
-            {},
-          ),
+        // filter charges with missing info
+        response.missingInfo.push(
+          ...validationCharges
+            .filter(
+              t =>
+                t.is_financial_entity === false ||
+                t.is_user_description === false ||
+                t.is_personal_category === false ||
+                t.is_vat === false ||
+                (t.invoices_count && Number(t.invoices_count) > 0) ||
+                (t.receipts_count && Number(t.receipts_count) > 0) ||
+                (t.ledger_records_count && Number(t.ledger_records_count) > 0),
+            )
+            .map(t => {
+              includedChargeIDs.add(t.id);
+              return t;
+            }),
         );
 
-        const incomeRecords: Array<RawVatReportRecord> = [];
-        const expenseRecords: Array<RawVatReportRecord> = [];
-
-        // update tax category according to Hashavshevet
-        await Promise.all(
-          charges.map(async charge => {
-            if (filters?.financialEntityId && charge.financial_entity) {
-              const hashIndex = await getHashavshevetBusinessIndexesLoader.load({
-                financialEntityId: filters?.financialEntityId,
-                businessName: charge.financial_entity,
-              });
-              charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
-            }
-          }),
+        // filter charges not included
+        response.differentMonthDoc.push(
+          ...validationCharges.filter(t => !includedChargeIDs.has(t.id)),
         );
 
-        charges.map(charge => {
-          const matchDoc = documents.find(doc => doc.charge_id === charge.id);
-          if (matchDoc) {
-            if (charge.vat === null || charge.vat < 0) {
-              expenseRecords.push(mergeChargeDoc(charge, matchDoc));
-            }
-            if ((charge.vat === null || charge.vat >= 0) && Number(charge.event_amount) > 0) {
-              incomeRecords.push(mergeChargeDoc(charge, matchDoc));
-            }
-          } else {
-            console.log(
-              `For VAT report, for some weire reason no document found for charge ID=${charge.id}`,
-            );
-          }
-        });
-
-        const dates: Array<number> = [...incomeRecords, ...expenseRecords]
-          .filter(record => record.tax_invoice_date)
-          .map(record => record.tax_invoice_date!.getTime());
-        if (dates.length === 0) {
-          console.log("No dates found for VAT report's exchange rates");
-          return emptyResponse;
-        }
-        const fromDate = format(new Date(Math.min(...dates)), 'yyyy-MM-dd');
-        const toDate = format(new Date(Math.max(...dates)), 'yyyy-MM-dd');
-        const exchangeRates = await getExchangeRatesByDates.run({ fromDate, toDate }, pool);
-
-        const ret: ResolversTypes['VatReportResult'] = {
-          income: adjustTaxRecords(incomeRecords, taxTransactions, exchangeRates),
-          expenses: adjustTaxRecords(expenseRecords, taxTransactions, exchangeRates),
-        };
-
-        return ret;
+        return response;
       } catch (e) {
         console.error('Error fetching vat report records:', e);
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching vat report records');
@@ -1626,6 +1676,12 @@ export const resolvers: Resolvers = {
         }
         return res;
       }),
+    validationData: DbCharge => {
+      if ('ledger_records_count' in DbCharge) {
+        return extractValidationData(DbCharge as IValidateChargesResult);
+      }
+      return validateChargeByIdLoader.load(DbCharge.id);
+    },
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
@@ -1813,6 +1869,8 @@ export const resolvers: Resolvers = {
   },
   // reports
   VatReportRecord: {
+    documentId: raw => raw.document_id,
+    chargeId: raw => raw.id,
     amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
     businessName: raw => raw.financial_entity,
     chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
@@ -1829,7 +1887,7 @@ export const resolvers: Resolvers = {
         ? formatFinancialAmount(raw.vatAfterDeductionILS, Currency.Ils)
         : null,
     roundedLocalVatAfterDeduction: raw =>
-      raw.roundedVATToAdd ? formatFinancialAmount(raw.roundedVATToAdd, Currency.Ils) : null,
+      raw.roundedVATToAdd ? formatFinancialIntAmount(raw.roundedVATToAdd, Currency.Ils) : null,
     taxReducedLocalAmount: raw =>
       raw.amountBeforeVAT ? formatFinancialAmount(raw.amountBeforeVAT, Currency.Ils) : null,
     vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),

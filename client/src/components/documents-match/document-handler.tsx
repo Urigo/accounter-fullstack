@@ -6,7 +6,7 @@ import {
   DocumentMatchChargesFieldsFragmentDoc,
   EditDocumentFieldsFragmentDoc,
 } from '../../gql/graphql';
-import { EditDocument } from '../all-charges/documents/edit-document';
+import { EditDocument } from '../common';
 import { DocumentMatchCompleted } from './document-match-completed';
 import { DocumentMatchesSelection } from './document-matches-selection';
 

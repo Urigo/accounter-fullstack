@@ -1,16 +1,16 @@
 import { Switch } from '@mantine/core';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { FragmentType, getFragmentData } from '../../gql';
+import { FragmentType, getFragmentData } from '../../../gql';
 import {
   Currency,
   EditChargeFieldsFragmentDoc,
   UpdateChargeInput,
   UpdateTransactionInput,
-} from '../../gql/graphql';
-import { MakeBoolean, relevantDataPicker } from '../../helpers';
-import { useUpdateCharge } from '../../hooks/use-update-charge';
-import { useUpdateTransaction } from '../../hooks/use-update-transaction';
-import { BeneficiariesInput, CurrencyInput, SimpleGrid, TagsInput, TextInput } from '../common';
+} from '../../../gql/graphql';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { useUpdateCharge } from '../../../hooks/use-update-charge';
+import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
+import { BeneficiariesInput, CurrencyInput, SimpleGrid, TagsInput, TextInput } from '..';
 
 /* GraphQL */ `
   fragment EditChargeFields on Charge {

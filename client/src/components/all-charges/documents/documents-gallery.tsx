@@ -3,9 +3,8 @@ import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
-import { PopUpDrawer } from '../../common';
+import { EditDocument, PopUpDrawer } from '../../common';
 import { DeleteDocumentButton } from './delete-document-button';
-import { EditDocument } from './edit-document';
 import { UnlinkDocumentButton } from './unlink-document-button';
 
 /* GraphQL */ `

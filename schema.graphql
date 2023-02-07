@@ -54,6 +54,16 @@ type FinancialAmount {
   currency: Currency!
 }
 
+" Represent financial rounded amount with Int values "
+type FinancialIntAmount {
+  " the raw amount, for example: 19 "
+  raw: Int!
+  " formatted value with the currency symbol, like: 10$ "
+  formatted: String!
+  " currency of the amount "
+  currency: Currency!
+}
+
 " All possible currencies "
 enum Currency {
   USD
@@ -178,10 +188,14 @@ input VatReportFilter {
 type VatReportResult {
   expenses: [VatReportRecord!]!
   income: [VatReportRecord!]!
+  missingInfo: [Charge!]!
+  differentMonthDoc: [Charge!]!
 }
 
 " Vat report record "
 type VatReportRecord {
+  chargeId: ID!
+  documentId: ID
   businessName: String
   vatNumber: String
   image: String
@@ -193,11 +207,9 @@ type VatReportRecord {
   vat: FinancialAmount
   vatAfterDeduction: FinancialAmount
   localVatAfterDeduction: FinancialAmount
-  roundedLocalVatAfterDeduction: FinancialAmount # Int value
-  # cumulativeRoundedLocalVatAfterDeduction: FinancialAmount! # Int value
+  " Int value"
+  roundedLocalVatAfterDeduction: FinancialIntAmount
   taxReducedLocalAmount: FinancialAmount
-  # cumulativeTaxableTaxReducedLocalAmount: FinancialAmount!
-  # cumulativeNonTaxableLocalAmount: FinancialAmount!
 }
 
 " Hashavshevet account "
@@ -650,6 +662,19 @@ extend type Charge {
   accountantApproval: AccountantApproval!
   " פחת, ציוד  "
   property: Boolean
+  " missing info validation data "
+  validationData: ValidationData
+}
+
+" represent a validation data for missing info "
+type ValidationData {
+  counterparty: Boolean!
+  transactionDescription: Boolean!
+  tags: Boolean!
+  vat: Boolean!
+  invoices: Int!
+  receipts: Int!
+  ledgerRecords: Int!
 }
 
 extend type LedgerRecord {

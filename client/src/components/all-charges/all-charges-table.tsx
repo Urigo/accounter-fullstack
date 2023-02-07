@@ -12,7 +12,7 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  data?: AllChargesQuery;
+  data?: AllChargesQuery['allCharges']['nodes'];
   isAllOpened: boolean;
 }
 
@@ -25,7 +25,7 @@ export const AllChargesTable = ({
   data,
   isAllOpened,
 }: Props) => {
-  const charges = data?.allCharges?.nodes ?? [];
+  const charges = data ?? [];
 
   return (
     <Table striped highlightOnHover>
