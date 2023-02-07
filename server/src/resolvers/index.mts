@@ -648,7 +648,7 @@ export const resolvers: Resolvers = {
         isProperty: fields.isProperty,
         links: null,
         originalId: null,
-        personalCategory: fields.tags ? JSON.stringify(fields.tags) : null,
+        personalCategory: fields.tags?.[0]?.name ?? null,
         proformaInvoiceFile: null,
         receiptDate: null,
         receiptImage: null,
@@ -1501,18 +1501,7 @@ export const resolvers: Resolvers = {
     transactions: DbCharge => [DbCharge],
     counterparty: DbCharge => DbCharge.financial_entity,
     description: () => 'Missing', // TODO: implement
-    tags: DbCharge => {
-      const raw = DbCharge.personal_category;
-      if (!raw) {
-        return [];
-      }
-      try {
-        return JSON.parse(DbCharge.personal_category!);
-      } catch {
-        null;
-      }
-      return [{ name: DbCharge.personal_category }];
-    },
+    tags: DbCharge => (DbCharge.personal_category ? [{ name: DbCharge.personal_category }] : []),
     beneficiaries: async DbCharge => {
       // TODO: update to better implementation after DB is updated
       try {

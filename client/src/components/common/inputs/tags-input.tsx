@@ -14,11 +14,13 @@ export function TagsInput({ label, formManager }: Props) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'tags',
+    rules: { maxLength: 1 },
   });
 
   return (
     <div>
       <label className="block text-sm pb-1 font-medium text-gray-700">{label ?? 'Tags'}</label>
+      <span>Currently adjusted to </span>
       <div className="h-full flex flex-col overflow-hidden">
         {fields?.map((tag, index) => (
           <div key={String(tag.id)} className=" flex items-center gap-2 text-gray-600 mb-2">
@@ -43,6 +45,9 @@ export function TagsInput({ label, formManager }: Props) {
         <ActionIcon>
           <PlaylistAdd size={20} onClick={() => append({ name: '' })} />
         </ActionIcon>
+        {fields.length > 1 && (
+          <p className="text-red-500 text-xs italic">Currently adjusted to accept only one tag</p>
+        )}
       </div>
     </div>
   );
