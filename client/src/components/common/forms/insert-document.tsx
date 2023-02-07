@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
-import { SimpleGrid } from '../../common';
+import { SimpleGrid } from '..';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {

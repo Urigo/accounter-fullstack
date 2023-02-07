@@ -8,6 +8,7 @@ import { useUrlQuery } from '../../hooks/use-url-query';
 import {
   AccounterLoader,
   EditChargeModal,
+  InsertDocumentModal,
   InsertLedgerRecordModal,
   NavBar,
   PopUpDrawer,
@@ -15,7 +16,6 @@ import {
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
-import { InsertDocument } from './documents/insert-document';
 import { UploadDocument } from './documents/upload-document';
 
 /* GraphQL */ `
@@ -157,25 +157,10 @@ export const AllCharges = () => {
         <InsertLedgerRecordModal insertLedger={insertLedger} setInsertLedger={setInsertLedger} />
       )}
       {insertDocument && (
-        <PopUpDrawer
-          modalSize="40%"
-          position="bottom"
-          title={
-            <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
-              <h1 className="sm:text-2xl font-small text-gray-900">Insert Document:</h1>
-              <a href="/#" className="pt-1">
-                Charge ID: {insertDocument}
-              </a>
-            </div>
-          }
-          opened={Boolean(insertDocument)}
-          onClose={() => setInsertDocument(undefined)}
-        >
-          <InsertDocument
-            chargeId={insertDocument}
-            closeModal={() => setInsertDocument(undefined)}
-          />
-        </PopUpDrawer>
+        <InsertDocumentModal
+          insertDocument={insertDocument}
+          setInsertDocument={setInsertDocument}
+        />
       )}
       {uploadDocument && (
         <PopUpDrawer
