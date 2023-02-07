@@ -1,7 +1,7 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { InsertDbLedgerRecordInput } from '../../../gql/graphql';
-import { useInsertDbLedgerRecord } from '../../../hooks/use-insert-db-ledger-record';
-import { SimpleGrid } from '../../common';
+import { InsertDbLedgerRecordInput } from '../../../../gql/graphql';
+import { useInsertDbLedgerRecord } from '../../../../hooks/use-insert-db-ledger-record';
+import { SimpleGrid } from '../..';
 import { InsertDbLedgerRecordFields } from './insert-db-ledger-record-fields';
 
 type Props = {
