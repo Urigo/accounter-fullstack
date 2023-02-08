@@ -951,12 +951,12 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
 
 export const isBusiness = (transaction: TransactionType) => {
   return (
-    (transaction.account_number == "61066" ||
-      transaction.account_number == "2733" ||
-      transaction.account_number == "466803" ||
-      transaction.account_number == "1082" ||
-      transaction.account_number == "5972" ||
-      transaction.account_number == "1074") &&
+    (transaction.account_number == '61066' ||
+      transaction.account_number == '2733' ||
+      transaction.account_number == '466803' ||
+      transaction.account_number == '1082' ||
+      transaction.account_number == '5972' ||
+      transaction.account_number == '1074') &&
     !entitiesWithoutInvoice.includes(transaction.financial_entity ?? '')
   );
 };

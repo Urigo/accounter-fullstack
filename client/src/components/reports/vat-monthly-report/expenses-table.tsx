@@ -89,8 +89,11 @@ export const ExpensesTable = ({ data }: Props) => {
               const cumulativeVat = expensesCumulativeVat;
               return (
                 <tr className="bg-gray-100" key={index}>
-                  <td>
-                    {item.businessName}-{item.vatNumber}
+                  <td className="flex flex-col gap-1">
+                    {item.businessName}
+                    {item.vatNumber && (
+                      <span style={{ fontSize: '10px', color: 'darkGray' }}>{item.vatNumber}</span>
+                    )}
                   </td>
                   <td>
                     {item.image && (
@@ -102,15 +105,21 @@ export const ExpensesTable = ({ data }: Props) => {
                   <td>{item.documentSerial}</td>
                   <td>{item.documentDate}</td>
                   <td>{item.chargeDate}</td>
-                  <td>{item.amount.formatted}</td>
-                  <td>{item.localAmount?.formatted}</td>
-                  <td>{item.vat?.formatted}</td>
-                  <td>{item.localVatAfterDeduction?.formatted}</td>
-                  <td>{item.vatAfterDeduction?.formatted}</td>
-                  <td>{item.roundedLocalVatAfterDeduction?.formatted}</td>
-                  <td>{formatStringifyAmount(cumulativeVat)} ILS</td>
-                  <td>{item.taxReducedLocalAmount?.formatted}</td>
-                  <td>{formatStringifyAmount(cumulativeAmount)} ILS</td>
+                  <td className="whitespace-nowrap">{item.amount.formatted}</td>
+                  <td className="whitespace-nowrap">{item.localAmount?.formatted}</td>
+                  <td className="whitespace-nowrap">{item.vat?.formatted}</td>
+                  <td className="whitespace-nowrap">{item.localVatAfterDeduction?.formatted}</td>
+                  <td className="whitespace-nowrap">{item.vatAfterDeduction?.formatted}</td>
+                  <td className="whitespace-nowrap">
+                    {item.roundedLocalVatAfterDeduction?.formatted}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {formatStringifyAmount(cumulativeVat, 0)} &#8362;
+                  </td>
+                  <td className="whitespace-nowrap">{item.taxReducedLocalAmount?.formatted}</td>
+                  <td className="whitespace-nowrap">
+                    {formatStringifyAmount(cumulativeAmount)} &#8362;
+                  </td>
                 </tr>
               );
             })}

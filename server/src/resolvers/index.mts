@@ -440,17 +440,17 @@ export const resolvers: Resolvers = {
             charges.map(charge => {
               const matchDoc = documents.find(doc => doc.charge_id === charge.id);
               if (matchDoc) {
-                if (charge.vat === null || charge.vat < 0) {
+                if (charge.vat != null && charge.vat < 0) {
                   includedChargeIDs.add(charge.id);
                   expenseRecords.push(mergeChargeDoc(charge, matchDoc));
                 }
-                if ((charge.vat === null || charge.vat >= 0) && Number(charge.event_amount) > 0) {
+                if (charge.vat != null && charge.vat >= 0 && Number(charge.event_amount) > 0) {
                   includedChargeIDs.add(charge.id);
                   incomeRecords.push(mergeChargeDoc(charge, matchDoc));
                 }
               } else {
                 console.log(
-                  `For VAT report, for some weire reason no document found for charge ID=${charge.id}`,
+                  `For VAT report, for some weird reason no document found for charge ID=${charge.id}`,
                 );
               }
             });
@@ -486,21 +486,20 @@ export const resolvers: Resolvers = {
 
         // filter charges with missing info
         response.missingInfo.push(
-          ...validationCharges
-            .filter(
-              t =>
-                t.is_financial_entity === false ||
-                t.is_user_description === false ||
-                t.is_personal_category === false ||
-                t.is_vat === false ||
-                (t.invoices_count && Number(t.invoices_count) > 0) ||
-                (t.receipts_count && Number(t.receipts_count) > 0) ||
-                (t.ledger_records_count && Number(t.ledger_records_count) > 0),
-            )
-            .map(t => {
+          ...validationCharges.filter(t => {
+            const isMissing =
+              t.is_financial_entity ||
+              t.is_user_description ||
+              t.is_personal_category ||
+              t.is_vat ||
+              Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) ||
+              // Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0) ||
+              Boolean(isNaN(Number(t.ledger_records_count)) || Number(t.ledger_records_count) == 0);
+            if (isMissing) {
               includedChargeIDs.add(t.id);
-              return t;
-            }),
+            }
+            return isMissing;
+          }),
         );
 
         // filter charges not included

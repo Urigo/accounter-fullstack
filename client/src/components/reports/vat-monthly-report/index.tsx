@@ -1,12 +1,26 @@
 import { useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
-import { VatMonthlyReportDocument, VatReportFilter } from '../../../gql/graphql';
-import { TimelessDateString } from '../../../helpers';
+import { FragmentType } from '../../../gql';
+import {
+  EditChargeFieldsFragmentDoc,
+  VatMonthlyReportDocument,
+  VatReportFilter,
+} from '../../../gql/graphql';
+import { dedupeFragments, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
-import { AccounterLoader, NavBar } from '../../common';
+import {
+  AccounterLoader,
+  EditChargeModal,
+  InsertDocumentModal,
+  InsertLedgerRecordModal,
+  MatchDocumentModal,
+  NavBar,
+  UploadDocumentModal,
+} from '../../common';
 import { ExpensesTable } from './expenses-table';
 import { IncomeTable } from './income-table';
+import { MiscTable } from './misc-table';
 import { MissingInfoTable } from './missing-info-table';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 
@@ -16,6 +30,7 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
       ...VarReportIncomeFields
       ...VarReportExpensesFields
       ...VarReportMissingInfoFields
+      ...VarReportMiscTableFields
     }
   }
 `;
@@ -33,8 +48,19 @@ export const VatMonthlyReport = () => {
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },
   );
+
+  // modals state
+  const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
+  const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
+  const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
+  const [editCharge, setEditCharge] = useState<
+    FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
+  >(undefined);
+
+  // fetch date
   const [{ data, fetching }] = useQuery({
-    query: VatMonthlyReportDocument,
+    query: dedupeFragments(VatMonthlyReportDocument),
     variables: {
       filters: filter,
     },
@@ -59,7 +85,52 @@ export const VatMonthlyReport = () => {
 
             <ExpensesTable data={data?.vatReport} />
 
-            <MissingInfoTable data={data?.vatReport} />
+            <MissingInfoTable
+              data={data?.vatReport}
+              setEditCharge={setEditCharge}
+              setInsertLedger={setInsertLedger}
+              setInsertDocument={setInsertDocument}
+              setUploadDocument={setUploadDocument}
+              setMatchDocuments={setMatchDocuments}
+            />
+
+            <MiscTable
+              data={data?.vatReport}
+              setEditCharge={setEditCharge}
+              setInsertLedger={setInsertLedger}
+              setInsertDocument={setInsertDocument}
+              setUploadDocument={setUploadDocument}
+              setMatchDocuments={setMatchDocuments}
+            />
+
+            {/* modification modals */}
+            {editCharge && (
+              <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />
+            )}
+            {insertLedger && (
+              <InsertLedgerRecordModal
+                insertLedger={insertLedger}
+                setInsertLedger={setInsertLedger}
+              />
+            )}
+            {insertDocument && (
+              <InsertDocumentModal
+                insertDocument={insertDocument}
+                setInsertDocument={setInsertDocument}
+              />
+            )}
+            {uploadDocument && (
+              <UploadDocumentModal
+                uploadDocument={uploadDocument}
+                setUploadDocument={setUploadDocument}
+              />
+            )}
+            {matchDocuments && (
+              <MatchDocumentModal
+                matchDocuments={matchDocuments}
+                setMatchDocuments={setMatchDocuments}
+              />
+            )}
           </div>
         )}
       </div>

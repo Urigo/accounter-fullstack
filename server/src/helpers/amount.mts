@@ -21,7 +21,7 @@ export const formatFinancialAmount = (
   const currency = formatCurrency(rawCurrency);
   return {
     raw: amount,
-    formatted: `${formatStringifyAmount(amount)}${getCurrencySymbol(currency)}`,
+    formatted: `${formatStringifyAmount(amount)} ${getCurrencySymbol(currency)}`,
     currency,
   };
 };
@@ -80,7 +80,7 @@ export const formatFinancialIntAmount = (
   const currency = formatCurrency(rawCurrency);
   return {
     raw: amount,
-    formatted: `${addCommasToStringifiedInt(amount)}${getCurrencySymbol(currency)}`,
+    formatted: `${addCommasToStringifiedInt(amount)} ${getCurrencySymbol(currency)}`,
     currency,
   };
 };
