@@ -1,7 +1,7 @@
 import { CSSProperties } from 'react';
 import {
   businessesWithoutTaxCategory,
-  businessesWithoutVAT,
+  entitiesWithoutInvoice,
   isBusiness,
   suggestedTransaction,
 } from '../../../../helpers';
@@ -18,7 +18,7 @@ export const Vat = ({ transaction, style }: Props) => {
     (!transaction.vat &&
       isBusiness(transaction) &&
       transaction.currency_code === 'ILS' &&
-      !businessesWithoutVAT.includes(transaction.financial_entity || '') &&
+      !entitiesWithoutInvoice.includes(transaction.financial_entity || '') &&
       !businessesWithoutTaxCategory.includes(transaction.financial_entity ?? '')) ||
     (transaction.vat &&
       ((transaction.vat > 0 && Number(transaction.event_amount) < 0) ||

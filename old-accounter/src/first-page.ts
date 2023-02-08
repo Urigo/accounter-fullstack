@@ -3,12 +3,11 @@ import { pool } from './index';
 import moment from 'moment';
 import { suggestedTransaction } from '../../client/src/helpers/transactions';
 import {
-  entitiesWithoutInvoice,
   entitiesWithoutInvoiceNumuber,
   privateBusinessExpenses,
   businessesNotToShare,
   businessesWithoutTaxCategory,
-  businessesWithoutVAT,
+  entitiesWithoutInvoice,
 } from '../../client/src/helpers/groups';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
@@ -492,7 +491,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="vat"  ${
             (!transaction.vat &&
               isBusiness(transaction) &&
-              !businessesWithoutVAT.includes(transaction.financial_entity) &&
+              !entitiesWithoutInvoice.includes(transaction.financial_entity) &&
               !businessesWithoutTaxCategory.includes(transaction.financial_entity) &&
               transaction.currency_code == 'ILS') ||
             (transaction.vat > 0 && transaction.event_amount < 0) ||

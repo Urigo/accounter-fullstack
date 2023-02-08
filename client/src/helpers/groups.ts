@@ -32,16 +32,6 @@ export const entitiesWithoutInvoice = [
 
 export const entitiesWithoutInvoiceNumuber = ['Uri Goldshtein'];
 
-export const businessesWithoutVAT = [
-  'Apple',
-  'Halman Aldubi Training Fund',
-  'Halman Aldubi Pension',
-  'Social Security Deductions',
-  'Tax Deductions',
-  'Poalim',
-  'Isracard',
-];
-
 export const privateBusinessExpenses = [
   'Google',
   'Uri Goldshtein',
