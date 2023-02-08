@@ -1,6 +1,6 @@
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesVatFieldsFragmentDoc, Currency } from '../../../gql/graphql';
-import { businessesWithoutTaxCategory, businessesWithoutVAT } from '../../../helpers';
+import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../helpers';
 
 /* GraphQL */ `
   fragment AllChargesVatFields on Charge {
@@ -37,7 +37,7 @@ export const Vat = ({ data }: Props) => {
   const vatIssueFlag =
     (!vat &&
       isBusiness &&
-      !businessesWithoutVAT.includes(counterparty?.name ?? '') &&
+      !entitiesWithoutInvoice.includes(counterparty?.name ?? '') &&
       !businessesWithoutTaxCategory.includes(counterparty?.name ?? '') &&
       totalAmount?.currency == Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||

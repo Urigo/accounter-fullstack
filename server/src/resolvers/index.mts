@@ -31,7 +31,7 @@ import {
   formatFinancialAmount,
   formatFinancialIntAmount,
 } from '../helpers/amount.mjs';
-import { extractValidationData } from '../helpers/charges.mjs';
+import { extractValidationData, validateCharge } from '../helpers/charges.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -487,21 +487,11 @@ export const resolvers: Resolvers = {
         // filter charges with missing info
         response.missingInfo.push(
           ...validationCharges.filter(t => {
-            const documentsValidation =
-              Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) &&
-              (!t.is_foreign ||
-                Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0));
-            const isMissing =
-              t.is_financial_entity ||
-              t.is_user_description ||
-              t.is_personal_category ||
-              (!t.is_foreign && t.is_vat) ||
-              documentsValidation ||
-              Boolean(isNaN(Number(t.ledger_records_count)) || Number(t.ledger_records_count) == 0);
-            if (isMissing) {
+            const isFine = validateCharge(t);
+            if (!isFine) {
               includedChargeIDs.add(t.id);
             }
-            return isMissing;
+            return !isFine;
           }),
         );
 

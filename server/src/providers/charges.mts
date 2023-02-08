@@ -383,6 +383,7 @@ const validateCharges = sql<IValidateChargesQuery>`
     (at.personal_category IS NULL OR TRIM(at.personal_category) = '') as is_personal_category,
     (at.vat IS NULL) as is_vat,
     (bu.country <> 'Israel') as is_foreign,
+    bu.no_invoices,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d

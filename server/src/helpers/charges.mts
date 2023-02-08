@@ -13,3 +13,32 @@ export function extractValidationData(data: IValidateChargesResult): ValidationD
     ledgerRecords: data?.ledger_records_count ? Number(data.ledger_records_count) : 0,
   };
 }
+
+// returns TRUE if charge has all required information
+export function validateCharge(charge: IValidateChargesResult): boolean {
+  const invoicesCount = Number(charge.invoices_count) || 0;
+  const receiptsCount = Number(charge.receipts_count) || 0;
+  const isForeignExpense = Boolean(charge.is_foreign && Number(charge.event_amount) < 0);
+  const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
+  const documentsAreFine = charge.no_invoices || invoicesCount > 0 || canSettleWithReceipt;
+
+  const businessIsFine = Boolean(charge.financial_entity);
+
+  const descriptionIsFine = Boolean(charge.user_description?.trim());
+
+  const tagsAreFine = Boolean(charge.personal_category?.trim());
+
+  const vatIsFine = charge.is_foreign || charge.no_invoices || Boolean(charge.is_vat);
+
+  const ledgerRecordsCount = Number(charge.ledger_records_count) || 0;
+  const ledgerRecordsAreFine = ledgerRecordsCount > 0;
+
+  const allFine =
+    documentsAreFine &&
+    businessIsFine &&
+    descriptionIsFine &&
+    tagsAreFine &&
+    vatIsFine &&
+    ledgerRecordsAreFine;
+  return allFine;
+}
