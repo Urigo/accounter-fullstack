@@ -77,8 +77,11 @@ export const IncomeTable = ({ data }: Props) => {
               const cumulativeAmount = incomeCumulativeAmount;
               return (
                 <tr className="bg-gray-100" key={index}>
-                  <td>
-                    {item.businessName}-{item.vatNumber}
+                  <td className="flex flex-col gap-1">
+                    {item.businessName}
+                    {item.vatNumber && (
+                      <span style={{ fontSize: '10px', color: 'darkGray' }}>{item.vatNumber}</span>
+                    )}
                   </td>
                   <td>
                     {item.image && (
