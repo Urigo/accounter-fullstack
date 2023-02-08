@@ -40,6 +40,12 @@ function recursiveFragmentDeduplication<T extends DocumentNode>(doc: T, fragment
 // }
 
 export function dedupeFragments<T extends DocumentNode>(document: T): T {
-  const fragments = new Set<string>();
-  return recursiveFragmentDeduplication(document, fragments);
+  const fragmentNames = new Set<string>();
+
+  //   /* rename duplicated fragments */
+  //   if (document.loc?.source?.body) {
+  //     document = renameDuplicates(document);
+  //   }
+
+  return recursiveFragmentDeduplication(document, fragmentNames);
 }
