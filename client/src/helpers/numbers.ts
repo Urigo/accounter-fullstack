@@ -11,8 +11,8 @@ export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
-export const formatStringifyAmount = (rawAmount: number): string => {
-  const formattedParts = rawAmount.toFixed(2).split('.');
+export const formatStringifyAmount = (rawAmount: number, digits = 2): string => {
+  const formattedParts = rawAmount.toFixed(digits).split('.');
   // add commas
   formattedParts[0] = formattedParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return formattedParts.join('.');
