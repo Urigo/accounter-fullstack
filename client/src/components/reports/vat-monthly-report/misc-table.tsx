@@ -4,13 +4,13 @@ import { CaretDown, CaretUp } from 'tabler-icons-react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
   EditChargeFieldsFragmentDoc,
-  VarReportMissingInfoFieldsFragmentDoc,
+  VarReportMiscTableFieldsFragmentDoc,
 } from '../../../gql/graphql';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
 
 /* GraphQL */ `
-  fragment VarReportMissingInfoFields on VatReportResult {
-    missingInfo {
+  fragment VarReportMiscTableFields on VatReportResult {
+    differentMonthDoc {
       id
       # ...ChargesFields
       ...AllChargesAccountFields
@@ -41,8 +41,8 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
 }
 `;
 
-interface Props {
-  data?: FragmentType<typeof VarReportMissingInfoFieldsFragmentDoc>;
+type Props = {
+  data?: FragmentType<typeof VarReportMiscTableFieldsFragmentDoc>;
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
@@ -50,9 +50,9 @@ interface Props {
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setMatchDocuments: React.Dispatch<React.SetStateAction<string | undefined>>;
-}
+};
 
-export const MissingInfoTable = ({
+export const MiscTable = ({
   data,
   setEditCharge,
   setInsertLedger,
@@ -60,7 +60,7 @@ export const MissingInfoTable = ({
   setUploadDocument,
   setMatchDocuments,
 }: Props) => {
-  const chargesData = getFragmentData(VarReportMissingInfoFieldsFragmentDoc, data);
+  const chargesData = getFragmentData(VarReportMiscTableFieldsFragmentDoc, data);
   const [isOpened, setOpened] = useState(true);
 
   return (
@@ -69,7 +69,7 @@ export const MissingInfoTable = ({
         <ActionIcon variant="default" onClick={() => setOpened(i => !i)} size={30}>
           {isOpened ? <CaretUp size={20} /> : <CaretDown size={20} />}
         </ActionIcon>
-        Missing Info
+        Misc Charges (which are not on the above tables)
       </span>
       {isOpened && chargesData && (
         <AllChargesTable
@@ -78,7 +78,7 @@ export const MissingInfoTable = ({
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
-          data={chargesData.missingInfo}
+          data={chargesData.differentMonthDoc}
           isAllOpened={false}
         />
       )}

@@ -488,13 +488,13 @@ export const resolvers: Resolvers = {
         response.missingInfo.push(
           ...validationCharges.filter(t => {
             const isMissing =
-              t.is_financial_entity === false ||
-              t.is_user_description === false ||
-              t.is_personal_category === false ||
-              t.is_vat === false ||
-              Boolean(t.invoices_count && Number(t.invoices_count) > 0) ||
-              Boolean(t.receipts_count && Number(t.receipts_count) > 0) ||
-              Boolean(t.ledger_records_count && Number(t.ledger_records_count) > 0);
+              t.is_financial_entity ||
+              t.is_user_description ||
+              t.is_personal_category ||
+              t.is_vat ||
+              Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) ||
+              Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0) ||
+              Boolean(isNaN(Number(t.ledger_records_count)) || Number(t.ledger_records_count) == 0);
             if (isMissing) {
               includedChargeIDs.add(t.id);
             }
