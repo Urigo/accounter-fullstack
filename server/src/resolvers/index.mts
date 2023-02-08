@@ -488,6 +488,7 @@ export const resolvers: Resolvers = {
         response.missingInfo.push(
           ...validationCharges.filter(t => {
             const documentsValidation =
+              !t.no_invoices &&
               Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) &&
               (!t.is_foreign ||
                 Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0));

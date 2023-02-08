@@ -34,7 +34,7 @@ generates:
         SortCode: ./hash-sort-codes.types.mjs#IGetSortCodesByIdsResult
         HashavshevetAccount: ./hash-account-cards.types.mjs#IGetAccountCardsBySortCodesResult
         BusinessTransactionSum: ../models/index.mjs#RawBusinessTransactionsSum
-        VatReportRecord: ../helpers/tax-report.mjs#DecoratedVatReportRecord
+        VatReportRecord: ../helpers/vat-report.mjs#DecoratedVatReportRecord
     plugins:
       - add:
           content: "import { TimelessDateString } from '../scalars'"
