@@ -44,7 +44,7 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
         missingInfo
       }
     }
-}
+  }
 `;
 
 interface Props {

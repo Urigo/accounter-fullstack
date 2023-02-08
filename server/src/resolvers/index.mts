@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { pcnGenerator } from '@accounter-toolkit/pcn874-generator';
 import { format } from 'date-fns';
 import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../__generated__/business-transactions-from-ledger.types.mjs';
 import type {
@@ -1457,6 +1458,28 @@ export const resolvers: Resolvers = {
     // counterparties
     // businessTransactions
     // reports
+    // misc
+    generatePCN: async (_parent, _args) => {
+      // const pcn = pcnGenerator();
+      return {
+        report: '',
+        rawData: {
+          header: {
+            licensedDealerId: '',
+            reportMonth: '',
+            taxableSalesAmount: 0,
+            taxableSalesVat: 0,
+            salesRecordCount: 0,
+            zeroValOrExemptSalesCount: 0,
+            otherInputsVat: 0,
+            equipmentInputsVat: 0,
+            inputsCount: 0,
+            totalVat: 0,
+          },
+          transactions: [],
+        },
+      };
+    },
   },
   // documents
   UpdateDocumentResult: {
