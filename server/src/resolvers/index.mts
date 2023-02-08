@@ -43,7 +43,7 @@ import {
   parseDate,
 } from '../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge, isTimelessDateString } from '../helpers/misc.mjs';
-import { adjustTaxRecords, mergeChargeDoc, RawVatReportRecord } from '../helpers/tax-report.mjs';
+import { adjustTaxRecords, mergeChargeDoc, RawVatReportRecord } from '../helpers/vat-report.mjs';
 import { RawBusinessTransactionsSum } from '../models/index.mjs';
 import {
   getBusinessTransactionsFromLedgerRecords,
@@ -487,13 +487,16 @@ export const resolvers: Resolvers = {
         // filter charges with missing info
         response.missingInfo.push(
           ...validationCharges.filter(t => {
+            const documentsValidation =
+              Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) &&
+              (!t.is_foreign ||
+                Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0));
             const isMissing =
               t.is_financial_entity ||
               t.is_user_description ||
               t.is_personal_category ||
-              t.is_vat ||
-              Boolean(isNaN(Number(t.invoices_count)) || Number(t.invoices_count) == 0) ||
-              // Boolean(isNaN(Number(t.receipts_count)) || Number(t.receipts_count) == 0) ||
+              (!t.is_foreign && t.is_vat) ||
+              documentsValidation ||
               Boolean(isNaN(Number(t.ledger_records_count)) || Number(t.ledger_records_count) == 0);
             if (isMissing) {
               includedChargeIDs.add(t.id);
