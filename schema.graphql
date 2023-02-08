@@ -672,6 +672,7 @@ type ValidationData {
   transactionDescription: Boolean!
   tags: Boolean!
   vat: Boolean!
+  foreign: Boolean!
   invoices: Int!
   receipts: Int!
   ledgerRecords: Int!

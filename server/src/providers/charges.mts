@@ -382,6 +382,7 @@ const validateCharges = sql<IValidateChargesQuery>`
     (at.user_description IS NULL OR TRIM(at.user_description) = '') as is_user_description,
     (at.personal_category IS NULL OR TRIM(at.personal_category) = '') as is_personal_category,
     (at.vat IS NULL) as is_vat,
+    (bu.country <> 'Israel') as is_foreign,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
@@ -402,6 +403,8 @@ const validateCharges = sql<IValidateChargesQuery>`
   FROM accounter_schema.all_transactions at
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
+  LEFT JOIN accounter_schema.businesses bu
+  ON  at.financial_entity = bu.name
   WHERE ($isFinancialEntityId = 0 OR fa.owner = $financialEntityId)
     AND ($isIDs = 0 OR at.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
