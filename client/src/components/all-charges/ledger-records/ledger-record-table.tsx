@@ -126,7 +126,7 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
             {editLedgerId && <DeleteLedgerRecordButton ledgerRecordId={editLedgerId} />}
           </div>
         }
-        opened={Boolean(editLedgerId)}
+        opened={!!(editLedgerId)}
         onClose={() => setEditLedgerId(undefined)}
       >
         {ledgerRecords.some(r => r.id === editLedgerId) ? (

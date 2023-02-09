@@ -63,7 +63,7 @@ export const AllChargesRow = ({
 
   const alternativeCharge = generateRowContext(charge);
 
-  const hasExtendedInfo = Boolean(charge.additionalDocuments.length || charge.ledgerRecords.length);
+  const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
 
   return (
     <>

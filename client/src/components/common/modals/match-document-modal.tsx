@@ -19,7 +19,7 @@ export const MatchDocumentModal = ({ matchDocuments, setMatchDocuments }: Props)
           </a>
         </div>
       }
-      opened={Boolean(matchDocuments)}
+      opened={!!(matchDocuments)}
       onClose={() => setMatchDocuments(undefined)}
     >
       <DocumentsToChargeMatcher

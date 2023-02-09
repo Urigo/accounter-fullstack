@@ -31,7 +31,7 @@ export const EditChargeModal = ({ editCharge, setEditCharge }: Props) => {
           </a>
         </div>
       }
-      opened={Boolean(editCharge)}
+      opened={!!(editCharge)}
       onClose={() => setEditCharge(undefined)}
     >
       <EditCharge

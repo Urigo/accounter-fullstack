@@ -362,7 +362,7 @@ export const resolvers: Resolvers = {
       try {
         return getLedgerRecordsDistinctBusinesses
           .run(undefined, pool)
-          .then(res => res.map(r => r.business_name).filter(r => Boolean(r)) as string[]);
+          .then(res => res.map(r => r.business_name).filter(Boolean) as string[]);
       } catch (e) {
         console.error(e);
         return [];
@@ -1379,7 +1379,7 @@ export const resolvers: Resolvers = {
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => Boolean(DbAccount.bank_number),
+    __isTypeOf: DbAccount => !!(DbAccount.bank_number),
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
@@ -1621,7 +1621,7 @@ export const resolvers: Resolvers = {
   },
   // counterparties
   NamedCounterparty: {
-    __isTypeOf: parent => Boolean(parent),
+    __isTypeOf: parent => !!(parent),
     name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {

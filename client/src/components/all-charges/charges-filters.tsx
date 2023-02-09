@@ -89,7 +89,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
     defaultValues: { ...filter },
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
-  const [enableAsc, setEnableAsc] = useState(Boolean(filter.sortBy?.field));
+  const [enableAsc, setEnableAsc] = useState(!!(filter.sortBy?.field));
   const [{ data, fetching, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });

@@ -29,7 +29,7 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
   }
 
   const keysToHandle = Object.entries(dirtyFields)
-    .filter(([_key, value]) => Boolean(value))
+    .filter(([_key, value]) => !!(value))
     .map(([key, _value]) => key);
 
   const subset = Object.fromEntries(
@@ -40,9 +40,9 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
           dirtyFields[key as keyof typeof values] === true
             ? values[key as keyof typeof values]
             : relevantDataPicker(
-                values[key as keyof typeof values],
-                dirtyFields[key as keyof typeof values],
-              );
+              values[key as keyof typeof values],
+              dirtyFields[key as keyof typeof values]
+            );
         /* additions to keep entire object instead of subset */
         if (
           [
@@ -52,7 +52,7 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
             'beneficiaries',
             'vat',
             'tags',
-            'amount',
+            'amount'
           ].includes(key) &&
           value
         ) {
@@ -65,7 +65,7 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
           return [key, adjustedValue];
         }
         return [key, value];
-      }),
+      })
   ) as Partial<T>;
 
   return subset;
@@ -78,7 +78,7 @@ export function isObjectEmpty(data: Record<string, unknown>): boolean {
       (typeof value !== 'object' ||
         (Array.isArray(value)
           ? value.length > 0
-          : !isObjectEmpty(value as Record<string, unknown>))),
+          : !isObjectEmpty(value as Record<string, unknown>)))
   );
   return values.length === 0;
 }

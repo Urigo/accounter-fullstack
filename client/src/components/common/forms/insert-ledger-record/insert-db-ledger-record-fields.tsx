@@ -40,7 +40,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
   ]);
 
   function isAccountActive(account?: string | null) {
-    return Boolean(account && account !== '');
+    return !!(account);
   }
 
   // add amount fields to credit/debit account only when name exists

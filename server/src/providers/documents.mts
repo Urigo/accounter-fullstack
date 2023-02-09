@@ -176,7 +176,7 @@ const getAdjustedDocumentsByFilters: Pick<
   'run'
 > = {
   run(params: IGetAdjustedDocumentsByFiltersParams, dbConnection: IDatabaseConnection) {
-    const isIDs = Boolean(params?.IDs?.length);
+    const isIDs = !!(params?.IDs?.length);
 
     const fullParams: IGetDocumentsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,

@@ -97,9 +97,9 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
     });
   }
 
-  const isEur = transactions.some(item => Boolean(item.eurAmount));
-  const isUsd = transactions.some(item => Boolean(item.usdAmount));
-  const isGbp = transactions.some(item => Boolean(item.gbpAmount));
+  const isEur = transactions.some(item => item.eurAmount);
+  const isUsd = transactions.some(item => item.usdAmount);
+  const isGbp = transactions.some(item => item.gbpAmount);
 
   return (
     <div className="flex flex-row gap-5">
