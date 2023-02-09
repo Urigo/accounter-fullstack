@@ -20,7 +20,7 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
           </label>
         )}
         <select
-          className={` bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md`}
+          className="bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md"
           {...props}
         >
           {Object.keys(Currency).map(key => (
