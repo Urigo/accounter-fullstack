@@ -1119,9 +1119,7 @@ export const resolvers: Resolvers = {
         }
         const debitExchangeRates = await getExchangeRates(charge.debit_date);
 
-        if (!charge.tax_invoice_date) {
-          charge.tax_invoice_date = charge.debit_date;
-        }
+        charge.tax_invoice_date ||= charge.debit_date;
         const invoiceExchangeRates = await getExchangeRates(charge.tax_invoice_date);
 
         const decoratedCharge = decorateCharge(charge);

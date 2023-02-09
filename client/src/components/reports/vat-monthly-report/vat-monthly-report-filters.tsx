@@ -129,13 +129,11 @@ export function VatMonthlyReportFilter({ filter, setFilter }: VatMonthlyReportFi
   const { get, set } = useUrlQuery();
 
   function onSetFilter(newFilter?: VatReportFilter) {
-    if (!newFilter) {
-      newFilter = {
+    newFilter ||= {
         financialEntityId: '6a20aa69-57ff-446e-8d6a-1e96d095e988',
         fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
         toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
       };
-    }
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);

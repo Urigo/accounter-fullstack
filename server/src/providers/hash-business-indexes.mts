@@ -19,9 +19,7 @@ async function batchHashavshevetBusinessIndexes(
 ) {
   const dict: Record<string, string[]> = {};
   params.forEach(({ financialEntityId, businessName }) => {
-    if (!dict[financialEntityId]) {
-      dict[financialEntityId] = [];
-    }
+    dict[financialEntityId] ||= [];
     if (!dict[financialEntityId].includes(businessName)) {
       dict[financialEntityId].push(businessName);
     }

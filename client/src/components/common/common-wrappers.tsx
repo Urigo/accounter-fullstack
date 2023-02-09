@@ -57,9 +57,9 @@ export const PageWrappers = ({
   alignContent,
   backgroundColor,
 }: FlexProps) => {
-  gap = gap ?? '0rem';
-  alignContent = alignContent ?? 'flex-start';
-  justifyContent = justifyContent ?? 'flex-start';
+  gap ??= '0rem';
+  alignContent ??= 'flex-start';
+  justifyContent ??= 'flex-start';
   return (
     <div
       style={{
@@ -88,7 +88,7 @@ export const FlexRow = ({
   backgroundColor,
   style,
 }: FlexProps & { children?: ReactNode | undefined }) => {
-  gap = gap ?? '0rem';
+  gap ??= '0rem';
   return (
     <div
       style={

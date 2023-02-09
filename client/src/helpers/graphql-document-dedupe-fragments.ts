@@ -4,8 +4,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 function recursiveFragmentDeduplication<T extends DocumentNode>(doc: T, fragments: Set<string>): T {
   let definitions = doc.definitions as Writeable<DocumentNode['definitions']>;
-  if (definitions) {
-    definitions = doc.definitions.filter(def => {
+  definitions &&= doc.definitions.filter(def => {
       if (def.kind === 'FragmentDefinition') {
         if (fragments.has(def.name.value)) {
           return false;
@@ -14,7 +13,6 @@ function recursiveFragmentDeduplication<T extends DocumentNode>(doc: T, fragment
       }
       return true;
     });
-  }
   return { ...doc, definitions };
 }
 
