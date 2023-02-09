@@ -9,7 +9,7 @@ type Props = {
 };
 
 export const Description = ({ transaction, style }: Props) => {
-  const isDescription = !!(transaction.user_description);
+  const isDescription = !!transaction.user_description;
   const cellText =
     transaction.user_description ?? suggestedTransaction(transaction)?.userDescription;
 

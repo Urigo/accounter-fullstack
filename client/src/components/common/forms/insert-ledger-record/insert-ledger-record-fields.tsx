@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
+import { CurrencyInput, NumberInput, TextInput } from '../..';
 import { Currency, InsertLedgerRecordInput } from '../../../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts';
-import { CurrencyInput, NumberInput, TextInput } from '../..';
 
 type Props = {
   control: Control<InsertLedgerRecordInput, unknown>;

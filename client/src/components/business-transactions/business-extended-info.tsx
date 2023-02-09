@@ -1,6 +1,6 @@
-import { Mark, Table } from '@mantine/core';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
+import { Mark, Table } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,

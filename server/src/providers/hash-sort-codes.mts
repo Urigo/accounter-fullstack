@@ -1,5 +1,5 @@
-import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import pgQuery from '@pgtyped/query';
 import { IGetSortCodesByIdsQuery } from '../__generated__/hash-sort-codes.types.mjs';
 import { pool } from './db.mjs';
 

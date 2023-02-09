@@ -18,7 +18,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Slack',
       userDescription: 'Slack',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('CLOUDFLARE')) {
@@ -26,7 +26,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Cloudflare, Inc.',
       userDescription: 'Web Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('CLICKHOUSE')) {
@@ -34,28 +34,28 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'ClickHouse, Inc.',
       userDescription: 'DB Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('WOLT')) {
     return {
       financialEntity: 'Wolt',
       userDescription: 'Wolt',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('שטראוס מים')) {
     return {
       financialEntity: 'Tami4',
       userDescription: 'Water',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('חומוס פול התימני')) {
     return {
       financialEntity: 'חומוס פול התימני',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (
@@ -65,21 +65,21 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'AmPm',
       userDescription: 'Groceries',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('סופר יודה')) {
     return {
       financialEntity: 'סופר יודה',
       userDescription: 'Groceries',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('הצרכניה-צמרת')) {
     return {
       financialEntity: 'הצרכניה-צמרת',
       userDescription: 'Groceries',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('מטח-קניה')) {
@@ -103,7 +103,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Green Invoice Monthly Charge',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (
@@ -120,14 +120,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'Poalim',
       personalCategory: 'financial',
-      userDescription: `Fees for bank_reference=${charge.transactions[0]?.referenceNumber}`
+      userDescription: `Fees for bank_reference=${charge.transactions[0]?.referenceNumber}`,
     };
   }
   if (transactionDescription?.includes('ריבית זכות')) {
     return {
       financialEntity: 'Poalim',
       userDescription: 'Interest fees on Euro plus',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transactionDescription?.includes('י.י. יעוץ והשקעות')) {
@@ -135,7 +135,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Yossi Yaron',
       userDescription: 'Tax benefits consultation',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -150,7 +150,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'dotan',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('גולדשטין אורי')) {
@@ -162,7 +162,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'uri',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('גרדוש')) {
@@ -174,7 +174,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('גלעד תדהר')) {
@@ -183,7 +183,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('תובל')) {
@@ -195,7 +195,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `${previousMonth}/2022 Salary`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מנורה מבטחים פנס')) {
@@ -207,7 +207,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('פניקס אקסלנס')) {
@@ -219,7 +219,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `Training Fund ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מיטב דש גמל ופנס')) {
@@ -231,7 +231,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מגדל מקפת')) {
@@ -243,7 +243,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `Pension ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('מגדל השתלמות')) {
@@ -255,7 +255,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: `Training Fund ${previousMonth}/2022`,
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (
@@ -265,14 +265,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'HOT',
       userDescription: 'Internet Provider',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (transactionDescription?.includes('סלקום')) {
     return {
       financialEntity: 'Celcom',
       userDescription: 'Internet Provider',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (
@@ -282,7 +282,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'Isracard',
       userDescription: 'Creditcard charge',
-      personalCategory: 'creditcard'
+      personalCategory: 'creditcard',
     };
   }
   if (transactionDescription?.includes('MEETUP')) {
@@ -290,7 +290,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Meetup',
       userDescription: 'Meetup Monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('ביטוח לאומי')) {
@@ -301,7 +301,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Social Security Deductions',
       userDescription: `Social Security Deductions for Salaries ${previousMonth}/2022`,
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('HOT MOBILE')) {
@@ -311,7 +311,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       taxCategory: 'פלאפון',
       financialAccountsToBalance: ' ',
       personalCategory: 'communications',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('GITHUB')) {
@@ -319,7 +319,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'GitHub',
       userDescription: 'GitHub Actions',
       financialAccountsToBalance: 'no' as const,
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
     if (charge.transactions[0]?.amount.raw <= -450) {
       suggested.userDescription = 'Monthly Sponsor for Yaacov and Benjie';
@@ -332,14 +332,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'Software Products Guilda Ltd.',
       userDescription: 'The Guild work',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('אורי גולדשטיין בע')) {
     return {
       financialEntity: 'Uri Goldshgtein LTD',
       userDescription: 'Transaction to company',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (charge.transactions[0]?.amount.raw == -4329) {
@@ -347,7 +347,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Avi Peretz',
       userDescription: 'Office rent',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('פיוז אוטוטק')) {
@@ -355,7 +355,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'פיוז אוטוטק בעמ',
       userDescription: 'The Guild Enterprise Support 02/22',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('ט.מ.ל מערכות')) {
@@ -363,7 +363,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Tamal',
       userDescription: 'Salary software',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('רשם החברות')) {
@@ -371,21 +371,21 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'מ.המשפטים-רשם החברות',
       userDescription: 'Company registration yearly fee',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('פועלים- דמי כרטיס')) {
     return {
       financialEntity: 'Poalim',
       userDescription: 'Bank creditcard fees',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transactionDescription?.includes('מוניטור')) {
     return {
       financialEntity: 'Monitor',
       userDescription: 'Personal Finance App',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transactionDescription?.includes('G.CO')) {
@@ -393,28 +393,28 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Google Fi',
       userDescription: 'Google Fi',
       financialAccountsToBalance: ' ',
-      personalCategory: 'communications'
+      personalCategory: 'communications',
     };
   }
   if (transactionDescription?.includes('ארומה')) {
     return {
       financialEntity: 'Aroma',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('פפואה')) {
     return {
       financialEntity: 'פפואה',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('סופר פארם')) {
     return {
       financialEntity: 'SuperPharm',
       userDescription: 'Personal care',
-      personalCategory: 'health'
+      personalCategory: 'health',
     };
   }
   if (transactionDescription?.includes('חברת פרטנר תקשורת בע')) {
@@ -427,7 +427,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'sdi procurement solutions',
       taxCategory: 'הכנפט1',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('ZOOM')) {
@@ -436,7 +436,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Zoom for therapy',
       taxCategory: 'אתר',
       financialAccountsToBalance: ' ',
-      personalCategory: 'love'
+      personalCategory: 'love',
     };
   }
   if (transactionDescription?.includes('MOUNTAIN V') || transactionDescription?.includes('STORA')) {
@@ -445,7 +445,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Google Storage',
       taxCategory: 'אתר',
       financialAccountsToBalance: ' ',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (transactionDescription?.includes('APPLE COM BILL/ITUNES.COM')) {
@@ -456,7 +456,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialAccountsToBalance: ' ',
       vat: formatFinancialAmount(0),
       userDescription: flag ? 'LinkedIn' : 'Apple Services',
-      personalCategory: flag ? 'business' : 'computer'
+      personalCategory: flag ? 'business' : 'computer',
     };
   }
   if (transactionDescription?.includes('GETT')) {
@@ -465,35 +465,35 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Taxi',
       financialAccountsToBalance: ' ',
       personalCategory: 'transportation',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('סונול')) {
     return {
       financialEntity: 'Sonol',
       userDescription: 'Gas',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transactionDescription?.includes('קאר 2 גו')) {
     return {
       financialEntity: 'קאר 2 גו',
       userDescription: 'Car rental',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transactionDescription?.includes('CARPOOL')) {
     return {
       financialEntity: 'Google Waze',
       userDescription: 'Waze Carpool',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transactionDescription?.includes('UBER')) {
     return {
       financialEntity: 'Uber',
       userDescription: 'Taxi',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transactionDescription?.includes('ZAPIER')) {
@@ -501,7 +501,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Zapier Inc.',
       userDescription: 'Zapier monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('NOTION')) {
@@ -509,7 +509,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Notion Labs, Inc',
       userDescription: 'Notion monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('ALTINITY')) {
@@ -517,7 +517,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Altinity Inc',
       userDescription: 'ALTINITY DB Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('PULUMI')) {
@@ -525,14 +525,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Pulumi Comporation',
       userDescription: 'Infrastructure Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('קרן מכבי- חיוב')) {
     return {
       financialEntity: 'Maccabi',
       userDescription: 'Monthly health bill',
-      personalCategory: 'health'
+      personalCategory: 'health',
     };
   }
   if (transactionDescription?.includes('MSFT AZURE')) {
@@ -540,7 +540,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Microsoft Azure',
       userDescription: 'Infrastructure',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('AWS EMEA')) {
@@ -548,7 +548,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Amazon Web Services EMEA SARL',
       userDescription: 'Infrastructure',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('POSTMARKAPP')) {
@@ -556,7 +556,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'ActiveCampaign, LLC',
       userDescription: 'Email Service',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('LOOM')) {
@@ -564,15 +564,15 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Loom',
       userDescription: 'Video recording for business',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
-  if (transactionDescription?.includes('ג\'אסט לאנס')) {
+  if (transactionDescription?.includes("ג'אסט לאנס")) {
     return {
       financialEntity: 'JustLance LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('LANCE GLOBAL')) {
@@ -583,7 +583,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Lance Global Inc',
       userDescription: `The Guild Enterprise Support - ${previousMonth} 2022`,
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('CRISP')) {
@@ -591,7 +591,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Crisp IM SARL',
       userDescription: 'Monthly Crisp',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('VERCEL')) {
@@ -599,7 +599,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Vercel Inc.',
       userDescription: 'Vercel Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('RETOOL')) {
@@ -607,42 +607,42 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Retool Inc',
       userDescription: 'Retool',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('הוק האוס אוף קופי')) {
     return {
       financialEntity: 'HOC - House Of Coffee',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('מנטנטו')) {
     return {
       financialEntity: 'Men Tenten Ramen Bar',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('משק ברזילי בע"מ')) {
     return {
       financialEntity: 'Meshek Barzilay',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('טל יהלום')) {
     return {
       financialEntity: 'Tal Yahalom',
       userDescription: 'gift',
-      personalCategory: 'family'
+      personalCategory: 'family',
     };
   }
   if (transactionDescription?.includes('רוני שפירא')) {
     return {
       financialEntity: 'Roney Shapira',
       userDescription: 'gift',
-      personalCategory: 'family'
+      personalCategory: 'family',
     };
   }
   if (
@@ -652,14 +652,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'Halman Aldubi Training Fund',
       financialAccountsToBalance: 'training_fund',
-      personalCategory: 'investments'
+      personalCategory: 'investments',
     };
   }
   if (transactionDescription?.includes('הלמן-אלדובי') && transactionDescription?.includes('קרן')) {
     return {
       financialEntity: 'Halman Aldubi Pension',
       financialAccountsToBalance: 'pension',
-      personalCategory: 'investments'
+      personalCategory: 'investments',
     };
   }
   if (transactionDescription?.includes('PAYPER')) {
@@ -668,7 +668,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Invoice Management Software',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (
@@ -682,7 +682,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Jelly JS Kamil Kisiela',
       userDescription: `${previousMonth}/22`,
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (charge.transactions[0]?.amount.raw == -12_000) {
@@ -693,14 +693,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Saihajpreet Singh',
       financialAccountsToBalance: 'no',
       userDescription: `${previousMonth}/2022`,
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('Vignesh')) {
     return {
       financialEntity: 'Vignesh T.V.',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('sof0')) {
@@ -708,7 +708,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'LaunchMade Web Services',
       userDescription: 'Jamie Barton',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('Steinbock Software LTD')) {
@@ -716,7 +716,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Steinbock Software LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('מס הכנסה')) {
@@ -730,7 +730,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: flag ? 'Tax Deductions' : 'Tax',
       userDescription: flag
         ? `Tax for employees for ${previousMonth}/2022`
-        : `Advance Tax for ${previousMonth}/2022`
+        : `Advance Tax for ${previousMonth}/2022`,
     };
   }
   if (transactionDescription?.includes('גורניצקי')) {
@@ -741,7 +741,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Gornitzky & Co., Advocates',
       userDescription: `${previousMonth}/2022 lawyer support`,
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -755,7 +755,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'VAT',
       userDescription: `VAT for ${previousMonth}/2022`,
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('מטרי')) {
@@ -765,7 +765,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'learn',
       financialAccountsToBalance: ' ',
       taxCategory: 'יעוץ',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('HEROKU')) {
@@ -773,7 +773,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Heroku',
       userDescription: 'accounter DB',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -784,7 +784,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Raintank Inc dba Grafana Labs',
       userDescription: 'Grafana Cloud',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('JETBRAINS')) {
@@ -792,7 +792,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'JetBrains',
       userDescription: 'DataGrip',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('RESCUETIME')) {
@@ -800,14 +800,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'RescueTime',
       userDescription: 'Time software',
       personalCategory: 'computer',
-      financialAccountsToBalance: ' '
+      financialAccountsToBalance: ' ',
     };
   }
   if (transactionDescription?.includes('חניון')) {
     return {
       financialEntity: transactionDescription?.includes('אחוזות החוף') ? 'Ahuzot' : 'Parking',
       userDescription: 'Parking',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transactionDescription?.includes('גיא אברהם')) {
@@ -815,7 +815,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Guy Avraham',
       userDescription: 'Wix Hashavshevet project',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('חשבשבת')) {
@@ -824,7 +824,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Accounting app',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('יהל-מור')) {
@@ -834,7 +834,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'business',
       taxCategory: 'הנחש',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('רווה רביד')) {
@@ -844,7 +844,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'business',
       taxCategory: 'הנחש',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('GODADDY')) {
@@ -853,7 +853,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Domain',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('AHREFS')) {
@@ -862,7 +862,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Websites SEO',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount(0)
+      vat: formatFinancialAmount(0),
     };
   }
   if (transactionDescription?.includes('DALET DIGITAL')) {
@@ -870,7 +870,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Dalet Digital Media Systems USA Inc',
       userDescription: 'Advance Payment - March',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('ETANA')) {
@@ -881,7 +881,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'The Graph Foundation',
       userDescription: `The Guild Enterprise Support - ${previousMonth} 2022`,
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('OUTREACH')) {
@@ -889,7 +889,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Outreach Corporation',
       userDescription: 'Apollo GraphQL server (aka Giraffe) improvements in Outreach - 1st month',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('ard')) {
@@ -897,7 +897,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Arda Tanrikulu',
       userDescription: 'Payment for February 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('deel')) {
@@ -908,7 +908,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Deel Germany GmbH',
       userDescription: 'Laurin Salary',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('עידן')) {
@@ -916,112 +916,112 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Idan Am-Shalem',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('מועדון הבלוק')) {
     return {
       financialEntity: 'The Block',
       userDescription: 'Party',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('EVENTBUZZ TICKETS')) {
     return {
       financialEntity: 'EVENTBUZZ TICKETS',
       userDescription: 'Party',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('סלון ברלין')) {
     return {
       financialEntity: 'סלון ברלין',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('סילון')) {
     return {
       financialEntity: 'סילון',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('גוגיס')) {
     return {
       financialEntity: 'גוגיס',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('אלברט 1943')) {
     return {
       financialEntity: 'אלברט 1943',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('223')) {
     return {
       financialEntity: '223 Bar',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('רמפה')) {
     return {
       financialEntity: 'Ala Rampa',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('K-BAR')) {
     return {
       financialEntity: 'K BAR',
       userDescription: 'Bar',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('NETFLIX')) {
     return {
       financialEntity: 'Netflix',
       userDescription: 'TV',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transactionDescription?.includes('תורגמן יצחק ואברהם')) {
     return {
       financialEntity: 'תורגמן יצחק ואברהם',
       userDescription: 'טמבוריה',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('אריה קריסטל')) {
     return {
       financialEntity: 'Arye Kristal',
       userDescription: 'Water bill for 04-2022',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('קאופמן מנעולים')) {
     return {
       financialEntity: 'קאופמן מנעולים',
       userDescription: 'טמבוריה',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
-  if (transactionDescription?.includes('חב\' חשמל דן חשבונות')) {
+  if (transactionDescription?.includes("חב' חשמל דן חשבונות")) {
     return {
       financialEntity: 'חב חשמל דן חשבונות',
       userDescription: 'Electricity bill',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('EUFYLIFE')) {
     return {
       financialEntity: 'Eufy',
       userDescription: 'Home Camera',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('NAME COM')) {
@@ -1029,7 +1029,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'NAME COM',
       userDescription: 'Domain',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('SENTRY')) {
@@ -1037,7 +1037,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Sentry',
       userDescription: 'Monitoring',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('RENDER')) {
@@ -1045,7 +1045,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Render',
       userDescription: 'Hosting',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('ELASTIC')) {
@@ -1053,7 +1053,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Elasticsearch AS',
       userDescription: 'Hive storage',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -1064,7 +1064,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Google Ireland Limited',
       userDescription: 'G Suite for The Guild',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('רב-פס')) {
@@ -1074,28 +1074,28 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'transportation',
       financialAccountsToBalance: ' ',
       taxCategory: 'נסע',
-      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17)
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
     };
   }
   if (transactionDescription?.includes('קיוסק קקל')) {
     return {
       financialEntity: 'לה קפה',
       userDescription: 'Coffeee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('ספסל בן גוריון')) {
     return {
       financialEntity: 'ספסל בן גוריון',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transactionDescription?.includes('גולדשטיין בן_עמי')) {
     return {
       financialEntity: 'Benami Goldshtein',
       userDescription: 'Rent for 09-2021',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('CALENDLY')) {
@@ -1103,7 +1103,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Calendly LLC',
       userDescription: 'Calendar service',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transactionDescription?.includes('קיי אס פי מחשבים')) {
@@ -1111,7 +1111,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'KSP',
       userDescription: 'Computer',
       personalCategory: 'computer',
-      financialAccountsToBalance: ' '
+      financialAccountsToBalance: ' ',
     };
   }
   if (charge.transactions[0]?.amount.raw == -600) {
@@ -1119,19 +1119,19 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       financialEntity: 'Zaum',
       userDescription: 'Matic Zavadlal - April 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (charge.transactions[0]?.__typename === 'ConversionTransaction') {
     return {
       financialEntity: 'Poalim',
       userDescription: 'Conversion for ',
-      personalCategory: 'conversion'
+      personalCategory: 'conversion',
     };
   }
   return {
-    financialEntity: transactionDescription?.replaceAll('"', '').replaceAll('\'', '') ?? '',
+    financialEntity: transactionDescription?.replaceAll('"', '').replaceAll("'", '') ?? '',
     userDescription: 'Food',
-    personalCategory: 'food'
+    personalCategory: 'food',
   };
 }

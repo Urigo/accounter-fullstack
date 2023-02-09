@@ -7,9 +7,9 @@ import {
   UseFormUnregister,
   UseFormWatch,
 } from 'react-hook-form';
+import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../..';
 import { Currency, InsertDbLedgerRecordInput } from '../../../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts';
-import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../..';
 
 type Props = {
   control: Control<InsertDbLedgerRecordInput, unknown>;
@@ -40,7 +40,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
   ]);
 
   function isAccountActive(account?: string | null) {
-    return !!(account);
+    return !!account;
   }
 
   // add amount fields to credit/debit account only when name exists

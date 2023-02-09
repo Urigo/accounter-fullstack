@@ -9,7 +9,7 @@ type Props = {
 };
 
 export const Entity = ({ transaction, style }: Props) => {
-  const isFinancialEntity = !!(transaction.financial_entity);
+  const isFinancialEntity = !!transaction.financial_entity;
   const cellText =
     transaction.financial_entity ?? suggestedTransaction(transaction)?.financialEntity;
 

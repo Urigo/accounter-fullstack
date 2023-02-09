@@ -1,6 +1,6 @@
+import { Check, X } from 'tabler-icons-react';
 import { Notification } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { Check, X } from 'tabler-icons-react';
 
 export interface NotificationPopUpProps {
   title?: string;

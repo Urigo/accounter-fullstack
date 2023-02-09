@@ -1,6 +1,6 @@
+import { EditCharge, PopUpDrawer } from '..';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { EditChargeFieldsFragment, EditChargeFieldsFragmentDoc } from '../../../gql/graphql';
-import { EditCharge, PopUpDrawer } from '..';
 
 interface Props {
   editCharge: FragmentType<typeof EditChargeFieldsFragmentDoc>;
@@ -31,7 +31,7 @@ export const EditChargeModal = ({ editCharge, setEditCharge }: Props) => {
           </a>
         </div>
       }
-      opened={!!(editCharge)}
+      opened={!!editCharge}
       onClose={() => setEditCharge(undefined)}
     >
       <EditCharge

@@ -9,7 +9,7 @@ type Props = {
 };
 
 export const Category = ({ transaction, style }: Props) => {
-  const isPersonalCategory = !!(transaction.personal_category);
+  const isPersonalCategory = !!transaction.personal_category;
   const cellText =
     transaction.personal_category ?? suggestedTransaction(transaction)?.personalCategory;
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActionIcon, Select } from '@mantine/core';
-import { DatePicker } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { ActionIcon, Select } from '@mantine/core';
+import { DatePicker } from '@mantine/dates';
+import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, VatReportFilter } from '../../../gql/graphql';
 import { isObjectEmpty, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
@@ -130,10 +130,10 @@ export function VatMonthlyReportFilter({ filter, setFilter }: VatMonthlyReportFi
 
   function onSetFilter(newFilter?: VatReportFilter) {
     newFilter ||= {
-        financialEntityId: '6a20aa69-57ff-446e-8d6a-1e96d095e988',
-        fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
-        toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
-      };
+      financialEntityId: '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+      fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
+      toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
+    };
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);

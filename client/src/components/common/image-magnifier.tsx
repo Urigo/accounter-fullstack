@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon, Tooltip } from '@mantine/core';
 import { ZoomIn, ZoomInArea, ZoomOut, ZoomOutArea } from 'tabler-icons-react';
+import { ActionIcon, Tooltip } from '@mantine/core';
 
 interface Props {
   src: string;

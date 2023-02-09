@@ -1,15 +1,19 @@
 import * as fs from 'fs';
+import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
-dotenv.config();
-import pg from 'pg';
-const { Pool } = pg;
-import { init } from 'modern-poalim-scraper';
 import lodash from 'lodash';
+import { init } from 'modern-poalim-scraper';
+import pg from 'pg';
+import { getCurrencyRates } from './data/currency';
+import { saveTransactionsToDB } from './data/save-transactions-to-db';
+
+dotenv.config();
+
+const { Pool } = pg;
+
 const { camelCase, upperFirst } = lodash;
 
-import { saveTransactionsToDB } from './data/save-transactions-to-db';
-import { getCurrencyRates } from './data/currency';
-import { isBefore, subYears, addMonths, startOfMonth } from 'date-fns'; // TODO: Use Temporal with polyfill instead
+// TODO: Use Temporal with polyfill instead
 
 function getTransactionsFromCards(CardsTransactionsListBean: any) {
   const allData: any = [];

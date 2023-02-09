@@ -1,5 +1,5 @@
-import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import pgQuery from '@pgtyped/query';
 import { IGetHashavshevetBusinessIndexesQuery } from '../__generated__/hash-business-indexes.types.mjs';
 import { pool } from './db.mjs';
 

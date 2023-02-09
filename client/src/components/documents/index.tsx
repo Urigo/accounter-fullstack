@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Image } from '@mantine/core';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
+import { Image } from '@mantine/core';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
@@ -132,7 +132,7 @@ export const DocumentsReport = () => {
         <PopUpModal
           modalSize="45%"
           content={<Image src={openedImage} />}
-          opened={!!(openedImage)}
+          opened={!!openedImage}
           onClose={() => setOpenedImage(null)}
         />
       )}

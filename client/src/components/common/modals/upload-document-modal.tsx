@@ -18,7 +18,7 @@ export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props
           </a>
         </div>
       }
-      opened={!!(uploadDocument)}
+      opened={!!uploadDocument}
       onClose={() => setUploadDocument(undefined)}
     >
       <UploadDocument chargeId={uploadDocument} closeModal={() => setUploadDocument(undefined)} />

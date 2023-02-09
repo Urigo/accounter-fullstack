@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import { NavLink } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
+import { NavLink } from '@mantine/core';
 
 interface props {
   header: string | ReactNode;

@@ -18,7 +18,7 @@ export const InsertDocumentModal = ({ insertDocument, setInsertDocument }: Props
           </a>
         </div>
       }
-      opened={!!(insertDocument)}
+      opened={!!insertDocument}
       onClose={() => setInsertDocument(undefined)}
     >
       <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />

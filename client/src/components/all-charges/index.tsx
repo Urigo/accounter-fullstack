@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ActionIcon, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { FragmentType } from '../../gql';
 import { AllChargesDocument, ChargeFilter, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
 import { useUrlQuery } from '../../hooks/use-url-query';

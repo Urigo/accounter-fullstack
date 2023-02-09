@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon } from '@mantine/core';
 import { PlugConnectedX } from 'tabler-icons-react';
+import { ActionIcon } from '@mantine/core';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ConfirmationModal } from '../../common';
 

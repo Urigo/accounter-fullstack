@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ActionIcon, Indicator, MultiSelect, Switch } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { ActionIcon, Indicator, MultiSelect, Switch } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessesNamesDocument,
   AllFinancialEntitiesDocument,

@@ -3,7 +3,7 @@ import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
   entitiesWithoutInvoice,
-  privateBusinessExpenses
+  privateBusinessExpenses,
 } from './groups.js';
 
 interface FinancialEntity {
@@ -21,7 +21,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Slack',
       userDescription: 'Slack',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('CLOUDFLARE')) {
@@ -29,7 +29,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Cloudflare',
       userDescription: 'Domain Registration',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('WOLT')) {
@@ -42,7 +42,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'חומוס פול התימני',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (
@@ -58,7 +58,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'הצרכניה-צמרת',
       userDescription: 'Groceries',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transaction.detailed_bank_description.includes('מטח-קניה')) {
@@ -73,7 +73,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Green Invoice Monthly Charge',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (
@@ -90,14 +90,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Poalim',
       personalCategory: 'financial',
-      userDescription: `Fees for bank_reference=${transaction.bank_reference}`
+      userDescription: `Fees for bank_reference=${transaction.bank_reference}`,
     };
   }
   if (transaction.detailed_bank_description.includes('ריבית זכות')) {
     return {
       financialEntity: 'Poalim',
       userDescription: 'Interest fees on Euro plus',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transaction.detailed_bank_description.includes('דותן שמחה')) {
@@ -106,7 +106,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'dotan',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('גולדשטין אורי')) {
@@ -115,7 +115,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'uri',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('גרדוש')) {
@@ -124,7 +124,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('גלעד תדהר')) {
@@ -133,7 +133,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('תובל שמחה')) {
@@ -142,7 +142,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: '02/2022 Salary',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('מנורה מבטחים פנס')) {
@@ -151,7 +151,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Pension 02/22',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('פניקס אקסלנס')) {
@@ -160,7 +160,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Training Fund 02/22',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('מיטב דש גמל ופנס')) {
@@ -169,7 +169,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Pension 02/22',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('מגדל מקפת')) {
@@ -178,7 +178,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Training Fund 02/22',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('מגדל השתלמות')) {
@@ -187,7 +187,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Training Fund 02/22',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (
@@ -197,14 +197,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'HOT',
       userDescription: 'Internet Provider',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (transaction.detailed_bank_description.includes('סלקום')) {
     return {
       financialEntity: 'Celcom',
       userDescription: 'Internet Provider',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (
@@ -214,7 +214,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Isracard',
       userDescription: 'Creditcard charge',
-      personalCategory: 'creditcard'
+      personalCategory: 'creditcard',
     };
   }
   if (transaction.detailed_bank_description.includes('MEETUP')) {
@@ -222,7 +222,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Meetup',
       userDescription: 'Meetup Monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('ביטוח לאומי')) {
@@ -230,7 +230,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Social Security Deductions',
       userDescription: 'Salaries of Uri Dotan and Gil March 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description == 'HOT MOBILE') {
@@ -240,7 +240,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       taxCategory: 'פלאפון',
       financialAccountsToBalance: ' ',
       personalCategory: 'communications',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('GITHUB')) {
@@ -248,7 +248,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'GitHub',
       userDescription: 'GitHub Actions',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
     if (Number(transaction.event_amount) <= -450) {
       suggestedTransaction.userDescription = 'Monthly Sponsor for Yaacov and Benjie';
@@ -261,14 +261,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Software Products Guilda Ltd.',
       userDescription: 'The Guild work',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('אורי גולדשטיין בע')) {
     return {
       financialEntity: 'Uri Goldshgtein LTD',
       userDescription: 'Transaction to company',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (Number(transaction.event_amount) == -4329) {
@@ -276,7 +276,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Avi Peretz',
       userDescription: 'Office rent',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('פיוז אוטוטק')) {
@@ -284,7 +284,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'פיוז אוטוטק בעמ',
       userDescription: 'The Guild Enterprise Support 02/22',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('ט.מ.ל מערכות')) {
@@ -292,7 +292,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Tamal',
       userDescription: 'Salary software',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('רשם החברות')) {
@@ -300,21 +300,21 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'מ.המשפטים-רשם החברות',
       userDescription: 'Company registration yearly fee',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description == 'פועלים- דמי כרטיס') {
     return {
       financialEntity: 'Poalim',
       userDescription: 'Bank creditcard fees',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transaction.detailed_bank_description == 'מוניטור') {
     return {
       financialEntity: 'Monitor',
       userDescription: 'Personal Finance App',
-      personalCategory: 'financial'
+      personalCategory: 'financial',
     };
   }
   if (transaction.detailed_bank_description.includes('G.CO')) {
@@ -322,7 +322,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Google Fi',
       userDescription: 'Google Fi',
       financialAccountsToBalance: ' ',
-      personalCategory: 'communications'
+      personalCategory: 'communications',
     };
   }
   if (transaction.detailed_bank_description.includes('ארומה')) {
@@ -335,7 +335,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'SuperPharm',
       userDescription: 'Personal care',
-      personalCategory: 'health'
+      personalCategory: 'health',
     };
   }
   if (transaction.detailed_bank_description == 'חברת פרטנר תקשורת בע') {
@@ -348,7 +348,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'sdi procurement solutions',
       taxCategory: 'הכנפט1',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('ZOOM')) {
@@ -357,7 +357,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Zoom for therapy',
       taxCategory: 'אתר',
       financialAccountsToBalance: ' ',
-      personalCategory: 'love'
+      personalCategory: 'love',
     };
   }
   if (
@@ -369,7 +369,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Google Storage',
       taxCategory: 'אתר',
       financialAccountsToBalance: ' ',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
   }
   if (transaction.detailed_bank_description == 'APPLE COM BILL/ITUNES.COM') {
@@ -379,7 +379,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialAccountsToBalance: ' ',
       vat: '0',
       userDescription: 'Apple Services',
-      personalCategory: 'computer'
+      personalCategory: 'computer',
     };
     if (Number(transaction.event_amount) == -109.9) {
       suggestedTransaction.userDescription = 'LinkedIn';
@@ -393,7 +393,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Taxi',
       financialAccountsToBalance: ' ',
       personalCategory: 'transportation',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('סונול')) {
@@ -403,14 +403,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Google Waze',
       userDescription: 'Waze Carpool',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transaction.detailed_bank_description.includes('קאר 2 גו')) {
     return {
       financialEntity: 'קאר 2 גו',
       userDescription: 'Car rental',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
   }
   if (transaction.detailed_bank_description.includes('UBER')) {
@@ -421,7 +421,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Zapier Inc.',
       userDescription: 'Zapier monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('NOTION')) {
@@ -429,7 +429,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Notion Labs, Inc',
       userDescription: 'Notion monthly charge',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('ALTINITY')) {
@@ -437,7 +437,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Altinity Inc',
       userDescription: 'ALTINITY DB Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('PULUMI')) {
@@ -445,14 +445,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Pulumi Comporation',
       userDescription: 'Infrastructure Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('קרן מכבי- חיוב')) {
     return {
       financialEntity: 'Maccabi',
       userDescription: 'Monthly health bill',
-      personalCategory: 'health'
+      personalCategory: 'health',
     };
   }
   if (transaction.detailed_bank_description.includes('MSFT AZURE')) {
@@ -460,7 +460,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Microsoft Azure',
       userDescription: 'Infrastructure',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('AWS EMEA')) {
@@ -468,7 +468,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Amazon Web Services EMEA SARL',
       userDescription: 'Infrastructure',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('LOOM')) {
@@ -476,22 +476,22 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Loom',
       userDescription: 'Video recording for business',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
-  if (transaction.detailed_bank_description.includes('ג\'אסט לאנס')) {
+  if (transaction.detailed_bank_description.includes("ג'אסט לאנס")) {
     return {
       financialEntity: 'JustLance LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('LANCE GLOBAL')) {
     return {
       financialEntity: 'Lance Global Inc',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('CRISP')) {
@@ -499,7 +499,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Crisp IM SARL',
       userDescription: 'Monthly Crisp',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('VERCEL')) {
@@ -507,7 +507,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Vercel Inc.',
       userDescription: 'Vercel Hosting',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('RETOOL')) {
@@ -515,28 +515,28 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Retool Inc',
       userDescription: 'Retool',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('הוק האוס אוף קופי')) {
     return {
       financialEntity: 'HOC - House Of Coffee',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transaction.detailed_bank_description.includes('מנטנטו')) {
     return {
       financialEntity: 'Men Tenten Ramen Bar',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transaction.detailed_bank_description.includes('משק ברזילי בע"מ')) {
     return {
       financialEntity: 'Meshek Barzilay',
       userDescription: 'Food',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transaction.detailed_bank_description.includes('טל יהלום')) {
@@ -546,7 +546,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Roney Shapira',
       userDescription: 'gift',
-      personalCategory: 'family'
+      personalCategory: 'family',
     };
   }
   if (
@@ -556,7 +556,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Halman Aldubi Training Fund',
       financialAccountsToBalance: 'training_fund',
-      personalCategory: 'investments'
+      personalCategory: 'investments',
     };
   }
   if (
@@ -566,7 +566,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Halman Aldubi Pension',
       financialAccountsToBalance: 'pension',
-      personalCategory: 'investments'
+      personalCategory: 'investments',
     };
   }
   if (transaction.detailed_bank_description.includes('PAYPER')) {
@@ -575,7 +575,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Invoice Management Software',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (
@@ -586,14 +586,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'Jelly JS Kamil Kisiela',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('Vignesh')) {
     return {
       financialEntity: 'Vignesh T.V.',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('sof0')) {
@@ -601,7 +601,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'LaunchMade Web Services',
       userDescription: 'Jamie Barton',
       financialAccountsToBalance: 'no',
-      personalCategory: 'business'
+      personalCategory: 'business',
     };
   }
   if (transaction.detailed_bank_description.includes('Steinbock Software LTD')) {
@@ -609,7 +609,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Steinbock Software LTD',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('מס הכנסה')) {
@@ -617,7 +617,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
       financialEntity: 'Tax',
-      userDescription: 'Advance Tax for April 2021'
+      userDescription: 'Advance Tax for April 2021',
     };
     if (transaction.detailed_bank_description.includes('מס הכנסה ני')) {
       suggestedTransaction.financialEntity = 'Tax Deductions';
@@ -630,7 +630,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Gornitzky & Co., Advocates',
       userDescription: '10-11/21 lawyer support',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -641,7 +641,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'VAT',
       userDescription: 'VAT for March-April 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('מטרי')) {
@@ -651,7 +651,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       personalCategory: 'learn',
       financialAccountsToBalance: ' ',
       taxCategory: 'יעוץ',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('HEROKU')) {
@@ -659,7 +659,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Heroku',
       userDescription: 'accounter DB',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('RAINTANK INC')) {
@@ -667,7 +667,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Raintank Inc dba Grafana Labs',
       userDescription: 'Grafana Cloud',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('JETBRAINS')) {
@@ -675,7 +675,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'JetBrains',
       userDescription: 'DataGrip',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('RESCUETIME')) {
@@ -683,14 +683,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'RescueTime',
       userDescription: 'Time software',
       personalCategory: 'computer',
-      financialAccountsToBalance: ' '
+      financialAccountsToBalance: ' ',
     };
   }
   if (transaction.detailed_bank_description.includes('חניון')) {
     const suggestedTransaction = {
       financialEntity: 'Parking',
       userDescription: 'Parking',
-      personalCategory: 'transportation'
+      personalCategory: 'transportation',
     };
     if (transaction.detailed_bank_description.includes('אחוזות החוף')) {
       suggestedTransaction.financialEntity = 'Ahuzot';
@@ -702,7 +702,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Guy Avraham',
       userDescription: 'Wix Hashavshevet project',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('חשבשבת')) {
@@ -711,7 +711,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Accounting app',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (
@@ -724,7 +724,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       personalCategory: 'business',
       taxCategory: 'הנחש',
       financialAccountsToBalance: 'no',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('GODADDY')) {
@@ -733,7 +733,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       userDescription: 'Domain',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: '0'
+      vat: '0',
     };
   }
   if (transaction.detailed_bank_description.includes('DALET DIGITAL')) {
@@ -741,7 +741,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Dalet Digital Media Systems USA Inc',
       userDescription: 'Advance Payment - March',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('OUTREACH')) {
@@ -749,7 +749,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Outreach Corporation',
       userDescription: 'Apollo GraphQL server (aka Giraffe) improvements in Outreach - 1st month',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('ard')) {
@@ -757,7 +757,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Arda Tanrikulu',
       userDescription: 'Payment for February 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('deel')) {
@@ -765,7 +765,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Deel Germany GmbH',
       userDescription: 'Laurin Salary',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('עידן')) {
@@ -773,7 +773,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Idan Am-Shalem',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('מועדון הבלוק')) {
@@ -783,7 +783,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'EVENTBUZZ TICKETS',
       userDescription: 'Party',
-      personalCategory: 'fun'
+      personalCategory: 'fun',
     };
   }
   if (transaction.detailed_bank_description.includes('סלון ברלין')) {
@@ -814,28 +814,28 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'תורגמן יצחק ואברהם',
       userDescription: 'טמבוריה',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transaction.detailed_bank_description.includes('אריה קריסטל')) {
     return {
       financialEntity: 'Arye Kristal',
       userDescription: 'Water bill for 04-2022',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transaction.detailed_bank_description.includes('קאופמן מנעולים')) {
     return {
       financialEntity: 'קאופמן מנעולים',
       userDescription: 'טמבוריה',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
-  if (transaction.detailed_bank_description.includes('חב\' חשמל דן חשבונות')) {
+  if (transaction.detailed_bank_description.includes("חב' חשמל דן חשבונות")) {
     return {
       financialEntity: 'חב חשמל דן חשבונות',
       userDescription: 'Electricity bill',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transaction.detailed_bank_description.includes('EUFYLIFE')) {
@@ -846,7 +846,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'NAME COM',
       userDescription: 'Domain',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('SENTRY')) {
@@ -854,7 +854,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Sentry',
       userDescription: 'Monitoring',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('RENDER')) {
@@ -862,7 +862,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Render',
       userDescription: 'Hosting',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('ELASTIC')) {
@@ -870,7 +870,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Elasticsearch AS',
       userDescription: 'Hive storage',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (
@@ -881,7 +881,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Google Ireland Limited',
       userDescription: 'G Suite for The Guild',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('רב-פס')) {
@@ -891,7 +891,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       personalCategory: 'transportation',
       financialAccountsToBalance: ' ',
       taxCategory: 'נסע',
-      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2)
+      vat: ((Number(transaction.event_amount) / 117) * 17).toFixed(2),
     };
   }
   if (transaction.detailed_bank_description.includes('קיוסק קקל')) {
@@ -901,14 +901,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     return {
       financialEntity: 'ספסל בן גוריון',
       userDescription: 'Coffee',
-      personalCategory: 'food'
+      personalCategory: 'food',
     };
   }
   if (transaction.detailed_bank_description.includes('גולדשטיין בן_עמי')) {
     return {
       financialEntity: 'Benami Goldshtein',
       userDescription: 'Rent for 09-2021',
-      personalCategory: 'house'
+      personalCategory: 'house',
     };
   }
   if (transaction.detailed_bank_description.includes('CALENDLY')) {
@@ -916,7 +916,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Calendly LLC',
       userDescription: 'Calendar service',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   if (transaction.detailed_bank_description.includes('קיי אס פי מחשבים')) {
@@ -924,7 +924,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'KSP',
       userDescription: 'Computer',
       personalCategory: 'computer',
-      financialAccountsToBalance: ' '
+      financialAccountsToBalance: ' ',
     };
   }
   if (Number(transaction.event_amount) == -600) {
@@ -932,13 +932,13 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
       financialEntity: 'Zaum',
       userDescription: 'Matic Zavadlal - April 2021',
       personalCategory: 'business',
-      financialAccountsToBalance: 'no'
+      financialAccountsToBalance: 'no',
     };
   }
   const suggestedTransaction = {
-    financialEntity: transaction.detailed_bank_description.replaceAll('"', '').replaceAll('\'', ''),
+    financialEntity: transaction.detailed_bank_description.replaceAll('"', '').replaceAll("'", ''),
     userDescription: 'Food',
-    personalCategory: 'food'
+    personalCategory: 'food',
   };
 
   if (transaction.is_conversion) {
@@ -965,7 +965,7 @@ export const shareWithDotan = (transaction: TransactionType) => {
   if (
     !transaction.financial_accounts_to_balance ||
     ['no', ' ', 'yes', 'pension', 'training_fund'].includes(
-      transaction.financial_accounts_to_balance
+      transaction.financial_accounts_to_balance,
     )
   ) {
     return false;

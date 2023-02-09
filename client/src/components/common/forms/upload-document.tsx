@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
+import { useMutation } from 'urql';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { useMutation } from 'urql';
 import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
 
 /* GraphQL */ `
