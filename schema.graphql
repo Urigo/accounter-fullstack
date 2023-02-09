@@ -668,14 +668,19 @@ extend type Charge {
 
 " represent a validation data for missing info "
 type ValidationData {
-  counterparty: Boolean!
-  transactionDescription: Boolean!
-  tags: Boolean!
-  vat: Boolean!
-  foreign: Boolean!
-  invoices: Int!
-  receipts: Int!
-  ledgerRecords: Int!
+  isValid: Boolean!
+  balance: FinancialAmount
+  missingInfo: [MissingChargeInfo!]!
+}
+
+enum MissingChargeInfo {
+  COUNTERPARTY
+  TRANSACTION_DESCRIPTION
+  TAGS
+  VAT
+  DOCUMENTS
+  LEDGER_RECORDS
+  BALANCE
 }
 
 extend type LedgerRecord {

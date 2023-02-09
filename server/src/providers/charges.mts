@@ -15,7 +15,7 @@ import {
   IValidateChargesResult,
 } from '../__generated__/charges.types.mjs';
 import { ValidationData } from '../__generated__/types.mjs';
-import { extractValidationData } from '../helpers/charges.mjs';
+import { validateCharge } from '../helpers/charges.mjs';
 import { Optional } from '../helpers/misc.mjs';
 import { pool } from '../providers/db.mjs';
 import { TimelessDateString } from '../scalars/timeless-date.mjs';
@@ -378,10 +378,6 @@ const validateCharges = sql<IValidateChargesQuery>`
   SELECT
     at.*,
     fa.owner as financial_entity_id,
-    (at.financial_entity IS NULL OR TRIM(at.financial_entity) = '') as is_financial_entity,
-    (at.user_description IS NULL OR TRIM(at.user_description) = '') as is_user_description,
-    (at.personal_category IS NULL OR TRIM(at.personal_category) = '') as is_personal_category,
-    (at.vat IS NULL) as is_vat,
     (bu.country <> 'Israel') as is_foreign,
     bu.no_invoices,
     (
@@ -488,8 +484,8 @@ async function batchValidateChargesByIds(ids: readonly string[]) {
     pool,
   );
   return ids.map(id => {
-    const data = charges.find(charge => charge.id === id);
-    return data ? extractValidationData(data) : null;
+    const charge = charges.find(charge => charge.id === id);
+    return charge ? validateCharge(charge) : null;
   });
 }
 

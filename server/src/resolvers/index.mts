@@ -31,7 +31,7 @@ import {
   formatFinancialAmount,
   formatFinancialIntAmount,
 } from '../helpers/amount.mjs';
-import { extractValidationData, validateCharge } from '../helpers/charges.mjs';
+import { validateCharge } from '../helpers/charges.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -471,11 +471,11 @@ export const resolvers: Resolvers = {
         // filter charges with missing info
         response.missingInfo.push(
           ...validationCharges.filter(t => {
-            const isFine = validateCharge(t);
-            if (!isFine) {
+            const { isValid } = validateCharge(t);
+            if (!isValid) {
               includedChargeIDs.add(t.id);
             }
-            return !isFine;
+            return !isValid;
           }),
         );
 
@@ -1654,7 +1654,7 @@ export const resolvers: Resolvers = {
       }),
     validationData: DbCharge => {
       if ('ledger_records_count' in DbCharge) {
-        return extractValidationData(DbCharge as IValidateChargesResult);
+        return validateCharge(DbCharge as IValidateChargesResult);
       }
       return validateChargeByIdLoader.load(DbCharge.id);
     },
