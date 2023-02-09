@@ -196,20 +196,20 @@ export const resolvers: Resolvers = {
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
 
-      // if (filters?.unbalanced) {
-      //   const validationInfo = await validateCharges.run(
-      //     {
-      //       IDs: pageCharges.map(c => c.id),
-      //     },
-      //     pool,
-      //   );
-      //   pageCharges.map(c =>
-      //     Object.assign(
-      //       c,
-      //       validationInfo.find(v => v.id === c.id),
-      //     ),
-      //   );
-      // }
+      if (filters?.unbalanced) {
+        const validationInfo = await validateCharges.run(
+          {
+            IDs: pageCharges.map(c => c.id),
+          },
+          pool,
+        );
+        pageCharges.map(c =>
+          Object.assign(
+            c,
+            validationInfo.find(v => v.id === c.id),
+          ),
+        );
+      }
 
       return {
         __typename: 'PaginatedCharges',
@@ -502,7 +502,9 @@ export const resolvers: Resolvers = {
           {
             fromDate: filters?.fromDate,
             toDate: filters?.toDate,
-            financialEntityId: filters?.financialEntityId,
+            financialEntityIds: filters?.financialEntityId
+              ? [filters?.financialEntityId]
+              : undefined,
           },
           pool,
         );
@@ -1692,7 +1694,7 @@ export const resolvers: Resolvers = {
         return res;
       }),
     validationData: DbCharge => {
-      if ('ledger_records_count' in DbCharge) {
+      if ('balance' in DbCharge) {
         return validateCharge(DbCharge as IValidateChargesResult);
       }
       return validateChargeByIdLoader.load(DbCharge.id);

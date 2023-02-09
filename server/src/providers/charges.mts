@@ -491,7 +491,7 @@ const validateCharges = sql<IValidateChargesQuery>`
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
   ON  at.financial_entity = bu.name
-  WHERE ($isFinancialEntityId = 0 OR fa.owner = $financialEntityId)
+  WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
     AND ($isIDs = 0 OR at.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
@@ -499,8 +499,8 @@ const validateCharges = sql<IValidateChargesQuery>`
 `;
 
 type IValidateChargesAdjustedParams = Optional<
-  Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityId'>,
-  'IDs' | 'toDate' | 'fromDate'
+  Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityIds'>,
+  'IDs' | 'toDate' | 'fromDate' | 'financialEntityIds'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
@@ -515,14 +515,16 @@ const validateChargesAdjusted: Pick<
 > = {
   run(params: IValidateChargesAdjustedParams, dbConnection: IDatabaseConnection) {
     const isIDs = Boolean(params?.IDs?.length);
+    const isFinancialEntityIds = Boolean(params?.financialEntityIds?.length);
 
     const fullParams: IValidateChargesParams = {
       isIDs: isIDs ? 1 : 0,
-      isFinancialEntityId: 1,
+      isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       IDs: isIDs ? params.IDs! : [null],
+      financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
     };
     return validateCharges.run(fullParams, dbConnection);
   },
@@ -541,8 +543,8 @@ async function batchValidateChargesByIds(ids: readonly string[]) {
       IDs: isIDs ? ids : [null],
       fromDate: null,
       toDate: null,
-      isFinancialEntityId: 0,
-      financialEntityId: null,
+      isFinancialEntityIds: 0,
+      financialEntityIds: [null],
     },
     pool,
   );
