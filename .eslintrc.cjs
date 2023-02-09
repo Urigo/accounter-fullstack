@@ -2,12 +2,9 @@ const SCHEMA_PATH = 'schema.graphql';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
-  extends: ['@theguild', '@theguild/eslint-config/react'],
-  plugins: ['eslint-plugin-simple-import-sort'],
+  extends: ['@theguild'],
   rules: {
     'no-console': 1,
-    'simple-import-sort/imports': 'error',
-    'simple-import-sort/exports': 'error',
   },
   overrides: [
     {
@@ -66,6 +63,7 @@ module.exports = {
     },
     {
       files: 'client/**',
+      extends: '@theguild/eslint-config/react',
       env: {
         browser: true,
       },
@@ -76,12 +74,6 @@ module.exports = {
         node: true,
       },
     },
-    {
-      files: 'client/**/*.tsx',
-      rules: {
-        'react/jsx-no-useless-fragment': 'error',
-      },
-    },
   ],
-  ignorePatterns: ['**/old-accounter/**', '**/temp-server/**', '**/dist/'],
+  ignorePatterns: ['old-accounter/**', 'temp-server/**'],
 };
