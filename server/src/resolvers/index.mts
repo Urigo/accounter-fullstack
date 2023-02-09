@@ -157,7 +157,7 @@ export const resolvers: Resolvers = {
         businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
       }
 
-      const charges = await getChargesByFilters
+      let charges = await getChargesByFilters
         .run(
           {
             financialEntityIds: filters?.byOwners ?? undefined,
@@ -166,15 +166,54 @@ export const resolvers: Resolvers = {
             toDate: filters?.toDate,
             sortColumn,
             asc: filters?.sortBy?.asc !== false,
+            preCalculateBalance: filters?.unbalanced,
+            preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
+            preCountReceipts: filters?.withoutDocuments,
+            preCountLedger: filters?.withoutLedger,
           },
           pool,
         )
         .catch(e => {
           throw new Error(e.message);
         });
+
+      // apply post-query filters
+      if (
+        filters?.unbalanced ||
+        filters?.withoutInvoice ||
+        filters?.withoutDocuments ||
+        filters?.withoutLedger
+      ) {
+        charges = charges.filter(
+          c =>
+            (!filters?.unbalanced || Number(c.balance) !== 0) &&
+            (!filters?.withoutInvoice || Number(c.invoices_count) === 0) &&
+            (!filters?.withoutDocuments ||
+              Number(c.receipts_count) + Number(c.invoices_count) === 0) &&
+            (!filters?.withoutLedger || Number(c.ledger_records_count) === 0),
+        );
+      }
+
+      const pageCharges = charges.slice(page * limit - limit, page * limit);
+
+      if (filters?.unbalanced) {
+        const validationInfo = await validateCharges.run(
+          {
+            IDs: pageCharges.map(c => c.id),
+          },
+          pool,
+        );
+        pageCharges.map(c =>
+          Object.assign(
+            c,
+            validationInfo.find(v => v.id === c.id),
+          ),
+        );
+      }
+
       return {
         __typename: 'PaginatedCharges',
-        nodes: charges.slice(page * limit - limit, page * limit),
+        nodes: pageCharges,
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
         },
@@ -463,7 +502,9 @@ export const resolvers: Resolvers = {
           {
             fromDate: filters?.fromDate,
             toDate: filters?.toDate,
-            financialEntityId: filters?.financialEntityId,
+            financialEntityIds: filters?.financialEntityId
+              ? [filters?.financialEntityId]
+              : undefined,
           },
           pool,
         );
@@ -1653,7 +1694,7 @@ export const resolvers: Resolvers = {
         return res;
       }),
     validationData: DbCharge => {
-      if ('ledger_records_count' in DbCharge) {
+      if ('balance' in DbCharge) {
         return validateCharge(DbCharge as IValidateChargesResult);
       }
       return validateChargeByIdLoader.load(DbCharge.id);

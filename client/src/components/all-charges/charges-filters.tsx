@@ -85,7 +85,9 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
 ];
 
 function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFormProps) {
-  const { control, handleSubmit, watch } = useForm<ChargeFilter>({ defaultValues: { ...filter } });
+  const { control, handleSubmit, watch, setValue } = useForm<ChargeFilter>({
+    defaultValues: { ...filter },
+  });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(Boolean(filter.sortBy?.field));
   const [{ data, fetching, error: financialEntitiesError }] = useQuery({
@@ -189,7 +191,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value || field.value === 'Missing' ? '' : field.value}
+              value={!field.value ? '' : field.value}
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -208,7 +210,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value || field.value === 'Missing' ? '' : field.value}
+              value={!field.value ? '' : field.value}
               error={fieldState.error?.message}
               label="To Date"
             />
@@ -239,6 +241,35 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           onLabel={<p>ASC</p>}
           offLabel={<p>DESC</p>}
         />
+
+        <div className="flex flex-col gap-2 mt-4">
+          <span>Missing Information:</span>
+
+          <Switch
+            defaultChecked={filter.withoutLedger ?? false}
+            onChange={event => setValue('withoutLedger', event.currentTarget.checked)}
+            label="Without Ledger Records"
+          />
+
+          <Switch
+            defaultChecked={filter.withoutInvoice ?? false}
+            onChange={event => setValue('withoutInvoice', event.currentTarget.checked)}
+            label="Without Invoices"
+          />
+
+          <Switch
+            defaultChecked={filter.withoutDocuments ?? false}
+            onChange={event => setValue('withoutDocuments', event.currentTarget.checked)}
+            label="Without Documents"
+          />
+
+          <Switch
+            defaultChecked={filter.unbalanced ?? false}
+            onChange={event => setValue('unbalanced', event.currentTarget.checked)}
+            label="Unbalanced businesses"
+          />
+        </div>
+
         {/* </SimpleGrid> */}
         <div className="flex justify-center mt-5 gap-3">
           <button
