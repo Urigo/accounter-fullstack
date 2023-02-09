@@ -33,12 +33,15 @@ export function validateCharge(charge: IValidateChargesResult): boolean {
   const ledgerRecordsCount = Number(charge.ledger_records_count) || 0;
   const ledgerRecordsAreFine = ledgerRecordsCount > 0;
 
+  const balanceIsFine = !charge.balance || Number(charge.balance) == 0;
+
   const allFine =
     documentsAreFine &&
     businessIsFine &&
     descriptionIsFine &&
     tagsAreFine &&
     vatIsFine &&
-    ledgerRecordsAreFine;
+    ledgerRecordsAreFine &&
+    balanceIsFine;
   return allFine;
 }
