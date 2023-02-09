@@ -9,7 +9,11 @@ import { TimelessDateString } from '../scalars/index.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 
-export type Optional<T, Keys extends keyof T> = Omit<T, Keys> & Partial<Pick<T, Keys>>;
+export type OptionalToNullable<O> = {
+  [K in keyof O]: undefined extends O[K] ? O[K] | null : O[K];
+};
+export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
+  OptionalToNullable<Partial<Pick<T, Keys>>>;
 
 export type VatExtendedCharge = IGetChargesByIdsResult & {
   vatAfterDeduction: number;
