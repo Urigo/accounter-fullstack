@@ -4,6 +4,7 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { FragmentType, getFragmentData } from '../../gql';
 import {
   AllChargesQuery,
+  Charge,
   EditChargeFieldsFragmentDoc,
   SuggestedChargeFragmentDoc,
 } from '../../gql/graphql';
@@ -32,6 +33,7 @@ interface Props {
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   charge: AllChargesQuery['allCharges']['nodes'][number];
   isAllOpened: boolean;
+  showBalance?: boolean;
 }
 
 export const AllChargesRow = ({
@@ -42,6 +44,7 @@ export const AllChargesRow = ({
   setUploadDocument,
   charge,
   isAllOpened,
+  showBalance = false,
 }: Props) => {
   const [opened, setOpen] = useState(false);
   function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
@@ -96,6 +99,9 @@ export const AllChargesRow = ({
             alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
           />
         </td>
+        {showBalance && (
+          <td>{(charge as Pick<Charge, 'validationData'>).validationData?.balance?.formatted}</td>
+        )}
         <td>
           <div>
             <p

@@ -14,6 +14,7 @@ interface Props {
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   data?: AllChargesQuery['allCharges']['nodes'];
   isAllOpened: boolean;
+  showBalance?: boolean;
 }
 
 export const AllChargesTable = ({
@@ -24,6 +25,7 @@ export const AllChargesTable = ({
   setUploadDocument,
   data,
   isAllOpened,
+  showBalance = false,
 }: Props) => {
   const charges = data ?? [];
 
@@ -39,6 +41,7 @@ export const AllChargesTable = ({
           <th>Description</th>
           <th>Tags</th>
           <th>Share With</th>
+          {showBalance && <th>Balance</th>}
           <th>More Info</th>
           <th>Accountant Approval</th>
           <th>Edit</th>
@@ -56,6 +59,7 @@ export const AllChargesTable = ({
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
             isAllOpened={isAllOpened}
+            showBalance={showBalance}
           />
         ))}
       </tbody>

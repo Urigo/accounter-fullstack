@@ -37,6 +37,12 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
         name
       }
       ###
+      validationData {
+        balance {
+          formatted
+        }
+        missingInfo
+      }
     }
 }
 `;
@@ -80,6 +86,7 @@ export const MissingInfoTable = ({
           setUploadDocument={setUploadDocument}
           data={chargesData.missingInfo}
           isAllOpened={false}
+          showBalance
         />
       )}
     </>
