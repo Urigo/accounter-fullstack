@@ -300,25 +300,78 @@ export const updateCharge = sql<IUpdateChargeQuery>`
 `;
 
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
-    SELECT at.*, fa.owner as financial_entity_id, ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount
-    FROM accounter_schema.all_transactions at
-    LEFT JOIN accounter_schema.financial_accounts fa
-    ON  at.account_number = fa.account_number
-    WHERE 
-    ($isIDs = 0 OR at.id IN $$IDs)
-    AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
-    AND ($isBusinesses = 0 OR at.financial_entity IN $$businesses)
-    AND ($isNotBusinesses = 0 OR at.financial_entity NOT IN $$notBusinesses)
-    AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY
-    CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN at.event_date  END ASC,
-    CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN at.event_date  END DESC,
-    CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN at.event_amount  END ASC,
-    CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN at.event_amount  END DESC,
-    CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(at.event_amount as DECIMAL))  END ASC,
-    CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC;
-    `;
+  SELECT
+    at.*,
+    fa.owner as financial_entity_id,
+    ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
+    bu.no_invoices,
+    -- invoices_count column, conditional calculation
+    CASE WHEN $preCountInvoices = false THEN NULL ELSE (
+      SELECT COUNT(*)
+      FROM accounter_schema.documents d
+      WHERE d.charge_id = at.id
+        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
+    ) END as invoices_count,
+    -- receipts_count column, conditional calculation
+    CASE WHEN $preCountReceipts = false THEN NULL ELSE (
+      SELECT COUNT(*)
+      FROM accounter_schema.documents d
+      WHERE d.charge_id = at.id
+        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
+    ) END as receipts_count,
+    -- ledger_records_count column, conditional calculation
+    CASE WHEN $preCountLedger = false THEN NULL ELSE (
+      SELECT COUNT(*)
+      FROM accounter_schema.ledger l
+      WHERE l.original_id = at.id
+    ) END as ledger_records_count,
+    -- balance column, conditional calculation
+    CASE WHEN $preCalculateBalance = false THEN NULL ELSE (
+      SELECT SUM(lr.amount) as balance
+      FROM (
+        SELECT debit_account_1 AS business_name, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
+        FROM accounter_schema.ledger
+        WHERE debit_amount_1 IS NOT NULL
+        UNION ALL
+        SELECT debit_account_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
+        FROM accounter_schema.ledger
+        WHERE debit_amount_2 IS NOT NULL
+        UNION ALL
+        SELECT credit_account_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        FROM accounter_schema.ledger
+        WHERE credit_amount_1 IS NOT NULL
+        UNION ALL
+        SELECT credit_account_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        FROM accounter_schema.ledger
+        WHERE credit_amount_2 IS NOT NULL
+      ) lr
+      WHERE lr.date <= (
+        SELECT MIN(to_date(l.invoice_date, 'DD/MM/YYYY'))
+        FROM accounter_schema.ledger l
+        WHERE l.original_id = at.id
+          AND lr.business_name = at.financial_entity
+          AND lr.financial_entity_id = fa.owner)
+    ) END as balance
+  FROM accounter_schema.all_transactions at
+  LEFT JOIN accounter_schema.financial_accounts fa
+  ON  at.account_number = fa.account_number
+  LEFT JOIN accounter_schema.businesses bu
+  ON  at.financial_entity = bu.name
+  WHERE 
+  ($isIDs = 0 OR at.id IN $$IDs)
+  AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+  AND ($isBusinesses = 0 OR at.financial_entity IN $$businesses)
+  AND ($isNotBusinesses = 0 OR at.financial_entity NOT IN $$notBusinesses)
+  AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+  AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  ORDER BY
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN at.event_date  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN at.event_date  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN at.event_amount  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN at.event_amount  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(at.event_amount as DECIMAL))  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC
+  `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<
@@ -333,6 +386,10 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   | 'sortColumn'
   | 'toDate'
   | 'fromDate'
+  | 'preCalculateBalance'
+  | 'preCountInvoices'
+  | 'preCountLedger'
+  | 'preCountReceipts'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
@@ -363,6 +420,10 @@ const getAdjustedChargesByFilters: Pick<
       isIDs: isIDs ? 1 : 0,
       isNotBusinesses: isNotBusinesses ? 1 : 0,
       ...params,
+      preCalculateBalance: params.preCalculateBalance ?? false,
+      preCountInvoices: params.preCountInvoices ?? false,
+      preCountLedger: params.preCountLedger ?? false,
+      preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       businesses: isBusinesses ? params.businesses! : [null],
@@ -370,6 +431,7 @@ const getAdjustedChargesByFilters: Pick<
       IDs: isIDs ? params.IDs! : [null],
       notBusinesses: isNotBusinesses ? params.notBusinesses! : [null],
     };
+    console.log('filters', fullParams);
     return getChargesByFilters.run(fullParams, dbConnection);
   },
 };
@@ -378,6 +440,7 @@ const validateCharges = sql<IValidateChargesQuery>`
   SELECT
     at.*,
     fa.owner as financial_entity_id,
+    ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
     (bu.country <> 'Israel') as is_foreign,
     bu.no_invoices,
     (
