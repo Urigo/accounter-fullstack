@@ -1494,15 +1494,15 @@ export const resolvers: Resolvers = {
       }
     },
     vat: DbCharge =>
-      DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat, DbCharge.currency_code) : null,
+      DbCharge.vat == null ? null : formatFinancialAmount(DbCharge.vat, DbCharge.currency_code),
     withholdingTax: DbCharge =>
-      DbCharge.withholding_tax != null
-        ? formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code)
-        : null,
+      DbCharge.withholding_tax == null
+        ? null
+        : formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code),
     totalAmount: DbCharge =>
-      DbCharge.event_amount != null
-        ? formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code)
-        : null,
+      DbCharge.event_amount == null
+        ? null
+        : formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code),
     invoice: async DbCharge => {
       if (!DbCharge.id) {
         return null;

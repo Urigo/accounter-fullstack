@@ -55,25 +55,25 @@ export const rateOptionalMatches = (
     let score = 0;
 
     score =
-      (!dateDiffsStd
-        ? 0
-        : Math.abs(
+      (dateDiffsStd
+        ? Math.abs(
             (comparisonDict.dateDiffs[charge.id] -
               Math.min(...Object.values(comparisonDict.dateDiffs))) /
               dateDiffsStd,
-          )) +
-      (!amountDiffsStd
-        ? 0
-        : Math.abs(
+          )
+        : 0) +
+      (amountDiffsStd
+        ? Math.abs(
             (comparisonDict.amountDiffs[charge.id] -
               Math.min(...Object.values(comparisonDict.amountDiffs))) /
               amountDiffsStd,
-          )) +
-      (!providerIdentsStd
-        ? 0
-        : (Math.max(...Object.values(comparisonDict.providerIdents)) -
+          )
+        : 0) +
+      (providerIdentsStd
+        ? (Math.max(...Object.values(comparisonDict.providerIdents)) -
             Math.abs(comparisonDict.providerIdents[charge.id])) /
-          providerIdentsStd);
+          providerIdentsStd
+        : 0);
 
     ratedMatches.push({ score, charge });
   }
@@ -135,25 +135,25 @@ export const rateOptionalDocumentsMatches = (
     let score = 0;
 
     score =
-      (!dateDiffsStd
-        ? 0
-        : Math.abs(
+      (dateDiffsStd
+        ? Math.abs(
             (comparisonDict.dateDiffs[charge.id] -
               Math.min(...Object.values(comparisonDict.dateDiffs))) /
               dateDiffsStd,
-          )) +
-      (!amountDiffsStd
-        ? 0
-        : Math.abs(
+          )
+        : 0) +
+      (amountDiffsStd
+        ? Math.abs(
             (comparisonDict.amountDiffs[charge.id] -
               Math.min(...Object.values(comparisonDict.amountDiffs))) /
               amountDiffsStd,
-          )) +
-      (!providerIdentsStd
-        ? 0
-        : (Math.max(...Object.values(comparisonDict.providerIdents)) -
+          )
+        : 0) +
+      (providerIdentsStd
+        ? (Math.max(...Object.values(comparisonDict.providerIdents)) -
             Math.abs(comparisonDict.providerIdents[charge.id])) /
-          providerIdentsStd);
+          providerIdentsStd
+        : 0);
 
     ratedMatches.push({ score, document });
   }

@@ -183,7 +183,7 @@ export function generateEntryForAccountingValues(
   const debitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount1'] =
     hashavshevetFormat.number(entryForAccounting.debitAmountILS, { abs: true });
   const foreignDebitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount1'] =
-    !isILS ? hashavshevetFormat.number(entryForAccounting.debitAmount, { abs: true }) : null;
+    isILS ? null : hashavshevetFormat.number(entryForAccounting.debitAmount, { abs: true });
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] =
     hashavshevetFormat.currency(charge.currency_code ?? 'NULL');
   const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
@@ -199,7 +199,7 @@ export function generateEntryForAccountingValues(
   const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] =
     hashavshevetFormat.number(entryForAccounting.creditAmountILS, { abs: true });
   const foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] =
-    !isILS ? hashavshevetFormat.number(entryForAccounting.creditAmount, { abs: true }) : null;
+    isILS ? null : hashavshevetFormat.number(entryForAccounting.creditAmount, { abs: true });
   const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] =
     entryForAccounting.secondAccountDebitAmount && entryForAccounting.secondAccountDebitAmount != 0
       ? charge.is_property
@@ -338,9 +338,9 @@ export function generateEntryForFinancialAccountValues(
   const debitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount1'] =
     hashavshevetFormat.number(entryForFinancialAccount.debitAmountILS, { abs: true });
   const foreignDebitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount1'] =
-    !isILS
-      ? hashavshevetFormat.number(entryForFinancialAccount.debitAmount, { abs: true })
-      : foreignBalance;
+    isILS
+      ? foreignBalance
+      : hashavshevetFormat.number(entryForFinancialAccount.debitAmount, { abs: true });
   const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
     hashavshevetFormat.account(
       entryForFinancialAccount.creditAccount,
@@ -354,9 +354,9 @@ export function generateEntryForFinancialAccountValues(
   const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] =
     hashavshevetFormat.number(entryForFinancialAccount.creditAmountILS, { abs: true });
   const foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] =
-    !isILS
-      ? hashavshevetFormat.number(entryForFinancialAccount.creditAmount, { abs: true })
-      : foreignBalance;
+    isILS
+      ? foreignBalance
+      : hashavshevetFormat.number(entryForFinancialAccount.creditAmount, { abs: true });
   const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] = null; //  NOTE(Uri): Check for interest transactions (הכנרבמ)
   const debitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount2'] = null;
   const foreignDebitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount2'] =
