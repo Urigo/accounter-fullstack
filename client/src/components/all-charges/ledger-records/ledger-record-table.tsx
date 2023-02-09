@@ -89,10 +89,10 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
             {/* <CreditAccount data={record} />
             <DebitAccount data={record} /> */}
             {/* <LocalAmount data={record} /> */}
-            <AccountDetails data={record} cred={false} first={true} />
-            <AccountDetails data={record} cred={true} first={true} />
+            <AccountDetails data={record} cred={false} first />
+            <AccountDetails data={record} cred first />
             <AccountDetails data={record} cred={false} first={false} />
-            <AccountDetails data={record} cred={true} first={false} />
+            <AccountDetails data={record} cred first={false} />
             {/* <td>{record.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
             {/* <OriginalAmount data={record} /> */}
             {/* <td>{record.originalAmount.formatted}</td> */}

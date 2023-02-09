@@ -138,7 +138,7 @@ export const DocumentsReport = () => {
       )}
       <div style={{ fontSize: 40 }}>Documents</div>
       <AccounterTable
-        stickyHeader={true}
+        stickyHeader
         items={data?.documents ?? ([] as DocumentsQuery['documents'])}
         columns={[
           { title: 'Type', value: doc => doc.__typename },

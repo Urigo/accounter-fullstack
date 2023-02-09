@@ -27,7 +27,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
         />
       )}
       <AccounterTable
-        stickyHeader={true}
+        stickyHeader
         items={documents}
         columns={[
           { title: 'Type', value: doc => doc.__typename },

@@ -96,7 +96,7 @@ export const BusinessTransactionsSummery = () => {
           <AccounterLoader />
         ) : (
           <AccounterTable
-            showButton={true}
+            showButton
             moreInfo={item => (
               <BusinessExtendedInfo businessName={item.businessName} filter={filter} />
             )}

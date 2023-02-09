@@ -115,8 +115,8 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
           return true;
         }) as Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[]
       ).sort((a, b) => {
-        if (a.date ?? '' < (b.date ?? '')) return 1;
-        if (a.date ?? '' > (b.date ?? '')) return -1;
+        if (a.date ?? (b.date ?? '') > '') return 1;
+        if (a.date ?? (b.date ?? '') < '') return -1;
         return 0;
       }),
     [documents],
