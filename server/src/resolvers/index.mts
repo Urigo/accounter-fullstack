@@ -31,7 +31,7 @@ import {
   formatFinancialAmount,
   formatFinancialIntAmount,
 } from '../helpers/amount.mjs';
-import { extractValidationData, validateCharge } from '../helpers/charges.mjs';
+import { validateCharge } from '../helpers/charges.mjs';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '../helpers/constants.mjs';
 import { getILSForDate } from '../helpers/exchange.mjs';
 import {
@@ -185,23 +185,7 @@ export const resolvers: Resolvers = {
     // businessTransactions
     businessTransactionsSumFromLedgerRecords: async (_, { filters }) => {
       try {
-        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
-        const isBusinessNames = filters?.businessNames?.length ?? 0;
-        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
-          isBusinessNames,
-          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
-          isFinancialEntityIds,
-          financialEntityIds:
-            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
-          fromDate: isTimelessDateString(filters?.fromDate ?? '')
-            ? (filters!.fromDate as TimelessDateString)
-            : null,
-          toDate: isTimelessDateString(filters?.toDate ?? '')
-            ? (filters!.toDate as TimelessDateString)
-            : null,
-        };
-
-        const res = await getBusinessTransactionsSumFromLedgerRecords.run(adjestedFilters, pool);
+        const res = await getBusinessTransactionsSumFromLedgerRecords.run(filters, pool);
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
@@ -272,7 +256,7 @@ export const resolvers: Resolvers = {
       try {
         const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
         const isBusinessNames = filters?.businessNames?.length ?? 0;
-        const adjestedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
+        const adjustedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
           isBusinessNames,
           businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
           isFinancialEntityIds,
@@ -286,7 +270,7 @@ export const resolvers: Resolvers = {
             : null,
         };
 
-        const res = await getBusinessTransactionsFromLedgerRecords.run(adjestedFilters, pool);
+        const res = await getBusinessTransactionsFromLedgerRecords.run(adjustedFilters, pool);
 
         const businessTransactions: BusinessTransaction[] = res.map(t => {
           const direction = t.direction ?? 1;
@@ -487,11 +471,11 @@ export const resolvers: Resolvers = {
         // filter charges with missing info
         response.missingInfo.push(
           ...validationCharges.filter(t => {
-            const isFine = validateCharge(t);
-            if (!isFine) {
+            const { isValid } = validateCharge(t);
+            if (!isValid) {
               includedChargeIDs.add(t.id);
             }
-            return !isFine;
+            return !isValid;
           }),
         );
 
@@ -1670,7 +1654,7 @@ export const resolvers: Resolvers = {
       }),
     validationData: DbCharge => {
       if ('ledger_records_count' in DbCharge) {
-        return extractValidationData(DbCharge as IValidateChargesResult);
+        return validateCharge(DbCharge as IValidateChargesResult);
       }
       return validateChargeByIdLoader.load(DbCharge.id);
     },

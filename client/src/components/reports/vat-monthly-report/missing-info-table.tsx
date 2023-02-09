@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import { ActionIcon } from '@mantine/core';
-import { CaretDown, CaretUp } from 'tabler-icons-react';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
   EditChargeFieldsFragmentDoc,
@@ -67,7 +67,7 @@ export const MissingInfoTable = ({
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
         <ActionIcon variant="default" onClick={() => setOpened(i => !i)} size={30}>
-          {isOpened ? <CaretUp size={20} /> : <CaretDown size={20} />}
+          {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
         Missing Info
       </span>
