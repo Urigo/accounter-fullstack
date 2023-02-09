@@ -785,7 +785,7 @@ export const resolvers: Resolvers = {
           charge.account_number,
         );
 
-        if (!financialAccount || !financialAccount.owner) {
+        if (!financialAccount?.owner) {
           throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
         }
 
@@ -926,7 +926,7 @@ export const resolvers: Resolvers = {
           charge.account_number,
         );
 
-        if (!financialAccount || !financialAccount.owner) {
+        if (!financialAccount?.owner) {
           throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
         }
 
