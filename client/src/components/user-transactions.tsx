@@ -83,13 +83,13 @@ const TransactionTable = ({ transactions }: Props) => {
                   <td>{transaction.counterAccount}</td>
                   <td>{transaction.hashavshevet_id ?? ''}</td>
                   <td>{transaction.date_3 ?? ''}</td>
-                  <td>{transaction.value_date ? transaction.value_date : ''}</td>
-                  <td>{transaction.invoice_date ? transaction.invoice_date : ''}</td>
-                  <td>{transaction.reference_1 ? transaction.reference_1 : ''}</td>
-                  <td>{transaction.reference_2 ? transaction.reference_2 : ''}</td>
+                  <td>{transaction.value_date || ''}</td>
+                  <td>{transaction.invoice_date || ''}</td>
+                  <td>{transaction.reference_1 || ''}</td>
+                  <td>{transaction.reference_2 || ''}</td>
                   <td>{transaction.details === '0' ? '' : transaction.details}</td>
-                  <td>{transaction.movement_type ? transaction.movement_type : ''}</td>
-                  <td>{transaction.currency ? transaction.currency : ''}</td>
+                  <td>{transaction.movement_type || ''}</td>
+                  <td>{transaction.currency || ''}</td>
                   <td>{transaction.direction === -1 ? transaction.amountForeign : ''}</td>
                   <td>{transaction.direction === 1 ? transaction.amountForeign : ''}</td>
                   <td>{transaction.balanceForeign.toFixed(2)}</td>

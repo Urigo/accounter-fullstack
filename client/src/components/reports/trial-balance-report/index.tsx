@@ -173,7 +173,7 @@ export const TrialBalanceReport = () => {
           ) * -1,
         sum: accounts.reduce(
           (total, account) =>
-            total + (account.transactionsSum?.total.raw ? account.transactionsSum.total.raw : 0),
+            total + (account.transactionsSum?.total.raw || 0),
           0,
         ),
       };

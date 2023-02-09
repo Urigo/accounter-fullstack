@@ -140,7 +140,7 @@ const TransactionRow = ({ transaction, index, setSelected, isSelected }: Transac
       <td className="valueDate">{addHoverEditButton('value_date')}</td>
       <td>{addHoverEditButton('date_3')}</td>
       <td style={missingHashavshevetSync ? { backgroundColor: 'rgb(255,0,0)' } : undefined}>
-        {transaction.hashavshevet_id ? transaction.hashavshevet_id : ''}
+        {transaction.hashavshevet_id || ''}
         <button
           type="button"
           onClick={() => {

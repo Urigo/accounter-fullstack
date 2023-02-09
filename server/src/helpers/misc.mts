@@ -51,9 +51,7 @@ export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharg
   }
 
   const amountToUse = parseFloat(
-    (decoratedCharge.tax_invoice_amount
-      ? decoratedCharge.tax_invoice_amount
-      : decoratedCharge.event_amount) ?? '0',
+    (decoratedCharge.tax_invoice_amount || decoratedCharge.event_amount) ?? '0',
   );
   decoratedCharge.vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
     decoratedCharge.tax_category ?? '',

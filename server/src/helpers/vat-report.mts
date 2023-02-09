@@ -95,9 +95,7 @@ export function adjustTaxRecords(
         sharedInvoiceIDs.push(ref.id);
 
         // TODO: update "taxes" DB table, make tax_invoice_amount and vat required, then remove redundant alternatives here:
-        decoratedRecord.event_amount = ref.tax_invoice_amount
-          ? ref.tax_invoice_amount
-          : decoratedRecord.event_amount;
+        decoratedRecord.event_amount = ref.tax_invoice_amount || decoratedRecord.event_amount;
         decoratedRecord.tax_invoice_amount = ref.tax_invoice_amount
           ? Number(ref.tax_invoice_amount)
           : null;
