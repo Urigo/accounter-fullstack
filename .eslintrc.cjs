@@ -5,6 +5,7 @@ module.exports = {
   extends: ['@theguild'],
   rules: {
     'no-console': 1,
+    '@typescript-eslint/no-unused-expressions': 'off', // TODO @dima!
   },
   overrides: [
     {
@@ -68,6 +69,10 @@ module.exports = {
       extends: '@theguild/eslint-config/react',
       env: {
         browser: true,
+      },
+      rules: {
+        'import/extensions': 'off', // TODO @dima!
+        'react/hook-use-state': 'off', // TODO @dima!
       },
     },
     {

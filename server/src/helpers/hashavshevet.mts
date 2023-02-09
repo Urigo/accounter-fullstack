@@ -114,7 +114,7 @@ function account(
 
 function number(rawNumber: unknown, options: { abs?: boolean } = { abs: false }): string | null {
   let parsed = Number.parseFloat(rawNumber as string);
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     return null;
   }
   if (options.abs) {
