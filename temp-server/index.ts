@@ -3,7 +3,7 @@ import express, { Express, Request, Response } from 'express';
 import { Pool } from 'pg';
 import { generateTaxMovement } from './generate-tax-movement';
 
-config();
+config({ path: '../.env' });
 
 const app: Express = express();
 const port = 4001;

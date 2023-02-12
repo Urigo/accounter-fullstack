@@ -3,7 +3,7 @@ import postgres from 'pg';
 
 const { Pool } = postgres;
 
-config();
+config({ path: '../.env' });
 
 export const pool = new Pool({
   connectionString: process.env.PGURI,

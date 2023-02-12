@@ -7,14 +7,14 @@
   "engines": {
     "node": "18.14.0"
   },
-  "main": "./server/src/index.mts",
+  "main": "./src/index.mts",
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "cd .. && yarn codegen && cd server && yarn sqlgen",
     "pgtyped": "pgtyped -c pgconfig.json",
     "prestart": "yarn build",
-    "sqlgen": "dotenv yarn pgtyped",
+    "sqlgen": "dotenv -e ../.env yarn pgtyped",
     "start": "node dist/index.mjs"
   },
   "dependencies": {
