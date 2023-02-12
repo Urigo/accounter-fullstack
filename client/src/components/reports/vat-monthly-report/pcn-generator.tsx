@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActionIcon } from '@mantine/core';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql';
@@ -50,8 +50,15 @@ export const PCNGenerator = ({
   }, [data]);
 
   return (
-    <ActionIcon disabled={fetching || isLoading} variant="default" onClick={executeQuery} size={30}>
-      <Report size={20} />
-    </ActionIcon>
+    <Tooltip label="Generate and Download PCN874 File">
+      <ActionIcon
+        disabled={fetching || isLoading}
+        variant="default"
+        onClick={executeQuery}
+        size={30}
+      >
+        <Report size={20} />
+      </ActionIcon>
+    </Tooltip>
   );
 };
