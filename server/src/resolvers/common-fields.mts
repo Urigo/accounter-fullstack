@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import type { IGetChargesByFinancialEntityIdsResult } from '../__generated__/charges.types.mjs';
+import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import type { IGetAllDocumentsResult } from '../__generated__/documents.types.mjs';
 import {
   BankFinancialAccountResolvers,
@@ -46,7 +46,7 @@ export const commonFinancialEntityFields:
     return accounts;
   },
   charges: async (DbBusiness, { filter, page, limit }) => {
-    const charges: IGetChargesByFinancialEntityIdsResult[] = [];
+    const charges: IGetChargesByIdsResult[] = [];
     if (!filter || Object.keys(filter).length === 0) {
       const newCharges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
       charges.push(...newCharges);

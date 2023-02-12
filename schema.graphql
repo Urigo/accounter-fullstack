@@ -111,6 +111,12 @@ type Query {
   ): BusinessTransactionsFromLedgerRecordsResult!
   businessNamesFromLedgerRecords: [String!]!
   vatReport(filters: VatReportFilter): VatReportResult!
+  pcn(
+    fromDate: TimelessDate!
+    toDate: TimelessDate!
+    financialEntityId: ID!
+    options: PCNOptionsInput
+  ): GeneratePCNResult!
 }
 
 " mutation root "
@@ -138,12 +144,6 @@ type Mutation {
   deleteDocument(documentId: ID!): Boolean!
   fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
   uploadDocument(file: File!, chargeId: ID): UploadDocumentResult!
-  generatePCN(
-    fromDate: TimelessDate!
-    toDate: TimelessDate!
-    financialEntityId: ID!
-    options: PCNOptionsInput
-  ): GeneratePCNResult!
 }
 
 " config options for generatePCN "
@@ -153,54 +153,55 @@ input PCNOptionsInput {
 
 " result type fot generatePCN "
 type GeneratePCNResult {
-  report: String!
-  rawData: PCNRawData!
+  reportContent: String!
+  fileName: String!
+  # rawData: PCNRawData
 }
 
-type PCNRawData {
-  header: PCNHeader!
-  transactions: [PCNTransaction!]!
-}
+# type PCNRawData {
+#   header: PCNHeader!
+#   transactions: [PCNTransaction!]!
+# }
 
-type PCNHeader {
-  licensedDealerId: String!
-  reportMonth: String!
-  generationDate: String
-  taxableSalesAmount: Int!
-  taxableSalesVat: Int!
-  salesRecordCount: Int!
-  zeroValOrExemptSalesCount: Int!
-  otherInputsVat: Int!
-  equipmentInputsVat: Int!
-  inputsCount: Int!
-  totalVat: Int!
-}
+# type PCNHeader {
+#   licensedDealerId: String!
+#   reportMonth: String!
+#   generationDate: String
+#   taxableSalesAmount: Int!
+#   taxableSalesVat: Int!
+#   salesRecordCount: Int!
+#   zeroValOrExemptSalesCount: Int!
+#   otherInputsVat: Int!
+#   equipmentInputsVat: Int!
+#   inputsCount: Int!
+#   totalVat: Int!
+# }
 
-type PCNTransaction {
-  entryType: PCNEntryType!
-  vatId: String
-  invoiceDate: String!
-  refGroup: String
-  refNumber: String
-  totalVat: Int
-  invoiceSum: Int!
-}
+# type PCNTransaction {
+#   entryType: PCNEntryType!
+#   vatId: String
+#   invoiceDate: String!
+#   refGroup: String
+#   refNumber: String
+#   totalVat: Int
+#   invoiceSum: Int!
+# }
 
-enum PCNEntryType {
-  S1
-  S2
-  L1
-  L2
-  M
-  Y
-  I
-  T
-  K
-  R
-  P
-  H
-  C
-}
+# enum PCNEntryType {
+#   S1
+#   S2
+#   L1
+#   L2
+#   M
+#   Y
+#   I
+#   T
+#   K
+#   R
+#   P
+#   H
+#   C
+# }
 
 " input variables for businessTransactions "
 input BusinessTransactionsFilter {
@@ -737,6 +738,7 @@ type ValidationData {
   missingInfo: [MissingChargeInfo!]!
 }
 
+" represent a missing info attributes for a charge"
 enum MissingChargeInfo {
   COUNTERPARTY
   TRANSACTION_DESCRIPTION

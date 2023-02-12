@@ -46,6 +46,8 @@ module.exports = {
                 'VatReportResult',
                 'VatReportRecord',
                 'ValidationData',
+                'GeneratePCNResult',
+                'PCNRawData',
               ],
             },
           },

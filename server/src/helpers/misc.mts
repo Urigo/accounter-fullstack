@@ -1,8 +1,5 @@
 import { format } from 'date-fns';
-import type {
-  IGetChargesByFinancialAccountNumbersResult,
-  IGetChargesByIdsResult,
-} from '../__generated__/charges.types.mjs';
+import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
 import { TimelessDateString } from '../scalars/index.js';
@@ -238,7 +235,7 @@ export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
-export function effectiveDateSuplement(transaction: IGetChargesByFinancialAccountNumbersResult) {
+export function effectiveDateSuplement(transaction: IGetChargesByIdsResult) {
   if (transaction.account_type != 'creditcard') {
     if (transaction.debit_date) {
       return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;

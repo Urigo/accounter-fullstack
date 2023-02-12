@@ -1,13 +1,15 @@
-import { IGetChargesByFiltersResult } from '../__generated__/charges.types.mjs';
+import { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
 import { IGetDocumentsByFiltersResult } from '../__generated__/documents.types.mjs';
 import { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.mjs';
+import { IGetFinancialEntitiesByIdsResult } from '../__generated__/financial-entities.types.mjs';
 import { IGetTaxTransactionsByIDsResult } from '../__generated__/tax-transactions.types.mjs';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getClosestRateForDate, getILSForDate, getRateForCurrency } from './exchange.mjs';
 
 export function mergeChargeDoc(
-  charge: IGetChargesByFiltersResult,
+  charge: IGetChargesByIdsResult,
   doc: IGetDocumentsByFiltersResult,
+  business?: IGetFinancialEntitiesByIdsResult,
 ) {
   return {
     tax_invoice_date: doc.date,
@@ -50,6 +52,7 @@ export function mergeChargeDoc(
     receipt_date: charge.receipt_date,
     is_property: charge.is_property,
     tax_invoice_currency: charge.tax_invoice_currency,
+    vat_number: business?.vat_number,
   };
 }
 
