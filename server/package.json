@@ -5,7 +5,7 @@
   "description": "",
   "license": "MIT",
   "engines": {
-    "node": "18.13.0"
+    "node": "18.14.0"
   },
   "main": "./server/src/index.mts",
   "scripts": {
