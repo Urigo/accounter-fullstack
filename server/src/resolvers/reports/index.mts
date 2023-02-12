@@ -184,7 +184,7 @@ export const reportsResolvers: Resolvers = {
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching vat report records');
       }
     },
-    PCN: async (_, { fromDate, toDate, financialEntityId }) => {
+    pcnFile: async (_, { fromDate, toDate, financialEntityId }) => {
       const financialEntity = await getFinancialEntityByIdLoader.load(financialEntityId);
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);

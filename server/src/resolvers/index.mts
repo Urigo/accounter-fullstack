@@ -98,6 +98,7 @@ import { reportsResolvers } from './reports/index.mjs';
 export const resolvers: Resolvers = {
   ...reportsResolvers,
   Query: {
+    ...reportsResolvers.Query,
     // documents
     documents: async () => {
       const dbDocs = await getAllDocuments.run(void 0, pool);

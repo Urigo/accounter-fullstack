@@ -111,12 +111,12 @@ type Query {
   ): BusinessTransactionsFromLedgerRecordsResult!
   businessNamesFromLedgerRecords: [String!]!
   vatReport(filters: VatReportFilter): VatReportResult!
-  pcn(
+  pcnFile(
     fromDate: TimelessDate!
     toDate: TimelessDate!
     financialEntityId: ID!
     options: PCNOptionsInput
-  ): GeneratePCNResult!
+  ): PCNFileResult!
 }
 
 " mutation root "
@@ -151,14 +151,14 @@ input PCNOptionsInput {
   strict: Boolean
 }
 
-" result type fot generatePCN "
-type GeneratePCNResult {
+" result type for pcnFile "
+type PCNFileResult {
   reportContent: String!
   fileName: String!
-  # rawData: PCNRawData
+  # rawData: PCNFileRawData
 }
 
-# type PCNRawData {
+# type PCNFileRawData {
 #   header: PCNHeader!
 #   transactions: [PCNTransaction!]!
 # }

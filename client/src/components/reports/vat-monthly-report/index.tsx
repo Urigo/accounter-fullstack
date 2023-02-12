@@ -22,6 +22,7 @@ import { ExpensesTable } from './expenses-table';
 import { IncomeTable } from './income-table';
 import { MiscTable } from './misc-table';
 import { MissingInfoTable } from './missing-info-table';
+import { PCNGenerator } from './pcn-generator';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 
 /* GraphQL */ `
@@ -58,7 +59,7 @@ export const VatMonthlyReport = () => {
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
 
-  // fetch date
+  // fetch data
   const [{ data, fetching }] = useQuery({
     query: dedupeFragments(VatMonthlyReportDocument),
     variables: {
@@ -73,6 +74,7 @@ export const VatMonthlyReport = () => {
           header="Vat Monthly Report"
           filters={
             <div className="flex flex-row gap-2">
+              <PCNGenerator filter={filter} isLoading={fetching} />
               <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
             </div>
           }
