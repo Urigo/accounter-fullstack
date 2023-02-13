@@ -1,5 +1,5 @@
-import { GraphQLError } from 'graphql';
 import { format } from 'date-fns';
+import { GraphQLError } from 'graphql';
 import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../__generated__/business-transactions-from-ledger.types.mjs';
 import type {
   IGetChargesByFiltersResult,
@@ -362,7 +362,7 @@ export const resolvers: Resolvers = {
       try {
         return getLedgerRecordsDistinctBusinesses
           .run(undefined, pool)
-          .then(res => res.map(r => r.business_name).filter(r => Boolean(r)) as string[]);
+          .then(res => res.map(r => r.business_name).filter(Boolean) as string[]);
       } catch (e) {
         console.error(e);
         return [];
@@ -785,7 +785,7 @@ export const resolvers: Resolvers = {
           charge.account_number,
         );
 
-        if (!financialAccount || !financialAccount.owner) {
+        if (!financialAccount?.owner) {
           throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
         }
 
@@ -926,7 +926,7 @@ export const resolvers: Resolvers = {
           charge.account_number,
         );
 
-        if (!financialAccount || !financialAccount.owner) {
+        if (!financialAccount?.owner) {
           throw new Error(`Financial entity for charge ID='${chargeId}' not found`);
         }
 
@@ -1119,9 +1119,7 @@ export const resolvers: Resolvers = {
         }
         const debitExchangeRates = await getExchangeRates(charge.debit_date);
 
-        if (!charge.tax_invoice_date) {
-          charge.tax_invoice_date = charge.debit_date;
-        }
+        charge.tax_invoice_date ||= charge.debit_date;
         const invoiceExchangeRates = await getExchangeRates(charge.tax_invoice_date);
 
         const decoratedCharge = decorateCharge(charge);
@@ -1381,7 +1379,7 @@ export const resolvers: Resolvers = {
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => Boolean(DbAccount.bank_number),
+    __isTypeOf: DbAccount => !!DbAccount.bank_number,
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
@@ -1494,15 +1492,15 @@ export const resolvers: Resolvers = {
       }
     },
     vat: DbCharge =>
-      DbCharge.vat != null ? formatFinancialAmount(DbCharge.vat, DbCharge.currency_code) : null,
+      DbCharge.vat == null ? null : formatFinancialAmount(DbCharge.vat, DbCharge.currency_code),
     withholdingTax: DbCharge =>
-      DbCharge.withholding_tax != null
-        ? formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code)
-        : null,
+      DbCharge.withholding_tax == null
+        ? null
+        : formatFinancialAmount(DbCharge.withholding_tax, DbCharge.currency_code),
     totalAmount: DbCharge =>
-      DbCharge.event_amount != null
-        ? formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code)
-        : null,
+      DbCharge.event_amount == null
+        ? null
+        : formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code),
     invoice: async DbCharge => {
       if (!DbCharge.id) {
         return null;
@@ -1623,7 +1621,7 @@ export const resolvers: Resolvers = {
   },
   // counterparties
   NamedCounterparty: {
-    __isTypeOf: parent => Boolean(parent),
+    __isTypeOf: parent => !!parent,
     name: parent => parent ?? '',
   },
   BeneficiaryCounterparty: {

@@ -13,7 +13,7 @@ SELECT
   top_private_expenses_for_month ('2020-12-01');
 
 CREATE
-OR REPLACE FUNCTION top_private_expenses_for_month (month_input VARCHAR) RETURNS TABLE (sum NUMERIC(9, 2), category VARCHAR) LANGUAGE SQL AS $$
+OR REPLACE FUNCTION top_private_expenses_for_month (month_input VARCHAR) RETURNS TABLE (SUM NUMERIC(9, 2), category VARCHAR) LANGUAGE SQL AS $$
 
 SELECT ABS(SUM(event_amount_in_usd_with_vat_if_exists)::numeric(9, 2)),
        personal_category
@@ -38,7 +38,7 @@ CREATE
 OR REPLACE FUNCTION expenses_by_category_for_month (
   month_input VARCHAR,
   personal_category_input VARCHAR
-) RETURNS TABLE (sum NUMERIC(9, 2), description VARCHAR) LANGUAGE SQL AS $$
+) RETURNS TABLE (SUM NUMERIC(9, 2), description VARCHAR) LANGUAGE SQL AS $$
 
 SELECT event_amount_in_usd_with_vat_if_exists,
        bank_description
@@ -72,7 +72,7 @@ ORDER BY
   event_amount;
 
 SELECT
-  sum(event_amount_in_usd),
+  SUM(event_amount_in_usd),
   personal_category
 FROM
   formatted_merged_tables
@@ -82,7 +82,7 @@ WHERE
 GROUP BY
   personal_category
 ORDER BY
-  sum(event_amount_in_usd);
+  SUM(event_amount_in_usd);
 
 SELECT
   *

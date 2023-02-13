@@ -1,5 +1,5 @@
-import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import pgQuery from '@pgtyped/query';
 import {
   IDeleteLedgerRecordQuery,
   IGetLedgerRecordsByChargeIdsQuery,

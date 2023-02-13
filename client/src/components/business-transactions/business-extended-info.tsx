@@ -1,6 +1,6 @@
-import { Mark, Table } from '@mantine/core';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
+import { Mark, Table } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
@@ -97,9 +97,9 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
     });
   }
 
-  const isEur = transactions.some(item => Boolean(item.eurAmount));
-  const isUsd = transactions.some(item => Boolean(item.usdAmount));
-  const isGbp = transactions.some(item => Boolean(item.gbpAmount));
+  const isEur = transactions.some(item => item.eurAmount);
+  const isUsd = transactions.some(item => item.usdAmount);
+  const isGbp = transactions.some(item => item.gbpAmount);
 
   return (
     <div className="flex flex-row gap-5">
@@ -138,12 +138,12 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                   )}
                 </td>
                 <td>
-                  {row.ilsBalance !== 0 ? (
+                  {row.ilsBalance === 0 ? (
+                    `${formatStringifyAmount(row.ilsBalance)} ILS`
+                  ) : (
                     <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>{`${row.ilsBalance.toFixed(
                       2,
                     )} ILS`}</Mark>
-                  ) : (
-                    `${formatStringifyAmount(row.ilsBalance)} ILS`
                   )}
                 </td>
                 {isEur && (
@@ -159,12 +159,12 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                 )}
                 {isEur && (
                   <td>
-                    {row.eurBalance !== 0 ? (
+                    {row.eurBalance === 0 ? (
+                      `${formatStringifyAmount(row.eurBalance)} EUR`
+                    ) : (
                       <Mark color={row.eurBalance > 0 ? 'green' : 'red'}>{`${row.eurBalance.toFixed(
                         2,
                       )} EUR`}</Mark>
-                    ) : (
-                      `${formatStringifyAmount(row.eurBalance)} EUR`
                     )}
                   </td>
                 )}
@@ -181,12 +181,12 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                 )}
                 {isUsd && (
                   <td>
-                    {row.usdBalance !== 0 ? (
+                    {row.usdBalance === 0 ? (
+                      `${formatStringifyAmount(row.usdBalance)} USD`
+                    ) : (
                       <Mark color={row.usdBalance > 0 ? 'green' : 'red'}>{`${row.usdBalance.toFixed(
                         2,
                       )} USD`}</Mark>
-                    ) : (
-                      `${formatStringifyAmount(row.usdBalance)} USD`
                     )}
                   </td>
                 )}
@@ -203,12 +203,12 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                 )}
                 {isGbp && (
                   <td>
-                    {row.gbpBalance !== 0 ? (
+                    {row.gbpBalance === 0 ? (
+                      `${formatStringifyAmount(row.gbpBalance)} GBP`
+                    ) : (
                       <Mark color={row.gbpBalance > 0 ? 'green' : 'red'}>{`${row.gbpBalance.toFixed(
                         2,
                       )} GBP`}</Mark>
-                    ) : (
-                      `${formatStringifyAmount(row.gbpBalance)} GBP`
                     )}
                   </td>
                 )}

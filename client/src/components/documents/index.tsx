@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Image } from '@mantine/core';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
+import { Image } from '@mantine/core';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
@@ -132,13 +132,13 @@ export const DocumentsReport = () => {
         <PopUpModal
           modalSize="45%"
           content={<Image src={openedImage} />}
-          opened={Boolean(openedImage)}
+          opened={!!openedImage}
           onClose={() => setOpenedImage(null)}
         />
       )}
       <div style={{ fontSize: 40 }}>Documents</div>
       <AccounterTable
-        stickyHeader={true}
+        stickyHeader
         items={data?.documents ?? ([] as DocumentsQuery['documents'])}
         columns={[
           { title: 'Type', value: doc => doc.__typename },

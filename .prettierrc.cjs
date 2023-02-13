@@ -5,5 +5,5 @@ module.exports = {
   plugins: [...plugins, 'prettier-plugin-sql'],
   // prettier-plugin-sql options
   language: 'postgresql',
-  uppercase: true,
+  keywordCase: 'upper',
 };

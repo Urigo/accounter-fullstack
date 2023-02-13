@@ -105,7 +105,7 @@ export function DocumentMatchesSelection({
   const [extendedInfoFlag, setExtendedInfoFlag] = useState(false);
 
   useEffect(() => {
-    setReadyForNextStep(Boolean(selectedCharge));
+    setReadyForNextStep(!!selectedCharge);
   }, [selectedCharge, setReadyForNextStep]);
 
   if (

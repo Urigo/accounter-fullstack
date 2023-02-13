@@ -1,5 +1,5 @@
-import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
 import { format } from 'date-fns';
+import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
 
 type addZero<T> = T | 0;
 type oneToFour = 1 | 2 | 3 | 4;

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { showNotification } from '@mantine/notifications';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { showNotification } from '@mantine/notifications';
+import { SimpleGrid } from '..';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql';
 import { useInsertDocument } from '../../../hooks/use-insert-document';
-import { SimpleGrid } from '..';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {

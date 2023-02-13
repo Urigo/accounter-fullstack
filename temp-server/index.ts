@@ -1,6 +1,6 @@
+import { config } from 'dotenv';
 import express, { Express, Request, Response } from 'express';
 import { Pool } from 'pg';
-import { config } from 'dotenv';
 import { generateTaxMovement } from './generate-tax-movement';
 
 config();

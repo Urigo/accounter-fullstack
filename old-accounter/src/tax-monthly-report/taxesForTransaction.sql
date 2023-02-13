@@ -6,7 +6,7 @@ SELECT
 FROM
   accounter_schema.exchange_rates
 WHERE
-  exchange_date = to_date(date_3, 'YYYY-MM-DD');
+  exchange_date = TO_DATE(date_3, 'YYYY-MM-DD');
 
 SELECT
   *
@@ -29,7 +29,7 @@ SELECT
 FROM
   accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id;
 
 INSERT INTO
@@ -46,14 +46,14 @@ SELECT
 FROM
   get_tax_report_of_transaction ('21b53e78-ef11-4edc-8a68-1e2357d90ca8')
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id;
 
 DROP FUNCTION
-  get_tax_report_of_transaction (transaction_id uuid);
+  get_tax_report_of_transaction (transaction_id UUID);
 
 CREATE
-OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id uuid) RETURNS TABLE (
+OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id UUID) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
@@ -74,7 +74,7 @@ OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id uuid) RETURNS 
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   proforma_invoice_file TEXT
 ) LANGUAGE SQL AS $$

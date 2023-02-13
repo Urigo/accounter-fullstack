@@ -22,12 +22,12 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
         <PopUpModal
           modalSize="45%"
           content={<Image src={openedImage} />}
-          opened={Boolean(openedImage)}
+          opened={!!openedImage}
           onClose={() => setOpenedImage(null)}
         />
       )}
       <AccounterTable
-        stickyHeader={true}
+        stickyHeader
         items={documents}
         columns={[
           { title: 'Type', value: doc => doc.__typename },

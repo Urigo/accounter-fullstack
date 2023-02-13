@@ -1,6 +1,6 @@
+import DataLoader from 'dataloader';
 import pgQuery, { TaggedQuery } from '@pgtyped/query';
 import { IDatabaseConnection } from '@pgtyped/query/lib/tag.js';
-import DataLoader from 'dataloader';
 import {
   IDeleteDocumentQuery,
   IGetAllDocumentsQuery,
@@ -176,7 +176,7 @@ const getAdjustedDocumentsByFilters: Pick<
   'run'
 > = {
   run(params: IGetAdjustedDocumentsByFiltersParams, dbConnection: IDatabaseConnection) {
-    const isIDs = Boolean(params?.IDs?.length);
+    const isIDs = !!params?.IDs?.length;
 
     const fullParams: IGetDocumentsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,

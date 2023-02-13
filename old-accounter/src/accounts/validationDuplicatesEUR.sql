@@ -3,7 +3,7 @@ SELECT
   event_amount,
   reference_number,
   account_number,
-  count(*)
+  COUNT(*)
 FROM
   accounter_schema.poalim_eur_account_transactions
 GROUP BY
@@ -12,4 +12,4 @@ GROUP BY
   reference_number,
   account_number
 HAVING
-  count(*) > 1;
+  COUNT(*) > 1;

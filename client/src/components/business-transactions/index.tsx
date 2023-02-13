@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Mark } from '@mantine/core';
 import { useQuery } from 'urql';
+import { Mark } from '@mantine/core';
 import { BusinessTransactionsFilter, BusinessTransactionsSummeryDocument } from '../../gql/graphql';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { AccounterLoader, AccounterTable, NavBar } from '../common';
@@ -96,7 +96,7 @@ export const BusinessTransactionsSummery = () => {
           <AccounterLoader />
         ) : (
           <AccounterTable
-            showButton={true}
+            showButton
             moreInfo={item => (
               <BusinessExtendedInfo businessName={item.businessName} filter={filter} />
             )}

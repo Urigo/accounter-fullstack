@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pagination } from '@mantine/core';
 import { useQuery } from 'urql';
+import { Pagination } from '@mantine/core';
 import { DocumentsToMatchDocument, DocumentsToMatchQuery } from '../../gql/graphql';
 import { AccounterLoader } from '../common';
 import { DocumentHandler } from './document-handler';

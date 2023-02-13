@@ -91,7 +91,7 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
       return rawAmount;
     case 'string': {
       const amount = parseFloat(rawAmount);
-      if (!isNaN(amount)) {
+      if (!Number.isNaN(amount)) {
         return amount;
       }
       console.warn(`Unknown string amount: "${rawAmount}". Using 0 instead.`);

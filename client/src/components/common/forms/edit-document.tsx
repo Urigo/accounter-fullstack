@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Image } from '@mantine/core';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { Drawer, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { EditDocumentFieldsFragmentDoc, UpdateDocumentFieldsInput } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
@@ -132,7 +132,7 @@ export const EditDocument = ({ documentProps }: Props) => {
         <div className=" w-1/5 h-max flex flex-col ">
           <div className="flex justify-center">
             <Image
-              onClick={() => setOpenImage(Boolean(documentData.image))}
+              onClick={() => setOpenImage(!!documentData.image)}
               src={documentData?.image?.toString()}
               className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
             />
@@ -144,7 +144,7 @@ export const EditDocument = ({ documentProps }: Props) => {
         withCloseButton
         withOverlay={false}
         position="right"
-        opened={Boolean(documentData.image) && openImage}
+        opened={!!documentData.image && openImage}
         onClose={() => setOpenImage(false)}
         // padding={padding}
         size="30%"

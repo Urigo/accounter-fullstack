@@ -1,7 +1,8 @@
-import pg from 'pg';
 import lodash from 'lodash';
-const { camelCase } = lodash;
 import moment from 'moment';
+import pg from 'pg';
+
+const { camelCase } = lodash;
 
 export type AccountTypes = 'ils' | 'usd' | 'eur' | 'gbp' | 'deposits' | 'isracard';
 

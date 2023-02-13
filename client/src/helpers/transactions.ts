@@ -64,7 +64,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
   if (transaction.detailed_bank_description.includes('מטח-קניה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
-  if (transaction.detailed_bank_description.includes(`רכישת מט"ח`)) {
+  if (transaction.detailed_bank_description.includes('רכישת מט"ח')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
   if (transaction.detailed_bank_description.includes('חשבונית ירוקה')) {
@@ -77,8 +77,8 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   if (
-    transaction.detailed_bank_description == `ע' העברת מט"ח` ||
-    (transaction.detailed_bank_description.includes(`העברת מט"ח`) &&
+    transaction.detailed_bank_description == 'ע\' העברת מט"ח' ||
+    (transaction.detailed_bank_description.includes('העברת מט"ח') &&
       Math.abs(Number(transaction.event_amount)) < 400) ||
     (transaction.detailed_bank_description.includes('מטח') &&
       Math.abs(Number(transaction.event_amount)) < 400) ||
@@ -196,14 +196,14 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
   ) {
     return {
       financialEntity: 'HOT',
-      userDescription: `Internet Provider`,
+      userDescription: 'Internet Provider',
       personalCategory: 'computer',
     };
   }
   if (transaction.detailed_bank_description.includes('סלקום')) {
     return {
       financialEntity: 'Celcom',
-      userDescription: `Internet Provider`,
+      userDescription: 'Internet Provider',
       personalCategory: 'computer',
     };
   }
@@ -936,7 +936,7 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
     };
   }
   const suggestedTransaction = {
-    financialEntity: transaction.detailed_bank_description.replaceAll(`"`, '').replaceAll(`'`, ''),
+    financialEntity: transaction.detailed_bank_description.replaceAll('"', '').replaceAll("'", ''),
     userDescription: 'Food',
     personalCategory: 'food',
   };

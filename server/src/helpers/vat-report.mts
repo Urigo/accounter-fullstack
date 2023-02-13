@@ -95,9 +95,7 @@ export function adjustTaxRecords(
         sharedInvoiceIDs.push(ref.id);
 
         // TODO: update "taxes" DB table, make tax_invoice_amount and vat required, then remove redundant alternatives here:
-        decoratedRecord.event_amount = ref.tax_invoice_amount
-          ? ref.tax_invoice_amount
-          : decoratedRecord.event_amount;
+        decoratedRecord.event_amount = ref.tax_invoice_amount || decoratedRecord.event_amount;
         decoratedRecord.tax_invoice_amount = ref.tax_invoice_amount
           ? Number(ref.tax_invoice_amount)
           : null;
@@ -141,11 +139,11 @@ export function adjustTaxRecords(
       // decorate record with additional fields
       const amountToUse =
         decoratedRecord.tax_invoice_amount ?? parseFloat(decoratedRecord.event_amount);
-      const vatAfterDeduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
+      const vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
         decoratedRecord.tax_category,
       )
-        ? decoratedRecord.vat
-        : (decoratedRecord.vat / 3) * 2;
+        ? (decoratedRecord.vat / 3) * 2
+        : decoratedRecord.vat;
       // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
       const amountBeforeVAT = amountToUse - vatAfterDeduction;
 

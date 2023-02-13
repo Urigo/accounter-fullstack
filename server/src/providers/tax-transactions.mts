@@ -1,5 +1,5 @@
-import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import pgQuery from '@pgtyped/query';
 import { IGetTaxTransactionsByIDsQuery } from '../__generated__/tax-transactions.types.mjs';
 import { pool } from './db.mjs';
 

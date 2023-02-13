@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useState } from 'react';
-import { ActionIcon, Paper } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ActionIcon, Paper } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql';
 import {
   AllChargesQuery,
@@ -63,7 +63,7 @@ export const AllChargesRow = ({
 
   const alternativeCharge = generateRowContext(charge);
 
-  const hasExtendedInfo = Boolean(charge.additionalDocuments.length || charge.ledgerRecords.length);
+  const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
 
   return (
     <>

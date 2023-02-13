@@ -53,7 +53,7 @@ export const EditDbLedgerRecordFields = ({
   ]);
 
   function isAccountActive(account?: string | null) {
-    return Boolean(account && account !== '');
+    return !!account;
   }
 
   useEffect(() => {

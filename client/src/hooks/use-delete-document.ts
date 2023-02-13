@@ -1,5 +1,5 @@
-import { showNotification } from '@mantine/notifications';
 import { useMutation } from 'urql';
+import { showNotification } from '@mantine/notifications';
 import { DeleteDocumentDocument, DeleteDocumentMutationVariables } from '../gql/graphql.js';
 
 /* GraphQL */ `

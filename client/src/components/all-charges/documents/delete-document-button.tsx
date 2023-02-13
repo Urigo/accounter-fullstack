@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon } from '@mantine/core';
 import { Trash } from 'tabler-icons-react';
+import { ActionIcon } from '@mantine/core';
 import { useDeleteDocument } from '../../../hooks/use-delete-document';
 import { ConfirmationModal } from '../../common';
 

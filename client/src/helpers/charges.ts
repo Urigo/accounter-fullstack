@@ -85,16 +85,16 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   if (transactionDescription?.includes('מטח-קניה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
-  if (transactionDescription?.includes(`רכישת מט"ח`)) {
+  if (transactionDescription?.includes('רכישת מט"ח')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
-  if (transactionDescription?.includes(`מטח-מכירה`)) {
+  if (transactionDescription?.includes('מטח-מכירה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
-  if (transactionDescription?.includes(`המרת מט"ח`)) {
+  if (transactionDescription?.includes('המרת מט"ח')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
-  if (transactionDescription?.includes(`קונברסיה`)) {
+  if (transactionDescription?.includes('קונברסיה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
   if (transactionDescription?.includes('חשבונית ירוקה')) {
@@ -107,8 +107,8 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     };
   }
   if (
-    transactionDescription?.includes(`ע' העברת מט"ח`) ||
-    (transactionDescription?.includes(`העברת מט"ח`) &&
+    transactionDescription?.includes('ע\' העברת מט"ח') ||
+    (transactionDescription?.includes('העברת מט"ח') &&
       Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
     (transactionDescription?.includes('מטח') &&
       Math.abs(charge.transactions[0]?.amount.raw) < 400) ||
@@ -133,7 +133,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   if (transactionDescription?.includes('י.י. יעוץ והשקעות')) {
     return {
       financialEntity: 'Yossi Yaron',
-      userDescription: `Tax benefits consultation`,
+      userDescription: 'Tax benefits consultation',
       personalCategory: 'business',
       financialAccountsToBalance: 'no',
     };
@@ -264,14 +264,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   ) {
     return {
       financialEntity: 'HOT',
-      userDescription: `Internet Provider`,
+      userDescription: 'Internet Provider',
       personalCategory: 'computer',
     };
   }
   if (transactionDescription?.includes('סלקום')) {
     return {
       financialEntity: 'Celcom',
-      userDescription: `Internet Provider`,
+      userDescription: 'Internet Provider',
       personalCategory: 'computer',
     };
   }
@@ -1130,7 +1130,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     };
   }
   return {
-    financialEntity: transactionDescription?.replaceAll(`"`, '').replaceAll(`'`, '') ?? '',
+    financialEntity: transactionDescription?.replaceAll('"', '').replaceAll("'", '') ?? '',
     userDescription: 'Food',
     personalCategory: 'food',
   };

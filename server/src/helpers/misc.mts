@@ -51,15 +51,13 @@ export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharg
   }
 
   const amountToUse = parseFloat(
-    (decoratedCharge.tax_invoice_amount
-      ? decoratedCharge.tax_invoice_amount
-      : decoratedCharge.event_amount) ?? '0',
+    (decoratedCharge.tax_invoice_amount || decoratedCharge.event_amount) ?? '0',
   );
-  decoratedCharge.vatAfterDeduction = !TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
+  decoratedCharge.vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
     decoratedCharge.tax_category ?? '',
   )
-    ? decoratedCharge.vat ?? 0
-    : ((decoratedCharge.vat ?? 0) / 3) * 2;
+    ? ((decoratedCharge.vat ?? 0) / 3) * 2
+    : decoratedCharge.vat ?? 0;
 
   // TODO(Uri): Add a check if there is vat and it's not equal for 17 percent, let us know
   decoratedCharge.amountBeforeVAT = amountToUse - decoratedCharge.vatAfterDeduction;

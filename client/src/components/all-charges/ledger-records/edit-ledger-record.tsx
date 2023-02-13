@@ -81,7 +81,7 @@ export const EditLedgerRecord = ({ ledgerRecordProps, onAccept, onCancel }: Prop
   const { updateDbLedgerRecord, fetching } = useUpdateDbLedgerRecord();
 
   function isAccountActive(account?: string | null) {
-    return Boolean(account && account !== '');
+    return !!account;
   }
 
   const onSubmit: SubmitHandler<UpdateDbLedgerRecordInput> = data => {

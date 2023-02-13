@@ -1,5 +1,5 @@
-import { DocumentsToChargeMatcher } from '../../documents-to-charge-matcher';
 import { PopUpDrawer } from '..';
+import { DocumentsToChargeMatcher } from '../../documents-to-charge-matcher';
 
 interface Props {
   matchDocuments: string;
@@ -19,7 +19,7 @@ export const MatchDocumentModal = ({ matchDocuments, setMatchDocuments }: Props)
           </a>
         </div>
       }
-      opened={Boolean(matchDocuments)}
+      opened={!!matchDocuments}
       onClose={() => setMatchDocuments(undefined)}
     >
       <DocumentsToChargeMatcher

@@ -29,7 +29,7 @@ export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
   }
 
   const keysToHandle = Object.entries(dirtyFields)
-    .filter(([_key, value]) => Boolean(value))
+    .filter(([_key, value]) => !!value)
     .map(([key, _value]) => key);
 
   const subset = Object.fromEntries(

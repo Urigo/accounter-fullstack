@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useState } from 'react';
-import { ActionIcon } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ActionIcon } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
   EditChargeFieldsFragmentDoc,

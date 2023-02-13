@@ -1,10 +1,10 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
-import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
@@ -89,7 +89,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
     defaultValues: { ...filter },
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
-  const [enableAsc, setEnableAsc] = useState(Boolean(filter.sortBy?.field));
+  const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
   const [{ data, fetching, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
@@ -191,7 +191,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value ? '' : field.value}
+              value={field.value || ''}
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -210,7 +210,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value ? '' : field.value}
+              value={field.value || ''}
               error={fieldState.error?.message}
               label="To Date"
             />

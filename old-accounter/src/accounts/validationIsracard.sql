@@ -69,7 +69,7 @@ SELECT
   real_payment,
   real_date,
   voucher_number,
-  count(*)
+  COUNT(*)
 FROM
   all_creditcard_transactions
 GROUP BY
@@ -77,7 +77,7 @@ GROUP BY
   real_date,
   voucher_number
 HAVING
-  count(*) > 1;
+  COUNT(*) > 1;
 
 -- 1241
 DELETE FROM
@@ -109,7 +109,7 @@ WHERE
 
 SELECT
   full_supplier_name_outbound,
-  count(*)
+  COUNT(*)
 FROM
   accounter_schema.isracard_creditcard_transactions
 WHERE
@@ -159,7 +159,7 @@ GROUP BY
   site_name,
   client_ip_address
 HAVING
-  count(*) > 1;
+  COUNT(*) > 1;
 
 --
 -- delete from accounter_schema.isracard_creditcard_transactions

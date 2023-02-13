@@ -18,7 +18,7 @@ export const InsertLedgerRecordModal = ({ insertLedger, setInsertLedger }: Props
           </a>
         </div>
       }
-      opened={Boolean(insertLedger)}
+      opened={!!insertLedger}
       onClose={() => setInsertLedger(undefined)}
     >
       <InsertLedgerRecord chargeId={insertLedger} closeModal={() => setInsertLedger(undefined)} />

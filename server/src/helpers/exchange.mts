@@ -13,7 +13,7 @@ export function getRateForCurrency(
   if (currencyCode && ['USD', 'EUR', 'GBP'].includes(currencyCode)) {
     const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
-    if (isNaN(rate)) {
+    if (Number.isNaN(rate)) {
       throw new Error(
         `Exchange rates for date ${exchangeRates.exchange_date}, currency ${currencyCode} not found`,
       );

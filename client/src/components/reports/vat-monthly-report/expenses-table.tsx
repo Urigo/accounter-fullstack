@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon, Table } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ActionIcon, Table } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { VarReportExpensesFieldsFragmentDoc } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';

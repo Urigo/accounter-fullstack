@@ -141,7 +141,7 @@ export const commonFinancialDocumentsFields:
   amount: documentRoot =>
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
-    documentRoot.vat_amount != null ? formatFinancialAmount(documentRoot.vat_amount) : null,
+    documentRoot.vat_amount == null ? null : formatFinancialAmount(documentRoot.vat_amount),
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
 };

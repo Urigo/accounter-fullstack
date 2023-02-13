@@ -1,24 +1,24 @@
 import { createReadStream } from 'fs';
 import { createServer } from 'http';
 import { parse } from 'url';
-import { reportToReview } from './reports-for-review/reports-to-review';
-import { printSomething } from './another-file';
-import { financialStatus, tableStyles } from './first-page';
-import { monthlyReport } from './tax-monthly-report/monthly-report-page';
-import { topPrivateNotCategorized } from './private-charts/private-charts';
-import { createTaxEntriesForTransaction } from './tax-monthly-report/taxes-for-transaction';
-import { userTransactions } from './users/user-transactions';
-
 import dotenv from 'dotenv';
-const { config } = dotenv;
-config();
-
 // Node says that when importing from commonjs you only can bring
 // const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
 // import * as pg from 'pg'; // Won't work as this does equal this that:
 import pg from 'pg';
-import { getAllUsers } from './users/get-all-users';
+import { printSomething } from './another-file';
+import { financialStatus, tableStyles } from './first-page';
+import { topPrivateNotCategorized } from './private-charts/private-charts';
+import { reportToReview } from './reports-for-review/reports-to-review';
+import { monthlyReport } from './tax-monthly-report/monthly-report-page';
+import { createTaxEntriesForTransaction } from './tax-monthly-report/taxes-for-transaction';
 import { updateBankTransactionAttribute } from './tax-monthly-report/update-transactions';
+import { getAllUsers } from './users/get-all-users';
+import { userTransactions } from './users/user-transactions';
+
+const { config } = dotenv;
+config();
+
 const { Pool } = pg;
 
 console.log('hello world');

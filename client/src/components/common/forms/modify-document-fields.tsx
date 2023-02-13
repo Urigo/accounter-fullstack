@@ -15,6 +15,7 @@ import {
   isDocumentReceipt,
 } from '../../../helpers/documents';
 import { CurrencyInput, SelectInput, TextInput } from '../../common';
+
 export interface Props {
   document?: EditDocumentFieldsFragment;
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
@@ -36,7 +37,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
   // auto update vat currency according to amount currency
   useEffect(() => {
     setShowExtendedFields(
-      Boolean(type) &&
+      !!type &&
         (type === DocumentType.Invoice ||
           type === DocumentType.Receipt ||
           type === DocumentType.InvoiceReceipt ||

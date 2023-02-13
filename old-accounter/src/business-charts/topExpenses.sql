@@ -113,8 +113,8 @@ SELECT
   --  month
   --     to_char(event_date, 'YYYY/mm') as date,
   --  year
-  to_char(event_date, 'YYYY') AS date,
-  sum(
+  TO_CHAR(event_date, 'YYYY') AS date,
+  SUM(
     CASE
       WHEN (
         event_amount > 0
@@ -129,7 +129,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS business_income,
-  sum(
+  SUM(
     CASE
       WHEN (
         event_amount < 0
@@ -144,7 +144,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS business_expenses,
-  sum(
+  SUM(
     CASE
       WHEN (
         personal_category = 'business'
@@ -158,7 +158,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS overall_business_profit,
-  sum(
+  SUM(
     CASE
       WHEN (
         personal_category = 'business'
@@ -211,7 +211,7 @@ WITH
   )
 SELECT
   personal_category,
-  sum(event_amount_in_usd)::float4 AS overall_sum
+  SUM(event_amount_in_usd)::float4 AS overall_sum
 FROM
   transactions_exclude
 WHERE
@@ -220,7 +220,7 @@ WHERE
 GROUP BY
   personal_category
 ORDER BY
-  sum(event_amount_in_usd);
+  SUM(event_amount_in_usd);
 
 -- Top Expenses
 WITH
@@ -259,10 +259,10 @@ ORDER BY
   event_amount_in_usd;
 
 SELECT
-  sum(
+  SUM(
     formatted_invoice_amount_in_ils_with_vat_if_exists::float4
   )::float4 AS invoice_sum,
-  sum(
+  SUM(
     formatted_event_amount_in_ils_with_vat_if_exist::float4
   )::float4 AS event_sum
 FROM

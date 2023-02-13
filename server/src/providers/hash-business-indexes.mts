@@ -1,5 +1,5 @@
-import pgQuery from '@pgtyped/query';
 import DataLoader from 'dataloader';
+import pgQuery from '@pgtyped/query';
 import { IGetHashavshevetBusinessIndexesQuery } from '../__generated__/hash-business-indexes.types.mjs';
 import { pool } from './db.mjs';
 
@@ -19,9 +19,7 @@ async function batchHashavshevetBusinessIndexes(
 ) {
   const dict: Record<string, string[]> = {};
   params.forEach(({ financialEntityId, businessName }) => {
-    if (!dict[financialEntityId]) {
-      dict[financialEntityId] = [];
-    }
+    dict[financialEntityId] ||= [];
     if (!dict[financialEntityId].includes(businessName)) {
       dict[financialEntityId].push(businessName);
     }

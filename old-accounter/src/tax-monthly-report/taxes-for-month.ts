@@ -1,19 +1,18 @@
-import pg from 'pg';
 import moment from 'moment';
+import pg from 'pg';
+import { v4 as uuidv4 } from 'uuid';
 import {
   addTrueVATtoTransaction,
-  hashDateFormat,
-  hashAccounts,
-  // insertMovementQuery,
-  getVATIndexes,
-  getILSForDate,
-  getTransactionExchangeRates,
   getHashBusinessIndexes,
-  hashNumberRounded,
+  getILSForDate,
+  getTransactionExchangeRates, // insertMovementQuery,
+  getVATIndexes,
+  hashAccounts,
+  hashDateFormat,
   hashNumber,
   hashNumberNoAbs,
+  hashNumberRounded,
 } from './taxes-for-transaction';
-import { v4 as uuidv4 } from 'uuid';
 
 enum TransactionType {
   Income = '>',

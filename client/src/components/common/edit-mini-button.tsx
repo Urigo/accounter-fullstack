@@ -1,6 +1,6 @@
+import { Edit } from 'tabler-icons-react';
 import { ActionIcon, ActionIconProps } from '@mantine/core';
 import { PolymorphicComponentProps } from '@mantine/utils';
-import { Edit } from 'tabler-icons-react';
 
 export function EditMiniButton(props: PolymorphicComponentProps<'button', ActionIconProps>) {
   return (

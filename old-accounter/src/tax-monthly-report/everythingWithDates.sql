@@ -5,10 +5,10 @@ FROM
 WHERE
   account_number IN ('2733', '61066')
   AND event_date::TEXT::date >= (
-    date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD'))
+    DATE_TRUNC('month', TO_DATE('2021-04-01', 'YYYY-MM-DD'))
   )::date
   AND event_date::TEXT::date <= (
-    date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
+    DATE_TRUNC('month', TO_DATE('2021-04-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
   )::date
   AND vat > 0;
 
@@ -18,8 +18,8 @@ FROM
   accounter_schema.all_transactions
 WHERE
   account_number IN ('466803', '1074', '1082')
-  AND event_date >= date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD'))
-  AND event_date <= date_trunc('month', to_date('2021-04-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
+  AND event_date >= DATE_TRUNC('month', TO_DATE('2021-04-01', 'YYYY-MM-DD'))
+  AND event_date <= DATE_TRUNC('month', TO_DATE('2021-04-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
   AND vat > 0;
 
 SELECT
@@ -52,9 +52,9 @@ WHERE
       AND full_payment_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-07-01')::date
     )
     OR (
-      event_date::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+      event_date::TEXT::date >= DATE_TRUNC('month', '2020-07-01'::date)
       AND event_date::TEXT::date <= (
-        date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+        DATE_TRUNC('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
       )::date
     )
   )
@@ -131,15 +131,15 @@ WHERE
       full_payment_date IS NULL
       AND (
         full_purchase_date IS NULL
-        AND full_purchase_date_outbound::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+        AND full_purchase_date_outbound::TEXT::date >= DATE_TRUNC('month', '2020-07-01'::date)
         AND full_purchase_date_outbound::TEXT::date <= (
-          date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+          DATE_TRUNC('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
         )::date
       )
       OR full_purchase_date_outbound IS NULL
-      AND full_purchase_date::TEXT::date >= date_trunc('month', '2020-07-01'::date)
+      AND full_purchase_date::TEXT::date >= DATE_TRUNC('month', '2020-07-01'::date)
       AND full_purchase_date::TEXT::date <= (
-        date_trunc('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+        DATE_TRUNC('month', '2020-07-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
       )::date
     )
   )

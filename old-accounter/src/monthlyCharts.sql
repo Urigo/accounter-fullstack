@@ -8,7 +8,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -20,7 +20,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -32,7 +32,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -146,10 +146,10 @@ WITH
   )
 SELECT
   --  month
-  to_char(event_date, 'YYYY/mm') AS date,
+  TO_CHAR(event_date, 'YYYY/mm') AS date,
   --  year
   -- to_char(event_date, 'YYYY') as date,
-  sum(
+  SUM(
     CASE
       WHEN (
         event_amount > 0
@@ -164,7 +164,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS business_income,
-  sum(
+  SUM(
     CASE
       WHEN (
         event_amount < 0
@@ -179,7 +179,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS business_expenses,
-  sum(
+  SUM(
     CASE
       WHEN (
         personal_category = 'business'
@@ -193,7 +193,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS overall_business_profit,
-  sum(
+  SUM(
     CASE
       WHEN (
         personal_category = 'business'
@@ -207,7 +207,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS business_profit_share,
-  sum(
+  SUM(
     CASE
       WHEN (
         event_amount < 0
@@ -216,7 +216,7 @@ SELECT
       ELSE 0
     END
   )::float4 AS private_expenses,
-  sum(
+  SUM(
     CASE
       WHEN personal_category <> 'business' THEN event_amount_in_usd_with_vat_if_exists
       ELSE 0

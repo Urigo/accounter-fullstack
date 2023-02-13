@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { ActionIcon, Table, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { ActionIcon, Table, Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
@@ -172,8 +172,7 @@ export const TrialBalanceReport = () => {
             0,
           ) * -1,
         sum: accounts.reduce(
-          (total, account) =>
-            total + (account.transactionsSum?.total.raw ? account.transactionsSum.total.raw : 0),
+          (total, account) => total + (account.transactionsSum?.total.raw || 0),
           0,
         ),
       };

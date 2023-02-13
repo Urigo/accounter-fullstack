@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon, Tooltip } from '@mantine/core';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info';
