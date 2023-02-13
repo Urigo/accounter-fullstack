@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { FinancialEntityOldDocument } from '../../../gql/graphql';
-import { businesses } from '../../../helpers';
+import { businesses, DEFAULT_FINANCIAL_ENTITY_ID } from '../../../helpers';
 import { useSql } from '../../../hooks/use-sql';
 import type { TransactionColumn, TransactionType } from '../../../models/types';
 import { AccounterBasicTable } from '../../common';
@@ -32,7 +32,7 @@ export const AllTransactionsString = () => {
       ? businesses['Software Products Guilda Ltd.']
       : financialEntity === 'UriLTD'
       ? businesses['Uri Goldshtein LTD']
-      : '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+      : DEFAULT_FINANCIAL_ENTITY_ID;
 
   const [{ data }] = useQuery({
     query: FinancialEntityOldDocument,

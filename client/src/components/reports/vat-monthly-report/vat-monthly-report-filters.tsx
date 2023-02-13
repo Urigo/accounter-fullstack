@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
-import { format, lastDayOfMonth } from 'date-fns';
-import equal from 'deep-equal';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
-import { useQuery } from 'urql';
+import { AllFinancialEntitiesDocument, VatReportFilter } from '../../../gql/graphql';
+import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TimelessDateString } from '../../../helpers';
+import { useUrlQuery } from '../../../hooks/use-url-query';
+import { PopUpModal } from '../../common';
 import { ActionIcon, Select } from '@mantine/core';
 import { DatePicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument, VatReportFilter } from '../../../gql/graphql';
-import { isObjectEmpty, TimelessDateString } from '../../../helpers';
-import { useUrlQuery } from '../../../hooks/use-url-query';
-import { PopUpModal } from '../../common';
+import { format, lastDayOfMonth } from 'date-fns';
+import equal from 'deep-equal';
+import { useEffect, useState } from 'react';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Filter } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 
 interface VatMonthlyReportFilterFormProps {
   filter: VatReportFilter;
@@ -130,7 +130,7 @@ export function VatMonthlyReportFilter({ filter, setFilter }: VatMonthlyReportFi
 
   function onSetFilter(newFilter?: VatReportFilter) {
     newFilter ||= {
-      financialEntityId: '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+      financialEntityId: DEFAULT_FINANCIAL_ENTITY_ID,
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
       toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
     };
