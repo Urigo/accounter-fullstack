@@ -4,7 +4,7 @@
  * @returns {boolean}
  */
 export const onlyDigitsValidator = (value: string): boolean => {
-  return Boolean(value) && /^\d+$/.test(value);
+  return !!value && /^\d+$/.test(value);
 };
 
 /**

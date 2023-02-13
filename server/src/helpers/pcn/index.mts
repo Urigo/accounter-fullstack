@@ -1,10 +1,10 @@
+import { format } from 'date-fns';
 import { pcnGenerator } from '@accounter-toolkit/pcn874-generator';
 import {
   EntryType,
   Header,
   Transaction,
 } from '@accounter-toolkit/pcn874-generator/typings/types.js';
-import { format } from 'date-fns';
 import { DecoratedVatReportRecord } from '../vat-report.mjs';
 import { yearMonthValidator } from './validators/dates.js';
 import { idValidator } from './validators/strings.js';
@@ -130,7 +130,7 @@ const transformTransactions = (
       console.debug(`Transaction ${t.id} has no tax_invoice_date. Skipping it.`);
       continue;
     }
-    const amountToUse = t.tax_invoice_amount ? t.tax_invoice_amount : t.event_amount;
+    const amountToUse = t.tax_invoice_amount || t.event_amount;
     let entryType = EntryType.INPUT_REGULAR;
     if (Number(amountToUse) > 0) {
       if (Number(t.vatAfterDeduction) > 0) {

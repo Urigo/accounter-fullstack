@@ -1,6 +1,6 @@
+import DataLoader from 'dataloader';
 import pgQuery, { TaggedQuery } from '@pgtyped/query';
 import { IDatabaseConnection } from '@pgtyped/query/lib/tag.js';
-import DataLoader from 'dataloader';
 import {
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
@@ -402,10 +402,10 @@ const getAdjustedChargesByFilters: Pick<
   'run'
 > = {
   run(params: IGetAdjustedChargesByFiltersParams, dbConnection: IDatabaseConnection) {
-    const isBusinesses = Boolean(params?.businesses?.length);
-    const isFinancialEntityIds = Boolean(params?.financialEntityIds?.length);
-    const isIDs = Boolean(params?.IDs?.length);
-    const isNotBusinesses = Boolean(params?.notBusinesses?.length);
+    const isBusinesses = !!params?.businesses?.length;
+    const isFinancialEntityIds = !!params?.financialEntityIds?.length;
+    const isIDs = !!params?.IDs?.length;
+    const isNotBusinesses = !!params?.notBusinesses?.length;
 
     const defaults = {
       asc: false,
@@ -511,8 +511,8 @@ const validateChargesAdjusted: Pick<
   'run'
 > = {
   run(params: IValidateChargesAdjustedParams, dbConnection: IDatabaseConnection) {
-    const isIDs = Boolean(params?.IDs?.length);
-    const isFinancialEntityIds = Boolean(params?.financialEntityIds?.length);
+    const isIDs = !!params?.IDs?.length;
+    const isFinancialEntityIds = !!params?.financialEntityIds?.length;
 
     const fullParams: IValidateChargesParams = {
       isIDs: isIDs ? 1 : 0,
@@ -533,7 +533,7 @@ export {
 };
 
 async function batchValidateChargesByIds(ids: readonly string[]) {
-  const isIDs = Boolean(ids?.length);
+  const isIDs = !!ids?.length;
   const charges = await validateCharges.run(
     {
       isIDs: 1,

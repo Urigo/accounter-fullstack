@@ -191,7 +191,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value ? '' : field.value}
+              value={field.value || ''}
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -210,7 +210,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <TextInput
               {...field}
-              value={!field.value ? '' : field.value}
+              value={field.value || ''}
               error={fieldState.error?.message}
               label="To Date"
             />

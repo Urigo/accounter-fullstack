@@ -7,24 +7,24 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
 
   const invoicesCount = Number(charge.invoices_count) || 0;
   const receiptsCount = Number(charge.receipts_count) || 0;
-  const isForeignExpense = Boolean(charge.is_foreign && Number(charge.event_amount) < 0);
+  const isForeignExpense = !!charge.is_foreign && Number(charge.event_amount) < 0;
   const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
   const documentsAreFine = charge.no_invoices || invoicesCount > 0 || canSettleWithReceipt;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
 
-  const businessIsFine = Boolean(charge.financial_entity);
+  const businessIsFine = !!charge.financial_entity;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
 
-  const descriptionIsFine = Boolean(charge.user_description?.trim());
+  const descriptionIsFine = !!charge.user_description?.trim();
   if (!descriptionIsFine) {
     missingInfo.push(MissingChargeInfo.TransactionDescription);
   }
 
-  const tagsAreFine = Boolean(charge.personal_category?.trim());
+  const tagsAreFine = !!charge.personal_category?.trim();
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }
