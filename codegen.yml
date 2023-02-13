@@ -37,7 +37,7 @@ generates:
         VatReportRecord: ../helpers/vat-report.mjs#DecoratedVatReportRecord
     plugins:
       - add:
-          content: "import { TimelessDateString } from '../scalars'"
+          content: "import { TimelessDateString } from '../models/index.mjs'"
       - 'typescript'
       - 'typescript-resolvers'
   client/src/gql/:
