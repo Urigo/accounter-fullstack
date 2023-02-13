@@ -1,10 +1,10 @@
 WITH
   times_table AS (
     SELECT
-      date_trunc(
+      DATE_TRUNC(
         'day',
-        generate_series(
-          min(exchange_date) --'2018-02-15'::timestamp
+        GENERATE_SERIES(
+          MIN(exchange_date) --'2018-02-15'::timestamp
 ,
           (
             SELECT
@@ -32,7 +32,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -44,7 +44,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -56,7 +56,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -231,7 +231,7 @@ WITH
     WHERE
       account_type = 'creditcard'
       AND account_number = 6264
-      AND debit_date > now()
+      AND debit_date > NOW()
   ),
   this_month_business_creditcard AS (
     SELECT
@@ -247,7 +247,7 @@ WITH
     WHERE
       account_type = 'creditcard'
       AND account_number = 2733
-      AND debit_date > now()
+      AND debit_date > NOW()
     ORDER BY
       event_date,
       event_number
@@ -736,7 +736,7 @@ WITH
         FROM
           ils_business_balance t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           event_date DESC
         LIMIT
@@ -748,7 +748,7 @@ WITH
         FROM
           ils_personal_balance t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           event_date DESC
         LIMIT
@@ -760,7 +760,7 @@ WITH
         FROM
           usd_business_balance t1
         WHERE
-          date_trunc('day', t1.executing_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
@@ -772,7 +772,7 @@ WITH
         FROM
           usd_personal_balance t1
         WHERE
-          date_trunc('day', t1.executing_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
@@ -784,7 +784,7 @@ WITH
         FROM
           euro_business_balance t1
         WHERE
-          date_trunc('day', t1.executing_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
@@ -796,7 +796,7 @@ WITH
         FROM
           euro_personal_balance t1
         WHERE
-          date_trunc('day', t1.executing_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.executing_date)::date <= times_table.dt
         ORDER BY
           executing_date DESC
         LIMIT
@@ -808,7 +808,7 @@ WITH
         FROM
           usd_interactive_brokers_personal_balance t1
         WHERE
-          date_trunc('day', t1.date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.date)::date <= times_table.dt
         ORDER BY
           date DESC
         LIMIT
@@ -820,7 +820,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -832,7 +832,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -844,7 +844,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -856,7 +856,7 @@ WITH
         FROM
           accounter_schema.dotan_debt t1
         WHERE
-          date_trunc('day', t1.debt_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.debt_date)::date <= times_table.dt
         ORDER BY
           t1.debt_date DESC
         LIMIT
@@ -868,7 +868,7 @@ WITH
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -884,7 +884,7 @@ WITH
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -900,7 +900,7 @@ WITH
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -916,7 +916,7 @@ WITH
         FROM
           new_business_account_transactions t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -932,7 +932,7 @@ WITH
         FROM
           dotan_dept t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC,
@@ -948,7 +948,7 @@ WITH
         FROM
           current_vat_status t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.bank_reference DESC
@@ -961,7 +961,7 @@ WITH
         FROM
           this_month_private_creditcard t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC
@@ -974,7 +974,7 @@ WITH
         FROM
           this_month_business_creditcard t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           t1.event_number DESC
@@ -987,7 +987,7 @@ WITH
         FROM
           future_balance t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           user_description DESC
@@ -1000,7 +1000,7 @@ WITH
         FROM
           dotan_future_dept t1
         WHERE
-          date_trunc('day', t1.event_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.event_date)::date <= times_table.dt
         ORDER BY
           t1.event_date DESC,
           user_description DESC

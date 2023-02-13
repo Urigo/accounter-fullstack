@@ -158,7 +158,7 @@ SELECT
   hashavshevet_id,
   current_balance,
   tax_invoice_file,
-  concat(
+  CONCAT(
     activity_description,
     ' ',
     COALESCE(beneficiary_details_data_party_name, ''),
@@ -207,7 +207,7 @@ SELECT
   hashavshevet_id,
   current_balance,
   tax_invoice_file,
-  concat(
+  CONCAT(
     activity_description,
     ' ',
     COALESCE(event_details, ''),
@@ -254,7 +254,7 @@ SELECT
   hashavshevet_id,
   current_balance,
   tax_invoice_file,
-  concat(
+  CONCAT(
     activity_description,
     ' ',
     COALESCE(event_details, ''),

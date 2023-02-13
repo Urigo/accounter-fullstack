@@ -3,7 +3,7 @@ SELECT
 FROM
   get_unified_tax_report_of_month ('2020-01-01', '2020-11-01')
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id,
   details,
   debit_account_1,
@@ -19,7 +19,7 @@ SELECT
 FROM
   get_unified_tax_report_of_month ('2020-01-01', '2020-11-01')
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id,
   details,
   debit_account_1,
@@ -31,10 +31,10 @@ FROM
   input_salary ('a2da2803-26ac-4b3e-8014-7f300aaaa0f3');
 
 DROP FUNCTION
-  report_to_hashavshevet_by_month (salary_transaction uuid);
+  report_to_hashavshevet_by_month (salary_transaction UUID);
 
 CREATE
-OR REPLACE FUNCTION input_salary (salary_transaction_id uuid) RETURNS TABLE (
+OR REPLACE FUNCTION input_salary (salary_transaction_id UUID) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
@@ -55,10 +55,10 @@ OR REPLACE FUNCTION input_salary (salary_transaction_id uuid) RETURNS TABLE (
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   proforma_invoice_file TEXT,
-  id uuid,
+  id UUID,
   reviewed BOOLEAN,
   hashavshevet_id INT
 ) LANGUAGE SQL AS $$

@@ -1,111 +1,111 @@
 SELECT
-  docs.date as tax_invoice_date,
-  docs.serial_number as tax_invoice_number,
-  docs.total_amount as tax_invoice_amount,
-  docs.currency_code as currency_code,
-  docs.image_url as proforma_invoice_file,
+  docs.date AS tax_invoice_date,
+  docs.serial_number AS tax_invoice_number,
+  docs.total_amount AS tax_invoice_amount,
+  docs.currency_code AS currency_code,
+  docs.image_url AS proforma_invoice_file,
   transactions.* --, docs.*
 FROM
   (
-    select
+    SELECT
       *
-    from
+    FROM
       accounter_schema.all_transactions
-    where
-      account_number in (
+    WHERE
+      account_number IN (
         (
-          select
+          SELECT
             account_number
-          from
+          FROM
             accounter_schema.financial_accounts
-          where
-            owner = (
-              select
+          WHERE
+            OWNER = (
+              SELECT
                 id
-              from
+              FROM
                 accounter_schema.businesses
-              where
-                name = $$Software Products Guilda Ltd.$$
+              WHERE
+                NAME = $$Software Products Guilda Ltd.$$
             )
         )
       )
-      and -- (vat >= 0 or vat is null) and event_amount > 0
+      AND -- (vat >= 0 or vat is null) and event_amount > 0
       (
         vat < 0
-        or vat is null
+        OR vat IS NULL
       )
       AND financial_entity <> 'Social Security Deductions'
       AND financial_entity <> 'Tax'
       AND financial_entity <> 'VAT'
       AND financial_entity <> 'Dotan Simha Dividend'
-  ) as "transactions"
-  inner join (
-    select
+  ) AS "transactions"
+  INNER JOIN (
+    SELECT
       *
-    from
+    FROM
       accounter_schema.documents
-    where
-      date >= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD'))
-      AND date <= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
-  ) as "docs" on transactions.id = docs.charge_id
-order by
+    WHERE
+      date >= DATE_TRUNC('month', TO_DATE('2022-06-01', 'YYYY-MM-DD'))
+      AND date <= DATE_TRUNC('month', TO_DATE('2022-06-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
+  ) AS "docs" ON transactions.id = docs.charge_id
+ORDER BY
   docs.date;
 
 SELECT
-  docs.date as tax_invoice_date,
-  docs.serial_number as tax_invoice_number,
-  docs.total_amount as tax_invoice_amount,
-  docs.currency_code as currency_code,
-  docs.image_url as proforma_invoice_file,
-  transactions.tax_category as tax_category,
-  transactions.event_date as event_date,
-  transactions.debit_date as debit_date,
-  transactions.event_amount as event_amount,
-  transactions.financial_entity as financial_entity,
-  transactions.vat as vat,
-  transactions.user_description as user_description,
-  transactions.bank_description as bank_description,
-  transactions.withholding_tax as withholding_tax,
-  transactions.interest as interest,
-  transactions.id as id,
-  transactions.detailed_bank_description as detailed_bank_description
-from
+  docs.date AS tax_invoice_date,
+  docs.serial_number AS tax_invoice_number,
+  docs.total_amount AS tax_invoice_amount,
+  docs.currency_code AS currency_code,
+  docs.image_url AS proforma_invoice_file,
+  transactions.tax_category AS tax_category,
+  transactions.event_date AS event_date,
+  transactions.debit_date AS debit_date,
+  transactions.event_amount AS event_amount,
+  transactions.financial_entity AS financial_entity,
+  transactions.vat AS vat,
+  transactions.user_description AS user_description,
+  transactions.bank_description AS bank_description,
+  transactions.withholding_tax AS withholding_tax,
+  transactions.interest AS interest,
+  transactions.id AS id,
+  transactions.detailed_bank_description AS detailed_bank_description
+FROM
   (
-    select
+    SELECT
       *
-    from
+    FROM
       accounter_schema.all_transactions
-    where
-      account_number in (
+    WHERE
+      account_number IN (
         (
-          select
+          SELECT
             account_number
-          from
+          FROM
             accounter_schema.financial_accounts
-          where
-            owner = (
-              select
+          WHERE
+            OWNER = (
+              SELECT
                 id
-              from
+              FROM
                 accounter_schema.businesses
-              where
-                name = $$Software Products Guilda Ltd.$$
+              WHERE
+                NAME = $$Software Products Guilda Ltd.$$
             )
         )
       )
-      and event_amount > 0
-      and is_conversion is false
-  ) as "transactions"
-  inner join (
-    select
+      AND event_amount > 0
+      AND is_conversion IS FALSE
+  ) AS "transactions"
+  INNER JOIN (
+    SELECT
       *
-    from
+    FROM
       accounter_schema.documents
-    where
-      date >= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD'))
-      AND date <= date_trunc('month', to_date('2022-06-01', 'YYYY-MM-DD')) + interval '1 month' - interval '1 day'
-  ) as "docs" on transactions.id = docs.charge_id
-order by
+    WHERE
+      date >= DATE_TRUNC('month', TO_DATE('2022-06-01', 'YYYY-MM-DD'))
+      AND date <= DATE_TRUNC('month', TO_DATE('2022-06-01', 'YYYY-MM-DD')) + INTERVAL '1 month' - INTERVAL '1 day'
+  ) AS "docs" ON transactions.id = docs.charge_id
+ORDER BY
   event_date;
 
 INSERT INTO
@@ -113,7 +113,7 @@ INSERT INTO
     id,
     image_url,
     file_url,
-    type
+    TYPE
 ,
       created_at,
       modified_at,
@@ -141,9 +141,9 @@ VALUES
     'ILS'::currency,
     -1134.79,
     '93ea590a-adf3-4eab-90ca-bd5305308f33',
-    null,
+    NULL,
     'Yahel Mor',
-    false
+    FALSE
   );
 
 SELECT
@@ -152,10 +152,10 @@ FROM
   accounter_schema.ledger
 WHERE
   hashavshevet_id IS NULL
-  AND to_date(date_3, 'DD/MM/YYYY') >= to_date('30/04/2021', 'DD/MM/YYYY')
+  AND TO_DATE(date_3, 'DD/MM/YYYY') >= TO_DATE('30/04/2021', 'DD/MM/YYYY')
   AND business = 'a1f66c23-cea3-48a8-9a4b-0b4a0422851a'
 ORDER BY
-  (to_date(date_3, 'DD/MM/YYYY')),
+  (TO_DATE(date_3, 'DD/MM/YYYY')),
   original_id,
   invoice_date;
 
@@ -174,13 +174,13 @@ FROM
   accounter_schema.ledger hashavshevet
 WHERE
   origin = 'manual_salary'
-  AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-07-01'::date);
+  AND TO_DATE(hashavshevet.invoice_date, 'DD/MM/YYYY') >= DATE_TRUNC('month', '2020-07-01'::date);
 
 UPDATE
   accounter_schema.isracard_creditcard_transactions
 SET
-  full_purchase_date_outbound = to_char(
-    to_date(full_purchase_date_outbound, 'YYYY-MM-DD'),
+  full_purchase_date_outbound = TO_CHAR(
+    TO_DATE(full_purchase_date_outbound, 'YYYY-MM-DD'),
     'DD/MM/YYYY'
   )
 WHERE
@@ -189,8 +189,8 @@ WHERE
 UPDATE
   accounter_schema.isracard_creditcard_transactions
 SET
-  full_purchase_date = to_char(
-    to_date(full_purchase_date, 'YYYY-MM-DD'),
+  full_purchase_date = TO_CHAR(
+    TO_DATE(full_purchase_date, 'YYYY-MM-DD'),
     'DD/MM/YYYY'
   )
 WHERE
@@ -199,22 +199,22 @@ WHERE
 UPDATE
   accounter_schema.isracard_creditcard_transactions
 SET
-  full_payment_date = to_char(
-    to_date(full_payment_date, 'YYYY-MM-DD'),
+  full_payment_date = TO_CHAR(
+    TO_DATE(full_payment_date, 'YYYY-MM-DD'),
     'DD/MM/YYYY'
   )
 WHERE
   full_payment_date IS NOT NULL;
 
 SELECT
-  count(*)
+  COUNT(*)
 FROM
   accounter_schema.poalim_ils_account_transactions
 WHERE
   poalim_ils_account_transactions.hashavshevet_id IS NOT NULL;
 
 SELECT
-  count(*)
+  COUNT(*)
 FROM
   accounter_schema.all_transactions
 WHERE
@@ -222,8 +222,8 @@ WHERE
   AND account_type = 'checking_ils';
 
 SELECT
-  to_char(
-    to_date(full_purchase_date_outbound, 'YYYY-MM-DD'),
+  TO_CHAR(
+    TO_DATE(full_purchase_date_outbound, 'YYYY-MM-DD'),
     'DD/MM/YYYY'
   )
 FROM
@@ -241,9 +241,9 @@ FROM
 WHERE
   (
     hashavshevet.original_id IS NULL
-    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') >= date_trunc('month', '2020-09-01'::date)
-    AND to_date(hashavshevet.invoice_date, 'DD/MM/YYYY') <= (
-      date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+    AND TO_DATE(hashavshevet.invoice_date, 'DD/MM/YYYY') >= DATE_TRUNC('month', '2020-09-01'::date)
+    AND TO_DATE(hashavshevet.invoice_date, 'DD/MM/YYYY') <= (
+      DATE_TRUNC('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
     )::date
   )
   OR (
@@ -259,9 +259,9 @@ WHERE
           OR bank.financial_entity IS NULL
         )
         AND bank.account_type != 'creditcard'
-        AND bank.event_date::TEXT::date >= date_trunc('month', '2020-09-01'::date)
+        AND bank.event_date::TEXT::date >= DATE_TRUNC('month', '2020-09-01'::date)
         AND bank.event_date::TEXT::date <= (
-          date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+          DATE_TRUNC('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
         )::date
         OR bank.event_date IS NULL
       )
@@ -275,9 +275,9 @@ WHERE
           AND bank.debit_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-09-01')::date
           OR (
             bank.debit_date IS NULL
-            AND bank.event_date::TEXT::date >= date_trunc('month', '2020-09-01'::date)
+            AND bank.event_date::TEXT::date >= DATE_TRUNC('month', '2020-09-01'::date)
             AND bank.event_date::TEXT::date <= (
-              date_trunc('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+              DATE_TRUNC('month', '2020-09-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
             )::date
           )
         )
@@ -285,7 +285,7 @@ WHERE
     )
   )
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id,
   details,
   debit_account_1;
@@ -329,9 +329,9 @@ FROM
   accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 WHERE
   hashavshevet_id IS NULL
-  AND to_date(date_3, 'DD/MM/YYYY') >= to_date('01/10/2020', 'DD/MM/YYYY')
+  AND TO_DATE(date_3, 'DD/MM/YYYY') >= TO_DATE('01/10/2020', 'DD/MM/YYYY')
 ORDER BY
-  (to_date(date_3, 'DD/MM/YYYY'));
+  (TO_DATE(date_3, 'DD/MM/YYYY'));
 
 DROP FUNCTION
   report_to_hashavshevet_by_month (month_report VARCHAR);
@@ -358,10 +358,10 @@ OR REPLACE FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR) RETUR
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   proforma_invoice_file TEXT,
-  id uuid,
+  id UUID,
   reviewed BOOLEAN,
   hashavshevet_id INT
 ) LANGUAGE SQL AS $$
@@ -401,7 +401,7 @@ FROM
     '2021-05-01'
   )
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY') DESC,
+  TO_DATE(date_3, 'DD/MM/YYYY') DESC,
   original_id,
   details,
   debit_account_1,
@@ -436,10 +436,10 @@ OR REPLACE FUNCTION get_unified_tax_report_of_month (
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   proforma_invoice_file TEXT,
-  id uuid,
+  id UUID,
   reviewed BOOLEAN,
   hashavshevet_id INT
 ) LANGUAGE SQL AS $$
@@ -643,7 +643,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-03-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -653,7 +653,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-04-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -663,7 +663,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-05-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -673,7 +673,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-06-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -683,7 +683,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-07-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -693,7 +693,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-08-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -703,7 +703,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-09-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -752,7 +752,7 @@ FROM
     )
   ) t2
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id;
 
 -- TODO: Reuse logic of getting business month from the initial query
@@ -776,9 +776,9 @@ WITH
             OR financial_entity IS NULL
           )
           AND account_type != 'creditcard'
-          AND event_date::TEXT::date >= date_trunc('month', '2020-08-01'::date)
+          AND event_date::TEXT::date >= DATE_TRUNC('month', '2020-08-01'::date)
           AND event_date::TEXT::date <= (
-            date_trunc('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+            DATE_TRUNC('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
           )::date
           OR event_date IS NULL
         )
@@ -792,9 +792,9 @@ WITH
             AND debit_date::TEXT::date > get_creditcard_charge_date_former_month ('2020-08-01')::date
             OR (
               debit_date IS NULL
-              AND event_date::TEXT::date >= date_trunc('month', '2020-08-01'::date)
+              AND event_date::TEXT::date >= DATE_TRUNC('month', '2020-08-01'::date)
               AND event_date::TEXT::date <= (
-                date_trunc('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
+                DATE_TRUNC('month', '2020-08-01'::date) + INTERVAL '1 month' - INTERVAL '1 day'
               )::date
             )
           )
@@ -804,13 +804,13 @@ WITH
 SELECT
   (
     (
-      sum(
+      SUM(
         formatted_invoice_amount_in_ils_with_vat_if_exists::FLOAT
       ) / 100
     ) * 3.5
   )::INT advance,
   (
-    sum(
+    SUM(
       formatted_invoice_amount_in_ils_with_vat_if_exists::FLOAT
     )
   )::INT total
@@ -894,7 +894,7 @@ OR REPLACE FUNCTION get_tax_report_of_month (month_input VARCHAR) RETURNS TABLE 
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   proforma_invoice_file TEXT
 ) LANGUAGE SQL AS $$
@@ -1544,8 +1544,8 @@ FROM
   accounter_schema.ledger
 WHERE
   hashavshevet_id IS NULL
-  AND to_date(date_3, 'DD/MM/YYYY') > to_date('30/11/2020', 'DD/MM/YYYY')
+  AND TO_DATE(date_3, 'DD/MM/YYYY') > TO_DATE('30/11/2020', 'DD/MM/YYYY')
 ORDER BY
-  (to_date(date_3, 'DD/MM/YYYY')),
+  (TO_DATE(date_3, 'DD/MM/YYYY')),
   original_id,
   invoice_date;

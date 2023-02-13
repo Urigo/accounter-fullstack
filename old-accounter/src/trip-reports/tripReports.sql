@@ -186,7 +186,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-03-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -196,7 +196,7 @@ FROM
       FROM
         get_tax_report_of_month ('2020-04-01')
       ORDER BY
-        to_date(date_3, 'DD/MM/YYYY'),
+        TO_DATE(date_3, 'DD/MM/YYYY'),
         original_id
     )
     UNION ALL
@@ -214,7 +214,7 @@ FROM
     )
   ) t2
 ORDER BY
-  to_date(date_3, 'DD/MM/YYYY'),
+  TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id;
 
 SELECT
@@ -261,7 +261,7 @@ OR REPLACE FUNCTION trip_report (
   movement_type VARCHAR,
   value_date VARCHAR,
   date_3 VARCHAR,
-  original_id uuid,
+  original_id UUID,
   origin TEXT,
   invoice_image TEXT
 ) LANGUAGE SQL AS $$

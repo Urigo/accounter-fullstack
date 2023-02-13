@@ -18,7 +18,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -30,7 +30,7 @@ WITH
         FROM
           accounter_schema.exchange_rates t1
         WHERE
-          date_trunc('day', t1.exchange_date)::date <= times_table.dt
+          DATE_TRUNC('day', t1.exchange_date)::date <= times_table.dt
         ORDER BY
           t1.exchange_date DESC
         LIMIT
@@ -106,9 +106,9 @@ SELECT
       ELSE financial_entity
     END
   ) AS formatted_financial_entity,
-  to_char(event_date, 'DD/MM/YYYY') AS formatted_event_date,
-  to_char(tax_invoice_date, 'DD/MM/YYYY') AS formatted_tax_invoice_date,
-  to_char(debit_date, 'DD/MM/YYYY') AS formatted_debit_date,
+  TO_CHAR(event_date, 'DD/MM/YYYY') AS formatted_event_date,
+  TO_CHAR(tax_invoice_date, 'DD/MM/YYYY') AS formatted_tax_invoice_date,
+  TO_CHAR(debit_date, 'DD/MM/YYYY') AS formatted_debit_date,
   (
     CASE
       WHEN tax_category = 'פלאפון' THEN ((vat::FLOAT / 3) * 2)
@@ -179,7 +179,7 @@ SELECT
       ELSE -99999999999
     END
   ) AS event_amount_in_usd_with_vat_if_exists,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -208,7 +208,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -237,7 +237,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils_with_interest,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -254,7 +254,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_invoice_amount_if_exists,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -336,7 +336,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_invoice_amount_in_ils_with_vat_if_exists,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -418,7 +418,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_invoice_amount_in_ils_if_exists,
-  to_char(
+  TO_CHAR(
     float8 (
       ABS(
         (
@@ -447,7 +447,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_event_amount_in_ils_with_vat_if_exist,
-  to_char(
+  TO_CHAR(
     float8 (
       CASE
         WHEN currency_code != 'ILS' THEN ABS(event_amount) --                 ELSE NULL
@@ -455,7 +455,7 @@ SELECT
     ),
     'FM999999999.00'
   ) AS formatted_foreign_amount_if_exist,
-  to_char(
+  TO_CHAR(
     float8 (
       CASE
         WHEN currency_code != 'ILS' THEN ABS(
