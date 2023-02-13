@@ -13,8 +13,8 @@ import {
   IUpdateDocumentQuery,
 } from '../__generated__/documents.types.mjs';
 import { Optional } from '../helpers/misc.mjs';
+import { TimelessDateString } from '../models/index.mjs';
 import { pool } from '../providers/db.mjs';
-import { TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
 
 const { sql } = pgQuery;
 

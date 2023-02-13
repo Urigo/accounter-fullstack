@@ -16,6 +16,7 @@ import {
   parseDate,
 } from '../../helpers/hashavshevet.mjs';
 import { buildLedgerEntries, decorateCharge } from '../../helpers/misc.mjs';
+import { TimelessDateString } from '../../models/index.mjs';
 import { getChargeByIdLoader, getConversionOtherSide } from '../../providers/charges.mjs';
 import { pool } from '../../providers/db.mjs';
 import { getDocumentsByChargeIdLoader } from '../../providers/documents.mjs';
@@ -33,7 +34,6 @@ import {
   insertLedgerRecords,
   updateLedgerRecord,
 } from '../../providers/ledger-records.mjs';
-import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import { GraphQLError } from 'graphql';
 
 export const ledgerResolvers: Resolvers = {

@@ -1,4 +1,4 @@
-import { Resolvers } from '../__generated__/types.mjs';
+import { Resolvers } from '../../__generated__/types.mjs';
 
 export const fetchEmailDocument: NonNullable<Resolvers['Mutation']>['fetchEmailDocument'] = (
   _,

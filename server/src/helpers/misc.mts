@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import type { IGetChargesByIdsResult } from '../__generated__/charges.types.mjs';
+import { TimelessDateString } from '../models/index.mjs';
 import { getChargeExchangeRates } from '../providers/exchange.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
-import { TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.mjs';
 import { getILSForDate } from './exchange.mjs';
 

@@ -2,7 +2,7 @@ import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../../__gene
 import { BusinessTransaction, Currency, Resolvers } from '../../__generated__/types.mjs';
 import { formatFinancialAmount } from '../../helpers/amount.mjs';
 import { isTimelessDateString } from '../../helpers/misc.mjs';
-import { RawBusinessTransactionsSum } from '../../models/index.mjs';
+import { RawBusinessTransactionsSum, TimelessDateString } from '../../models/index.mjs';
 import {
   getBusinessTransactionsFromLedgerRecords,
   getBusinessTransactionsSumFromLedgerRecords,
@@ -11,7 +11,6 @@ import {
 import { pool } from '../../providers/db.mjs';
 import { getAccountCardsByKeysLoader } from '../../providers/hash-account-cards.mjs';
 import { getSortCodesByIdLoader } from '../../providers/hash-sort-codes.mjs';
-import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 

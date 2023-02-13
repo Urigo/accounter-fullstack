@@ -9,8 +9,8 @@ import {
   Resolver,
 } from '../../__generated__/types.mjs';
 import { formatFinancialAmount } from '../../helpers/amount.mjs';
+import { TimelessDateString } from '../../models/index.mjs';
 import { getChargeByIdLoader } from '../../providers/charges.mjs';
-import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import { format } from 'date-fns';
 
 export const documentType: Resolver<

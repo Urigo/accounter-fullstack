@@ -11,6 +11,7 @@ import {
   mergeChargeDoc,
   RawVatReportRecord,
 } from '../../helpers/vat-report.mjs';
+import { TimelessDateString } from '../../models/index.mjs';
 import { getChargesByFilters, validateCharges } from '../../providers/charges.mjs';
 import { pool } from '../../providers/db.mjs';
 import { getDocumentsByFilters } from '../../providers/documents.mjs';
@@ -21,7 +22,6 @@ import {
 } from '../../providers/financial-entities.mjs';
 import { getHashavshevetBusinessIndexesLoader } from '../../providers/hash-business-indexes.mjs';
 import { getTaxTransactionsLoader } from '../../providers/tax-transactions.mjs';
-import { TimelessDateString } from '../scalars/timeless-date.mjs';
 
 async function getVatRecords(
   fromDate?: TimelessDateString,

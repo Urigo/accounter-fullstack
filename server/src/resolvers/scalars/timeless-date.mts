@@ -1,15 +1,6 @@
+import { TimelessDateString } from '../../models/index.mjs';
 import { format } from 'date-fns';
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
-
-type addZero<T> = T | 0;
-type oneToFour = 1 | 2 | 3 | 4;
-type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;
-type d = addZero<oneToNine>;
-type YYYY = `20${addZero<oneToFour>}${d}`;
-type MM = `0${oneToNine}` | `1${0 | 1 | 2}`;
-type DD = `${0}${oneToNine}` | `${1 | 2}${d}` | `3${0 | 1}`;
-
-export type TimelessDateString = `${YYYY}-${MM}-${DD}`;
 
 /* regex of yyyy-mm-dd  */
 export const TIMELESS_DATE_REGEX =

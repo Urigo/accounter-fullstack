@@ -8,7 +8,7 @@ import {
   IGetLedgerRecordsDistinctBusinessesQuery,
 } from '../__generated__/business-transactions-from-ledger.types.mjs';
 import { isTimelessDateString, Optional } from '../helpers/misc.mjs';
-import { TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
+import { TimelessDateString } from '../models/index.mjs';
 
 const { sql } = pgQuery;
 

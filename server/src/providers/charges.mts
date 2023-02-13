@@ -17,8 +17,8 @@ import {
 import { ValidationData } from '../__generated__/types.mjs';
 import { validateCharge } from '../helpers/charges.mjs';
 import { Optional } from '../helpers/misc.mjs';
+import { TimelessDateString } from '../models/index.mjs';
 import { pool } from '../providers/db.mjs';
-import { TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
 
 const { sql } = pgQuery;
 
