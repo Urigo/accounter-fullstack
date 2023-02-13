@@ -2854,6 +2854,16 @@ ajv@8.11.2, ajv@^8.11.0:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
+ajv@8.12.0:
+  version "8.12.0"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.12.0.tgz#d1a0527323e22f53562c567c00991577dfbe19d1"
+  integrity sha512-sRu1kpcO9yLtYxBKvqfTeh9KzZEwO3STyX1HT+4CaDzC6HpTGYhIhPIzj9XuKU7KYDwnaeh5hcOwjy1QuJzBPA==
+  dependencies:
+    fast-deep-equal "^3.1.1"
+    json-schema-traverse "^1.0.0"
+    require-from-string "^2.0.2"
+    uri-js "^4.2.2"
+
 ajv@^6.10.0, ajv@^6.12.4:
   version "6.12.6"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.12.6.tgz#baf5a62e802b07d977034586f8c3baf5adf26df4"
@@ -7022,12 +7032,12 @@ mkdirp@1.0.4:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-modern-poalim-scraper@0.5.4:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.5.4.tgz#fe08c284ae7d39b1e45c3cad1606c198a9906c6d"
-  integrity sha512-huEfNmalnLvGRdIiCTKAo+qMu2iGhJLhgx7mhRvQjx3QJKJOxdj2OKX7Lh1mpB/ULt9Psz2GkfIrQZpgAhwPJg==
+modern-poalim-scraper@0.6.8:
+  version "0.6.8"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.6.8.tgz#b44ea65cdd9abfedea45a52523ce36a569a44f4e"
+  integrity sha512-u8+TPbhE410y90YiLIg8sQpdq45lEG46OVz3IiFI3JxAo0eEB9IRsB+/uWId8j97kiTppp+GeOB1abm6bqSFkA==
   dependencies:
-    ajv "8.11.2"
+    ajv "8.12.0"
     ajv-formats "2.1.1"
     inquirer "9.1.4"
     node-fetch "3.3.0"
