@@ -31,7 +31,8 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.Tags);
   }
 
-  const vatIsFine = charge.is_foreign || charge.no_invoices || charge.vat == null;
+  const vatIsFine =
+    charge.is_foreign || charge.no_invoices || (charge.vat != null && charge.vat != 0);
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
