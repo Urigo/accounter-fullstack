@@ -17,9 +17,9 @@ import {
   insertDocuments,
   updateDocument,
 } from '../../providers/documents.mjs';
-import { uploadDocument } from '../document-handling.mjs';
-import { fetchEmailDocument } from '../email-handling.mjs';
 import { commonDocumentsFields, commonFinancialDocumentsFields } from './common.mjs';
+import { uploadDocument } from './document-handling.mjs';
+import { fetchEmailDocument } from './email-handling.mjs';
 
 export const documentsResolvers: Resolvers = {
   Query: {

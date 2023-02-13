@@ -21,7 +21,7 @@ import {
 } from '../../providers/financial-entities.mjs';
 import { getHashavshevetBusinessIndexesLoader } from '../../providers/hash-business-indexes.mjs';
 import { getTaxTransactionsLoader } from '../../providers/tax-transactions.mjs';
-import { TimelessDateString } from '../../scalars/timeless-date.mjs';
+import { TimelessDateString } from '../scalars/timeless-date.mjs';
 
 async function getVatRecords(
   fromDate?: TimelessDateString,

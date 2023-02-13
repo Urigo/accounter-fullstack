@@ -10,7 +10,7 @@ import {
 } from '../../__generated__/types.mjs';
 import { formatFinancialAmount } from '../../helpers/amount.mjs';
 import { getChargeByIdLoader } from '../../providers/charges.mjs';
-import { TimelessDateString } from '../../scalars/index.js';
+import { TimelessDateString } from '../scalars/timeless-date.mjs';
 import { format } from 'date-fns';
 
 export const documentType: Resolver<

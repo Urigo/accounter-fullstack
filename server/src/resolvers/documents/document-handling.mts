@@ -2,13 +2,13 @@ import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
 import {
   IGetAllDocumentsResult,
   IInsertDocumentsParams,
-} from '../__generated__/documents.types.mjs';
-import { Currency, Resolvers } from '../__generated__/types.mjs';
-import { normalizeDocumentType } from '../helpers/green-invoice.mjs';
-import { uploadInvoiceToCloudinary } from '../providers/cloudinary.mjs';
-import { pool } from '../providers/db.mjs';
-import { insertDocuments } from '../providers/documents.mjs';
-import { GreenInvoice } from '../providers/green-invoice.mjs';
+} from '../../__generated__/documents.types.mjs';
+import { Currency, Resolvers } from '../../__generated__/types.mjs';
+import { normalizeDocumentType } from '../../helpers/green-invoice.mjs';
+import { uploadInvoiceToCloudinary } from '../../providers/cloudinary.mjs';
+import { pool } from '../../providers/db.mjs';
+import { insertDocuments } from '../../providers/documents.mjs';
+import { GreenInvoice } from '../../providers/green-invoice.mjs';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
   const base64string = Buffer.from(await file.arrayBuffer()).toString('base64');

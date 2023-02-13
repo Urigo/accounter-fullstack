@@ -1,41 +1,13 @@
 import {
-  BankFinancialAccountResolvers,
-  CardFinancialAccountResolvers,
   CommonTransactionResolvers,
   ConversionTransactionResolvers,
   FeeTransactionResolvers,
   TransactionDirection,
   WireTransactionResolvers,
-} from '../__generated__/types.mjs';
-import { formatFinancialAmount } from '../helpers/amount.mjs';
-import { effectiveDateSuplement } from '../helpers/misc.mjs';
-import {
-  getChargeByFinancialAccountNumberLoader,
-  getChargesByFinancialAccountNumbers,
-} from '../providers/charges.mjs';
-import { pool } from '../providers/db.mjs';
-import { getFinancialAccountByAccountNumberLoader } from '../providers/financial-accounts.mjs';
-
-export const commonFinancialAccountFields:
-  | CardFinancialAccountResolvers
-  | BankFinancialAccountResolvers = {
-  id: DbAccount => DbAccount.id,
-  charges: async (DbAccount, { filter }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
-      return charges;
-    }
-    const charges = await getChargesByFinancialAccountNumbers.run(
-      {
-        financialAccountNumbers: [DbAccount.account_number],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      },
-      pool,
-    );
-    return charges;
-  },
-};
+} from '../../__generated__/types.mjs';
+import { formatFinancialAmount } from '../../helpers/amount.mjs';
+import { effectiveDateSuplement } from '../../helpers/misc.mjs';
+import { getFinancialAccountByAccountNumberLoader } from '../../providers/financial-accounts.mjs';
 
 export const commonTransactionFields:
   | ConversionTransactionResolvers

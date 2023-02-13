@@ -14,7 +14,7 @@ import {
 } from '../__generated__/documents.types.mjs';
 import { Optional } from '../helpers/misc.mjs';
 import { pool } from '../providers/db.mjs';
-import { TimelessDateString } from '../scalars/timeless-date.mjs';
+import { TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
 
 const { sql } = pgQuery;
 

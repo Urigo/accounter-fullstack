@@ -7,7 +7,7 @@ import type { IGetFinancialEntitiesByIdsResult } from '../__generated__/financia
 import type { IGetHashavshevetBusinessIndexesResult } from '../__generated__/hashavshevet.types.mjs';
 import type { IInsertLedgerRecordsParams } from '../__generated__/ledger-records.types.mjs';
 import { VatIndexesKeys } from '../providers/hashavshevet.mjs';
-import { TIMELESS_DATE_REGEX, TimelessDateString } from '../scalars/index.js';
+import { TIMELESS_DATE_REGEX, TimelessDateString } from '../resolvers/scalars/timeless-date.mjs';
 import {
   ENTITIES_WITHOUT_INVOICE_DATE,
   TAX_CATEGORIES_WITHOUT_INVOICE_DATE,

@@ -1,7 +1,4 @@
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
-import { DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
-import { Resolvers } from '../__generated__/types.mjs';
-import { TimelessDateScalar } from '../scalars/timeless-date.mjs';
 
 function validatePercentage(value: number) {
   if (value >= 0 && value <= 1) return value;
@@ -29,11 +26,3 @@ export const Percentage = new GraphQLScalarType({
     throw new GraphQLError(`Can only validate numbers as Percentage but got: ${ast.kind}`);
   },
 });
-
-export const resolvers: Partial<Resolvers> = {
-  Date: DateTimeResolver,
-  IBAN: IBANResolver,
-  Percentage,
-  URL: URLResolver,
-  TimelessDate: TimelessDateScalar,
-};
