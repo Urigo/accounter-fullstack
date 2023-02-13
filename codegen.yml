@@ -18,17 +18,17 @@ generates:
         PersonalFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
         BankFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
         CardFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
-        Charge: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        Charge: ./charges.types.mjs#IGetChargesByIdsResult
         LedgerRecord: ./ledger-records.types.mjs#IGetLedgerRecordsByChargeIdsResult
         NamedCounterparty: ../prototypes.mjs#CounterpartyProto
         Invoice: ./documents.types.mjs#IGetAllDocumentsResult
         Proforma: ./documents.types.mjs#IGetAllDocumentsResult
         Receipt: ./documents.types.mjs#IGetAllDocumentsResult
         InvoiceReceipt: ./documents.types.mjs#IGetAllDocumentsResult
-        WireTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        FeeTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        ConversionTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
-        CommonTransaction: ./charges.types.mjs#IGetChargesByFinancialAccountNumbersResult
+        WireTransaction: ./charges.types.mjs#IGetChargesByIdsResult
+        FeeTransaction: ./charges.types.mjs#IGetChargesByIdsResult
+        ConversionTransaction: ./charges.types.mjs#IGetChargesByIdsResult
+        CommonTransaction: ./charges.types.mjs#IGetChargesByIdsResult
         BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
         Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
         SortCode: ./hash-sort-codes.types.mjs#IGetSortCodesByIdsResult

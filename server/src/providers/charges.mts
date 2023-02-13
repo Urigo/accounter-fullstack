@@ -302,7 +302,6 @@ export const updateCharge = sql<IUpdateChargeQuery>`
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     at.*,
-    fa.owner as financial_entity_id,
     ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
     bu.no_invoices,
     -- invoices_count column, conditional calculation
@@ -370,7 +369,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN at.event_amount  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN at.event_amount  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(at.event_amount as DECIMAL))  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC;
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
@@ -439,8 +438,6 @@ const getAdjustedChargesByFilters: Pick<
 const validateCharges = sql<IValidateChargesQuery>`
   SELECT
     at.*,
-    fa.owner as financial_entity_id,
-    ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
     (bu.country <> 'Israel') as is_foreign,
     bu.no_invoices,
     (
