@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { useGraphQLModules } from '@envelop/graphql-modules';
 import { config } from 'dotenv';
 import { createYoga } from 'graphql-yoga';
 import { initCloudinary } from './providers/cloudinary.mjs';
@@ -14,13 +15,13 @@ async function main() {
   } catch (e) {
     console.error(`Error initiating providers: ${e}`);
   }
-  const schema = await getSchema();
+  const application = await getSchema();
 
-  const yoga = createYoga({ schema });
+  const yoga = createYoga({ plugins: [useGraphQLModules(application)] });
 
-  const app = createServer(yoga);
+  const server = createServer(yoga);
 
-  app.listen(
+  server.listen(
     {
       port: 4000,
     },

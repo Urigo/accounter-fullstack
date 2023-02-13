@@ -1,28 +1,3 @@
-# Scalars
-
-" Date "
-scalar Date
-" Date with no time of day "
-scalar TimelessDate
-" IBAN "
-scalar IBAN
-" Percentage"
-scalar Percentage
-" Rate "
-scalar Rate
-" URL "
-scalar URL
-" File "
-scalar File
-
-# Common Types
-
-" a date range "
-type DateRange {
-  start: TimelessDate!
-  end: TimelessDate!
-}
-
 " represent a link to an external file "
 interface Linkable {
   file: URL

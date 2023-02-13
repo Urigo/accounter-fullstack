@@ -1,0 +1,32 @@
+# Scalars
+
+" Date "
+scalar Date
+" Date with no time of day "
+scalar TimelessDate
+" IBAN "
+scalar IBAN
+" Percentage"
+scalar Percentage
+" Rate "
+scalar Rate
+" URL "
+scalar URL
+" File "
+scalar File
+
+# Common Types
+
+" a date range "
+type DateRange {
+  start: TimelessDate!
+  end: TimelessDate!
+}
+
+type Query {
+  ping: Boolean
+}
+
+type Mutation {
+  pong: Boolean
+}

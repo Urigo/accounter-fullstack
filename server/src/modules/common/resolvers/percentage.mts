@@ -6,7 +6,7 @@ function validatePercentage(value: number) {
   throw new GraphQLError(`Percantage value must be between 0 and 1, but got a: ${value}`);
 }
 
-export const Percentage = new GraphQLScalarType({
+export const PercentageScalar = new GraphQLScalarType({
   name: 'Percentage',
   description: 'A floating point number between 0 and 1',
 
