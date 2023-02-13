@@ -1,4 +1,4 @@
-import { onlyDigitsValidator } from "./strings.js";
+import { onlyDigitsValidator } from './strings.js';
 
 /**
  * validates string format is YYYYMM
