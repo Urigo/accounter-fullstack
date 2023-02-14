@@ -4,8 +4,8 @@ import { join } from 'node:path';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
-export const financialEntitiesModule = createModule({
-  id: 'financialEntities',
+export const accountantApprovalModule = createModule({
+  id: 'accountantApproval',
   dirname: __dirname,
   typeDefs: loadFilesSync(join(__dirname, './typeDefs/*.graphql'), { useRequire: true }),
   resolvers: loadFilesSync(join(__dirname, './resolvers/*.mts')),

@@ -1,6 +1,8 @@
-import { join } from 'node:path';
 import { loadFilesSync } from '@graphql-tools/load-files';
 import { createModule } from 'graphql-modules';
+import { join } from 'node:path';
+
+const __dirname = new URL('.', import.meta.url).pathname;
 
 export const commonModule = createModule({
   id: 'common',

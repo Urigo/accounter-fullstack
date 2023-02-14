@@ -1,4 +1,4 @@
-import { TimelessDateString } from '../../models/index.mjs';
+import { TimelessDateString } from '../../../models/index.mjs';
 import { format } from 'date-fns';
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
 
