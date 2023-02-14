@@ -82,5 +82,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['old-accounter/**', 'temp-server/**'],
+  ignorePatterns: ['old-accounter/**', 'temp-server/**', '**/__generated__/**'],
 };

@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
-import { useMutation } from 'urql';
+import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
+import { useCallback, useState } from 'react';
+import { useMutation } from 'urql';
 
 /* GraphQL */ `
-  mutation UploadDocument($file: File!, $chargeId: ID) {
+  mutation UploadDocument($file: FileScalar!, $chargeId: ID) {
     uploadDocument(file: $file, chargeId: $chargeId) {
       __typename
       ... on UploadDocumentSuccessfulResult {

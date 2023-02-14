@@ -2,15 +2,27 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["es2020"],
-    "module": "ES2020",
+    "lib": ["esnext", "dom"],
+    "module": "esnext",
     "moduleResolution": "Node",
     "strict": true,
     "sourceMap": true,
-    // Needed for CommonJS modules
-    "allowSyntheticDefaultImports": true, // (C)
-    //
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+
+    "target": "esnext",
+    "baseUrl": "./src",
+
+    "importHelpers": true,
+    "allowJs": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/node_modules"]
 }
