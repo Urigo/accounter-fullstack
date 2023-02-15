@@ -9,10 +9,6 @@ config();
   global: true,
 })
 export class CloudinaryProvider {
-  constructor() {
-    this.initCloudinary();
-  }
-
   public initCloudinary() {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_NAME,
@@ -20,6 +16,7 @@ export class CloudinaryProvider {
       api_secret: process.env.CLOUDINARY_API_SECRET,
       secure: true,
     });
+    console.debug('Cloudinary initialized');
   }
 
   public async uploadInvoiceToCloudinary(

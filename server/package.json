@@ -14,9 +14,10 @@
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "cd .. && yarn codegen && cd server && yarn sqlgen",
     "pgtyped": "pgtyped -c pgconfig.json",
+    "presqlgen": "rimraf **/*.types.ts",
     "prestart": "yarn build",
     "sqlgen": "dotenv -e ../.env yarn pgtyped",
-    "start": "node dist/index.mjs"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@accounter-toolkit/green-invoice-graphql": "0.1.1-alpha-20221128094016-ab48d5a",

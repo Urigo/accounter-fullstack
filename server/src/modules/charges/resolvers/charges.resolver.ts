@@ -1,14 +1,14 @@
 import { ChargeSortByField, Currency } from 'models/enums.js';
-import type {
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { formatFinancialAmount } from '../../../helpers/amount.js';
+import { validateCharge } from '../helpers/validate.helper.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
+import {
+  ChargesModule,
   IGetChargesByFiltersResult,
   IUpdateChargeParams,
   IValidateChargesResult,
-} from '../../../__generated__/charges.types.js';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
-import { validateCharge } from '../../../helpers/charges.js';
-import { getFinancialEntityByIdLoader } from '../../../providers/financial-entities.js';
-import { ChargesModule } from '../__generated__/types.js';
-import { ChargesProvider } from '../providers/charges.provider.js';
+} from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -43,7 +43,9 @@ export const chargesResolvers: ChargesModule.Resolvers = {
       const businesses: Array<string | null> = [];
       if (filters?.byBusinesses?.length) {
         const businessNames = await Promise.all(
-          filters.byBusinesses.map(id => getFinancialEntityByIdLoader.load(id)),
+          filters.byBusinesses.map(id =>
+            injector.get(FinancialEntitiesProvider).getFinancialEntityByIdLoader.load(id),
+          ),
         );
         businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
       }

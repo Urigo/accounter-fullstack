@@ -1,7 +1,9 @@
 import { createApplication } from 'graphql-modules';
-import { DBProvider } from './modules/app-providers/db.provider.js';
 import postgres from 'pg';
+import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
+import { DBProvider } from './modules/app-providers/db.provider.js';
 import { businessTripModule } from './modules/business-trip/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { commonModule } from './modules/common/index.js';
@@ -42,6 +44,8 @@ export async function createGraphQLApp() {
           }),
       },
       DBProvider,
+      CloudinaryProvider,
+      GreenInvoiceProvider,
     ],
   });
 }

@@ -1,24 +1,21 @@
-import { pool } from '../../../providers/db.js';
-import { getFinancialAccountsByFinancialEntityIdLoader } from '../../../providers/financial-accounts.js';
-import {
-  getAllFinancialEntities,
-  getFinancialEntityByChargeIdsLoader,
-  getFinancialEntityByIdLoader,
-} from '../../../providers/financial-entities.js';
-import { FinancialEntitiesModule } from '../__generated__/types.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
+import { FinancialEntitiesModule } from '../types.js';
 import { commonFinancialEntityFields } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
-    financialEntity: async (_, { id }) => {
-      const dbFe = await getFinancialEntityByIdLoader.load(id);
+    financialEntity: async (_, { id }, { injector }) => {
+      const dbFe = await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
       return dbFe;
     },
-    allFinancialEntities: async () => {
-      return getAllFinancialEntities.run(undefined, pool);
+    allFinancialEntities: async (_, __, { injector }) => {
+      return injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
     },
   },
   LtdFinancialEntity: {
@@ -41,7 +38,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   },
   Charge: {
     counterparty: DbCharge => DbCharge.financial_entity,
-    beneficiaries: async DbCharge => {
+    beneficiaries: async (DbCharge, _, { injector }) => {
       // TODO: update to better implementation after DB is updated
       try {
         if (DbCharge.financial_accounts_to_balance) {
@@ -79,9 +76,11 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         default:
           {
             // case Guild account
-            const guildAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
-              '6a20aa69-57ff-446e-8d6a-1e96d095e988',
-            );
+            const guildAccounts = await injector
+              .get(FinancialAccountsProvider)
+              .getFinancialAccountsByFinancialEntityIdLoader.load(
+                '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+              );
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number)) {
               return [
@@ -97,9 +96,11 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
             }
 
             // case UriLTD account
-            const uriAccounts = await getFinancialAccountsByFinancialEntityIdLoader.load(
-              'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
-            );
+            const uriAccounts = await injector
+              .get(FinancialAccountsProvider)
+              .getFinancialAccountsByFinancialEntityIdLoader.load(
+                'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
+              );
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number)) {
               return [
@@ -113,13 +114,16 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
           return [];
       }
     },
-    financialEntity: DbCharge =>
-      getFinancialEntityByChargeIdsLoader.load(DbCharge.id).then(res => {
-        if (!res) {
-          throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);
-        }
-        return res;
-      }),
+    financialEntity: (DbCharge, _, { injector }) =>
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByChargeIdsLoader.load(DbCharge.id)
+        .then(res => {
+          if (!res) {
+            throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);
+          }
+          return res;
+        }),
   },
   LedgerRecord: {
     creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_1,

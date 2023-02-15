@@ -1,12 +1,13 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
-import { DocumentsProvider } from 'modules/documents/providers/documents.provider.js';
-import { IGetTaxTransactionsByIDsResult } from '../../../__generated__/tax-transactions.types.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { HashavshevetProvider } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
+import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
 import { ResolversTypes } from '../../../__generated__/types.js';
 import { formatFinancialAmount, formatFinancialIntAmount } from '../../../helpers/amount.js';
-import { validateCharge } from '../../../helpers/charges.js';
 import { generatePcnFromCharges } from '../../../helpers/pcn/index.js';
 import {
   adjustTaxRecords,
@@ -16,15 +17,9 @@ import {
 } from '../../../helpers/vat-report.js';
 import { Currency } from '../../../models/enums.js';
 import { TimelessDateString } from '../../../models/index.js';
-import { pool } from '../../../providers/db.js';
-import { getExchangeRatesByDates } from '../../../providers/exchange.js';
-import {
-  getFinancialEntityByIdLoader,
-  getFinancialEntityByNameLoader,
-} from '../../../providers/financial-entities.js';
-import { getHashavshevetBusinessIndexesLoader } from '../../../providers/hash-business-indexes.js';
-import { getTaxTransactionsLoader } from '../../../providers/tax-transactions.js';
-import { ReportsModule } from '../__generated__/types.js';
+import { validateCharge } from '../../charges/helpers/validate.helper.js';
+import { TaxTransactionsProvider } from '../providers/tax-transactions.provider.js';
+import type { IGetTaxTransactionsByIDsResult, ReportsModule } from '../types.js';
 
 async function getVatRecords(
   injector: Injector,
@@ -64,7 +59,12 @@ async function getVatRecords(
     } else {
       // Get transactions that are batched into one invoice
       const taxTransactions = await Promise.all(
-        chargesIDs.map(id => getTaxTransactionsLoader.load(id).then(res => ({ id, ref: res }))),
+        chargesIDs.map(id =>
+          injector
+            .get(TaxTransactionsProvider)
+            .getTaxTransactionsLoader.load(id)
+            .then(res => ({ id, ref: res })),
+        ),
       ).then(res =>
         res.reduce(
           (a: { [id: string]: IGetTaxTransactionsByIDsResult }, v) =>
@@ -80,10 +80,12 @@ async function getVatRecords(
       await Promise.all(
         charges.map(async charge => {
           if (financialEntityId && charge.financial_entity) {
-            const hashIndex = await getHashavshevetBusinessIndexesLoader.load({
-              financialEntityId,
-              businessName: charge.financial_entity,
-            });
+            const hashIndex = await injector
+              .get(HashavshevetProvider)
+              .getHashavshevetBusinessIndexesByIdLoader.load({
+                financialEntityId,
+                businessName: charge.financial_entity,
+              });
             charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
           }
         }),
@@ -93,7 +95,9 @@ async function getVatRecords(
         const matchDoc = documents.find(doc => doc.charge_id === charge.id);
         const matchBusiness =
           charge.financial_entity && getVatNumbers
-            ? await getFinancialEntityByNameLoader.load(charge.financial_entity)
+            ? await injector
+                .get(FinancialEntitiesProvider)
+                .getFinancialEntityByNameLoader.load(charge.financial_entity)
             : undefined;
         if (matchDoc) {
           if (charge.vat != null && charge.vat < 0) {
@@ -119,7 +123,9 @@ async function getVatRecords(
       } else {
         const fromDate = format(new Date(Math.min(...dates)), 'yyyy-MM-dd');
         const toDate = format(new Date(Math.max(...dates)), 'yyyy-MM-dd');
-        const exchangeRates = await getExchangeRatesByDates.run({ fromDate, toDate }, pool);
+        const exchangeRates = await injector
+          .get(ExchangeProvider)
+          .getExchangeRatesByDates({ fromDate, toDate });
 
         response.income.push(...adjustTaxRecords(incomeRecords, taxTransactions, exchangeRates));
         response.expenses.push(...adjustTaxRecords(expenseRecords, taxTransactions, exchangeRates));
@@ -184,7 +190,9 @@ export const reportsResolvers: ReportsModule.Resolvers = {
       }
     },
     pcnFile: async (_, { fromDate, toDate, financialEntityId }, { injector }) => {
-      const financialEntity = await getFinancialEntityByIdLoader.load(financialEntityId);
+      const financialEntity = await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(financialEntityId);
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
       }
@@ -223,10 +231,11 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),
     vatAfterDeduction: raw =>
       raw.vatAfterDeduction ? formatFinancialAmount(raw.vatAfterDeduction, Currency.Ils) : null,
-    vatNumber: raw =>
+    vatNumber: (raw, _, { injector }) =>
       raw.financial_entity
-        ? getFinancialEntityByNameLoader
-            .load(raw.financial_entity)
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByNameLoader.load(raw.financial_entity)
             .then(entity => entity?.vat_number ?? null)
         : null,
   },

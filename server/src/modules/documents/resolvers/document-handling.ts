@@ -1,12 +1,12 @@
 import { CloudinaryProvider } from 'modules/app-providers/cloudinary.js';
 import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
+import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
+import { normalizeDocumentType } from '../../../helpers/green-invoice.js';
+import { Currency } from '../../../models/enums.js';
 import {
   IGetAllDocumentsResult,
   IInsertDocumentsParams,
-} from '../../../__generated__/documents.types.js';
-import { normalizeDocumentType } from '../../../helpers/green-invoice.js';
-import { Currency } from '../../../models/enums.js';
-import { GreenInvoice } from '../../../providers/green-invoice.js';
+} from '../__generated__/documents.types.js';
 import { DocumentsModule } from '../__generated__/types.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 
@@ -37,9 +37,12 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       .get(CloudinaryProvider)
       .uploadInvoiceToCloudinary(base64string);
 
-    const data = await GreenInvoice.addExpenseDraftByFile_mutation({
-      input: { file: base64string },
-    });
+    const data = await injector
+      .get(GreenInvoiceProvider)
+      .getSDK()
+      .addExpenseDraftByFile_mutation({
+        input: { file: base64string },
+      });
 
     if (!data.addExpenseDraftByFile) {
       throw new Error('No data returned from Green Invoice');

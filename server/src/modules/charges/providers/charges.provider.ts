@@ -1,9 +1,10 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import pgQuery from '@pgtyped/query';
-import { validateCharge } from '../../../helpers/charges.js';
 import { Optional, TimelessDateString } from '../../../models/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import { ChargesModule } from '../__generated__/types.js';
+import { validateCharge } from '../helpers/validate.helper.js';
 import {
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
@@ -18,8 +19,7 @@ import {
   IUpdateChargeQuery,
   IValidateChargesParams,
   IValidateChargesQuery,
-} from '../__generated__/charges.types.js';
-import { ChargesModule } from '../__generated__/types.js';
+} from '../types.js';
 
 const { sql } = pgQuery;
 

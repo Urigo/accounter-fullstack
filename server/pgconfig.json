@@ -8,7 +8,7 @@
     {
       "": "// TODO: remove this after providers are migrated",
       "mode": "ts",
-      "include": "src/providers/**/*.ts",
+      "include": "providers/**/*.ts",
       "emitTemplate": "src/__generated__/{{name}}.types.ts"
     },
     {

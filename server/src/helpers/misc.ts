@@ -1,18 +1,19 @@
 import { format } from 'date-fns';
-import type { IGetChargesByIdsResult } from '../__generated__/charges.types.js';
+import type { ChargesTypes } from '@modules/charges';
+import { VatIndexesKeys } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
 import { TimelessDateString } from '../models/index.js';
-import { getChargeExchangeRates } from '../providers/exchange.js';
-import { VatIndexesKeys } from '../providers/hashavshevet.js';
+import { getILSForDate } from '../modules/ledger/helpers/exchange.helper.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.js';
-import { getILSForDate } from './exchange.js';
+import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
+import { Injector } from 'graphql-modules';
 
-export type VatExtendedCharge = IGetChargesByIdsResult & {
+export type VatExtendedCharge = ChargesTypes.IGetChargesByIdsResult & {
   vatAfterDeduction: number;
   amountBeforeVAT: number;
   amountBeforeFullVAT: number;
 };
 
-export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharge {
+export function decorateCharge(charge: ChargesTypes.IGetChargesByIdsResult): VatExtendedCharge {
   const decoratedCharge: Partial<VatExtendedCharge> = { ...charge };
 
   // If foriegn transaction, can use receipt as invoice
@@ -91,6 +92,7 @@ export interface EntryForAccounting {
 }
 
 export async function buildLedgerEntries(
+  injector: Injector,
   charge: VatExtendedCharge,
   originalAmount: number,
   hashVATIndexes: Record<VatIndexesKeys, string>,
@@ -112,7 +114,7 @@ export async function buildLedgerEntries(
     throw new Error(`Chare id=${charge.id} is missing debit date`);
   }
 
-  const { debitExchangeRates, invoiceExchangeRates } = await getChargeExchangeRates(charge);
+  const { debitExchangeRates, invoiceExchangeRates } = await injector.get(ExchangeProvider).getChargeExchangeRates(charge);
 
   entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
     charge.debit_date
@@ -227,7 +229,7 @@ export function numberRounded(number: number): number {
   return parseIntRound((number + Number.EPSILON) * 100) / 100;
 }
 
-export function effectiveDateSupplement(transaction: IGetChargesByIdsResult) {
+export function effectiveDateSupplement(transaction: ChargesTypes.IGetChargesByIdsResult) {
   if (transaction.account_type != 'creditcard') {
     if (transaction.debit_date) {
       return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;

@@ -1,16 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
-import type {
-  IGetChargesByIdsResult,
-  IUpdateChargeParams,
-} from '../../../__generated__/charges.types.js';
+import type { ChargesTypes } from '@modules/charges';
 import { DocumentType } from '../../../models/enums.js';
-import type {
-  IInsertDocumentsParams,
-  IUpdateDocumentParams,
-} from '../__generated__/documents.types.js';
-import { DocumentsModule } from '../__generated__/types.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
+import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialDocumentsFields,
@@ -31,7 +24,7 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
     fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       try {
-        let charge: IGetChargesByIdsResult | undefined;
+        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
         if (fields.chargeId) {
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
@@ -61,7 +54,7 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
         const updatedDoc = res[0];
 
         if (charge?.id && !charge.vat && updatedDoc.vat_amount) {
-          const adjustedFields: IUpdateChargeParams = {
+          const adjustedFields: ChargesTypes.IUpdateChargeParams = {
             accountNumber: null,
             accountType: null,
             bankDescription: null,

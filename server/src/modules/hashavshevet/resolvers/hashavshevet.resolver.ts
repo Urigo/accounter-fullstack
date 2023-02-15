@@ -1,24 +1,17 @@
 import { GraphQLError } from 'graphql';
-import { pool } from '../../../providers/db.js';
-import {
-  getAccountCardsByKeysLoader,
-  getAccountCardsBySortCodesLoader,
-} from '../../../providers/hash-account-cards.js';
-import { getSortCodesByIdLoader, getSortCodesByIds } from '../../../providers/hash-sort-codes.js';
-import { HashavshevetModule } from '../__generated__/types.js';
+import { AccountCardsProvider } from '../providers/account-cards.provider.js';
+import { SortCodesProvider } from '../providers/sort-codes.provider.js';
+import { HashavshevetModule } from '../types.js';
 import { commonTransactionFields } from './common.js';
 
 export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
   Query: {
-    allSortCodes: async () => {
+    allSortCodes: async (_, __, { injector }) => {
       try {
-        return await getSortCodesByIds.run(
-          {
-            isSortCodesIds: 0,
-            sortCodesIds: [null],
-          },
-          pool,
-        );
+        return await injector.get(SortCodesProvider).getSortCodesByIds({
+          isSortCodesIds: 0,
+          sortCodesIds: [null],
+        });
       } catch (e) {
         console.error('Error fetching sort codes', e);
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
@@ -28,12 +21,14 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
   SortCode: {
     id: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
-    accounts: async dbSortCode => {
+    accounts: async (dbSortCode, _, { injector }) => {
       if (!dbSortCode.key) {
         return [];
       }
       try {
-        return getAccountCardsBySortCodesLoader.load(dbSortCode.key);
+        return injector
+          .get(AccountCardsProvider)
+          .getAccountCardsBySortCodesLoader.load(dbSortCode.key);
       } catch (e) {
         console.log(`Error fetching accounts for sort code ${dbSortCode.key}:`, e);
         return [];
@@ -43,14 +38,17 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
   HashavshevetAccount: {
     id: dbHashAccount => dbHashAccount.id,
     key: dbHashAccount => dbHashAccount.key,
-    sortCode: dbHashAccount => {
+    sortCode: (dbHashAccount, _, { injector }) => {
       try {
-        return getSortCodesByIdLoader.load(dbHashAccount.sort_code).then(sortCode => {
-          if (!sortCode) {
-            throw new Error('Sort code not found');
-          }
-          return sortCode;
-        });
+        return injector
+          .get(SortCodesProvider)
+          .getSortCodesByIdLoader.load(dbHashAccount.sort_code)
+          .then(sortCode => {
+            if (!sortCode) {
+              throw new Error('Sort code not found');
+            }
+            return sortCode;
+          });
       } catch (e) {
         console.error(`Error sort code for Hashavshevet account card ${dbHashAccount.key}:`, e);
         throw new GraphQLError(
@@ -73,22 +71,28 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
     ...commonTransactionFields,
   },
   BusinessTransactionSum: {
-    sortCode: rawSum =>
-      getAccountCardsByKeysLoader.load(rawSum.businessName).then(async card => {
-        if (!card) {
-          throw new GraphQLError(
-            `Hashavshevet account card not found for business "${rawSum.businessName}"`,
-          );
-        }
-        return await getSortCodesByIdLoader.load(card.sort_code).then(sortCode => {
-          if (!sortCode) {
+    sortCode: (rawSum, _, { injector }) =>
+      injector
+        .get(AccountCardsProvider)
+        .getAccountCardsByKeysLoader.load(rawSum.businessName)
+        .then(async card => {
+          if (!card) {
             throw new GraphQLError(
-              `Hashavshevet sort code not found for account card "${card.key}"`,
+              `Hashavshevet account card not found for business "${rawSum.businessName}"`,
             );
           }
-          return sortCode;
-        });
-      }),
+          return await injector
+            .get(SortCodesProvider)
+            .getSortCodesByIdLoader.load(card.sort_code)
+            .then(sortCode => {
+              if (!sortCode) {
+                throw new GraphQLError(
+                  `Hashavshevet sort code not found for account card "${card.key}"`,
+                );
+              }
+              return sortCode;
+            });
+        }),
   },
   LedgerRecord: {
     hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,

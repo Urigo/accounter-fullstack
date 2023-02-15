@@ -8,3 +8,5 @@ export const businessTripModule = createModule({
   dirname: __dirname,
   typeDefs: [businessTrip],
 });
+
+export * as BusinessTripTypes from './types.js';

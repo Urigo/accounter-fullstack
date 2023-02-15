@@ -1,9 +1,8 @@
-import { IGetChargesByIdsResult } from '../../../__generated__/charges.types.js';
 import { TransactionDirection } from '../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../helpers/amount.js';
 import { effectiveDateSupplement } from '../../../helpers/misc.js';
-import type { ChargesModule } from '../__generated__/types.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
+import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 export const commonTransactionFields:
   | ChargesModule.ConversionTransactionResolvers

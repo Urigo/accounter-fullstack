@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
-import { currency } from '../__generated__/charges.types.js';
-import type { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.js';
-import type { VatExtendedCharge } from './misc.js';
+import type { currency } from '@modules/charges/types.js';
+import type { VatExtendedCharge } from '../../../helpers/misc.js';
+import { IGetExchangeRatesByDatesResult } from '../types.js';
 
 export function getRateForCurrency(
   currencyCode: currency,

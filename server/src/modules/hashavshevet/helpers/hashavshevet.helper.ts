@@ -1,22 +1,27 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import type { IGetConversionOtherSideResult } from '../__generated__/charges.types.js';
-import { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.js';
-import type { IGetFinancialAccountsByAccountNumbersResult } from '../__generated__/financial-accounts.types.js';
-import type { IGetFinancialEntitiesByIdsResult } from '../__generated__/financial-entities.types.js';
-import type { IGetHashavshevetBusinessIndexesResult } from '../__generated__/hashavshevet.types.js';
-import type { IInsertLedgerRecordsParams } from '../__generated__/ledger-records.types.js';
-import { TimelessDateString } from '../models/index.js';
-import { TIMELESS_DATE_REGEX } from '../modules/common/resolvers/timeless-date.js';
-import { VatIndexesKeys } from '../providers/hashavshevet.js';
-import { ENTITIES_WITHOUT_INVOICE_DATE, TAX_CATEGORIES_WITHOUT_INVOICE_DATE } from './constants.js';
-import { getILSForDate } from './exchange.js';
+import type { ChargesTypes } from '@modules/charges';
+import type { IGetFinancialAccountsByAccountNumbersResult } from '@modules/financial-accounts/types.js';
+import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
+import type { VatIndexesKeys } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
+import type {
+  IGetExchangeRatesByDatesResult,
+  IInsertLedgerRecordsParams,
+} from '@modules/ledger/types.js';
+import {
+  ENTITIES_WITHOUT_INVOICE_DATE,
+  TAX_CATEGORIES_WITHOUT_INVOICE_DATE,
+} from '../../../helpers/constants.js';
 import {
   EntryForAccounting,
   EntryForFinancialAccount,
   numberRounded,
   VatExtendedCharge,
-} from './misc.js';
+} from '../../../helpers/misc.js';
+import type { TimelessDateString } from '../../../models/index.js';
+import { TIMELESS_DATE_REGEX } from '../../common/resolvers/timeless-date.js';
+import { getILSForDate } from '../../ledger/helpers/exchange.helper.js';
+import type { IGetHashavshevetBusinessIndexesByNameResult } from '../types.js';
 
 /* regex of dd/mm/yyyy */
 const HASHAVSHEVET_DATE_REGEX =
@@ -71,7 +76,7 @@ function getCreditcardAccount(
 function account(
   accountType: string | null,
   financialAccounts: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   currency: string | null,
   isracardHashIndex: string | null,
@@ -154,7 +159,7 @@ export function generateEntryForAccountingValues(
   charge: VatExtendedCharge,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
@@ -295,11 +300,11 @@ export function generateEntryForFinancialAccountValues(
   charge: VatExtendedCharge,
   entryForFinancialAccount: EntryForFinancialAccount,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
-  conversionOtherSide?: IGetConversionOtherSideResult,
+  conversionOtherSide?: ChargesTypes.IGetConversionOtherSideResult,
 ): IInsertLedgerRecordsParams['ledgerRecord'][0] {
   const isILS = charge.currency_code === 'ILS';
 
@@ -468,7 +473,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
   entryForFinancialAccount: EntryForFinancialAccount,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
@@ -585,7 +590,7 @@ export function generateEntryForforeignTransferFeesValues(
   entryForFinancialAccount: EntryForFinancialAccount,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,

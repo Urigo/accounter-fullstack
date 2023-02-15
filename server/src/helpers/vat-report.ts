@@ -1,14 +1,18 @@
-import { IGetChargesByIdsResult } from '../__generated__/charges.types.js';
-import { IGetDocumentsByFiltersResult } from '../__generated__/documents.types.js';
-import { IGetExchangeRatesByDatesResult } from '../__generated__/exchange.types.js';
-import { IGetFinancialEntitiesByIdsResult } from '../__generated__/financial-entities.types.js';
-import { IGetTaxTransactionsByIDsResult } from '../__generated__/tax-transactions.types.js';
+import type { ChargesTypes } from '@modules/charges';
+import type { DocumentsTypes } from '@modules/documents';
+import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
+import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
+import type { IGetTaxTransactionsByIDsResult } from '@modules/reports/types.js';
+import {
+  getClosestRateForDate,
+  getILSForDate,
+  getRateForCurrency,
+} from '../modules/ledger/helpers/exchange.helper.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.js';
-import { getClosestRateForDate, getILSForDate, getRateForCurrency } from './exchange.js';
 
 export function mergeChargeDoc(
-  charge: IGetChargesByIdsResult,
-  doc: IGetDocumentsByFiltersResult,
+  charge: ChargesTypes.IGetChargesByIdsResult,
+  doc: DocumentsTypes.IGetDocumentsByFiltersResult,
   business?: IGetFinancialEntitiesByIdsResult,
 ) {
   return {

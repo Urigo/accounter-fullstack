@@ -21,7 +21,10 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@modules/*": ["./modules/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["**/node_modules"]

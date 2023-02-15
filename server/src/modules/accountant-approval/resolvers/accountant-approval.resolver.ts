@@ -1,18 +1,14 @@
-import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
-import type { IUpdateChargeParams } from '../../../__generated__/charges.types.js';
-import { IUpdateLedgerRecordParams } from '../../../__generated__/ledger-records.types.js';
-import { pool } from '../../../providers/db.js';
-import {
-  getLedgerRecordsByChargeIdLoader,
-  updateLedgerRecord,
-} from '../../../providers/ledger-records.js';
+import type { ChargesTypes } from '@modules/charges';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import type { IUpdateLedgerRecordParams } from '@modules/ledger/types.js';
 import { AccountantApprovalModule } from '../__generated__/types.js';
 import { commonTransactionFields } from './common.js';
 
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   Mutation: {
     toggleChargeAccountantApproval: async (_, { chargeId, approved }, { injector }) => {
-      const adjustedFields: IUpdateChargeParams = {
+      const adjustedFields: ChargesTypes.IUpdateChargeParams = {
         accountNumber: null,
         accountType: null,
         bankDescription: null,
@@ -65,7 +61,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
       }
       return res[0].reviewed || false;
     },
-    toggleLedgerRecordAccountantApproval: async (_, { ledgerRecordId, approved }) => {
+    toggleLedgerRecordAccountantApproval: async (_, { ledgerRecordId, approved }, { injector }) => {
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
@@ -95,7 +91,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         reviewed: approved,
         valueDate: null,
       };
-      const res = await updateLedgerRecord.run({ ...adjustedFields }, pool);
+      const res = await injector.get(LedgerProvider).updateLedgerRecord({ ...adjustedFields });
 
       if (!res || res.length === 0) {
         throw new Error(`Failed to update ledger record ID='${ledgerRecordId}'`);
@@ -103,7 +99,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
 
       /* clear cache */
       if (res[0].original_id) {
-        getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
+        injector.get(LedgerProvider).getLedgerRecordsByChargeIdLoader.clear(res[0].original_id);
       }
       return res[0].reviewed || false;
     },

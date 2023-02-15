@@ -11,3 +11,5 @@ export const commonModule = createModule({
   typeDefs: [common, errors],
   resolvers: [scalarsResolvers],
 });
+
+export * as CommonTypes from './types.js';

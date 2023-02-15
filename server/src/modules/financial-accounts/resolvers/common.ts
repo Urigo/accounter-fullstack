@@ -1,8 +1,5 @@
-import {
-  getFinancialAccountByAccountNumberLoader,
-  getFinancialAccountsByFinancialEntityIdLoader,
-} from '../../../providers/financial-accounts.js';
 import type { FinancialAccountsModule } from '../__generated__/types.js';
+import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 
 export const commonFinancialAccountFields:
   | FinancialAccountsModule.CardFinancialAccountResolvers
@@ -15,14 +12,14 @@ export const commonTransactionFields:
   | FinancialAccountsModule.FeeTransactionResolvers
   | FinancialAccountsModule.WireTransactionResolvers
   | FinancialAccountsModule.CommonTransactionResolvers = {
-  account: async DbTransaction => {
+  account: async (DbTransaction, _, { injector }) => {
     // TODO: enhance logic to be based on ID instead of account_number
     if (!DbTransaction.account_number) {
       throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
     }
-    const account = await getFinancialAccountByAccountNumberLoader.load(
-      DbTransaction.account_number,
-    );
+    const account = await injector
+      .get(FinancialAccountsProvider)
+      .getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
     if (!account) {
       throw new Error(`Account number "${DbTransaction.account_number}" is missing`);
     }
@@ -33,9 +30,11 @@ export const commonTransactionFields:
 export const commonFinancialEntityFields:
   | FinancialAccountsModule.LtdFinancialEntityResolvers
   | FinancialAccountsModule.PersonalFinancialEntityResolvers = {
-  accounts: async DbBusiness => {
+  accounts: async (DbBusiness, _, { injector }) => {
     // TODO: add functionality for linkedEntities data
-    const accounts = await getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
+    const accounts = await injector
+      .get(FinancialAccountsProvider)
+      .getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
     return accounts;
   },
 };

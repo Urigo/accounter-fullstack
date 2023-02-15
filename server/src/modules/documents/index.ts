@@ -12,3 +12,5 @@ export const documentsModule = createModule({
   resolvers: [documentsResolvers],
   providers: () => [DocumentsProvider],
 });
+
+export * as DocumentsTypes from './types.js';

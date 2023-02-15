@@ -1,23 +1,22 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { IGetBusinessTransactionsSumFromLedgerRecordsParams } from '../../../__generated__/business-transactions-from-ledger.types.js';
 import { formatFinancialAmount } from '../../../helpers/amount.js';
 import { isTimelessDateString } from '../../../helpers/misc.js';
 import { Currency } from '../../../models/enums.js';
 import { RawBusinessTransactionsSum, TimelessDateString } from '../../../models/index.js';
-import {
-  getBusinessTransactionsFromLedgerRecords,
-  getBusinessTransactionsSumFromLedgerRecords,
-  getLedgerRecordsDistinctBusinesses,
-} from '../../../providers/business-transactions-from-ledger.js';
-import { pool } from '../../../providers/db.js';
-import type { FinancialEntitiesModule } from '../__generated__/types.js';
+import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
+import type {
+  FinancialEntitiesModule,
+  IGetBusinessTransactionsSumFromLedgerRecordsParams,
+} from '../types.js';
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
-    businessTransactionsSumFromLedgerRecords: async (_, { filters }) => {
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }) => {
       try {
-        const res = await getBusinessTransactionsSumFromLedgerRecords.run(filters, pool);
+        const res = await injector
+          .get(BusinessesTransactionsProvider)
+          .getBusinessTransactionsSumFromLedgerRecords(filters);
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
@@ -84,7 +83,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
         };
       }
     },
-    businessTransactionsFromLedgerRecords: async (_, { filters }) => {
+    businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }) => {
       try {
         const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
         const isBusinessNames = filters?.businessNames?.length ?? 0;
@@ -102,7 +101,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
             : null,
         };
 
-        const res = await getBusinessTransactionsFromLedgerRecords.run(adjustedFilters, pool);
+        const res = await injector
+          .get(BusinessesTransactionsProvider)
+          .getBusinessTransactionsFromLedgerRecords(adjustedFilters);
 
         const businessTransactions: FinancialEntitiesModule.BusinessTransaction[] = res.map(t => {
           const direction = t.direction ?? 1;
@@ -160,10 +161,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
         };
       }
     },
-    businessNamesFromLedgerRecords: async () => {
+    businessNamesFromLedgerRecords: async (_, __, { injector }) => {
       try {
-        return getLedgerRecordsDistinctBusinesses
-          .run(undefined, pool)
+        return injector
+          .get(BusinessesTransactionsProvider)
+          .getLedgerRecordsDistinctBusinesses()
           .then(res => res.map(r => r.business_name).filter(Boolean) as string[]);
       } catch (e) {
         console.error(e);

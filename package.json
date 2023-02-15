@@ -29,11 +29,11 @@
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
+    "precodegen": "rimraf **/__generated__/types.ts",
     "prettier": "prettier --cache --ignore-path .gitignore --write --list-different .",
     "scrape": "yarn --cwd old-accounter scrape",
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",
-    "sqlgen": "npx pgtyped -c pgTypedConfig.json",
     "start": "yarn --cwd old-accounter start",
     "temp-server:build": "yarn --cwd temp-server build",
     "temp-server:dev": "yarn --cwd temp-server dev"

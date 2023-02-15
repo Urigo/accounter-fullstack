@@ -14,3 +14,5 @@ export const chargesModule = createModule({
   resolvers: [chargesResolvers],
   providers: () => [ChargesProvider],
 });
+
+export * as ChargesTypes from './types.js';

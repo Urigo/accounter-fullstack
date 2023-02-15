@@ -1,18 +1,20 @@
-import pgQuery, { TaggedQuery } from '@pgtyped/query';
-import { IDatabaseConnection } from '@pgtyped/query/lib/tag.js';
+import { Injectable, Scope } from 'graphql-modules';
+import { DBProvider } from '@modules/app-providers/db.provider.js';
+import pgQuery from '@pgtyped/query';
+import { isTimelessDateString } from '../../../helpers/misc.js';
+import { Optional, TimelessDateString } from '../../../models/index.js';
 import {
+  IGetBusinessTransactionsFromLedgerRecordsParams,
   IGetBusinessTransactionsFromLedgerRecordsQuery,
   IGetBusinessTransactionsSumFromLedgerRecordsParams,
   IGetBusinessTransactionsSumFromLedgerRecordsQuery,
-  IGetBusinessTransactionsSumFromLedgerRecordsResult,
+  IGetLedgerRecordsDistinctBusinessesParams,
   IGetLedgerRecordsDistinctBusinessesQuery,
-} from '../__generated__/business-transactions-from-ledger.types.js';
-import { isTimelessDateString } from '../helpers/misc.js';
-import { Optional, TimelessDateString } from '../models/index.js';
+} from '../types.js';
 
 const { sql } = pgQuery;
 
-export const getLedgerRecordsDistinctBusinesses = sql<IGetLedgerRecordsDistinctBusinessesQuery>`
+const getLedgerRecordsDistinctBusinesses = sql<IGetLedgerRecordsDistinctBusinessesQuery>`
   SELECT DISTINCT business_name FROM (SELECT debit_account_1 as business_name FROM accounter_schema.ledger
   UNION
   SELECT debit_account_2 FROM accounter_schema.ledger
@@ -22,7 +24,7 @@ export const getLedgerRecordsDistinctBusinesses = sql<IGetLedgerRecordsDistinctB
   SELECT credit_account_2 FROM accounter_schema.ledger) as bu
   ORDER BY bu.business_name;`;
 
-export const getBusinessTransactionsFromLedgerRecords = sql<IGetBusinessTransactionsFromLedgerRecordsQuery>`
+const getBusinessTransactionsFromLedgerRecords = sql<IGetBusinessTransactionsFromLedgerRecordsQuery>`
   SELECT * 
   FROM (SELECT debit_account_1 AS business_name, to_date(invoice_date, 'DD/MM/YYYY') AS invoice_date, debit_amount_1 AS amount, foreign_debit_amount_1 AS foreign_amount, -1 AS direction, business AS financial_entity_id, currency, reference_1, reference_2, details, credit_account_1 as counter_account FROM accounter_schema.ledger
     UNION ALL
@@ -95,14 +97,26 @@ type IGetBusinessTransactionsSumFromLedgerRecordsParamsAdjusted = Optional<
   fromDate?: TimelessDateString | null;
 };
 
-const getBusinessTransactionsSumFromLedgerRecordsAdjusted: Pick<
-  TaggedQuery<{
-    params: IGetBusinessTransactionsSumFromLedgerRecordsParamsAdjusted | null | undefined;
-    result: IGetBusinessTransactionsSumFromLedgerRecordsResult;
-  }>,
-  'run'
-> = {
-  run(params, dbConnection: IDatabaseConnection) {
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
+export class BusinessesTransactionsProvider {
+  constructor(private dbProvider: DBProvider) {}
+
+  public getLedgerRecordsDistinctBusinesses(params: IGetLedgerRecordsDistinctBusinessesParams) {
+    return getLedgerRecordsDistinctBusinesses.run(params, this.dbProvider);
+  }
+
+  public getBusinessTransactionsFromLedgerRecords(
+    params: IGetBusinessTransactionsFromLedgerRecordsParams,
+  ) {
+    return getBusinessTransactionsFromLedgerRecords.run(params, this.dbProvider);
+  }
+
+  public getBusinessTransactionsSumFromLedgerRecords(
+    params: IGetBusinessTransactionsSumFromLedgerRecordsParamsAdjusted | null | undefined,
+  ) {
     const isFinancialEntityIds = params?.financialEntityIds?.length ?? 0;
     const isBusinessNames = params?.businessNames?.length ?? 0;
     const adjustedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
@@ -118,8 +132,6 @@ const getBusinessTransactionsSumFromLedgerRecordsAdjusted: Pick<
         ? (params?.toDate as TimelessDateString)
         : null,
     };
-    return getBusinessTransactionsSumFromLedgerRecords.run(adjustedFilters, dbConnection);
-  },
-};
-
-export { getBusinessTransactionsSumFromLedgerRecordsAdjusted as getBusinessTransactionsSumFromLedgerRecords };
+    return getBusinessTransactionsSumFromLedgerRecords.run(adjustedFilters, this.dbProvider);
+  }
+}

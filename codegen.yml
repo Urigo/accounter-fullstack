@@ -26,25 +26,25 @@ generates:
         Currency: '../models/enums.js#Currency'
         DocumentType: '../models/enums.js#DocumentType'
       mappers:
-        LtdFinancialEntity: ./financial-entities.types.js#IGetFinancialEntitiesByIdsResult
-        PersonalFinancialEntity: ./financial-entities.types.js#IGetFinancialEntitiesByIdsResult
-        BankFinancialAccount: ./financial-accounts.types.js#IGetFinancialAccountsByFinancialEntityIdsResult
-        CardFinancialAccount: ./financial-accounts.types.js#IGetFinancialAccountsByFinancialEntityIdsResult
-        Charge: ./charges.types.js#IGetChargesByIdsResult
-        LedgerRecord: ./ledger-records.types.js#IGetLedgerRecordsByChargeIdsResult
+        LtdFinancialEntity: ../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult
+        PersonalFinancialEntity: ../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult
+        BankFinancialAccount: ../modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult
+        CardFinancialAccount: ../modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult
+        Charge: ../modules/charges/types.js#IGetChargesByIdsResult
+        LedgerRecord: ../modules/ledger/types.js#IGetLedgerRecordsByChargeIdsResult
         NamedCounterparty: ../models/index.js#CounterpartyProto
-        Invoice: ./documents.types.js#IGetAllDocumentsResult
-        Proforma: ./documents.types.js#IGetAllDocumentsResult
-        Receipt: ./documents.types.js#IGetAllDocumentsResult
-        InvoiceReceipt: ./documents.types.js#IGetAllDocumentsResult
-        WireTransaction: ./charges.types.js#IGetChargesByIdsResult
-        FeeTransaction: ./charges.types.js#IGetChargesByIdsResult
-        ConversionTransaction: ./charges.types.js#IGetChargesByIdsResult
-        CommonTransaction: ./charges.types.js#IGetChargesByIdsResult
+        Invoice: ../modules/documents/types.js#IGetAllDocumentsResult
+        Proforma: ../modules/documents/types.js#IGetAllDocumentsResult
+        Receipt: ../modules/documents/types.js#IGetAllDocumentsResult
+        InvoiceReceipt: ../modules/documents/types.js#IGetAllDocumentsResult
+        WireTransaction: ../modules/charges/types.js#IGetChargesByIdsResult
+        FeeTransaction: ../modules/charges/types.js#IGetChargesByIdsResult
+        ConversionTransaction: ../modules/charges/types.js#IGetChargesByIdsResult
+        CommonTransaction: ../modules/charges/types.js#IGetChargesByIdsResult
         BeneficiaryCounterparty: ../models/index.js#BeneficiaryCounterpartyProto
-        Unprocessed: ./documents.types.js#IGetAllDocumentsResult
-        SortCode: ./hash-sort-codes.types.js#IGetSortCodesByIdsResult
-        HashavshevetAccount: ./hash-account-cards.types.js#IGetAccountCardsBySortCodesResult
+        Unprocessed: ../modules/documents/types.js#IGetAllDocumentsResult
+        SortCode: ../modules/hashavshevet/types.js#IGetSortCodesByIdsResult
+        HashavshevetAccount: ../modules/hashavshevet/types.js#IGetAccountCardsBySortCodesResult
         BusinessTransactionSum: ../models/index.js#RawBusinessTransactionsSum
         VatReportRecord: ../helpers/vat-report.js#DecoratedVatReportRecord
     plugins:

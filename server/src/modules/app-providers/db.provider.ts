@@ -7,7 +7,6 @@ type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[] };
 
 @Injectable({
   scope: Scope.Singleton,
-  global: true,
 })
 export class DBProvider {
   constructor(private pool: postgres.Pool) {}
@@ -16,6 +15,9 @@ export class DBProvider {
     queryStatement: string,
     values?: any[] | undefined,
   ): Promise<TypedQueryResult<Entity>> {
+    if (!this.pool) {
+      throw new Error('DB connection not initialized');
+    }
     return this.pool.query(queryStatement, values);
   }
 }

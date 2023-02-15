@@ -1,6 +1,6 @@
-import { IValidateChargesResult } from '../__generated__/charges.types.js';
-import { Currency, MissingChargeInfo, ValidationData } from '../__generated__/types.js';
-import { formatFinancialAmount } from './amount.js';
+import { Currency, MissingChargeInfo, ValidationData } from '../../../__generated__/types.js';
+import { formatFinancialAmount } from '../../../helpers/amount.js';
+import { IValidateChargesResult } from '../types.js';
 
 export function validateCharge(charge: IValidateChargesResult): ValidationData {
   const missingInfo: Array<MissingChargeInfo> = [];
