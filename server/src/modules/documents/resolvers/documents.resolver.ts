@@ -1,23 +1,16 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import type {
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../../../__generated__/charges.types.js';
+import { DocumentType } from '../../../models/enums.js';
 import type {
   IInsertDocumentsParams,
   IUpdateDocumentParams,
-} from '../../../__generated__/documents.types.js';
-import { DocumentType } from '../../../models/enums.js';
-import { getChargeByIdLoader, updateCharge } from '../../../providers/charges.js';
-import { pool } from '../../../providers/db.js';
-import {
-  deleteDocument,
-  getAllDocuments,
-  getDocumentsByChargeIdLoader,
-  insertDocuments,
-  updateDocument,
-} from '../../../providers/documents.js';
+} from '../__generated__/documents.types.js';
 import { DocumentsModule } from '../__generated__/types.js';
+import { DocumentsProvider } from '../providers/documents.provider.js';
 import {
   commonDocumentsFields,
   commonFinancialDocumentsFields,
@@ -28,20 +21,20 @@ import { fetchEmailDocument } from './email-handling.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers = {
   Query: {
-    documents: async () => {
-      const dbDocs = await getAllDocuments.run(void 0, pool);
+    documents: async (_, __, { injector }) => {
+      const dbDocs = await injector.get(DocumentsProvider).getAllDocuments();
       return dbDocs;
     },
   },
   Mutation: {
     uploadDocument,
     fetchEmailDocument,
-    updateDocument: async (_, { fields, documentId }) => {
+    updateDocument: async (_, { fields, documentId }, { injector }) => {
       try {
         let charge: IGetChargesByIdsResult | undefined;
 
         if (fields.chargeId) {
-          charge = await getChargeByIdLoader.load(fields.chargeId);
+          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new Error(`Charge ID="${fields.chargeId}" not valid`);
           }
@@ -60,7 +53,7 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
           vatAmount: fields.vat?.raw ?? null,
           isReviewed: true,
         };
-        const res = await updateDocument.run({ ...adjustedFields }, pool);
+        const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
         if (!res || res.length === 0) {
           throw new Error(`Document ID="${documentId}" not found`);
         }
@@ -109,7 +102,7 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
             withholdingTax: null,
             chargeId: charge.id,
           };
-          const res = await updateCharge.run(adjustedFields, pool);
+          const res = await injector.get(ChargesProvider).updateCharge(adjustedFields);
           if (!res || res.length === 0) {
             throw new Error(
               `Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`,
@@ -127,8 +120,8 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
         };
       }
     },
-    deleteDocument: async (_, { documentId }) => {
-      const res = await deleteDocument.run({ documentId }, pool);
+    deleteDocument: async (_, { documentId }, { injector }) => {
+      const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
       if (res.length === 1) {
         return true;
       }
@@ -138,10 +131,12 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
           : `More than one document found and deleted: ${res}`,
       );
     },
-    insertDocument: async (_, { record }) => {
+    insertDocument: async (_, { record }, { injector }) => {
       try {
         if (record.chargeId) {
-          const charge = await getChargeByIdLoader.load(record.chargeId);
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(record.chargeId);
 
           if (!charge) {
             throw new Error(`Charge ID='${record.chargeId}' not found`);
@@ -159,7 +154,9 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
           vat: record.vat?.raw ?? null,
           chargeId: record.chargeId ?? null,
         };
-        const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
+        const res = await injector
+          .get(DocumentsProvider)
+          .insertDocuments({ document: [{ ...newDocument }] });
 
         if (!res || res.length === 0) {
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
@@ -167,7 +164,7 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
 
         if (record.chargeId) {
           /* clear cache */
-          getDocumentsByChargeIdLoader.clear(record.chargeId);
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.clear(record.chargeId);
         }
 
         return { document: res[0] };
@@ -232,18 +229,27 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
     ...commonFinancialDocumentsFields,
   },
   Charge: {
-    additionalDocuments: async DbCharge => {
+    additionalDocuments: async (DbCharge, _, { injector }) => {
       if (!DbCharge.id) {
         return [];
       }
-      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
-      return docs;
+      try {
+        const docs = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(DbCharge.id);
+        return docs;
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
     },
-    invoice: async DbCharge => {
+    invoice: async (DbCharge, _, { injector }) => {
       if (!DbCharge.id) {
         return null;
       }
-      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
+      const docs = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(DbCharge.id);
       const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (invoices.length > 1) {
         console.log(
@@ -254,11 +260,13 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
       }
       return invoices.shift() ?? null;
     },
-    receipt: async DbCharge => {
+    receipt: async (DbCharge, _, { injector }) => {
       if (!DbCharge.id) {
         return null;
       }
-      const docs = await getDocumentsByChargeIdLoader.load(DbCharge.id);
+      const docs = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(DbCharge.id);
       const receipts = docs.filter(d => ['RECEIPT', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
       if (receipts.length > 1) {
         console.log(

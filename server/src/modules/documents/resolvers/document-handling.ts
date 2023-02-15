@@ -1,3 +1,4 @@
+import { CloudinaryProvider } from 'modules/app-providers/cloudinary.js';
 import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
 import {
   IGetAllDocumentsResult,
@@ -5,11 +6,9 @@ import {
 } from '../../../__generated__/documents.types.js';
 import { normalizeDocumentType } from '../../../helpers/green-invoice.js';
 import { Currency } from '../../../models/enums.js';
-import { uploadInvoiceToCloudinary } from '../../../providers/cloudinary.js';
-import { pool } from '../../../providers/db.js';
-import { insertDocuments } from '../../../providers/documents.js';
 import { GreenInvoice } from '../../../providers/green-invoice.js';
 import { DocumentsModule } from '../__generated__/types.js';
+import { DocumentsProvider } from '../providers/documents.provider.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
   const base64string = Buffer.from(await file.arrayBuffer()).toString('base64');
@@ -27,13 +26,16 @@ function isCurrency(value?: string | null): value is Currency {
 export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument'] = async (
   _,
   { file, chargeId },
+  { injector },
 ) => {
   try {
     const base64string = await toBase64(file).catch(err => {
       throw new Error(`Failed to convert file to base64: ${err.message}`);
     });
 
-    const { fileUrl, imageUrl } = await uploadInvoiceToCloudinary(base64string);
+    const { fileUrl, imageUrl } = await injector
+      .get(CloudinaryProvider)
+      .uploadInvoiceToCloudinary(base64string);
 
     const data = await GreenInvoice.addExpenseDraftByFile_mutation({
       input: { file: base64string },
@@ -63,7 +65,9 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       vat: draft.expense?.vat ?? null,
       chargeId: chargeId ?? null,
     };
-    const res = await insertDocuments.run({ document: [{ ...newDocument }] }, pool);
+    const res = await injector
+      .get(DocumentsProvider)
+      .insertDocuments({ document: [{ ...newDocument }] });
     return { document: res[0] as IGetAllDocumentsResult };
   } catch (e) {
     const message = (e as Error)?.message ?? 'Unknown error';

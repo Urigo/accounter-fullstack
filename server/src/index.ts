@@ -1,21 +1,24 @@
 import { createServer } from 'node:http';
 import { config } from 'dotenv';
 import { createYoga } from 'graphql-yoga';
+import 'reflect-metadata';
 import { useGraphQLModules } from '@envelop/graphql-modules';
-import { initCloudinary } from './providers/cloudinary.js';
-import { initGreenInvoice } from './providers/green-invoice.js';
 import { createGraphQLApp } from './modules-app.js';
+import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
+import { initGreenInvoice } from './providers/green-invoice.js';
 
 config({ path: '../.env' });
 
 async function main() {
   // initiate providers
   try {
-    await Promise.all([initCloudinary(), initGreenInvoice()]);
+    await Promise.all([initGreenInvoice()]);
   } catch (e) {
     console.error(`Error initiating providers: ${e}`);
   }
   const application = await createGraphQLApp();
+
+  application.injector.get(CloudinaryProvider).initCloudinary();
 
   const yoga = createYoga({ plugins: [useGraphQLModules(application)] });
 

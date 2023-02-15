@@ -6,12 +6,6 @@ import { VatIndexesKeys } from '../providers/hashavshevet.js';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.js';
 import { getILSForDate } from './exchange.js';
 
-export type OptionalToNullable<O> = {
-  [K in keyof O]: undefined extends O[K] ? O[K] | null : O[K];
-};
-export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
-  OptionalToNullable<Partial<Pick<T, Keys>>>;
-
 export type VatExtendedCharge = IGetChargesByIdsResult & {
   vatAfterDeduction: number;
   amountBeforeVAT: number;

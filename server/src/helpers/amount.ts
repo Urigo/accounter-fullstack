@@ -98,7 +98,7 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
       return 0;
     }
     default:
-      console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
+      // console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
       return 0;
   }
 };

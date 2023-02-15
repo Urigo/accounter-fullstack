@@ -25,4 +25,10 @@ type DD = `${0}${oneToNine}` | `${1 | 2}${d}` | `3${0 | 1}`;
 
 export type TimelessDateString = `${YYYY}-${MM}-${DD}`;
 
+export type OptionalToNullable<O> = {
+  [K in keyof O]: undefined extends O[K] ? O[K] | null : O[K];
+};
+export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
+  OptionalToNullable<Partial<Pick<T, Keys>>>;
+
 export * as enums from './enums.js';

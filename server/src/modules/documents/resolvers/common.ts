@@ -2,9 +2,8 @@ import { format } from 'date-fns';
 import { formatFinancialAmount } from '../../../helpers/amount.js';
 import { DocumentType } from '../../../models/enums.js';
 import { TimelessDateString } from '../../../models/index.js';
-import { pool } from '../../../providers/db.js';
-import { getDocumentsByFinancialEntityIds } from '../../../providers/documents.js';
 import { DocumentsModule } from '../__generated__/types.js';
+import { DocumentsProvider } from '../providers/documents.provider.js';
 
 export const documentType: DocumentsModule.DocumentResolvers['documentType'] = documentRoot => {
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
@@ -43,11 +42,10 @@ export const commonFinancialDocumentsFields:
 export const commonFinancialEntityFields:
   | DocumentsModule.LtdFinancialEntityResolvers
   | DocumentsModule.PersonalFinancialEntityResolvers = {
-  documents: async DbBusiness => {
-    const documents = await getDocumentsByFinancialEntityIds.run(
-      { financialEntityIds: [DbBusiness.id] },
-      pool,
-    );
+  documents: async (DbBusiness, _, { injector }) => {
+    const documents = await injector
+      .get(DocumentsProvider)
+      .getDocumentsByFinancialEntityIds({ financialEntityIds: [DbBusiness.id] });
     return documents;
   },
 };

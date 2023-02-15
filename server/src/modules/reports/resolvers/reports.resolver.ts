@@ -1,5 +1,8 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
+import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
+import { DocumentsProvider } from 'modules/documents/providers/documents.provider.js';
 import { IGetTaxTransactionsByIDsResult } from '../../../__generated__/tax-transactions.types.js';
 import { ResolversTypes } from '../../../__generated__/types.js';
 import { formatFinancialAmount, formatFinancialIntAmount } from '../../../helpers/amount.js';
@@ -13,9 +16,7 @@ import {
 } from '../../../helpers/vat-report.js';
 import { Currency } from '../../../models/enums.js';
 import { TimelessDateString } from '../../../models/index.js';
-import { getChargesByFilters, validateCharges } from '../../../providers/charges.js';
 import { pool } from '../../../providers/db.js';
-import { getDocumentsByFilters } from '../../../providers/documents.js';
 import { getExchangeRatesByDates } from '../../../providers/exchange.js';
 import {
   getFinancialEntityByIdLoader,
@@ -26,6 +27,7 @@ import { getTaxTransactionsLoader } from '../../../providers/tax-transactions.js
 import { ReportsModule } from '../__generated__/types.js';
 
 async function getVatRecords(
+  injector: Injector,
   fromDate?: TimelessDateString,
   toDate?: TimelessDateString,
   financialEntityId?: string,
@@ -37,7 +39,9 @@ async function getVatRecords(
     expenses: [] as DecoratedVatReportRecord[],
   };
 
-  const documents = await getDocumentsByFilters.run({ fromDate, toDate }, pool);
+  const documents = await injector
+    .get(DocumentsProvider)
+    .getDocumentsByFilters({ fromDate, toDate });
 
   if (documents.length === 0) {
     console.log('No documents found for VAT report');
@@ -49,14 +53,11 @@ async function getVatRecords(
       'VAT',
       'Dotan Simha Dividend',
     ];
-    const charges = await getChargesByFilters.run(
-      {
-        IDs: chargesIDs,
-        financialEntityIds: [financialEntityId],
-        notBusinesses: EXCLUDED_BUSINESS_NAMES,
-      },
-      pool,
-    );
+    const charges = await injector.get(ChargesProvider).getChargesByFilters({
+      IDs: chargesIDs,
+      financialEntityIds: [financialEntityId],
+      notBusinesses: EXCLUDED_BUSINESS_NAMES,
+    });
 
     if (charges.length === 0) {
       console.log('No charges found for VAT report');
@@ -131,7 +132,7 @@ async function getVatRecords(
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
-    vatReport: async (_, { filters }) => {
+    vatReport: async (_, { filters }, { injector }) => {
       try {
         const response = {
           income: [] as Array<ResolversTypes['VatReportRecord']>,
@@ -143,6 +144,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         const includedChargeIDs = new Set<string>();
 
         const vatRecords = await getVatRecords(
+          injector,
           filters?.fromDate,
           filters?.toDate,
           filters?.financialEntityId,
@@ -153,16 +155,11 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         const chargeIDs = Array.from(vatRecords.includedChargeIDs);
         chargeIDs.forEach(id => includedChargeIDs.add(id));
 
-        const validationCharges = await validateCharges.run(
-          {
-            fromDate: filters?.fromDate,
-            toDate: filters?.toDate,
-            financialEntityIds: filters?.financialEntityId
-              ? [filters?.financialEntityId]
-              : undefined,
-          },
-          pool,
-        );
+        const validationCharges = await injector.get(ChargesProvider).validateCharges({
+          fromDate: filters?.fromDate,
+          toDate: filters?.toDate,
+          financialEntityIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
+        });
 
         // filter charges with missing info
         response.missingInfo.push(
@@ -186,12 +183,12 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching vat report records');
       }
     },
-    pcnFile: async (_, { fromDate, toDate, financialEntityId }) => {
+    pcnFile: async (_, { fromDate, toDate, financialEntityId }, { injector }) => {
       const financialEntity = await getFinancialEntityByIdLoader.load(financialEntityId);
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
       }
-      const vatRecords = await getVatRecords(fromDate, toDate, financialEntityId);
+      const vatRecords = await getVatRecords(injector, fromDate, toDate, financialEntityId);
       const reportMonth = format(new Date(fromDate), 'yyyyMM');
 
       return generatePcnFromCharges(

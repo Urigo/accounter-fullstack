@@ -1,6 +1,6 @@
+import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import type { IUpdateChargeParams } from '../../../__generated__/charges.types.js';
 import { IUpdateLedgerRecordParams } from '../../../__generated__/ledger-records.types.js';
-import { getChargeByIdLoader, updateCharge } from '../../../providers/charges.js';
 import { pool } from '../../../providers/db.js';
 import {
   getLedgerRecordsByChargeIdLoader,
@@ -11,7 +11,7 @@ import { commonTransactionFields } from './common.js';
 
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   Mutation: {
-    toggleChargeAccountantApproval: async (_, { chargeId, approved }) => {
+    toggleChargeAccountantApproval: async (_, { chargeId, approved }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountNumber: null,
         accountType: null,
@@ -53,7 +53,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         withholdingTax: null,
         chargeId,
       };
-      const res = await updateCharge.run({ ...adjustedFields }, pool);
+      const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
 
       if (!res || res.length === 0) {
         throw new Error(`Failed to update charge ID='${chargeId}'`);
@@ -61,7 +61,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
 
       /* clear cache */
       if (res[0].original_id) {
-        getChargeByIdLoader.clear(res[0].original_id);
+        injector.get(ChargesProvider).getChargeByIdLoader.clear(res[0].original_id);
       }
       return res[0].reviewed || false;
     },

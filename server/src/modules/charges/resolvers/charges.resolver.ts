@@ -6,16 +6,9 @@ import type {
 } from '../../../__generated__/charges.types.js';
 import { formatFinancialAmount } from '../../../helpers/amount.js';
 import { validateCharge } from '../../../helpers/charges.js';
-import {
-  getChargeByIdLoader,
-  getChargesByFilters,
-  updateCharge,
-  validateChargeByIdLoader,
-  validateCharges,
-} from '../../../providers/charges.js';
-import { pool } from '../../../providers/db.js';
 import { getFinancialEntityByIdLoader } from '../../../providers/financial-entities.js';
 import { ChargesModule } from '../__generated__/types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -25,14 +18,14 @@ import {
 
 export const chargesResolvers: ChargesModule.Resolvers = {
   Query: {
-    chargeById: async (_, { id }) => {
-      const dbCharge = await getChargeByIdLoader.load(id);
+    chargeById: async (_, { id }, { injector }) => {
+      const dbCharge = await injector.get(ChargesProvider).getChargeByIdLoader.load(id);
       if (!dbCharge) {
         throw new Error(`Charge ID="${id}" not found`);
       }
       return dbCharge;
     },
-    allCharges: async (_, { filters, page, limit }) => {
+    allCharges: async (_, { filters, page, limit }, { injector }) => {
       // handle sort column
       let sortColumn: keyof IGetChargesByFiltersResult = 'event_date';
       switch (filters?.sortBy?.field) {
@@ -55,22 +48,20 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
       }
 
-      let charges = await getChargesByFilters
-        .run(
-          {
-            financialEntityIds: filters?.byOwners ?? undefined,
-            businesses,
-            fromDate: filters?.fromDate,
-            toDate: filters?.toDate,
-            sortColumn,
-            asc: filters?.sortBy?.asc !== false,
-            preCalculateBalance: filters?.unbalanced,
-            preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
-            preCountReceipts: filters?.withoutDocuments,
-            preCountLedger: filters?.withoutLedger,
-          },
-          pool,
-        )
+      let charges = await injector
+        .get(ChargesProvider)
+        .getChargesByFilters({
+          financialEntityIds: filters?.byOwners ?? undefined,
+          businesses,
+          fromDate: filters?.fromDate,
+          toDate: filters?.toDate,
+          sortColumn,
+          asc: filters?.sortBy?.asc !== false,
+          preCalculateBalance: filters?.unbalanced,
+          preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
+          preCountReceipts: filters?.withoutDocuments,
+          preCountLedger: filters?.withoutLedger,
+        })
         .catch(e => {
           throw new Error(e.message);
         });
@@ -95,12 +86,9 @@ export const chargesResolvers: ChargesModule.Resolvers = {
       const pageCharges = charges.slice(page * limit - limit, page * limit);
 
       if (filters?.unbalanced) {
-        const validationInfo = await validateCharges.run(
-          {
-            IDs: pageCharges.map(c => c.id),
-          },
-          pool,
-        );
+        const validationInfo = await injector.get(ChargesProvider).validateCharges({
+          IDs: pageCharges.map(c => c.id),
+        });
         pageCharges.map(c =>
           Object.assign(
             c,
@@ -119,7 +107,7 @@ export const chargesResolvers: ChargesModule.Resolvers = {
     },
   },
   Mutation: {
-    updateCharge: async (_, { chargeId, fields }) => {
+    updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const financialAccountsToBalance = fields.beneficiaries
         ? JSON.stringify(
             fields.beneficiaries.map(b => ({
@@ -170,8 +158,8 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         chargeId,
       };
       try {
-        getChargeByIdLoader.clear(chargeId);
-        const res = await updateCharge.run({ ...adjustedFields }, pool);
+        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
+        const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
         return res[0];
       } catch (e) {
         return {
@@ -183,7 +171,7 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         };
       }
     },
-    updateTransaction: async (_, { transactionId, fields }) => {
+    updateTransaction: async (_, { transactionId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountNumber: null,
         accountType: null,
@@ -234,8 +222,8 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         chargeId: transactionId,
       };
       try {
-        getChargeByIdLoader.clear(transactionId);
-        const res = await updateCharge.run({ ...adjustedFields }, pool);
+        injector.get(ChargesProvider).getChargeByIdLoader.clear(transactionId);
+        const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
         return res[0];
       } catch (e) {
         return {
@@ -261,11 +249,11 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         ? null
         : formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code),
     property: DbCharge => DbCharge.is_property,
-    validationData: DbCharge => {
+    validationData: (DbCharge, _, { injector }) => {
       if ('balance' in DbCharge) {
         return validateCharge(DbCharge as IValidateChargesResult);
       }
-      return validateChargeByIdLoader.load(DbCharge.id);
+      return injector.get(ChargesProvider).validateChargeByIdLoader.load(DbCharge.id);
     },
   },
   // UpdateChargeResult: {

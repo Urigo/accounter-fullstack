@@ -1,4 +1,6 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
+import { DocumentsProvider } from 'modules/documents/providers/documents.provider.js';
 import {
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsResult,
@@ -17,9 +19,7 @@ import {
 } from '../../../helpers/hashavshevet.js';
 import { buildLedgerEntries, decorateCharge } from '../../../helpers/misc.js';
 import { TimelessDateString } from '../../../models/index.js';
-import { getChargeByIdLoader, getConversionOtherSide } from '../../../providers/charges.js';
 import { pool } from '../../../providers/db.js';
-import { getDocumentsByChargeIdLoader } from '../../../providers/documents.js';
 import { getExchangeRates } from '../../../providers/exchange.js';
 import { getFinancialAccountByAccountNumberLoader } from '../../../providers/financial-accounts.js';
 import { getFinancialEntityByIdLoader } from '../../../providers/financial-entities.js';
@@ -96,9 +96,9 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
         };
       }
     },
-    insertLedgerRecord: async (_, { chargeId, record }) => {
+    insertLedgerRecord: async (_, { chargeId, record }, { injector }) => {
       try {
-        const charge = await getChargeByIdLoader.load(chargeId);
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
 
         if (!charge) {
           throw new Error(`Charge ID='${chargeId}' not found`);
@@ -236,10 +236,10 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
         };
       }
     },
-    insertDbLedgerRecord: async (_, { chargeId, record }) => {
+    insertDbLedgerRecord: async (_, { chargeId, record }, { injector }) => {
       /* TEMPORARY: this is a temporary solution to insert a ledger record to the DB. */
       try {
-        const charge = await getChargeByIdLoader.load(chargeId);
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
 
         if (!charge) {
           throw new Error(`Charge ID='${chargeId}' not found`);
@@ -331,16 +331,18 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
           : `More than one ledger records found and deleted: ${res}`,
       );
     },
-    generateLedgerRecords: async (_, { chargeId }) => {
+    generateLedgerRecords: async (_, { chargeId }, { injector }) => {
       try {
-        const charge = await getChargeByIdLoader.load(chargeId);
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
         if (!charge) {
           throw new Error(`Charge ID="${chargeId}" not found`);
         }
         if (!charge.account_number) {
           throw new Error(`Charge ID="${chargeId}" has no account number`);
         }
-        const docs = await getDocumentsByChargeIdLoader.load(chargeId);
+        const docs = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(chargeId);
         let docTypes = ['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'];
         if (parseFloat(charge.event_amount) > 0) {
           docTypes = ['INVOICE', 'INVOICE_RECEIPT'];
@@ -441,10 +443,12 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
         }
 
         const conversionOtherSide = (
-          await getConversionOtherSide.run(
-            { chargeId: decoratedCharge.id, bankReference: decoratedCharge.bank_reference },
-            pool,
-          )
+          await injector
+            .get(ChargesProvider)
+            .getConversionOtherSide({
+              chargeId: decoratedCharge.id,
+              bankReference: decoratedCharge.bank_reference,
+            })
         ).shift();
 
         // insert finacial account ledger

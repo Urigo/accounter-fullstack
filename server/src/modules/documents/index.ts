@@ -1,6 +1,7 @@
-import { documentsResolvers } from './resolvers/documents.resolver.js';
 import documents from './typeDefs/documents.graphql.js';
 import { createModule } from 'graphql-modules';
+import { DocumentsProvider } from './providers/documents.provider.js';
+import { documentsResolvers } from './resolvers/documents.resolver.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -9,5 +10,5 @@ export const documentsModule = createModule({
   dirname: __dirname,
   typeDefs: [documents],
   resolvers: [documentsResolvers],
-  providers: () => [],
+  providers: () => [DocumentsProvider],
 });

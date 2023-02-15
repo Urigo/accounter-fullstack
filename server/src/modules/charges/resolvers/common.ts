@@ -2,15 +2,8 @@ import { IGetChargesByIdsResult } from '../../../__generated__/charges.types.js'
 import { TransactionDirection } from '../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../helpers/amount.js';
 import { effectiveDateSupplement } from '../../../helpers/misc.js';
-import {
-  getChargeByFinancialAccountNumberLoader,
-  getChargeByFinancialEntityIdLoader,
-  getChargeByIdLoader,
-  getChargesByFinancialAccountNumbers,
-  getChargesByFinancialEntityIds,
-} from '../../../providers/charges.js';
-import { pool } from '../../../providers/db.js';
 import type { ChargesModule } from '../__generated__/types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 
 export const commonTransactionFields:
   | ChargesModule.ConversionTransactionResolvers
@@ -34,11 +27,13 @@ export const commonTransactionFields:
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
-  charge: async documentRoot => {
+  charge: async (documentRoot, _, { injector }) => {
     if (!documentRoot.charge_id) {
       return null;
     }
-    const charge = await getChargeByIdLoader.load(documentRoot.charge_id);
+    const charge = await injector
+      .get(ChargesProvider)
+      .getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
   },
 };
@@ -46,19 +41,18 @@ export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
 export const commonFinancialAccountFields:
   | ChargesModule.CardFinancialAccountResolvers
   | ChargesModule.BankFinancialAccountResolvers = {
-  charges: async (DbAccount, { filter }) => {
+  charges: async (DbAccount, { filter }, { injector }) => {
     if (!filter || Object.keys(filter).length === 0) {
-      const charges = await getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
+      const charges = await injector
+        .get(ChargesProvider)
+        .getChargeByFinancialAccountNumberLoader.load(DbAccount.account_number);
       return charges;
     }
-    const charges = await getChargesByFinancialAccountNumbers.run(
-      {
-        financialAccountNumbers: [DbAccount.account_number],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      },
-      pool,
-    );
+    const charges = await injector.get(ChargesProvider).getChargesByFinancialAccountNumbers({
+      financialAccountNumbers: [DbAccount.account_number],
+      fromDate: filter?.fromDate,
+      toDate: filter?.toDate,
+    });
     return charges;
   },
 };
@@ -66,20 +60,19 @@ export const commonFinancialAccountFields:
 export const commonFinancialEntityFields:
   | ChargesModule.LtdFinancialEntityResolvers
   | ChargesModule.PersonalFinancialEntityResolvers = {
-  charges: async (DbBusiness, { filter, page, limit }) => {
+  charges: async (DbBusiness, { filter, page, limit }, { injector }) => {
     const charges: IGetChargesByIdsResult[] = [];
     if (!filter || Object.keys(filter).length === 0) {
-      const newCharges = await getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
+      const newCharges = await injector
+        .get(ChargesProvider)
+        .getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
       charges.push(...newCharges);
     } else {
-      const newCharges = await getChargesByFinancialEntityIds.run(
-        {
-          financialEntityIds: [DbBusiness.id],
-          fromDate: filter?.fromDate,
-          toDate: filter?.toDate,
-        },
-        pool,
-      );
+      const newCharges = await injector.get(ChargesProvider).getChargesByFinancialEntityIds({
+        financialEntityIds: [DbBusiness.id],
+        fromDate: filter?.fromDate,
+        toDate: filter?.toDate,
+      });
       charges.push(...newCharges);
     }
     return {

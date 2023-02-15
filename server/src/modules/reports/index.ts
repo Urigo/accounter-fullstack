@@ -10,5 +10,5 @@ export const reportsModule = createModule({
   dirname: __dirname,
   typeDefs: [vatReport, pcn],
   resolvers: [reportsResolvers],
-  providers: () => [],
+  // providers: () => [],
 });

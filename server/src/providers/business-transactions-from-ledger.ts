@@ -7,8 +7,8 @@ import {
   IGetBusinessTransactionsSumFromLedgerRecordsResult,
   IGetLedgerRecordsDistinctBusinessesQuery,
 } from '../__generated__/business-transactions-from-ledger.types.js';
-import { isTimelessDateString, Optional } from '../helpers/misc.js';
-import { TimelessDateString } from '../models/index.js';
+import { isTimelessDateString } from '../helpers/misc.js';
+import { Optional, TimelessDateString } from '../models/index.js';
 
 const { sql } = pgQuery;
 

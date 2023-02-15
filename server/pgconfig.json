@@ -6,9 +6,15 @@
       "emitTemplate": "src/__generated__/{{name}}.types.ts"
     },
     {
+      "": "// TODO: remove this after providers are migrated",
       "mode": "ts",
-      "include": "**/providers/**/*.ts",
+      "include": "src/providers/**/*.ts",
       "emitTemplate": "src/__generated__/{{name}}.types.ts"
+    },
+    {
+      "mode": "ts",
+      "include": "**/providers/*.provider.ts",
+      "emitTemplate": "{{dir}}/../__generated__/{{name.replace('.provider','')}}.types.ts"
     }
   ],
   "srcDir": "./src/",
