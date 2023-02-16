@@ -31,7 +31,10 @@ export class TaxTransactionsProvider {
     return ids.map(id => taxTransactions.find(charge => charge.id === id));
   }
 
-  public getTaxTransactionsLoader = new DataLoader(this.batchTaxTransactionsByIDs, {
-    cache: false,
-  });
+  public getTaxTransactionsLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchTaxTransactionsByIDs(keys),
+    {
+      cache: false,
+    },
+  );
 }

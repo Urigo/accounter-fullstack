@@ -164,7 +164,8 @@ export class HashavshevetProvider {
   }
 
   public getHashavshevetBusinessIndexesByIdLoader = new DataLoader(
-    this.batchHashavshevetBusinessIndexesById,
+    (keys: readonly { financialEntityId: string; businessName: string }[]) =>
+      this.batchHashavshevetBusinessIndexesById(keys),
     { cache: false },
   );
 }

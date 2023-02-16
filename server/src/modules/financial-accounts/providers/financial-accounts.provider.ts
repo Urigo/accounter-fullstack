@@ -39,7 +39,7 @@ export class FinancialAccountsProvider {
   }
 
   public getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
-    this.batchFinancialAccountsByFinancialEntityIds,
+    (keys: readonly string[]) => this.batchFinancialAccountsByFinancialEntityIds(keys),
     { cache: false },
   );
 
@@ -56,7 +56,7 @@ export class FinancialAccountsProvider {
   }
 
   public getFinancialAccountByAccountNumberLoader = new DataLoader(
-    this.batchFinancialAccountsByAccountNumbers,
+    (keys: readonly string[]) => this.batchFinancialAccountsByAccountNumbers(keys),
     {
       cache: false,
     },

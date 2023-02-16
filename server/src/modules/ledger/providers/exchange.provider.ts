@@ -69,9 +69,12 @@ export class ExchangeProvider {
     });
   }
 
-  public getExchangeRatesByDatesLoader = new DataLoader(this.batchExchangeRatesByDates, {
-    cache: false,
-  });
+  public getExchangeRatesByDatesLoader = new DataLoader(
+    (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
+    {
+      cache: false,
+    },
+  );
 
   public async getChargeExchangeRates(charge: ChargesTypes.IGetChargesByIdsResult) {
     if (!charge.debit_date) {

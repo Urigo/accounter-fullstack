@@ -184,9 +184,12 @@ export class DocumentsProvider {
     }
   }
 
-  public getDocumentsByChargeIdLoader = new DataLoader(this.batchDocumentsByChargeIds, {
-    cache: false,
-  });
+  public getDocumentsByChargeIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
+    {
+      cache: false,
+    },
+  );
 
   public async getDocumentsByFinancialEntityIds(params: IGetDocumentsByFinancialEntityIdsParams) {
     return getDocumentsByFinancialEntityIds.run(params, this.dbProvider);

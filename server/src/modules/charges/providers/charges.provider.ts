@@ -431,7 +431,10 @@ export class ChargesProvider {
     return ids.map(id => charges.find(charge => charge.id === id));
   }
 
-  public getChargeByIdLoader = new DataLoader(this.batchChargesByIds, { cache: false });
+  public getChargeByIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchChargesByIds(keys),
+    { cache: false },
+  );
 
   public getChargesByFinancialAccountNumbers(params: IGetChargesByFinancialAccountNumbersParams) {
     return getChargesByFinancialAccountNumbers.run(params, this.dbProvider);
@@ -452,7 +455,7 @@ export class ChargesProvider {
   }
 
   public getChargeByFinancialAccountNumberLoader = new DataLoader(
-    this.batchChargesByFinancialAccountNumbers,
+    (keys: readonly string[]) => this.batchChargesByFinancialAccountNumbers(keys),
     {
       cache: false,
     },
@@ -477,7 +480,7 @@ export class ChargesProvider {
   }
 
   public getChargeByFinancialEntityIdLoader = new DataLoader(
-    this.batchChargesByFinancialEntityIds,
+    (keys: readonly string[]) => this.batchChargesByFinancialEntityIds(keys),
     {
       cache: false,
     },
@@ -559,7 +562,7 @@ export class ChargesProvider {
   }
 
   public validateChargeByIdLoader = new DataLoader<string, ChargesModule.ValidationData | null>(
-    this.batchValidateChargesByIds,
+    keys => this.batchValidateChargesByIds(keys),
     { cache: false },
   );
 }

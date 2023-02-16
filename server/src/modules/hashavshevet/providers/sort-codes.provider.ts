@@ -33,7 +33,10 @@ export class SortCodesProvider {
     return sortCodesIds.map(id => ledgerRecords.find(record => record.key === id));
   }
 
-  public getSortCodesByIdLoader = new DataLoader(this.batchSortCodesByIds, {
-    cache: false,
-  });
+  public getSortCodesByIdLoader = new DataLoader(
+    (keys: readonly number[]) => this.batchSortCodesByIds(keys),
+    {
+      cache: false,
+    },
+  );
 }

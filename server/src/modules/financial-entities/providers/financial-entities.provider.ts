@@ -53,9 +53,12 @@ export class FinancialEntitiesProvider {
     return ids.map(id => financialEntities.find(fe => fe.id === id));
   }
 
-  public getFinancialEntityByIdLoader = new DataLoader(this.batchFinancialEntitiesByIds, {
-    cache: false,
-  });
+  public getFinancialEntityByIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
+    {
+      cache: false,
+    },
+  );
 
   private async batchFinancialEntitiesByNames(names: readonly string[]) {
     const financialEntities = await getFinancialEntitiesByNames.run(
@@ -67,9 +70,12 @@ export class FinancialEntitiesProvider {
     return names.map(name => financialEntities.find(fe => fe.name === name));
   }
 
-  public getFinancialEntityByNameLoader = new DataLoader(this.batchFinancialEntitiesByNames, {
-    cache: false,
-  });
+  public getFinancialEntityByNameLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchFinancialEntitiesByNames(keys),
+    {
+      cache: false,
+    },
+  );
 
   public getAllFinancialEntities(params: IGetAllFinancialEntitiesParams) {
     return getAllFinancialEntities.run(params, this.dbProvider);
@@ -92,7 +98,7 @@ export class FinancialEntitiesProvider {
   }
 
   public getFinancialEntityByChargeIdsLoader = new DataLoader(
-    this.batchFinancialEntitiesByChargeIds,
+    (keys: readonly string[]) => this.batchFinancialEntitiesByChargeIds(keys),
     { cache: false },
   );
 }

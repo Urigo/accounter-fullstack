@@ -231,9 +231,12 @@ export class LedgerProvider {
     return chargeIds.map(id => ledgerRecords.filter(record => record.original_id === id));
   }
 
-  public getLedgerRecordsByChargeIdLoader = new DataLoader(this.batchLedgerRecordsByChargeIds, {
-    cache: false,
-  });
+  public getLedgerRecordsByChargeIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchLedgerRecordsByChargeIds(keys),
+    {
+      cache: false,
+    },
+  );
 
   public getLedgerRecordsByFinancialEntityIds(params: IGetLedgerRecordsByFinancialEntityIdsParams) {
     return getLedgerRecordsByFinancialEntityIds.run(params, this.dbProvider);

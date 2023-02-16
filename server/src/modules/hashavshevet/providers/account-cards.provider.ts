@@ -42,9 +42,12 @@ export class AccountCardsProvider {
     return sortCodesIds.map(id => accountCards.filter(record => record.sort_code === id));
   }
 
-  public getAccountCardsBySortCodesLoader = new DataLoader(this.batchAccountCardsBySortCodes, {
-    cache: false,
-  });
+  public getAccountCardsBySortCodesLoader = new DataLoader(
+    (keys: readonly number[]) => this.batchAccountCardsBySortCodes(keys),
+    {
+      cache: false,
+    },
+  );
 
   private async batchAccountCardsByKeys(keys: readonly string[]) {
     const accountCards = await getAccountCardsByKeys.run(

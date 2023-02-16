@@ -74,7 +74,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
           }
         });
 
-        return { businessTransactionsSum: Object.values(rawRes) };
+        return {
+          __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
+          businessTransactionsSum: Object.values(rawRes),
+        };
       } catch (e) {
         console.error(e);
         return {
@@ -183,12 +186,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
     counterparty: parent => parent.name,
     percentage: parent => parent.percentage,
   },
-  // BusinessTransactionsSumFromLedgerRecordsResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult';
-  //   },
-  // },
   BusinessTransactionSum: {
     businessName: rawSum => rawSum.businessName,
     credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
