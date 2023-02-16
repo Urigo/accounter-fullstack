@@ -1,4 +1,5 @@
-const SCHEMA_PATH = 'schema.graphql';
+const SCHEMA_PATH = 'schema.graphql.json';
+// const MODULES_PATH = 'server/**/typeDefs/*.{graphql,gql}.{,c,m}{j,t}s{,x}';
 const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
@@ -10,7 +11,7 @@ module.exports = {
   overrides: [
     {
       // Setup GraphQL Parser
-      files: '**/*.{graphql,gql}',
+      files: ['**/*.{graphql,gql}'],
       parser: '@graphql-eslint/eslint-plugin',
       plugins: ['@graphql-eslint'],
       parserOptions: {
@@ -23,38 +24,38 @@ module.exports = {
       files: OPERATIONS_PATH,
       processor: '@graphql-eslint/graphql',
     },
-    {
-      // Setup recommended config for schema file
-      files: SCHEMA_PATH,
-      extends: 'plugin:@graphql-eslint/schema-recommended',
-      rules: {
-        '@graphql-eslint/description-style': ['error', { style: 'inline' }],
-        '@graphql-eslint/strict-id-in-types': [
-          'error',
-          {
-            exceptions: {
-              types: [
-                'AccountantApproval',
-                'BeneficiaryCounterparty',
-                'CommonError',
-                'DateRange',
-                'FinancialAmount',
-                'FinancialIntAmount',
-                'NamedCounterparty',
-                'PageInfo',
-                'PaginatedCharges',
-                'SortCode',
-                'VatReportResult',
-                'VatReportRecord',
-                'ValidationData',
-                'PCNFileResult',
-                'PCNRawData',
-              ],
-            },
-          },
-        ],
-      },
-    },
+    // {
+    //   // Setup recommended config for schema file
+    //   files: MODULES_PATH,
+    //   extends: 'plugin:@graphql-eslint/schema-recommended',
+    //   rules: {
+    //     '@graphql-eslint/description-style': ['error', { style: 'inline' }],
+    //     '@graphql-eslint/strict-id-in-types': [
+    //       'error',
+    //       {
+    //         exceptions: {
+    //           types: [
+    //             'AccountantApproval',
+    //             'BeneficiaryCounterparty',
+    //             'CommonError',
+    //             'DateRange',
+    //             'FinancialAmount',
+    //             'FinancialIntAmount',
+    //             'NamedCounterparty',
+    //             'PageInfo',
+    //             'PaginatedCharges',
+    //             'SortCode',
+    //             'VatReportResult',
+    //             'VatReportRecord',
+    //             'ValidationData',
+    //             'PCNFileResult',
+    //             'PCNRawData',
+    //           ],
+    //         },
+    //       },
+    //     ],
+    //   },
+    // },
     {
       // Setup recommended config for operations files
       files: 'client/**/*.{graphql,gql}',
