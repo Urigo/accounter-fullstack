@@ -1,6 +1,6 @@
-import { pool } from '.';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
+import { pool } from '.';
 
 const TAX_CATEGORIES_WITH_NOT_FULL_VAT = ['פלאפון', 'מידע', 'מחשבים'];
 const ENTITIES_WITHOUT_INVOICE_DATE = ['Uri Goldshtein', 'Poalim', 'Isracard'];
