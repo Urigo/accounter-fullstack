@@ -208,7 +208,7 @@ async function getExchangeRates(currencyCode: any, date: Date) {
       // Make sure we get a value in a day without values (small and limit 1)
       return await pool.query(exchangeQuery);
     } catch (error) {
-      console.log('error in DB - ', error);
+      throw new Error(`error in DB - %{error}`);
     }
   }
 }

@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
 
 /* GraphQL */ `
-  mutation UploadDocument($file: File!, $chargeId: ID) {
+  mutation UploadDocument($file: FileScalar!, $chargeId: ID) {
     uploadDocument(file: $file, chargeId: $chargeId) {
       __typename
       ... on UploadDocumentSuccessfulResult {

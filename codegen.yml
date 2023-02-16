@@ -1,43 +1,58 @@
 overwrite: true
-schema: './**/*.graphql'
+schema: ./server/src/modules/*/typeDefs/*.graphql.ts
 documents: ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts']
 config:
   scalars:
-    Date: 'Date'
     TimelessDate: 'TimelessDateString'
     IBAN: string
     Percentage: number
     URL: 'URL | string'
-    File: 'File | Blob'
+    FileScalar: 'File | Blob'
 generates:
-  server/src/__generated__/types.mts:
+  schema.graphql.json:
+    plugins:
+      - 'introspection'
+  server/src/modules/:
+    preset: graphql-modules
+    presetConfig:
+      baseTypesPath: ../__generated__/types.ts
+      filename: __generated__/types.ts
+      encapsulateModuleTypes: namespace
     config:
+      immutableTypes: true
+      contextType: 'GraphQLModules.Context'
       optionalResolveType: true
+      enumValues:
+        MissingChargeInfo: '@shared/enums#MissingChargeInfo'
+        ChargeSortByField: '@shared/enums#ChargeSortByField'
+        TransactionDirection: '@shared/enums#TransactionDirection'
+        Currency: '@shared/enums#Currency'
+        DocumentType: '@shared/enums#DocumentType'
       mappers:
-        LtdFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
-        PersonalFinancialEntity: ./financial-entities.types.mjs#IGetFinancialEntitiesByIdsResult
-        BankFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
-        CardFinancialAccount: ./financial-accounts.types.mjs#IGetFinancialAccountsByFinancialEntityIdsResult
-        Charge: ./charges.types.mjs#IGetChargesByIdsResult
-        LedgerRecord: ./ledger-records.types.mjs#IGetLedgerRecordsByChargeIdsResult
-        NamedCounterparty: ../prototypes.mjs#CounterpartyProto
-        Invoice: ./documents.types.mjs#IGetAllDocumentsResult
-        Proforma: ./documents.types.mjs#IGetAllDocumentsResult
-        Receipt: ./documents.types.mjs#IGetAllDocumentsResult
-        InvoiceReceipt: ./documents.types.mjs#IGetAllDocumentsResult
-        WireTransaction: ./charges.types.mjs#IGetChargesByIdsResult
-        FeeTransaction: ./charges.types.mjs#IGetChargesByIdsResult
-        ConversionTransaction: ./charges.types.mjs#IGetChargesByIdsResult
-        CommonTransaction: ./charges.types.mjs#IGetChargesByIdsResult
-        BeneficiaryCounterparty: ../prototypes.mjs#BeneficiaryCounterpartyProto
-        Unprocessed: ./documents.types.mjs#IGetAllDocumentsResult
-        SortCode: ./hash-sort-codes.types.mjs#IGetSortCodesByIdsResult
-        HashavshevetAccount: ./hash-account-cards.types.mjs#IGetAccountCardsBySortCodesResult
-        BusinessTransactionSum: ../models/index.mjs#RawBusinessTransactionsSum
-        VatReportRecord: ../helpers/vat-report.mjs#DecoratedVatReportRecord
+        LtdFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
+        CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
+        Charge: '@modules/charges/types.js#IGetChargesByIdsResult'
+        LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargeIdsResult'
+        NamedCounterparty: '@shared/types#CounterpartyProto'
+        Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
+        Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
+        Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'
+        InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
+        WireTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
+        FeeTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
+        ConversionTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
+        CommonTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
+        BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
+        Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult'
+        SortCode: '@modules/hashavshevet/types.js#IGetSortCodesByIdsResult'
+        HashavshevetAccount: '@modules/hashavshevet/types.js#IGetAccountCardsBySortCodesResult'
+        BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
+        VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#DecoratedVatReportRecord'
     plugins:
       - add:
-          content: "import { TimelessDateString } from '../scalars'"
+          content: "import { TimelessDateString } from '@shared/types'"
       - 'typescript'
       - 'typescript-resolvers'
   client/src/gql/:

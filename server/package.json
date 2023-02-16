@@ -9,36 +9,41 @@
   },
   "main": "./src/index.mts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
+    "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "cd .. && yarn codegen && cd server && yarn sqlgen",
     "pgtyped": "pgtyped -c pgconfig.json",
+    "presqlgen": "rimraf **/*.types.ts",
     "prestart": "yarn build",
     "sqlgen": "dotenv -e ../.env yarn pgtyped",
-    "start": "node dist/index.mjs"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@accounter-toolkit/green-invoice-graphql": "0.1.1-alpha-20221128094016-ab48d5a",
     "@accounter-toolkit/pcn874-generator": "0.0.2",
-    "@graphql-tools/load-files": "6.6.1",
-    "@graphql-tools/mock": "8.7.14",
-    "@graphql-tools/schema": "9.0.12",
-    "@graphql-yoga/node": "3.1.1",
+    "@envelop/graphql-modules": "4.0.4",
+    "@graphql-tools/mock": "8.7.18",
+    "@graphql-tools/schema": "9.0.16",
+    "@graphql-yoga/node": "3.6.1",
     "@pgtyped/cli": "1.0.2",
     "@pgtyped/query": "1.0.1",
     "cloudinary": "1.32.0",
-    "currency.js": "2.0.4",
     "dataloader": "2.1.0",
     "date-fns": "2.29.3",
     "dotenv": "16.0.3",
     "dotenv-cli": "6.0.0",
     "fastify": "4.10.2",
     "graphql": "16.6.0",
+    "graphql-modules": "2.1.0",
     "graphql-yoga": "3.1.1",
-    "pg": "8.8.0"
+    "pg": "8.9.0",
+    "reflect-metadata": "0.1.13"
   },
   "devDependencies": {
+    "@types/pg": "8.6.6",
     "nodemon": "2.0.20",
-    "pino-pretty": "9.1.1"
+    "pino-pretty": "9.1.1",
+    "tsc-alias": "1.8.2"
   }
 }

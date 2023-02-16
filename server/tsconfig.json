@@ -2,15 +2,35 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["es2020"],
-    "module": "ES2020",
+    "lib": ["esnext", "dom"],
+    "module": "esnext",
     "moduleResolution": "Node",
     "strict": true,
     "sourceMap": true,
-    // Needed for CommonJS modules
-    "allowSyntheticDefaultImports": true, // (C)
-    //
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+
+    "target": "esnext",
+    "baseUrl": "./src",
+
+    "importHelpers": true,
+    "allowJs": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "resolveJsonModule": true,
+    "paths": {
+      "@modules/*": ["./modules/*"],
+      "@shared/types": ["./shared/types/index.js"],
+      "@shared/gql-types": ["./__generated__/types.js"],
+      "@shared/enums": ["./shared/enums.js"],
+      "@shared/constants": ["./shared/constants.js"],
+      "@shared/helpers": ["./shared/helpers/index.js"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/node_modules"]
 }
