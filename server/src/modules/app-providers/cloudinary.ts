@@ -2,7 +2,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { config } from 'dotenv';
 import { Injectable, Scope } from 'graphql-modules';
 
-config();
+config({ path: '../.env' });
 
 @Injectable({
   scope: Scope.Singleton,

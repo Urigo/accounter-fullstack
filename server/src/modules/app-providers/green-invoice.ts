@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 import { Injectable, Scope } from 'graphql-modules';
 import { init, Sdk } from '@accounter-toolkit/green-invoice-graphql';
 
-config();
+config({ path: '../.env' });
 
 @Injectable({
   scope: Scope.Singleton,
