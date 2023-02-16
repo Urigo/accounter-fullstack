@@ -7,7 +7,7 @@ import {
   VatMonthlyReportDocument,
   VatReportFilter,
 } from '../../../gql/graphql';
-import { dedupeFragments, TimelessDateString } from '../../../helpers';
+import { dedupeFragments, DEFAULT_FINANCIAL_ENTITY_ID, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import {
   AccounterLoader,
@@ -44,7 +44,7 @@ export const VatMonthlyReport = () => {
           decodeURIComponent(get('vatMonthlyReportFilters') as string),
         ) as VatReportFilter)
       : {
-          financialEntityId: '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+          financialEntityId: DEFAULT_FINANCIAL_ENTITY_ID,
           fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },

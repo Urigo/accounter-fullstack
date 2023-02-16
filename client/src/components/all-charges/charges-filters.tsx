@@ -6,7 +6,7 @@ import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
+import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
@@ -145,7 +145,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
                   label: entity.name,
                 })) ?? []
               }
-              value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
+              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={fetching}
               label="Owners"
               placeholder="Scroll to see all options"

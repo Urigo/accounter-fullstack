@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from 'urql';
 import { Pagination } from '@mantine/core';
 import { DocumentsToMatchDocument, DocumentsToMatchQuery } from '../../gql/graphql';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
 import { AccounterLoader } from '../common';
 import { DocumentHandler } from './document-handler';
 
@@ -20,7 +21,7 @@ import { DocumentHandler } from './document-handler';
 
 export function DocumentsMatch() {
   // TODO: improve the ID logic
-  const financialEntityId = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+  const financialEntityId = DEFAULT_FINANCIAL_ENTITY_ID;
 
   const [{ data, fetching }] = useQuery({
     query: DocumentsToMatchDocument,

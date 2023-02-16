@@ -10,7 +10,7 @@ import {
   AllFinancialEntitiesDocument,
   BusinessTransactionsFilter,
 } from '../../gql/graphql';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
+import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
@@ -83,7 +83,7 @@ function BusinessTransactionsFilterForm({
                   label: entity.name,
                 })) ?? []
               }
-              value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
+              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={feLoading}
               label="Financial Entities"
               placeholder="Scroll to see all options"
@@ -106,7 +106,7 @@ function BusinessTransactionsFilterForm({
                   label: entity,
                 })) ?? []
               }
-              value={field.value ?? ['6a20aa69-57ff-446e-8d6a-1e96d095e988']}
+              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={bnLoading}
               label="Business Names"
               placeholder="Scroll to see all options"
