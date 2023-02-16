@@ -5,9 +5,8 @@ import {
   Header,
   Transaction,
 } from '@accounter-toolkit/pcn874-generator/typings/types.js';
-import { DecoratedVatReportRecord } from '../vat-report.js';
-import { yearMonthValidator } from './validators/dates.js';
-import { idValidator } from './validators/strings.js';
+import { idValidator, yearMonthValidator } from '@shared/helpers';
+import type { DecoratedVatReportRecord } from './vat-report.helper';
 
 // export type DecoratedVatReportRecord = IGetChargesByIdsResult & {
 //   vatNumber: string;

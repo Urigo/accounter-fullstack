@@ -2,7 +2,7 @@ import type { ChargesTypes } from '@modules/charges';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import type { IUpdateLedgerRecordParams } from '@modules/ledger/types.js';
-import { AccountantApprovalModule } from '../__generated__/types.js';
+import type { AccountantApprovalModule } from '../types.js';
 import { commonTransactionFields } from './common.js';
 
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {

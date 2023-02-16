@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import pgQuery from '@pgtyped/query';
-import {
+import type {
   IGetAccountCardsByKeysQuery,
   IGetAccountCardsBySortCodesParams,
   IGetAccountCardsBySortCodesQuery,

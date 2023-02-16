@@ -4,7 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import pgQuery from '@pgtyped/query';
-import '../__generated__/hashavshevet.types.js';
 import type {
   IGetHashavshevetBusinessIndexesByIdQuery,
   IGetHashavshevetBusinessIndexesByNameParams,

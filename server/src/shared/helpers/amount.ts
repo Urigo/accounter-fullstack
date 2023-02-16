@@ -1,4 +1,4 @@
-import { Currency, FinancialAmount, FinancialIntAmount } from '../__generated__/types.js';
+import { Currency, FinancialAmount, FinancialIntAmount } from '@shared/gql-types';
 
 export const addCommasToStringifiedInt = (rawAmount: string | number): string => {
   // add commas

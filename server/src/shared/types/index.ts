@@ -1,3 +1,5 @@
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+
 export type BeneficiaryCounterpartyProto = { name: string; percentage: number };
 export type CounterpartyProto = string | null;
 
@@ -31,4 +33,10 @@ export type OptionalToNullable<O> = {
 export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
   OptionalToNullable<Partial<Pick<T, Keys>>>;
 
-export * as enums from './enums.js';
+export type VatExtendedCharge = IGetChargesByIdsResult & {
+  vatAfterDeduction: number;
+  amountBeforeVAT: number;
+  amountBeforeFullVAT: number;
+};
+
+export * from './ledger.js';

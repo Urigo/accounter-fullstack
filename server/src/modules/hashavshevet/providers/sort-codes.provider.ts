@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import pgQuery from '@pgtyped/query';
-import { IGetSortCodesByIdsParams, IGetSortCodesByIdsQuery } from '../types.js';
+import type { IGetSortCodesByIdsParams, IGetSortCodesByIdsQuery } from '../types.js';
 
 const { sql } = pgQuery;
 

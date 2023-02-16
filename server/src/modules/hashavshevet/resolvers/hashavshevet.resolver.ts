@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { AccountCardsProvider } from '../providers/account-cards.provider.js';
 import { SortCodesProvider } from '../providers/sort-codes.provider.js';
-import { HashavshevetModule } from '../types.js';
+import type { HashavshevetModule } from '../types.js';
 import { commonTransactionFields } from './common.js';
 
 export const hashavshevetResolvers: HashavshevetModule.Resolvers = {

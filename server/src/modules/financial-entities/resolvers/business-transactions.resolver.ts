@@ -1,9 +1,8 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
-import { isTimelessDateString } from '../../../helpers/misc.js';
-import { Currency } from '../../../models/enums.js';
-import { RawBusinessTransactionsSum, TimelessDateString } from '../../../models/index.js';
+import { Currency } from '@shared/enums';
+import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
+import type { RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import type {
   FinancialEntitiesModule,

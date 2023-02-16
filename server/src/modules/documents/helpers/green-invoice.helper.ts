@@ -1,5 +1,5 @@
-import { mutation_addExpense_oneOf_0_allOf_0_documentType } from '@accounter-toolkit/green-invoice-graphql';
-import { DocumentType } from '../__generated__/types.js';
+import type { mutation_addExpense_oneOf_0_allOf_0_documentType } from '@accounter-toolkit/green-invoice-graphql';
+import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
   rawType?: mutation_addExpense_oneOf_0_allOf_0_documentType | null,

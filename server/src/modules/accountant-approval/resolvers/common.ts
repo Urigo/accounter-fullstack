@@ -1,4 +1,4 @@
-import type { AccountantApprovalModule } from '../__generated__/types.js';
+import type { AccountantApprovalModule } from '../types.js';
 
 export const commonTransactionFields:
   | AccountantApprovalModule.ConversionTransactionResolvers

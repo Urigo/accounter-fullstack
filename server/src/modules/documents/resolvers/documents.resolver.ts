@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import type { ChargesTypes } from '@modules/charges';
-import { DocumentType } from '../../../models/enums.js';
+import { DocumentType } from '@shared/enums';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
 import {

@@ -1,4 +1,4 @@
-import type { FinancialEntitiesModule } from '../__generated__/types.js';
+import type { FinancialEntitiesModule } from '../types.js';
 
 export const commonFinancialEntityFields:
   | FinancialEntitiesModule.LtdFinancialEntityResolvers

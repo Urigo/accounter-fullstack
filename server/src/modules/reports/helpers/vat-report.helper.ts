@@ -1,14 +1,14 @@
 import type { ChargesTypes } from '@modules/charges';
 import type { DocumentsTypes } from '@modules/documents';
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
-import type { IGetTaxTransactionsByIDsResult } from '@modules/reports/types.js';
 import {
   getClosestRateForDate,
   getILSForDate,
   getRateForCurrency,
-} from '../modules/ledger/helpers/exchange.helper.js';
-import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.js';
+} from '@modules/ledger/helpers/exchange.helper.js';
+import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
+import type { IGetTaxTransactionsByIDsResult } from '@modules/reports/types.js';
+import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 
 export function mergeChargeDoc(
   charge: ChargesTypes.IGetChargesByIdsResult,

@@ -1,6 +1,6 @@
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
-import { FinancialEntitiesModule } from '../types.js';
+import type { FinancialEntitiesModule } from '../types.js';
 import { commonFinancialEntityFields } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {

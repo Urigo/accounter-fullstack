@@ -1,4 +1,4 @@
-import { DocumentsModule } from '../__generated__/types.js';
+import type { DocumentsModule } from '../types.js';
 
 export const fetchEmailDocument: DocumentsModule.MutationResolvers['fetchEmailDocument'] = (
   _,

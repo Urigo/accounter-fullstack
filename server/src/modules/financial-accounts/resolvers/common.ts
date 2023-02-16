@@ -1,5 +1,5 @@
-import type { FinancialAccountsModule } from '../__generated__/types.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
+import type { FinancialAccountsModule } from '../types.js';
 
 export const commonFinancialAccountFields:
   | FinancialAccountsModule.CardFinancialAccountResolvers

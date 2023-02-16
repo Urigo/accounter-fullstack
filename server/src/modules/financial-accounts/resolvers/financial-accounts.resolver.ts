@@ -1,4 +1,4 @@
-import { FinancialAccountsModule } from '../__generated__/types.js';
+import type { FinancialAccountsModule } from '../types.js';
 import {
   commonFinancialAccountFields,
   commonFinancialEntityFields,

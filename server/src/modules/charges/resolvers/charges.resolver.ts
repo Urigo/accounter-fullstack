@@ -1,9 +1,9 @@
-import { ChargeSortByField, Currency } from 'models/enums.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
+import { ChargeSortByField, Currency } from '@shared/enums';
+import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
-import {
+import type {
   ChargesModule,
   IGetChargesByFiltersResult,
   IUpdateChargeParams,

@@ -1,11 +1,11 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
+import { DBProvider } from '@modules/app-providers/db.provider.js';
 import pgQuery from '@pgtyped/query';
-import { Optional, TimelessDateString } from '../../../models/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
-import { ChargesModule } from '../__generated__/types.js';
+import type { Optional, TimelessDateString } from '@shared/types';
 import { validateCharge } from '../helpers/validate.helper.js';
-import {
+import type {
+  ChargesModule,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFinancialAccountNumbersParams,

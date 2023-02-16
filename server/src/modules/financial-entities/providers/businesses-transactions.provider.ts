@@ -1,9 +1,9 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import pgQuery from '@pgtyped/query';
-import { isTimelessDateString } from '../../../helpers/misc.js';
-import { Optional, TimelessDateString } from '../../../models/index.js';
-import {
+import { isTimelessDateString } from '@shared/helpers';
+import type { Optional, TimelessDateString } from '@shared/types';
+import type {
   IGetBusinessTransactionsFromLedgerRecordsParams,
   IGetBusinessTransactionsFromLedgerRecordsQuery,
   IGetBusinessTransactionsSumFromLedgerRecordsParams,

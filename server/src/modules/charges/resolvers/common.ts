@@ -1,6 +1,6 @@
-import { TransactionDirection } from '../../../__generated__/types.js';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
-import { effectiveDateSupplement } from '../../../helpers/misc.js';
+import { TransactionDirection } from '@shared/gql-types';
+import { formatFinancialAmount } from '@shared/helpers';
+import { effectiveDateSupplement } from '../helpers/validate.helper.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 

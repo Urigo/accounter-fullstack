@@ -1,6 +1,8 @@
-import { Currency, MissingChargeInfo, ValidationData } from '../../../__generated__/types.js';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
-import { IValidateChargesResult } from '../types.js';
+import { format } from 'date-fns';
+import { Currency, MissingChargeInfo, ValidationData } from '@shared/gql-types';
+import { formatFinancialAmount } from '@shared/helpers';
+import type { TimelessDateString } from '@shared/types';
+import type { IGetChargesByIdsResult, IValidateChargesResult } from '../types.js';
 
 export function validateCharge(charge: IValidateChargesResult): ValidationData {
   const missingInfo: Array<MissingChargeInfo> = [];
@@ -59,4 +61,20 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo,
     balance: formatFinancialAmount(charge.balance, Currency.Ils),
   };
+}
+
+export function effectiveDateSupplement(transaction: IGetChargesByIdsResult) {
+  if (transaction.account_type != 'creditcard') {
+    if (transaction.debit_date) {
+      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+    }
+    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  }
+  if (transaction.debit_date) {
+    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+  }
+  if (transaction.currency_code == 'ILS') {
+    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  }
+  return null;
 }

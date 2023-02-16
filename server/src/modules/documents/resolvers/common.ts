@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
-import { formatFinancialAmount } from '../../../helpers/amount.js';
-import { DocumentType } from '../../../models/enums.js';
-import { TimelessDateString } from '../../../models/index.js';
-import { DocumentsModule } from '../__generated__/types.js';
+import { DocumentType } from '@shared/enums';
+import { formatFinancialAmount } from '@shared/helpers';
+import type { TimelessDateString } from '@shared/types';
 import { DocumentsProvider } from '../providers/documents.provider.js';
+import type { DocumentsModule } from '../types.js';
 
 export const documentType: DocumentsModule.DocumentResolvers['documentType'] = documentRoot => {
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
@@ -15,8 +15,20 @@ export const documentType: DocumentsModule.DocumentResolvers['documentType'] = d
 
 export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
   id: documentRoot => documentRoot.id,
-  image: documentRoot => documentRoot.image_url ?? null,
-  file: documentRoot => documentRoot.file_url ?? null,
+  image: documentRoot => {
+    const url = documentRoot.image_url ?? null;
+    if (!url) {
+      console.log('no image url', documentRoot.image_url, documentRoot.id);
+    }
+    return url;
+  },
+  file: documentRoot => {
+    const url = documentRoot.file_url ?? null;
+    if (!url) {
+      console.log('no file url', documentRoot.file_url, documentRoot.id);
+    }
+    return url;
+  },
   creditor: documentRoot => documentRoot.creditor,
   debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,

@@ -1,23 +1,23 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { HashavshevetProvider } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
 import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
-import { ResolversTypes } from '../../../__generated__/types.js';
-import { formatFinancialAmount, formatFinancialIntAmount } from '../../../helpers/amount.js';
-import { generatePcnFromCharges } from '../../../helpers/pcn/index.js';
+import { Currency } from '@shared/enums';
+import type { ResolversTypes } from '@shared/gql-types';
+import { formatFinancialAmount, formatFinancialIntAmount } from '@shared/helpers';
+import type { TimelessDateString } from '@shared/types';
+import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
 import {
   adjustTaxRecords,
   DecoratedVatReportRecord,
   mergeChargeDoc,
   RawVatReportRecord,
-} from '../../../helpers/vat-report.js';
-import { Currency } from '../../../models/enums.js';
-import { TimelessDateString } from '../../../models/index.js';
-import { validateCharge } from '../../charges/helpers/validate.helper.js';
+} from '../helpers/vat-report.helper.js';
 import { TaxTransactionsProvider } from '../providers/tax-transactions.provider.js';
 import type { IGetTaxTransactionsByIDsResult, ReportsModule } from '../types.js';
 

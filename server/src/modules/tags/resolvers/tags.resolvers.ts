@@ -1,4 +1,4 @@
-import { TagsModule } from '../__generated__/types.js';
+import type { TagsModule } from '../types.js';
 
 export const tagsResolvers: TagsModule.Resolvers = {
   Charge: {

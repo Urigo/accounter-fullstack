@@ -23,7 +23,12 @@
 
     "resolveJsonModule": true,
     "paths": {
-      "@modules/*": ["./modules/*"]
+      "@modules/*": ["./modules/*"],
+      "@shared/types": ["./shared/types/index.js"],
+      "@shared/gql-types": ["./__generated__/types.js"],
+      "@shared/enums": ["./shared/enums.js"],
+      "@shared/constants": ["./shared/constants.js"],
+      "@shared/helpers": ["./shared/helpers/index.js"]
     }
   },
   "include": ["src/**/*"],

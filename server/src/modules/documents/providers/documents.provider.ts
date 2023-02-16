@@ -2,8 +2,8 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from 'modules/app-providers/db.provider.js';
 import pgQuery from '@pgtyped/query';
-import { Optional, TimelessDateString } from '../../../models/index.js';
-import {
+import type { Optional, TimelessDateString } from '@shared/types';
+import type {
   IDeleteDocumentParams,
   IDeleteDocumentQuery,
   IGetAllDocumentsParams,
@@ -17,7 +17,7 @@ import {
   IInsertDocumentsQuery,
   IUpdateDocumentParams,
   IUpdateDocumentQuery,
-} from '../__generated__/documents.types.js';
+} from '../types.js';
 
 const { sql } = pgQuery;
 

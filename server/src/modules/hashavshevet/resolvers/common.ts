@@ -1,4 +1,4 @@
-import type { HashavshevetModule } from '../__generated__/types.js';
+import type { HashavshevetModule } from '../types.js';
 
 export const commonTransactionFields:
   | HashavshevetModule.ConversionTransactionResolvers

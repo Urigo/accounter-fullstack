@@ -1,19 +1,16 @@
-import { format } from 'date-fns';
-import type { ChargesTypes } from '@modules/charges';
-import { VatIndexesKeys } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
-import { TimelessDateString } from '../models/index.js';
-import { getILSForDate } from '../modules/ledger/helpers/exchange.helper.js';
-import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from './constants.js';
-import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
 import { Injector } from 'graphql-modules';
+import type { IGetChargesByIdsResult } from '@modules/charges/types';
+import { VatIndexesKeys } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
+import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
+import type {
+  EntryForAccounting,
+  EntryForFinancialAccount,
+  VatExtendedCharge,
+} from '@shared/types';
+import { ExchangeProvider } from '../providers/exchange.provider.js';
+import { getILSForDate } from './exchange.helper.js';
 
-export type VatExtendedCharge = ChargesTypes.IGetChargesByIdsResult & {
-  vatAfterDeduction: number;
-  amountBeforeVAT: number;
-  amountBeforeFullVAT: number;
-};
-
-export function decorateCharge(charge: ChargesTypes.IGetChargesByIdsResult): VatExtendedCharge {
+export function decorateCharge(charge: IGetChargesByIdsResult): VatExtendedCharge {
   const decoratedCharge: Partial<VatExtendedCharge> = { ...charge };
 
   // If foriegn transaction, can use receipt as invoice
@@ -62,33 +59,12 @@ export function decorateCharge(charge: ChargesTypes.IGetChargesByIdsResult): Vat
   return decoratedCharge as VatExtendedCharge;
 }
 
-export interface EntryForFinancialAccount {
-  creditAccount: string | null;
-  debitAccount: string | null;
-  creditAmount: number;
-  debitAmount: number;
-  creditAmountILS: number | null;
-  debitAmountILS: number | null;
-  reference1: string | null;
-  reference2: string | null;
-  description: string | null;
-}
-
-export interface EntryForAccounting {
-  movementType: string | null;
-  creditAccount: string | null;
-  debitAccount: string | null;
-  creditAmount: number | null;
-  debitAmount: number | null;
-  creditAmountILS: number;
-  debitAmountILS: number;
-  secondAccountCreditAmount?: number;
-  secondAccountCreditAmountILS?: number;
-  secondAccountDebitAmount?: number;
-  secondAccountDebitAmountILS?: number;
-  reference1: string | null;
-  reference2: string | null;
-  description: string | null;
+export function swapObjectKeys(
+  obj: Record<string | number | symbol, unknown>,
+  key1: string | number | symbol,
+  key2: string | number | symbol,
+) {
+  [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
 }
 
 export async function buildLedgerEntries(
@@ -114,7 +90,9 @@ export async function buildLedgerEntries(
     throw new Error(`Chare id=${charge.id} is missing debit date`);
   }
 
-  const { debitExchangeRates, invoiceExchangeRates } = await injector.get(ExchangeProvider).getChargeExchangeRates(charge);
+  const { debitExchangeRates, invoiceExchangeRates } = await injector
+    .get(ExchangeProvider)
+    .getChargeExchangeRates(charge);
 
   entryForFinancialAccount.creditAmountILS = entryForFinancialAccount.debitAmountILS =
     charge.debit_date
@@ -207,74 +185,4 @@ export async function buildLedgerEntries(
     entryForAccounting: entryForAccounting as EntryForAccounting,
     entryForFinancialAccount: entryForFinancialAccount as EntryForFinancialAccount,
   };
-}
-
-export function swapObjectKeys(
-  obj: Record<string | number | symbol, unknown>,
-  key1: string | number | symbol,
-  key2: string | number | symbol,
-) {
-  [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
-}
-
-function parseIntRound(v: number) {
-  return Math.trunc(v + Math.sign(v) / 2);
-}
-
-export function stringNumberRounded(number: string): number {
-  return parseIntRound((parseFloat(number) + Number.EPSILON) * 100) / 100;
-}
-
-export function numberRounded(number: number): number {
-  return parseIntRound((number + Number.EPSILON) * 100) / 100;
-}
-
-export function effectiveDateSupplement(transaction: ChargesTypes.IGetChargesByIdsResult) {
-  if (transaction.account_type != 'creditcard') {
-    if (transaction.debit_date) {
-      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-    }
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (transaction.debit_date) {
-    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (transaction.currency_code == 'ILS') {
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  return null;
-}
-
-export function isTimelessDateString(date: string): date is TimelessDateString {
-  const parts = date.split('-');
-  if (parts.length !== 3) {
-    return false;
-  }
-  const [year, month, day] = parts;
-  //year
-  const yearNum = Number(year);
-  if (Number.isNaN(yearNum) || yearNum < 2000 || yearNum > 2049) {
-    return false;
-  }
-  // month
-  const monthNum = Number(month);
-  if (Number.isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-    return false;
-  }
-  // day
-  const dayNum = Number(day);
-  if (Number.isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
-    return false;
-  }
-  return true;
-}
-
-export function dateFormatValidation(date: Date | string) {
-  if (typeof date === 'string') {
-    if (isTimelessDateString(date)) {
-      return date;
-    }
-    return null;
-  }
-  return date;
 }

@@ -1,14 +1,10 @@
-import { CloudinaryProvider } from 'modules/app-providers/cloudinary.js';
 import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
+import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
-import { normalizeDocumentType } from '../../../helpers/green-invoice.js';
-import { Currency } from '../../../models/enums.js';
-import {
-  IGetAllDocumentsResult,
-  IInsertDocumentsParams,
-} from '../__generated__/documents.types.js';
-import { DocumentsModule } from '../__generated__/types.js';
+import { Currency } from '@shared/enums';
+import { normalizeDocumentType } from '../helpers/green-invoice.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
+import type { DocumentsModule, IGetAllDocumentsResult, IInsertDocumentsParams } from '../types.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
   const base64string = Buffer.from(await file.arrayBuffer()).toString('base64');
