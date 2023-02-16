@@ -1,5 +1,6 @@
 import { gql } from 'graphql-modules';
 
+// eslint-disable-next-line import/no-default-export
 export default gql`
   " Represent something external that we scrape, like bank or card "
   interface FinancialAccount {
