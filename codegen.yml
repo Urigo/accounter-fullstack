@@ -9,9 +9,6 @@ config:
     URL: 'URL | string'
     FileScalar: 'File | Blob'
 generates:
-  schema.graphql.json:
-    plugins:
-      - 'introspection'
   server/src/modules/:
     preset: graphql-modules
     presetConfig:
