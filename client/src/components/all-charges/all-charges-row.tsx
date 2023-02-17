@@ -3,25 +3,56 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql';
 import {
-  AllChargesQuery,
-  Charge,
+  AllChargesTableFieldsFragment,
   EditChargeFieldsFragmentDoc,
   SuggestedChargeFragmentDoc,
 } from '../../gql/graphql';
-import { entitiesWithoutInvoice, SuggestedCharge, suggestedCharge } from '../../helpers';
+import { SuggestedCharge, suggestedCharge } from '../../helpers';
 import { EditMiniButton } from '../common';
 import {
   Account,
   AccountantApproval,
   Amount,
+  Balance,
   DateCell,
   Description,
   Entity,
+  MoreInfo,
   ShareWith,
   Tags,
   Vat,
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
+
+/* GraphQL */ `
+  fragment SuggestedCharge on Charge {
+    id
+    transactions {
+      id
+      __typename
+      amount {
+        raw
+      }
+      userNote
+      referenceNumber
+      description
+    }
+    beneficiaries {
+      counterparty {
+        name
+      }
+    }
+    counterparty {
+      name
+    }
+    vat {
+      raw
+    }
+    tags {
+      name
+    }
+  }
+`;
 
 interface Props {
   setEditCharge: Dispatch<
@@ -31,9 +62,8 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  charge: AllChargesQuery['allCharges']['nodes'][number];
+  charge: AllChargesTableFieldsFragment;
   isAllOpened: boolean;
-  showBalance?: boolean;
 }
 
 export const AllChargesRow = ({
@@ -44,19 +74,20 @@ export const AllChargesRow = ({
   setUploadDocument,
   charge,
   isAllOpened,
-  showBalance = false,
 }: Props) => {
   const [opened, setOpen] = useState(false);
+  // const charge = getFragmentData(AllChargesTableFragmentDoc, data);
+
   function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
-    const charge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
+    const altCharge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
     if (
-      !charge.counterparty?.name ||
-      !charge.transactions[0]?.userNote?.trim() ||
-      charge.tags?.length === 0 ||
-      !charge.vat?.raw ||
-      charge.beneficiaries?.length === 0
+      !altCharge.counterparty?.name ||
+      !altCharge.transactions[0]?.userNote?.trim() ||
+      altCharge.tags?.length === 0 ||
+      !altCharge.vat?.raw ||
+      altCharge.beneficiaries?.length === 0
     ) {
-      return suggestedCharge(charge);
+      return suggestedCharge(altCharge);
     }
     return undefined;
   }
@@ -68,64 +99,26 @@ export const AllChargesRow = ({
   return (
     <>
       <tr>
-        <td>
-          <DateCell data={charge} />
-        </td>
-        <td>
-          <Amount data={charge} />
-        </td>
-        <td>
-          <Vat data={charge} />
-        </td>
-        <td>
-          <Entity
-            data={charge}
-            alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-          />
-        </td>
-        <td>
-          <Account data={charge} />
-        </td>
-        <td>
-          <Description
-            data={charge}
-            alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-          />
-        </td>
+        <DateCell data={charge} />
+        <Amount data={charge} />
+        <Vat data={charge} />
+        <Entity
+          data={charge}
+          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+        />
+        <Account data={charge} />
+        <Description
+          data={charge}
+          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+        />
         <Tags data={charge} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
-        <td>
-          <ShareWith
-            data={charge}
-            alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-          />
-        </td>
-        {showBalance && (
-          <td>{(charge as Pick<Charge, 'validationData'>).validationData?.balance?.formatted}</td>
-        )}
-        <td>
-          <div>
-            <p
-              style={
-                charge.ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' }
-              }
-            >
-              Ledger Records: {charge.ledgerRecords.length}
-            </p>
-            <p
-              style={
-                charge.additionalDocuments.length > 0 ||
-                (charge.counterparty && entitiesWithoutInvoice.includes(charge.counterparty.name))
-                  ? {}
-                  : { backgroundColor: 'rgb(236, 207, 57)' }
-              }
-            >
-              Documents: {charge.additionalDocuments.length}
-            </p>
-          </div>
-        </td>
-        <td>
-          <AccountantApproval data={charge} />
-        </td>
+        <ShareWith
+          data={charge}
+          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
+        />
+        <Balance data={charge} />
+        <MoreInfo data={charge} />
+        <AccountantApproval data={charge} />
         <td>
           <EditMiniButton onClick={() => setEditCharge(charge)} />
         </td>

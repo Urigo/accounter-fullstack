@@ -21,7 +21,7 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
 
-  const descriptionIsFine = !!charge.user_description?.trim();
+  const descriptionIsFine = (charge.user_description?.trim().length ?? 0) > 0;
   if (!descriptionIsFine) {
     missingInfo.push(MissingChargeInfo.TransactionDescription);
   }

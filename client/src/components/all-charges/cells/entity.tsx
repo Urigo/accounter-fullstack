@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
+import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesEntityFieldsFragmentDoc } from '../../../gql/graphql';
+import { AllChargesEntityFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton } from '../../common';
@@ -11,6 +12,9 @@ import { ConfirmMiniButton } from '../../common';
     counterparty {
       name
     }
+    validationData {
+      missingInfo
+    }
   }
 `;
 
@@ -20,10 +24,16 @@ type Props = {
 };
 
 export const Entity = ({ data, alternativeCharge }: Props) => {
-  const { counterparty, id: chargeId } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
+  const {
+    counterparty,
+    id: chargeId,
+    validationData,
+  } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
+  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);
+  const hasAlternative = isError && !!alternativeCharge?.financialEntity.trim()?.length;
   const { name } = counterparty || {};
-  const isFinancialEntity = name && name !== '';
-  const cellText = isFinancialEntity ? name : alternativeCharge?.financialEntity;
+  const alternativeName = hasAlternative ? alternativeCharge.financialEntity.trim() : 'Missing';
+  const cellText = isError ? alternativeName : name;
 
   const { updateCharge, fetching } = useUpdateCharge();
 
@@ -46,16 +56,15 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
   );
 
   return (
-    <div className="flex flex-wrap">
-      <p style={isFinancialEntity ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>
-        {cellText ?? 'undefined'}
-      </p>
-      {!isFinancialEntity && alternativeCharge?.financialEntity && (
-        <ConfirmMiniButton
-          onClick={() => updateTag(alternativeCharge.financialEntity)}
-          disabled={fetching}
-        />
-      )}
-    </div>
+    <td>
+      <div className="flex flex-wrap">
+        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+          <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
+        </Indicator>
+        {hasAlternative && (
+          <ConfirmMiniButton onClick={() => updateTag(cellText)} disabled={fetching} />
+        )}
+      </div>
+    </td>
   );
 };

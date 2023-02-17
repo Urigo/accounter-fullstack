@@ -12,37 +12,7 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
   fragment VarReportMissingInfoFields on VatReportResult {
     missingInfo {
       id
-      # ...ChargesFields
-      ...AllChargesAccountFields
-      ...AllChargesAccountantApprovalFields
-      ...AllChargesAmountFields
-      ...AllChargesDateFields
-      ...AllChargesDescriptionFields
-      ...AllChargesEntityFields
-      ...AllChargesTagsFields
-      ...AllChargesShareWithFields
-      ...AllChargesVatFields
-      ...EditChargeFields
-      ...SuggestedCharge
-      ...ChargeExtendedInfoFields
-
-      # next are some fields for the temp columns:
-      ledgerRecords {
-        id
-      }
-      additionalDocuments {
-        id
-      }
-      counterparty {
-        name
-      }
-      ###
-      validationData {
-        balance {
-          formatted
-        }
-        missingInfo
-      }
+      ...AllChargesTableFields
     }
   }
 `;
@@ -86,7 +56,6 @@ export const MissingInfoTable = ({
           setUploadDocument={setUploadDocument}
           data={chargesData.missingInfo}
           isAllOpened={false}
-          showBalance
         />
       )}
     </>

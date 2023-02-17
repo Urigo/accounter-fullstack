@@ -22,65 +22,11 @@ import { ChargesFilters } from './charges-filters';
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
-        # ...ChargesFields
-        ...AllChargesAccountFields
-        ...AllChargesAccountantApprovalFields
-        ...AllChargesAmountFields
-        ...AllChargesDateFields
-        ...AllChargesDescriptionFields
-        ...AllChargesEntityFields
-        ...AllChargesTagsFields
-        ...AllChargesShareWithFields
-        ...AllChargesVatFields
-        ...EditChargeFields
-        ...SuggestedCharge
-        ...ChargeExtendedInfoFields
-
-        # next are some fields for the temp columns:
-        ledgerRecords {
-          id
-        }
-        additionalDocuments {
-          id
-        }
-        counterparty {
-          name
-        }
-        ###
+        ...AllChargesTableFields
       }
       pageInfo {
         totalPages
       }
-    }
-  }
-`;
-
-/* GraphQL */ `
-  fragment SuggestedCharge on Charge {
-    id
-    transactions {
-      id
-      __typename
-      amount {
-        raw
-      }
-      userNote
-      referenceNumber
-      description
-    }
-    beneficiaries {
-      counterparty {
-        name
-      }
-    }
-    counterparty {
-      name
-    }
-    vat {
-      raw
-    }
-    tags {
-      name
     }
   }
 `;

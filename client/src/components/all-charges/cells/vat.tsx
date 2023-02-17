@@ -1,5 +1,6 @@
+import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesVatFieldsFragmentDoc, Currency } from '../../../gql/graphql';
+import { AllChargesVatFieldsFragmentDoc, Currency, MissingChargeInfo } from '../../../gql/graphql';
 import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../helpers';
 
 /* GraphQL */ `
@@ -20,6 +21,9 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
       __typename
       id
     }
+    validationData {
+      missingInfo
+    }
   }
 `;
 
@@ -28,10 +32,11 @@ type Props = {
 };
 
 export const Vat = ({ data }: Props) => {
-  const { vat, totalAmount, counterparty, financialEntity } = getFragmentData(
+  const { vat, totalAmount, counterparty, financialEntity, validationData } = getFragmentData(
     AllChargesVatFieldsFragmentDoc,
     data,
   );
+  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Vat);
   const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
 
   const vatIssueFlag =
@@ -44,8 +49,12 @@ export const Vat = ({ data }: Props) => {
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
 
   return (
-    <div style={{ color: vatIssueFlag ? 'red' : 'green' }}>
-      {vat ? vat.formatted : vatIssueFlag ? 'Missing' : null}
-    </div>
+    <td>
+      <div style={{ color: vatIssueFlag ? 'red' : 'green' }}>
+        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+          {vat ? vat.formatted : vatIssueFlag ? 'Missing' : null}
+        </Indicator>
+      </div>
+    </td>
   );
 };

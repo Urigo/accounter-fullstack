@@ -14,6 +14,7 @@ export * from './forms/index.js';
 export * from './hover-handler.js';
 export * from './info-mini-button.js';
 export * from './inputs/index.js';
+export * from './list-capsule.js';
 export * from './loader.js';
 export * from './modal.js';
 export * from './modals/index.js';

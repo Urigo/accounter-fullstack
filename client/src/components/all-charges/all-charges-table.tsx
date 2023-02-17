@@ -1,8 +1,35 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Table } from '@mantine/core';
-import { FragmentType } from '../../gql';
-import { AllChargesQuery, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import { FragmentType, getFragmentData } from '../../gql';
+import { AllChargesTableFieldsFragmentDoc, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
 import { AllChargesRow } from './all-charges-row';
+
+/* GraphQL */ `
+  fragment AllChargesTableFields on Charge {
+    id
+    additionalDocuments {
+      id
+    }
+    ledgerRecords {
+      id
+    }
+    # ...ChargesFields
+    ...AllChargesAccountFields
+    ...AllChargesAccountantApprovalFields
+    ...AllChargesAmountFields
+    ...AllChargesBalanceFields
+    ...AllChargesDateFields
+    ...AllChargesDescriptionFields
+    ...AllChargesEntityFields
+    ...AllChargesShareWithFields
+    ...AllChargesMoreInfoFields
+    ...AllChargesTagsFields
+    ...AllChargesVatFields
+    ...EditChargeFields
+    ...SuggestedCharge
+    ...ChargeExtendedInfoFields
+  }
+`;
 
 interface Props {
   setEditCharge: Dispatch<
@@ -12,9 +39,8 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  data?: AllChargesQuery['allCharges']['nodes'];
+  data?: FragmentType<typeof AllChargesTableFieldsFragmentDoc>[];
   isAllOpened: boolean;
-  showBalance?: boolean;
 }
 
 export const AllChargesTable = ({
@@ -25,9 +51,9 @@ export const AllChargesTable = ({
   setUploadDocument,
   data,
   isAllOpened,
-  showBalance = false,
 }: Props) => {
-  const charges = data ?? [];
+  const charges =
+    data?.map(charge => getFragmentData(AllChargesTableFieldsFragmentDoc, charge)) ?? [];
 
   return (
     <Table striped highlightOnHover>
@@ -41,7 +67,7 @@ export const AllChargesTable = ({
           <th>Description</th>
           <th>Tags</th>
           <th>Share With</th>
-          {showBalance && <th>Balance</th>}
+          <th>Balance</th>
           <th>More Info</th>
           <th>Accountant Approval</th>
           <th>Edit</th>
@@ -59,7 +85,6 @@ export const AllChargesTable = ({
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
             isAllOpened={isAllOpened}
-            showBalance={showBalance}
           />
         ))}
       </tbody>
