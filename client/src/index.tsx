@@ -26,7 +26,7 @@ root.render(
     <Providers>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<FinancialStatus />} />
+          <Route path="/" element={<AllCharges />} />
           <Route path="/financial-status" element={<FinancialStatus />} />
           <Route path="/all-charges" element={<AllCharges />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />

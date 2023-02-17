@@ -145,7 +145,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
                   label: entity.name,
                 })) ?? []
               }
-              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
+              value={field.value ?? []}
               disabled={fetching}
               label="Owners"
               placeholder="Scroll to see all options"

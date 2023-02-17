@@ -3,7 +3,13 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { FragmentType } from '../../gql';
-import { AllChargesDocument, ChargeFilter, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import {
+  AllChargesDocument,
+  ChargeFilter,
+  ChargeSortByField,
+  EditChargeFieldsFragmentDoc,
+} from '../../gql/graphql';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import {
   AccounterLoader,
@@ -99,7 +105,13 @@ export const AllCharges = () => {
   const [filter, setFilter] = useState<ChargeFilter>(
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
-      : {},
+      : {
+          byOwners: [DEFAULT_FINANCIAL_ENTITY_ID],
+          sortBy: {
+            field: ChargeSortByField.Date,
+            asc: false,
+          },
+        },
   );
 
   const [{ data, fetching }] = useQuery({
