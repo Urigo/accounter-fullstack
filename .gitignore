@@ -4,3 +4,4 @@ dist/
 **/__generated__/
 **/gql/
 .idea/
+schema.graphql
