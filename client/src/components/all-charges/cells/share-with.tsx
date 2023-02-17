@@ -9,7 +9,7 @@ import {
   SuggestedCharge,
 } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { ConfirmMiniButton } from '../../common';
+import { ConfirmMiniButton, ListCapsule } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesShareWithFields on Charge {
@@ -44,10 +44,11 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
   } = getFragmentData(AllChargesShareWithFieldsFragmentDoc, data);
   const financialEntityName = counterparty?.name ?? '';
   const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
+  const isError = beneficiaries.length === 0;
 
   const { updateCharge, fetching } = useUpdateCharge();
 
-  const updateTag = useCallback(
+  const updateBeneficiaries = useCallback(
     (value?: string) => {
       if (value !== undefined) {
         updateCharge({
@@ -59,9 +60,8 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
     [chargeId, updateCharge],
   );
 
-  const hasBeneficiariesd = beneficiaries.length > 0;
   const shareWithDotanFlag =
-    !hasBeneficiariesd &&
+    isError &&
     (!(isBusiness && !entitiesWithoutInvoice.includes(financialEntityName)) ||
       [
         ...privateBusinessExpenses,
@@ -70,31 +70,23 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
       ].includes(financialEntityName));
 
   return (
-    <div className="text-gray-600 body-font">
-      <div className="container px-6 py-5 mx-auto">
-        <div className="flex flex-wrap -m-4 text-center gap-5">
-          {beneficiaries?.map((beneficiary, index) => (
-            <div
-              key={index}
-              className="sm:w-1/4"
-              style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
-            >
-              <h2 className="title-font font-medium sm:text-base text-gray-900">
-                {beneficiary.counterparty.name}
-              </h2>
-              <p className="leading-relaxed">{beneficiary.percentage}%</p>
-            </div>
-          ))}
-          {!hasBeneficiariesd && alternativeCharge?.financialAccountsToBalance && (
-            <div className="sm:w-1/4">
-              <ConfirmMiniButton
-                onClick={() => updateTag(alternativeCharge.financialAccountsToBalance)}
-                disabled={fetching}
-              />
-            </div>
-          )}
+    <td>
+      <ListCapsule
+        style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
+        items={beneficiaries?.map((beneficiary, index) => (
+          <div key={index} className="sm:w-1/4 whitespace-nowrap text-xs">
+            {beneficiary.counterparty.name}: <span>{beneficiary.percentage}%</span>
+          </div>
+        ))}
+      />
+      {isError && alternativeCharge?.financialAccountsToBalance && (
+        <div className="sm:w-1/4">
+          <ConfirmMiniButton
+            onClick={() => updateBeneficiaries(alternativeCharge.financialAccountsToBalance)}
+            disabled={fetching}
+          />
         </div>
-      </div>
-    </div>
+      )}
+    </td>
   );
 };

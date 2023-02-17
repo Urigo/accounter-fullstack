@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
+import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesDescriptionFieldsFragmentDoc } from '../../../gql/graphql';
+import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
 import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 import { ConfirmMiniButton, InfoMiniButton } from '../../common';
@@ -13,6 +14,9 @@ import { ConfirmMiniButton, InfoMiniButton } from '../../common';
       userNote
       description
     }
+    validationData {
+      missingInfo
+    }
   }
 `;
 
@@ -23,9 +27,12 @@ type Props = {
 
 export const Description = ({ data, alternativeCharge }: Props) => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
+  const isError = charge?.validationData?.missingInfo?.includes(
+    MissingChargeInfo.TransactionDescription,
+  );
+  const hasAlternative = isError && !!alternativeCharge?.userDescription?.trim().length;
   const { userNote, id: transactionId, description: fullDescription } = charge.transactions[0];
-  const isDescription = userNote && userNote.trim() !== '';
-  const cellText = userNote?.trim() ?? alternativeCharge?.userDescription ?? 'undefined';
+  const cellText = userNote?.trim() ?? alternativeCharge?.userDescription ?? 'Missing';
   const [toggleDescription, setToggleDescription] = useState(false);
 
   const { updateTransaction, fetching } = useUpdateTransaction();
@@ -43,13 +50,15 @@ export const Description = ({ data, alternativeCharge }: Props) => {
   );
 
   return (
-    <>
+    <td>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
-          <p style={isDescription ? {} : { backgroundColor: 'rgb(236, 207, 57)' }}>{cellText}</p>
+          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+            <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
+          </Indicator>
         </div>
         <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
-        {!isDescription && alternativeCharge?.userDescription && (
+        {hasAlternative && (
           <ConfirmMiniButton
             onClick={() => updateUserNote(alternativeCharge.userDescription)}
             disabled={fetching}
@@ -57,6 +66,6 @@ export const Description = ({ data, alternativeCharge }: Props) => {
         )}
       </div>
       {toggleDescription && fullDescription}
-    </>
+    </td>
   );
 };

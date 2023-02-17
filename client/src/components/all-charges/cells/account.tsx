@@ -39,9 +39,11 @@ export const Account = ({ data }: Props) => {
     account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
 
   return (
-    <div className="flex flex-col gap-2 items-center">
-      <p>{accountNumber}</p>
-      <p>{accountType}</p>
-    </div>
+    <td>
+      <div className="flex flex-col gap-2 items-center">
+        <p>{accountNumber}</p>
+        <p>{accountType}</p>
+      </div>
+    </td>
   );
 };

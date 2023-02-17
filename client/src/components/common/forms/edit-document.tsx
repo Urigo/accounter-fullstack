@@ -70,7 +70,7 @@ import { ModifyDocumentFields } from './modify-document-fields';
   }
 `;
 
-export interface Props {
+interface Props {
   documentProps: FragmentType<typeof EditDocumentFieldsFragmentDoc>;
 }
 

@@ -22,5 +22,9 @@ export const Amount = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesAmountFieldsFragmentDoc, data);
   const { amount } = charge.transactions[0];
 
-  return <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red' }}>{amount.formatted}</div>;
+  return (
+    <td>
+      <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red' }}>{amount.formatted}</div>
+    </td>
+  );
 };

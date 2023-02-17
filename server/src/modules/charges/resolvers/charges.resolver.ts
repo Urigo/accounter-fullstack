@@ -252,7 +252,7 @@ export const chargesResolvers: ChargesModule.Resolvers = {
         : formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code),
     property: DbCharge => DbCharge.is_property,
     validationData: (DbCharge, _, { injector }) => {
-      if ('balance' in DbCharge) {
+      if ('invoices_count' in DbCharge && DbCharge.invoices_count != null) {
         return validateCharge(DbCharge as IValidateChargesResult);
       }
       return injector.get(ChargesProvider).validateChargeByIdLoader.load(DbCharge.id);

@@ -24,11 +24,13 @@ export const DateCell = ({ data }: Props) => {
   const timelessEffectiveDate = format(new Date(effectiveDate as string), 'dd/MM/yy');
 
   return (
-    <div>
-      <div style={{ fontSize: '12px', color: 'gray' }}>{timelessCreatedAt}</div>
-      {timelessEffectiveDate && timelessEffectiveDate !== timelessCreatedAt && (
-        <div style={{ fontSize: '10px', color: 'darkGray' }}>{timelessEffectiveDate}</div>
-      )}
-    </div>
+    <td>
+      <div>
+        {timelessCreatedAt}
+        {timelessEffectiveDate && timelessEffectiveDate !== timelessCreatedAt && (
+          <div style={{ fontSize: '12px', color: 'darkGray' }}>{timelessEffectiveDate}</div>
+        )}
+      </div>
+    </td>
   );
 };
