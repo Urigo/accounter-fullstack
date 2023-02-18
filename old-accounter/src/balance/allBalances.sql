@@ -230,7 +230,7 @@ WITH
       local_formatted_merged_tables
     WHERE
       account_type = 'creditcard'
-      AND account_number = 6264
+      AND account_number = '6264'
       AND debit_date > now()
   ),
   this_month_business_creditcard AS (
@@ -246,7 +246,7 @@ WITH
       local_formatted_merged_tables
     WHERE
       account_type = 'creditcard'
-      AND account_number = 2733
+      AND account_number = '2733'
       AND debit_date > now()
     ORDER BY
       event_date,
@@ -330,8 +330,8 @@ WITH
       local_formatted_merged_tables
     WHERE
       (
-        account_number = 2733
-        OR account_number = 61066
+        account_number = '2733'
+        OR account_number = '61066'
       )
       AND event_date::date >= '2019-12-01'::TIMESTAMP
       AND financial_accounts_to_balance IN ('no', 'dotan', 'uri', 'training_fund', 'pension')
@@ -423,8 +423,8 @@ WITH
       accounter_schema.future_transactions
     WHERE
       (
-        account_number = 2733
-        OR account_number = 61066
+        account_number = '2733'
+        OR account_number = '61066'
       )
       AND event_date::date >= '2019-12-01'::TIMESTAMP
       AND financial_accounts_to_balance = 'no'
@@ -497,9 +497,9 @@ WITH
       local_formatted_merged_tables
     WHERE
       (
-        account_number = 1082
-        OR account_number = 466803
-        OR account_number = 1074
+        account_number = '1082'
+        OR account_number = '466803'
+        OR account_number = '1074'
       )
       AND financial_entity <> 'Isracard'
     ORDER BY
@@ -588,8 +588,8 @@ WITH
       accounter_schema.future_transactions
     WHERE
       (
-        account_number = 2733
-        OR account_number = 61066
+        account_number = '2733'
+        OR account_number = '61066'
       )
       AND event_date::date >= '2019-12-01'::TIMESTAMP
     ORDER BY
@@ -624,8 +624,8 @@ WITH
       local_formatted_merged_tables
     WHERE
       (
-        account_number = 2733
-        OR account_number = 61066
+        account_number = '2733'
+        OR account_number = '61066'
       )
       AND (
         vat IS NOT NULL
@@ -648,7 +648,7 @@ WITH
     FROM
       accounter_schema.poalim_ils_account_transactions
     WHERE
-      account_number = 61066
+      account_number = '61066'
     ORDER BY
       event_date,
       expanded_event_date DESC
@@ -661,7 +661,7 @@ WITH
     FROM
       accounter_schema.poalim_ils_account_transactions
     WHERE
-      account_number = 410915
+      account_number = '410915'
     ORDER BY
       event_date,
       expanded_event_date DESC
@@ -674,7 +674,7 @@ WITH
     FROM
       accounter_schema.poalim_usd_account_transactions
     WHERE
-      account_number = 61066
+      account_number = '61066'
     ORDER BY
       executing_date,
       event_number DESC
@@ -687,7 +687,7 @@ WITH
     FROM
       accounter_schema.poalim_usd_account_transactions
     WHERE
-      account_number = 410915
+      account_number = '410915'
     ORDER BY
       executing_date,
       event_number DESC
@@ -700,7 +700,7 @@ WITH
     FROM
       accounter_schema.poalim_eur_account_transactions
     WHERE
-      account_number = 61066
+      account_number = '61066'
     ORDER BY
       executing_date,
       event_number DESC
@@ -713,7 +713,7 @@ WITH
     FROM
       accounter_schema.poalim_eur_account_transactions
     WHERE
-      account_number = 410915
+      account_number = '410915'
     ORDER BY
       executing_date,
       event_number DESC

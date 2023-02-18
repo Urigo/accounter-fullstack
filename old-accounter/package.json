@@ -30,7 +30,7 @@
     "dotenv": "16.0.3",
     "graphql": "16.6.0",
     "lodash": "4.17.21",
-    "modern-poalim-scraper": "0.5.4",
+    "modern-poalim-scraper": "0.6.7",
     "moment": "2.29.4",
     "pg": "8.8.0",
     "pixl-xml": "1.0.13",

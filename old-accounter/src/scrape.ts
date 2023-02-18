@@ -155,6 +155,83 @@ async function getForeignTransactionsfromBankAndSave(
   );
 }
 
+async function getForeignSwiftTransactionsfromBankAndSave(
+  newScraperIstance: any,
+  account: any,
+  pool: pg.Pool,
+) {
+  const foreignSwiftTransactions = await newScraperIstance.getForeignSwiftTransactions(account);
+  console.log(JSON.stringify(foreignSwiftTransactions));
+  console.log(
+    `finished getting foreignTransactions ${account.accountNumber}`,
+    foreignSwiftTransactions.isValid,
+  );
+  if (!foreignSwiftTransactions.isValid) {
+    console.log(
+      `getForeignSwiftTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
+      foreignSwiftTransactions.errors,
+    );
+  } else if (
+    foreignSwiftTransactions.data.swiftsList &&
+    foreignSwiftTransactions.data.swiftsList.length > 0
+  ) {
+    await Promise.all(
+      foreignSwiftTransactions.data.swiftsList.map(async (foreignSwiftTransaction: any) => {
+        console.log(JSON.stringify(foreignSwiftTransaction));
+        console.log(foreignSwiftTransaction.transferCatenatedId);
+        try {
+          const foreignSwiftTransactionDetails = await newScraperIstance.getForeignSwiftTransaction(
+            account,
+            foreignSwiftTransaction.transferCatenatedId,
+          );
+          console.log(foreignSwiftTransactionDetails);
+        } catch (e) {
+          console.log(e);
+        }
+      }),
+    );
+  }
+
+  // await Promise.all(
+  //   foreignTransactions.data.balancesAndLimitsDataList.map(async (foreignAccountsArray: any) => {
+  //     let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
+  //     switch (foreignAccountsArray.currencyCode) {
+  //       case 19:
+  //         accountCurrency = 'usd';
+  //         break;
+  //       case 100:
+  //         accountCurrency = 'eur';
+  //         break;
+  //       case 27:
+  //         accountCurrency = 'gbp';
+  //         break;
+  //       default:
+  //         // TODO: Log important checks
+  //         console.error('New account currency - ', foreignAccountsArray.currencyCode);
+  //         break;
+  //     }
+  //     if (accountCurrency) {
+  //       console.log(
+  //         `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
+  //       );
+  //       await saveTransactionsToDB(
+  //         foreignAccountsArray.transactions,
+  //         accountCurrency,
+  //         {
+  //           accountNumber: foreignAccountsArray.accountNumber,
+  //           branchNumber: foreignAccountsArray.branchNumber,
+  //           bankNumber: foreignAccountsArray.bankNumber,
+  //         },
+  //         pool,
+  //       );
+  //       console.log(
+  //         `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
+  //       );
+  //     }
+  //   }),
+  // );
+}
+
 async function getBankData(pool: pg.Pool, scraper: any) {
   console.log('start getBankData');
   console.log('Bank Login');
@@ -320,6 +397,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         getILSfromBankAndSave(newPoalimInstance, account, pool),
         getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool),
         getDepositsAndSave(newPoalimInstance, account, pool),
+        getForeignSwiftTransactionsfromBankAndSave(newPoalimInstance, account, pool),
       ]);
       console.log(
         `got and saved ILS and Foreign for ${account.accountNumber} - ${JSON.stringify(results)}`,
@@ -406,7 +484,7 @@ async function getCreditCardTransactionsAndSave(
   }
   const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972'];
+  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972', '6317'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
     wantedCreditCards.includes(transaction.card),
   );

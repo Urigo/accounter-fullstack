@@ -1,0 +1,107 @@
+{
+  "swiftBankDetails": {
+    "swiftIsnSerialNumber": "895250",
+    "swiftBankCode": "BARCDEFFXXX",
+    "orderCustomerName": "BARCLAYS BANK IRELAND PLC FRANKFURT",
+    "beneficiaryEnglishStreetName1": "TAUNUSTURM TAUNUSTOR 1",
+    "beneficiaryEnglishCityName1": "60310, FRANKFURT AM MAIN",
+    "beneficiaryEnglishCountryName": "GERMANY"
+  },
+  "swiftTransferDetailsList": [
+    {
+      "swiftTransferAttributeCode": ":20:",
+      "swiftTransferAttributeDesc": "SENDER'S REFERENCE",
+      "swiftTransferAttributeValue": "GER004561041"
+    },
+    {
+      "swiftTransferAttributeCode": ":23B:",
+      "swiftTransferAttributeDesc": "BANK OPERATION CODE",
+      "swiftTransferAttributeValue": "CRED"
+    },
+    {
+      "swiftTransferAttributeCode": ":32A:",
+      "swiftTransferAttributeDesc": "VALUE DATE,CURRENCY,AMOUNT",
+      "swiftTransferAttributeValue": "210210EUR1512,56"
+    },
+    {
+      "swiftTransferAttributeCode": ":33B:",
+      "swiftTransferAttributeDesc": "CURRENCY/INSTRUCTED AMOUNT",
+      "swiftTransferAttributeValue": "EUR1512,56"
+    },
+    {
+      "swiftTransferAttributeCode": ":50K:",
+      "swiftTransferAttributeDesc": "ORDERING CUSTOMER",
+      "swiftTransferAttributeValue": "/NL32INGB0007346709"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "STICHTING FRONTEND AMSTERDAM"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "EKSTERSTRAAT 49"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "1021 EB  AMSTERDAM"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "NL"
+    },
+    {
+      "swiftTransferAttributeCode": ":52A:",
+      "swiftTransferAttributeDesc": "ORDERING INSTITUTION",
+      "swiftTransferAttributeValue": "INGBNL2AXXX"
+    },
+    {
+      "swiftTransferAttributeCode": ":53A:",
+      "swiftTransferAttributeDesc": "SENDERS  CORRESPONDENT",
+      "swiftTransferAttributeValue": "BARCGB22XXX"
+    },
+    {
+      "swiftTransferAttributeCode": ":59:",
+      "swiftTransferAttributeDesc": "BENEFICIARY CUSTOMER",
+      "swiftTransferAttributeValue": "/IL930126150000000466803"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "SOFTWARE PRODUCTS GUILDA LTD"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "REHOV GNESSIN 18"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "ISRAEL 5341918"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "IL"
+    },
+    {
+      "swiftTransferAttributeCode": ":70:",
+      "swiftTransferAttributeDesc": "REMITTANCE INFORMATION",
+      "swiftTransferAttributeValue": "/RFB/NOTPROVIDED"
+    },
+    {
+      "swiftTransferAttributeCode": null,
+      "swiftTransferAttributeDesc": null,
+      "swiftTransferAttributeValue": "SERVICES INVOICE 40004"
+    },
+    {
+      "swiftTransferAttributeCode": ":71A:",
+      "swiftTransferAttributeDesc": "DETAILS OF CHARGES",
+      "swiftTransferAttributeValue": "OUR"
+    }
+  ]
+}

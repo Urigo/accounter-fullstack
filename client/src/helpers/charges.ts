@@ -258,16 +258,16 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       vat: formatFinancialAmount(0),
     };
   }
-  if (
-    transactionDescription?.includes('הוט נט שרותי אינטרנט') ||
-    transactionDescription?.includes('HOT')
-  ) {
-    return {
-      financialEntity: 'HOT',
-      userDescription: `Internet Provider`,
-      personalCategory: 'computer',
-    };
-  }
+  // if (
+  //   transactionDescription?.includes('הוט נט שרותי אינטרנט') ||
+  //   transactionDescription?.includes('HOT')
+  // ) {
+  //   return {
+  //     financialEntity: 'HOT',
+  //     userDescription: `Internet Provider`,
+  //     personalCategory: 'computer',
+  //   };
+  // }
   if (transactionDescription?.includes('סלקום')) {
     return {
       financialEntity: 'Celcom',
@@ -475,6 +475,13 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'transportation',
     };
   }
+  if (transactionDescription?.includes('אלון')) {
+    return {
+      financialEntity: 'Alon',
+      userDescription: 'Gas',
+      personalCategory: 'transportation',
+    };
+  }
   if (transactionDescription?.includes('קאר 2 גו')) {
     return {
       financialEntity: 'קאר 2 גו',
@@ -549,6 +556,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'Infrastructure',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
+    };
+  }
+  if (transactionDescription?.includes('שיק שיק')) {
+    return {
+      financialEntity: 'Arye Kristal',
+      userDescription: 'House rent',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'house',
     };
   }
   if (transactionDescription?.includes('POSTMARKAPP')) {
@@ -761,6 +776,16 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   if (transactionDescription?.includes('מטרי')) {
     return {
       financialEntity: 'Yaacov Matri',
+      userDescription: 'Consulting',
+      personalCategory: 'learn',
+      financialAccountsToBalance: ' ',
+      taxCategory: 'יעוץ',
+      vat: formatFinancialAmount((charge.transactions[0]?.amount.raw / 117) * 17),
+    };
+  }
+  if (transactionDescription?.includes('יפה צדוק')) {
+    return {
+      financialEntity: 'Yaffa Tsadoc',
       userDescription: 'Consulting',
       personalCategory: 'learn',
       financialAccountsToBalance: ' ',
@@ -1014,6 +1039,13 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'חב חשמל דן חשבונות',
       userDescription: 'Electricity bill',
+      personalCategory: 'house',
+    };
+  }
+  if (transactionDescription?.includes('עיריית תל אביב יפו א')) {
+    return {
+      financialEntity: 'Tel Aviv Municipality',
+      userDescription: 'Arnona',
       personalCategory: 'house',
     };
   }

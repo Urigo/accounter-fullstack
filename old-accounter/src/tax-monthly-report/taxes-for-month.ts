@@ -97,7 +97,7 @@ function getVATTransaction(
       select *
       from accounter_schema.all_transactions
       where
-        account_number in ${getCurrentBusinessAccountsQuery} 
+        account_number in ${getCurrentBusinessAccountsQuery}
         AND (vat ${symbolToUse} 0 or vat is null) ${extraSymbol}
         AND financial_entity <> 'Social Security Deductions'
         AND financial_entity <> 'Tax'
@@ -618,6 +618,7 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
         if (!monthIncomeVATTransaction.vatNumber) {
           monthIncomeVATTransaction.vatNumber = null;
         }
+        monthIncomeVATTransaction.account_number = Number(monthIncomeVATTransaction.account_number);
         // monthIncomeVATTransaction.amountBeforeFullVAT = getILSForDate(
         //   monthIncomeVATTransaction,
         //   invoiceExchangeRates
