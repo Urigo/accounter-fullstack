@@ -12,7 +12,7 @@
     ]
   },
   "engines": {
-    "node": "18.14.0"
+    "node": "19.6.1"
   },
   "scripts": {
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
