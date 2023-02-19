@@ -6,7 +6,7 @@ import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
-import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
