@@ -1,11 +1,11 @@
-import * as fs from 'fs';
+import { getCurrencyRates } from './data/currency';
+import { saveTransactionsToDB } from './data/save-transactions-to-db';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
+import * as fs from 'fs';
 import lodash from 'lodash';
 import { init } from 'modern-poalim-scraper';
 import pg from 'pg';
-import { getCurrencyRates } from './data/currency';
-import { saveTransactionsToDB } from './data/save-transactions-to-db';
 
 dotenv.config();
 
@@ -410,7 +410,7 @@ async function getCreditCardTransactionsAndSave(
   }
   const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972'];
+  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972', '6317'];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
     wantedCreditCards.includes(transaction.card),
   );
