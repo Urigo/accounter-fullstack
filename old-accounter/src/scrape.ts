@@ -1,11 +1,11 @@
-import { getCurrencyRates } from './data/currency.js';
-import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
+import * as fs from 'fs';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
-import * as fs from 'fs';
 import lodash from 'lodash';
 import { init } from 'modern-poalim-scraper';
 import pg from 'pg';
+import { getCurrencyRates } from './data/currency.js';
+import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 
 dotenv.config();
 

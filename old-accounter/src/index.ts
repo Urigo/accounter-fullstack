@@ -1,3 +1,11 @@
+import { createReadStream } from 'fs';
+import { createServer } from 'http';
+import { parse } from 'url';
+import dotenv from 'dotenv';
+// Node says that when importing from commonjs you only can bring
+// const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
+// import * as pg from 'pg'; // Won't work as this does equal this that:
+import pg from 'pg';
 import { printSomething } from './another-file.js';
 import { financialStatus, tableStyles } from './first-page.js';
 import { topPrivateNotCategorized } from './private-charts/private-charts.js';
@@ -7,14 +15,6 @@ import { createTaxEntriesForTransaction } from './tax-monthly-report/taxes-for-t
 import { updateBankTransactionAttribute } from './tax-monthly-report/update-transactions.js';
 import { getAllUsers } from './users/get-all-users.js';
 import { userTransactions } from './users/user-transactions.js';
-import dotenv from 'dotenv';
-import { createReadStream } from 'fs';
-import { createServer } from 'http';
-// Node says that when importing from commonjs you only can bring
-// const pg = require('pg'); // That works is we change Typescript and Node to use regular commonjs
-// import * as pg from 'pg'; // Won't work as this does equal this that:
-import pg from 'pg';
-import { parse } from 'url';
 
 const { config } = dotenv;
 config();

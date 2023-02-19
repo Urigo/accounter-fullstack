@@ -1,3 +1,6 @@
+import moment from 'moment';
+import pg from 'pg';
+import { v4 as uuidv4 } from 'uuid';
 import {
   addTrueVATtoTransaction,
   getHashBusinessIndexes,
@@ -10,9 +13,6 @@ import {
   hashNumberNoAbs,
   hashNumberRounded,
 } from './taxes-for-transaction.js';
-import moment from 'moment';
-import pg from 'pg';
-import { v4 as uuidv4 } from 'uuid';
 
 enum TransactionType {
   Income = '>',

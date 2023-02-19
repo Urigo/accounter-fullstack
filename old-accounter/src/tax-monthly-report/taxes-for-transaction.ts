@@ -1,7 +1,7 @@
-import { pool } from '../index.js';
-import { numberRounded } from './taxes-for-month.js';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
+import { pool } from '../index.js';
+import { numberRounded } from './taxes-for-month.js';
 
 const entitiesWithoutInvoiceDate = ['Uri Goldshtein', 'Poalim', 'Isracard'];
 const taxCategoriesWithoutInvoiceDate = ['אוריח'];
