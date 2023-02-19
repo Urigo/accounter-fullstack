@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import pgQuery from '@pgtyped/query';
+import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import { validateCharge } from '../helpers/validate.helper.js';
 import type {
@@ -20,8 +20,6 @@ import type {
   IValidateChargesParams,
   IValidateChargesQuery,
 } from '../types.js';
-
-const { sql } = pgQuery;
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *

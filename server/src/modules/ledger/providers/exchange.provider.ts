@@ -3,14 +3,12 @@ import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import type { ChargesTypes } from '@modules/charges';
-import pgQuery from '@pgtyped/query';
+import { sql } from '@pgtyped/runtime';
 import type {
   IGetExchangeRatesByDateQuery,
   IGetExchangeRatesByDatesParams,
   IGetExchangeRatesByDatesQuery,
 } from '../types.js';
-
-const { sql } = pgQuery;
 
 const getExchangeRatesByDate = sql<IGetExchangeRatesByDateQuery>`
     select *

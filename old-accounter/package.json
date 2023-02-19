@@ -32,16 +32,16 @@
     "lodash": "4.17.21",
     "modern-poalim-scraper": "0.6.8",
     "moment": "2.29.4",
-    "pg": "8.8.0",
+    "pg": "8.9.0",
     "pixl-xml": "1.0.13",
     "uuid": "9.0.0"
   },
   "devDependencies": {
     "@types/lodash": "4.14.191",
-    "@types/pg": "8.6.5",
+    "@types/pg": "8.6.6",
     "@types/pixl-xml": "1.0.2",
     "@types/uuid": "9.0.0",
-    "eslint": "8.29.0",
+    "eslint": "8.34.0",
     "nodemon": "2.0.20"
   }
 }

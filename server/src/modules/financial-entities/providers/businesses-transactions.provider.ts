@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import pgQuery from '@pgtyped/query';
+import { sql } from '@pgtyped/runtime';
 import { isTimelessDateString } from '@shared/helpers';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
@@ -11,8 +11,6 @@ import type {
   IGetLedgerRecordsDistinctBusinessesParams,
   IGetLedgerRecordsDistinctBusinessesQuery,
 } from '../types.js';
-
-const { sql } = pgQuery;
 
 const getLedgerRecordsDistinctBusinesses = sql<IGetLedgerRecordsDistinctBusinessesQuery>`
   SELECT DISTINCT business_name FROM (SELECT debit_account_1 as business_name FROM accounter_schema.ledger
