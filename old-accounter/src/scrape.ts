@@ -1,5 +1,5 @@
-import { getCurrencyRates } from './data/currency';
-import { saveTransactionsToDB } from './data/save-transactions-to-db';
+import { getCurrencyRates } from './data/currency.js';
+import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import * as fs from 'fs';

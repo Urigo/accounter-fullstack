@@ -1,14 +1,14 @@
-import { readFileSync } from 'fs';
-import moment from 'moment';
 import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
   entitiesWithoutInvoice,
   entitiesWithoutInvoiceNumuber,
   privateBusinessExpenses,
-} from '../../client/src/helpers/groups';
-import { suggestedTransaction } from '../../client/src/helpers/transactions';
-import { pool } from './index';
+} from '../../client/src/helpers/groups.js';
+import { suggestedTransaction } from '../../client/src/helpers/transactions.js';
+import { pool } from './index.js';
+import { readFileSync } from 'fs';
+import moment from 'moment';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/
 

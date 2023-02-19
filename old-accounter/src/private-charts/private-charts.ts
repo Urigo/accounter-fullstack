@@ -1,5 +1,5 @@
-import { currencyCodeToSymbol } from '../first-page';
-import { pool } from '../index';
+import { currencyCodeToSymbol } from '../first-page.js';
+import { pool } from '../index.js';
 
 export const topPrivateNotCategorized = async (): Promise<string> => {
   const startingDate = '2020-01-01';

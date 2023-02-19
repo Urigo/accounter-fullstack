@@ -2,10 +2,11 @@ import { add, differenceInDays, format, sub } from 'date-fns';
 import { Pool } from 'pg';
 import XML from 'pixl-xml';
 import puppeteer from 'puppeteer';
+import type { Page } from 'puppeteer';
 
 // TODO: Compare to this library: https://github.com/TobiasNickel/tXml
 
-async function getCurrencyRatesForDate(currentDate: Date, page: puppeteer.Page) {
+async function getCurrencyRatesForDate(currentDate: Date, page: Page) {
   const url = `https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS?startperiod=${format(
     currentDate,
     'yyyy-MM-dd',

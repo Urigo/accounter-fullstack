@@ -1,5 +1,5 @@
-import { tableStyles } from '../first-page';
-import { pool } from '../index';
+import { tableStyles } from '../first-page.js';
+import { pool } from '../index.js';
 
 export const businesses = {
   'Software Products Guilda Ltd.': '6a20aa69-57ff-446e-8d6a-1e96d095e988',
