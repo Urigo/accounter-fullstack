@@ -22,7 +22,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     __isTypeOf: () => true,
     ...commonFinancialEntityFields,
     govermentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
-    name: DbBusiness => DbBusiness.hebrew_name ?? DbBusiness.name,
+    name: DbBusiness => DbBusiness.name,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
 
     englishName: DbBusiness => DbBusiness.name,

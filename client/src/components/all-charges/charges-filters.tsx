@@ -90,6 +90,9 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [{ data, fetching, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
@@ -127,6 +130,20 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
     closeModal();
   }
 
+  // On every new data fetch, reorder results by name
+  useEffect(() => {
+    if (data?.allFinancialEntities.length) {
+      setFinancialEntities(
+        data.allFinancialEntities
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [data, setFinancialEntities]);
+
   return (
     <>
       {fetching ? <div>Loading...</div> : <div />}
@@ -139,12 +156,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
-              data={
-                data?.allFinancialEntities.map(entity => ({
-                  value: entity.id,
-                  label: entity.name,
-                })) ?? []
-              }
+              data={financialEntities}
               value={field.value ?? []}
               disabled={fetching}
               label="Owners"
@@ -162,12 +174,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <MultiSelect
               {...field}
-              data={
-                data?.allFinancialEntities.map(entity => ({
-                  value: entity.id,
-                  label: entity.name,
-                })) ?? []
-              }
+              data={financialEntities}
               value={field.value ?? []}
               disabled={fetching}
               label="Main Businesses"
