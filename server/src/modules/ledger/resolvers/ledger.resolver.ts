@@ -41,16 +41,28 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             )
           : null;
 
+      const businessesIDs = [fields.creditAccount?.id, fields.debitAccount?.id];
+      const [creditAccount1, debitAccount1] = await Promise.all(
+        businessesIDs.map(id =>
+          id
+            ? injector
+                .get(FinancialEntitiesProvider)
+                .getFinancialEntityByIdLoader.load(id)
+                .then(business => business?.name ?? null)
+            : null,
+        ),
+      );
+
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
-        creditAccount1: fields.creditAccount?.name ?? null,
+        creditAccount1,
         creditAccount2: null,
         creditAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null, // Temporary. this field shouldn't exist
-        debitAccount1: fields.debitAccount?.name ?? null,
+        debitAccount1,
         debitAccount2: null,
         debitAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         debitAmount2: null,
@@ -114,15 +126,27 @@ export const ledgerResolvers: LedgerModule.Resolvers &
               )
             : null;
 
+        const businessesIDs = [record.creditAccount?.id, record.debitAccount?.id];
+        const [creditAccount1, debitAccount1] = await Promise.all(
+          businessesIDs.map(id =>
+            id
+              ? injector
+                  .get(FinancialEntitiesProvider)
+                  .getFinancialEntityByIdLoader.load(id)
+                  .then(business => business?.name ?? null)
+              : null,
+          ),
+        );
+
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
           business: financialAccount.owner,
-          creditAccount1: record.creditAccount?.name ?? null,
+          creditAccount1,
           creditAccount2: null,
           creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           creditAmount2: null,
           currency,
           date3: record.date3 ? hashavshevetFormat.date(record.date3) : null, // Temporary. this field shouldn't exist
-          debitAccount1: record.debitAccount?.name ?? null,
+          debitAccount1,
           debitAccount2: null,
           debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           debitAmount2: null,
@@ -363,7 +387,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             ? mainInvoice.total_amount.toString()
             : null;
           charge.tax_invoice_number = mainInvoice.serial_number;
-        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity_id ?? '')) {
           throw new Error(`Charge ID="${chargeId}" has no invoices`);
         }
 
@@ -384,21 +408,31 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           throw new Error(`FinancialEntity ID="${charge.account_number}" not found`);
         }
 
-        const [hashBusinessIndexes] = await injector
-          .get(HashavshevetProvider)
-          .getHashavshevetBusinessIndexesByName({
-            financialEntityName: charge.financial_entity,
-            ownerId: owner.id,
-          });
+        const hashBusinessIndexes = charge.financial_entity_id
+          ? await injector
+              .get(HashavshevetProvider)
+              .getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader.load({
+                businessID: charge.financial_entity_id,
+                financialEntityId: owner.id,
+              })
+          : undefined;
+
+        if (!hashBusinessIndexes) {
+          throw new GraphQLError(
+            `Failed to get Hashavshevet business indexes for charge ID="${chargeId}"`,
+          );
+        }
+
         const hashVATIndexes = await injector
           .get(HashavshevetProvider)
           .getHashavshevetVatIndexes(owner.id);
         const isracardHashIndex = await injector
           .get(HashavshevetProvider)
           .getHashavshevetIsracardIndex(charge);
-        if (charge.financial_entity == 'Isracard') {
+        if (charge.financial_entity_id == '96dba127-90f4-4407-ae89-5a53afa42ca3') {
+          // Isracard
           charge.tax_category = isracardHashIndex;
-        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity_id ?? '')) {
           charge.tax_category = hashBusinessIndexes.auto_tax_category;
         }
 
@@ -430,7 +464,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
         const createdLedgerRecords: IInsertLedgerRecordsResult[] = [];
 
         // insert accounting ledger
-        if (!ENTITIES_WITHOUT_ACCOUNTING.includes(decoratedCharge.financial_entity ?? '')) {
+        if (!ENTITIES_WITHOUT_ACCOUNTING.includes(decoratedCharge.financial_entity_id ?? '')) {
           try {
             const entryForAccountingValues = generateEntryForAccountingValues(
               decoratedCharge,
@@ -553,7 +587,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           getILSForDate(decoratedCharge, invoiceExchangeRates).eventAmountILS !=
             getILSForDate(decoratedCharge, debitExchangeRates).eventAmountILS &&
           decoratedCharge.account_type != 'creditcard' &&
-          decoratedCharge.financial_entity != 'Isracard' &&
+          decoratedCharge.financial_entity_id != '96dba127-90f4-4407-ae89-5a53afa42ca3' && // Isracard
           decoratedCharge.tax_invoice_date
         ) {
           console.log('שערררררררר');

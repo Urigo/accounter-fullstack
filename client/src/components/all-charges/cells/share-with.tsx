@@ -17,11 +17,13 @@ import { ConfirmMiniButton, ListCapsule } from '../../common';
     beneficiaries {
       counterparty {
         name
+        id
       }
       percentage
     }
     counterparty {
       name
+      id
     }
     financialEntity {
       __typename
@@ -42,7 +44,7 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
     id: chargeId,
     financialEntity,
   } = getFragmentData(AllChargesShareWithFieldsFragmentDoc, data);
-  const financialEntityName = counterparty?.name ?? '';
+  const financialEntityId = counterparty?.id ?? '';
   const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
   const isError = beneficiaries.length === 0;
 
@@ -62,12 +64,12 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
 
   const shareWithDotanFlag =
     isError &&
-    (!(isBusiness && !entitiesWithoutInvoice.includes(financialEntityName)) ||
+    (!(isBusiness && !entitiesWithoutInvoice.includes(financialEntityId)) ||
       [
         ...privateBusinessExpenses,
         ...businessesNotToShare,
         ...businessesWithoutTaxCategory,
-      ].includes(financialEntityName));
+      ].includes(financialEntityId));
 
   return (
     <td>

@@ -1,4 +1,3 @@
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { ChargeSortByField, Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -41,21 +40,11 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           break;
       }
 
-      const businesses: Array<string | null> = [];
-      if (filters?.byBusinesses?.length) {
-        const businessNames = await Promise.all(
-          filters.byBusinesses.map(id =>
-            injector.get(FinancialEntitiesProvider).getFinancialEntityByIdLoader.load(id),
-          ),
-        );
-        businesses.push(...(businessNames.map(b => b?.name).filter(Boolean) as string[]));
-      }
-
       let charges = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
           financialEntityIds: filters?.byOwners ?? undefined,
-          businesses,
+          businessesIDs: filters?.byBusinesses ?? undefined,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
           sortColumn,
@@ -115,7 +104,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
       const financialAccountsToBalance = fields.beneficiaries
         ? JSON.stringify(
             fields.beneficiaries.map(b => ({
-              name: b.counterparty.name,
+              id: b.counterparty.id,
               percentage: b.percentage,
             })),
           )
@@ -136,7 +125,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance,
-        financialEntity: fields.counterparty?.name,
+        financialEntityID: fields.counterparty?.id,
         hashavshevetId: null,
         interest: null,
         isConversion: null,
@@ -200,7 +189,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
-        financialEntity: null,
+        financialEntityID: null,
         hashavshevetId: fields.hashavshevetId,
         interest: null,
         isConversion: null,

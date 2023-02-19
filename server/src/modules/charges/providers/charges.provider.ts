@@ -84,9 +84,9 @@ const updateCharge = sql<IUpdateChargeQuery>`
     event_amount,
     NULL
   ),
-  financial_entity = COALESCE(
-    $financialEntity,
-    financial_entity,
+  financial_entity_id = COALESCE(
+    $financialEntityID,
+    financial_entity_id,
     NULL
   ),
   vat = COALESCE(
@@ -305,12 +305,12 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity = bu.name
+  ON  at.financial_entity_id = bu.id
   WHERE 
   ($isIDs = 0 OR at.id IN $$IDs)
   AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
-  AND ($isBusinesses = 0 OR at.financial_entity IN $$businesses)
-  AND ($isNotBusinesses = 0 OR at.financial_entity NOT IN $$notBusinesses)
+  AND ($isBusinessesIDs = 0 OR at.financial_entity_id IN $$businessesIDs)
+  AND ($isNotBusinessesIDs = 0 OR at.financial_entity_id NOT IN $$notBusinessesIDs)
   AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
@@ -328,10 +328,10 @@ type IGetAdjustedChargesByFiltersParams = Optional<
     IGetChargesByFiltersParams,
     'isBusinesses' | 'isFinancialEntityIds' | 'isIDs' | 'isNotBusinesses'
   >,
-  | 'businesses'
+  | 'businessesIDs'
   | 'financialEntityIds'
   | 'IDs'
-  | 'notBusinesses'
+  | 'notBusinessesIDs'
   | 'asc'
   | 'sortColumn'
   | 'toDate'
@@ -397,7 +397,7 @@ const validateCharges = sql<IValidateChargesQuery>`
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity = bu.name
+  ON  at.financial_entity_id = bu.id
   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
     AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
     AND ($isIDs = 0 OR at.id IN $$IDs)
@@ -493,10 +493,10 @@ export class ChargesProvider {
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
-    const isBusinesses = !!params?.businesses?.length;
+    const isBusinessesIDs = !!params?.businessesIDs?.length;
     const isFinancialEntityIds = !!params?.financialEntityIds?.length;
     const isIDs = !!params?.IDs?.length;
-    const isNotBusinesses = !!params?.notBusinesses?.length;
+    const isNotBusinessesIDs = !!params?.notBusinessesIDs?.length;
 
     const defaults = {
       asc: false,
@@ -505,10 +505,10 @@ export class ChargesProvider {
 
     const fullParams: IGetChargesByFiltersParams = {
       ...defaults,
-      isBusinesses: isBusinesses ? 1 : 0,
+      isBusinessesIDs: isBusinessesIDs ? 1 : 0,
       isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
-      isNotBusinesses: isNotBusinesses ? 1 : 0,
+      isNotBusinessesIDs: isNotBusinessesIDs ? 1 : 0,
       ...params,
       preCalculateBalance: params.preCalculateBalance ?? false,
       preCountInvoices: params.preCountInvoices ?? false,
@@ -516,10 +516,10 @@ export class ChargesProvider {
       preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
-      businesses: isBusinesses ? params.businesses! : [null],
+      businessesIDs: isBusinessesIDs ? params.businessesIDs! : [null],
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
-      notBusinesses: isNotBusinesses ? params.notBusinesses! : [null],
+      notBusinessesIDs: isNotBusinessesIDs ? params.notBusinessesIDs! : [null],
       chargeType: params.chargeType ?? 'ALL',
     };
     return getChargesByFilters.run(fullParams, this.dbProvider);

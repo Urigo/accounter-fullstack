@@ -28,16 +28,23 @@ app.get('/getLastInvoiceNumbers', async (_req: Request, res: Response) => {
   console.log('getLastInvoiceNumbers request');
 
   const queryRes = await pool.query(`
-    SELECT tax_invoice_number,
-      user_description,
-      financial_entity,
-      event_amount,
-      event_date
-    FROM accounter_schema.all_transactions
+    SELECT at.tax_invoice_number,
+      at.user_description,
+      b.name as financial_entity_name,
+      at.event_amount,
+      at.event_date
+    FROM accounter_schema.all_transactions at
+    LEFT JOIN accounter_schema.businesses b
+    ON at.financial_entity_id = b.id
     WHERE
       (account_number in ('466803', '1074', '1082', '5972')) AND
       event_amount > 0 AND
-      (financial_entity not in ('Poalim', 'VAT') OR financial_entity IS NULL)
+      (financial_entity_id not in (
+        -- Poalim
+        '8fa16264-de32-4592-bffb-64a1914318ad',
+        -- VAT
+        'c7fdf6f6-e075-44ee-b251-cbefea366826'
+      ) OR financial_entity_id IS NULL)
     ORDER BY event_date DESC;`);
   res.send(queryRes.rows);
 });
@@ -182,9 +189,11 @@ app.get('/getProfitTable', async (req: Request, res: Response) => {
         where 
           personal_category <> 'conversion'
           and personal_category <> 'investments'
-          and financial_entity <> 'Isracard'
-          and financial_entity <> 'Tax'
-          and financial_entity <> 'VAT'
+          and financial_entity_id NOT IN (
+            '96dba127-90f4-4407-ae89-5a53afa42ca3', -- Isracard
+            '9d3a8a88-6958-4119-b509-d50a7cdc0744', -- Tax
+            'c7fdf6f6-e075-44ee-b251-cbefea366826', -- VAT
+          ) 
           and financial_entity <> 'Tax Shuma'
           and financial_entity <> 'Tax Corona Grant'
           and financial_entity <> 'Uri Goldshtein'

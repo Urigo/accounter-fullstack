@@ -33,6 +33,18 @@ const INSERT_MOVEMENT_QUERY = `insert into accounter_schema.ledger (
     business) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) returning *;
   `;
 const ENTITIES_WITHOUT_ACCOUNTING = [
+  '96dba127-90f4-4407-ae89-5a53afa42ca3', // Isracard
+  'c7fdf6f6-e075-44ee-b251-cbefea366826', // VAT
+  '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa', // Social Security Deductions
+  'f1ade516-4999-4919-9d94-6b013221536d', // Tax Deductions
+  '9d3a8a88-6958-4119-b509-d50a7cdc0744', // Tax
+  '8f347f1f-293d-4a88-889a-8043b91f34d5', // Dividend Tax Deduction Origin
+  '8fa16264-de32-4592-bffb-64a1914318ad', // Poalim
+  '0117c1b0-c1f3-4564-9bc5-bdc27a8895f0', // Halman Aldubi Training Fund
+  'd57ff56d-08ef-454b-88e9-37c4e9d0328c', // Halman Aldubi Pension
+  'c80775bc-1028-4836-9599-f5ebccbe5d06', // Uri Goldshtein Hoz
+  '147d3415-55e3-497f-acba-352dcc37cb8d', // Uri Goldshtein
+  // TODO: delete next values after DB migration to business ID done
   'Isracard',
   'VAT',
   'Social Security Deductions',
@@ -59,34 +71,20 @@ async function getHashFinancialAccounts(transaction: any) {
 }
 
 async function getHashBusinessIndexes(transaction: any, owner: any) {
-  let businessIDResult: any;
-  try {
-    businessIDResult = await pool.query(`
-      select id
-      from accounter_schema.businesses
-      where
-        name = $$${transaction.financial_entity}$$;
-    `);
-  } catch (error) {
-    console.log('Finding business id error - ', error);
-  }
-
-  // console.log('businessIDResult', businessIDResult);
-
   let hashBusinessIndexResult: any;
   try {
     const businessHashInfoQuery = `
       select hash_index, auto_tax_category
       from accounter_schema.hash_business_indexes
       where
-        business = $$${businessIDResult.rows[0].id}$$ and
+        business = $$${transaction.financial_entity_id}$$ and
         hash_owner = $$${owner}$$;
     `;
     // console.log('businessHashInfoQuery', businessHashInfoQuery);
     hashBusinessIndexResult = await pool.query(businessHashInfoQuery);
   } catch (error) {
     console.log('Finding business Hash id error - ', error);
-    console.log(`failed query: ${transaction.financial_entity}`);
+    console.log(`failed query for charge ID: ${transaction.id}`);
   }
   // console.log('hashBusinessIndexResult.rows', hashBusinessIndexResult?.rows);
   return hashBusinessIndexResult?.rows[0];
@@ -411,7 +409,8 @@ export const generateTaxMovement = async (transactionId: string) => {
   const hashVATIndexes = await getVATIndexes(owner);
 
   let isracardHashIndexes;
-  if (transaction.financial_entity == 'Isracard') {
+  if (transaction.financial_entity_id == '96dba127-90f4-4407-ae89-5a53afa42ca3') {
+    // Isracard
     const hashCreditcardIndexResult: any = await pool.query(`
     select hashavshevet_account_ils,
           hashavshevet_account_usd,
@@ -596,7 +595,7 @@ export const generateTaxMovement = async (transactionId: string) => {
 
   const entryForAccountingValues = [
     hashDateFormat(
-      !ENTITIES_WITHOUT_INVOICE_DATE.includes(transaction.financial_entity) &&
+      !ENTITIES_WITHOUT_INVOICE_DATE.includes(transaction.financial_entity_id) &&
         !TAX_CATEGORIES_WITHOUT_INVOICE_DATE.includes(transaction.tax_category)
         ? transaction.tax_invoice_date
         : transaction.event_date,
@@ -674,7 +673,8 @@ export const generateTaxMovement = async (transactionId: string) => {
 
   let foreignBalance = null;
   let currency = hashCurrencyType(transaction.currency_code);
-  if (transaction.financial_entity == 'Isracard') {
+  if (transaction.financial_entity_id == '96dba127-90f4-4407-ae89-5a53afa42ca3') {
+    // Isracard
     const originalInvoicedAmountAndCurrency: any = await pool.query(`
     select tax_invoice_amount, tax_invoice_currency
     from accounter_schema.all_transactions
@@ -787,7 +787,7 @@ export const generateTaxMovement = async (transactionId: string) => {
     text: INSERT_MOVEMENT_QUERY,
     values: entryForAccountingValues,
   };
-  if (!ENTITIES_WITHOUT_ACCOUNTING.includes(transaction.financial_entity)) {
+  if (!ENTITIES_WITHOUT_ACCOUNTING.includes(transaction.financial_entity_id)) {
     try {
       const updateResult = await pool.query(queryConfig);
       console.log(JSON.stringify(updateResult.rows[0]));

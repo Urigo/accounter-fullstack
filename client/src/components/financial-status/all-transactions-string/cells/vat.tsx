@@ -18,8 +18,8 @@ export const Vat = ({ transaction, style }: Props) => {
     (!transaction.vat &&
       isBusiness(transaction) &&
       transaction.currency_code === 'ILS' &&
-      !entitiesWithoutInvoice.includes(transaction.financial_entity || '') &&
-      !businessesWithoutTaxCategory.includes(transaction.financial_entity ?? '')) ||
+      !entitiesWithoutInvoice.includes(transaction.financial_entity_id || '') &&
+      !businessesWithoutTaxCategory.includes(transaction.financial_entity_id ?? '')) ||
     (transaction.vat &&
       ((transaction.vat > 0 && Number(transaction.event_amount) < 0) ||
         (transaction.vat < 0 && Number(transaction.event_amount) > 0)));

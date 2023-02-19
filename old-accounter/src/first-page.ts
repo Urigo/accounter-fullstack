@@ -4,7 +4,7 @@ import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
   entitiesWithoutInvoice,
-  entitiesWithoutInvoiceNumuber,
+  entitiesWithoutInvoiceNumber,
   privateBusinessExpenses,
 } from '../../client/src/helpers/groups.js';
 import { suggestedTransaction } from '../../client/src/helpers/transactions.js';
@@ -20,7 +20,7 @@ function isBusiness(transaction: any) {
       transaction.account_number == '1082' ||
       transaction.account_number == '5972' ||
       transaction.account_number == '1074') &&
-    !entitiesWithoutInvoice.includes(transaction.financial_entity)
+    !entitiesWithoutInvoice.includes(transaction.financial_entity_id)
   );
 }
 function shareWithDotan(transaction: any) {
@@ -35,9 +35,9 @@ function shareWithDotan(transaction: any) {
   }
   return !(
     !isBusiness(transaction) ||
-    privateBusinessExpenses.includes(transaction.financial_entity) ||
-    businessesNotToShare.includes(transaction.financial_entity) ||
-    businessesWithoutTaxCategory.includes(transaction.financial_entity)
+    privateBusinessExpenses.includes(transaction.financial_entity_id) ||
+    businessesNotToShare.includes(transaction.financial_entity_id) ||
+    businessesWithoutTaxCategory.includes(transaction.financial_entity_id)
   );
 }
 
@@ -491,8 +491,8 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="vat"  ${
             (!transaction.vat &&
               isBusiness(transaction) &&
-              !entitiesWithoutInvoice.includes(transaction.financial_entity) &&
-              !businessesWithoutTaxCategory.includes(transaction.financial_entity) &&
+              !entitiesWithoutInvoice.includes(transaction.financial_entity_id) &&
+              !businessesWithoutTaxCategory.includes(transaction.financial_entity_id) &&
               transaction.currency_code == 'ILS') ||
             (transaction.vat > 0 && transaction.event_amount < 0) ||
             (transaction.vat < 0 && transaction.event_amount > 0)
@@ -551,7 +551,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           </td>
           <td class="tax_invoice_number" ${
             isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
+            !entitiesWithoutInvoiceNumber.includes(transaction.financial_entity_id) &&
             !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
@@ -595,7 +595,7 @@ export const financialStatus = async (query: any): Promise<string> => {
           </td>
           <td class="receipt_number" ${
             isBusiness(transaction) &&
-            !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity) &&
+            !entitiesWithoutInvoiceNumber.includes(transaction.financial_entity_id) &&
             !transaction.receipt_number &&
             !transaction.tax_invoice_number
               ? 'style="background-color: rgb(236, 207, 57);"'

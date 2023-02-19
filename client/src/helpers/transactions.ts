@@ -957,7 +957,7 @@ export const isBusiness = (transaction: TransactionType) => {
       transaction.account_number == '1082' ||
       transaction.account_number == '5972' ||
       transaction.account_number == '1074') &&
-    !entitiesWithoutInvoice.includes(transaction.financial_entity ?? '')
+    !entitiesWithoutInvoice.includes(transaction.financial_entity_id ?? '')
   );
 };
 
@@ -971,12 +971,12 @@ export const shareWithDotan = (transaction: TransactionType) => {
     return false;
   }
 
-  const financialEntity = transaction.financial_entity ?? '';
+  const financialEntityID = transaction.financial_entity_id ?? '';
 
   return !(
     !isBusiness(transaction) ||
-    privateBusinessExpenses.includes(financialEntity) ||
-    businessesNotToShare.includes(financialEntity) ||
-    businessesWithoutTaxCategory.includes(financialEntity)
+    privateBusinessExpenses.includes(financialEntityID) ||
+    businessesNotToShare.includes(financialEntityID) ||
+    businessesWithoutTaxCategory.includes(financialEntityID)
   );
 };

@@ -2,6 +2,29 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  " The other side of a transaction "
+  interface Counterparty {
+    name: String!
+    id: ID!
+  }
+
+  " input variables for updateCharge.Counterparty"
+  input CounterpartyInput {
+    id: ID!
+  }
+
+  " defines a link between a counterparty and their part in the charge "
+  type BeneficiaryCounterparty {
+    counterparty: Counterparty!
+    percentage: Percentage!
+  }
+
+  " represent a counterparty with a name "
+  type NamedCounterparty implements Counterparty {
+    name: String!
+    id: ID!
+  }
+
   extend type Charge {
     " calculated counterparty details for the charge "
     counterparty: Counterparty

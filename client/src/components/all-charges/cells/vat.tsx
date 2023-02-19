@@ -15,7 +15,7 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
       currency
     }
     counterparty {
-      name
+      id
     }
     financialEntity {
       __typename
@@ -42,8 +42,8 @@ export const Vat = ({ data }: Props) => {
   const vatIssueFlag =
     (!vat &&
       isBusiness &&
-      !entitiesWithoutInvoice.includes(counterparty?.name ?? '') &&
-      !businessesWithoutTaxCategory.includes(counterparty?.name ?? '') &&
+      !entitiesWithoutInvoice.includes(counterparty?.id ?? '') &&
+      !businessesWithoutTaxCategory.includes(counterparty?.id ?? '') &&
       totalAmount?.currency == Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);

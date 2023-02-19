@@ -21,7 +21,7 @@ import type {
   TimelessDateString,
   VatExtendedCharge,
 } from '@shared/types';
-import type { IGetHashavshevetBusinessIndexesByNameResult } from '../types.js';
+import type { IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult } from '../types.js';
 
 /* regex of dd/mm/yyyy */
 const HASHAVSHEVET_DATE_REGEX =
@@ -76,7 +76,7 @@ function getCreditcardAccount(
 function account(
   accountType: string | null,
   financialAccounts: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   currency: string | null,
   isracardHashIndex: string | null,
@@ -159,7 +159,7 @@ export function generateEntryForAccountingValues(
   charge: VatExtendedCharge,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
@@ -167,7 +167,7 @@ export function generateEntryForAccountingValues(
   const isILS = charge.currency_code === 'ILS';
 
   const unformattedInvoiceDate =
-    !ENTITIES_WITHOUT_INVOICE_DATE.includes(charge.financial_entity ?? '') &&
+    !ENTITIES_WITHOUT_INVOICE_DATE.includes(charge.financial_entity_id ?? '') &&
     !TAX_CATEGORIES_WITHOUT_INVOICE_DATE.includes(charge.tax_category ?? '')
       ? charge.tax_invoice_date
       : charge.event_date; // add a check if should have an invoice but doesn't let user know;
@@ -300,7 +300,7 @@ export function generateEntryForFinancialAccountValues(
   charge: VatExtendedCharge,
   entryForFinancialAccount: EntryForFinancialAccount,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
@@ -313,7 +313,7 @@ export function generateEntryForFinancialAccountValues(
     ? hashavshevetFormat.currency(charge.currency_code)
     : null; // TODO(Uri): Check if it works for foreign creditcard in ILS
   // TODO(Uri): commented code is a never-completed experiment
-  //   if (charge.financial_entity == 'Isracard' && originalInvoicedAmountAndCurrency) {
+  //   if (charge.financial_entity_id == '96dba127-90f4-4407-ae89-5a53afa42ca3' && originalInvoicedAmountAndCurrency) {
   //     const originalInvoicedAmountAndCurrency: any = await pool.query(`
   //     select tax_invoice_amount, tax_invoice_currency
   //     from accounter_schema.all_transactions
@@ -473,7 +473,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
   entryForFinancialAccount: EntryForFinancialAccount,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,
@@ -590,7 +590,7 @@ export function generateEntryForforeignTransferFeesValues(
   entryForFinancialAccount: EntryForFinancialAccount,
   entryForAccounting: EntryForAccounting,
   financialAccount: IGetFinancialAccountsByAccountNumbersResult,
-  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByNameResult,
+  hashBusinessIndexes: IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdResult,
   hashVATIndexes: Record<VatIndexesKeys, string>,
   isracardHashIndex: string | null,
   owner: IGetFinancialEntitiesByIdsResult,

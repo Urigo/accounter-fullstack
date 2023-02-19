@@ -16,7 +16,7 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.Documents);
   }
 
-  const businessIsFine = !!charge.financial_entity;
+  const businessIsFine = !!charge.financial_entity_id;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }

@@ -1,6 +1,6 @@
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 
-export type BeneficiaryCounterpartyProto = { name: string; percentage: number };
+export type BeneficiaryCounterpartyProto = { counterpartyID: string; percentage: number };
 export type CounterpartyProto = string | null;
 
 type CurrencySum = {

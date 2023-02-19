@@ -40,27 +40,6 @@ export default gql`
     linkedEntities: [FinancialEntity!]!
   }
 
-  " The other side of a transaction "
-  interface Counterparty {
-    name: String!
-  }
-
-  " input variables for updateCharge.Counterparty"
-  input CounterpartyInput {
-    name: String!
-  }
-
-  " defines a link between a counterparty and their part in the charge "
-  type BeneficiaryCounterparty {
-    counterparty: Counterparty!
-    percentage: Percentage!
-  }
-
-  " represent a counterparty with a name "
-  type NamedCounterparty implements Counterparty {
-    name: String!
-  }
-
   extend type Charge {
     " the financial entity that created the charge "
     financialEntity: FinancialEntity!

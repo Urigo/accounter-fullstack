@@ -1,14 +1,12 @@
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 import { commonFinancialEntityFields } from './common.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
     financialEntity: async (_, { id }, { injector }) => {
-      const dbFe = await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(id);
+      const dbFe = await injector.get(FinancialEntitiesProvider).getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
@@ -36,8 +34,14 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
+  BeneficiaryCounterparty: {
+    // TODO: improve counterparty handle
+    __isTypeOf: () => true,
+    counterparty: parent => parent.counterpartyID,
+    percentage: parent => parent.percentage,
+  },
   Charge: {
-    counterparty: DbCharge => DbCharge.financial_entity,
+    counterparty: DbCharge => DbCharge.financial_entity_id,
     beneficiaries: async (DbCharge, _, { injector }) => {
       // TODO: update to better implementation after DB is updated
       try {
@@ -51,25 +55,25 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         case 'no':
           return [
             {
-              name: 'Uri',
+              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
               percentage: 0.5,
             },
             {
-              name: 'Dotan',
+              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
               percentage: 0.5,
             },
           ];
         case 'uri':
           return [
             {
-              name: 'Uri',
+              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
               percentage: 1,
             },
           ];
         case 'dotan':
           return [
             {
-              name: 'dotan',
+              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
               percentage: 1,
             },
           ];
@@ -78,18 +82,16 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
             // case Guild account
             const guildAccounts = await injector
               .get(FinancialAccountsProvider)
-              .getFinancialAccountsByFinancialEntityIdLoader.load(
-                '6a20aa69-57ff-446e-8d6a-1e96d095e988',
-              );
+              .getFinancialAccountsByFinancialEntityIdLoader.load('6a20aa69-57ff-446e-8d6a-1e96d095e988');
             const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
             if (guildAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
-                  name: 'Uri',
+                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
                   percentage: 0.5,
                 },
                 {
-                  name: 'Dotan',
+                  counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
                   percentage: 0.5,
                 },
               ];
@@ -98,14 +100,12 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
             // case UriLTD account
             const uriAccounts = await injector
               .get(FinancialAccountsProvider)
-              .getFinancialAccountsByFinancialEntityIdLoader.load(
-                'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
-              );
+              .getFinancialAccountsByFinancialEntityIdLoader.load('a1f66c23-cea3-48a8-9a4b-0b4a0422851a');
             const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
             if (uriAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
-                  name: 'Uri',
+                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
                   percentage: 1,
                 },
               ];

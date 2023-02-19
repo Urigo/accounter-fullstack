@@ -24,7 +24,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         eventDate: null,
         eventNumber: null,
         financialAccountsToBalance: null,
-        financialEntity: null,
+        financialEntityID: null,
         hashavshevetId: null,
         interest: null,
         isConversion: null,

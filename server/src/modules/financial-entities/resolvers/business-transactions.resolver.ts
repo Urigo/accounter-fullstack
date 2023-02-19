@@ -5,6 +5,7 @@ import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
 import type { RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
+import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessTransactionsSumFromLedgerRecordsParams,
@@ -185,13 +186,17 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
-    name: parent => parent ?? '',
-  },
-  BeneficiaryCounterparty: {
-    // TODO: improve counterparty handle
-    __isTypeOf: () => true,
-    counterparty: parent => parent.name,
-    percentage: parent => parent.percentage,
+    name: (parent, _, { injector }) =>
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(parent!)
+        .then(fe => {
+          if (!fe) {
+            throw new GraphQLError(`Financial entity not found for id ${parent}`);
+          }
+          return fe.name;
+        }),
+    id: parent => parent!,
   },
   BusinessTransactionSum: {
     businessName: rawSum => rawSum.businessName,
