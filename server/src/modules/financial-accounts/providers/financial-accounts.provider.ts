@@ -1,13 +1,11 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import pgQuery from '@pgtyped/query';
+import { sql } from '@pgtyped/runtime';
 import type {
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByFinancialEntityIdsQuery,
 } from '../types.js';
-
-const { sql } = pgQuery;
 
 const getFinancialAccountsByFinancialEntityIds = sql<IGetFinancialAccountsByFinancialEntityIdsQuery>`
     SELECT *
