@@ -1,4 +1,4 @@
-import { pool } from '..';
+import { pool } from '../index.js';
 
 export async function updateBankTransactionAttribute(
   transactionId: string,
