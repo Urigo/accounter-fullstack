@@ -35,7 +35,7 @@ const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNum
     ORDER BY event_date DESC;`;
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
-    SELECT at.*, fa.owner as financial_entity_id
+    SELECT at.*, fa.owner as owner_id
     FROM accounter_schema.all_transactions at
     LEFT JOIN accounter_schema.financial_accounts fa
     ON  at.account_number = fa.account_number
@@ -472,9 +472,7 @@ export class ChargesProvider {
       },
       this.dbProvider,
     );
-    return financialEntityIds.map(id =>
-      charges.filter(charge => charge.financial_entity_id === id),
-    );
+    return financialEntityIds.map(id => charges.filter(charge => charge.owner_id === id));
   }
 
   public getChargeByFinancialEntityIdLoader = new DataLoader(
