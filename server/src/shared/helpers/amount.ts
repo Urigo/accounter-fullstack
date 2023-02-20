@@ -42,6 +42,10 @@ export const formatCurrency = (raw?: string | null): Currency => {
       return Currency.Eur;
     case 'ILS':
       return Currency.Ils;
+    case 'GRT':
+      return Currency.Grt;
+    case 'USDC':
+      return Currency.Usdc;
     case null:
       return Currency.Ils;
     case undefined:
@@ -62,6 +66,12 @@ export function getCurrencySymbol(currency: Currency) {
       return '€';
     case Currency.Ils:
       return '₪';
+    case Currency.Grt:
+      // TODO: use symbol
+      return 'GRT';
+    case Currency.Usdc:
+      // TODO: use symbol
+      return 'USDC';
     default:
       console.warn(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
       return '₪';

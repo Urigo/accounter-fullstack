@@ -11,6 +11,12 @@ export function currencyCodeToSymbol(currency_code: string): string {
     currencySymbol = '€';
   } else if (currency_code == 'GBP') {
     currencySymbol = '£';
+  } else if (currency_code == 'GRT') {
+    // TODO: use symbol
+    currencySymbol = 'GRT';
+  } else if (currency_code == 'USDC') {
+    // TODO: use symbol
+    currencySymbol = 'USDC';
   }
   return currencySymbol;
 }
