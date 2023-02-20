@@ -24,6 +24,10 @@ export enum Currency {
   Ils = 'ILS',
   Gbp = 'GBP',
   Eur = 'EUR',
+  // TODO: use symbol
+  Grt = 'GRT',
+  // TODO: use symbol
+  Usdc = 'USDC',
 }
 
 export enum DocumentType {

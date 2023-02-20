@@ -69,6 +69,8 @@ export default gql`
     ILS
     GBP
     EUR
+    GRT
+    USDC
   }
 
   " meta info for page pagination "
