@@ -227,7 +227,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     roundedLocalVatAfterDeduction: raw =>
       raw.roundedVATToAdd ? formatFinancialIntAmount(raw.roundedVATToAdd, Currency.Ils) : null,
     taxReducedLocalAmount: raw =>
-      raw.amountBeforeVAT ? formatFinancialAmount(raw.amountBeforeVAT, Currency.Ils) : null,
+      raw.amountBeforeVAT ? formatFinancialIntAmount(raw.amountBeforeVAT, Currency.Ils) : null,
     vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),
     vatAfterDeduction: raw =>
       raw.vatAfterDeduction ? formatFinancialAmount(raw.vatAfterDeduction, Currency.Ils) : null,
