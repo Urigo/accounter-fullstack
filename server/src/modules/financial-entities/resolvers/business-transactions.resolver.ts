@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Currency } from '@shared/enums';
+import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
 import type { RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
@@ -9,7 +10,8 @@ import type {
   IGetBusinessTransactionsSumFromLedgerRecordsParams,
 } from '../types.js';
 
-export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
+export const businessesResolvers: FinancialEntitiesModule.Resolvers &
+  Pick<Resolvers, 'BusinessTransactionsSumFromLedgerRecordsResult'> = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }) => {
       try {
@@ -173,6 +175,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers = {
         console.error(e);
         return [];
       }
+    },
+  },
+  BusinessTransactionsSumFromLedgerRecordsResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult';
     },
   },
   NamedCounterparty: {

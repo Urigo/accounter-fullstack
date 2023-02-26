@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { DocumentType } from '@shared/enums';
+import type { Resolvers } from '@shared/gql-types';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
 import {
@@ -12,7 +13,8 @@ import {
 import { uploadDocument } from './document-handling.js';
 import { fetchEmailDocument } from './email-handling.js';
 
-export const documentsResolvers: DocumentsModule.Resolvers = {
+export const documentsResolvers: DocumentsModule.Resolvers &
+  Pick<Resolvers, 'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult'> = {
   Query: {
     documents: async (_, __, { injector }) => {
       const dbDocs = await injector.get(DocumentsProvider).getAllDocuments();
@@ -169,6 +171,24 @@ export const documentsResolvers: DocumentsModule.Resolvers = {
           }`,
         };
       }
+    },
+  },
+  UpdateDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UpdateDocumentSuccessfulResult';
+    },
+  },
+  InsertDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'InsertDocumentSuccessfulResult';
+    },
+  },
+  UploadDocumentResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UploadDocumentSuccessfulResult';
     },
   },
   // UpdateDocumentResult: {

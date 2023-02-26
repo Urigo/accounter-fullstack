@@ -1,5 +1,6 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { ChargeSortByField, Currency } from '@shared/enums';
+import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
@@ -16,7 +17,7 @@ import {
   commonTransactionFields,
 } from './common.js';
 
-export const chargesResolvers: ChargesModule.Resolvers = {
+export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'UpdateChargeResult'> = {
   Query: {
     chargeById: async (_, { id }, { injector }) => {
       const dbCharge = await injector.get(ChargesProvider).getChargeByIdLoader.load(id);
@@ -233,6 +234,12 @@ export const chargesResolvers: ChargesModule.Resolvers = {
           message: (e as Error)?.message ?? 'Unknown error',
         };
       }
+    },
+  },
+  UpdateChargeResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
     },
   },
   Charge: {

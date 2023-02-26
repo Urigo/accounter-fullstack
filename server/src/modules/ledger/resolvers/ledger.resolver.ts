@@ -13,6 +13,7 @@ import {
 } from '@modules/hashavshevet/helpers/hashavshevet.helper.js';
 import { HashavshevetProvider } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
 import { ENTITIES_WITHOUT_ACCOUNTING } from '@shared/constants';
+import type { Resolvers } from '@shared/gql-types';
 import { formatAmount, formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
 import { getILSForDate } from '../helpers/exchange.helper.js';
@@ -26,7 +27,11 @@ import type {
   LedgerModule,
 } from '../types.js';
 
-export const ledgerResolvers: LedgerModule.Resolvers = {
+export const ledgerResolvers: LedgerModule.Resolvers &
+  Pick<
+    Resolvers,
+    'UpdateLedgerRecordResult' | 'InsertLedgerRecordResult' | 'GenerateLedgerRecordsResult'
+  > = {
   Mutation: {
     updateLedgerRecord: async (_, { ledgerRecordId, fields }, { injector }) => {
       const currency =
@@ -590,6 +595,24 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
           message: (e as Error)?.message ?? 'Unknown error',
         };
       }
+    },
+  },
+  UpdateLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'LedgerRecord';
+    },
+  },
+  InsertLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  GenerateLedgerRecordsResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
     },
   },
   // UpdateLedgerRecordResult: {
