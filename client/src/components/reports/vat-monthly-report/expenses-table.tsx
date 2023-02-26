@@ -118,7 +118,7 @@ export const ExpensesTable = ({ data }: Props) => {
                   </td>
                   <td className="whitespace-nowrap">{item.taxReducedLocalAmount?.formatted}</td>
                   <td className="whitespace-nowrap">
-                    {formatStringifyAmount(cumulativeAmount)} &#8362;
+                    {formatStringifyAmount(cumulativeAmount, 0)} &#8362;
                   </td>
                 </tr>
               );

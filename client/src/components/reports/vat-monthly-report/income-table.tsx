@@ -95,7 +95,7 @@ export const IncomeTable = ({ data }: Props) => {
                   <td>{item.chargeDate}</td>
                   <td>{item.amount.formatted}</td>
                   <td>{item.taxReducedLocalAmount?.formatted}</td>
-                  <td>{formatStringifyAmount(cumulativeAmount)} ILS</td>
+                  <td>{formatStringifyAmount(cumulativeAmount, 0)} ILS</td>
                 </tr>
               );
             })}

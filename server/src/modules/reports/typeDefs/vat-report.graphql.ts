@@ -38,6 +38,6 @@ export default gql`
     localVatAfterDeduction: FinancialAmount
     " Int value"
     roundedLocalVatAfterDeduction: FinancialIntAmount
-    taxReducedLocalAmount: FinancialAmount
+    taxReducedLocalAmount: FinancialIntAmount
   }
 `;
