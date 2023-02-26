@@ -24,7 +24,7 @@ export const Balance = ({ data }: Props) => {
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Balance);
 
   return (
-    <td>
+    <td style={{ whiteSpace: 'nowrap' }}>
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
         {validationData?.balance?.raw == 0
           ? 'Balanced'

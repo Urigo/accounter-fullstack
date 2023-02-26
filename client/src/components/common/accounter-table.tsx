@@ -10,6 +10,7 @@ export interface AccounterTableProps<T, U> {
     title: string | ReactNode;
     disabled?: boolean;
     value: (item: T, context?: U) => string | ReactNode;
+    style?: React.CSSProperties;
   }>;
   items: Array<T>;
   moreInfo?: (item: T) => ReactNode;
@@ -36,7 +37,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
       <tr>
         {props.columns.map((c, index) =>
           c.disabled ? null : (
-            <td key={String(index)}>
+            <td key={String(index)} style={c.style}>
               {c.value(props.item, props.rowContext ? props.rowContext(props.item) : undefined)}
             </td>
           ),

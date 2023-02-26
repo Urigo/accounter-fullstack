@@ -130,7 +130,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
               <tr key={index}>
                 <td>{row.businessName}</td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
-                <td>
+                <td style={{ whiteSpace: 'nowrap' }}>
                   {row.amount.raw && row.amount.raw !== 0 ? (
                     <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>{row.amount.formatted}</Mark>
                   ) : (
@@ -147,7 +147,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                   )}
                 </td>
                 {isEur && (
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     {row.eurAmount?.raw && row.eurAmount.raw !== 0 ? (
                       <Mark color={row.eurAmount.raw > 0 ? 'green' : 'red'}>
                         {row.eurAmount.formatted}
@@ -169,7 +169,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                   </td>
                 )}
                 {isUsd && (
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     {row.usdAmount?.raw && row.usdAmount.raw !== 0 ? (
                       <Mark color={row.usdAmount.raw > 0 ? 'green' : 'red'}>
                         {row.usdAmount.formatted}
@@ -191,7 +191,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
                   </td>
                 )}
                 {isGbp && (
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     {row.gbpAmount?.raw && row.gbpAmount.raw !== 0 ? (
                       <Mark color={row.gbpAmount.raw > 0 ? 'green' : 'red'}>
                         {row.gbpAmount.formatted}
