@@ -16,12 +16,10 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-    getValues,
     setValue,
     watch,
   } = useForm<InsertDocumentInput>();
   const { insertDocument, fetching } = useInsertDocument();
-
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
     if (data && Object.keys(data).length > 0) {
       if (data.vat) {
@@ -34,6 +32,7 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
         }
         data.vat.currency = data.amount.currency;
       }
+      data.documentType ??= DocumentType.Unprocessed;
       insertDocument({
         record: { ...data, chargeId },
       });
@@ -42,10 +41,6 @@ export const InsertDocument = ({ chargeId, closeModal }: Props) => {
       }
     }
   };
-
-  if (!getValues('documentType')) {
-    setValue('documentType', DocumentType.Unprocessed, { shouldDirty: true });
-  }
 
   const currency = watch('amount.currency');
 
