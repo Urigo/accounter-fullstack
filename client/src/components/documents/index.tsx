@@ -174,8 +174,16 @@ export const DocumentsReport = () => {
             title: 'Serial Number',
             value: doc => ('serialNumber' in doc ? doc.serialNumber : null),
           },
-          { title: 'VAT', value: doc => ('vat' in doc ? doc.vat?.formatted : null) },
-          { title: 'Amount', value: doc => doc.charge?.transactions[0].amount.formatted ?? null },
+          {
+            title: 'VAT',
+            value: doc => ('vat' in doc ? doc.vat?.formatted : null),
+            style: { whiteSpace: 'nowrap' },
+          },
+          {
+            title: 'Amount',
+            value: doc => doc.charge?.transactions[0].amount.formatted ?? null,
+            style: { whiteSpace: 'nowrap' },
+          },
           { title: 'Creditor', value: doc => doc.creditor ?? null },
           { title: 'Debtor', value: doc => doc.debtor ?? null },
           {
@@ -212,6 +220,7 @@ export const DocumentsReport = () => {
               ) : (
                 'No Realted Transaction'
               ),
+            style: { whiteSpace: 'nowrap' },
           },
         ]}
       />

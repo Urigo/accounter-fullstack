@@ -24,7 +24,9 @@ export const Amount = ({ data }: Props) => {
 
   return (
     <td>
-      <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red' }}>{amount.formatted}</div>
+      <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red', whiteSpace: 'nowrap' }}>
+        {amount.formatted}
+      </div>
     </td>
   );
 };

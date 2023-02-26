@@ -116,10 +116,12 @@ export const BusinessTransactionsSummery = () => {
               {
                 title: 'Debit',
                 value: data => data.debit.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'Credit',
                 value: data => data.credit.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'Total',
@@ -129,14 +131,17 @@ export const BusinessTransactionsSummery = () => {
                   ) : (
                     data.total.formatted
                   ),
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'EUR Debit',
                 value: data => data.eurSum?.debit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'EUR Credit',
                 value: data => data.eurSum?.credit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'EUR Total',
@@ -149,14 +154,17 @@ export const BusinessTransactionsSummery = () => {
                   ) : (
                     data.eurSum?.total?.formatted
                   ),
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'USD Debit',
                 value: data => data.usdSum?.debit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'USD Credit',
                 value: data => data.usdSum?.credit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'USD Total',
@@ -169,14 +177,17 @@ export const BusinessTransactionsSummery = () => {
                   ) : (
                     data.usdSum?.total?.formatted
                   ),
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'GBP Debit',
                 value: data => data.gbpSum?.debit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'GBP Credit',
                 value: data => data.gbpSum?.credit?.formatted,
+                style: { whiteSpace: 'nowrap' },
               },
               {
                 title: 'GBP Total',
@@ -189,6 +200,7 @@ export const BusinessTransactionsSummery = () => {
                   ) : (
                     data.gbpSum?.total?.formatted
                   ),
+                style: { whiteSpace: 'nowrap' },
               },
             ]}
           />
