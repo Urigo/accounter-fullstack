@@ -91,29 +91,30 @@ async function getVatRecords(
         }),
       );
 
-      charges.forEach(async charge => {
-        const matchDoc = documents.find(doc => doc.charge_id === charge.id);
-        const matchBusiness =
-          charge.financial_entity && getVatNumbers
-            ? await injector
+      await Promise.all(
+        charges.map(async charge => {
+          const matchDoc = documents.find(doc => doc.charge_id === charge.id);
+          const matchBusiness = await (charge.financial_entity && getVatNumbers
+            ? injector
                 .get(FinancialEntitiesProvider)
                 .getFinancialEntityByNameLoader.load(charge.financial_entity)
-            : undefined;
-        if (matchDoc) {
-          if (charge.vat != null && charge.vat < 0) {
-            response.includedChargeIDs.add(charge.id);
-            expenseRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
+            : undefined);
+          if (matchDoc) {
+            if (charge.vat != null && charge.vat < 0) {
+              response.includedChargeIDs.add(charge.id);
+              expenseRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
+            }
+            if (charge.vat != null && charge.vat >= 0 && Number(charge.event_amount) > 0) {
+              response.includedChargeIDs.add(charge.id);
+              incomeRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
+            }
+          } else {
+            console.log(
+              `For VAT report, for some weird reason no document found for charge ID=${charge.id}`,
+            );
           }
-          if (charge.vat != null && charge.vat >= 0 && Number(charge.event_amount) > 0) {
-            response.includedChargeIDs.add(charge.id);
-            incomeRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
-          }
-        } else {
-          console.log(
-            `For VAT report, for some weird reason no document found for charge ID=${charge.id}`,
-          );
-        }
-      });
+        }),
+      );
 
       const dates: Array<number> = [...incomeRecords, ...expenseRecords]
         .filter(record => record.tax_invoice_date)
@@ -196,7 +197,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
       }
-      const vatRecords = await getVatRecords(injector, fromDate, toDate, financialEntityId);
+      const vatRecords = await getVatRecords(injector, fromDate, toDate, financialEntityId, true);
       const reportMonth = format(new Date(fromDate), 'yyyyMM');
 
       return generatePcnFromCharges(

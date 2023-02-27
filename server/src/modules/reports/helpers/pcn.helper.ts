@@ -145,12 +145,21 @@ const transformTransactions = (
       invoiceDate: format(new Date(t.tax_invoice_date), 'yyyyMMdd'),
       refGroup: '0000',
       refNumber: t.tax_invoice_number ?? undefined,
-      totalVat: Math.round(Math.abs(Number(t.vatAfterDeduction))),
-      invoiceSum: Math.round(Math.abs(Number(t.amountBeforeFullVAT))),
+      totalVat: Math.round(Math.abs(Number(t.vatAfterDeduction ?? 0))),
+      invoiceSum: Math.round(Math.abs(Number(t.amountBeforeFullVAT ?? t.amountBeforeVAT))),
       isProperty: t.is_property,
     });
   }
-  return transactions;
+  return transactions.sort((a, b) => {
+    // sort by entry type, then by invoice date
+    if (a.entryType > b.entryType) {
+      return 1;
+    }
+    if (b.entryType > a.entryType) {
+      return -1;
+    }
+    return a.invoiceDate > b.invoiceDate ? 1 : -1;
+  });
 };
 
 export const generatePcnFromCharges = (
