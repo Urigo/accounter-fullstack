@@ -295,7 +295,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
         WHERE credit_amount_2 IS NOT NULL
       ) lr
       WHERE lr.date <= (
-        SELECT MIN(to_date(l.invoice_date, 'DD/MM/YYYY'))
+        SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
         WHERE l.original_id = at.id
           AND lr.business_name = at.financial_entity
