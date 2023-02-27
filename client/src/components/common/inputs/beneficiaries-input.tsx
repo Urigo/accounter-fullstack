@@ -30,12 +30,12 @@ export function BeneficiariesInput({ label, formManager }: Props) {
 
   useEffect(() => {
     if (setError && clearErrors) {
-      if (sum === 100) {
+      if (sum === 1) {
         clearErrors('beneficiaries');
       } else {
         setError(
           'beneficiaries',
-          sum === 100
+          sum === 1
             ? { type: undefined, message: undefined }
             : { type: 'custom', message: 'Sum of percentages must be 100' },
         );
@@ -67,7 +67,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
               <Controller
                 control={control}
                 name={`beneficiaries.${index}.percentage`}
-                rules={{ required: 'Required', max: 100, min: 0 }}
+                rules={{ required: 'Required', max: 1, min: 0 }}
                 render={({ field, fieldState }) => (
                   <PercentageInput
                     {...field}

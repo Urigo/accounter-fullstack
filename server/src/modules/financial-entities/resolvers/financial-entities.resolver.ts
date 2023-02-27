@@ -52,25 +52,25 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
           return [
             {
               name: 'Uri',
-              percentage: 50,
+              percentage: 0.5,
             },
             {
               name: 'Dotan',
-              percentage: 50,
+              percentage: 0.5,
             },
           ];
         case 'uri':
           return [
             {
               name: 'Uri',
-              percentage: 100,
+              percentage: 1,
             },
           ];
         case 'dotan':
           return [
             {
               name: 'dotan',
-              percentage: 100,
+              percentage: 1,
             },
           ];
         default:
@@ -86,11 +86,11 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
               return [
                 {
                   name: 'Uri',
-                  percentage: 50,
+                  percentage: 0.5,
                 },
                 {
                   name: 'Dotan',
-                  percentage: 50,
+                  percentage: 0.5,
                 },
               ];
             }
@@ -106,7 +106,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
               return [
                 {
                   name: 'Uri',
-                  percentage: 100,
+                  percentage: 1,
                 },
               ];
             }
