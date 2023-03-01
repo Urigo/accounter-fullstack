@@ -30,7 +30,7 @@
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
     "precodegen": "rimraf **/__generated__/types.ts",
-    "prettier": "prettier --cache --ignore-path .gitignore --write --list-different .",
+    "prettier": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
     "scrape": "yarn --cwd old-accounter scrape",
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",
