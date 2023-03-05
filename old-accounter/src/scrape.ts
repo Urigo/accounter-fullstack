@@ -7,7 +7,7 @@ import pg from 'pg';
 import { getCurrencyRates } from './data/currency.js';
 import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 
-dotenv.config();
+dotenv.config({ path: '../.env' });
 
 const { Pool } = pg;
 

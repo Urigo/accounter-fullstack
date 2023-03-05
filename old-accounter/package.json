@@ -12,7 +12,7 @@
     "deploy": "git push heroku master",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon --experimental-specifier-resolution=node --experimental-json-modules dist/old-accounter/src/index.js\"",
     "generate": "concurrently \"yarn codegen\" \"cd server && yarn sqlgen\"",
-    "get": "node --experimental-specifier-resolution=node dist/old-accounter/src/scrape.js",
+    "get": "dotenv -e ../.env node --experimental-specifier-resolution=node dist/old-accounter/src/scrape.js",
     "lint": "eslint --ignore-path .gitignore .",
     "month": "node --experimental-specifier-resolution=node dist/taxMonthlyReport/taxesForMonth.js",
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",

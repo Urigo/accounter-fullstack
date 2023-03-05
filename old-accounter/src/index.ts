@@ -17,7 +17,7 @@ import { getAllUsers } from './users/get-all-users.js';
 import { userTransactions } from './users/user-transactions.js';
 
 const { config } = dotenv;
-config();
+config({ path: '../.env' });
 
 const { Pool } = pg;
 
