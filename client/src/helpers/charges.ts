@@ -97,6 +97,9 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   if (transactionDescription?.includes('קונברסיה')) {
     return { financialEntity: 'Poalim', personalCategory: 'conversion' };
   }
+  if (transactionDescription?.includes('חליפין')) {
+    return { financialEntity: 'Poalim', personalCategory: 'conversion' };
+  }
   if (transactionDescription?.includes('חשבונית ירוקה')) {
     return {
       financialEntity: 'Green Invoice',
@@ -316,7 +319,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   }
   if (transactionDescription?.includes('GITHUB')) {
     const suggested = {
-      financialEntity: 'GitHub',
+      financialEntity: 'GitHub, Inc',
       userDescription: 'GitHub Actions',
       financialAccountsToBalance: 'no' as const,
       personalCategory: 'business',
@@ -529,7 +532,7 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
   }
   if (transactionDescription?.includes('PULUMI')) {
     return {
-      financialEntity: 'Pulumi Comporation',
+      financialEntity: 'Pulumi Corporation',
       userDescription: 'Infrastructure Hosting',
       financialAccountsToBalance: 'no',
       personalCategory: 'business',
@@ -539,6 +542,13 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
     return {
       financialEntity: 'Maccabi',
       userDescription: 'Monthly health bill',
+      personalCategory: 'health',
+    };
+  }
+  if (transactionDescription?.includes('ATHLETIC TRUTH GROUP')) {
+    return {
+      financialEntity: 'ATHLETIC TRUTH GROUP',
+      userDescription: 'Sports App',
       personalCategory: 'health',
     };
   }
@@ -564,6 +574,14 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       userDescription: 'House rent',
       financialAccountsToBalance: 'no',
       personalCategory: 'house',
+    };
+  }
+  if (transactionDescription.includes('BEEHIIV')) {
+    return {
+      financialEntity: 'beehiiv',
+      userDescription: 'Newsletter service',
+      financialAccountsToBalance: 'no',
+      personalCategory: 'business',
     };
   }
   if (transactionDescription?.includes('POSTMARKAPP')) {
@@ -951,7 +969,31 @@ export function suggestedCharge(charge: SuggestedChargeFragment): SuggestedCharg
       personalCategory: 'fun',
     };
   }
-  if (transactionDescription?.includes('EVENTBUZZ TICKETS')) {
+  if (transactionDescription?.includes('chillz')) {
+    return {
+      financialEntity: 'chillz',
+      userDescription: 'Party',
+      personalCategory: 'fun',
+    };
+  }
+  if (transactionDescription?.includes('הגשמה')) {
+    return {
+      financialEntity: 'מייקו הגשמה בעמ',
+      userDescription: 'Party',
+      personalCategory: 'fun',
+    };
+  }
+  if (transactionDescription?.includes('המרץ2 תיאטרון')) {
+    return {
+      financialEntity: 'המרץ2 תיאטרון',
+      userDescription: 'Party',
+      personalCategory: 'fun',
+    };
+  }
+  if (
+    transactionDescription?.includes('EVENTBUZZ TICKETS') ||
+    transactionDescription?.includes('איבנטבאז')
+  ) {
     return {
       financialEntity: 'EVENTBUZZ TICKETS',
       userDescription: 'Party',
