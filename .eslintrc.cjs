@@ -7,7 +7,6 @@ module.exports = {
   extends: ['@theguild'],
   rules: {
     'no-console': 1,
-    '@typescript-eslint/no-unused-expressions': 'off', // TODO @dima!
   },
   overrides: [
     {
