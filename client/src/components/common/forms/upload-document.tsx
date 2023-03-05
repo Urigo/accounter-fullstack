@@ -4,6 +4,7 @@ import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation UploadDocument($file: FileScalar!, $chargeId: ID) {
     uploadDocument(file: $file, chargeId: $chargeId) {

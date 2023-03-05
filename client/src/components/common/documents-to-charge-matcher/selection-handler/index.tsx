@@ -12,6 +12,7 @@ import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { StrictFilteredSelection } from './strict-filtered-selection';
 import { WideFilteredSelection } from './wide-filtered-selection';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment ChargeToMatchDocumentsFields on Charge {
     id
@@ -32,6 +33,7 @@ import { WideFilteredSelection } from './wide-filtered-selection';
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment DocumentsToMatchFields on Document {
     id

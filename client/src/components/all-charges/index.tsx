@@ -17,6 +17,7 @@ import {
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
     allCharges(page: $page, limit: $limit, filters: $filters) {

@@ -6,6 +6,7 @@ import {
   UpdateDocumentMutationVariables,
 } from '../gql/graphql.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation UpdateDocument($documentId: ID!, $fields: UpdateDocumentFieldsInput!) {
     updateDocument(documentId: $documentId, fields: $fields) {

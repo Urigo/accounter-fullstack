@@ -5,6 +5,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { VarReportMissingInfoFieldsFragmentDoc } from '../../../gql/graphql';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VarReportMissingInfoFields on VatReportResult {
     missingInfo {

@@ -23,6 +23,7 @@ import {
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id

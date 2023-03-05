@@ -14,6 +14,7 @@ import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from 
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query AllBusinessesNames {
     businessNamesFromLedgerRecords {

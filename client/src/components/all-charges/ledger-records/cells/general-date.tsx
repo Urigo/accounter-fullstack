@@ -4,6 +4,7 @@ import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graph
 
 /* TEMPORARY: this component is used for temporary reasons */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment LedgerRecordsGeneralDateFields on LedgerRecord {
     id

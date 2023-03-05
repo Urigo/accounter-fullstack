@@ -9,6 +9,7 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* TEMPORARY: this component is used for temporary reasons */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment LedgerRecordsAccountDetailsFields on LedgerRecord {
     id
