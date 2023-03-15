@@ -6,11 +6,10 @@ import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
 
 type Props = {
   children?: ReactElement | ReactElement[];
-  zIndex?: number;
   chargeId: string;
 };
 
-export const DragFile = ({ children, zIndex, chargeId }: Props) => {
+export const DragFile = ({ children, chargeId }: Props) => {
   const [res, mutate] = useMutation(UploadDocumentDocument);
 
   function onFail(message?: string) {
