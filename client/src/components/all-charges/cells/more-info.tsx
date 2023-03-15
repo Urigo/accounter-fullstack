@@ -2,7 +2,7 @@ import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
 import { entitiesWithoutInvoice } from '../../../helpers';
-import { ListCapsule } from '../../common';
+import { DragFile, ListCapsule } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
@@ -27,7 +27,7 @@ type Props = {
 };
 
 export const MoreInfo = ({ data }: Props) => {
-  const { ledgerRecords, additionalDocuments, counterparty, validationData } = getFragmentData(
+  const { ledgerRecords, additionalDocuments, counterparty, validationData, id } = getFragmentData(
     AllChargesMoreInfoFieldsFragmentDoc,
     data,
   );
@@ -36,44 +36,46 @@ export const MoreInfo = ({ data }: Props) => {
 
   return (
     <td>
-      <ListCapsule
-        items={[
-          {
-            style: ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
-            content: (
-              <Indicator
-                key="ledger"
-                inline
-                size={12}
-                disabled={!isLedgerError}
-                color="red"
-                zIndex="auto"
-              >
-                <div className="whitespace-nowrap">Ledger Records: {ledgerRecords.length}</div>
-              </Indicator>
-            ),
-          },
-          {
-            content: (
-              <Indicator
-                key="ledger"
-                inline
-                size={12}
-                disabled={!isDocumentsError}
-                color="red"
-                zIndex="auto"
-              >
-                <div className="whitespace-nowrap">Documents: {additionalDocuments.length}</div>
-              </Indicator>
-            ),
-            style:
-              additionalDocuments.length > 0 ||
-              (counterparty && entitiesWithoutInvoice.includes(counterparty.name))
-                ? {}
-                : { backgroundColor: 'rgb(236, 207, 57)' },
-          },
-        ]}
-      />
+      <DragFile chargeId={id}>
+        <ListCapsule
+          items={[
+            {
+              style: ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              content: (
+                <Indicator
+                  key="ledger"
+                  inline
+                  size={12}
+                  disabled={!isLedgerError}
+                  color="red"
+                  zIndex="auto"
+                >
+                  <div className="whitespace-nowrap">Ledger Records: {ledgerRecords.length}</div>
+                </Indicator>
+              ),
+            },
+            {
+              content: (
+                <Indicator
+                  key="ledger"
+                  inline
+                  size={12}
+                  disabled={!isDocumentsError}
+                  color="red"
+                  zIndex="auto"
+                >
+                  <div className="whitespace-nowrap">Documents: {additionalDocuments.length}</div>
+                </Indicator>
+              ),
+              style:
+                additionalDocuments.length > 0 ||
+                (counterparty && entitiesWithoutInvoice.includes(counterparty.name))
+                  ? {}
+                  : { backgroundColor: 'rgb(236, 207, 57)' },
+            },
+          ]}
+        />
+      </DragFile>
     </td>
   );
 };
