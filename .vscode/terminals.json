@@ -5,22 +5,19 @@
       "name": "app:dev",
       "description": "Run App",
       "open": true,
-      "cwd": "client",
-      "command": "yarn dev"
+      "command": "yarn client:dev"
     },
     {
       "name": "server:dev",
       "description": "Run server",
       "open": true,
-      "cwd": "server",
-      "command": "yarn dev"
+      "command": "yarn server:dev"
     },
     {
       "name": "temp-server:dev",
       "description": "Run temp-server",
       "open": true,
-      "cwd": "temp-server",
-      "command": "yarn dev"
+      "command": "yarn temp-server:dev"
     }
   ]
 }
