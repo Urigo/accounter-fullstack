@@ -150,16 +150,7 @@ const transformTransactions = (
       isProperty: t.is_property,
     });
   }
-  return transactions.sort((a, b) => {
-    // sort by entry type, then by invoice date
-    if (a.entryType > b.entryType) {
-      return 1;
-    }
-    if (b.entryType > a.entryType) {
-      return -1;
-    }
-    return a.invoiceDate > b.invoiceDate ? 1 : -1;
-  });
+  return transactions;
 };
 
 export const generatePcnFromCharges = (
