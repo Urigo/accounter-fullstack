@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@accounter-toolkit/green-invoice-graphql@0.2.1-alpha-20230315210933-04d6e00":
-  version "0.2.1-alpha-20230315210933-04d6e00"
-  resolved "https://registry.yarnpkg.com/@accounter-toolkit/green-invoice-graphql/-/green-invoice-graphql-0.2.1-alpha-20230315210933-04d6e00.tgz#9300a2c7225c896810f545a7f77e3e10a515d2be"
-  integrity sha512-WWdkkydf+sAGQ7FmjsC8e08KTNeQqeuUww83g05hR8f7wcyArqXeqPQolSUTWisuiZTb0zLMuMk99h5TGJooDA==
+"@accounter-toolkit/green-invoice-graphql@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@accounter-toolkit/green-invoice-graphql/-/green-invoice-graphql-0.3.0.tgz#74595ff77bd5f3d5fa77b637ab90e9546d0f981a"
+  integrity sha512-6W3gudMyJXTv3KCfC6LW1AyhrKxXEiIP5lMCDYQreJ77IkJJXIyatdvl9F/RwH0QtQMhzXvlYEVq3863gvcstg==
   dependencies:
     "@graphql-mesh/cli" "0.82.25"
     "@graphql-mesh/json-schema" "0.37.18"
@@ -13,10 +13,10 @@
     graphql "16.6.0"
     path "0.12.7"
 
-"@accounter-toolkit/pcn874-generator@0.1.1-alpha-20230315210933-04d6e00":
-  version "0.1.1-alpha-20230315210933-04d6e00"
-  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.1.1-alpha-20230315210933-04d6e00.tgz#df30863d180f5ef23b2b62b7762562be82670fdb"
-  integrity sha512-wTmMzcL4IjJ9tnGp4AVaMdueNM+fQ/6dH8GkGZ7InxHzc9CmwFjJVh04Bl+ZRJhXQ9HQgcSnJyiEDQ72Zvd1dg==
+"@accounter-toolkit/pcn874-generator@0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.1.1.tgz#a44c29dcaf03ac68f5f2fa39f079f3f65b72dd5c"
+  integrity sha512-y3V6ZAQQRBrm+zDTppTaj6OW9hBeYQ85NaOGYAdXv/k+JjK+OLUTbqSL0Ip7IWYNE6hVl4hzj6Isr0r3MgJzZg==
 
 "@ampproject/remapping@^2.1.0":
   version "2.2.0"
