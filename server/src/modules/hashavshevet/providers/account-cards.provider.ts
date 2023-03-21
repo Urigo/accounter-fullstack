@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetAccountCardsByKeysQuery,
+  IGetAccountCardsByBusinessIDsQuery,
   IGetAccountCardsBySortCodesParams,
   IGetAccountCardsBySortCodesQuery,
 } from '../types.js';
@@ -13,10 +13,10 @@ const getAccountCardsBySortCodes = sql<IGetAccountCardsBySortCodesQuery>`
     FROM accounter_schema.hash_account_cards ac
     WHERE ($isSortCodes = 0 OR ac.sort_code IN $$sortCodesIds);`;
 
-const getAccountCardsByKeys = sql<IGetAccountCardsByKeysQuery>`
+const getAccountCardsByBusinessIDs = sql<IGetAccountCardsByBusinessIDsQuery>`
     SELECT ac.*
     FROM accounter_schema.hash_account_cards ac
-    WHERE ($isKeys = 0 OR ac.key IN $$keys);`;
+    WHERE ($isBusinessIDs = 0 OR ac.business_id IN $$businessIDs);`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -47,18 +47,18 @@ export class AccountCardsProvider {
     },
   );
 
-  private async batchAccountCardsByKeys(keys: readonly string[]) {
-    const accountCards = await getAccountCardsByKeys.run(
+  private async batchAccountCardsByBusinessIDs(businessIDs: readonly string[]) {
+    const accountCards = await getAccountCardsByBusinessIDs.run(
       {
-        isKeys: keys.length > 0 ? 1 : 0,
-        keys,
+        isBusinessIDs: businessIDs.length > 0 ? 1 : 0,
+        businessIDs,
       },
       this.dbProvider,
     );
-    return keys.map(key => accountCards.find(record => record.key === key));
+    return businessIDs.map(id => accountCards.find(record => record.business_id === id));
   }
 
-  public getAccountCardsByKeysLoader = new DataLoader(this.batchAccountCardsByKeys, {
+  public getAccountCardsByBusinessIDsLoader = new DataLoader(this.batchAccountCardsByBusinessIDs, {
     cache: false,
   });
 }

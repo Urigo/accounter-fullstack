@@ -27,16 +27,16 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
 
   const [
     formCurrency,
-    formCreditAccount1,
-    formCreditAccount2,
-    formDebitAccount1,
-    formDebitAccount2,
+    formCreditAccountID1,
+    formCreditAccountID2,
+    formDebitAccountID1,
+    formDebitAccountID2,
   ] = watch([
     'currency',
-    'credit_account_1',
-    'credit_account_2',
-    'debit_account_1',
-    'debit_account_2',
+    'credit_account_id_1',
+    'credit_account_id_2',
+    'debit_account_id_1',
+    'debit_account_id_2',
   ]);
 
   function isAccountActive(account?: string | null) {
@@ -45,48 +45,48 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
 
   // add amount fields to credit/debit account only when name exists
   useEffect(() => {
-    const isActive = isAccountActive(formCreditAccount1);
-    !isActive && setValue('credit_account_1', undefined);
+    const isActive = isAccountActive(formCreditAccountID1);
+    !isActive && setValue('credit_account_id_1', undefined);
     setIsCredit1(isActive);
     if (!isActive) {
-      setValue('credit_account_1', undefined);
+      setValue('credit_account_id_1', undefined);
       setValue('credit_amount_1', undefined);
       setValue('foreign_credit_amount_1', undefined);
       unregister(['credit_amount_1', 'foreign_credit_amount_1']);
     }
-  }, [formCreditAccount1, setValue, unregister]);
+  }, [formCreditAccountID1, setValue, unregister]);
   useEffect(() => {
-    const isActive = isAccountActive(formCreditAccount2);
-    !isActive && setValue('credit_account_2', undefined);
+    const isActive = isAccountActive(formCreditAccountID2);
+    !isActive && setValue('credit_account_id_2', undefined);
     setIsCredit2(isActive);
     if (!isActive) {
-      setValue('credit_account_2', undefined);
+      setValue('credit_account_id_2', undefined);
       setValue('credit_amount_2', undefined);
       setValue('foreign_credit_amount_2', undefined);
       unregister(['credit_amount_2', 'foreign_credit_amount_2']);
     }
-  }, [formCreditAccount2, setValue, unregister]);
+  }, [formCreditAccountID2, setValue, unregister]);
   useEffect(() => {
-    const isActive = isAccountActive(formDebitAccount1);
-    !isActive && setValue('debit_account_1', undefined);
+    const isActive = isAccountActive(formDebitAccountID1);
+    !isActive && setValue('debit_account_id_1', undefined);
     setIsDebit1(isActive);
     if (!isActive) {
-      setValue('debit_account_1', undefined);
+      setValue('debit_account_id_1', undefined);
       setValue('debit_amount_1', undefined);
       setValue('foreign_debit_amount_1', undefined);
       unregister(['debit_amount_1', 'foreign_debit_amount_1']);
     }
-  }, [formDebitAccount1, setValue, unregister]);
+  }, [formDebitAccountID1, setValue, unregister]);
   useEffect(() => {
-    const isActive = isAccountActive(formDebitAccount2);
+    const isActive = isAccountActive(formDebitAccountID2);
     setIsDebit2(isActive);
     if (!isActive) {
-      setValue('debit_account_2', undefined);
+      setValue('debit_account_id_2', undefined);
       setValue('debit_amount_2', undefined);
       setValue('foreign_debit_amount_2', undefined);
       unregister(['debit_amount_2', 'foreign_debit_amount_2']);
     }
-  }, [formDebitAccount2, setValue, unregister]);
+  }, [formDebitAccountID2, setValue, unregister]);
 
   useEffect(() => {
     setCurrency(formCurrency ?? Currency.Ils);
@@ -122,7 +122,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
       />
 
       <Controller
-        name="credit_account_1"
+        name="credit_account_id_1"
         control={control}
         render={({ field, fieldState }) => (
           <TextInput
@@ -176,7 +176,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
       )}
 
       <Controller
-        name="credit_account_2"
+        name="credit_account_id_2"
         control={control}
         render={({ field, fieldState }) => (
           <TextInput
@@ -231,7 +231,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
       )}
 
       <Controller
-        name="debit_account_1"
+        name="debit_account_id_1"
         control={control}
         render={({ field, fieldState }) => (
           <TextInput
@@ -286,7 +286,7 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
       )}
 
       <Controller
-        name="debit_account_2"
+        name="debit_account_id_2"
         control={control}
         render={({ field, fieldState }) => (
           <TextInput

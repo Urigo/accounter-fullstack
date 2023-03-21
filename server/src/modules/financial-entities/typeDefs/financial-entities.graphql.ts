@@ -11,7 +11,7 @@ export default gql`
   " Financial entity, identifier by ID, can be a company or individual "
   type LtdFinancialEntity implements FinancialEntity {
     id: ID!
-    govermentId: String!
+    governmentId: String!
     name: String!
     address: String!
 

@@ -45,7 +45,7 @@ export const Entity = ({ data, alternativeCharge }: Props) => {
           fields: {
             counterparty: value
               ? {
-                  name: value,
+                  id: value,
                 }
               : undefined,
           },

@@ -14,7 +14,7 @@ export type RawBusinessTransactionsSum = {
   eur: CurrencySum;
   gbp: CurrencySum;
   usd: CurrencySum;
-  businessName: string;
+  businessID: string;
 };
 
 type addZero<T> = T | 0;

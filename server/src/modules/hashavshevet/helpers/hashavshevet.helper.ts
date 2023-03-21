@@ -173,7 +173,7 @@ export function generateEntryForAccountingValues(
       : charge.event_date; // add a check if should have an invoice but doesn't let user know;
   const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] =
     unformattedInvoiceDate ? hashavshevetFormat.date(unformattedInvoiceDate) : null;
-  const debitAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount1'] =
+  const debitAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID1'] =
     hashavshevetFormat.account(
       entryForAccounting.debitAccount,
       financialAccount,
@@ -189,7 +189,7 @@ export function generateEntryForAccountingValues(
     isILS ? null : hashavshevetFormat.number(entryForAccounting.debitAmount, { abs: true });
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] =
     hashavshevetFormat.currency(charge.currency_code ?? 'NULL');
-  const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
+  const creditAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID1'] =
     hashavshevetFormat.account(
       entryForAccounting.creditAccount,
       financialAccount,
@@ -203,7 +203,7 @@ export function generateEntryForAccountingValues(
     hashavshevetFormat.number(entryForAccounting.creditAmountILS, { abs: true });
   const foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] =
     isILS ? null : hashavshevetFormat.number(entryForAccounting.creditAmount, { abs: true });
-  const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] =
+  const debitAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID2'] =
     entryForAccounting.secondAccountDebitAmount && entryForAccounting.secondAccountDebitAmount != 0
       ? charge.is_property
         ? hashVATIndexes.vatPropertyInputsIndex
@@ -217,7 +217,7 @@ export function generateEntryForAccountingValues(
     entryForAccounting.secondAccountDebitAmount && !isILS
       ? hashavshevetFormat.number(entryForAccounting.secondAccountDebitAmount, { abs: true })
       : null;
-  const creditAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount2'] =
+  const creditAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID2'] =
     entryForAccounting.secondAccountCreditAmount &&
     entryForAccounting.secondAccountCreditAmount != 0
       ? hashVATIndexes.vatOutputsIndex
@@ -266,17 +266,17 @@ export function generateEntryForAccountingValues(
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
-    debitAccount1,
+    debitAccountID1,
     debitAmount1,
     foreignDebitAmount1,
     currency,
-    creditAccount1,
+    creditAccountID1,
     creditAmount1,
     foreignCreditAmount1,
-    debitAccount2,
+    debitAccountID2,
     debitAmount2,
     foreignDebitAmount2,
-    creditAccount2,
+    creditAccountID2,
     creditAmount2,
     foreignCreditAmount2,
     details,
@@ -328,7 +328,7 @@ export function generateEntryForFinancialAccountValues(
 
   const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] =
     charge.event_date ? hashavshevetFormat.date(charge.event_date) : null;
-  const debitAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount1'] =
+  const debitAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID1'] =
     hashavshevetFormat.account(
       entryForFinancialAccount.debitAccount,
       financialAccount,
@@ -344,7 +344,7 @@ export function generateEntryForFinancialAccountValues(
     isILS
       ? foreignBalance
       : hashavshevetFormat.number(entryForFinancialAccount.debitAmount, { abs: true });
-  const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
+  const creditAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID1'] =
     hashavshevetFormat.account(
       entryForFinancialAccount.creditAccount,
       financialAccount,
@@ -360,11 +360,11 @@ export function generateEntryForFinancialAccountValues(
     isILS
       ? foreignBalance
       : hashavshevetFormat.number(entryForFinancialAccount.creditAmount, { abs: true });
-  const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] = null; //  NOTE(Uri): Check for interest transactions (הכנרבמ)
+  const debitAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID2'] = null; //  NOTE(Uri): Check for interest transactions (הכנרבמ)
   const debitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount2'] = null;
   const foreignDebitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount2'] =
     null;
-  const creditAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount2'] = null;
+  const creditAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID2'] = null;
   const creditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount2'] = null;
   const foreignCreditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount2'] =
     null;
@@ -397,17 +397,17 @@ export function generateEntryForFinancialAccountValues(
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
-    debitAccount1,
+    debitAccountID1,
     debitAmount1,
     foreignDebitAmount1,
     currency,
-    creditAccount1,
+    creditAccountID1,
     creditAmount1,
     foreignCreditAmount1,
-    debitAccount2,
+    debitAccountID2,
     debitAmount2,
     foreignDebitAmount2,
-    creditAccount2,
+    creditAccountID2,
     creditAmount2,
     foreignCreditAmount2,
     details,
@@ -432,11 +432,11 @@ export function generateEntryForFinancialAccountValues(
       ledger.debitAmount1 = hashavshevetFormat.number(conversionOtherSide?.event_amount, {
         abs: true,
       });
-      ledger.creditAccount1 = null;
+      ledger.creditAccountID1 = null;
       ledger.creditAmount1 = null;
       ledger.foreignCreditAmount1 = null;
     } else if (chargeAmount < 0 && isILS) {
-      ledger.debitAccount1 = null;
+      ledger.debitAccountID1 = null;
       ledger.debitAmount1 = null;
       ledger.foreignDebitAmount1 = null;
       ledger.currency = conversionOtherSide?.currency_code
@@ -452,11 +452,11 @@ export function generateEntryForFinancialAccountValues(
       ledger.currency = conversionOtherSide?.currency_code
         ? hashavshevetFormat.currency(conversionOtherSide.currency_code)
         : null;
-      ledger.creditAccount1 = null;
+      ledger.creditAccountID1 = null;
       ledger.creditAmount1 = null;
       ledger.foreignCreditAmount1 = null;
     } else if (chargeAmount < 0 && !isILS) {
-      ledger.debitAccount1 = null;
+      ledger.debitAccountID1 = null;
       ledger.debitAmount1 = null;
       ledger.foreignDebitAmount1 = null;
       ledger.creditAmount1 = hashavshevetFormat.number(conversionOtherSide?.event_amount, {
@@ -504,24 +504,23 @@ export function generateEntryForExchangeRatesDifferenceValues(
 
   const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] =
     unformattedInvoiceDate ? hashavshevetFormat.date(unformattedInvoiceDate) : null;
-  const debitAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount1'] = someNameFlag
-    ? credit
-    : hashVATIndexes.hashCurrencyRatesDifferencesIndex;
+  const debitAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID1'] =
+    someNameFlag ? credit : hashVATIndexes.hashCurrencyRatesDifferencesIndex;
   const debitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount1'] = amount;
   const foreignDebitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount1'] =
     null;
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] =
     hashavshevetFormat.currency('ILS');
-  const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
+  const creditAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID1'] =
     someNameFlag ? hashVATIndexes.hashCurrencyRatesDifferencesIndex : credit;
   const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] = amount;
   const foreignCreditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount1'] =
     hashavshevetFormat.currency('ILS');
-  const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] = null; // Check for interest transactions (הכנרבמ)
+  const debitAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID2'] = null; // Check for interest transactions (הכנרבמ)
   const debitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount2'] = null;
   const foreignDebitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount2'] =
     null;
-  const creditAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount2'] = null;
+  const creditAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID2'] = null;
   const creditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount2'] = null;
   const foreignCreditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount2'] =
     null;
@@ -555,17 +554,17 @@ export function generateEntryForExchangeRatesDifferenceValues(
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
-    debitAccount1,
+    debitAccountID1,
     debitAmount1,
     foreignDebitAmount1,
     currency,
-    creditAccount1,
+    creditAccountID1,
     creditAmount1,
     foreignCreditAmount1,
-    debitAccount2,
+    debitAccountID2,
     debitAmount2,
     foreignDebitAmount2,
-    creditAccount2,
+    creditAccountID2,
     creditAmount2,
     foreignCreditAmount2,
     details,
@@ -623,9 +622,8 @@ export function generateEntryForforeignTransferFeesValues(
   const invoiceDate: IInsertLedgerRecordsParams['ledgerRecord'][0]['invoiceDate'] =
     charge.event_date ? hashavshevetFormat.date(charge.event_date) : null;
 
-  const debitAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount1'] = someNameFlag
-    ? credit
-    : hashVATIndexes.foreignTransferBankFees;
+  const debitAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID1'] =
+    someNameFlag ? credit : hashVATIndexes.foreignTransferBankFees;
   const debitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount1'] = amount;
   let foreignDebitAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount1'] =
     null;
@@ -642,15 +640,15 @@ export function generateEntryForforeignTransferFeesValues(
   }
   const currency: IInsertLedgerRecordsParams['ledgerRecord'][0]['currency'] =
     hashavshevetFormat.currency(charge.currency_code);
-  const creditAccount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount1'] =
+  const creditAccountID1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID1'] =
     someNameFlag ? hashVATIndexes.foreignTransferBankFees : credit;
   const creditAmount1: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount1'] = amount;
 
-  const debitAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccount2'] = null; // Check for interest transactions (הכנרבמ)
+  const debitAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAccountID2'] = null; // Check for interest transactions (הכנרבמ)
   const debitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['debitAmount2'] = null;
   const foreignDebitAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignDebitAmount2'] =
     null;
-  const creditAccount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccount2'] = null;
+  const creditAccountID2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAccountID2'] = null;
   const creditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['creditAmount2'] = null;
   const foreignCreditAmount2: IInsertLedgerRecordsParams['ledgerRecord'][0]['foreignCreditAmount2'] =
     null;
@@ -684,17 +682,17 @@ export function generateEntryForforeignTransferFeesValues(
 
   const ledger: IInsertLedgerRecordsParams['ledgerRecord'][0] = {
     invoiceDate,
-    debitAccount1,
+    debitAccountID1,
     debitAmount1,
     foreignDebitAmount1,
     currency,
-    creditAccount1,
+    creditAccountID1,
     creditAmount1,
     foreignCreditAmount1,
-    debitAccount2,
+    debitAccountID2,
     debitAmount2,
     foreignDebitAmount2,
-    creditAccount2,
+    creditAccountID2,
     creditAmount2,
     foreignCreditAmount2,
     details,

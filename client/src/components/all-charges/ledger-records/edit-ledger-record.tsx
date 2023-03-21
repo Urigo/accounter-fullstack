@@ -37,14 +37,26 @@ import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
 /* GraphQL */ `
   fragment EditDbLedgerRecordsFields on LedgerRecord {
     id
-    credit_account_1
-    credit_account_2
+    credit_account_1 {
+      id
+      name
+    }
+    credit_account_2 {
+      id
+      name
+    }
     credit_amount_1
     credit_amount_2
     currency
     date3
-    debit_account_1
-    debit_account_2
+    debit_account_1 {
+      id
+      name
+    }
+    debit_account_2 {
+      id
+      name
+    }
     debit_amount_1
     debit_amount_2
     details
@@ -85,19 +97,19 @@ export const EditLedgerRecord = ({ ledgerRecordProps, onAccept, onCancel }: Prop
   }
 
   const onSubmit: SubmitHandler<UpdateDbLedgerRecordInput> = data => {
-    if (isAccountActive(data.credit_account_1)) {
+    if (isAccountActive(data.credit_account_id_1)) {
       data.credit_amount_1 = undefined;
       data.foreign_credit_amount_1 = undefined;
     }
-    if (isAccountActive(data.credit_account_2)) {
+    if (isAccountActive(data.credit_account_id_2)) {
       data.credit_amount_2 = undefined;
       data.foreign_credit_amount_2 = undefined;
     }
-    if (isAccountActive(data.debit_account_1)) {
+    if (isAccountActive(data.debit_account_id_1)) {
       data.debit_amount_1 = undefined;
       data.foreign_debit_amount_1 = undefined;
     }
-    if (isAccountActive(data.debit_account_2)) {
+    if (isAccountActive(data.debit_account_id_2)) {
       data.debit_amount_2 = undefined;
       data.foreign_debit_amount_2 = undefined;
     }

@@ -50,6 +50,7 @@ generates:
         HashavshevetAccount: '@modules/hashavshevet/types.js#IGetAccountCardsBySortCodesResult'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#DecoratedVatReportRecord'
+        BusinessTransaction: '@modules/financial-entities/types.js#IGetBusinessTransactionsFromLedgerRecordsResult'
     plugins:
       - add:
           content: "import { TimelessDateString } from '@shared/types'"

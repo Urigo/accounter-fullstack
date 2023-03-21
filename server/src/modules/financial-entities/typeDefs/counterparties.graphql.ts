@@ -5,12 +5,12 @@ export default gql`
   " The other side of a transaction "
   interface Counterparty {
     name: String!
-    id: ID!
+    id: UUID!
   }
 
   " input variables for updateCharge.Counterparty"
   input CounterpartyInput {
-    id: ID!
+    id: UUID!
   }
 
   " defines a link between a counterparty and their part in the charge "
@@ -22,7 +22,7 @@ export default gql`
   " represent a counterparty with a name "
   type NamedCounterparty implements Counterparty {
     name: String!
-    id: ID!
+    id: UUID!
   }
 
   extend type Charge {

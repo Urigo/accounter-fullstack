@@ -278,19 +278,19 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     CASE WHEN $preCalculateBalance = false THEN NULL ELSE (
       SELECT SUM(lr.amount) as balance
       FROM (
-        SELECT debit_account_1 AS business_name, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
+        SELECT debit_account_id_1 AS business_id, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
         FROM accounter_schema.ledger
         WHERE debit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT debit_account_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT debit_account_id_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE debit_amount_2 IS NOT NULL
         UNION ALL
-        SELECT credit_account_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT credit_account_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_2 IS NOT NULL
       ) lr
@@ -298,7 +298,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
         WHERE l.original_id = at.id
-          AND lr.business_name = at.financial_entity
+          AND lr.business_id = at.financial_entity_id
           AND lr.financial_entity_id = fa.owner)
     ) END as balance
   FROM accounter_schema.all_transactions at
@@ -370,19 +370,19 @@ const validateCharges = sql<IValidateChargesQuery>`
     (
       SELECT SUM(lr.amount) as balance
       FROM (
-        SELECT debit_account_1 AS business_name, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
+        SELECT debit_account_id_1 AS business_id, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
         FROM accounter_schema.ledger
         WHERE debit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT debit_account_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT debit_account_id_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE debit_amount_2 IS NOT NULL
         UNION ALL
-        SELECT credit_account_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT credit_account_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_2 IS NOT NULL
       ) lr
@@ -390,7 +390,7 @@ const validateCharges = sql<IValidateChargesQuery>`
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
         WHERE l.original_id = at.id
-          AND lr.business_name = at.financial_entity
+          AND lr.business_id = at.financial_entity_id
           AND lr.financial_entity_id = fa.owner)
     ) as balance
   FROM accounter_schema.all_transactions at

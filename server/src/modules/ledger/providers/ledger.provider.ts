@@ -38,14 +38,14 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
 const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     INSERT INTO accounter_schema.ledger (
       business,
-      credit_account_1,
-      credit_account_2,
+      credit_account_id_1,
+      credit_account_id_2,
       credit_amount_1,
       credit_amount_2,
       currency,
       date_3,
-      debit_account_1,
-      debit_account_2,
+      debit_account_id_1,
+      debit_account_id_2,
       debit_amount_1,
       debit_amount_2,
       details,
@@ -66,14 +66,14 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     )
     VALUES $$ledgerRecord(
       business,
-      creditAccount1,
-      creditAccount2,
+      creditAccountID1,
+      creditAccountID2,
       creditAmount1,
       creditAmount2,
       currency,
       date3,
-      debitAccount1,
-      debitAccount2,
+      debitAccountID1,
+      debitAccountID2,
       debitAmount1,
       debitAmount2,
       details,
@@ -101,13 +101,13 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     $business,
     business
   ),
-  credit_account_1 = COALESCE(
-    $creditAccount1,
-    credit_account_1
+  credit_account_id_1 = COALESCE(
+    $creditAccountID1,
+    credit_account_id_1
   ),
-  credit_account_2 = COALESCE(
-    $creditAccount2,
-    credit_account_2
+  credit_account_id_2 = COALESCE(
+    $creditAccountID2,
+    credit_account_id_2
   ),
   credit_amount_1 = COALESCE(
     $creditAmount1,
@@ -125,13 +125,13 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     $date3,
     date_3
   ),
-  debit_account_1 = COALESCE(
-    $debitAccount1,
-    debit_account_1
+  debit_account_id_1 = COALESCE(
+    $debitAccountID1,
+    debit_account_id_1
   ),
-  debit_account_2 = COALESCE(
-    $debitAccount2,
-    debit_account_2
+  debit_account_id_2 = COALESCE(
+    $debitAccountID2,
+    debit_account_id_2
   ),
   debit_amount_1 = COALESCE(
     $debitAmount1,

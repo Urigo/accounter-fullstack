@@ -12,7 +12,10 @@ import { BusinessTransactionsFilters } from './business-transactions-filters';
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
-          businessName
+          business {
+            id
+            name
+          }
           credit {
             formatted
           }
@@ -98,7 +101,7 @@ export const BusinessTransactionsSummery = () => {
           <AccounterTable
             showButton
             moreInfo={item => (
-              <BusinessExtendedInfo businessName={item.businessName} filter={filter} />
+              <BusinessExtendedInfo businessID={item.business.id} filter={filter} />
             )}
             striped
             highlightOnHover
@@ -111,7 +114,7 @@ export const BusinessTransactionsSummery = () => {
             columns={[
               {
                 title: 'Business Name',
-                value: data => data.businessName,
+                value: data => data.business.name,
               },
               {
                 title: 'Debit',

@@ -18,7 +18,10 @@ import { AccounterLoader } from '../common';
             formatted
             raw
           }
-          businessName
+          business {
+            id
+            name
+          }
           eurAmount {
             formatted
             raw
@@ -47,15 +50,15 @@ import { AccounterLoader } from '../common';
 `;
 
 interface Props {
-  businessName: string;
+  businessID: string;
   filter?: BusinessTransactionsFilter;
 }
 
-export function BusinessExtendedInfo({ businessName, filter }: Props) {
+export function BusinessExtendedInfo({ businessID, filter }: Props) {
   const [{ data, fetching }] = useQuery({
     query: BusinessTransactionsInfoDocument,
     variables: {
-      filters: { ...filter, businessNames: [businessName] },
+      filters: { ...filter, businessIDs: [businessID] },
     },
   });
 
@@ -128,7 +131,7 @@ export function BusinessExtendedInfo({ businessName, filter }: Props) {
           <tbody>
             {extendedTransactions.map((row, index) => (
               <tr key={index}>
-                <td>{row.businessName}</td>
+                <td>{row.business.name}</td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {row.amount.raw && row.amount.raw !== 0 ? (

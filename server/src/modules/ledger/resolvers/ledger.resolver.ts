@@ -41,29 +41,17 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             )
           : null;
 
-      const businessesIDs = [fields.creditAccount?.id, fields.debitAccount?.id];
-      const [creditAccount1, debitAccount1] = await Promise.all(
-        businessesIDs.map(id =>
-          id
-            ? injector
-                .get(FinancialEntitiesProvider)
-                .getFinancialEntityByIdLoader.load(id)
-                .then(business => business?.name ?? null)
-            : null,
-        ),
-      );
-
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
-        creditAccount1,
-        creditAccount2: null,
+        creditAccountID1: fields.creditAccount?.id,
+        creditAccountID2: null,
         creditAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null, // Temporary. this field shouldn't exist
-        debitAccount1,
-        debitAccount2: null,
+        debitAccountID1: fields.debitAccount?.id,
+        debitAccountID2: null,
         debitAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         debitAmount2: null,
         details: fields.description ?? null,
@@ -126,28 +114,16 @@ export const ledgerResolvers: LedgerModule.Resolvers &
               )
             : null;
 
-        const businessesIDs = [record.creditAccount?.id, record.debitAccount?.id];
-        const [creditAccount1, debitAccount1] = await Promise.all(
-          businessesIDs.map(id =>
-            id
-              ? injector
-                  .get(FinancialEntitiesProvider)
-                  .getFinancialEntityByIdLoader.load(id)
-                  .then(business => business?.name ?? null)
-              : null,
-          ),
-        );
-
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
           business: financialAccount.owner,
-          creditAccount1,
-          creditAccount2: null,
+          creditAccountID1: record.creditAccount?.id,
+          creditAccountID2: null,
           creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           creditAmount2: null,
           currency,
           date3: record.date3 ? hashavshevetFormat.date(record.date3) : null, // Temporary. this field shouldn't exist
-          debitAccount1,
-          debitAccount2: null,
+          debitAccountID1: record.debitAccount?.id,
+          debitAccountID2: null,
           debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           debitAmount2: null,
           details: record.description ?? null,
@@ -192,8 +168,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
-        creditAccount1: fields.credit_account_1 ?? null,
-        creditAccount2: fields.credit_account_2 ?? null,
+        creditAccountID1: fields.credit_account_id_1 ?? null,
+        creditAccountID2: fields.credit_account_id_2 ?? null,
         creditAmount1: Number.isNaN(fields.credit_amount_1)
           ? null
           : fields.credit_amount_1?.toFixed(2),
@@ -202,8 +178,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           : fields.credit_amount_2?.toFixed(2),
         currency: fields.currency ? hashavshevetFormat.currency(fields.currency) : null,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null,
-        debitAccount1: fields.debit_account_1 ?? null,
-        debitAccount2: fields.debit_account_2 ?? null,
+        debitAccountID1: fields.debit_account_id_1 ?? null,
+        debitAccountID2: fields.debit_account_id_2 ?? null,
         debitAmount1: Number.isNaN(fields.debit_amount_1)
           ? null
           : fields.debit_amount_1?.toFixed(2),
@@ -276,8 +252,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
 
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
           business: financialAccount.owner,
-          creditAccount1: record.credit_account_1 ?? null,
-          creditAccount2: record.credit_account_2 ?? null,
+          creditAccountID1: record.credit_account_id_1 ?? null,
+          creditAccountID2: record.credit_account_id_2 ?? null,
           creditAmount1: Number.isNaN(record.credit_amount_1)
             ? null
             : record.credit_amount_1?.toFixed(2),
@@ -286,8 +262,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             : record.credit_amount_2?.toFixed(2),
           currency: hashavshevetFormat.currency(record.currency ?? ''),
           date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
-          debitAccount1: record.debit_account_1 ?? null,
-          debitAccount2: record.debit_account_2 ?? null,
+          debitAccountID1: record.debit_account_id_1 ?? null,
+          debitAccountID2: record.debit_account_id_2 ?? null,
           debitAmount1: Number.isNaN(record.debit_amount_1)
             ? null
             : record.debit_amount_1?.toFixed(2),
@@ -682,13 +658,13 @@ export const ledgerResolvers: LedgerModule.Resolvers &
       formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
 
     /* next fields are temporary, to resemble the DB entity */
-    credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_1,
-    credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_2,
+    credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_id_1,
+    credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_id_2,
     credit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_1),
     credit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_2),
     currency: DbLedgerRecord => formatCurrency(DbLedgerRecord.currency),
-    debit_account_1: DbLedgerRecord => DbLedgerRecord.debit_account_1,
-    debit_account_2: DbLedgerRecord => DbLedgerRecord.debit_account_2,
+    debit_account_1: DbLedgerRecord => DbLedgerRecord.debit_account_id_1,
+    debit_account_2: DbLedgerRecord => DbLedgerRecord.debit_account_id_2,
     debit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_1),
     debit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_2),
     details: DbLedgerRecord => DbLedgerRecord.details,

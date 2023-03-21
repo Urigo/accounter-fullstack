@@ -40,16 +40,16 @@ export const EditDbLedgerRecordFields = ({
 
   const [
     formCurrency,
-    formCreditAccount1,
-    formCreditAccount2,
-    formDebitAccount1,
-    formDebitAccount2,
+    formCreditAccountID1,
+    formCreditAccountID2,
+    formDebitAccountID1,
+    formDebitAccountID2,
   ] = watch([
     'currency',
-    'credit_account_1',
-    'credit_account_2',
-    'debit_account_1',
-    'debit_account_2',
+    'credit_account_id_1',
+    'credit_account_id_2',
+    'debit_account_id_1',
+    'debit_account_id_2',
   ]);
 
   function isAccountActive(account?: string | null) {
@@ -57,21 +57,21 @@ export const EditDbLedgerRecordFields = ({
   }
 
   useEffect(() => {
-    const isActive = isAccountActive(formCreditAccount1);
+    const isActive = isAccountActive(formCreditAccountID1);
     setIsCredit1(isActive);
-  }, [formCreditAccount1]);
+  }, [formCreditAccountID1]);
   useEffect(() => {
-    const isActive = isAccountActive(formCreditAccount2);
+    const isActive = isAccountActive(formCreditAccountID2);
     setIsCredit2(isActive);
-  }, [formCreditAccount2]);
+  }, [formCreditAccountID2]);
   useEffect(() => {
-    const isActive = isAccountActive(formDebitAccount1);
+    const isActive = isAccountActive(formDebitAccountID1);
     setIsDebit1(isActive);
-  }, [formDebitAccount1]);
+  }, [formDebitAccountID1]);
   useEffect(() => {
-    const isActive = isAccountActive(formDebitAccount2);
+    const isActive = isAccountActive(formDebitAccountID2);
     setIsDebit2(isActive);
-  }, [formDebitAccount2]);
+  }, [formDebitAccountID2]);
 
   useEffect(() => {
     setCurrency(formCurrency ?? Currency.Ils);
@@ -106,9 +106,9 @@ export const EditDbLedgerRecordFields = ({
       />
 
       <Controller
-        name="credit_account_1"
+        name="credit_account_id_1"
         control={control}
-        defaultValue={ledgerRecord.credit_account_1}
+        defaultValue={ledgerRecord.credit_account_1?.id}
         render={({ field, fieldState }) => (
           <TextInput
             {...field}
@@ -160,9 +160,9 @@ export const EditDbLedgerRecordFields = ({
       />
 
       <Controller
-        name="credit_account_2"
+        name="credit_account_id_2"
         control={control}
-        defaultValue={ledgerRecord.credit_account_2}
+        defaultValue={ledgerRecord.credit_account_2?.id}
         render={({ field, fieldState }) => (
           <TextInput
             {...field}
@@ -214,9 +214,9 @@ export const EditDbLedgerRecordFields = ({
       />
 
       <Controller
-        name="debit_account_1"
+        name="debit_account_id_1"
         control={control}
-        defaultValue={ledgerRecord.debit_account_1}
+        defaultValue={ledgerRecord.debit_account_1?.id}
         render={({ field, fieldState }) => (
           <TextInput
             {...field}
@@ -268,9 +268,9 @@ export const EditDbLedgerRecordFields = ({
       />
 
       <Controller
-        name="debit_account_2"
+        name="debit_account_id_2"
         control={control}
-        defaultValue={ledgerRecord.debit_account_2}
+        defaultValue={ledgerRecord.debit_account_2?.id}
         render={({ field, fieldState }) => (
           <TextInput
             {...field}

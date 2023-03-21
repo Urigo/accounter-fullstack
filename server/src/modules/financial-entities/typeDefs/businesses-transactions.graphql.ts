@@ -9,13 +9,13 @@ export default gql`
     businessTransactionsFromLedgerRecords(
       filters: BusinessTransactionsFilter
     ): BusinessTransactionsFromLedgerRecordsResult!
-    businessNamesFromLedgerRecords: [String!]!
+    businessNamesFromLedgerRecords: [Counterparty!]!
   }
 
   " input variables for businessTransactions "
   input BusinessTransactionsFilter {
-    businessNames: [String!]
-    financialEntityIds: [ID!]
+    businessIDs: [UUID!]
+    financialEntityIds: [UUID!]
     fromDate: TimelessDate
     toDate: TimelessDate
   }
@@ -32,7 +32,7 @@ export default gql`
 
   " single business transaction summery " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type BusinessTransactionSum {
-    businessName: String!
+    business: Counterparty!
     credit: FinancialAmount!
     debit: FinancialAmount!
     total: FinancialAmount!
@@ -61,7 +61,7 @@ export default gql`
   " single business transaction info " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type BusinessTransaction {
     amount: FinancialAmount!
-    businessName: String!
+    business: Counterparty!
     eurAmount: FinancialAmount
     gbpAmount: FinancialAmount
     usdAmount: FinancialAmount

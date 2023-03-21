@@ -13,12 +13,24 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 /* GraphQL */ `
   fragment LedgerRecordsAccountDetailsFields on LedgerRecord {
     id
-    credit_account_1
-    credit_account_2
+    credit_account_1 {
+      id
+      name
+    }
+    credit_account_2 {
+      id
+      name
+    }
     credit_amount_1
     credit_amount_2
-    debit_account_1
-    debit_account_2
+    debit_account_1 {
+      id
+      name
+    }
+    debit_account_2 {
+      id
+      name
+    }
     debit_amount_1
     debit_amount_2
     foreign_credit_amount_1
@@ -55,11 +67,11 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
 
   const creditAccount = cred
     ? first
-      ? credit_account_1
-      : credit_account_2
+      ? credit_account_1?.name
+      : credit_account_2?.name
     : first
-    ? debit_account_1
-    : debit_account_2;
+    ? debit_account_1?.name
+    : debit_account_2?.name;
 
   const foreignAmount = cred
     ? first

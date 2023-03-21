@@ -74,11 +74,11 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
     sortCode: (rawSum, _, { injector }) =>
       injector
         .get(AccountCardsProvider)
-        .getAccountCardsByKeysLoader.load(rawSum.businessName)
+        .getAccountCardsByBusinessIDsLoader.load(rawSum.businessID)
         .then(async card => {
           if (!card) {
             throw new GraphQLError(
-              `Hashavshevet account card not found for business "${rawSum.businessName}"`,
+              `Hashavshevet account card not found for business ID "${rawSum.businessID}"`,
             );
           }
           return await injector

@@ -1,10 +1,3 @@
-import { useEffect, useState } from 'react';
-import equal from 'deep-equal';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
-import { useQuery } from 'urql';
-import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessesNamesDocument,
   AllFinancialEntitiesDocument,
@@ -13,10 +6,20 @@ import {
 import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
+import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import equal from 'deep-equal';
+import { useEffect, useState } from 'react';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Filter } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 
 /* GraphQL */ `
   query AllBusinessesNames {
-    businessNamesFromLedgerRecords
+    businessNamesFromLedgerRecords {
+      id
+      name
+    }
   }
 `;
 
@@ -26,11 +29,7 @@ interface BusinessTransactionsFilterFormProps {
   closeModal: () => void;
 }
 
-function BusinessTransactionsFilterForm({
-  filter,
-  setFilter,
-  closeModal,
-}: BusinessTransactionsFilterFormProps) {
+function BusinessTransactionsFilterForm({ filter, setFilter, closeModal }: BusinessTransactionsFilterFormProps) {
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
@@ -102,8 +101,8 @@ function BusinessTransactionsFilterForm({
               {...field}
               data={
                 bnData?.businessNamesFromLedgerRecords.map(entity => ({
-                  value: entity,
-                  label: entity,
+                  value: entity.id,
+                  label: entity.name,
                 })) ?? []
               }
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
@@ -186,17 +185,14 @@ interface BusinessTransactionsFilterProps {
   setFilter: (filter: BusinessTransactionsFilter) => void;
 }
 
-export function BusinessTransactionsFilters({
-  filter,
-  setFilter,
-}: BusinessTransactionsFilterProps) {
+export function BusinessTransactionsFilters({ filter, setFilter }: BusinessTransactionsFilterProps) {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
   function isFilterApplied(filter: BusinessTransactionsFilter) {
     const changed = Object.entries(filter ?? {}).filter(
-      ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
+      ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0
     );
     return changed.length > 0;
   }
@@ -224,11 +220,7 @@ export function BusinessTransactionsFilters({
         opened={opened}
         onClose={() => setOpened(false)}
         content={
-          <BusinessTransactionsFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
-          />
+          <BusinessTransactionsFilterForm filter={filter} setFilter={onSetFilter} closeModal={() => setOpened(false)} />
         }
       />
       <Indicator inline size={16} disabled={!isFiltered}>

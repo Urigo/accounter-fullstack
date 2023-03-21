@@ -1,7 +1,3 @@
-import { useMemo, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { useQuery } from 'urql';
-import { ActionIcon, Table, Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
@@ -9,6 +5,10 @@ import { AccounterLoader, NavBar } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceReportGroup } from './trial-balance-report-group';
 import { ExtendedSortCode } from './trial-balance-report-sort-code';
+import { ActionIcon, Table, Tooltip } from '@mantine/core';
+import { useMemo, useState } from 'react';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 
 /* GraphQL */ `
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
@@ -24,7 +24,10 @@ import { ExtendedSortCode } from './trial-balance-report-sort-code';
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
-          businessName
+          business {
+            id
+            name
+          }
           credit {
             formatted
           }
@@ -88,10 +91,8 @@ export const TrialBalanceReport = () => {
   const { get } = useUrlQuery();
   const [{ isShowZeroedAccounts, ...filter }, setFilter] = useState<TrialBalanceReportFilters>(
     get('trialBalanceReportFilters')
-      ? (JSON.parse(
-          decodeURIComponent(get('trialBalanceReportFilters') as string),
-        ) as TrialBalanceReportFilters)
-      : {},
+      ? (JSON.parse(decodeURIComponent(get('trialBalanceReportFilters') as string)) as TrialBalanceReportFilters)
+      : {}
   );
   const [{ data, fetching }] = useQuery({
     query: TrialBalanceReportDocument,
@@ -147,8 +148,7 @@ export const TrialBalanceReport = () => {
           account =>
             isShowZeroedAccounts ||
             (account.transactionsSum?.total.raw &&
-              (account.transactionsSum.total.raw > 0.001 ||
-                account.transactionsSum.total.raw < -0.001)),
+              (account.transactionsSum.total.raw > 0.001 || account.transactionsSum.total.raw < -0.001))
         );
 
       const extendedSortCode = {
@@ -160,7 +160,7 @@ export const TrialBalanceReport = () => {
             (account.transactionsSum?.total.raw && account.transactionsSum.total.raw > 0
               ? account.transactionsSum.total.raw
               : 0),
-          0,
+          0
         ),
         debit:
           accounts.reduce(
@@ -169,12 +169,9 @@ export const TrialBalanceReport = () => {
               (account.transactionsSum?.total.raw && account.transactionsSum.total.raw < 0
                 ? account.transactionsSum.total.raw
                 : 0),
-            0,
+            0
           ) * -1,
-        sum: accounts.reduce(
-          (total, account) => total + (account.transactionsSum?.total.raw || 0),
-          0,
-        ),
+        sum: accounts.reduce((total, account) => total + (account.transactionsSum?.total.raw || 0), 0),
       };
       adjustedSortCodes[group]['sortCodes'].push(extendedSortCode);
       adjustedSortCodes[group].sum += extendedSortCode.sum;
@@ -192,17 +189,10 @@ export const TrialBalanceReport = () => {
             <div className="flex flex-row gap-2">
               <Tooltip label="Expand all accounts">
                 <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
-                  {isAllOpened ? (
-                    <LayoutNavbarCollapse size={20} />
-                  ) : (
-                    <LayoutNavbarExpand size={20} />
-                  )}
+                  {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
                 </ActionIcon>
               </Tooltip>
-              <TrialBalanceReportFilters
-                filter={{ ...filter, isShowZeroedAccounts }}
-                setFilter={setFilter}
-              />
+              <TrialBalanceReportFilters filter={{ ...filter, isShowZeroedAccounts }} setFilter={setFilter} />
             </div>
           }
         />
@@ -235,9 +225,7 @@ export const TrialBalanceReport = () => {
                 <td colSpan={2}>Report total:</td>
                 <td colSpan={3}>{}</td>
                 <td colSpan={1}>
-                  {formatStringifyAmount(
-                    Object.values(extendedSortCodes).reduce((total, row) => total + row.sum, 0),
-                  )}
+                  {formatStringifyAmount(Object.values(extendedSortCodes).reduce((total, row) => total + row.sum, 0))}
                 </td>
               </tr>
             </tbody>
