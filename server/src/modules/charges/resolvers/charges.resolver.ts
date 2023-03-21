@@ -64,6 +64,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
           preCountReceipts: filters?.withoutDocuments,
           preCountLedger: filters?.withoutLedger,
+          chargeType: filters?.chargesType,
         })
         .catch(e => {
           throw new Error(e.message);

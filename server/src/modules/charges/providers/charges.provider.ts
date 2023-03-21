@@ -313,6 +313,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isNotBusinesses = 0 OR at.financial_entity NOT IN $$notBusinesses)
   AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN at.event_date  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN at.event_date  END DESC,
@@ -518,6 +519,7 @@ export class ChargesProvider {
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
       notBusinesses: isNotBusinesses ? params.notBusinesses! : [null],
+      chargeType: params.chargeType ?? null,
     };
     return getChargesByFilters.run(fullParams, this.dbProvider);
   }
