@@ -89,6 +89,12 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
   //   },
 ];
 
+export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilterType }> = [
+  { label: 'All', value: ChargeFilterType.All },
+  { label: 'Income', value: ChargeFilterType.Income },
+  { label: 'Expense', value: ChargeFilterType.Expense },
+];
+
 function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFormProps) {
   const { control, handleSubmit, watch, setValue } = useForm<ChargeFilter>({
     defaultValues: { ...filter },
@@ -148,12 +154,6 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
       );
     }
   }, [data, setFinancialEntities]);
-
-  const chargeTypes: Array<{ label: string; value: ChargeFilterType }> = [
-    { label: 'All', value: ChargeFilterType.All },
-    { label: 'Income', value: ChargeFilterType.Income },
-    { label: 'Expense', value: ChargeFilterType.Expense },
-  ];
 
   return (
     <>
@@ -241,7 +241,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           render={({ field, fieldState }) => (
             <Select
               {...field}
-              data={chargeTypes}
+              data={chargesTypeFilterOptions}
               value={field.value ?? ChargeFilterType.All}
               disabled={fetching}
               label="Charge Type"

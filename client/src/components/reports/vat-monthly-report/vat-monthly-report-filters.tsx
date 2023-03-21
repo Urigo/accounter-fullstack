@@ -7,9 +7,14 @@ import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
 import { DatePicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument, VatReportFilter } from '../../../gql/graphql';
+import {
+  AllFinancialEntitiesDocument,
+  ChargeFilterType,
+  VatReportFilter,
+} from '../../../gql/graphql';
 import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
+import { chargesTypeFilterOptions } from '../../all-charges/charges-filters';
 import { PopUpModal } from '../../common';
 
 interface VatMonthlyReportFilterFormProps {
@@ -79,6 +84,22 @@ function VatMonthlyReportFilterForm({
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          name="chargesType"
+          control={control}
+          defaultValue={filter.chargesType}
+          render={({ field, fieldState }) => (
+            <Select
+              {...field}
+              data={chargesTypeFilterOptions}
+              value={field.value ?? ChargeFilterType.All}
+              label="Charge Type"
+              placeholder="Filter income/expense"
+              maxDropdownHeight={160}
               error={fieldState.error?.message}
             />
           )}

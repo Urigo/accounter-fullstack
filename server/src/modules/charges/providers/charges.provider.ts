@@ -399,6 +399,7 @@ const validateCharges = sql<IValidateChargesQuery>`
   LEFT JOIN accounter_schema.businesses bu
   ON  at.financial_entity = bu.name
   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
     AND ($isIDs = 0 OR at.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
@@ -519,7 +520,7 @@ export class ChargesProvider {
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
       notBusinesses: isNotBusinesses ? params.notBusinesses! : [null],
-      chargeType: params.chargeType ?? null,
+      chargeType: params.chargeType ?? 'ALL',
     };
     return getChargesByFilters.run(fullParams, this.dbProvider);
   }
@@ -536,6 +537,7 @@ export class ChargesProvider {
       toDate: params.toDate ?? null,
       IDs: isIDs ? params.IDs! : [null],
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
+      chargeType: params.chargeType ?? 'ALL',
     };
     return validateCharges.run(fullParams, this.dbProvider);
   }
