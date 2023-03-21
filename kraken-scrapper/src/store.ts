@@ -3,11 +3,10 @@ import createPgp from 'pg-promise';
 import type { KrakenLedgerRecord, KrakenTradeRecord } from './kraken';
 
 const logger = diary('store');
+const ledgerTable = `kraken_ledger_records`;
+const tradesTable = `kraken_trades`;
 
 export async function createAndConnectStore(options: { connectionString: string; schema: string }) {
-  const ledgerTable = `kraken_ledger_records`;
-  const tradesTable = `kraken_trades`;
-
   logger.info(`Creating database instance...`);
   const pgp = createPgp();
   const pg = pgp({
@@ -27,7 +26,96 @@ export async function createAndConnectStore(options: { connectionString: string;
       pgp.end();
     },
     async ensureTriggerAndFunction() {
-      // TODO: implement this one
+      logger.info(`Creating ${ledgerTable} function...`);
+
+      // Upsert the function
+      await pg.none(`
+        CREATE OR REPLACE FUNCTION ${ledgerTable}_insert_fn () RETURNS TRIGGER AS $$
+      BEGIN
+          INSERT INTO ${options.schema}.all_transactions (
+            currency_code,
+            event_date,
+            debit_date,
+            event_amount,
+            bank_reference,
+            event_number,
+            account_number,
+            account_type,
+            is_conversion,
+            currency_rate,
+            contra_currency_code,
+            bank_description,
+            original_id,
+            id,
+            current_balance,
+            detailed_bank_description,
+            fee
+          ) VALUES (
+            new.currency::currency,
+            new.value_date::text::date,
+            new.value_date::text::date,
+            new.amount,
+            new.ledger_id,
+            to_char(new.value_date, 'YYYYMMDD')::bigint,
+            new.account_nickname,
+            concat('kraken_', LOWER(new.currency)),
+            (CASE
+              WHEN new.trade_ref_id IS NOT NULL
+              THEN true
+              ELSE false
+            END),
+            (CASE
+              WHEN new.trade_ref_id IS NOT NULL
+              THEN (SELECT price FROM ${options.schema}.${tradesTable} WHERE trade_id = new.trade_ref_id)
+              ELSE 0
+            END),
+            NULL,
+            (CASE
+              WHEN new.trade_ref_id IS NOT NULL
+              THEN new.trade_ref_id
+              ELSE ''
+            END),
+            new.ledger_id,
+            gen_random_uuid(),
+            0,
+            '',
+            (CASE
+              WHEN new.trade_ref_id IS NOT NULL
+              THEN (SELECT fee FROM ${options.schema}.${tradesTable} WHERE trade_id = new.trade_ref_id)
+              ELSE NULL
+            END)
+          );
+
+          RETURN NEW;
+      END;
+      $$ LANGUAGE 'plpgsql';
+      `);
+
+      // Upsert the trigger
+      logger.info(`Creating ${ledgerTable} trigger...`);
+
+      const { count } = await pg.one<{ count: string }>(`select count(*) as count
+      from pg_trigger
+      where not tgisinternal
+      and tgname = '${ledgerTable}_insert_trigger';`);
+
+      // TODO: We can drop this when we move to PG>=13
+      if (parseInt(count) === 1) {
+        logger.info(`Function already exists, deleting and placing a new one...`);
+
+        await pg.none(
+          `DROP TRIGGER ${ledgerTable}_insert_trigger ON ${options.schema}.${ledgerTable};`,
+        );
+      }
+
+      await pg.none(`
+        CREATE TRIGGER ${ledgerTable}_insert_trigger
+        AFTER INSERT
+          ON ${options.schema}.${ledgerTable}
+          FOR EACH ROW
+        EXECUTE
+          PROCEDURE ${ledgerTable}_insert_fn ();
+      `);
     },
     async ensureTables() {
       logger.info(`Ensuring table ${tradesTable} exists...`);
