@@ -10,6 +10,7 @@ export default gql`
   input VatReportFilter {
     fromDate: TimelessDate!
     toDate: TimelessDate!
+    chargesType: ChargeFilterType
     financialEntityId: ID!
   }
 

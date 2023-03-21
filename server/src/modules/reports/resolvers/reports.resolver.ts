@@ -157,8 +157,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
           filters?.financialEntityId,
         );
 
-        response.income.push(...vatRecords.income);
-        response.expenses.push(...vatRecords.expenses);
+        response.income.push(...(filters?.chargesType === 'EXPENSE' ? [] : vatRecords.income));
+        response.expenses.push(...(filters?.chargesType === 'INCOME' ? [] : vatRecords.expenses));
         const chargeIDs = Array.from(vatRecords.includedChargeIDs);
         chargeIDs.forEach(id => includedChargeIDs.add(id));
 
@@ -166,6 +166,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
           financialEntityIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
+          chargeType: filters?.chargesType,
         });
 
         // filter charges with missing info

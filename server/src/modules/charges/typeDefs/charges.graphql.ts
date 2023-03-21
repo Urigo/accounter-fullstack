@@ -41,6 +41,14 @@ export default gql`
     " Include only charges including specific business "
     byBusinesses: [ID!]
     sortBy: ChargeSortBy
+    chargesType: ChargeFilterType
+  }
+
+  " filter charges by type "
+  enum ChargeFilterType {
+    ALL
+    INCOME
+    EXPENSE
   }
 
   " input variables for sorting charges "

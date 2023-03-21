@@ -3,6 +3,7 @@ import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
 import { FragmentType } from '../../../gql';
 import {
+  ChargeFilterType,
   EditChargeFieldsFragmentDoc,
   VatMonthlyReportDocument,
   VatReportFilter,
@@ -83,9 +84,13 @@ export const VatMonthlyReport = () => {
           <AccounterLoader />
         ) : (
           <div className="flex flex-col gap-4">
-            <IncomeTable data={data?.vatReport} />
+            {filter.chargesType !== ChargeFilterType.Expense && (
+              <IncomeTable data={data?.vatReport} />
+            )}
 
-            <ExpensesTable data={data?.vatReport} />
+            {filter.chargesType !== ChargeFilterType.Income && (
+              <ExpensesTable data={data?.vatReport} />
+            )}
 
             <MissingInfoTable
               data={data?.vatReport}

@@ -5,7 +5,12 @@ import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
+import {
+  AllFinancialEntitiesDocument,
+  ChargeFilter,
+  ChargeFilterType,
+  ChargeSortByField,
+} from '../../gql/graphql';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
@@ -82,6 +87,12 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
   //     value: 'vat',
   //     label: 'Vat',
   //   },
+];
+
+export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilterType }> = [
+  { label: 'All', value: ChargeFilterType.All },
+  { label: 'Income', value: ChargeFilterType.Income },
+  { label: 'Expense', value: ChargeFilterType.Expense },
 ];
 
 function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFormProps) {
@@ -220,6 +231,23 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
               value={field.value || ''}
               error={fieldState.error?.message}
               label="To Date"
+            />
+          )}
+        />
+        <Controller
+          name="chargesType"
+          control={control}
+          defaultValue={filter.chargesType}
+          render={({ field, fieldState }) => (
+            <Select
+              {...field}
+              data={chargesTypeFilterOptions}
+              value={field.value ?? ChargeFilterType.All}
+              disabled={fetching}
+              label="Charge Type"
+              placeholder="Filter income/expense"
+              maxDropdownHeight={160}
+              error={fieldState.error?.message}
             />
           )}
         />
