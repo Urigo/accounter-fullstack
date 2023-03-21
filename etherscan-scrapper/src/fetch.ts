@@ -1,5 +1,5 @@
-import { fetch as rawFetch } from '@whatwg-node/fetch';
 import { diary } from 'diary';
+import { fetch as rawFetch } from '@whatwg-node/fetch';
 
 const logger = diary('fetch');
 

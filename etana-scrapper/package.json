@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "csv-parse": "5.3.3",
     "@whatwg-node/fetch": "0.6.1",
+    "csv-parse": "5.3.3",
     "diary": "0.4.3",
     "dotenv": "16.0.3",
     "pg-promise": "11.0.2"

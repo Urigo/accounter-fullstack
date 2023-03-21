@@ -75,7 +75,7 @@ export default gql`
     # createdAt: Date!
     # additionalDocument: [Linkable!]!
     # ledgerRecords: [LedgerRecord!]!
-     
+
     # transactions: [Transaction!]!
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
     # description: String
