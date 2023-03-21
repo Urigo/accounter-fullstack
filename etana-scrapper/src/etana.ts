@@ -14,6 +14,22 @@ export type EtanaAccountTransaction = {
   raw: string[];
 };
 
+export type ProcessedEtanaAccountTransaction = {
+  transactionId: string;
+  accountId: string;
+  currency: string;
+  time: Date;
+  amount: number;
+  description: string;
+  metadata: string;
+  fee?: {
+    amount: number;
+    transactionId: string;
+  };
+  actionType: null | 'deposit' | 'withdrawal' | 'fee';
+  raw: string[];
+};
+
 function parseRecord(input: string[]): EtanaAccountTransaction {
   const description = input[5] || '';
   const ref = description.includes('wire fee') ? description.split(': ')[1]?.trim() || null : null;
@@ -46,6 +62,30 @@ export function createEtana(options: { csvContent: string }) {
   const parser = parse(options.csvContent);
 
   return {
+    processTransactions(
+      transactionsArray: EtanaAccountTransaction[],
+    ): ProcessedEtanaAccountTransaction[] {
+      const onlyFee = transactionsArray.filter(r => r.actionType === 'fee');
+      const onlyNonFee = transactionsArray.filter(r => r.actionType !== 'fee');
+
+      const processed = onlyNonFee.map<ProcessedEtanaAccountTransaction>(transaction => {
+        const feeRecord = onlyFee.find(f => transaction.transactionRef === f.ref);
+
+        if (feeRecord) {
+          return {
+            ...transaction,
+            fee: {
+              amount: feeRecord.amount * -1,
+              transactionId: feeRecord.transactionId,
+            },
+          };
+        }
+
+        return transaction;
+      });
+
+      return [...processed, ...onlyFee];
+    },
     accountTransactions() {
       return new Promise<EtanaAccountTransaction[]>((resolve, reject) => {
         const records: EtanaAccountTransaction[] = [];

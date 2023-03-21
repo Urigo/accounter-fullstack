@@ -30,17 +30,17 @@ async function main() {
 
   const transactions = await etana.accountTransactions();
   logger.info(`ℹ️ Got total of ${transactions.length} Etana account transactions`);
+  const mergedTransactions = etana.processTransactions(transactions);
 
   const store = await createAndConnectStore({
     connectionString: ensureEnv('DATABASE_URL'),
     schema: 'accounter_schema',
   });
   await store.ensureTable();
-  // TODO: Enable this one
-  // await store.ensureTriggerAndFunction();
+  await store.ensureTriggerAndFunction();
 
   logger.info(`ℹ️ Writing Etana account transactions to the database...`);
-  await Promise.all(transactions.map(t => store.storeTransaction(t)));
+  await Promise.all(mergedTransactions.map(t => store.storeTransaction(t)));
 
   await store.close();
   logger.info(`✅ Done!`);
