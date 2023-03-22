@@ -212,13 +212,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     documentId: raw => raw.document_id,
     chargeId: raw => raw.id,
     amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
-    businessName: (raw, _, { injector }) =>
-      raw.financial_entity_id
-        ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(raw.financial_entity_id)
-            .then(entity => entity?.name ?? null)
-        : null,
+    business: raw => raw.financial_entity_id,
     chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
     documentDate: raw =>
       raw.tax_invoice_date

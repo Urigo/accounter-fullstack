@@ -8,7 +8,10 @@ import { formatStringifyAmount } from '../../../helpers';
 /* GraphQL */ `
   fragment VarReportExpensesFields on VatReportResult {
     expenses {
-        businessName
+        business {
+          id
+          name
+        }
         vatNumber
         image
         documentSerial
@@ -90,7 +93,7 @@ export const ExpensesTable = ({ data }: Props) => {
               return (
                 <tr className="bg-gray-100" key={index}>
                   <td className="flex flex-col gap-1">
-                    {item.businessName}
+                    {item.business.name}
                     {item.vatNumber && (
                       <span style={{ fontSize: '10px', color: 'darkGray' }}>{item.vatNumber}</span>
                     )}

@@ -56,7 +56,7 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
       }
     },
     name: dbHashAccount => dbHashAccount.name,
-    businessID: dbHashAccount => dbHashAccount.business_id,
+    business: dbHashAccount => dbHashAccount.business_id,
   },
   // WireTransaction: {
   //   ...commonTransactionFields,

@@ -17,7 +17,10 @@ import { ExtendedSortCode } from './trial-balance-report-sort-code';
       name
       accounts {
         id
-        businessID
+        business {
+          id
+          name
+        }
         name
       }
     }
@@ -144,7 +147,7 @@ export const TrialBalanceReport = () => {
           return {
             ...account,
             transactionsSum: businessTransactionsSum.find(
-              s => s.business.id === account.businessID,
+              s => s.business.id === account.business?.id,
             ),
           };
         })

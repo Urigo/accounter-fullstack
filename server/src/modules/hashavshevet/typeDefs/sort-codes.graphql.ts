@@ -18,7 +18,7 @@ export default gql`
     id: ID!
     sortCode: SortCode!
     name: String
-    businessID: UUID # TODO: (Gil) should be non-nullable
+    business: Counterparty # TODO: (Gil) should be non-nullable
   }
 
   extend type BusinessTransactionSum {

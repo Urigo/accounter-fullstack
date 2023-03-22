@@ -26,7 +26,7 @@ export default gql`
   type VatReportRecord {
     chargeId: ID!
     documentId: ID
-    businessName: String
+    business: Counterparty
     vatNumber: String
     image: String
     documentSerial: String
