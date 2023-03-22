@@ -26,13 +26,11 @@ const getHashGovIndexes = sql<IGetHashGovIndexesQuery>`
     WHERE hash_owner = $ownerId;`;
 
 const getHashavshevetBusinessIndexesByOwnerAndBusinessID = sql<IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdQuery>`
-SELECT hbi.*, b.name as business_name
-FROM accounter_schema.hash_business_indexes hbi
-LEFT JOIN accounter_schema.businesses b
-ON hbi.business = b.id
+SELECT *
+FROM accounter_schema.hash_business_indexes
 WHERE
-    hbi.hash_owner = $financialEntityId
-    AND b.id IN $$businessIDs;`;
+    hash_owner = $financialEntityId
+    AND business IN $$businessIDs;`;
 
 export type VatIndexesKeys =
   | 'vatInputsIndex'
