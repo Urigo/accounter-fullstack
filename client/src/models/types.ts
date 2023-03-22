@@ -5,7 +5,7 @@ export interface TransactionType {
   event_date: Date;
   debit_date: Date | null;
   event_amount: string;
-  financial_entity_id: string | null;
+  financial_entity: string | null;
   vat: number | null;
   user_description: string | null;
   tax_invoice_number: string | null;

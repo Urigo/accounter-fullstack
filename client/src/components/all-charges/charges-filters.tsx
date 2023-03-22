@@ -60,8 +60,8 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
     label: 'Date',
   },
   //   {
-  //     value: 'financial_entity',
-  //     label: 'Financial Entity',
+  //     value: 'financial_entity_id',
+  //     label: 'Financial Entity ID',
   //   },
   //   {
   //     value: 'personal_category',
