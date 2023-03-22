@@ -544,17 +544,12 @@ export class ChargesProvider {
 
   private async batchValidateChargesByIds(ids: readonly string[]) {
     const isIDs = !!ids?.length;
-    const charges = await validateCharges.run(
-      {
-        isIDs: 1,
-        IDs: isIDs ? ids : [null],
-        fromDate: null,
-        toDate: null,
-        isFinancialEntityIds: 0,
-        financialEntityIds: [null],
-      },
-      this.dbProvider,
-    );
+    const charges = await this.validateCharges({
+      IDs: isIDs ? ids : [null],
+      fromDate: null,
+      toDate: null,
+      financialEntityIds: null,
+    });
     return ids.map(id => {
       const charge = charges.find(charge => charge.id === id);
       return charge ? validateCharge(charge) : null;
