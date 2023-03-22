@@ -77,7 +77,7 @@ export const ShareWith = ({ data, alternativeCharge }: Props) => {
         style={shareWithDotanFlag ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
         items={beneficiaries?.map((beneficiary, index) => (
           <div key={index} className="sm:w-1/4 whitespace-nowrap text-xs">
-            {beneficiary.counterparty.name}: <span>{beneficiary.percentage}%</span>
+            {beneficiary.counterparty.name}: <span>{beneficiary.percentage * 100}%</span>
           </div>
         ))}
       />
