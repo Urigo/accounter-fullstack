@@ -584,7 +584,7 @@ export function generateEntryForExchangeRatesDifferenceValues(
   return ledger;
 }
 
-export function generateEntryForforeignTransferFeesValues(
+export function generateEntryForForeignTransferFeesValues(
   charge: VatExtendedCharge,
   entryForFinancialAccount: EntryForFinancialAccount,
   entryForAccounting: EntryForAccounting,

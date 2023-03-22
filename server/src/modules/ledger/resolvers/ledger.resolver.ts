@@ -7,7 +7,7 @@ import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
-  generateEntryForforeignTransferFeesValues,
+  generateEntryForForeignTransferFeesValues,
   hashavshevetFormat,
   parseDate,
 } from '@modules/hashavshevet/helpers/hashavshevet.helper.js';
@@ -504,8 +504,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
         ) {
           console.log('עמלת העברת מטח');
           try {
-            const entryForgenerateEntryForforeignTransferFeesValues =
-              generateEntryForforeignTransferFeesValues(
+            const entryForGenerateEntryForForeignTransferFeesValues =
+              generateEntryForForeignTransferFeesValues(
                 decoratedCharge,
                 entryForFinancialAccount,
                 entryForAccounting,
@@ -519,7 +519,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
                 invoiceExchangeRates,
               );
             const updateResult = await injector.get(LedgerProvider).insertLedgerRecords({
-              ledgerRecord: [entryForgenerateEntryForforeignTransferFeesValues],
+              ledgerRecord: [entryForGenerateEntryForForeignTransferFeesValues],
             });
             if (updateResult.length === 0) {
               throw new Error('Failed to insert foreign transfer fees record');
