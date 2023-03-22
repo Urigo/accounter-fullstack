@@ -37,7 +37,6 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
   },
   HashavshevetAccount: {
     id: dbHashAccount => dbHashAccount.id,
-    key: dbHashAccount => dbHashAccount.key,
     sortCode: (dbHashAccount, _, { injector }) => {
       try {
         return injector
@@ -57,6 +56,7 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
       }
     },
     name: dbHashAccount => dbHashAccount.name,
+    businessID: dbHashAccount => dbHashAccount.business_id,
   },
   // WireTransaction: {
   //   ...commonTransactionFields,

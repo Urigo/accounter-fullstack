@@ -16,9 +16,9 @@ export default gql`
   " Hashavshevet account "
   type HashavshevetAccount {
     id: ID!
-    key: String!
     sortCode: SortCode!
     name: String
+    businessID: UUID # TODO: (Gil) should be non-nullable
   }
 
   extend type BusinessTransactionSum {

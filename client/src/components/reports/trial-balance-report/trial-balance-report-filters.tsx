@@ -94,7 +94,7 @@ function TrialBalanceReportFilterForm({
           )}
         />
         <Controller
-          name="businessNames"
+          name="businessIDs"
           control={control}
           defaultValue={undefined}
           render={({ field, fieldState }) => (
@@ -108,7 +108,7 @@ function TrialBalanceReportFilterForm({
               }
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={bnLoading}
-              label="Business Names"
+              label="Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
