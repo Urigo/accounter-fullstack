@@ -69,6 +69,6 @@ export default gql`
     reference1: String
     reference2: String
     details: String
-    counterAccount: String
+    counterAccount: Counterparty
   }
 `;

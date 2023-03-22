@@ -38,7 +38,10 @@ import { AccounterLoader } from '../common';
           reference1
           reference2
           details
-          counterAccount
+          counterAccount {
+            id
+            name
+          }
         }
       }
       ... on CommonError {
@@ -218,7 +221,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props) {
                 <td>{row.reference1}</td>
                 <td>{row.reference2}</td>
                 <td>{row.details}</td>
-                <td>{row.counterAccount}</td>
+                <td>{row.counterAccount?.name}</td>
               </tr>
             ))}
           </tbody>
