@@ -13,9 +13,11 @@ import { EditDbLedgerRecordFields } from './edit-db-ledger-record-fields';
 //   fragment EditLedgerRecordsFields on LedgerRecord {
 //     id
 //     creditAccount {
+//       id
 //       name
 //     }
 //     debitAccount {
+//       id
 //       name
 //     }
 //     date
