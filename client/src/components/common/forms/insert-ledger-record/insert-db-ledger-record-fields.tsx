@@ -7,8 +7,15 @@ import {
   UseFormUnregister,
   UseFormWatch,
 } from 'react-hook-form';
+import { useQuery } from 'urql';
+import { Select } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { CurrencyCodeInput, CurrencyInput, NumberInput, TextInput } from '../..';
-import { Currency, InsertDbLedgerRecordInput } from '../../../../gql/graphql';
+import {
+  AllFinancialEntitiesDocument,
+  Currency,
+  InsertDbLedgerRecordInput,
+} from '../../../../gql/graphql';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts';
 
 type Props = {
@@ -24,6 +31,9 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
   const [isCredit2, setIsCredit2] = useState(false);
   const [isDebit1, setIsDebit1] = useState(false);
   const [isDebit2, setIsDebit2] = useState(false);
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
   const [
     formCurrency,
@@ -42,6 +52,33 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
   function isAccountActive(account?: string | null) {
     return !!account;
   }
+
+  const [{ data, fetching, error: financialEntitiesError }] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
+
+  useEffect(() => {
+    if (financialEntitiesError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      });
+    }
+  }, [financialEntitiesError]);
+
+  // On every new data fetch, reorder results by name
+  useEffect(() => {
+    if (data?.allFinancialEntities.length) {
+      setFinancialEntities(
+        data.allFinancialEntities
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [data, setFinancialEntities]);
 
   // add amount fields to credit/debit account only when name exists
   useEffect(() => {
@@ -125,11 +162,16 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
         name="credit_account_id_1"
         control={control}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? ''}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Credit Account 1"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -179,11 +221,16 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
         name="credit_account_id_2"
         control={control}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Credit Account 2"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -234,11 +281,16 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
         name="debit_account_id_1"
         control={control}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Debit Account 1"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -289,11 +341,16 @@ export const InsertDbLedgerRecordFields = ({ control, watch, setValue, unregiste
         name="debit_account_id_2"
         control={control}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Debit Account 2"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />

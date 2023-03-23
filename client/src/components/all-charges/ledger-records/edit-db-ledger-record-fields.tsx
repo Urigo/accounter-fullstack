@@ -7,8 +7,12 @@ import {
   UseFormUnregister,
   UseFormWatch,
 } from 'react-hook-form';
+import { useQuery } from 'urql';
+import { Select } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
+  AllFinancialEntitiesDocument,
   Currency,
   EditDbLedgerRecordsFieldsFragmentDoc,
   UpdateDbLedgerRecordInput,
@@ -37,6 +41,9 @@ export const EditDbLedgerRecordFields = ({
   const [isCredit2, setIsCredit2] = useState(false);
   const [isDebit1, setIsDebit1] = useState(false);
   const [isDebit2, setIsDebit2] = useState(false);
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
   const [
     formCurrency,
@@ -55,6 +62,33 @@ export const EditDbLedgerRecordFields = ({
   function isAccountActive(account?: string | null) {
     return !!account;
   }
+
+  const [{ data, fetching, error: financialEntitiesError }] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
+
+  useEffect(() => {
+    if (financialEntitiesError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      });
+    }
+  }, [financialEntitiesError]);
+
+  // On every new data fetch, reorder results by name
+  useEffect(() => {
+    if (data?.allFinancialEntities.length) {
+      setFinancialEntities(
+        data.allFinancialEntities
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [data, setFinancialEntities]);
 
   useEffect(() => {
     const isActive = isAccountActive(formCreditAccountID1);
@@ -110,11 +144,16 @@ export const EditDbLedgerRecordFields = ({
         control={control}
         defaultValue={ledgerRecord.credit_account_1?.id}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? ''}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Credit Account 1"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -164,11 +203,16 @@ export const EditDbLedgerRecordFields = ({
         control={control}
         defaultValue={ledgerRecord.credit_account_2?.id}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Credit Account 2"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -218,11 +262,16 @@ export const EditDbLedgerRecordFields = ({
         control={control}
         defaultValue={ledgerRecord.debit_account_1?.id}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Debit Account 1"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -272,11 +321,16 @@ export const EditDbLedgerRecordFields = ({
         control={control}
         defaultValue={ledgerRecord.debit_account_2?.id}
         render={({ field, fieldState }) => (
-          <TextInput
+          <Select
             {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetching}
             label="Debit Account 2"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
