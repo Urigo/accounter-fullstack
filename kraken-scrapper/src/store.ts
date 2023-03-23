@@ -58,7 +58,13 @@ export async function createAndConnectStore(options: { connectionString: string;
             new.ledger_id,
             to_char(new.value_date, 'YYYYMMDD')::bigint,
             new.account_nickname,
-            concat('kraken_', LOWER(new.currency)),
+            (
+              CASE
+                WHEN new.currency = 'USD'
+                  THEN concat('checking_', LOWER(new.currency))
+                ELSE concat('crypto_', LOWER(new.currency))
+              END
+            ),
             (CASE
               WHEN new.trade_ref_id IS NOT NULL
               THEN true
