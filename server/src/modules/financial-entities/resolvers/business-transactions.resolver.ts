@@ -147,14 +147,21 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     name: (parent, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(parent!)
+        .getFinancialEntityByIdLoader.load(
+          typeof parent === 'string'
+            ? parent
+            : (parent as unknown as { counterpartyID: string })!.counterpartyID,
+        )
         .then(fe => {
           if (!fe) {
             throw new GraphQLError(`Financial entity not found for id ${parent}`);
           }
           return fe.name;
         }),
-    id: parent => parent,
+    id: parent =>
+      typeof parent === 'string'
+        ? parent
+        : (parent as unknown as { counterpartyID: string })!.counterpartyID,
   },
   BusinessTransactionSum: {
     business: rawSum => rawSum.businessID,
