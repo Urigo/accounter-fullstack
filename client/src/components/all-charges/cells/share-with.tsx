@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesShareWithFieldsFragmentDoc, BeneficiaryInput } from '../../../gql/graphql';
+import { AllChargesShareWithFieldsFragmentDoc } from '../../../gql/graphql';
 import {
   businessesNotToShare,
   businessesWithoutTaxCategory,
@@ -63,7 +63,12 @@ export const ShareWith = ({ data }: Props) => {
       if (value !== undefined) {
         updateCharge({
           chargeId,
-          fields: { beneficiaries: value as unknown as BeneficiaryInput[] },
+          fields: {
+            beneficiaries: value?.map(b => ({
+              counterparty: { id: b.counterparty.id },
+              percentage: b.percentage,
+            })),
+          },
         });
       }
     },
