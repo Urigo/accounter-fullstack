@@ -58,7 +58,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             new.transaction_id,
             to_char(new.time, 'YYYYMMDD')::bigint,
             new.account_id,
-            concat('etana_', LOWER(new.currency)),
+            concat('checking_', LOWER(new.currency)),
             false,
             0,
             NULL,
