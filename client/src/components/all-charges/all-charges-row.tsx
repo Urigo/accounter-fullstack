@@ -1,13 +1,8 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../gql';
-import {
-  AllChargesTableFieldsFragment,
-  EditChargeFieldsFragmentDoc,
-  SuggestedChargeFragmentDoc,
-} from '../../gql/graphql';
-import { SuggestedCharge, suggestedCharge } from '../../helpers';
+import { FragmentType } from '../../gql';
+import { AllChargesTableFieldsFragment, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
 import { EditMiniButton } from '../common';
 import {
   Account,
@@ -39,10 +34,12 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     }
     beneficiaries {
       counterparty {
+        id
         name
       }
     }
     counterparty {
+      id
       name
     }
     vat {
@@ -76,23 +73,6 @@ export const AllChargesRow = ({
   isAllOpened,
 }: Props) => {
   const [opened, setOpen] = useState(false);
-  // const charge = getFragmentData(AllChargesTableFragmentDoc, data);
-
-  function generateRowContext(chargeProps: FragmentType<typeof SuggestedChargeFragmentDoc>) {
-    const altCharge = getFragmentData(SuggestedChargeFragmentDoc, chargeProps);
-    if (
-      !altCharge.counterparty?.name ||
-      !altCharge.transactions[0]?.userNote?.trim() ||
-      altCharge.tags?.length === 0 ||
-      !altCharge.vat?.raw ||
-      altCharge.beneficiaries?.length === 0
-    ) {
-      return suggestedCharge(altCharge);
-    }
-    return undefined;
-  }
-
-  const alternativeCharge = generateRowContext(charge);
 
   const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
 
@@ -102,20 +82,11 @@ export const AllChargesRow = ({
         <DateCell data={charge} />
         <Amount data={charge} />
         <Vat data={charge} />
-        <Entity
-          data={charge}
-          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-        />
+        <Entity data={charge} />
         <Account data={charge} />
-        <Description
-          data={charge}
-          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-        />
-        <Tags data={charge} alternativeCharge={alternativeCharge as SuggestedCharge | undefined} />
-        <ShareWith
-          data={charge}
-          alternativeCharge={alternativeCharge as SuggestedCharge | undefined}
-        />
+        <Description data={charge} />
+        <Tags data={charge} />
+        <ShareWith data={charge} />
         <Balance data={charge} />
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />

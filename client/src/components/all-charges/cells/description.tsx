@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
-import type { SuggestedCharge } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 import { ConfirmMiniButton, InfoMiniButton } from '../../common';
 
@@ -17,22 +16,24 @@ import { ConfirmMiniButton, InfoMiniButton } from '../../common';
     validationData {
       missingInfo
     }
+    missingInfoSuggestions {
+      description
+    }
   }
 `;
 
 type Props = {
   data: FragmentType<typeof AllChargesDescriptionFieldsFragmentDoc>;
-  alternativeCharge?: SuggestedCharge;
 };
 
-export const Description = ({ data, alternativeCharge }: Props) => {
+export const Description = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
   const isError = charge?.validationData?.missingInfo?.includes(
     MissingChargeInfo.TransactionDescription,
   );
-  const hasAlternative = isError && !!alternativeCharge?.userDescription?.trim().length;
+  const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
   const { userNote, id: transactionId, description: fullDescription } = charge.transactions[0];
-  const cellText = userNote?.trim() ?? alternativeCharge?.userDescription ?? 'Missing';
+  const cellText = userNote?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
   const [toggleDescription, setToggleDescription] = useState(false);
 
   const { updateTransaction, fetching } = useUpdateTransaction();
@@ -60,7 +61,7 @@ export const Description = ({ data, alternativeCharge }: Props) => {
         <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={() => updateUserNote(alternativeCharge.userDescription)}
+            onClick={() => updateUserNote(charge.missingInfoSuggestions!.description!)}
             disabled={fetching}
           />
         )}

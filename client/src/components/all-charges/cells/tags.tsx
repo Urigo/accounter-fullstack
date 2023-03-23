@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
-import { SuggestedCharge } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton, ListCapsule } from '../../common';
 
@@ -15,35 +14,40 @@ import { ConfirmMiniButton, ListCapsule } from '../../common';
     validationData {
       missingInfo
     }
+    missingInfoSuggestions {
+      tags {
+        name
+      }
+    }
   }
 `;
 
 type Props = {
   data: FragmentType<typeof AllChargesTagsFieldsFragmentDoc>;
-  alternativeCharge?: SuggestedCharge;
 };
 
-export const Tags = ({ data, alternativeCharge }: Props) => {
+export const Tags = ({ data }: Props) => {
   const {
     tags: originalTags,
     id: chargeId,
     validationData,
+    missingInfoSuggestions,
   } = getFragmentData(AllChargesTagsFieldsFragmentDoc, data);
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags);
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
-  const hasAlternative = isError && !!alternativeCharge?.personalCategory.trim()?.length;
+  const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
   if (tags.length === 0 && hasAlternative) {
-    setTags([{ name: alternativeCharge.personalCategory }]);
+    setTags(missingInfoSuggestions.tags);
   }
 
   const updateTag = useCallback(
     // NOTE: updating only first tag, due to DB current limitations
-    (value?: string) => {
+    (tags?: Array<{ name: string }>) => {
       updateCharge({
         chargeId,
-        fields: { tags: [{ name: value! }] },
+        fields: { tags },
       });
     },
     [chargeId, updateCharge],
@@ -59,7 +63,7 @@ export const Tags = ({ data, alternativeCharge }: Props) => {
       </Indicator>
       {hasAlternative && (
         <ConfirmMiniButton
-          onClick={() => updateTag(alternativeCharge.personalCategory)}
+          onClick={() => updateTag(missingInfoSuggestions.tags)}
           disabled={fetching}
         />
       )}
