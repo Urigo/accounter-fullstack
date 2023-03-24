@@ -28,6 +28,8 @@ export default gql`
   scalar URL
   " File "
   scalar FileScalar
+  " UUID "
+  scalar UUID
 
   # Common Types
 

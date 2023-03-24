@@ -84,9 +84,9 @@ const updateCharge = sql<IUpdateChargeQuery>`
     event_amount,
     NULL
   ),
-  financial_entity = COALESCE(
-    $financialEntity,
-    financial_entity,
+  financial_entity_id = COALESCE(
+    $financialEntityID,
+    financial_entity_id,
     NULL
   ),
   vat = COALESCE(
@@ -278,19 +278,19 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     CASE WHEN $preCalculateBalance = false THEN NULL ELSE (
       SELECT SUM(lr.amount) as balance
       FROM (
-        SELECT debit_account_1 AS business_name, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
+        SELECT debit_account_id_1 AS business_id, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
         FROM accounter_schema.ledger
         WHERE debit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT debit_account_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT debit_account_id_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE debit_amount_2 IS NOT NULL
         UNION ALL
-        SELECT credit_account_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT credit_account_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_2 IS NOT NULL
       ) lr
@@ -298,19 +298,19 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
         WHERE l.original_id = at.id
-          AND lr.business_name = at.financial_entity
+          AND lr.business_id = at.financial_entity_id
           AND lr.financial_entity_id = fa.owner)
     ) END as balance
   FROM accounter_schema.all_transactions at
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity = bu.name
+  ON  at.financial_entity_id = bu.id
   WHERE 
   ($isIDs = 0 OR at.id IN $$IDs)
   AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
-  AND ($isBusinesses = 0 OR at.financial_entity IN $$businesses)
-  AND ($isNotBusinesses = 0 OR at.financial_entity NOT IN $$notBusinesses)
+  AND ($isBusinessesIDs = 0 OR at.financial_entity_id IN $$businessesIDs)
+  AND ($isNotBusinessesIDs = 0 OR at.financial_entity_id NOT IN $$notBusinessesIDs)
   AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
@@ -328,10 +328,10 @@ type IGetAdjustedChargesByFiltersParams = Optional<
     IGetChargesByFiltersParams,
     'isBusinesses' | 'isFinancialEntityIds' | 'isIDs' | 'isNotBusinesses'
   >,
-  | 'businesses'
+  | 'businessesIDs'
   | 'financialEntityIds'
   | 'IDs'
-  | 'notBusinesses'
+  | 'notBusinessesIDs'
   | 'asc'
   | 'sortColumn'
   | 'toDate'
@@ -370,19 +370,19 @@ const validateCharges = sql<IValidateChargesQuery>`
     (
       SELECT SUM(lr.amount) as balance
       FROM (
-        SELECT debit_account_1 AS business_name, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
+        SELECT debit_account_id_1 AS business_id, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
         FROM accounter_schema.ledger
         WHERE debit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT debit_account_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT debit_account_id_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE debit_amount_2 IS NOT NULL
         UNION ALL
-        SELECT credit_account_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_1 IS NOT NULL
         UNION ALL
-        SELECT credit_account_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
+        SELECT credit_account_id_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
         FROM accounter_schema.ledger
         WHERE credit_amount_2 IS NOT NULL
       ) lr
@@ -390,14 +390,14 @@ const validateCharges = sql<IValidateChargesQuery>`
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
         WHERE l.original_id = at.id
-          AND lr.business_name = at.financial_entity
+          AND lr.business_id = at.financial_entity_id
           AND lr.financial_entity_id = fa.owner)
     ) as balance
   FROM accounter_schema.all_transactions at
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity = bu.name
+  ON  at.financial_entity_id = bu.id
   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
     AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
     AND ($isIDs = 0 OR at.id IN $$IDs)
@@ -493,10 +493,10 @@ export class ChargesProvider {
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
-    const isBusinesses = !!params?.businesses?.length;
+    const isBusinessesIDs = !!params?.businessesIDs?.length;
     const isFinancialEntityIds = !!params?.financialEntityIds?.length;
     const isIDs = !!params?.IDs?.length;
-    const isNotBusinesses = !!params?.notBusinesses?.length;
+    const isNotBusinessesIDs = !!params?.notBusinessesIDs?.length;
 
     const defaults = {
       asc: false,
@@ -505,10 +505,10 @@ export class ChargesProvider {
 
     const fullParams: IGetChargesByFiltersParams = {
       ...defaults,
-      isBusinesses: isBusinesses ? 1 : 0,
+      isBusinessesIDs: isBusinessesIDs ? 1 : 0,
       isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
-      isNotBusinesses: isNotBusinesses ? 1 : 0,
+      isNotBusinessesIDs: isNotBusinessesIDs ? 1 : 0,
       ...params,
       preCalculateBalance: params.preCalculateBalance ?? false,
       preCountInvoices: params.preCountInvoices ?? false,
@@ -516,10 +516,10 @@ export class ChargesProvider {
       preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
-      businesses: isBusinesses ? params.businesses! : [null],
+      businessesIDs: isBusinessesIDs ? params.businessesIDs! : [null],
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
-      notBusinesses: isNotBusinesses ? params.notBusinesses! : [null],
+      notBusinessesIDs: isNotBusinessesIDs ? params.notBusinessesIDs! : [null],
       chargeType: params.chargeType ?? 'ALL',
     };
     return getChargesByFilters.run(fullParams, this.dbProvider);
@@ -544,17 +544,12 @@ export class ChargesProvider {
 
   private async batchValidateChargesByIds(ids: readonly string[]) {
     const isIDs = !!ids?.length;
-    const charges = await validateCharges.run(
-      {
-        isIDs: 1,
-        IDs: isIDs ? ids : [null],
-        fromDate: null,
-        toDate: null,
-        isFinancialEntityIds: 0,
-        financialEntityIds: [null],
-      },
-      this.dbProvider,
-    );
+    const charges = await this.validateCharges({
+      IDs: isIDs ? ids : [null],
+      fromDate: null,
+      toDate: null,
+      financialEntityIds: null,
+    });
     return ids.map(id => {
       const charge = charges.find(charge => charge.id === id);
       return charge ? validateCharge(charge) : null;

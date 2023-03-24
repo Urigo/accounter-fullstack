@@ -11,7 +11,7 @@ export default gql`
   " Financial entity, identifier by ID, can be a company or individual "
   type LtdFinancialEntity implements FinancialEntity {
     id: ID!
-    govermentId: String!
+    governmentId: String!
     name: String!
     address: String!
 
@@ -38,27 +38,6 @@ export default gql`
     name: String!
 
     linkedEntities: [FinancialEntity!]!
-  }
-
-  " The other side of a transaction "
-  interface Counterparty {
-    name: String!
-  }
-
-  " input variables for updateCharge.Counterparty"
-  input CounterpartyInput {
-    name: String!
-  }
-
-  " defines a link between a counterparty and their part in the charge "
-  type BeneficiaryCounterparty {
-    counterparty: Counterparty!
-    percentage: Percentage!
-  }
-
-  " represent a counterparty with a name "
-  type NamedCounterparty implements Counterparty {
-    name: String!
   }
 
   extend type Charge {

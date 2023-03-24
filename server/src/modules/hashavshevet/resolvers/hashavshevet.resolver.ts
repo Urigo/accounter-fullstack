@@ -37,7 +37,6 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
   },
   HashavshevetAccount: {
     id: dbHashAccount => dbHashAccount.id,
-    key: dbHashAccount => dbHashAccount.key,
     sortCode: (dbHashAccount, _, { injector }) => {
       try {
         return injector
@@ -57,6 +56,7 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
       }
     },
     name: dbHashAccount => dbHashAccount.name,
+    business: dbHashAccount => dbHashAccount.business_id,
   },
   // WireTransaction: {
   //   ...commonTransactionFields,
@@ -74,11 +74,11 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
     sortCode: (rawSum, _, { injector }) =>
       injector
         .get(AccountCardsProvider)
-        .getAccountCardsByKeysLoader.load(rawSum.businessName)
+        .getAccountCardsByBusinessIDsLoader.load(rawSum.businessID)
         .then(async card => {
           if (!card) {
             throw new GraphQLError(
-              `Hashavshevet account card not found for business "${rawSum.businessName}"`,
+              `Hashavshevet account card not found for business ID "${rawSum.businessID}"`,
             );
           }
           return await injector

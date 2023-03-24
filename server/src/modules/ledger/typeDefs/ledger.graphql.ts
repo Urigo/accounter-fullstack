@@ -39,9 +39,9 @@ export default gql`
   extend type LedgerRecord {
     " TEMPORARY: extension to reflect original DB fields "
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_1: String
+    credit_account_1: Counterparty
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_2: String
+    credit_account_2: Counterparty
     # eslint-disable-next-line @graphql-eslint/naming-convention
     credit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -49,9 +49,9 @@ export default gql`
     currency: Currency
     " date_3: String! "
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_1: String
+    debit_account_1: Counterparty
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_2: String
+    debit_account_2: Counterparty
     # eslint-disable-next-line @graphql-eslint/naming-convention
     debit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -114,9 +114,9 @@ export default gql`
   " TEMPORARY: input variables for updateDbLedgerRecord "
   input UpdateDbLedgerRecordInput {
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_1: String
+    credit_account_id_1: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_2: String
+    credit_account_id_2: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
     credit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -124,9 +124,9 @@ export default gql`
     currency: Currency
     date3: TimelessDate
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_1: String
+    debit_account_id_1: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_2: String
+    debit_account_id_2: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
     debit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -158,9 +158,9 @@ export default gql`
   " TEMPORARY: input variables for insertDbLedgerRecord "
   input InsertDbLedgerRecordInput {
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_1: String
+    credit_account_id_1: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    credit_account_2: String
+    credit_account_id_2: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
     credit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention
@@ -168,9 +168,9 @@ export default gql`
     currency: Currency
     date3: TimelessDate!
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_1: String
+    debit_account_id_1: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
-    debit_account_2: String
+    debit_account_id_2: String
     # eslint-disable-next-line @graphql-eslint/naming-convention
     debit_amount_1: Float
     # eslint-disable-next-line @graphql-eslint/naming-convention

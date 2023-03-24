@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { entitiesWithoutInvoiceNumuber, isBusiness } from '../../../../helpers';
+import { entitiesWithoutInvoiceNumber, isBusiness } from '../../../../helpers';
 import type { TransactionType } from '../../../../models/types';
 import { UpdateButton } from '../../../common';
 
@@ -11,7 +11,7 @@ type Props = {
 export const ReceiptNumber = ({ transaction, style }: Props) => {
   const indicator =
     isBusiness(transaction) &&
-    !entitiesWithoutInvoiceNumuber.includes(transaction.financial_entity ?? '') &&
+    !entitiesWithoutInvoiceNumber.includes(transaction.financial_entity_id ?? '') &&
     !transaction.receipt_number &&
     !transaction.tax_invoice_number;
 

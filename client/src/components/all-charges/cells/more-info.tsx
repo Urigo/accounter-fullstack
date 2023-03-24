@@ -14,7 +14,7 @@ import { DragFile, ListCapsule } from '../../common';
         id
     }
     counterparty {
-        name
+        id
     }
     validationData {
       missingInfo
@@ -69,7 +69,7 @@ export const MoreInfo = ({ data }: Props) => {
               ),
               style:
                 additionalDocuments.length > 0 ||
-                (counterparty && entitiesWithoutInvoice.includes(counterparty.name))
+                (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },
             },

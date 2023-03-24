@@ -72,7 +72,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             eventDate: null,
             eventNumber: null,
             financialAccountsToBalance: null,
-            financialEntity: null,
+            financialEntityID: null,
             hashavshevetId: null,
             interest: null,
             isConversion: null,

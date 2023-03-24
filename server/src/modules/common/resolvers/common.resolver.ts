@@ -1,4 +1,5 @@
-import { DateTimeResolver, IBANResolver, URLResolver } from 'graphql-scalars';
+import { GraphQLScalarType } from 'graphql';
+import { DateTimeResolver, IBANResolver, URLResolver, UUIDResolver } from 'graphql-scalars';
 import type { CommonModule } from '../types.js';
 import { PercentageScalar } from './percentage.js';
 import { TimelessDateScalar } from './timeless-date.js';
@@ -9,4 +10,5 @@ export const scalarsResolvers: CommonModule.Resolvers = {
   Percentage: PercentageScalar,
   URL: URLResolver,
   TimelessDate: TimelessDateScalar,
+  UUID: UUIDResolver as GraphQLScalarType<string, string>,
 };

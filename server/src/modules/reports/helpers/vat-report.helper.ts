@@ -26,7 +26,7 @@ export function mergeChargeDoc(
     event_date: charge.event_date,
     debit_date: charge.debit_date,
     event_amount: charge.event_amount,
-    financial_entity: charge.financial_entity,
+    financial_entity_id: charge.financial_entity_id,
     vat: charge.vat,
     user_description: charge.user_description,
     bank_description: charge.bank_description,

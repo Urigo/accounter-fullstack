@@ -17,14 +17,20 @@ import { ExtendedSortCode } from './trial-balance-report-sort-code';
       name
       accounts {
         id
-        key
+        business {
+          id
+          name
+        }
         name
       }
     }
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
-          businessName
+          business {
+            id
+            name
+          }
           credit {
             formatted
           }
@@ -140,7 +146,9 @@ export const TrialBalanceReport = () => {
         .map(account => {
           return {
             ...account,
-            transactionsSum: businessTransactionsSum.find(s => s.businessName === account.key),
+            transactionsSum: businessTransactionsSum.find(
+              s => s.business.id === account.business?.id,
+            ),
           };
         })
         .filter(

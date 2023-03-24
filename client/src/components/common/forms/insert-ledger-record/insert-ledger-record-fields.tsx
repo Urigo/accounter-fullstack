@@ -12,7 +12,7 @@ export const InsertLedgerRecordFields = ({ control }: Props) => {
   return (
     <>
       <Controller
-        name="creditAccount.name"
+        name="creditAccount.id"
         control={control}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (
@@ -20,7 +20,7 @@ export const InsertLedgerRecordFields = ({ control }: Props) => {
         )}
       />
       <Controller
-        name="debitAccount.name"
+        name="debitAccount.id"
         control={control}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (

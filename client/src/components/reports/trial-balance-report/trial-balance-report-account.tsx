@@ -56,7 +56,7 @@ export const TrialBalanceReportAccount = ({ account, sortCodeId, filter, isAllOp
       {(isExtended || isAllOpened) && (
         <tr>
           <td colSpan={7}>
-            <BusinessExtendedInfo businessName={account.key} filter={filter} />
+            <BusinessExtendedInfo businessID={account.business?.id} filter={filter} />
           </td>
         </tr>
       )}

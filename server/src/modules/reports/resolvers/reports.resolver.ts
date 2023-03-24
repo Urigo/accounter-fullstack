@@ -43,15 +43,15 @@ async function getVatRecords(
   } else {
     const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
     const EXCLUDED_BUSINESS_NAMES = [
-      'Social Security Deductions',
-      'Tax',
-      'VAT',
-      'Dotan Simha Dividend',
+      '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa', // Social Security Deductions
+      '9d3a8a88-6958-4119-b509-d50a7cdc0744', // Tax
+      'c7fdf6f6-e075-44ee-b251-cbefea366826', // Vat
+      '3176e27a-3f54-43ec-9f5a-9c1d4d7876da', // Dotan Simha Dividend
     ];
     const charges = await injector.get(ChargesProvider).getChargesByFilters({
       IDs: chargesIDs,
       financialEntityIds: [financialEntityId],
-      notBusinesses: EXCLUDED_BUSINESS_NAMES,
+      notBusinessesIDs: EXCLUDED_BUSINESS_NAMES,
     });
 
     if (charges.length === 0) {
@@ -79,12 +79,12 @@ async function getVatRecords(
       // update tax category according to Hashavshevet
       await Promise.all(
         charges.map(async charge => {
-          if (financialEntityId && charge.financial_entity) {
+          if (financialEntityId && charge.financial_entity_id) {
             const hashIndex = await injector
               .get(HashavshevetProvider)
-              .getHashavshevetBusinessIndexesByIdLoader.load({
+              .getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader.load({
                 financialEntityId,
-                businessName: charge.financial_entity,
+                businessID: charge.financial_entity_id,
               });
             charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
           }
@@ -94,10 +94,10 @@ async function getVatRecords(
       await Promise.all(
         charges.map(async charge => {
           const matchDoc = documents.find(doc => doc.charge_id === charge.id);
-          const matchBusiness = await (charge.financial_entity && getVatNumbers
+          const matchBusiness = await (charge.financial_entity_id && getVatNumbers
             ? injector
                 .get(FinancialEntitiesProvider)
-                .getFinancialEntityByNameLoader.load(charge.financial_entity)
+                .getFinancialEntityByNameLoader.load(charge.financial_entity_id)
             : undefined);
           if (matchDoc) {
             if (charge.vat != null && charge.vat < 0) {
@@ -212,7 +212,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     documentId: raw => raw.document_id,
     chargeId: raw => raw.id,
     amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
-    businessName: raw => raw.financial_entity,
+    business: raw => raw.financial_entity_id,
     chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
     documentDate: raw =>
       raw.tax_invoice_date
@@ -234,10 +234,10 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     vatAfterDeduction: raw =>
       raw.vatAfterDeduction ? formatFinancialAmount(raw.vatAfterDeduction, Currency.Ils) : null,
     vatNumber: (raw, _, { injector }) =>
-      raw.financial_entity
+      raw.financial_entity_id
         ? injector
             .get(FinancialEntitiesProvider)
-            .getFinancialEntityByNameLoader.load(raw.financial_entity)
+            .getFinancialEntityByIdLoader.load(raw.financial_entity_id)
             .then(entity => entity?.vat_number ?? null)
         : null,
   },

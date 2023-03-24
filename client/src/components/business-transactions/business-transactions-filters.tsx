@@ -16,7 +16,10 @@ import { PopUpModal, TextInput } from '../common';
 
 /* GraphQL */ `
   query AllBusinessesNames {
-    businessNamesFromLedgerRecords
+    businessNamesFromLedgerRecords {
+      id
+      name
+    }
   }
 `;
 
@@ -94,7 +97,7 @@ function BusinessTransactionsFilterForm({
           )}
         />
         <Controller
-          name="businessNames"
+          name="businessIDs"
           control={control}
           defaultValue={undefined}
           render={({ field, fieldState }) => (
@@ -102,13 +105,13 @@ function BusinessTransactionsFilterForm({
               {...field}
               data={
                 bnData?.businessNamesFromLedgerRecords.map(entity => ({
-                  value: entity,
-                  label: entity,
+                  value: entity.id,
+                  label: entity.name,
                 })) ?? []
               }
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={bnLoading}
-              label="Business Names"
+              label="Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable

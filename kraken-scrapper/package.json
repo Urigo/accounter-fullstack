@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "node-kraken-api": "2.2.2",
     "@whatwg-node/fetch": "0.6.1",
     "diary": "0.4.3",
     "dotenv": "16.0.3",
+    "node-kraken-api": "2.2.2",
     "pg-promise": "11.0.2"
   },
   "devDependencies": {

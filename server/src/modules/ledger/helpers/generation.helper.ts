@@ -81,8 +81,8 @@ export async function buildLedgerEntries(
   // entryForFinancialAccount setup
   const entryForFinancialAccount: Partial<EntryForFinancialAccount> = {};
 
-  entryForFinancialAccount.creditAccount = charge.financial_entity;
-  entryForFinancialAccount.debitAccount = charge.account_type;
+  entryForFinancialAccount.creditAccount = charge.financial_entity_id;
+  entryForFinancialAccount.debitAccount = charge.account_type; // TODO(gil): replace with ID-based logic
 
   entryForFinancialAccount.creditAmount = entryForFinancialAccount.debitAmount = chargeAmount;
 
@@ -105,7 +105,7 @@ export async function buildLedgerEntries(
   entryForAccounting.movementType = null;
 
   entryForAccounting.creditAccount = charge.tax_category;
-  entryForAccounting.debitAccount = charge.financial_entity;
+  entryForAccounting.debitAccount = charge.financial_entity_id;
 
   entryForAccounting.creditAmount = entryForAccounting.debitAmount = charge.tax_invoice_amount
     ? parseFloat(charge.tax_invoice_amount)

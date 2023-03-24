@@ -5,13 +5,17 @@ import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
 import type { RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
+import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessTransactionsSumFromLedgerRecordsParams,
 } from '../types.js';
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
-  Pick<Resolvers, 'BusinessTransactionsSumFromLedgerRecordsResult'> = {
+  Pick<
+    Resolvers,
+    'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
+  > = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }) => {
       try {
@@ -22,10 +26,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
         res.forEach(t => {
-          if (!t.business_name) {
-            throw new GraphQLError('business_name is null');
+          if (!t.business_id) {
+            throw new GraphQLError('business_id is null');
           }
-          rawRes[t.business_name] ??= {
+          rawRes[t.business_id] ??= {
             ils: {
               credit: 0,
               debit: 0,
@@ -46,10 +50,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               debit: 0,
               total: 0,
             },
-            businessName: t.business_name,
+            businessID: t.business_id,
           };
 
-          const business = rawRes[t.business_name ?? ''];
+          const business = rawRes[t.business_id ?? ''];
           const currency =
             t.currency === 'אירו'
               ? 'eur'
@@ -90,10 +94,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }) => {
       try {
         const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
-        const isBusinessNames = filters?.businessNames?.length ?? 0;
+        const isBusinessIDs = filters?.businessIDs?.length ?? 0;
         const adjustedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
-          isBusinessNames,
-          businessNames: isBusinessNames > 0 ? (filters!.businessNames as string[]) : [null],
+          isBusinessIDs,
+          businessIDs: isBusinessIDs > 0 ? (filters!.businessIDs as string[]) : [null],
           isFinancialEntityIds,
           financialEntityIds:
             isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
@@ -109,53 +113,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           .get(BusinessesTransactionsProvider)
           .getBusinessTransactionsFromLedgerRecords(adjustedFilters);
 
-        const businessTransactions: FinancialEntitiesModule.BusinessTransaction[] = res.map(t => {
-          const direction = t.direction ?? 1;
-          return {
-            amount: formatFinancialAmount(
-              Number.isNaN(t.foreign_amount) ? t.amount : Number(t.amount) * direction,
-              Currency.Ils,
-            ),
-            businessName: t.business_name ?? 'Missing',
-            eurAmount:
-              t.currency === 'אירו'
-                ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount)
-                      ? t.foreign_amount
-                      : Number(t.foreign_amount) * direction,
-                    Currency.Eur,
-                  )
-                : undefined,
-            gbpAmount:
-              t.currency === 'לש'
-                ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount)
-                      ? t.foreign_amount
-                      : Number(t.foreign_amount) * direction,
-                    Currency.Gbp,
-                  )
-                : undefined,
-            usdAmount:
-              t.currency === '$'
-                ? formatFinancialAmount(
-                    Number.isNaN(t.foreign_amount)
-                      ? t.foreign_amount
-                      : Number(t.foreign_amount) * direction,
-                    Currency.Usd,
-                  )
-                : undefined,
-
-            invoiceDate: format(t.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
-            reference1: t.reference_1 ?? null,
-            reference2: t.reference_2 ?? null,
-            details: t.details ?? null,
-            counterAccount: t.counter_account ?? null,
-          };
-        });
-
         return {
-          __typename: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult',
-          businessTransactions,
+          businessTransactions: res,
         };
       } catch (e) {
         console.error(e);
@@ -170,7 +129,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         return injector
           .get(BusinessesTransactionsProvider)
           .getLedgerRecordsDistinctBusinesses()
-          .then(res => res.map(r => r.business_name).filter(Boolean) as string[]);
+          .then(res => res.filter(r => !!r.business_id).map(r => r.business_id));
       } catch (e) {
         console.error(e);
         return [];
@@ -185,16 +144,27 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   NamedCounterparty: {
     __isTypeOf: parent => !!parent,
-    name: parent => parent ?? '',
-  },
-  BeneficiaryCounterparty: {
-    // TODO: improve counterparty handle
-    __isTypeOf: () => true,
-    counterparty: parent => parent.name,
-    percentage: parent => parent.percentage,
+    name: (parent, _, { injector }) =>
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(
+          typeof parent === 'string'
+            ? parent
+            : (parent as unknown as { counterpartyID: string })!.counterpartyID,
+        )
+        .then(fe => {
+          if (!fe) {
+            throw new GraphQLError(`Financial entity not found for id ${parent}`);
+          }
+          return fe.name;
+        }),
+    id: parent =>
+      typeof parent === 'string'
+        ? parent
+        : (parent as unknown as { counterpartyID: string })!.counterpartyID,
   },
   BusinessTransactionSum: {
-    businessName: rawSum => rawSum.businessName,
+    business: rawSum => rawSum.businessID,
     credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
     debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
     total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
@@ -222,5 +192,55 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             total: formatFinancialAmount(rawSum.usd.total, Currency.Usd),
           }
         : null,
+  },
+  BusinessTransactionsFromLedgerRecordsResult: {
+    __resolveType: parent =>
+      'businessTransactions' in parent
+        ? 'BusinessTransactionsFromLedgerRecordsSuccessfulResult'
+        : 'CommonError',
+  },
+  BusinessTransaction: {
+    __isTypeOf: parent => !!parent.business_id,
+    amount: parent =>
+      formatFinancialAmount(
+        Number.isNaN(parent.foreign_amount)
+          ? parent.amount
+          : Number(parent.amount) * (parent.direction ?? 1),
+        Currency.Ils,
+      ),
+    business: parent => parent.business_id!,
+    eurAmount: parent =>
+      parent.currency === 'אירו'
+        ? formatFinancialAmount(
+            Number.isNaN(parent.foreign_amount)
+              ? parent.foreign_amount
+              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+            Currency.Eur,
+          )
+        : null,
+    gbpAmount: parent =>
+      parent.currency === 'לש'
+        ? formatFinancialAmount(
+            Number.isNaN(parent.foreign_amount)
+              ? parent.foreign_amount
+              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+            Currency.Gbp,
+          )
+        : null,
+    usdAmount: parent =>
+      parent.currency === '$'
+        ? formatFinancialAmount(
+            Number.isNaN(parent.foreign_amount)
+              ? parent.foreign_amount
+              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+            Currency.Usd,
+          )
+        : null,
+
+    invoiceDate: parent => format(parent.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
+    reference1: parent => parent.reference_1 ?? null,
+    reference2: parent => parent.reference_2 ?? null,
+    details: parent => parent.details ?? null,
+    counterAccount: parent => parent.counter_account_id ?? null,
   },
 };

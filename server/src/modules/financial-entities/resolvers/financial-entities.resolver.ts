@@ -21,7 +21,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   LtdFinancialEntity: {
     __isTypeOf: () => true,
     ...commonFinancialEntityFields,
-    govermentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
+    governmentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
     name: DbBusiness => DbBusiness.name,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
 
@@ -36,8 +36,14 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
   },
+  BeneficiaryCounterparty: {
+    // TODO: improve counterparty handle
+    __isTypeOf: () => true,
+    counterparty: parent => parent.counterpartyID,
+    percentage: parent => parent.percentage,
+  },
   Charge: {
-    counterparty: DbCharge => DbCharge.financial_entity,
+    counterparty: DbCharge => DbCharge.financial_entity_id,
     beneficiaries: async (DbCharge, _, { injector }) => {
       // TODO: update to better implementation after DB is updated
       try {
@@ -51,25 +57,25 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         case 'no':
           return [
             {
-              name: 'Uri',
+              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
               percentage: 0.5,
             },
             {
-              name: 'Dotan',
+              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
               percentage: 0.5,
             },
           ];
         case 'uri':
           return [
             {
-              name: 'Uri',
+              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
               percentage: 1,
             },
           ];
         case 'dotan':
           return [
             {
-              name: 'dotan',
+              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
               percentage: 1,
             },
           ];
@@ -85,11 +91,11 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
             if (guildAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
-                  name: 'Uri',
+                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
                   percentage: 0.5,
                 },
                 {
-                  name: 'Dotan',
+                  counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
                   percentage: 0.5,
                 },
               ];
@@ -105,7 +111,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
             if (uriAccountsNumbers.includes(DbCharge.account_number)) {
               return [
                 {
-                  name: 'Uri',
+                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
                   percentage: 1,
                 },
               ];
@@ -126,7 +132,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         }),
   },
   LedgerRecord: {
-    creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_1,
-    debitAccount: DbLedgerRecord => DbLedgerRecord.debit_account_1,
+    creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_id_1,
+    debitAccount: DbLedgerRecord => DbLedgerRecord.debit_account_id_1,
   },
 };

@@ -21,14 +21,26 @@ type Props = {
 
 export const Balance = ({ data }: Props) => {
   const { validationData } = getFragmentData(AllChargesBalanceFieldsFragmentDoc, data);
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Balance);
+  const missingLedger = validationData?.missingInfo?.includes(MissingChargeInfo.LedgerRecords);
+  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Balance) || missingLedger;
+  const isBalanced = validationData?.balance?.raw == 0;
+
+  const text = missingLedger
+    ? 'Ledger Generation Required'
+    : isBalanced
+    ? 'Balanced'
+    : validationData?.balance?.formatted ?? 'Missing';
 
   return (
-    <td style={{ whiteSpace: 'nowrap' }}>
+    <td
+      style={
+        !missingLedger && !isBalanced && validationData?.balance?.formatted
+          ? { whiteSpace: 'nowrap' }
+          : {}
+      }
+    >
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-        {validationData?.balance?.raw == 0
-          ? 'Balanced'
-          : validationData?.balance?.formatted ?? 'Missing'}
+        {text}
       </Indicator>
     </td>
   );

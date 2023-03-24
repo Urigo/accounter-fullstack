@@ -12,9 +12,11 @@ import { LedgerRecordsFragmentDoc } from '../../../../gql/graphql';
       formatted
     }
     creditAccount {
+      id
       name
     }
     debitAccount {
+      id
       name
     }
     accountantApproval {

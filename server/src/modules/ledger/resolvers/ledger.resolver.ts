@@ -7,7 +7,7 @@ import {
   generateEntryForAccountingValues,
   generateEntryForExchangeRatesDifferenceValues,
   generateEntryForFinancialAccountValues,
-  generateEntryForforeignTransferFeesValues,
+  generateEntryForForeignTransferFeesValues,
   hashavshevetFormat,
   parseDate,
 } from '@modules/hashavshevet/helpers/hashavshevet.helper.js';
@@ -44,14 +44,14 @@ export const ledgerResolvers: LedgerModule.Resolvers &
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
-        creditAccount1: fields.creditAccount?.name ?? null,
-        creditAccount2: null,
+        creditAccountID1: fields.creditAccount?.id,
+        creditAccountID2: null,
         creditAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         creditAmount2: null,
         currency,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null, // Temporary. this field shouldn't exist
-        debitAccount1: fields.debitAccount?.name ?? null,
-        debitAccount2: null,
+        debitAccountID1: fields.debitAccount?.id,
+        debitAccountID2: null,
         debitAmount1: fields.localCurrencyAmount?.raw.toFixed(2) ?? null,
         debitAmount2: null,
         details: fields.description ?? null,
@@ -116,14 +116,14 @@ export const ledgerResolvers: LedgerModule.Resolvers &
 
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
           business: financialAccount.owner,
-          creditAccount1: record.creditAccount?.name ?? null,
-          creditAccount2: null,
+          creditAccountID1: record.creditAccount?.id,
+          creditAccountID2: null,
           creditAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           creditAmount2: null,
           currency,
           date3: record.date3 ? hashavshevetFormat.date(record.date3) : null, // Temporary. this field shouldn't exist
-          debitAccount1: record.debitAccount?.name ?? null,
-          debitAccount2: null,
+          debitAccountID1: record.debitAccount?.id,
+          debitAccountID2: null,
           debitAmount1: record.localCurrencyAmount?.raw.toFixed(2) ?? null,
           debitAmount2: null,
           details: record.description ?? null,
@@ -168,8 +168,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
       const adjustedFields: IUpdateLedgerRecordParams = {
         ledgerRecordId,
         business: null,
-        creditAccount1: fields.credit_account_1 ?? null,
-        creditAccount2: fields.credit_account_2 ?? null,
+        creditAccountID1: fields.credit_account_id_1 ?? null,
+        creditAccountID2: fields.credit_account_id_2 ?? null,
         creditAmount1: Number.isNaN(fields.credit_amount_1)
           ? null
           : fields.credit_amount_1?.toFixed(2),
@@ -178,8 +178,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           : fields.credit_amount_2?.toFixed(2),
         currency: fields.currency ? hashavshevetFormat.currency(fields.currency) : null,
         date3: fields.date3 ? hashavshevetFormat.date(fields.date3) : null,
-        debitAccount1: fields.debit_account_1 ?? null,
-        debitAccount2: fields.debit_account_2 ?? null,
+        debitAccountID1: fields.debit_account_id_1 ?? null,
+        debitAccountID2: fields.debit_account_id_2 ?? null,
         debitAmount1: Number.isNaN(fields.debit_amount_1)
           ? null
           : fields.debit_amount_1?.toFixed(2),
@@ -252,8 +252,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
 
         const newLedgerRecord: IInsertLedgerRecordsParams['ledgerRecord']['0'] = {
           business: financialAccount.owner,
-          creditAccount1: record.credit_account_1 ?? null,
-          creditAccount2: record.credit_account_2 ?? null,
+          creditAccountID1: record.credit_account_id_1 ?? null,
+          creditAccountID2: record.credit_account_id_2 ?? null,
           creditAmount1: Number.isNaN(record.credit_amount_1)
             ? null
             : record.credit_amount_1?.toFixed(2),
@@ -262,8 +262,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             : record.credit_amount_2?.toFixed(2),
           currency: hashavshevetFormat.currency(record.currency ?? ''),
           date3: record.date3 ? hashavshevetFormat.date(record.date3) : null,
-          debitAccount1: record.debit_account_1 ?? null,
-          debitAccount2: record.debit_account_2 ?? null,
+          debitAccountID1: record.debit_account_id_1 ?? null,
+          debitAccountID2: record.debit_account_id_2 ?? null,
           debitAmount1: Number.isNaN(record.debit_amount_1)
             ? null
             : record.debit_amount_1?.toFixed(2),
@@ -363,7 +363,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
             ? mainInvoice.total_amount.toString()
             : null;
           charge.tax_invoice_number = mainInvoice.serial_number;
-        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity_id ?? '')) {
           throw new Error(`Charge ID="${chargeId}" has no invoices`);
         }
 
@@ -384,21 +384,31 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           throw new Error(`FinancialEntity ID="${charge.account_number}" not found`);
         }
 
-        const [hashBusinessIndexes] = await injector
-          .get(HashavshevetProvider)
-          .getHashavshevetBusinessIndexesByName({
-            financialEntityName: charge.financial_entity,
-            ownerId: owner.id,
-          });
+        const hashBusinessIndexes = charge.financial_entity_id
+          ? await injector
+              .get(HashavshevetProvider)
+              .getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader.load({
+                businessID: charge.financial_entity_id,
+                financialEntityId: owner.id,
+              })
+          : undefined;
+
+        if (!hashBusinessIndexes) {
+          throw new GraphQLError(
+            `Failed to get Hashavshevet business indexes for charge ID="${chargeId}"`,
+          );
+        }
+
         const hashVATIndexes = await injector
           .get(HashavshevetProvider)
           .getHashavshevetVatIndexes(owner.id);
         const isracardHashIndex = await injector
           .get(HashavshevetProvider)
           .getHashavshevetIsracardIndex(charge);
-        if (charge.financial_entity == 'Isracard') {
+        if (charge.financial_entity_id == '96dba127-90f4-4407-ae89-5a53afa42ca3') {
+          // Isracard
           charge.tax_category = isracardHashIndex;
-        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity ?? '')) {
+        } else if (!ENTITIES_WITHOUT_ACCOUNTING.includes(charge.financial_entity_id ?? '')) {
           charge.tax_category = hashBusinessIndexes.auto_tax_category;
         }
 
@@ -430,7 +440,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
         const createdLedgerRecords: IInsertLedgerRecordsResult[] = [];
 
         // insert accounting ledger
-        if (!ENTITIES_WITHOUT_ACCOUNTING.includes(decoratedCharge.financial_entity ?? '')) {
+        if (!ENTITIES_WITHOUT_ACCOUNTING.includes(decoratedCharge.financial_entity_id ?? '')) {
           try {
             const entryForAccountingValues = generateEntryForAccountingValues(
               decoratedCharge,
@@ -494,8 +504,8 @@ export const ledgerResolvers: LedgerModule.Resolvers &
         ) {
           console.log('עמלת העברת מטח');
           try {
-            const entryForgenerateEntryForforeignTransferFeesValues =
-              generateEntryForforeignTransferFeesValues(
+            const entryForGenerateEntryForForeignTransferFeesValues =
+              generateEntryForForeignTransferFeesValues(
                 decoratedCharge,
                 entryForFinancialAccount,
                 entryForAccounting,
@@ -509,7 +519,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
                 invoiceExchangeRates,
               );
             const updateResult = await injector.get(LedgerProvider).insertLedgerRecords({
-              ledgerRecord: [entryForgenerateEntryForforeignTransferFeesValues],
+              ledgerRecord: [entryForGenerateEntryForForeignTransferFeesValues],
             });
             if (updateResult.length === 0) {
               throw new Error('Failed to insert foreign transfer fees record');
@@ -553,7 +563,7 @@ export const ledgerResolvers: LedgerModule.Resolvers &
           getILSForDate(decoratedCharge, invoiceExchangeRates).eventAmountILS !=
             getILSForDate(decoratedCharge, debitExchangeRates).eventAmountILS &&
           decoratedCharge.account_type != 'creditcard' &&
-          decoratedCharge.financial_entity != 'Isracard' &&
+          decoratedCharge.financial_entity_id != '96dba127-90f4-4407-ae89-5a53afa42ca3' && // Isracard
           decoratedCharge.tax_invoice_date
         ) {
           console.log('שערררררררר');
@@ -648,13 +658,13 @@ export const ledgerResolvers: LedgerModule.Resolvers &
       formatFinancialAmount(DbLedgerRecord.debit_amount_1, null),
 
     /* next fields are temporary, to resemble the DB entity */
-    credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_1,
-    credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_2,
+    credit_account_1: DbLedgerRecord => DbLedgerRecord.credit_account_id_1,
+    credit_account_2: DbLedgerRecord => DbLedgerRecord.credit_account_id_2,
     credit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_1),
     credit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.credit_amount_2),
     currency: DbLedgerRecord => formatCurrency(DbLedgerRecord.currency),
-    debit_account_1: DbLedgerRecord => DbLedgerRecord.debit_account_1,
-    debit_account_2: DbLedgerRecord => DbLedgerRecord.debit_account_2,
+    debit_account_1: DbLedgerRecord => DbLedgerRecord.debit_account_id_1,
+    debit_account_2: DbLedgerRecord => DbLedgerRecord.debit_account_id_2,
     debit_amount_1: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_1),
     debit_amount_2: DbLedgerRecord => formatAmount(DbLedgerRecord.debit_amount_2),
     details: DbLedgerRecord => DbLedgerRecord.details,

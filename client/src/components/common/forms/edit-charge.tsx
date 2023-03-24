@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Switch } from '@mantine/core';
+import { useQuery } from 'urql';
+import { Select, Switch } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { BeneficiariesInput, CurrencyInput, SimpleGrid, TagsInput, TextInput } from '..';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
+  AllFinancialEntitiesDocument,
   Currency,
   EditChargeFieldsFragmentDoc,
   UpdateChargeInput,
@@ -16,11 +20,13 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
   fragment EditChargeFields on Charge {
     id
     counterparty {
+      id
       name
     }
     beneficiaries {
       percentage
       counterparty {
+        id
         name
       }
     }
@@ -58,6 +64,9 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
   const useFormManager = useForm<UpdateChargeInput>({
     defaultValues: { ...charge, vat: charge.vat?.raw, withholdingTax: charge.withholdingTax?.raw },
   });
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const {
     control: chargeControl,
     handleSubmit: handleChargeSubmit,
@@ -102,6 +111,33 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
     }
   };
 
+  const [{ data, fetching, error: financialEntitiesError }] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
+
+  useEffect(() => {
+    if (financialEntitiesError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      });
+    }
+  }, [financialEntitiesError]);
+
+  // On every new data fetch, reorder results by name
+  useEffect(() => {
+    if (data?.allFinancialEntities.length) {
+      setFinancialEntities(
+        data.allFinancialEntities
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [data, setFinancialEntities]);
+
   return (
     <form onSubmit={handleChargeSubmit(onChargeSubmit)}>
       <div className="flex-row px-10 h-max justify-start block">
@@ -124,15 +160,25 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
             )}
           />
           <Controller
-            name="counterparty.name"
+            name="counterparty.id"
             control={chargeControl}
-            defaultValue={charge.counterparty?.name}
+            defaultValue={charge.counterparty?.id}
             rules={{
               required: 'Required',
               minLength: { value: 2, message: 'Minimum 2 characters' },
             }}
             render={({ field, fieldState }) => (
-              <TextInput {...field} error={fieldState.error?.message} label="Counterparty" />
+              <Select
+                {...field}
+                data={financialEntities}
+                value={field.value}
+                disabled={fetching}
+                label="Counterparty"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
             )}
           />
           <Controller

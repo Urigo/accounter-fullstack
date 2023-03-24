@@ -51,6 +51,7 @@ module.exports = {
                 'ValidationData',
                 'PCNFileResult',
                 'PCNRawData',
+                'ChargeSuggestions',
               ],
             },
           },

@@ -14,18 +14,18 @@ export const EditLedgerRecordFields = ({ ledgerRecord, control }: Props) => {
   return (
     <>
       <Controller
-        name="creditAccount.name"
+        name="creditAccount.id"
         control={control}
-        defaultValue={ledgerRecord.creditAccount?.name}
+        defaultValue={ledgerRecord.creditAccount?.id}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (
           <TextInput {...field} error={fieldState.error?.message} label="Credit Account" />
         )}
       />
       <Controller
-        name="debitAccount.name"
+        name="debitAccount.id"
         control={control}
-        defaultValue={ledgerRecord.debitAccount?.name}
+        defaultValue={ledgerRecord.debitAccount?.id}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }) => (
           <TextInput {...field} error={fieldState.error?.message} label="Debit Account" />

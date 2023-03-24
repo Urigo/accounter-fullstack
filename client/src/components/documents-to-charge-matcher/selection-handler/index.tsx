@@ -21,6 +21,7 @@ import { WideFilteredSelection } from './wide-filtered-selection';
       currency
     }
     counterparty {
+      id
       name
     }
     transactions {

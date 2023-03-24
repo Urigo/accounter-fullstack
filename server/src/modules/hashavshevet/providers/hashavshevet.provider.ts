@@ -5,9 +5,9 @@ import type { ChargesTypes } from '@modules/charges';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetHashavshevetBusinessIndexesByIdQuery,
   IGetHashavshevetBusinessIndexesByNameParams,
   IGetHashavshevetBusinessIndexesByNameQuery,
+  IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdQuery,
   IGetHashGovIndexesQuery,
 } from '../types.js';
 
@@ -25,14 +25,12 @@ const getHashGovIndexes = sql<IGetHashGovIndexesQuery>`
     FROM accounter_schema.hash_gov_indexes
     WHERE hash_owner = $ownerId;`;
 
-const getHashavshevetBusinessIndexesById = sql<IGetHashavshevetBusinessIndexesByIdQuery>`
-SELECT hbi.*, b.name as business_name
-FROM accounter_schema.hash_business_indexes hbi
-LEFT JOIN accounter_schema.businesses b
-ON hbi.business = b.id
+const getHashavshevetBusinessIndexesByOwnerAndBusinessID = sql<IGetHashavshevetBusinessIndexesByOwnerAndBusinessIdQuery>`
+SELECT *
+FROM accounter_schema.hash_business_indexes
 WHERE
-    hbi.hash_owner = $financialEntityId
-    AND b.name IN $$businessNames;`;
+    hash_owner = $financialEntityId
+    AND business IN $$businessIDs;`;
 
 export type VatIndexesKeys =
   | 'vatInputsIndex'
@@ -107,7 +105,10 @@ export class HashavshevetProvider {
   }
 
   public async getHashavshevetIsracardIndex(charge: ChargesTypes.IGetChargesByIdsResult) {
-    if (charge.financial_entity === 'Isracard' && charge.bank_reference) {
+    if (
+      charge.financial_entity_id === '96dba127-90f4-4407-ae89-5a53afa42ca3' &&
+      charge.bank_reference
+    ) {
       const hashCreditcardIndexResult =
         await this.financialAccountsProvider.getFinancialAccountByAccountNumberLoader.load(
           charge.bank_reference,
@@ -130,39 +131,39 @@ export class HashavshevetProvider {
     return null;
   }
 
-  private async batchHashavshevetBusinessIndexesById(
-    params: readonly { financialEntityId: string; businessName: string }[],
+  private async batchHashavshevetBusinessIndexesByOwnerAndBusinessID(
+    params: readonly { financialEntityId: string; businessID: string }[],
   ) {
     const dict: Record<string, string[]> = {};
-    params.forEach(({ financialEntityId, businessName }) => {
+    params.forEach(({ financialEntityId, businessID }) => {
       dict[financialEntityId] ||= [];
-      if (!dict[financialEntityId].includes(businessName)) {
-        dict[financialEntityId].push(businessName);
+      if (!dict[financialEntityId].includes(businessID)) {
+        dict[financialEntityId].push(businessID);
       }
     });
     const financialEntityIds = Object.keys(dict);
     const res = await Promise.all(
       financialEntityIds.map(id =>
-        getHashavshevetBusinessIndexesById.run(
+        getHashavshevetBusinessIndexesByOwnerAndBusinessID.run(
           {
             financialEntityId: id,
-            businessNames: dict[id],
+            businessIDs: dict[id],
           },
           this.dbProvider,
         ),
       ),
     );
     const indexes = res.flat();
-    return params.map(({ financialEntityId, businessName }) =>
+    return params.map(({ financialEntityId, businessID }) =>
       indexes.find(
-        index => index.hash_owner === financialEntityId && index.business_name === businessName,
+        index => index.hash_owner === financialEntityId && index.business === businessID,
       ),
     );
   }
 
-  public getHashavshevetBusinessIndexesByIdLoader = new DataLoader(
-    (keys: readonly { financialEntityId: string; businessName: string }[]) =>
-      this.batchHashavshevetBusinessIndexesById(keys),
+  public getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader = new DataLoader(
+    (keys: readonly { financialEntityId: string; businessID: string }[]) =>
+      this.batchHashavshevetBusinessIndexesByOwnerAndBusinessID(keys),
     { cache: false },
   );
 }
