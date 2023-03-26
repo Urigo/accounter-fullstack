@@ -253,7 +253,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     at.*,
     ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
-    bu.no_invoices,
+    bu.no_invoices_required,
     -- invoices_count column, conditional calculation
     CASE WHEN $preCountInvoices = false THEN NULL ELSE (
       SELECT COUNT(*)
@@ -349,7 +349,7 @@ const validateCharges = sql<IValidateChargesQuery>`
   SELECT
     at.*,
     (bu.country <> 'Israel') as is_foreign,
-    bu.no_invoices,
+    bu.no_invoices_required,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d

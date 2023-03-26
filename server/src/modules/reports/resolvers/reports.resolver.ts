@@ -32,8 +32,10 @@ async function getVatRecords(
     includedChargeIDs: new Set<string>(),
     income: [] as DecoratedVatReportRecord[],
     expenses: [] as DecoratedVatReportRecord[],
+    notIncludedChargeIDs: new Set<string>(),
   };
 
+  // get all documents by date filters
   const documents = await injector
     .get(DocumentsProvider)
     .getDocumentsByFilters({ fromDate, toDate });
@@ -41,6 +43,7 @@ async function getVatRecords(
   if (documents.length === 0) {
     console.log('No documents found for VAT report');
   } else {
+    // get all charges by IDs from documents
     const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
     const EXCLUDED_BUSINESS_NAMES = [
       '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa', // Social Security Deductions
@@ -103,10 +106,11 @@ async function getVatRecords(
             if (charge.vat != null && charge.vat < 0) {
               response.includedChargeIDs.add(charge.id);
               expenseRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
-            }
-            if (charge.vat != null && charge.vat >= 0 && Number(charge.event_amount) > 0) {
+            } else if (charge.vat != null && charge.vat >= 0 && Number(charge.event_amount) > 0) {
               response.includedChargeIDs.add(charge.id);
               incomeRecords.push(mergeChargeDoc(charge, matchDoc, matchBusiness));
+            } else {
+              response.notIncludedChargeIDs.add(charge.id);
             }
           } else {
             console.log(
@@ -168,6 +172,16 @@ export const reportsResolvers: ReportsModule.Resolvers = {
           financialEntityIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
           chargeType: filters?.chargesType,
         });
+
+        const moreValidationCharges = await injector.get(ChargesProvider).validateCharges({
+          IDs: Array.from(vatRecords.notIncludedChargeIDs).filter(
+            id => !validationCharges.some(c => c.id === id),
+          ),
+          financialEntityIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
+          chargeType: filters?.chargesType,
+        });
+
+        validationCharges.push(...moreValidationCharges);
 
         // filter charges with missing info
         response.missingInfo.push(

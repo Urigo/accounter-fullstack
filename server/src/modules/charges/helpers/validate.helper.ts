@@ -11,7 +11,7 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
   const receiptsCount = Number(charge.receipts_count) || 0;
   const isForeignExpense = !!charge.is_foreign && Number(charge.event_amount) < 0;
   const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
-  const documentsAreFine = charge.no_invoices || invoicesCount > 0 || canSettleWithReceipt;
+  const documentsAreFine = charge.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
@@ -31,8 +31,7 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.Tags);
   }
 
-  const vatIsFine =
-    charge.is_foreign || charge.no_invoices || (charge.vat != null && charge.vat != 0);
+  const vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
