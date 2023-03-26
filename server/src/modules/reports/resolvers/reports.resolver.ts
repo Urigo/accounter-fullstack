@@ -173,15 +173,20 @@ export const reportsResolvers: ReportsModule.Resolvers = {
           chargeType: filters?.chargesType,
         });
 
-        const moreValidationCharges = await injector.get(ChargesProvider).validateCharges({
-          IDs: Array.from(vatRecords.notIncludedChargeIDs).filter(
-            id => !validationCharges.some(c => c.id === id),
-          ),
-          financialEntityIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
-          chargeType: filters?.chargesType,
+        validationCharges.map(c => {
+          vatRecords.notIncludedChargeIDs.delete(c.id);
         });
+        if (vatRecords.notIncludedChargeIDs.size > 0) {
+          const moreValidationCharges = await injector.get(ChargesProvider).validateCharges({
+            IDs: Array.from(vatRecords.notIncludedChargeIDs),
+            financialEntityIds: filters?.financialEntityId
+              ? [filters?.financialEntityId]
+              : undefined,
+            chargeType: filters?.chargesType,
+          });
 
-        validationCharges.push(...moreValidationCharges);
+          validationCharges.push(...moreValidationCharges);
+        }
 
         // filter charges with missing info
         response.missingInfo.push(

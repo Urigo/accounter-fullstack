@@ -6,7 +6,7 @@ export function formatFinancialAmount(
 ): FinancialAmount {
   return {
     raw: rawAmount,
-    formatted: `${rawAmount.toFixed(2)} ${currency}`,
+    formatted: `${currency} ${rawAmount.toFixed(2)}`,
     currency,
   };
 }

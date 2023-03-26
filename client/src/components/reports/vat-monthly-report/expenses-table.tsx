@@ -93,7 +93,7 @@ export const ExpensesTable = ({ data }: Props) => {
               return (
                 <tr className="bg-gray-100" key={index}>
                   <td className="flex flex-col gap-1">
-                    {item.business.name}
+                    {item.business?.name}
                     {item.vatNumber && (
                       <span style={{ fontSize: '10px', color: 'darkGray' }}>{item.vatNumber}</span>
                     )}
@@ -117,11 +117,11 @@ export const ExpensesTable = ({ data }: Props) => {
                     {item.roundedLocalVatAfterDeduction?.formatted}
                   </td>
                   <td className="whitespace-nowrap">
-                    {formatStringifyAmount(cumulativeVat, 0)} &#8362;
+                    &#8362; {formatStringifyAmount(cumulativeVat, 0)}
                   </td>
                   <td className="whitespace-nowrap">{item.taxReducedLocalAmount?.formatted}</td>
                   <td className="whitespace-nowrap">
-                    {formatStringifyAmount(cumulativeAmount, 0)} &#8362;
+                    &#8362; {formatStringifyAmount(cumulativeAmount, 0)}
                   </td>
                 </tr>
               );
