@@ -113,7 +113,7 @@ async function getVatRecords(
           const matchBusiness = await (charge.financial_entity_id && getVatNumbers
             ? injector
                 .get(FinancialEntitiesProvider)
-                .getFinancialEntityByNameLoader.load(charge.financial_entity_id)
+                .getFinancialEntityByIdLoader.load(charge.financial_entity_id)
             : undefined);
           if (matchDoc) {
             if (charge.vat != null && charge.vat < 0) {
