@@ -3,19 +3,24 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    findMatchingBusinesses: BusinessesMatches!
+    findMatchingBusinesses: BusinessesMatchesResponse!
   }
 
   " A score for a business match "
   type BusinessMatchScore {
-    name: String
+    business: Counterparty
     score: Float
-    id: UUID
+  }
+
+  " Businesses Name Matches Response "
+  type BusinessesMatchesResponse {
+    matches: [BusinessesMatches]!
   }
 
   " Businesses Name Matches "
   type BusinessesMatches {
-    bestScore: BusinessMatchScore!
+    business: Counterparty!
+    bestScore: BusinessMatchScore
     scores: [BusinessMatchScore!]!
   }
 `;
