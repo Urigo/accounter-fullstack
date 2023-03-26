@@ -16,7 +16,7 @@ export const businessMatcherResolver: FinancialEntitiesModule.Resolvers = {
       const matches = businessesToMatch.map(business => {
         const scores = similarStringsFinder(
           business.phrase,
-          businessesToMatch.filter(b => !b.id === business.id),
+          businessesToMatch.filter(b => b.id !== business.id),
           {},
         );
         return {
