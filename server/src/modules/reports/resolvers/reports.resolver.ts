@@ -4,6 +4,7 @@ import { Injector } from 'graphql-modules';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { HashavshevetProvider } from '@modules/hashavshevet/providers/hashavshevet.provider.js';
 import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
@@ -40,11 +41,23 @@ async function getVatRecords(
     .get(DocumentsProvider)
     .getDocumentsByFilters({ fromDate, toDate });
 
-  if (documents.length === 0) {
+  // filter invoice/receipt documents with linked charge
+  const relevantDocuments: IGetDocumentsByFiltersResult[] = [];
+  documents.map(doc => {
+    if (doc.charge_id) {
+      if (['INVOICE', 'INVOICE_RECEIPT', 'RECEIPT'].includes(doc.type)) {
+        relevantDocuments.push(doc);
+      } else {
+        response.notIncludedChargeIDs.add(doc.charge_id);
+      }
+    }
+  });
+
+  if (relevantDocuments.length === 0) {
     console.log('No documents found for VAT report');
   } else {
     // get all charges by IDs from documents
-    const chargesIDs = documents.map(doc => doc.charge_id).filter(Boolean) as string[];
+    const chargesIDs = relevantDocuments.map(doc => doc.charge_id).filter(Boolean) as string[];
     const EXCLUDED_BUSINESS_NAMES = [
       '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa', // Social Security Deductions
       '9d3a8a88-6958-4119-b509-d50a7cdc0744', // Tax
@@ -96,7 +109,7 @@ async function getVatRecords(
 
       await Promise.all(
         charges.map(async charge => {
-          const matchDoc = documents.find(doc => doc.charge_id === charge.id);
+          const matchDoc = relevantDocuments.find(doc => doc.charge_id === charge.id);
           const matchBusiness = await (charge.financial_entity_id && getVatNumbers
             ? injector
                 .get(FinancialEntitiesProvider)
