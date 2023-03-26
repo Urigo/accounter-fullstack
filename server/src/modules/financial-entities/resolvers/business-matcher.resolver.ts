@@ -8,13 +8,17 @@ export const businessMatcherResolver: FinancialEntitiesModule.Resolvers = {
     findMatchingBusinesses: async (_, __, { injector }) => {
       const businesses = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
 
-      const businessesToMatch = businesses.map(business => ({
+      const businessesToMatch = businesses.slice(0, 100).map(business => ({
         phrase: business.name,
         id: business.id,
       }));
 
       const matches = businessesToMatch.map(business => {
-        const scores = similarStringsFinder(business.phrase, businessesToMatch, {});
+        const scores = similarStringsFinder(
+          business.phrase,
+          businessesToMatch.filter(b => !b.id === business.id),
+          {},
+        );
         return {
           business: business.id as unknown as Counterparty,
           bestScore: scores.bestScore.id
