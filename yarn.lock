@@ -13,10 +13,10 @@
     graphql "16.6.0"
     path "0.12.7"
 
-"@accounter-toolkit/pcn874-generator@0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.1.1.tgz#a44c29dcaf03ac68f5f2fa39f079f3f65b72dd5c"
-  integrity sha512-y3V6ZAQQRBrm+zDTppTaj6OW9hBeYQ85NaOGYAdXv/k+JjK+OLUTbqSL0Ip7IWYNE6hVl4hzj6Isr0r3MgJzZg==
+"@accounter-toolkit/pcn874-generator@0.2.0-alpha-20230326113533-8039ee4":
+  version "0.2.0-alpha-20230326113533-8039ee4"
+  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.2.0-alpha-20230326113533-8039ee4.tgz#08550956aa0a972938a54b55ea6c532a719cc5a7"
+  integrity sha512-1T6L3MCh/sjk65ylw041ARLIxjWuEMIQDDBysadmrTffnaPcjqCHf+H7HOm+OaVAUN4zNhs4p34+AIzw3oSfsw==
 
 "@ampproject/remapping@^2.1.0":
   version "2.2.0"

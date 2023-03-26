@@ -172,7 +172,7 @@ export const generatePcnFromCharges = (
 
   const header = headerPropsFromTransactions(transactions, vatNumber, reportMonth);
 
-  const reportContent = pcnGenerator(header, transactions);
+  const reportContent = pcnGenerator(header, transactions, { strict: false });
 
   const fileName = `pcn874_${vatNumber}_${reportMonth}.txt`;
 
