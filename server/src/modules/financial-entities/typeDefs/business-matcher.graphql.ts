@@ -3,12 +3,17 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    findMatchingBusinesses: BusinessesMatchesResponse!
+    findMatchingBusinesses(
+      " The minimum score to return a match, 0-1 "
+      minScore: Float
+    ): BusinessesMatchesResponse!
   }
 
   " A score for a business match "
   type BusinessMatchScore {
+    " The business that was matched "
     business: Counterparty
+    " The score of the match, 0-1 "
     score: Float
   }
 
@@ -19,8 +24,11 @@ export default gql`
 
   " Businesses Name Matches "
   type BusinessesMatches {
+    " The business being matched "
     business: Counterparty!
-    bestScore: BusinessMatchScore
-    scores: [BusinessMatchScore!]!
+    " The best match for the business "
+    bestMatch: BusinessMatchScore
+    " Other matches for the business "
+    moreMatches: [BusinessMatchScore!]
   }
 `;
