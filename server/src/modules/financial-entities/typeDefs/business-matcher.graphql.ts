@@ -6,7 +6,7 @@ export default gql`
     findMatchingBusinesses(
       " The minimum score to return a match, 0-1 "
       minScore: Float
-    ): BusinessesMatchesResponse!
+    ): [BusinessesMatches!]!
   }
 
   " A score for a business match "
@@ -15,11 +15,6 @@ export default gql`
     business: Counterparty
     " The score of the match, 0-1 "
     score: Float
-  }
-
-  " Businesses Name Matches Response "
-  type BusinessesMatchesResponse {
-    matches: [BusinessesMatches]!
   }
 
   " Businesses Name Matches "

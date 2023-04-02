@@ -38,7 +38,7 @@ export const businessMatcherResolver: FinancialEntitiesModule.Resolvers = {
           };
         })
         .filter(m => m.bestMatch && (m.bestMatch.score ?? 0) > minScore!);
-      return { matches };
+      return matches;
     },
   },
 };
