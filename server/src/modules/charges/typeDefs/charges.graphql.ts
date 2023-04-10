@@ -27,6 +27,10 @@ export default gql`
     totalAmount: FinancialAmount
     " פחת, ציוד  "
     property: Boolean
+    " is currency conversion "
+    conversion: Boolean
+    " user custom description "
+    userDescription: String
   }
 
   " input variables for charge filtering "
@@ -88,6 +92,8 @@ export default gql`
     isProperty: Boolean
     isConversion: Boolean
     # businessTrip: BusinessTrip
+    " user custom description "
+    userDescription: String
   }
 
   " result type for updateCharge "

@@ -27,8 +27,6 @@ export default gql`
     amount: FinancialAmount!
     " description of the transaction, as defined by the bank/card "
     description: String!
-    " user custom note, saved by the bank "
-    userNote: String
     " effective bank / card balance, after the transaction "
     balance: FinancialAmount!
   }

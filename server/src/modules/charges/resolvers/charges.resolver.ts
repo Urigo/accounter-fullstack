@@ -193,7 +193,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         isConversion: fields.isConversion,
         isProperty: fields.isProperty,
         ownerId: fields.ownerId,
-        userDescription: null, // TODO: should it be here or on transaction?
+        userDescription: fields.userDescription,
         chargeId,
       };
       try {
@@ -264,6 +264,8 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
     withholdingTax: undefined, // deprecated for now
     totalAmount: calculateTotalAmount,
     property: DbCharge => DbCharge.is_property,
+    conversion: DbCharge => DbCharge.is_conversion,
+    userDescription: DbCharge => DbCharge.user_description,
     validationData: (DbCharge, _, { injector }) => {
       if ('invoices_count' in DbCharge && DbCharge.invoices_count != null) {
         return validateCharge(DbCharge as IValidateChargesResult);

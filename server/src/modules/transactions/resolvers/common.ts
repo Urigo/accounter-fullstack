@@ -9,13 +9,12 @@ export const commonTransactionFields:
   | TransactionsModule.WireTransactionResolvers
   | TransactionsModule.CommonTransactionResolvers = {
   id: DbTransaction => DbTransaction.id,
-  referenceNumber: DbTransaction => DbTransaction.bank_reference ?? 'Missing',
+  referenceNumber: () => 'Missing', // TODO(Gil): implement?
   createdAt: DbTransaction => DbTransaction.event_date,
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
   direction: DbTransaction =>
     parseFloat(DbTransaction.amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
   amount: DbTransaction => formatFinancialAmount(DbTransaction.amount, DbTransaction.currency),
   description: DbTransaction => DbTransaction.source_description ?? '',
-  userNote: DbTransaction => DbTransaction.user_description,
   balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
 };
