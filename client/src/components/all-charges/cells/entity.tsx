@@ -55,9 +55,7 @@ export const Entity = ({ data }: Props) => {
         updateCharge({
           chargeId,
           fields: {
-            counterparty: {
-              id: businessID,
-            },
+            counterpartyId: businessID,
           },
         });
       }

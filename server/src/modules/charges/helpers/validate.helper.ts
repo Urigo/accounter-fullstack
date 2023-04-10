@@ -63,18 +63,18 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
   };
 }
 
-export function effectiveDateSupplement(transaction: IGetChargesByIdsResult) {
-  if (transaction.account_type != 'creditcard') {
-    if (transaction.debit_date) {
-      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+export function effectiveDateSupplement(charge: IGetChargesByIdsResult) {
+  if (charge.account_type != 'creditcard') {
+    if (charge.debit_date) {
+      return format(charge.debit_date, 'yyyy-MM-dd') as TimelessDateString;
     }
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+    return format(charge.event_date, 'yyyy-MM-dd') as TimelessDateString;
   }
-  if (transaction.debit_date) {
-    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
+  if (charge.debit_date) {
+    return format(charge.debit_date, 'yyyy-MM-dd') as TimelessDateString;
   }
-  if (transaction.currency_code == 'ILS') {
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  if (charge.currency_code == 'ILS') {
+    return format(charge.event_date, 'yyyy-MM-dd') as TimelessDateString;
   }
   return null;
 }

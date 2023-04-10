@@ -9,6 +9,7 @@ export default gql`
 
   extend type Mutation {
     updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
+    mergeCharges(baseChargeID: ID!, chargeIdsToMerge: [ID!]!): Charge!
   }
 
   " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
@@ -79,12 +80,13 @@ export default gql`
     # transactions: [Transaction!]!
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
     # description: String
-    vat: Float
-    withholdingTax: Float
-    totalAmount: FinancialAmountInput
+    # vat: Float
+    # withholdingTax: Float
+    # totalAmount: FinancialAmountInput
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
     # invoice: Invoice
     isProperty: Boolean
+    isConversion: Boolean
     # businessTrip: BusinessTrip
   }
 

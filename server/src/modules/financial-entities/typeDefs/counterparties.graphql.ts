@@ -31,7 +31,8 @@ export default gql`
   }
 
   extend input UpdateChargeInput {
-    counterparty: CounterpartyInput
+    counterpartyId: UUID
+    ownerId: UUID
   }
 
   extend type LedgerRecord {

@@ -99,18 +99,17 @@ export default gql`
 
   " input variables for updateTransaction "
   input UpdateTransactionInput {
-    referenceNumber: String
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
     # createdAt: Date!
+    eventDate: TimelessDate
     effectiveDate: TimelessDate
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
     # direction: TransactionDirection
     amount: FinancialAmountInput
+    description: String
+    sourceDescription: String
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    # description: String // NOTE: which field should be updated? and should we update fields originated at bank/card info?
-    userNote: String
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    # account: FinancialAccount
+    account: UUID
     balance: FinancialAmountInput
   }
 

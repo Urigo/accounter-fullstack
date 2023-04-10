@@ -15,6 +15,8 @@ import type {
   IGetDocumentsByFinancialEntityIdsQuery,
   IInsertDocumentsParams,
   IInsertDocumentsQuery,
+  IReplaceDocumentsChargeIdParams,
+  IReplaceDocumentsChargeIdQuery,
   IUpdateDocumentParams,
   IUpdateDocumentQuery,
 } from '../types.js';
@@ -36,12 +38,10 @@ const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQu
   SELECT *
   FROM accounter_schema.documents
   WHERE charge_id IN(
-    SELECT at.id as financial_entity_id
-    FROM accounter_schema.all_transactions at
-    LEFT JOIN accounter_schema.financial_accounts fa
-    ON  at.account_number = fa.account_number
-    WHERE fa.owner IN $$financialEntityIds
-    )
+    SELECT c.id as financial_entity_id
+    FROM accounter_schema.charges c
+    WHERE c.owner_id IN $$financialEntityIds
+  )
   ORDER BY created_at DESC;
 `;
 
@@ -159,6 +159,13 @@ type IGetAdjustedDocumentsByFiltersParams = Optional<
   toDate?: TimelessDateString;
 };
 
+const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
+  UPDATE accounter_schema.documents
+  SET charge_id = $assertChargeID
+  WHERE charge_id = $replaceChargeID
+  RETURNING id;
+`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -216,5 +223,9 @@ export class DocumentsProvider {
       IDs: isIDs ? params.IDs! : [null],
     };
     return getDocumentsByFilters.run(fullParams, this.dbProvider);
+  }
+
+  public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
+    return replaceDocumentsChargeId.run(params, this.dbProvider);
   }
 }

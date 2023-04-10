@@ -6,15 +6,16 @@ import type { Optional, TimelessDateString } from '@shared/types';
 import { validateCharge } from '../helpers/validate.helper.js';
 import type {
   ChargesModule,
+  IDeleteChargesByIdsParams,
+  IDeleteChargesByIdsQuery,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
-  IGetChargesByFinancialAccountNumbersParams,
-  IGetChargesByFinancialAccountNumbersQuery,
+  IGetChargesByFinancialAccountIdsParams,
+  IGetChargesByFinancialAccountIdsQuery,
   IGetChargesByFinancialEntityIdsParams,
   IGetChargesByFinancialEntityIdsQuery,
-  IGetChargesByIdsQuery,
-  IGetConversionOtherSideParams,
-  IGetConversionOtherSideQuery,
+  IGetChargesByIdsQuery, // IGetConversionOtherSideParams,
+  // IGetConversionOtherSideQuery,
   IUpdateChargeParams,
   IUpdateChargeQuery,
   IValidateChargesParams,
@@ -23,75 +24,61 @@ import type {
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *
-    FROM accounter_schema.all_transactions
-    WHERE id IN $$cahrgeIds;`;
+    FROM accounter_schema.charges
+    WHERE id IN $$chargeIds;`;
 
-const getChargesByFinancialAccountNumbers = sql<IGetChargesByFinancialAccountNumbersQuery>`
-    SELECT *
-    FROM accounter_schema.all_transactions
-    WHERE account_number IN $$financialAccountNumbers
-    AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY event_date DESC;`;
+const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuery>`
+    SELECT c.*, t.account_id
+    FROM accounter_schema.charges c
+    LEFT JOIN accounter_schema.transactions t
+    ON c.id = t.charge_id
+    WHERE c.id IN (
+      SELECT charge_id
+      FROM accounter_schema.transactions
+      WHERE account_id IN $$financialAccountIDs
+      AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+      AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    )
+    AND t.event_date = (
+      SELECT MIN(event_date)
+      FROM accounter_schema.transactions as t2
+      WHERE t2.charge_id = c.id
+    )
+    ORDER BY t.event_date DESC;`;
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
-    SELECT at.*, fa.owner as owner_id
-    FROM accounter_schema.all_transactions at
-    LEFT JOIN accounter_schema.financial_accounts fa
-    ON  at.account_number = fa.account_number
-    WHERE fa.owner IN $$financialEntityIds
-    AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY at.event_date DESC;`;
+    SELECT c.*
+    FROM accounter_schema.charges c
+    LEFT JOIN accounter_schema.transactions t
+    ON c.id = t.charge_id
+    WHERE owner_id IN $$financialEntityIds
+    AND t.event_date = (
+      SELECT MIN(event_date)
+      FROM accounter_schema.transactions as t2
+      WHERE t2.charge_id = c.id
+    )
+    AND ($fromDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY t.event_date DESC;`;
 
-const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
-    SELECT event_amount, currency_code
-    FROM accounter_schema.all_transactions
-    WHERE bank_reference = $bankReference
-      AND id <> $chargeId
-      LIMIT 1;`;
+// const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
+//     SELECT event_amount, currency_code
+//     FROM accounter_schema.all_transactions
+//     WHERE bank_reference = $bankReference
+//       AND id <> $chargeId
+//       LIMIT 1;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
-  UPDATE accounter_schema.all_transactions
+  UPDATE accounter_schema.charges
   SET
-  tax_invoice_date = COALESCE(
-    $taxInvoiceDate,
-    tax_invoice_date,
+  owner_id = COALESCE(
+    $ownerId,
+    owner_id,
     NULL
   ),
-  tax_category = COALESCE(
-    $taxCategory,
-    tax_category,
-    NULL
-  ),
-  currency_code = COALESCE(
-    $currencyCode,
-    currency_code,
-    NULL
-  ),
-  event_date = COALESCE(
-    $eventDate,
-    event_date,
-    NULL
-  ),
-  debit_date = COALESCE(
-    $debitDate,
-    debit_date,
-    NULL
-  ),
-  event_amount = COALESCE(
-    $eventAmount,
-    event_amount,
-    NULL
-  ),
-  financial_entity_id = COALESCE(
-    $financialEntityID,
-    financial_entity_id,
-    NULL
-  ),
-  vat = COALESCE(
-    $vat,
-    vat,
+  counterparty_id = COALESCE(
+    $counterpartyId,
+    counterparty_id,
     NULL
   ),
   user_description = COALESCE(
@@ -99,139 +86,9 @@ const updateCharge = sql<IUpdateChargeQuery>`
     user_description,
     NULL
   ),
-  tax_invoice_number = COALESCE(
-    $taxInvoiceNumber,
-    tax_invoice_number,
-    NULL
-  ),
-  tax_invoice_amount = COALESCE(
-    $taxInvoiceAmount,
-    tax_invoice_amount,
-    NULL
-  ),
-  receipt_number = COALESCE(
-    $receiptNumber,
-    receipt_number,
-    NULL
-  ),
-  business_trip = COALESCE(
-    $businessTrip,
-    business_trip,
-    NULL
-  ),
-  personal_category = COALESCE(
-    $personalCategory,
-    personal_category,
-    NULL
-  ),
-  financial_accounts_to_balance = COALESCE(
-    $financialAccountsToBalance,
-    financial_accounts_to_balance,
-    NULL
-  ),
-  bank_reference = COALESCE(
-    $bankReference,
-    bank_reference,
-    NULL
-  ),
-  event_number = COALESCE(
-    $eventNumber,
-    event_number,
-    NULL
-  ),
-  account_number = COALESCE(
-    $accountNumber,
-    account_number,
-    NULL
-  ),
-  account_type = COALESCE(
-    $accountType,
-    account_type,
-    NULL
-  ),
   is_conversion = COALESCE(
     $isConversion,
     is_conversion,
-    NULL
-  ),
-  currency_rate = COALESCE(
-    $currencyRate,
-    currency_rate,
-    NULL
-  ),
-  contra_currency_code = COALESCE(
-    $contraCurrencyCode,
-    contra_currency_code,
-    NULL
-  ),
-  bank_description = COALESCE(
-    $bankDescription,
-    bank_description,
-    NULL
-  ),
-  withholding_tax = COALESCE(
-    $withholdingTax,
-    withholding_tax,
-    NULL
-  ),
-  interest = COALESCE(
-    $interest,
-    interest,
-    NULL
-  ),
-  proforma_invoice_file = COALESCE(
-    $proformaInvoiceFile,
-    proforma_invoice_file,
-    NULL
-  ),
-  original_id = COALESCE(
-    $originalId,
-    original_id,
-    NULL
-  ),
-  reviewed = COALESCE(
-    $reviewed,
-    reviewed,
-    NULL
-  ),
-  hashavshevet_id = COALESCE(
-    $hashavshevetId,
-    hashavshevet_id,
-    NULL
-  ),
-  current_balance = COALESCE(
-    $currentBalance,
-    current_balance,
-    NULL
-  ),
-  tax_invoice_file = COALESCE(
-    $taxInvoiceFile,
-    tax_invoice_file,
-    NULL
-  ),
-  detailed_bank_description = COALESCE(
-    $detailedBankDescription,
-    detailed_bank_description,
-    NULL
-  ),
-  links = COALESCE(
-    $links,
-    links,
-    NULL
-  ),
-  receipt_date = COALESCE(
-    $receiptDate,
-    receipt_date,
-    NULL
-  ),
-  receipt_url = COALESCE(
-    $receiptUrl,
-    receipt_url,
-    NULL
-  ),
-  receipt_image = COALESCE(
-    $receiptImage,
-    receipt_image,
     NULL
   ),
   is_property = COALESCE(
@@ -239,9 +96,9 @@ const updateCharge = sql<IUpdateChargeQuery>`
     is_property,
     NULL
   ),
-  tax_invoice_currency = COALESCE(
-    $taxInvoiceCurrency,
-    tax_invoice_currency,
+  accountant_reviewed = COALESCE(
+    $accountantReviewed,
+    accountant_reviewed,
     NULL
   )
   WHERE
@@ -251,28 +108,28 @@ const updateCharge = sql<IUpdateChargeQuery>`
 
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
-    at.*,
-    ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
+    c.*,
+    ABS(cast(t.event_amount as DECIMAL)) as abs_event_amount,
     bu.no_invoices_required,
     -- invoices_count column, conditional calculation
     CASE WHEN $preCountInvoices = false THEN NULL ELSE (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
+      WHERE d.charge_id = c.id
         AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
     ) END as invoices_count,
     -- receipts_count column, conditional calculation
     CASE WHEN $preCountReceipts = false THEN NULL ELSE (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
+      WHERE d.charge_id = c.id
         AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
     ) END as receipts_count,
     -- ledger_records_count column, conditional calculation
     CASE WHEN $preCountLedger = false THEN NULL ELSE (
       SELECT COUNT(*)
       FROM accounter_schema.ledger l
-      WHERE l.original_id = at.id
+      WHERE l.original_id = c.id
     ) END as ledger_records_count,
     -- balance column, conditional calculation
     CASE WHEN $preCalculateBalance = false THEN NULL ELSE (
@@ -297,30 +154,34 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       WHERE lr.date <= (
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
-        WHERE l.original_id = at.id
-          AND lr.business_id = at.financial_entity_id
-          AND lr.financial_entity_id = fa.owner)
+        WHERE l.original_id = c.id
+          AND lr.business_id = c.counterparty_id
+          AND lr.financial_entity_id = c.owner_id)
     ) END as balance
-  FROM accounter_schema.all_transactions at
-  LEFT JOIN accounter_schema.financial_accounts fa
-  ON  at.account_number = fa.account_number
+  FROM accounter_schema.charges c
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity_id = bu.id
+  ON  c.counterparty_id = bu.id
+  LEFT JOIN (
+    SELECT charge_id, MIN(event_date) as min_event_date, MAX(event_date) as max_event_date, SUM(amount) as event_amount
+    FROM accounter_schema.transactions
+    GROUP BY charge_id
+  ) t
+  ON t.charge_id = c.id
   WHERE 
-  ($isIDs = 0 OR at.id IN $$IDs)
-  AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
-  AND ($isBusinessesIDs = 0 OR at.financial_entity_id IN $$businessesIDs)
-  AND ($isNotBusinessesIDs = 0 OR at.financial_entity_id NOT IN $$notBusinessesIDs)
-  AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-  AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
+  ($isIDs = 0 OR c.id IN $$IDs)
+  AND ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
+  AND ($isBusinessesIDs = 0 OR c.counterparty_id IN $$businessesIDs)
+  AND ($isNotBusinessesIDs = 0 OR c.counterparty_id NOT IN $$notBusinessesIDs)
+  AND ($fromDate ::TEXT IS NULL OR t.min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+  AND ($toDate ::TEXT IS NULL OR t.max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND t.event_amount > 0) OR ($chargeType = 'EXPENSE' AND t.event_amount <= 0))
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN at.event_date  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN at.event_date  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN at.event_amount  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN at.event_amount  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(at.event_amount as DECIMAL))  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(at.event_amount as DECIMAL))  END DESC;
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN t.min_event_date  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN t.min_event_date  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN t.event_amount  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN t.event_amount  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(t.event_amount as DECIMAL))  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(t.event_amount as DECIMAL))  END DESC;
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
@@ -347,25 +208,25 @@ type IGetAdjustedChargesByFiltersParams = Optional<
 
 const validateCharges = sql<IValidateChargesQuery>`
   SELECT
-    at.*,
+    c.*,
     (bu.country <> 'Israel') as is_foreign,
     bu.no_invoices_required,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
+      WHERE d.charge_id = c.id
         AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
     ) as invoices_count,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
+      WHERE d.charge_id = c.id
         AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
     ) as receipts_count,
     (
       SELECT COUNT(*)
       FROM accounter_schema.ledger l
-      WHERE l.original_id = at.id
+      WHERE l.original_id = c.id
     ) as ledger_records_count,
     (
       SELECT SUM(lr.amount) as balance
@@ -389,22 +250,30 @@ const validateCharges = sql<IValidateChargesQuery>`
       WHERE lr.date <= (
         SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
         FROM accounter_schema.ledger l
-        WHERE l.original_id = at.id
-          AND lr.business_id = at.financial_entity_id
-          AND lr.financial_entity_id = fa.owner)
+        WHERE l.original_id = c.id
+          AND lr.business_id = c.counterparty_id
+          AND lr.financial_entity_id = c.owner_id)
     ) as balance
-  FROM accounter_schema.all_transactions at
-  LEFT JOIN accounter_schema.financial_accounts fa
-  ON  at.account_number = fa.account_number
+  FROM accounter_schema.charges c
   LEFT JOIN accounter_schema.businesses bu
-  ON  at.financial_entity_id = bu.id
-  WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
-    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
-    AND ($isIDs = 0 OR at.id IN $$IDs)
-    AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY at.event_date DESC;
+  ON  c.counterparty_id = bu.id
+  LEFT JOIN (
+    SELECT charge_id, MIN(event_date) as min_event_date, MAX(event_date) as max_event_date, SUM(amount) as event_amount
+    FROM accounter_schema.transactions
+    GROUP BY charge_id
+  ) t
+  ON t.charge_id = c.id
+  WHERE ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
+    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND t.event_amount > 0) OR ($chargeType = 'EXPENSE' AND t.event_amount <= 0))
+    AND ($isIDs = 0 OR c.id IN $$IDs)
+    AND ($fromDate ::TEXT IS NULL OR t.min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR t.max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY t.min_event_date DESC;
 `;
+
+const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
+    DELETE FROM accounter_schema.charges
+    WHERE id IN $$chargeIds;`;
 
 type IValidateChargesAdjustedParams = Optional<
   Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityIds'>,
@@ -424,7 +293,7 @@ export class ChargesProvider {
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(
       {
-        cahrgeIds: ids,
+        chargeIds: ids,
       },
       this.dbProvider,
     );
@@ -436,26 +305,26 @@ export class ChargesProvider {
     { cache: false },
   );
 
-  public getChargesByFinancialAccountNumbers(params: IGetChargesByFinancialAccountNumbersParams) {
-    return getChargesByFinancialAccountNumbers.run(params, this.dbProvider);
+  public getChargesByFinancialAccountIds(params: IGetChargesByFinancialAccountIdsParams) {
+    return getChargesByFinancialAccountIds.run(params, this.dbProvider);
   }
 
-  private async batchChargesByFinancialAccountNumbers(financialAccountNumbers: readonly string[]) {
-    const charges = await getChargesByFinancialAccountNumbers.run(
+  private async batchChargesByFinancialAccountIds(financialAccountIDs: readonly string[]) {
+    const charges = await getChargesByFinancialAccountIds.run(
       {
-        financialAccountNumbers,
+        financialAccountIDs,
         fromDate: null,
         toDate: null,
       },
       this.dbProvider,
     );
-    return financialAccountNumbers.map(accountNumber =>
-      charges.filter(charge => charge.account_number === accountNumber),
+    return financialAccountIDs.map(accountId =>
+      charges.filter(charge => charge.account_id === accountId),
     );
   }
 
-  public getChargeByFinancialAccountNumberLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesByFinancialAccountNumbers(keys),
+  public getChargeByFinancialAccountIDsLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchChargesByFinancialAccountIds(keys),
     {
       cache: false,
     },
@@ -484,9 +353,9 @@ export class ChargesProvider {
     },
   );
 
-  public getConversionOtherSide(params: IGetConversionOtherSideParams) {
-    return getConversionOtherSide.run(params, this.dbProvider);
-  }
+  // public getConversionOtherSide(params: IGetConversionOtherSideParams) {
+  //   return getConversionOtherSide.run(params, this.dbProvider);
+  // }
 
   public updateCharge(params: IUpdateChargeParams) {
     return updateCharge.run(params, this.dbProvider);
@@ -560,4 +429,8 @@ export class ChargesProvider {
     keys => this.batchValidateChargesByIds(keys),
     { cache: false },
   );
+
+  public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
+    return deleteChargesByIds.run(params, this.dbProvider);
+  }
 }
