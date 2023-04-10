@@ -34,6 +34,7 @@ module.exports = {
         '@graphql-eslint/strict-id-in-types': [
           'error',
           {
+            acceptedIdTypes: ['ID', 'UUID'],
             exceptions: {
               types: [
                 'AccountantApproval',
@@ -52,6 +53,8 @@ module.exports = {
                 'PCNFileResult',
                 'PCNRawData',
                 'ChargeSuggestions',
+                'LedgerRecords',
+                'GeneratedLedgerRecords',
               ],
             },
           },
@@ -85,5 +88,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['old-accounter/**', '**/__generated__/**', 'schema.graphql'],
+  ignorePatterns: ['old-accounter/**', '**/__generated__/**', 'schema.graphql', '**/__tests__/**'],
 };

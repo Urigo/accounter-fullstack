@@ -31,21 +31,57 @@ export default gql`
   }
 
   extend input UpdateChargeInput {
-    counterparty: CounterpartyInput
+    counterpartyId: UUID
+    ownerId: UUID
   }
 
-  extend type LedgerRecord {
-    creditAccount: Counterparty
-    debitAccount: Counterparty
+  extend interface Transaction {
+    " calculated counterparty details for the charge "
+    counterparty: Counterparty
+  }
+  extend type CommonTransaction {
+    counterparty: Counterparty
   }
 
-  extend input UpdateLedgerRecordInput {
-    creditAccount: CounterpartyInput
-    debitAccount: CounterpartyInput
+  extend type WireTransaction {
+    counterparty: Counterparty
   }
 
-  extend input InsertLedgerRecordInput {
-    creditAccount: CounterpartyInput
-    debitAccount: CounterpartyInput
+  extend type FeeTransaction {
+    counterparty: Counterparty
+  }
+
+  extend type ConversionTransaction {
+    counterparty: Counterparty
+  }
+
+  extend interface Document {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Unprocessed {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Invoice {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Proforma {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Receipt {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type InvoiceReceipt {
+    creditor: Counterparty
+    debtor: Counterparty
   }
 `;

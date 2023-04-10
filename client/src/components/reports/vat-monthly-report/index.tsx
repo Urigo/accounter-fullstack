@@ -14,7 +14,6 @@ import {
   AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
-  InsertLedgerRecordModal,
   MatchDocumentModal,
   NavBar,
   UploadDocumentModal,
@@ -52,9 +51,10 @@ export const VatMonthlyReport = () => {
   );
 
   // modals state
-  const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
-  const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
+    undefined,
+  );
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
@@ -95,7 +95,6 @@ export const VatMonthlyReport = () => {
             <MissingInfoTable
               data={data?.vatReport}
               setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setUploadDocument={setUploadDocument}
               setMatchDocuments={setMatchDocuments}
@@ -104,7 +103,6 @@ export const VatMonthlyReport = () => {
             <MiscTable
               data={data?.vatReport}
               setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setUploadDocument={setUploadDocument}
               setMatchDocuments={setMatchDocuments}
@@ -113,12 +111,6 @@ export const VatMonthlyReport = () => {
             {/* modification modals */}
             {editCharge && (
               <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />
-            )}
-            {insertLedger && (
-              <InsertLedgerRecordModal
-                insertLedger={insertLedger}
-                setInsertLedger={setInsertLedger}
-              />
             )}
             {insertDocument && (
               <InsertDocumentModal
@@ -134,8 +126,9 @@ export const VatMonthlyReport = () => {
             )}
             {matchDocuments && (
               <MatchDocumentModal
-                matchDocuments={matchDocuments}
-                setMatchDocuments={setMatchDocuments}
+                chargeId={matchDocuments.id}
+                ownerId={matchDocuments.ownerId}
+                setMatchDocuments={() => setMatchDocuments(undefined)}
               />
             )}
           </div>

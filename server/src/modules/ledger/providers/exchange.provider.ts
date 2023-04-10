@@ -75,15 +75,15 @@ export class ExchangeProvider {
   );
 
   public async getChargeExchangeRates(charge: ChargesTypes.IGetChargesByIdsResult) {
-    if (!charge.debit_date) {
+    if (!charge.transactions_min_debit_date) {
       throw new Error(`Charge ID=${charge.id} has no debit date`);
     }
-    if (!charge.tax_invoice_date) {
+    if (!charge.documents_min_date) {
       throw new Error(`Charge ID=${charge.id} has no tax invoice date`);
     }
     const results = await Promise.all([
-      this.getExchangeRatesByDatesLoader.load(charge.debit_date),
-      this.getExchangeRatesByDatesLoader.load(charge.tax_invoice_date),
+      this.getExchangeRatesByDatesLoader.load(charge.transactions_min_debit_date),
+      this.getExchangeRatesByDatesLoader.load(charge.documents_min_date),
     ]);
     return {
       debitExchangeRates: results[0],

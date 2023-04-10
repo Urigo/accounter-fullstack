@@ -15,15 +15,6 @@ import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
-/* GraphQL */ `
-  query AllFinancialEntities {
-    allFinancialEntities {
-      id
-      name
-    }
-  }
-`;
-
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;
@@ -281,12 +272,6 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           <span>Missing Information:</span>
 
           <Switch
-            defaultChecked={filter.withoutLedger ?? false}
-            onChange={event => setValue('withoutLedger', event.currentTarget.checked)}
-            label="Without Ledger Records"
-          />
-
-          <Switch
             defaultChecked={filter.withoutInvoice ?? false}
             onChange={event => setValue('withoutInvoice', event.currentTarget.checked)}
             label="Without Invoices"
@@ -397,7 +382,12 @@ export function ChargesFilters({
         }
       />
       {totalPages > 1 && (
-        <Pagination className="flex-auto" page={activePage} onChange={setPage} total={totalPages} />
+        <Pagination
+          className="flex-auto"
+          value={activePage}
+          onChange={setPage}
+          total={totalPages}
+        />
       )}
       <Indicator inline size={16} disabled={!isFiltered}>
         <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>

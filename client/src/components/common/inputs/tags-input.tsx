@@ -1,8 +1,8 @@
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
-import { UpdateChargeInput } from '../../../gql/graphql';
-import { TextInput } from './text-input';
+import { useQuery } from 'urql';
+import { ActionIcon, Select } from '@mantine/core';
+import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql';
 
 type Props = {
   label?: string;
@@ -10,11 +10,17 @@ type Props = {
 };
 
 export function TagsInput({ label, formManager }: Props) {
+  const [{ data, fetching }] = useQuery({
+    query: AllTagsDocument,
+  });
+
+  const allTags = data?.allTags.map(tag => tag.name) ?? [];
+
   const { control } = formManager;
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'tags',
-    rules: { maxLength: 1 },
+    // rules: { maxLength: 1 },
   });
 
   return (
@@ -33,7 +39,18 @@ export function TagsInput({ label, formManager }: Props) {
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
                 render={({ field, fieldState }) => (
-                  <TextInput className="w-full" {...field} error={fieldState.error?.message} />
+                  <Select
+                    className="w-full"
+                    {...field}
+                    data={allTags}
+                    value={field.value}
+                    disabled={fetching}
+                    label="Tag"
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
                 )}
               />
             </div>

@@ -30,50 +30,69 @@ export async function createAndConnectStore(options: { connectionString: string;
 
       // Upsert the function
       await pg.none(`
-        CREATE OR REPLACE FUNCTION ${tableName}_insert_fn () RETURNS TRIGGER AS $$
-      BEGIN
-          INSERT INTO ${options.schema}.all_transactions (
-            currency_code,
-            event_date,
-            debit_date,
-            event_amount,
-            bank_reference,
-            event_number,
-            account_number,
-            account_type,
-            is_conversion,
-            currency_rate,
-            contra_currency_code,
-            bank_description,
-            original_id,
-            id,
-            current_balance,
-            detailed_bank_description
-          ) VALUES (
-            new.currency::currency,
-            new.value_date::text::date,
-            new.value_date::text::date,
-            (CASE
-                WHEN new.wallet_address = new.from_address THEN (new.amount * -1)
-                ELSE new.amount END
-            ),
-            new.transaction_hash,
-            to_char(new.value_date, 'YYYYMMDD')::bigint,
-            new.wallet_address,
-            concat('crypto_', LOWER(new.currency)),
-            false,
-            0,
-            NULL,
+    CREATE OR REPLACE FUNCTION ${tableName}_insert_fn() RETURNS TRIGGER
+      LANGUAGE plpgsql
+    AS $$
+    DECLARE
+        merged_id UUID;
+        account_id_var UUID;
+        owner_id_var UUID;
+        charge_id_var UUID = NULL;
+    BEGIN
+        -- Create merged raw transactions record:
+        INSERT INTO ${options.schema}.transactions_raw_list(etherscan_id)
+        VALUES (NEW.tx_id::text)
+        RETURNING id INTO merged_id;
+    
+        -- get account and owner IDs
+        SELECT INTO account_id_var, owner_id_var
+            id, owner
+        FROM ${options.schema}.financial_accounts
+        WHERE account_number = NEW.wallet_address;
+    
+        -- create new charge
+        IF (charge_id_var IS NULL) THEN
+            INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
+            VALUES (
+                owner_id_var,
+                FALSE
+            )
+            RETURNING id INTO charge_id_var;
+        END IF;
+    
+        -- create new transaction
+        INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
+        VALUES (
+            account_id_var,
+            charge_id_var,
+            merged_id,
             '',
-            new.tx_id,
-            gen_random_uuid(),
-            0,
-            ''
-          );
-
-          RETURN NEW;
+            NEW.currency::currency,
+            NEW.value_date::text::date,
+            NEW.value_date::text::date,
+            (CASE
+                WHEN NEW.wallet_address = NEW.from_address THEN (NEW.amount * -1)
+                ELSE NEW.amount END
+            ),
+            0
+        );
+    
+        -- deprecated fields for ref
+        -- INSERT INTO ${options.schema}.all_transactions (
+        --     bank_reference,
+        --     event_number,
+        --     account_type,
+        --     contra_currency_code
+        -- ) VALUES (
+        --     new.transaction_hash,
+        --     to_char(new.value_date, 'YYYYMMDD')::bigint,
+        --     concat('crypto_', LOWER(new.currency)),
+        --     NULL
+        -- );
+    
+        RETURN NEW;
       END;
-      $$ LANGUAGE 'plpgsql';
+    $$;
       `);
 
       // Upsert the trigger

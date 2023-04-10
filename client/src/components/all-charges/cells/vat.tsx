@@ -17,7 +17,7 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
     counterparty {
       id
     }
-    financialEntity {
+    owner {
       __typename
       id
     }
@@ -32,19 +32,19 @@ type Props = {
 };
 
 export const Vat = ({ data }: Props) => {
-  const { vat, totalAmount, counterparty, financialEntity, validationData } = getFragmentData(
+  const { vat, totalAmount, counterparty, owner, validationData } = getFragmentData(
     AllChargesVatFieldsFragmentDoc,
     data,
   );
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Vat);
-  const isBusiness = financialEntity?.__typename === 'LtdFinancialEntity';
+  const isBusiness = owner?.__typename === 'LtdFinancialEntity';
 
   const vatIssueFlag =
     (!vat &&
       isBusiness &&
       !entitiesWithoutInvoice.includes(counterparty?.id ?? '') &&
       !businessesWithoutTaxCategory.includes(counterparty?.id ?? '') &&
-      totalAmount?.currency == Currency.Ils) ||
+      totalAmount?.currency === Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
 

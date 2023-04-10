@@ -31,15 +31,14 @@ SELECT
 FROM
   accounter_schema.isracard_creditcard_transactions;
 
-CREATE INDEX
-  event_date_index ON accounter_schema.test3 (
-    (
-      CASE
-        WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound
-        WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date
-      END
-    ) NULLS LAST
-  );
+CREATE INDEX event_date_index ON accounter_schema.test3 (
+  (
+    CASE
+      WHEN full_purchase_date IS NULL THEN full_purchase_date_outbound
+      WHEN full_purchase_date_outbound IS NULL THEN full_purchase_date
+    END
+  ) NULLS LAST
+);
 
 SELECT
   *

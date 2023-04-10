@@ -30,57 +30,85 @@ export async function createAndConnectStore(options: { connectionString: string;
 
       // Upsert the function
       await pg.none(`
-        CREATE OR REPLACE FUNCTION ${tableName}_insert_fn () RETURNS TRIGGER AS $$
-      BEGIN
-          INSERT INTO ${options.schema}.all_transactions (
-            currency_code,
-            event_date,
-            debit_date,
-            event_amount,
-            bank_reference,
-            event_number,
-            account_number,
-            account_type,
-            is_conversion,
-            currency_rate,
-            contra_currency_code,
-            bank_description,
-            original_id,
-            id,
-            current_balance,
-            detailed_bank_description,
-            fee
-          ) VALUES (
-            new.currency::currency,
-            new.time::text::date,
-            new.time::text::date,
-            new.amount,
-            new.transaction_id,
-            to_char(new.time, 'YYYYMMDD')::bigint,
-            new.account_id,
-            concat('checking_', LOWER(new.currency)),
-            false,
-            0,
-            NULL,
-            new.description,
-            new.transaction_id,
-            gen_random_uuid(),
-            0,
-            (CASE
-              WHEN new.fee_tx_id IS NOT NULL
-              THEN (new.fee_tx_id)
-              ELSE ''
-            END),
-            (CASE
-              WHEN new.fee IS NOT NULL
-              THEN new.fee
-              ELSE NULL
-            END)
+      CREATE OR REPLACE FUNCTION ${tableName}_insert_fn() RETURNS TRIGGER
+      LANGUAGE plpgsql
+      AS $$
+        DECLARE
+          merged_id UUID;
+          account_id_var UUID;
+          owner_id_var UUID;
+          charge_id_var UUID = NULL;
+        BEGIN
+          -- Create merged raw transactions record:
+          INSERT INTO ${options.schema}.transactions_raw_list(etana_id)
+          VALUES (NEW.transaction_id::text)
+          RETURNING id INTO merged_id;
+      
+          -- get account and owner IDs
+          SELECT INTO account_id_var, owner_id_var
+              id, owner
+          FROM ${options.schema}.financial_accounts
+          WHERE account_number = NEW.account_id;
+      
+          -- create new charge
+          IF (charge_id_var IS NULL) THEN
+              INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
+              VALUES (
+                  owner_id_var,
+                  FALSE
+              )
+              RETURNING id INTO charge_id_var;
+          END IF;
+      
+          -- create new transaction
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
+          VALUES (
+              account_id_var,
+              charge_id_var,
+              merged_id,
+              CONCAT(NEW.description,(
+                  CASE
+                    WHEN new.fee_tx_id IS NOT NULL
+                    THEN (new.fee_tx_id)
+                  END)
+              ),
+              NEW.currency::currency,
+              NEW.time::text::date,
+              NEW.time::text::date,
+              new.amount,
+              0
           );
-
-          RETURN NEW;
-      END;
-      $$ LANGUAGE 'plpgsql';
+      
+          -- deprecated fields for ref
+          --   INSERT INTO ${options.schema}.all_transactions (
+          --     bank_reference,
+          --     event_number,
+          --     account_type,
+          --     currency_rate,
+          --     contra_currency_code,
+          --     detailed_bank_description,
+          --     fee
+          --   ) VALUES (
+          --     new.transaction_id,
+          --     to_char(new.time, 'YYYYMMDD')::bigint,
+          --     concat('checking_', LOWER(new.currency)),
+          --     0,
+          --     NULL,
+          --     (CASE
+          --       WHEN new.fee_tx_id IS NOT NULL
+          --       THEN (new.fee_tx_id)
+          --       ELSE ''
+          --     END),
+          --     (CASE
+          --       WHEN new.fee IS NOT NULL
+          --       THEN new.fee
+          --       ELSE NULL
+          --     END)
+          --   );
+      
+            RETURN NEW;
+        END;
+      $$;
       `);
 
       logger.info(`Ensuring trigger for table ${tableName} exists...`);

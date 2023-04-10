@@ -7,27 +7,7 @@ import { AllChargesRow } from './all-charges-row';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
-    additionalDocuments {
-      id
-    }
-    ledgerRecords {
-      id
-    }
-    # ...ChargesFields
-    ...AllChargesAccountFields
-    ...AllChargesAccountantApprovalFields
-    ...AllChargesAmountFields
-    ...AllChargesBalanceFields
-    ...AllChargesDateFields
-    ...AllChargesDescriptionFields
-    ...AllChargesEntityFields
-    ...AllChargesShareWithFields
-    ...AllChargesMoreInfoFields
-    ...AllChargesTagsFields
-    ...AllChargesVatFields
-    ...EditChargeFields
-    ...SuggestedCharge
-    ...ChargeExtendedInfoFields
+    ...AllChargesRowFields
   }
 `;
 
@@ -35,20 +15,22 @@ interface Props {
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
+  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
+  toggleMergeCharge?: (chargeId: string) => void;
+  mergeSelectedCharges?: string[];
   data?: FragmentType<typeof AllChargesTableFieldsFragmentDoc>[];
   isAllOpened: boolean;
 }
 
 export const AllChargesTable = ({
   setEditCharge,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
+  toggleMergeCharge,
+  mergeSelectedCharges,
   data,
   isAllOpened,
 }: Props) => {
@@ -62,12 +44,9 @@ export const AllChargesTable = ({
           <th>Date</th>
           <th>Amount</th>
           <th>Vat</th>
-          <th>Entity</th>
-          <th>Account</th>
+          <th>Counterparty</th>
           <th>Description</th>
           <th>Tags</th>
-          <th>Share With</th>
-          <th>Balance</th>
           <th>More Info</th>
           <th>Accountant Approval</th>
           <th>Edit</th>
@@ -78,12 +57,13 @@ export const AllChargesTable = ({
         {charges.map(charge => (
           <AllChargesRow
             key={charge.id}
-            charge={charge}
+            data={charge}
             setEditCharge={setEditCharge}
-            setInsertLedger={setInsertLedger}
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
+            toggleMergeCharge={toggleMergeCharge ? () => toggleMergeCharge(charge.id) : undefined}
+            isSelectedForMerge={mergeSelectedCharges?.includes(charge.id) ?? false}
             isAllOpened={isAllOpened}
           />
         ))}

@@ -42,6 +42,6 @@ export default gql`
 
   extend type Charge {
     " the financial entity that created the charge "
-    financialEntity: FinancialEntity!
+    owner: FinancialEntity!
   }
 `;

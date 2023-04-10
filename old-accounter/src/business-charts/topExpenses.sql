@@ -1,4 +1,4 @@
- -- Not to include (create a function)
+-- Not to include (create a function)
 -- personal_category <> 'conversion'
 -- financial_entity <> 'Isracard'
 -- Taxes entities

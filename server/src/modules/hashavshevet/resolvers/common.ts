@@ -5,5 +5,6 @@ export const commonTransactionFields:
   | HashavshevetModule.FeeTransactionResolvers
   | HashavshevetModule.WireTransactionResolvers
   | HashavshevetModule.CommonTransactionResolvers = {
-  hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id,
+  // TODO(Gil): refactor according to new DB structure
+  // hashavshevetId: DbTransaction => DbTransaction.hashavshevet_id,
 };

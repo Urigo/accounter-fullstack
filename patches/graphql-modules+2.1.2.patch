@@ -1,0 +1,13 @@
+diff --git a/node_modules/graphql-modules/index.mjs b/node_modules/graphql-modules/index.mjs
+index dd82962..faba338 100644
+--- a/node_modules/graphql-modules/index.mjs
++++ b/node_modules/graphql-modules/index.mjs
+@@ -1857,7 +1857,7 @@ function isResolveOptions(value) {
+     return isDefined(value.resolve) || isDefined(value.subscribe);
+ }
+ function isScalarResolver(obj) {
+-    return obj instanceof GraphQLScalarType;
++    return obj instanceof GraphQLScalarType || ("name" in obj && ['Percentage', 'TimelessDate'].includes(obj.name)); 
+ }
+ function isEnumResolver(obj) {
+     return Object.values(obj).every(isPrimitive);

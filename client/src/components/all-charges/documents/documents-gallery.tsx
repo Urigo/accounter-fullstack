@@ -39,12 +39,9 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
   const [openModal, setOpenModal] = useState<string | null>(null);
 
   return (
-    <div className="container px-3 py-3 mx-auto text-gray-600 body-font">
+    <div className="container mx-auto text-gray-600 body-font">
       {additionalDocuments.length > 0 ? (
         <>
-          <div className="flex flex-col text-center w-full">
-            <h1 className="text-lg">Realted Documents</h1>
-          </div>
           <div className="flex flex-wrap">
             <Carousel
               sx={{ maxWidth: 320 }}
@@ -58,7 +55,7 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
               {additionalDocuments.map(doc => (
                 <Carousel.Slide key={doc.id}>
                   <div className="flex flex-col items-center">
-                    <h2 className="text-gray-900 text-lg title-font font-medium">
+                    <h2 className="text-gray-900 text-base font-medium">
                       {'documentType' in doc ? doc.documentType : 'Unprocessed'}
                     </h2>
                     <button className="mx-10" onClick={() => setOpenModal(doc.id)}>

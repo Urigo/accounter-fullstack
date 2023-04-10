@@ -1,3 +1,4 @@
+import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule } from '../types.js';
 import {
   commonFinancialAccountFields,
@@ -6,6 +7,11 @@ import {
 } from './common.js';
 
 export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
+  Query: {
+    allFinancialAccounts: async (_, __, { injector }) => {
+      return injector.get(FinancialAccountsProvider).getAllFinancialAccounts();
+    },
+  },
   BankFinancialAccount: {
     __isTypeOf: DbAccount => !!DbAccount.bank_number,
     ...commonFinancialAccountFields,

@@ -5,7 +5,6 @@ import {
   ChargeFilter,
   LedgerRecordsAccountDetailsFieldsFragmentDoc,
 } from '../../../../gql/graphql';
-import { formatStringifyAmount } from '../../../../helpers';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* TEMPORARY: this component is used for temporary reasons */
@@ -13,31 +12,78 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 /* GraphQL */ `
   fragment LedgerRecordsAccountDetailsFields on LedgerRecord {
     id
-    credit_account_1 {
-      id
-      name
+    creditAccount1 {
+      __typename
+      ... on TaxCategory {
+        id
+        name
+      }
+      ... on NamedCounterparty {
+        id
+        name
+      }
     }
-    credit_account_2 {
-      id
-      name
+    creditAccount2 {
+      __typename
+      ... on TaxCategory {
+        id
+        name
+      }
+      ... on NamedCounterparty {
+        id
+        name
+      }
     }
-    credit_amount_1
-    credit_amount_2
-    debit_account_1 {
-      id
-      name
+    debitAccount1 {
+      __typename
+      ... on TaxCategory {
+        id
+        name
+      }
+      ... on NamedCounterparty {
+        id
+        name
+      }
     }
-    debit_account_2 {
-      id
-      name
+    debitAccount2 {
+      __typename
+      ... on TaxCategory {
+        id
+        name
+      }
+      ... on NamedCounterparty {
+        id
+        name
+      }
     }
-    debit_amount_1
-    debit_amount_2
-    foreign_credit_amount_1
-    foreign_credit_amount_2
-    foreign_debit_amount_1
-    foreign_debit_amount_2
-    currency
+    creditAmount1 {
+      formatted
+      currency
+    }
+    creditAmount2 {
+      formatted
+      currency
+    }
+    debitAmount1 {
+      formatted
+      currency
+    }
+    debitAmount2 {
+      formatted
+      currency
+    }
+    localCurrencyCreditAmount1 {
+      formatted
+    }
+    localCurrencyCreditAmount2 {
+      formatted
+    }
+    localCurrencyDebitAmount1 {
+      formatted
+    }
+    localCurrencyDebitAmount2 {
+      formatted
+    }
   }
 `;
 
@@ -50,47 +96,45 @@ type Props = {
 export const AccountDetails = ({ data, cred, first }: Props) => {
   const { get } = useUrlQuery();
   const {
-    credit_account_1,
-    credit_account_2,
-    credit_amount_1,
-    credit_amount_2,
-    debit_account_1,
-    debit_account_2,
-    debit_amount_1,
-    debit_amount_2,
-    foreign_credit_amount_1,
-    foreign_credit_amount_2,
-    foreign_debit_amount_1,
-    foreign_debit_amount_2,
-    currency,
+    creditAccount1,
+    creditAccount2,
+    debitAccount1,
+    debitAccount2,
+    creditAmount1,
+    creditAmount2,
+    debitAmount1,
+    debitAmount2,
+    localCurrencyCreditAmount1,
+    localCurrencyCreditAmount2,
+    localCurrencyDebitAmount1,
+    localCurrencyDebitAmount2,
   } = getFragmentData(LedgerRecordsAccountDetailsFieldsFragmentDoc, data);
 
   const creditAccount = cred
     ? first
-      ? credit_account_1
-      : credit_account_2
+      ? creditAccount1
+      : creditAccount2
     : first
-    ? debit_account_1
-    : debit_account_2;
-
-  const foreignAmount = cred
-    ? first
-      ? foreign_credit_amount_1
-      : foreign_credit_amount_2
-    : first
-    ? foreign_debit_amount_1
-    : foreign_debit_amount_2;
+    ? debitAccount1
+    : debitAccount2;
 
   const localAmount = cred
     ? first
-      ? credit_amount_1
-      : credit_amount_2
+      ? localCurrencyCreditAmount1
+      : localCurrencyCreditAmount2
     : first
-    ? debit_amount_1
-    : debit_amount_2;
+    ? localCurrencyDebitAmount1
+    : localCurrencyDebitAmount2;
 
-  const isAccount = creditAccount || Number(localAmount) > 0 || Number(foreignAmount) > 0;
-  const isForeign = foreignAmount != null && currency && currency !== 'ILS';
+  const foreignAmount = cred
+    ? first
+      ? creditAmount1
+      : creditAmount2
+    : first
+    ? debitAmount1
+    : debitAmount2;
+
+  const isForeign = foreignAmount != null && foreignAmount.currency !== 'ILS';
 
   const encodedFilters = get('chargesFilters');
 
@@ -122,20 +166,24 @@ export const AccountDetails = ({ data, cred, first }: Props) => {
 
   return (
     <td>
-      {isAccount && (
+      {creditAccount && (
         <>
-          <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
+          {creditAccount.__typename === 'NamedCounterparty' ? (
+            <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
+              <NavLink
+                label={creditAccount?.name}
+                className="[&>*>.mantine-NavLink-label]:font-semibold"
+              />
+            </a>
+          ) : (
             <NavLink
               label={creditAccount?.name}
               className="[&>*>.mantine-NavLink-label]:font-semibold"
+              disabled
             />
-          </a>
-          {isForeign && (
-            <p>
-              {formatStringifyAmount(foreignAmount)} {currency}
-            </p>
           )}
-          {localAmount != null && <p>{formatStringifyAmount(localAmount)} ILS</p>}
+          {isForeign && <p>{foreignAmount.formatted}</p>}
+          {localAmount != null && <p>{localAmount.formatted}</p>}
         </>
       )}
     </td>
