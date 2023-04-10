@@ -2,7 +2,7 @@
 make sure that other then monthly balance and CASH ADVANCE all transactions
 has full_purchase_date or full_purchase_date_outbound
 (result should be empty)
- */
+*/
 SELECT
   *
 FROM
@@ -17,7 +17,7 @@ WHERE
 make sure that other then monthly balance and CASH ADVANCE all transactions
 has payment_sum or payment_sum_outbound
 (result should be empty)
- */
+*/
 SELECT
   *
 FROM
@@ -32,7 +32,7 @@ WHERE
 make sure that other then monthly balance and CASH ADVANCE all transactions
 has voucher_number
 (result should be empty)
- */
+*/
 SELECT
   *
 FROM
@@ -44,7 +44,7 @@ WHERE
 
 /*
 make sure that there are no duplicates in creditcards
- */
+*/
 WITH
   all_creditcard_transactions AS (
     SELECT
@@ -80,8 +80,7 @@ HAVING
   COUNT(*) > 1;
 
 -- 1241
-DELETE FROM
-  accounter_schema.isracard_creditcard_transactions
+DELETE FROM accounter_schema.isracard_creditcard_transactions
 WHERE
   card = 2733
   AND card_index = 1

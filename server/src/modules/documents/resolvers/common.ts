@@ -7,7 +7,7 @@ import type { DocumentsModule } from '../types.js';
 
 export const documentType: DocumentsModule.DocumentResolvers['documentType'] = documentRoot => {
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  if (key == 'Invoice_receipt') {
+  if (key === 'Invoice_receipt') {
     key = 'InvoiceReceipt';
   }
   return DocumentType[key as keyof typeof DocumentType];
@@ -29,10 +29,9 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
     }
     return url;
   },
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,
   documentType,
+  isValid: () => false,
 };
 
 export const commonFinancialDocumentsFields:
@@ -47,8 +46,18 @@ export const commonFinancialDocumentsFields:
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
     documentRoot.vat_amount == null ? null : formatFinancialAmount(documentRoot.vat_amount),
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
+  isValid: documentRoot => {
+    const temp =
+      !!documentRoot.charge_id_new &&
+      !!documentRoot.creditor_id &&
+      !!documentRoot.debtor_id &&
+      !!documentRoot.currency_code &&
+      !!documentRoot.date &&
+      documentRoot.total_amount != null &&
+      documentRoot.vat_amount != null &&
+      !!documentRoot.serial_number;
+    return temp;
+  },
 };
 
 export const commonFinancialEntityFields:
@@ -57,7 +66,7 @@ export const commonFinancialEntityFields:
   documents: async (DbBusiness, _, { injector }) => {
     const documents = await injector
       .get(DocumentsProvider)
-      .getDocumentsByFinancialEntityIds({ financialEntityIds: [DbBusiness.id] });
+      .getDocumentsByFinancialEntityIds({ ownerIds: [DbBusiness.id] });
     return documents;
   },
 };

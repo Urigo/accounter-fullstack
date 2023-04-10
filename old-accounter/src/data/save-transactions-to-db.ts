@@ -4,7 +4,14 @@ import pg from 'pg';
 
 const { camelCase } = lodash;
 
-export type AccountTypes = 'ils' | 'usd' | 'eur' | 'gbp' | 'deposits' | 'isracard';
+export type AccountTypes =
+  | 'ils'
+  | 'usd'
+  | 'eur'
+  | 'gbp'
+  | 'deposits'
+  | 'foreign_deposits'
+  | 'isracard';
 
 export async function saveTransactionsToDB(
   transactions: any,
@@ -82,7 +89,7 @@ export async function saveTransactionsToDB(
       // TODO: Check if we want to save it to DB
       optionalTransactionKeys = ['data0ExpectedRepaymentSwitch'];
     } else if (accountType == 'isracard') {
-      optionalTransactionKeys = ['clientIpAddress', 'bcKey'];
+      optionalTransactionKeys = ['clientIpAddress', 'bcKey', 'chargingDate'];
     }
     optionalTransactionKeys = optionalTransactionKeys.concat(['id']);
     findMissingTransactionKeys(
@@ -551,6 +558,7 @@ function transactionValuesToArray(transaction: any, accountType: AccountTypes) {
       transaction.siteName,
       transaction.clientIpAddress,
       transaction.card,
+      null,
     ];
   } else if (accountType == 'deposits') {
     values = [

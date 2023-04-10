@@ -4,12 +4,9 @@ import { AllChargesAmountFieldsFragmentDoc } from '../../../gql/graphql';
 /* GraphQL */ `
   fragment AllChargesAmountFields on Charge {
     id
-    transactions {
-      id
-      amount {
+    totalAmount {
         raw
         formatted
-      }
     }
   }
 `;
@@ -20,12 +17,16 @@ type Props = {
 
 export const Amount = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesAmountFieldsFragmentDoc, data);
-  const { amount } = charge.transactions[0];
 
   return (
     <td>
-      <div style={{ color: Number(amount.raw) > 0 ? 'green' : 'red', whiteSpace: 'nowrap' }}>
-        {amount.formatted}
+      <div
+        style={{
+          color: Number(charge.totalAmount?.raw) > 0 ? 'green' : 'red',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {charge.totalAmount?.formatted}
       </div>
     </td>
   );

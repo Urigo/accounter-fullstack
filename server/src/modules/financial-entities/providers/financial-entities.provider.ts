@@ -3,7 +3,6 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetAllFinancialEntitiesParams,
   IGetAllFinancialEntitiesQuery,
   IGetFinancialEntitiesByChargeIdsParams,
   IGetFinancialEntitiesByChargeIdsQuery,
@@ -26,13 +25,11 @@ const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     FROM accounter_schema.businesses;`;
 
 const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
-    SELECT at.id as transaction_id, bu.*
-    FROM accounter_schema.all_transactions at
-    LEFT JOIN accounter_schema.financial_accounts fa
-    ON  at.account_number = fa.account_number
+    SELECT c.id as charge_id, bu.*
+    FROM accounter_schema.charges c
     LEFT JOIN accounter_schema.businesses bu
-    ON  fa.owner = bu.id
-    WHERE at.id IN $$chargeIds;`;
+    ON  c.owner_id = bu.id
+    WHERE c.id IN $$chargeIds;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -75,8 +72,8 @@ export class FinancialEntitiesProvider {
     },
   );
 
-  public getAllFinancialEntities(params: IGetAllFinancialEntitiesParams) {
-    return getAllFinancialEntities.run(params, this.dbProvider);
+  public getAllFinancialEntities() {
+    return getAllFinancialEntities.run(undefined, this.dbProvider);
   }
 
   public getFinancialEntitiesByChargeIds(params: IGetFinancialEntitiesByChargeIdsParams) {
@@ -91,7 +88,7 @@ export class FinancialEntitiesProvider {
       this.dbProvider,
     );
     return chargeIds.map(
-      chargeId => financialEntities.find(fe => fe.transaction_id === chargeId) ?? null,
+      chargeId => financialEntities.find(fe => fe.charge_id === chargeId) ?? null,
     );
   }
 

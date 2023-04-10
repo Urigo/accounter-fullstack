@@ -9,21 +9,13 @@ export default gql`
 
   " represent charge suggestions for missing info "
   type ChargeSuggestions {
+    " redundant. relevant on transaction level "
     business: Counterparty!
     description: String
+    " redundant. relevant on transaction level "
     beneficiaries: [BeneficiaryCounterparty!]
     tags: [Tag!]!
+    " redundant. relevant on transaction level "
     vat: FinancialAmount
-  }
-
-  " represent a missing info attributes for a charge"
-  enum MissingChargeInfo {
-    COUNTERPARTY
-    TRANSACTION_DESCRIPTION
-    TAGS
-    VAT
-    DOCUMENTS
-    LEDGER_RECORDS
-    BALANCE
   }
 `;

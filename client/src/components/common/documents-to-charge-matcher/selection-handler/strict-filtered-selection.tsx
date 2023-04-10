@@ -57,7 +57,7 @@ export function StrictFilteredSelection({
                 <CalendarEvent color="white" />
               </div>
               <span className="ml-3 text-neutral-600">
-                {format(new Date(charge.transactions[0].createdAt), 'yyyy-MM-dd')}
+                {format(new Date(charge.transactions[0].eventDate), 'yyyy-MM-dd')}
               </span>
             </li>
             <li className="flex">
@@ -70,7 +70,9 @@ export function StrictFilteredSelection({
               <div className="inline-flex items-center w-6 h-6 bg-blue-600 rounded-xl p-0.5">
                 <Bookmark color="white" />
               </div>
-              <span className="ml-3 text-neutral-600">{charge.transactions[0].description}</span>
+              <span className="ml-3 text-neutral-600">
+                {charge.transactions[0].sourceDescription}
+              </span>
             </li>
             {extandedInfoFlag ? (
               <>
@@ -110,7 +112,7 @@ export function StrictFilteredSelection({
                 {document.amount?.formatted}
               </span>
             </p>
-            <p className="mt-6 text-gray-300">{document.creditor}</p>
+            <p className="mt-6 text-gray-300">{document.creditor?.name}</p>
             <ul className="pt-6 mt-6 space-y-6 border-t">
               <li className="flex">
                 <div className="inline-flex items-center w-6 h-6 bg-white rounded-xl p-0.5">
@@ -140,7 +142,7 @@ export function StrictFilteredSelection({
                 <div className="inline-flex items-center w-6 h-6 bg-white rounded-xl p-0.5">
                   <Bookmark color="blue" />
                 </div>
-                <span className="ml-3 text-white">{document.creditor}</span>
+                <span className="ml-3 text-white">{document.creditor?.name}</span>
               </li>
               {extandedInfoFlag ? (
                 <>

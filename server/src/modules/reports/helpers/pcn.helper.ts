@@ -6,14 +6,8 @@ import {
   Transaction,
 } from '@accounter-toolkit/pcn874-generator/typings/types.js';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
-import type { DecoratedVatReportRecord } from './vat-report.helper';
+import type { RawVatReportRecord2 } from './vat-report.helper';
 
-// export type DecoratedVatReportRecord = IGetChargesByIdsResult & {
-//   vatNumber: string;
-//   vatAfterDeduction: number;
-//   amountBeforeVAT: number;
-//   amountBeforeFullVAT: number;
-// };
 export type ExtendedPCNTransaction = Omit<Transaction, 'totalVat'> &
   Required<Pick<Transaction, 'totalVat'>> & { isProperty: boolean };
 
@@ -33,7 +27,7 @@ const headerPropsFromTransactions = (
   let inputsCount = 0;
   let totalVat = 0;
 
-  transactions.forEach(t => {
+  for (const t of transactions) {
     switch (t.entryType) {
       case EntryType.SALE_REGULAR: {
         taxableSalesVat += t.totalVat;
@@ -99,7 +93,7 @@ const headerPropsFromTransactions = (
     if (t.invoiceDate.substring(0, 6) > derivedReportMonth) {
       derivedReportMonth = t.invoiceDate.substring(0, 6);
     }
-  });
+  }
 
   totalVat = taxableSalesVat - otherInputsVat - equipmentInputsVat;
 
@@ -120,16 +114,14 @@ const headerPropsFromTransactions = (
   return header;
 };
 
-const transformTransactions = (
-  dbTransactions: DecoratedVatReportRecord[],
-): ExtendedPCNTransaction[] => {
+const transformTransactions = (dbTransactions: RawVatReportRecord2[]): ExtendedPCNTransaction[] => {
   const transactions: ExtendedPCNTransaction[] = [];
   for (const t of dbTransactions) {
-    if (!t.tax_invoice_date) {
-      console.debug(`Transaction ${t.id} has no tax_invoice_date. Skipping it.`);
+    if (!t.documentDate) {
+      console.debug(`Document ${t.documentId} has no tax_invoice_date. Skipping it.`);
       continue;
     }
-    const amountToUse = t.tax_invoice_amount || t.event_amount;
+    const amountToUse = (t.isExpense ? '-' : '') + t.documentAmount;
     let entryType = EntryType.INPUT_REGULAR;
     if (Number(amountToUse) > 0) {
       if (Number(t.vatAfterDeduction) > 0) {
@@ -141,20 +133,20 @@ const transformTransactions = (
 
     transactions.push({
       entryType,
-      vatId: t.vat_number ?? '0',
-      invoiceDate: format(new Date(t.tax_invoice_date), 'yyyyMMdd'),
+      vatId: t.vatNumber ?? '0',
+      invoiceDate: format(new Date(t.documentDate!), 'yyyyMMdd'),
       refGroup: '0000',
-      refNumber: t.tax_invoice_number ?? undefined,
+      refNumber: t.documentSerial ?? undefined,
       totalVat: Math.round(Math.abs(Number(t.vatAfterDeduction ?? 0))),
-      invoiceSum: Math.round(Math.abs(Number(t.amountBeforeFullVAT ?? t.amountBeforeVAT))),
-      isProperty: t.is_property,
+      invoiceSum: Math.round(Math.abs(Number(t.amountBeforeVAT))),
+      isProperty: t.isProperty,
     });
   }
   return transactions;
 };
 
 export const generatePcnFromCharges = (
-  charges: DecoratedVatReportRecord[],
+  vatRecords: RawVatReportRecord2[],
   vatNumber: string,
   reportMonth: string,
 ) => {
@@ -168,7 +160,7 @@ export const generatePcnFromCharges = (
     throw new Error(`Expected vatNumber to be 9 digits, received "${vatNumber}"`);
   }
 
-  const transactions = transformTransactions(charges);
+  const transactions = transformTransactions(vatRecords);
 
   const header = headerPropsFromTransactions(transactions, vatNumber, reportMonth);
 

@@ -1,8 +1,14 @@
-import type { mutation_addExpense_oneOf_0_allOf_0_documentType } from '@accounter-toolkit/green-invoice-graphql';
+import type {
+  mutation_addExpense_oneOf_0_allOf_0_documentType,
+  query_searchDocuments_items_items_payment_items_ref_items,
+} from '@accounter-toolkit/green-invoice-graphql';
 import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
-  rawType?: mutation_addExpense_oneOf_0_allOf_0_documentType | null,
+  rawType?:
+    | mutation_addExpense_oneOf_0_allOf_0_documentType
+    | query_searchDocuments_items_items_payment_items_ref_items
+    | null,
 ): DocumentType {
   if (!rawType) {
     return DocumentType.Unprocessed;
@@ -11,6 +17,9 @@ export function normalizeDocumentType(
     case '_20':
       // חשבון / אישור תשלום
       return DocumentType.Invoice;
+    case '_300':
+      // חשבונית עסקה
+      return DocumentType.Unprocessed;
     case '_305':
       // חשבונית מס
       return DocumentType.Invoice;

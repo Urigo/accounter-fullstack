@@ -10,6 +10,8 @@ import type {
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsQuery,
+  IReplaceLedgerRecordsChargeIdParams,
+  IReplaceLedgerRecordsChargeIdQuery,
   IUpdateLedgerRecordParams,
   IUpdateLedgerRecordQuery,
 } from '../types.js';
@@ -26,12 +28,8 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
         FROM accounter_schema.financial_accounts
         WHERE owner IN (
             SELECT id
-            FROM accounter_schema.all_transactions
-            WHERE account_number IN (
-                SELECT account_number
-                FROM accounter_schema.financial_accounts
-                WHERE owner IN $$financialEntityIds
-            )
+            FROM accounter_schema.charges
+            WHERE owner_id IN $$ownerIds
         )
     );`;
 
@@ -212,6 +210,13 @@ const deleteLedgerRecord = sql<IDeleteLedgerRecordQuery>`
   RETURNING id;
 `;
 
+const replaceLedgerRecordsChargeId = sql<IReplaceLedgerRecordsChargeIdQuery>`
+  UPDATE accounter_schema.ledger
+  SET original_id = $assertChargeID
+  WHERE original_id = $replaceChargeID
+  RETURNING id;
+`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -250,5 +255,9 @@ export class LedgerProvider {
 
   public deleteLedgerRecord(params: IDeleteLedgerRecordParams) {
     return deleteLedgerRecord.run(params, this.dbProvider);
+  }
+
+  public async replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
+    return replaceLedgerRecordsChargeId.run(params, this.dbProvider);
   }
 }

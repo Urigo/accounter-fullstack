@@ -30,71 +30,89 @@ export async function createAndConnectStore(options: { connectionString: string;
 
       // Upsert the function
       await pg.none(`
-        CREATE OR REPLACE FUNCTION ${ledgerTable}_insert_fn () RETURNS TRIGGER AS $$
-      BEGIN
-          INSERT INTO ${options.schema}.all_transactions (
-            currency_code,
-            event_date,
-            debit_date,
-            event_amount,
-            bank_reference,
-            event_number,
-            account_number,
-            account_type,
-            is_conversion,
-            currency_rate,
-            contra_currency_code,
-            bank_description,
-            original_id,
-            id,
-            current_balance,
-            detailed_bank_description,
-            fee
-          ) VALUES (
-            new.currency::currency,
-            new.value_date::text::date,
-            new.value_date::text::date,
-            new.amount,
-            new.ledger_id,
-            to_char(new.value_date, 'YYYYMMDD')::bigint,
-            new.account_nickname,
-            (
-              CASE
-                WHEN new.currency = 'USD'
-                  THEN concat('checking_', LOWER(new.currency))
-                ELSE concat('crypto_', LOWER(new.currency))
-              END
-            ),
-            (CASE
-              WHEN new.trade_ref_id IS NOT NULL
-              THEN true
-              ELSE false
-            END),
-            (CASE
-              WHEN new.trade_ref_id IS NOT NULL
-              THEN (SELECT price FROM ${options.schema}.${tradesTable} WHERE trade_id = new.trade_ref_id)
-              ELSE 0
-            END),
-            NULL,
-            (CASE
-              WHEN new.trade_ref_id IS NOT NULL
-              THEN new.trade_ref_id
-              ELSE ''
-            END),
-            new.ledger_id,
-            gen_random_uuid(),
-            0,
-            '',
-            (CASE
-              WHEN new.trade_ref_id IS NOT NULL
-              THEN (SELECT fee FROM ${options.schema}.${tradesTable} WHERE trade_id = new.trade_ref_id)
-              ELSE NULL
-            END)
-          );
+        CREATE OR REPLACE FUNCTION ${ledgerTable}_insert_fn() RETURNS TRIGGER
+          LANGUAGE plpgsql
+        AS $$
+        DECLARE
+            merged_id UUID;
+            account_id_var UUID;
+            owner_id_var UUID;
+            charge_id_var UUID = NULL;
+        BEGIN
+            -- Create merged raw transactions record:
+            INSERT INTO ${options.schema}.transactions_raw_list(kraken_id)
+            VALUES (NEW.ledger_id::text)
+            RETURNING id INTO merged_id;
 
-          RETURN NEW;
-      END;
-      $$ LANGUAGE 'plpgsql';
+            -- get account and owner IDs
+            SELECT INTO account_id_var, owner_id_var
+                id, owner
+            FROM ${options.schema}.financial_accounts
+            WHERE account_number = NEW.account_nickname;
+
+            -- create new charge
+            IF (charge_id_var IS NULL) THEN
+                INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
+                VALUES (
+                    owner_id_var,
+                    (CASE
+                      WHEN new.trade_ref_id IS NOT NULL
+                      THEN true
+                      ELSE false
+                END)
+                )
+                RETURNING id INTO charge_id_var;
+            END IF;
+
+            -- create new transaction
+            INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
+            VALUES (
+                account_id_var,
+                charge_id_var,
+                merged_id,
+                (CASE
+                      WHEN new.trade_ref_id IS NOT NULL
+                      THEN new.trade_ref_id
+                END),
+                NEW.currency::currency,
+                NEW.value_date::text::date,
+                NEW.value_date::text::date,
+                NEW.amount,
+                NEW.balance
+            );
+
+            -- deprecated fields for ref
+            -- INSERT INTO ${options.schema}.all_transactions (
+            --     bank_reference,
+            --     event_number,
+            --     account_type,
+            --     currency_rate,
+            --     fee
+            -- ) VALUES (
+            --     new.ledger_id,
+            --     to_char(new.value_date, 'YYYYMMDD')::bigint,
+            --     (
+            --         CASE
+            --             WHEN new.currency = 'USD'
+            --                 THEN concat('checking_', LOWER(new.currency))
+            --             ELSE concat('crypto_', LOWER(new.currency))
+            --         END
+            --     ),
+            --     (CASE
+            --           WHEN new.trade_ref_id IS NOT NULL
+            --           THEN (SELECT price FROM ${options.schema}.kraken_trades WHERE trade_id = new.trade_ref_id)
+            --           ELSE 0
+            --     END),
+            --     (CASE
+            --           WHEN new.trade_ref_id IS NOT NULL
+            --           THEN (SELECT fee FROM ${options.schema}.kraken_trades WHERE trade_id = new.trade_ref_id)
+            --           ELSE NULL
+            --     END)
+            -- );
+
+            RETURN NEW;
+        END;
+        $$;
       `);
 
       // Upsert the trigger
@@ -133,7 +151,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           trade_id TEXT PRIMARY KEY,
           account_nickname TEXT NOT NULL,
           pair TEXT NOT NULL,
-          value_date DATE NOT NULL,
+          value_date TIMESTAMP NOT NULL,
           order_type TEXT NOT NULL,
           price NUMERIC NOT NULL,
           cost NUMERIC NOT NULL,
@@ -157,7 +175,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           amount DECIMAL NOT NULL,
           balance DECIMAL NOT NULL,
           fee DECIMAL NOT NULL,
-          value_date DATE NOT NULL,
+          value_date TIMESTAMP NOT NULL,
           trade_ref_id TEXT,
           raw_data JSONB NOT NULL
         );

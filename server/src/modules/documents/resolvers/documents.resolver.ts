@@ -1,10 +1,20 @@
+import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
+import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import { formatCurrency } from '@shared/helpers';
+import { normalizeDocumentType } from '../helpers/green-invoice.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
-import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
+import type {
+  DocumentsModule,
+  IInsertDocumentsParams,
+  IInsertDocumentsResult,
+  IUpdateDocumentParams,
+} from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialDocumentsFields,
@@ -14,10 +24,17 @@ import { uploadDocument } from './document-handling.js';
 import { fetchEmailDocument } from './email-handling.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers &
-  Pick<Resolvers, 'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult'> = {
+  Pick<
+    Resolvers,
+    'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult' | 'Document'
+  > = {
   Query: {
     documents: async (_, __, { injector }) => {
       const dbDocs = await injector.get(DocumentsProvider).getAllDocuments();
+      return dbDocs;
+    },
+    documentsByFilters: async (_, { filters }, { injector }) => {
+      const dbDocs = await injector.get(DocumentsProvider).getDocumentsByFilters(filters);
       return dbDocs;
     },
   },
@@ -28,7 +45,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
-        if (fields.chargeId) {
+        if (fields.chargeId && fields.chargeId !== 'NULL') {
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new Error(`Charge ID="${fields.chargeId}" not valid`);
@@ -39,6 +56,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           documentId,
           chargeId: fields.chargeId ?? null,
           currencyCode: fields.amount?.currency ?? null,
+          creditorId: fields.creditorId ?? null,
+          debtorId: fields.debtorId ?? null,
           date: fields.date ? new Date(fields.date) : null,
           fileUrl: fields.file ? fields.file.toString() : null,
           imageUrl: fields.image ? fields.image.toString() : null,
@@ -53,60 +72,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           throw new Error(`Document ID="${documentId}" not found`);
         }
 
-        const updatedDoc = res[0];
-
-        if (charge?.id && !charge.vat && updatedDoc.vat_amount) {
-          const adjustedFields: ChargesTypes.IUpdateChargeParams = {
-            accountNumber: null,
-            accountType: null,
-            bankDescription: null,
-            bankReference: null,
-            businessTrip: null,
-            contraCurrencyCode: null,
-            currencyCode: null,
-            currencyRate: null,
-            currentBalance: null,
-            debitDate: null,
-            detailedBankDescription: null,
-            eventAmount: null,
-            eventDate: null,
-            eventNumber: null,
-            financialAccountsToBalance: null,
-            financialEntityID: null,
-            hashavshevetId: null,
-            interest: null,
-            isConversion: null,
-            isProperty: null,
-            links: null,
-            originalId: null,
-            personalCategory: null,
-            proformaInvoiceFile: null,
-            receiptDate: null,
-            receiptImage: null,
-            receiptNumber: null,
-            receiptUrl: null,
-            reviewed: null,
-            taxCategory: null,
-            taxInvoiceAmount: null,
-            taxInvoiceCurrency: null,
-            taxInvoiceDate: null,
-            taxInvoiceFile: null,
-            taxInvoiceNumber: null,
-            userDescription: null,
-            vat: updatedDoc.vat_amount,
-            withholdingTax: null,
-            chargeId: charge.id,
-          };
-          const res = await injector.get(ChargesProvider).updateCharge(adjustedFields);
-          if (!res || res.length === 0) {
-            throw new Error(
-              `Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`,
-            );
-          }
-        }
-
         return {
-          document: updatedDoc,
+          document: res[0],
         };
       } catch (e) {
         return {
@@ -172,6 +139,108 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
+    fetchIncomeDocuments: async (_, { ownerId }, { injector }) => {
+      const data = await injector
+        .get(GreenInvoiceProvider)
+        .getSDK()
+        .searchDocuments_query({
+          input: { pageSize: 100, sort: 'creationDate' },
+        });
+      if (!data.searchDocuments?.items) {
+        throw new GraphQLError('Failed to fetch documents');
+      }
+      if (data.searchDocuments.items.length === 0) {
+        return [];
+      }
+
+      const documents = await injector.get(DocumentsProvider).getAllDocuments();
+      const newDocuments = data.searchDocuments.items.filter(
+        item =>
+          item &&
+          !documents.some(
+            doc =>
+              doc.vat_amount === item.vat &&
+              doc.total_amount === item.amount &&
+              doc.serial_number === item.number &&
+              doc.date &&
+              format(doc.date, 'yyyy-MM-dd') === item.documentDate,
+          ),
+      );
+      const addedDocs: IInsertDocumentsResult[] = [];
+
+      await Promise.all(
+        newDocuments.map(async greenInvoiceDoc => {
+          if (!greenInvoiceDoc || greenInvoiceDoc.type === '_300') {
+            // ignore if no doc or חשבונית עסקה
+            return;
+          }
+          try {
+            // generate preview image via cloudinary
+            const { imageUrl } = await injector
+              .get(CloudinaryProvider)
+              .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
+
+            // Generate parent charge
+            const [charge] = await injector.get(ChargesProvider).generateCharge({
+              ownerId,
+              userDescription: 'Green Invoice generated charge',
+            });
+            if (!charge) {
+              throw new Error('Failed to generate charge');
+            }
+            console.log('Generated charge:', charge.id);
+
+            // insert document
+            const rawDocument: IInsertDocumentsParams['document']['0'] = {
+              image: imageUrl,
+              file: greenInvoiceDoc.url.origin,
+              documentType: normalizeDocumentType(greenInvoiceDoc.type),
+              serialNumber: greenInvoiceDoc.number,
+              date: greenInvoiceDoc.documentDate,
+              amount: greenInvoiceDoc.amount,
+              currencyCode: formatCurrency(greenInvoiceDoc.currency),
+              vat: greenInvoiceDoc.vat,
+              chargeId: charge.id,
+            };
+            const newDocument = await injector
+              .get(DocumentsProvider)
+              .insertDocuments({ document: [rawDocument] });
+            addedDocs.push(newDocument[0]);
+          } catch (e) {
+            throw new GraphQLError(
+              `Error adding Green Invoice document: ${e}\n\n${JSON.stringify(
+                greenInvoiceDoc,
+                null,
+                2,
+              )}`,
+            );
+          }
+        }),
+      );
+
+      return addedDocs;
+    },
+  },
+  Document: {
+    __resolveType: (documentRoot, _context, _info) => {
+      switch (documentRoot?.type) {
+        case DocumentType.Invoice: {
+          return 'Invoice';
+        }
+        case DocumentType.Receipt: {
+          return 'Receipt';
+        }
+        case DocumentType.InvoiceReceipt: {
+          return 'InvoiceReceipt';
+        }
+        case DocumentType.Proforma: {
+          return 'Proforma';
+        }
+        default: {
+          return 'Unprocessed';
+        }
+      }
+    },
   },
   UpdateDocumentResult: {
     __resolveType: (obj, _context, _info) => {
@@ -210,34 +279,21 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   //   },
   // },
   Invoice: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'INVOICE';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   InvoiceReceipt: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'INVOICE_RECEIPT';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   Proforma: {
-    __isTypeOf: () => false,
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   Unprocessed: {
-    __isTypeOf(documentRoot) {
-      return !documentRoot.type || documentRoot.type === 'UNPROCESSED';
-    },
     ...commonDocumentsFields,
   },
   Receipt: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'RECEIPT';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },

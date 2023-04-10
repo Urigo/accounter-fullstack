@@ -25,7 +25,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
-        res.forEach(t => {
+        for (const t of res) {
           if (!t.business_id) {
             throw new GraphQLError('business_id is null');
           }
@@ -77,7 +77,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             foreignInfo.debit += direction < 0 ? foreignAmount : 0;
             foreignInfo.total += direction * foreignAmount;
           }
-        });
+        }
 
         return {
           __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',

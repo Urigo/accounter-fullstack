@@ -11,7 +11,7 @@ export interface NotificationPopUpProps {
 export const NotificationPopUp = ({ title, content, state }: NotificationPopUpProps) => {
   return (
     <Notification
-      disallowClose
+      withCloseButton={false}
       style={{ zIndex: 9999, position: 'absolute', left: 0, top: 0 }}
       icon={state === 'success' ? <Check size={18} /> : <X size={18} />}
       color={state}
@@ -23,7 +23,7 @@ export const NotificationPopUp = ({ title, content, state }: NotificationPopUpPr
           title: 'Loading your data',
           message: 'Data will be loaded in 3 seconds, you cannot close this yet',
           autoClose: false,
-          disallowClose: true,
+          withCloseButton: false,
         });
 
         setTimeout(() => {

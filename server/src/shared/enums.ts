@@ -1,11 +1,10 @@
 export enum MissingChargeInfo {
   Counterparty = 'COUNTERPARTY',
-  TransactionDescription = 'TRANSACTION_DESCRIPTION',
+  Transactions = 'TRANSACTIONS',
   Tags = 'TAGS',
   Vat = 'VAT',
   Documents = 'DOCUMENTS',
-  LedgerRecords = 'LEDGER_RECORDS',
-  Balance = 'BALANCE',
+  Description = 'DESCRIPTION',
 }
 
 export enum ChargeSortByField {

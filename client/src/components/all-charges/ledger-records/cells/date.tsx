@@ -5,7 +5,7 @@ import { LedgerRecordsDateFieldsFragmentDoc } from '../../../../gql/graphql';
 /* GraphQL */ `
   fragment LedgerRecordsDateFields on LedgerRecord {
     id
-    date
+    invoiceDate
   }
 `;
 
@@ -14,9 +14,9 @@ type Props = {
 };
 
 export const DateCell = ({ data }: Props) => {
-  const { date } = getFragmentData(LedgerRecordsDateFieldsFragmentDoc, data);
+  const { invoiceDate } = getFragmentData(LedgerRecordsDateFieldsFragmentDoc, data);
 
-  const formattedDate = date ? format(new Date(date), 'dd/MM/yy') : 'Missing Data';
+  const formattedDate = invoiceDate ? format(new Date(invoiceDate), 'dd/MM/yy') : 'Missing Data';
 
   return <td>{formattedDate}</td>;
 };

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Control, Controller, UseFormWatch } from 'react-hook-form';
+import { useQuery } from 'urql';
+import { Select } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import {
+  AllFinancialEntitiesDocument,
   Currency,
   DocumentType,
   EditDocumentFieldsFragment,
@@ -25,6 +29,19 @@ export interface Props {
 
 export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency }: Props) => {
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+
+  const [
+    {
+      data: financialEntitiesData,
+      fetching: fetchingFinancialEntities,
+      error: financialEntitiesError,
+    },
+  ] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
 
   const isDocumentProcessed =
     isDocumentInvoice(document) ||
@@ -44,6 +61,29 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
           type === DocumentType.Proforma),
     );
   }, [type]);
+
+  useEffect(() => {
+    if (financialEntitiesError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+        color: 'red',
+      });
+    }
+  }, [financialEntitiesError]);
+
+  useEffect(() => {
+    if (financialEntitiesData?.allFinancialEntities.length) {
+      setFinancialEntities(
+        financialEntitiesData.allFinancialEntities
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [financialEntitiesData, setFinancialEntities]);
 
   return (
     <>
@@ -98,30 +138,38 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             )}
           />
           <Controller
-            name="debtor"
+            name="debtorId"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.debtor : undefined}
+            defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
             render={({ field, fieldState }) => (
-              <TextInput
+              <Select
                 {...field}
-                value={!field || field.value === 'Missing' ? '' : field.value!}
-                error={fieldState.error?.message}
-                isDirty={fieldState.isDirty}
+                data={financialEntities}
+                value={field.value}
+                disabled={fetchingFinancialEntities}
                 label="Debtor"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
               />
             )}
           />
           <Controller
-            name="creditor"
+            name="creditorId"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.creditor : undefined}
+            defaultValue={isDocumentProcessed ? document?.creditor?.id : undefined}
             render={({ field, fieldState }) => (
-              <TextInput
+              <Select
                 {...field}
-                value={!field || field.value === 'Missing' ? '' : field.value!}
-                error={fieldState.error?.message}
-                isDirty={fieldState.isDirty}
+                data={financialEntities}
+                value={field.value}
+                disabled={fetchingFinancialEntities}
                 label="Creditor"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
               />
             )}
           />

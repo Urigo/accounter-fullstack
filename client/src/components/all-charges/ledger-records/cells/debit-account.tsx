@@ -4,8 +4,15 @@ import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/grap
 /* GraphQL */ `
   fragment LedgerRecordsDebitAccountFields on LedgerRecord {
     id
-    debitAccount {
-      name
+    debitAccount1 {
+      ... on NamedCounterparty {
+        id
+        name
+      }
+      ... on TaxCategory {
+        id
+        name
+      }
     }
   }
 `;
@@ -15,7 +22,7 @@ type Props = {
 };
 
 export const DebitAccount = ({ data }: Props) => {
-  const { debitAccount } = getFragmentData(LedgerRecordsDebitAccountFieldsFragmentDoc, data);
+  const { debitAccount1 } = getFragmentData(LedgerRecordsDebitAccountFieldsFragmentDoc, data);
 
-  return <td>{debitAccount?.name ?? 'Missing Account'}</td>;
+  return <td>{debitAccount1?.name ?? 'Missing Account'}</td>;
 };
