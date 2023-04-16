@@ -43,7 +43,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     percentage: parent => parent.percentage,
   },
   Charge: {
-    counterparty: DbCharge => DbCharge.financial_entity_id,
+    counterparty: DbCharge => DbCharge.counterparty_id,
     beneficiaries: async (DbCharge, _, { injector }) => {
       // TODO: update to better implementation after DB is updated
       try {

@@ -199,7 +199,13 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
       try {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
         const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
-        return res[0];
+        const updatedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(res[0].id);
+        if (!updatedCharge) {
+          throw new Error(`Charge ID="${chargeId}" not found`);
+        }
+        return updatedCharge;
       } catch (e) {
         return {
           __typename: 'CommonError',

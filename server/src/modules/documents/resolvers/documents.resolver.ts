@@ -53,60 +53,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           throw new Error(`Document ID="${documentId}" not found`);
         }
 
-        const updatedDoc = res[0];
-
-        if (charge?.id && !charge.vat && updatedDoc.vat_amount) {
-          const adjustedFields: ChargesTypes.IUpdateChargeParams = {
-            accountNumber: null,
-            accountType: null,
-            bankDescription: null,
-            bankReference: null,
-            businessTrip: null,
-            contraCurrencyCode: null,
-            currencyCode: null,
-            currencyRate: null,
-            currentBalance: null,
-            debitDate: null,
-            detailedBankDescription: null,
-            eventAmount: null,
-            eventDate: null,
-            eventNumber: null,
-            financialAccountsToBalance: null,
-            financialEntityID: null,
-            hashavshevetId: null,
-            interest: null,
-            isConversion: null,
-            isProperty: null,
-            links: null,
-            originalId: null,
-            personalCategory: null,
-            proformaInvoiceFile: null,
-            receiptDate: null,
-            receiptImage: null,
-            receiptNumber: null,
-            receiptUrl: null,
-            reviewed: null,
-            taxCategory: null,
-            taxInvoiceAmount: null,
-            taxInvoiceCurrency: null,
-            taxInvoiceDate: null,
-            taxInvoiceFile: null,
-            taxInvoiceNumber: null,
-            userDescription: null,
-            vat: updatedDoc.vat_amount,
-            withholdingTax: null,
-            chargeId: charge.id,
-          };
-          const res = await injector.get(ChargesProvider).updateCharge(adjustedFields);
-          if (!res || res.length === 0) {
-            throw new Error(
-              `Could not update vat from Document ID="${documentId}" to Charge ID="${fields.chargeId}"`,
-            );
-          }
-        }
-
         return {
-          document: updatedDoc,
+          document: res[0],
         };
       } catch (e) {
         return {

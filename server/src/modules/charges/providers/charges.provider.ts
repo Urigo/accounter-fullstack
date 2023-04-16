@@ -10,26 +10,48 @@ import type {
   IDeleteChargesByIdsQuery,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
+  IGetChargesByFiltersResult,
   IGetChargesByFinancialAccountIdsParams,
   IGetChargesByFinancialAccountIdsQuery,
+  IGetChargesByFinancialAccountIdsResult,
   IGetChargesByFinancialEntityIdsParams,
   IGetChargesByFinancialEntityIdsQuery,
-  IGetChargesByIdsQuery, // IGetConversionOtherSideParams,
+  IGetChargesByFinancialEntityIdsResult,
+  IGetChargesByIdsQuery,
+  IGetChargesByIdsResult, // IGetConversionOtherSideParams,
   // IGetConversionOtherSideQuery,
   IUpdateChargeParams,
   IUpdateChargeQuery,
+  IUpdateChargeResult,
   IValidateChargesParams,
   IValidateChargesQuery,
+  IValidateChargesResult,
 } from '../types.js';
+
+export type ChargeRequiredWrapper<
+  T extends {
+    id: unknown;
+    owner_id: unknown;
+    is_conversion: unknown;
+    is_property: unknown;
+    accountant_reviewed: unknown;
+  },
+> = Omit<T, 'id' | 'owner_id' | 'is_conversion' | 'is_property' | 'accountant_reviewed'> & {
+  id: NonNullable<T['id']>;
+  owner_id: NonNullable<T['owner_id']>;
+  is_conversion: NonNullable<T['is_conversion']>;
+  is_property: NonNullable<T['is_property']>;
+  accountant_reviewed: NonNullable<T['accountant_reviewed']>;
+};
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *
-    FROM accounter_schema.charges
+    FROM accounter_schema.extended_charges
     WHERE id IN $$chargeIds;`;
 
 const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuery>`
     SELECT c.*, t.account_id
-    FROM accounter_schema.charges c
+    FROM accounter_schema.extended_charges c
     LEFT JOIN accounter_schema.transactions t
     ON c.id = t.charge_id
     WHERE c.id IN (
@@ -48,7 +70,7 @@ const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuer
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT c.*
-    FROM accounter_schema.charges c
+    FROM accounter_schema.extended_charges c
     LEFT JOIN accounter_schema.transactions t
     ON c.id = t.charge_id
     WHERE owner_id IN $$financialEntityIds
@@ -109,8 +131,7 @@ const updateCharge = sql<IUpdateChargeQuery>`
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     c.*,
-    ABS(cast(t.event_amount as DECIMAL)) as abs_event_amount,
-    bu.no_invoices_required,
+    ABS(c.event_amount) as abs_event_amount,
     -- invoices_count column, conditional calculation
     CASE WHEN $preCountInvoices = false THEN NULL ELSE (
       SELECT COUNT(*)
@@ -158,30 +179,24 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
           AND lr.business_id = c.counterparty_id
           AND lr.financial_entity_id = c.owner_id)
     ) END as balance
-  FROM accounter_schema.charges c
+  FROM accounter_schema.extended_charges c
   LEFT JOIN accounter_schema.businesses bu
   ON  c.counterparty_id = bu.id
-  LEFT JOIN (
-    SELECT charge_id, MIN(event_date) as min_event_date, MAX(event_date) as max_event_date, SUM(amount) as event_amount
-    FROM accounter_schema.transactions
-    GROUP BY charge_id
-  ) t
-  ON t.charge_id = c.id
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
   AND ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
   AND ($isBusinessesIDs = 0 OR c.counterparty_id IN $$businessesIDs)
   AND ($isNotBusinessesIDs = 0 OR c.counterparty_id NOT IN $$notBusinessesIDs)
-  AND ($fromDate ::TEXT IS NULL OR t.min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-  AND ($toDate ::TEXT IS NULL OR t.max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND t.event_amount > 0) OR ($chargeType = 'EXPENSE' AND t.event_amount <= 0))
+  AND ($fromDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+  AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.event_amount <= 0))
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN t.min_event_date  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN t.min_event_date  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN t.event_amount  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN t.event_amount  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(t.event_amount as DECIMAL))  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(t.event_amount as DECIMAL))  END DESC;
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN c.transactions_min_event_date  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN c.transactions_min_event_date  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN c.event_amount  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN c.event_amount  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(c.event_amount as DECIMAL))  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(c.event_amount as DECIMAL))  END DESC;
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
@@ -209,8 +224,6 @@ type IGetAdjustedChargesByFiltersParams = Optional<
 const validateCharges = sql<IValidateChargesQuery>`
   SELECT
     c.*,
-    (bu.country <> 'Israel') as is_foreign,
-    bu.no_invoices_required,
     (
       SELECT COUNT(*)
       FROM accounter_schema.documents d
@@ -254,21 +267,16 @@ const validateCharges = sql<IValidateChargesQuery>`
           AND lr.business_id = c.counterparty_id
           AND lr.financial_entity_id = c.owner_id)
     ) as balance
-  FROM accounter_schema.charges c
+  FROM accounter_schema.extended_charges c
   LEFT JOIN accounter_schema.businesses bu
   ON  c.counterparty_id = bu.id
-  LEFT JOIN (
-    SELECT charge_id, MIN(event_date) as min_event_date, MAX(event_date) as max_event_date, SUM(amount) as event_amount
-    FROM accounter_schema.transactions
-    GROUP BY charge_id
-  ) t
-  ON t.charge_id = c.id
+
   WHERE ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
-    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND t.event_amount > 0) OR ($chargeType = 'EXPENSE' AND t.event_amount <= 0))
+    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.event_amount <= 0))
     AND ($isIDs = 0 OR c.id IN $$IDs)
-    AND ($fromDate ::TEXT IS NULL OR t.min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR t.max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY t.min_event_date DESC;
+    AND ($fromDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY c.transactions_min_event_date DESC;
 `;
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -291,12 +299,12 @@ export class ChargesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
-    const charges = await getChargesByIds.run(
+    const charges = (await getChargesByIds.run(
       {
         chargeIds: ids,
       },
       this.dbProvider,
-    );
+    )) as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
     return ids.map(id => charges.find(charge => charge.id === id));
   }
 
@@ -306,18 +314,20 @@ export class ChargesProvider {
   );
 
   public getChargesByFinancialAccountIds(params: IGetChargesByFinancialAccountIdsParams) {
-    return getChargesByFinancialAccountIds.run(params, this.dbProvider);
+    return getChargesByFinancialAccountIds.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IGetChargesByFinancialAccountIdsResult>[]
+    >;
   }
 
   private async batchChargesByFinancialAccountIds(financialAccountIDs: readonly string[]) {
-    const charges = await getChargesByFinancialAccountIds.run(
+    const charges = (await getChargesByFinancialAccountIds.run(
       {
         financialAccountIDs,
         fromDate: null,
         toDate: null,
       },
       this.dbProvider,
-    );
+    )) as ChargeRequiredWrapper<IGetChargesByFinancialAccountIdsResult>[];
     return financialAccountIDs.map(accountId =>
       charges.filter(charge => charge.account_id === accountId),
     );
@@ -331,18 +341,20 @@ export class ChargesProvider {
   );
 
   public getChargesByFinancialEntityIds(params: IGetChargesByFinancialEntityIdsParams) {
-    return getChargesByFinancialEntityIds.run(params, this.dbProvider);
+    return getChargesByFinancialEntityIds.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResult>[]
+    >;
   }
 
   private async batchChargesByFinancialEntityIds(financialEntityIds: readonly string[]) {
-    const charges = await getChargesByFinancialEntityIds.run(
+    const charges = (await getChargesByFinancialEntityIds.run(
       {
         financialEntityIds,
         fromDate: null,
         toDate: null,
       },
       this.dbProvider,
-    );
+    )) as ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResult>[];
     return financialEntityIds.map(id => charges.filter(charge => charge.owner_id === id));
   }
 
@@ -358,7 +370,9 @@ export class ChargesProvider {
   // }
 
   public updateCharge(params: IUpdateChargeParams) {
-    return updateCharge.run(params, this.dbProvider);
+    return updateCharge.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IUpdateChargeResult>[]
+    >;
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
@@ -391,7 +405,9 @@ export class ChargesProvider {
       notBusinessesIDs: isNotBusinessesIDs ? params.notBusinessesIDs! : [null],
       chargeType: params.chargeType ?? 'ALL',
     };
-    return getChargesByFilters.run(fullParams, this.dbProvider);
+    return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IGetChargesByFiltersResult>[]
+    >;
   }
 
   public validateCharges(params: IValidateChargesAdjustedParams) {
@@ -408,7 +424,9 @@ export class ChargesProvider {
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
       chargeType: params.chargeType ?? 'ALL',
     };
-    return validateCharges.run(fullParams, this.dbProvider);
+    return validateCharges.run(fullParams, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IValidateChargesResult>[]
+    >;
   }
 
   private async batchValidateChargesByIds(ids: readonly string[]) {

@@ -1,3 +1,4 @@
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   ChargeResolvers,
   Maybe,
@@ -12,17 +13,21 @@ const missingInfoSuggestions: Resolver<
   Maybe<Omit<ResolversTypes['ChargeSuggestions'], 'business'> & { business: string }>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context
-> = DbCharge => {
+> = async (DbCharge, _, { injector }) => {
   if (
-    DbCharge.financial_entity_id &&
-    DbCharge.personal_category &&
-    DbCharge.vat != null &&
-    DbCharge.financial_accounts_to_balance &&
+    DbCharge.counterparty_id &&
+    // TODO (Gil): Re-enable tags after migration to new DB structure
+    // DbCharge.personal_category &&
+    DbCharge.documents_vat_amount != null &&
+    // DbCharge.financial_accounts_to_balance &&
     !!DbCharge.user_description?.trim()
   ) {
     return null;
   }
-  const description = `${DbCharge.bank_description} ${DbCharge.detailed_bank_description}`;
+  const transactions = await injector
+    .get(TransactionsProvider)
+    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+  const description = transactions.map(t => t.source_description).join(' ');
 
   if (description.includes('SLACK TAYJ1FSUA/DUBLIN')) {
     return {
@@ -157,10 +162,16 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
+    const sourceTransaction =
+      transactions.length === 0
+        ? 'Missing'
+        : transactions.length === 1
+        ? transactions[0].id
+        : `['${transactions.map(t => t.id).join("','")}']`;
     return {
       business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
       tags: [{ name: 'financial' }],
-      description: `Fees for bank_reference=${DbCharge.bank_reference ?? 'Missing'}`,
+      description: `Fees for source transaction=${sourceTransaction}`,
     };
   }
   if (description.includes('ריבית זכות')) {

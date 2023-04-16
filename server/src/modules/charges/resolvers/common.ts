@@ -1,4 +1,4 @@
-import { ChargesProvider } from '../providers/charges.provider.js';
+import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
@@ -36,7 +36,7 @@ export const commonFinancialEntityFields:
   | ChargesModule.LtdFinancialEntityResolvers
   | ChargesModule.PersonalFinancialEntityResolvers = {
   charges: async (DbBusiness, { filter, page, limit }, { injector }) => {
-    const charges: IGetChargesByIdsResult[] = [];
+    const charges: ChargeRequiredWrapper<IGetChargesByIdsResult>[] = [];
     if (!filter || Object.keys(filter).length === 0) {
       const newCharges = await injector
         .get(ChargesProvider)

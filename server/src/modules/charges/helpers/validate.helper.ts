@@ -1,22 +1,23 @@
-import { format } from 'date-fns';
 import { Currency, MissingChargeInfo, ValidationData } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
-import type { IGetChargesByIdsResult, IValidateChargesResult } from '../types.js';
+import type { ChargeRequiredWrapper } from '../providers/charges.provider.js';
+import type { IValidateChargesResult } from '../types.js';
 
-export function validateCharge(charge: IValidateChargesResult): ValidationData {
+export function validateCharge(
+  charge: ChargeRequiredWrapper<IValidateChargesResult>,
+): ValidationData {
   const missingInfo: Array<MissingChargeInfo> = [];
 
   const invoicesCount = Number(charge.invoices_count) || 0;
   const receiptsCount = Number(charge.receipts_count) || 0;
-  const isForeignExpense = !!charge.is_foreign && Number(charge.event_amount) < 0;
+  const isForeignExpense = !!charge.is_foreign && Number(charge.transactions_event_amount) < 0;
   const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
   const documentsAreFine = charge.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
 
-  const businessIsFine = !!charge.financial_entity_id;
+  const businessIsFine = !!charge.counterparty_id;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
@@ -26,12 +27,15 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.TransactionDescription);
   }
 
-  const tagsAreFine = !!charge.personal_category?.trim();
-  if (!tagsAreFine) {
-    missingInfo.push(MissingChargeInfo.Tags);
-  }
+  // TODO(Gil): Re-enable tags after migration to new DB structure
+  // const tagsAreFine = !!charge.personal_category?.trim();
+  // if (!tagsAreFine) {
+  //   missingInfo.push(MissingChargeInfo.Tags);
+  // }
 
-  const vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
+  const vatIsFine =
+    charge.no_invoices_required ||
+    (charge.documents_vat_amount != null && charge.documents_vat_amount != 0);
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
@@ -51,7 +55,7 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     documentsAreFine &&
     businessIsFine &&
     descriptionIsFine &&
-    tagsAreFine &&
+    // tagsAreFine &&
     vatIsFine &&
     ledgerRecordsAreFine &&
     balanceIsFine;
@@ -61,20 +65,4 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo,
     balance: formatFinancialAmount(charge.balance, Currency.Ils),
   };
-}
-
-export function effectiveDateSupplement(charge: IGetChargesByIdsResult) {
-  if (charge.account_type != 'creditcard') {
-    if (charge.debit_date) {
-      return format(charge.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-    }
-    return format(charge.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (charge.debit_date) {
-    return format(charge.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (charge.currency_code == 'ILS') {
-    return format(charge.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  return null;
 }
