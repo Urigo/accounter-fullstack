@@ -46,7 +46,6 @@ export default gql`
     direction: TransactionDirection!
     amount: FinancialAmount!
     description: String!
-    userNote: String
     balance: FinancialAmount!
   }
 
@@ -59,7 +58,6 @@ export default gql`
     direction: TransactionDirection!
     amount: FinancialAmount!
     description: String!
-    userNote: String
     balance: FinancialAmount!
   }
 
@@ -72,7 +70,6 @@ export default gql`
     direction: TransactionDirection!
     amount: FinancialAmount!
     description: String!
-    userNote: String
     balance: FinancialAmount!
   }
 
@@ -85,7 +82,6 @@ export default gql`
     direction: TransactionDirection!
     amount: FinancialAmount!
     description: String!
-    userNote: String
     balance: FinancialAmount!
     from: Currency!
     to: Currency!

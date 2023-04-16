@@ -22,13 +22,13 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 /* GraphQL */ `
   fragment SuggestedCharge on Charge {
     id
+    userDescription
     transactions {
       id
       __typename
       amount {
         raw
       }
-      userNote
       referenceNumber
       description
     }

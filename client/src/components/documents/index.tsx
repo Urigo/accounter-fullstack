@@ -25,6 +25,7 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
           formatted
           __typename
         }
+        userDescription
         transactions {
           id
           createdAt
@@ -34,7 +35,6 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
             formatted
             __typename
           }
-          userNote
         }
       }
       __typename

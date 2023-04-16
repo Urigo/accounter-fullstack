@@ -95,12 +95,12 @@ async function getVatRecords(
       // update tax category according to Hashavshevet
       await Promise.all(
         charges.map(async charge => {
-          if (financialEntityId && charge.financial_entity_id) {
+          if (financialEntityId && charge.owner_id) {
             const hashIndex = await injector
               .get(HashavshevetProvider)
               .getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader.load({
                 financialEntityId,
-                businessID: charge.financial_entity_id,
+                businessID: charge.owner_id,
               });
             charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
           }
@@ -110,10 +110,10 @@ async function getVatRecords(
       await Promise.all(
         charges.map(async charge => {
           const matchDoc = relevantDocuments.find(doc => doc.charge_id === charge.id);
-          const matchBusiness = await (charge.financial_entity_id && getVatNumbers
+          const matchBusiness = await (charge.owner_id && getVatNumbers
             ? injector
                 .get(FinancialEntitiesProvider)
-                .getFinancialEntityByIdLoader.load(charge.financial_entity_id)
+                .getFinancialEntityByIdLoader.load(charge.owner_id)
             : undefined);
           if (matchDoc) {
             if (charge.vat != null && charge.vat < 0) {

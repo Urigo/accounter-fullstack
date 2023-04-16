@@ -23,36 +23,12 @@ export default gql`
     accountantApproval: AccountantApproval!
   }
 
-  extend interface Transaction {
-    accountantApproval: AccountantApproval!
-  }
-
   extend type Charge {
     " calculated based on ledger record and transaction approvals "
     accountantApproval: AccountantApproval!
   }
 
   extend input UpdateChargeInput {
-    accountantApproval: AccountantApprovalInput
-  }
-
-  extend type CommonTransaction implements Transaction {
-    accountantApproval: AccountantApproval!
-  }
-
-  extend type WireTransaction implements Transaction {
-    accountantApproval: AccountantApproval!
-  }
-
-  extend type FeeTransaction implements Transaction {
-    accountantApproval: AccountantApproval!
-  }
-
-  extend type ConversionTransaction implements Transaction {
-    accountantApproval: AccountantApproval!
-  }
-
-  extend input UpdateTransactionInput {
     accountantApproval: AccountantApprovalInput
   }
 

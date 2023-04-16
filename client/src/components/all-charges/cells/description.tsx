@@ -2,15 +2,15 @@ import { useCallback, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
+import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton, InfoMiniButton } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesDescriptionFields on Charge {
     id
+    userDescription
     transactions {
       id
-      userNote
       description
     }
     validationData {
@@ -32,22 +32,24 @@ export const Description = ({ data }: Props) => {
     MissingChargeInfo.TransactionDescription,
   );
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
-  const { userNote, id: transactionId, description: fullDescription } = charge.transactions[0];
-  const cellText = userNote?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
+  const { userDescription, id: chargeId } = charge;
+  const { description: fullDescription } = charge.transactions[0];
+  const cellText =
+    userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
   const [toggleDescription, setToggleDescription] = useState(false);
 
-  const { updateTransaction, fetching } = useUpdateTransaction();
+  const { updateCharge, fetching } = useUpdateCharge();
 
-  const updateUserNote = useCallback(
+  const updateUserDescription = useCallback(
     (value?: string) => {
       if (value !== undefined) {
-        updateTransaction({
-          transactionId,
-          fields: { userNote: value },
+        updateCharge({
+          chargeId,
+          fields: { userDescription: value },
         });
       }
     },
-    [transactionId, updateTransaction],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -61,7 +63,7 @@ export const Description = ({ data }: Props) => {
         <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={() => updateUserNote(charge.missingInfoSuggestions!.description!)}
+            onClick={() => updateUserDescription(charge.missingInfoSuggestions!.description!)}
             disabled={fetching}
           />
         )}
