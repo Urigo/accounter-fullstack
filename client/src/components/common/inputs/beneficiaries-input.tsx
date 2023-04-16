@@ -52,7 +52,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
             <div className="mt-1 relative rounded-md shadow-sm">
               <Controller
                 control={control}
-                name={`beneficiaries.${index}.counterparty.name`}
+                name={`beneficiaries.${index}.counterparty.id`}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
@@ -85,7 +85,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
         <ActionIcon>
           <PlaylistAdd
             size={20}
-            onClick={() => append({ percentage: 0, counterparty: { name: '' } })}
+            onClick={() => append({ percentage: 0, counterparty: { id: '' } })}
           />
         </ActionIcon>
         {errors.beneficiaries?.message && (

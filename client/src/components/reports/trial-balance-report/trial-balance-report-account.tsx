@@ -28,7 +28,7 @@ export const TrialBalanceReportAccount = ({ account, sortCodeId, filter, isAllOp
     <>
       <tr key={account.id}>
         <td>{sortCodeId}</td>
-        <td>{account.key}</td>
+        <td>{account.id}</td>
         <td>{account.name ?? undefined}</td>
         <td>
           {rowTotal < -0.001
