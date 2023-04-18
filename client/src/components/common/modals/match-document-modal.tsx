@@ -2,7 +2,7 @@ import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { PopUpDrawer } from '..';
 import { writeToClipboard } from '../../../helpers';
-import { DocumentsToChargeMatcher } from '../../documents-to-charge-matcher';
+import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
 
 interface Props {
   matchDocuments: string;

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Image } from '@mantine/core';
+import { AccounterTable, Button, PopUpModal } from '../../';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../../../gql/graphql';
-import { AccounterTable, Button, PopUpModal } from '../../common';
+} from '../../../../gql/graphql';
 
 interface Props {
   documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[];

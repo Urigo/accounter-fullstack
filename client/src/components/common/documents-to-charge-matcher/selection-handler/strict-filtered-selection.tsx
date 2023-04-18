@@ -4,8 +4,8 @@ import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icon
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../../../gql/graphql';
-import { rateOptionalDocumentsMatches } from '../../../helpers/document-matches';
+} from '../../../../gql/graphql';
+import { rateOptionalDocumentsMatches } from '../../../../helpers/document-matches';
 
 interface Props {
   documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[];
