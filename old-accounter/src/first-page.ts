@@ -7,7 +7,7 @@ import {
   entitiesWithoutInvoiceNumber,
   privateBusinessExpenses,
 } from '../../client/src/helpers/groups.js';
-import { suggestedTransaction } from '../../client/src/helpers/transactions.js';
+import { suggestedTransaction } from './helpers/index.js';
 import { pool } from './index.js';
 
 // TODO: Check this article for joins https://www.cybertec-postgresql.com/en/understanding-lateral-joins-in-postgresql/

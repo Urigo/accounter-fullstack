@@ -18,12 +18,11 @@
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",
     "prettier:check": "prettier --ignore-path .gitignore --check .",
     "react:dev": "cd client && yarn dev",
-    "react:install": "cd server && yarn install && cd ../temp-server && yarn install && cd ../client && yarn install && cd ../",
+    "react:install": "cd server && yarn install && cd ../client && yarn install && cd ../",
     "scrape": "node --experimental-specifier-resolution=node --experimental-json-modules dist/old-accounter/src/scrape.js",
     "server:dev": "cd server && yarn dev",
     "sqlgen": "npx pgtyped -c pgTypedConfig.json",
-    "start": "node --experimental-specifier-resolution=node dist/old-accounter/src/index.js",
-    "temp-server:dev": "cd temp-server && yarn dev"
+    "start": "node --experimental-specifier-resolution=node dist/old-accounter/src/index.js"
   },
   "dependencies": {
     "date-fns": "2.29.3",

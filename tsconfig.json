@@ -30,6 +30,6 @@
     "strict": true,
     "jsx": "preserve"
   },
-  "include": ["./server", "./temp-server", "./old-accounter", "./client"],
+  "include": ["./server", "./old-accounter", "./client"],
   "exclude": ["**/node_modules", "**/dist"]
 }

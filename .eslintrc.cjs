@@ -85,5 +85,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['old-accounter/**', 'temp-server/**', '**/__generated__/**', 'schema.graphql'],
+  ignorePatterns: ['old-accounter/**', '**/__generated__/**', 'schema.graphql'],
 };

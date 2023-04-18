@@ -10,8 +10,7 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "generate": "cd ../ && yarn generate && cd client",
-    "preview": "vite preview",
-    "server:dev": "cd ../temp-server && yarn dev"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@emotion/react": "11.10.6",
