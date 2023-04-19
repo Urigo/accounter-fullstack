@@ -2,17 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
-import { AllUsers } from './components/all-users';
 import { BusinessTransactionsSummery } from './components/business-transactions';
 import { DocumentsReport } from './components/documents';
-import { DocumentsMatch } from './components/documents-match';
-import { FinancialStatus } from './components/financial-status';
-import { MonthlyReport } from './components/monthly-report';
-import { ReportsToReview } from './components/reports-to-review';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
-import { TopPrivateNotCategorized } from './components/top-private-not-categorized';
-import { UserTransactions } from './components/user-transactions';
 import { Providers } from './providers';
 import './index.css';
 
@@ -27,15 +20,8 @@ root.render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AllCharges />} />
-          <Route path="/financial-status" element={<FinancialStatus />} />
           <Route path="/all-charges" element={<AllCharges />} />
-          <Route path="/monthly-report" element={<MonthlyReport />} />
-          <Route path="/reports-to-review" element={<ReportsToReview />} />
           <Route path="/documents" element={<DocumentsReport />} />
-          <Route path="/private-charts" element={<TopPrivateNotCategorized />} />
-          <Route path="/user-transactions" element={<UserTransactions />} />
-          <Route path="/all-users" element={<AllUsers />} />
-          <Route path="/match-documents" element={<DocumentsMatch />} />
           <Route path="/business-transactions" element={<BusinessTransactionsSummery />} />
           <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
           <Route path="/reports/vat-monthly" element={<VatMonthlyReport />} />

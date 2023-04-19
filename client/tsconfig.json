@@ -20,12 +20,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": [
-    "client/vite.config.ts",
-    "src/**/*",
-    "client/**/*",
-    "server/**/*",
-    "temp-server/index.ts"
-  ],
+  "include": ["client/vite.config.ts", "src/**/*", "client/**/*", "server/**/*"],
   "references": [{ "path": "tsconfig.node.json" }]
 }

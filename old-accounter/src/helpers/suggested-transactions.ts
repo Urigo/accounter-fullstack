@@ -1,10 +1,43 @@
-import type { TransactionType } from '../models/types';
-import {
-  businessesNotToShare,
-  businessesWithoutTaxCategory,
-  entitiesWithoutInvoice,
-  privateBusinessExpenses,
-} from './groups.js';
+interface TransactionType {
+  tax_invoice_date: Date | null;
+  tax_category: string | null;
+  currency_code: string;
+  event_date: Date;
+  debit_date: Date | null;
+  event_amount: string;
+  financial_entity: string | null;
+  financial_entity_id: string | null;
+  vat: number | null;
+  user_description: string | null;
+  tax_invoice_number: string | null;
+  tax_invoice_amount: number | null;
+  receipt_number: number | null;
+  business_trip: string | null;
+  personal_category: string | null;
+  financial_accounts_to_balance: string | null;
+  bank_reference: string | null;
+  event_number: string | null;
+  account_number: string;
+  account_type: string;
+  is_conversion: boolean;
+  currency_rate: number;
+  contra_currency_code: number | null;
+  bank_description: string;
+  withholding_tax: number | null;
+  interest: number | null;
+  proforma_invoice_file: string | null;
+  original_id: string;
+  id: string;
+  reviewed: boolean | null;
+  hashavshevet_id: number | null;
+  current_balance: number;
+  tax_invoice_file: string | null;
+  detailed_bank_description: string;
+  links: string | null;
+  receipt_image: string | null;
+  receipt_url: string | null;
+  receipt_date: string | null;
+}
 
 interface FinancialEntity {
   financialEntity: string;
@@ -948,35 +981,3 @@ export function suggestedTransaction(transaction: TransactionType): FinancialEnt
   }
   return suggestedTransaction;
 }
-
-export const isBusiness = (transaction: TransactionType) => {
-  return (
-    (transaction.account_number == '61066' ||
-      transaction.account_number == '2733' ||
-      transaction.account_number == '466803' ||
-      transaction.account_number == '1082' ||
-      transaction.account_number == '5972' ||
-      transaction.account_number == '1074') &&
-    !entitiesWithoutInvoice.includes(transaction.financial_entity_id ?? '')
-  );
-};
-
-export const shareWithDotan = (transaction: TransactionType) => {
-  if (
-    !transaction.financial_accounts_to_balance ||
-    ['no', ' ', 'yes', 'pension', 'training_fund'].includes(
-      transaction.financial_accounts_to_balance,
-    )
-  ) {
-    return false;
-  }
-
-  const financialEntityID = transaction.financial_entity_id ?? '';
-
-  return !(
-    !isBusiness(transaction) ||
-    privateBusinessExpenses.includes(financialEntityID) ||
-    businessesNotToShare.includes(financialEntityID) ||
-    businessesWithoutTaxCategory.includes(financialEntityID)
-  );
-};

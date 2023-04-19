@@ -8,7 +8,6 @@
       "client",
       "server",
       "old-accounter",
-      "temp-server",
       "etherscan-scrapper",
       "kraken-scrapper",
       "etana-scrapper"
@@ -18,7 +17,7 @@
     "node": "19.8.1"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn temp-server:build\"",
+    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
     "client:build": "yarn --cwd client build",
     "client:dev": "yarn --cwd client dev",
     "codegen": "graphql-codegen --config codegen.yml",
@@ -37,9 +36,7 @@
     "scrape": "yarn --cwd old-accounter scrape",
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",
-    "start": "yarn --cwd old-accounter start",
-    "temp-server:build": "yarn --cwd temp-server build",
-    "temp-server:dev": "yarn --cwd temp-server dev"
+    "start": "yarn --cwd old-accounter start"
   },
   "dependencies": {
     "graphql": "16.6.0",
