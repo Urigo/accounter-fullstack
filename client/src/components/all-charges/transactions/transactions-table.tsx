@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableTransactionsFieldsFragmentDoc } from '../../../gql/graphql';
 import { EditMiniButton, PopUpDrawer } from '../../common';
-import { Account, Amount, BankID, Counterparty, DebitDate, Description, EventDate } from './cells';
+import {
+  Account,
+  Amount,
+  Counterparty,
+  DebitDate,
+  Description,
+  EventDate,
+  SourceID,
+} from './cells';
 
 // import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
 // import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
@@ -17,7 +25,7 @@ import { Account, Amount, BankID, Counterparty, DebitDate, Description, EventDat
       ...Transactions_AmountFields
       ...Transactions_AccountFields
       ...Transactions_DescriptionFields
-      ...Transactions_BankIDFields
+      ...Transactions_SourceIDFields
       ...Transactions_EntityFields
     }
   }
@@ -39,7 +47,7 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
           <th>Amount</th>
           <th>Account</th>
           <th>Description</th>
-          <th>Bank ID</th>
+          <th>Source ID</th>
           <th>Counterparty</th>
           {/* <th>Activity Type</th> // TODO: implement */}
           <th>Edit</th>
@@ -53,7 +61,7 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
             <Amount data={transaction} />
             <Account data={transaction} />
             <Description data={transaction} />
-            <BankID data={transaction} />
+            <SourceID data={transaction} />
             <Counterparty data={transaction} />
             <td>
               <EditMiniButton onClick={() => setEditTransactionId(transaction.id)} />
