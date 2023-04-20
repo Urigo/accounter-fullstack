@@ -1,33 +1,30 @@
-import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesAccountFieldsFragmentDoc } from '../../../gql/graphql';
+import { FragmentType, getFragmentData } from '../../../../gql';
+import { Transactions_AccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment AllChargesAccountFields on Charge {
+  fragment Transactions_AccountFields on Transaction {
     id
-    transactions {
-      id
-      account {
+    account {
         id
         __typename
         ... on BankFinancialAccount {
-          accountNumber
+            accountNumber
         }
         ... on CardFinancialAccount {
-          fourDigits
+            fourDigits
         }
-      }
     }
   }
 `;
 
 type Props = {
-  data: FragmentType<typeof AllChargesAccountFieldsFragmentDoc>;
+  data: FragmentType<typeof Transactions_AccountFieldsFragmentDoc>;
 };
 
 // TODO: this is temp. delete this cell after all_transaction is split into ledger and charge
 export const Account = ({ data }: Props) => {
-  const charge = getFragmentData(AllChargesAccountFieldsFragmentDoc, data);
-  const { account } = charge.transactions[0];
+  const transaction = getFragmentData(Transactions_AccountFieldsFragmentDoc, data);
+  const { account } = transaction;
 
   const accountType =
     account.__typename === 'BankFinancialAccount'

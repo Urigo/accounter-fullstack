@@ -7,27 +7,7 @@ import { AllChargesRow } from './all-charges-row';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
-    additionalDocuments {
-      id
-    }
-    ledgerRecords {
-      id
-    }
-    # ...ChargesFields
-    ...AllChargesAccountFields
-    ...AllChargesAccountantApprovalFields
-    ...AllChargesAmountFields
-    ...AllChargesBalanceFields
-    ...AllChargesDateFields
-    ...AllChargesDescriptionFields
-    ...AllChargesEntityFields
-    ...AllChargesShareWithFields
-    ...AllChargesMoreInfoFields
-    ...AllChargesTagsFields
-    ...AllChargesVatFields
-    ...EditChargeFields
-    ...SuggestedCharge
-    ...ChargeExtendedInfoFields
+    ...AllChargesRowFields
   }
 `;
 
@@ -63,11 +43,8 @@ export const AllChargesTable = ({
           <th>Amount</th>
           <th>Vat</th>
           <th>Entity</th>
-          <th>Account</th>
           <th>Description</th>
           <th>Tags</th>
-          <th>Share With</th>
-          <th>Balance</th>
           <th>More Info</th>
           <th>Accountant Approval</th>
           <th>Edit</th>
@@ -78,7 +55,7 @@ export const AllChargesTable = ({
         {charges.map(charge => (
           <AllChargesRow
             key={charge.id}
-            charge={charge}
+            data={charge}
             setEditCharge={setEditCharge}
             setInsertLedger={setInsertLedger}
             setInsertDocument={setInsertDocument}

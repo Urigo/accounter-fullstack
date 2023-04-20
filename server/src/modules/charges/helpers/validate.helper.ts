@@ -1,25 +1,63 @@
-import { Currency, MissingChargeInfo, ValidationData } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
-import type { ChargeRequiredWrapper } from '../providers/charges.provider.js';
+import { GraphQLError } from 'graphql';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { ChargeResolvers, MissingChargeInfo } from '@shared/gql-types';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import type { IValidateChargesResult } from '../types.js';
 
-export function validateCharge(
-  charge: ChargeRequiredWrapper<IValidateChargesResult>,
-): ValidationData {
+export const validateCharge: ChargeResolvers['validationData'] = async (
+  DbCharge,
+  _,
+  { injector },
+) => {
+  const charge: IValidateChargesResult | undefined =
+    'invoices_count' in DbCharge && DbCharge.invoices_count != null
+      ? (DbCharge as IValidateChargesResult)
+      : await injector.get(ChargesProvider).validateChargeByIdLoader.load(DbCharge.id);
+
+  if (!charge) {
+    throw new GraphQLError(`Charge ID='${DbCharge.id}' not found`);
+  }
+
   const missingInfo: Array<MissingChargeInfo> = [];
+
+  const counterpartyIDs = new Set<string>();
+  const documents = await injector
+    .get(DocumentsProvider)
+    .getDocumentsByChargeIdLoader.load(DbCharge.id);
+  const transactions = await injector
+    .get(TransactionsProvider)
+    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+  documents.map(d => {
+    if (d.creditor_id && d.creditor_id !== DbCharge.owner_id) counterpartyIDs.add(d.creditor_id);
+    if (d.debtor_id && d.debtor_id !== DbCharge.owner_id) counterpartyIDs.add(d.debtor_id);
+  });
+  transactions.map(t => {
+    if (t.business_id) counterpartyIDs.add(t.business_id);
+  });
+
+  const business =
+    counterpartyIDs.size === 1
+      ? await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(counterpartyIDs.values().next().value)
+      : undefined;
+
+  const businessIsFine = !!business;
+  if (!businessIsFine) {
+    missingInfo.push(MissingChargeInfo.Counterparty);
+  }
 
   const invoicesCount = Number(charge.invoices_count) || 0;
   const receiptsCount = Number(charge.receipts_count) || 0;
-  const isForeignExpense = !!charge.is_foreign && Number(charge.transactions_event_amount) < 0;
+  const isForeignExpense =
+    business?.country !== 'Israel' && Number(charge.transactions_event_amount) < 0;
   const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
-  const documentsAreFine = charge.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
+  const documentsAreFine =
+    business?.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
-  }
-
-  const businessIsFine = !!charge.counterparty_id;
-  if (!businessIsFine) {
-    missingInfo.push(MissingChargeInfo.Counterparty);
   }
 
   const descriptionIsFine = (charge.user_description?.trim().length ?? 0) > 0;
@@ -34,7 +72,7 @@ export function validateCharge(
   // }
 
   const vatIsFine =
-    charge.no_invoices_required ||
+    business?.no_invoices_required ||
     (charge.documents_vat_amount != null && charge.documents_vat_amount != 0);
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
@@ -46,23 +84,16 @@ export function validateCharge(
     missingInfo.push(MissingChargeInfo.LedgerRecords);
   }
 
-  const balanceIsFine = !charge.balance || Number(charge.balance) == 0;
-  if (!balanceIsFine) {
-    missingInfo.push(MissingChargeInfo.Balance);
-  }
-
   const allFine =
     documentsAreFine &&
     businessIsFine &&
     descriptionIsFine &&
     // tagsAreFine &&
     vatIsFine &&
-    ledgerRecordsAreFine &&
-    balanceIsFine;
+    ledgerRecordsAreFine;
 
   return {
     isValid: allFine,
     missingInfo,
-    balance: formatFinancialAmount(charge.balance, Currency.Ils),
   };
-}
+};

@@ -30,7 +30,7 @@ const getAllDocuments = sql<IGetAllDocumentsQuery>`
 const getDocumentsByChargeId = sql<IGetDocumentsByChargeIdQuery>`
   SELECT *
   FROM accounter_schema.documents
-  WHERE charge_id in $$chargeIds
+  WHERE charge_id_new in $$chargeIds
   ORDER BY created_at DESC;
 `;
 
@@ -148,15 +148,16 @@ const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
   ORDER BY created_at DESC;
 `;
 
 type IGetAdjustedDocumentsByFiltersParams = Optional<
   Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate'>,
-  'IDs'
+  'IDs' | 'businessIDs'
 > & {
-  fromDate?: TimelessDateString;
-  toDate?: TimelessDateString;
+  fromDate?: TimelessDateString | null;
+  toDate?: TimelessDateString | null;
 };
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
@@ -182,7 +183,7 @@ export class DocumentsProvider {
     try {
       const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.dbProvider);
 
-      return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
+      return chargeIds.map(id => docs.filter(doc => doc.charge_id_new === id));
     } catch (e) {
       console.error(e);
       return chargeIds.map(() => []);
@@ -214,13 +215,16 @@ export class DocumentsProvider {
 
   public getDocumentsByFilters(params: IGetAdjustedDocumentsByFiltersParams) {
     const isIDs = !!params?.IDs?.length;
+    const isBusinessIDs = !!params?.businessIDs?.length;
 
     const fullParams: IGetDocumentsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,
+      isBusinessIDs: isBusinessIDs ? 1 : 0,
       fromDate: null,
       toDate: null,
       ...params,
       IDs: isIDs ? params.IDs! : [null],
+      businessIDs: isBusinessIDs ? params.businessIDs! : [null],
     };
     return getDocumentsByFilters.run(fullParams, this.dbProvider);
   }

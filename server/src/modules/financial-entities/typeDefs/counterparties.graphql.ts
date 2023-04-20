@@ -35,6 +35,26 @@ export default gql`
     ownerId: UUID
   }
 
+  extend interface Transaction {
+    " calculated counterparty details for the charge "
+    counterparty: Counterparty
+  }
+  extend type CommonTransaction {
+    counterparty: Counterparty
+  }
+
+  extend type WireTransaction {
+    counterparty: Counterparty
+  }
+
+  extend type FeeTransaction {
+    counterparty: Counterparty
+  }
+
+  extend type ConversionTransaction {
+    counterparty: Counterparty
+  }
+
   extend type LedgerRecord {
     creditAccount: Counterparty
     debitAccount: Counterparty

@@ -18,7 +18,7 @@ export const commonTransactionFields:
     }
     const account = await injector
       .get(FinancialAccountsProvider)
-      .getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_id);
+      .getFinancialAccountByAccountIDLoader.load(DbTransaction.account_id);
     if (!account) {
       throw new Error(`Account ID "${DbTransaction.account_id}" is missing`);
     }

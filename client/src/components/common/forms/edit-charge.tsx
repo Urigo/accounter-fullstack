@@ -26,7 +26,7 @@ import { useUpdateCharge } from '../../../hooks/use-update-charge';
       id
       name
     }
-    financialEntity {
+    owner {
       id
       name
     }
@@ -170,7 +170,7 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
           <Controller
             name="ownerId"
             control={chargeControl}
-            defaultValue={charge.financialEntity?.id}
+            defaultValue={charge.owner?.id}
             rules={{
               required: 'Required',
               minLength: { value: 2, message: 'Minimum 2 characters' },

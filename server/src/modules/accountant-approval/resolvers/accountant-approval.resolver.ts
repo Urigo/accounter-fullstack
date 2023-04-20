@@ -10,7 +10,6 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
       const adjustedFields: ChargesTypes.IUpdateChargeParams = {
         accountantReviewed: approved,
         chargeId,
-        counterpartyId: null,
         isConversion: null,
         isProperty: null,
         ownerId: null,

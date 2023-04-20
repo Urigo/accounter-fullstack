@@ -31,6 +31,12 @@ export default gql`
     conversion: Boolean
     " user custom description "
     userDescription: String
+    " minimal event date from linked transactions "
+    minEventDate: Date
+    " minimal debit date from linked transactions "
+    minDebitDate: Date
+    " minimal date from linked documents "
+    minDocumentsDate: Date
   }
 
   " input variables for charge filtering "

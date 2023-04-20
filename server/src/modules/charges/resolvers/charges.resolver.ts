@@ -8,7 +8,7 @@ import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IUpdateChargeParams, IValidateChargesResult } from '../types.js';
+import type { ChargesModule, IUpdateChargeParams } from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -33,7 +33,7 @@ const calculateVat: ChargeResolvers['vat'] = async (charge, _, { injector }) => 
     if (record.currency) {
       currency ||= record.currency;
       if (record.currency !== currency) {
-        throw new Error('Cannot calculate VAT for charge with multiple currencies');
+        throw new GraphQLError('Cannot calculate VAT for charge with multiple currencies');
       }
     }
     vat += record.vat ?? 0;
@@ -65,10 +65,11 @@ const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, {
     const invoiceNumbers = new Set<string>();
     for (const record of totalAmountRecords) {
       if (record.currency) {
-        invoiceNumbers.add(record.serial ?? '');
         currency ||= record.currency;
         if (record.currency !== currency) {
-          throw new Error('Cannot calculate total amount for charge with multiple currencies');
+          throw new GraphQLError(
+            'Cannot calculate total amount for charge with multiple currencies',
+          );
         }
       }
       if (!invoiceNumbers.has(record.serial ?? '')) {
@@ -93,7 +94,7 @@ const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, {
     if (transaction.currency) {
       currency ||= transaction.currency;
       if (transaction.currency !== currency) {
-        throw new Error('Cannot calculate total amount for charge with multiple currencies');
+        throw new GraphQLError('Cannot calculate total amount for charge with multiple currencies');
       }
     }
     amount += Number(transaction.amount);
@@ -126,16 +127,40 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           break;
       }
 
+      const chargeIDs = new Set<string>();
+      const documents = await injector.get(DocumentsProvider).getDocumentsByFilters({
+        fromDate: filters?.fromDate,
+        toDate: filters?.toDate,
+        businessIDs: filters?.byBusinesses,
+      });
+
+      documents.map(doc => {
+        if (doc.charge_id) {
+          chargeIDs.add(doc.charge_id);
+        }
+      });
+
+      const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
+        fromEventDate: filters?.fromDate,
+        toEventDate: filters?.toDate,
+        businessIDs: filters?.byBusinesses,
+      });
+
+      transactions.map(t => {
+        if (t.charge_id) {
+          chargeIDs.add(t.charge_id);
+        }
+      });
+
       let charges = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
+          IDs: Array.from(chargeIDs),
           financialEntityIds: filters?.byOwners ?? undefined,
-          businessesIDs: filters?.byBusinesses ?? undefined,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
           sortColumn,
           asc: filters?.sortBy?.asc !== false,
-          preCalculateBalance: filters?.unbalanced,
           preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
           preCountReceipts: filters?.withoutDocuments,
           preCountLedger: filters?.withoutLedger,
@@ -147,14 +172,14 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
 
       // apply post-query filters
       if (
-        filters?.unbalanced ||
+        // filters?.unbalanced ||
         filters?.withoutInvoice ||
         filters?.withoutDocuments ||
         filters?.withoutLedger
       ) {
         charges = charges.filter(
           c =>
-            (!filters?.unbalanced || Number(c.balance) !== 0) &&
+            // (!filters?.unbalanced || Number(c.balance) !== 0) &&
             (!filters?.withoutInvoice || Number(c.invoices_count) === 0) &&
             (!filters?.withoutDocuments ||
               Number(c.receipts_count) + Number(c.invoices_count) === 0) &&
@@ -189,7 +214,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountantReviewed: fields.accountantApproval?.approved,
-        counterpartyId: fields.counterpartyId,
         isConversion: fields.isConversion,
         isProperty: fields.isProperty,
         ownerId: fields.ownerId,
@@ -267,17 +291,15 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
     createdAt: () => new Date('1900-01-01'), // TODO: missing in DB
     description: () => 'Missing', // TODO: implement
     vat: calculateVat,
-    withholdingTax: undefined, // deprecated for now
+    // withholdingTax: undefined, // deprecated for now
     totalAmount: calculateTotalAmount,
     property: DbCharge => DbCharge.is_property,
     conversion: DbCharge => DbCharge.is_conversion,
     userDescription: DbCharge => DbCharge.user_description,
-    validationData: (DbCharge, _, { injector }) => {
-      if ('invoices_count' in DbCharge && DbCharge.invoices_count != null) {
-        return validateCharge(DbCharge as IValidateChargesResult);
-      }
-      return injector.get(ChargesProvider).validateChargeByIdLoader.load(DbCharge.id);
-    },
+    minEventDate: DbCharge => DbCharge.transactions_min_event_date,
+    minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
+    minDocumentsDate: DbCharge => DbCharge.documents_min_date,
+    validationData: validateCharge,
   },
   // UpdateChargeResult: {
   //   __resolveType: (obj, _context, _info) => {

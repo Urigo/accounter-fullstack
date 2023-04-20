@@ -1,23 +1,48 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
-import { FragmentType } from '../../gql';
-import { AllChargesTableFieldsFragment, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import { FragmentType, getFragmentData } from '../../gql';
+import {
+  AllChargesRowFieldsFragmentDoc,
+  AllChargesTableFieldsFragment,
+  EditChargeFieldsFragmentDoc,
+} from '../../gql/graphql';
 import { EditMiniButton } from '../common';
 import {
-  Account,
   AccountantApproval,
   Amount,
-  Balance,
+  Counterparty,
   DateCell,
   Description,
-  Entity,
   MoreInfo,
-  ShareWith,
   Tags,
   Vat,
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
+
+/* GraphQL */ `
+  fragment AllChargesRowFields on Charge {
+    id
+    additionalDocuments {
+      id
+    }
+    ledgerRecords {
+      id
+    }
+    ...AllChargesAccountantApprovalFields
+    ...AllChargesAmountFields
+    ...AllChargesBalanceFields
+    ...AllChargesDateFields
+    ...AllChargesDescriptionFields
+    ...AllChargesEntityFields
+    ...AllChargesMoreInfoFields
+    ...AllChargesTagsFields
+    ...AllChargesVatFields
+    ...EditChargeFields
+    ...SuggestedCharge
+    ...ChargeExtendedInfoFields
+  }
+`;
 
 /* GraphQL */ `
   fragment SuggestedCharge on Charge {
@@ -59,7 +84,7 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  charge: AllChargesTableFieldsFragment;
+  data: AllChargesTableFieldsFragment;
   isAllOpened: boolean;
 }
 
@@ -69,10 +94,12 @@ export const AllChargesRow = ({
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
-  charge,
+  data,
   isAllOpened,
 }: Props) => {
   const [opened, setOpen] = useState(false);
+
+  const charge = getFragmentData(AllChargesRowFieldsFragmentDoc, data);
 
   const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
 
@@ -82,12 +109,9 @@ export const AllChargesRow = ({
         <DateCell data={charge} />
         <Amount data={charge} />
         <Vat data={charge} />
-        <Entity data={charge} />
-        <Account data={charge} />
+        <Counterparty data={charge} />
         <Description data={charge} />
         <Tags data={charge} />
-        <ShareWith data={charge} />
-        <Balance data={charge} />
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />
         <td>

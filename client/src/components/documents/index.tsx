@@ -15,7 +15,6 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
       debtor
       charge {
         id
-        createdAt
         description
         __typename
         tags {
@@ -187,7 +186,7 @@ export const DocumentsReport = () => {
           { title: 'Creditor', value: doc => doc.creditor ?? null },
           { title: 'Debtor', value: doc => doc.debtor ?? null },
           {
-            title: 'Realted Transaction',
+            title: 'Related Transaction',
             value: doc =>
               doc.charge?.transactions[0].id ? (
                 <AccounterTable

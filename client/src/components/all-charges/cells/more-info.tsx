@@ -7,6 +7,9 @@ import { DragFile, ListCapsule } from '../../common';
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
     id
+    transactions {
+      id
+    }
     ledgerRecords {
         id
     }
@@ -27,10 +30,11 @@ type Props = {
 };
 
 export const MoreInfo = ({ data }: Props) => {
-  const { ledgerRecords, additionalDocuments, counterparty, validationData, id } = getFragmentData(
-    AllChargesMoreInfoFieldsFragmentDoc,
-    data,
-  );
+  const { transactions, ledgerRecords, additionalDocuments, counterparty, validationData, id } =
+    getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, data);
+  const isTransactionsError = false;
+  // TODO(Gil): implement isTransactionsError
+  // validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
   const isLedgerError = validationData?.missingInfo?.includes(MissingChargeInfo.LedgerRecords);
   const isDocumentsError = validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
 
@@ -39,6 +43,21 @@ export const MoreInfo = ({ data }: Props) => {
       <DragFile chargeId={id}>
         <ListCapsule
           items={[
+            {
+              style: transactions.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              content: (
+                <Indicator
+                  key="transactions"
+                  inline
+                  size={12}
+                  disabled={!isTransactionsError}
+                  color="red"
+                  zIndex="auto"
+                >
+                  <div className="whitespace-nowrap">Transactions: {transactions.length}</div>
+                </Indicator>
+              ),
+            },
             {
               style: ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
               content: (

@@ -15,7 +15,8 @@ const missingInfoSuggestions: Resolver<
   GraphQLModules.Context
 > = async (DbCharge, _, { injector }) => {
   if (
-    DbCharge.counterparty_id &&
+    // TODO (Gil): Re-enable tags after migration to new DB structure
+    // DbCharge.counterparty_id &&
     // TODO (Gil): Re-enable tags after migration to new DB structure
     // DbCharge.personal_category &&
     DbCharge.documents_vat_amount != null &&

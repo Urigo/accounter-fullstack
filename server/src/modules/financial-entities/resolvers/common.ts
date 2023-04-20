@@ -6,3 +6,11 @@ export const commonFinancialEntityFields:
   id: DbBusiness => DbBusiness.id,
   linkedEntities: () => [], // TODO: implement
 };
+
+export const commonTransactionFields:
+  | FinancialEntitiesModule.ConversionTransactionResolvers
+  | FinancialEntitiesModule.FeeTransactionResolvers
+  | FinancialEntitiesModule.WireTransactionResolvers
+  | FinancialEntitiesModule.CommonTransactionResolvers = {
+  counterparty: DbTransaction => DbTransaction.business_id,
+};

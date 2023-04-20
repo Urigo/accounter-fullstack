@@ -6,6 +6,7 @@ import { ChargeExtendedInfoFieldsFragmentDoc } from '../../gql/graphql';
 import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
+import { TransactionsTable } from './transactions/transactions-table';
 
 /* GraphQL */ `
   fragment ChargeExtendedInfoFields on Charge {
@@ -16,8 +17,12 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table';
     additionalDocuments {
       id
     }
+    transactions {
+      id
+    }
     ...DocumentsGalleryFields
     ...TableLedgerRecordsFields
+    ...TableTransactionsFields
   }
 `;
 
@@ -38,28 +43,35 @@ export function ChargeExtendedInfo({
 }: Props) {
   const charge = getFragmentData(ChargeExtendedInfoFieldsFragmentDoc, chargeProps);
   return (
-    <div className="flex flex-row gap-5">
-      {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-row gap-5">
+        {(charge.transactions.length > 0 || charge.additionalDocuments.length > 0) && (
+          <div className="flex flex-row justify-start w-full max-w-7/8">
+            <TransactionsTable transactionsProps={charge} />
+          </div>
+        )}
+        <div className={`flex flex-col w-${charge.ledgerRecords.length > 0 ? '1/6' : 'full'}`}>
+          <div className="w-full flex flex-row justify-end">
+            <ChargeExtendedInfoMenu
+              chargeId={charge.id}
+              setInsertLedger={setInsertLedger}
+              setInsertDocument={setInsertDocument}
+              setMatchDocuments={setMatchDocuments}
+              setUploadDocument={setUploadDocument}
+            />
+          </div>
+          {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
+            <div className="flex flex-row justify-start">
+              <DocumentsGallery chargeProps={charge} />
+            </div>
+          )}
+        </div>
+      </div>
+      {charge.ledgerRecords.length > 0 && (
         <div className="flex flex-row justify-start w-full max-w-7/8">
           <LedgerRecordTable ledgerRecordsProps={charge} />
         </div>
       )}
-      <div className={`flex flex-col w-${charge.ledgerRecords.length > 0 ? '1/6' : 'full'}`}>
-        <div className="w-full flex flex-row justify-end">
-          <ChargeExtendedInfoMenu
-            chargeId={charge.id}
-            setInsertLedger={setInsertLedger}
-            setInsertDocument={setInsertDocument}
-            setMatchDocuments={setMatchDocuments}
-            setUploadDocument={setUploadDocument}
-          />
-        </div>
-        {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
-          <div className="flex flex-row justify-start">
-            <DocumentsGallery chargeProps={charge} />
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ type Props = {
   data: FragmentType<typeof AllChargesEntityFieldsFragmentDoc>;
 };
 
-export const Entity = ({ data }: Props) => {
+export const Counterparty = ({ data }: Props) => {
   const { get } = useUrlQuery();
   const {
     counterparty,

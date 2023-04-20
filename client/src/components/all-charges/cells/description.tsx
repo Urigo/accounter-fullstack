@@ -1,18 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
-import { ConfirmMiniButton, InfoMiniButton } from '../../common';
+import { ConfirmMiniButton } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesDescriptionFields on Charge {
     id
     userDescription
-    transactions {
-      id
-      description
-    }
     validationData {
       missingInfo
     }
@@ -33,10 +29,8 @@ export const Description = ({ data }: Props) => {
   );
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
   const { userDescription, id: chargeId } = charge;
-  const { description: fullDescription } = charge.transactions[0];
   const cellText =
     userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
-  const [toggleDescription, setToggleDescription] = useState(false);
 
   const { updateCharge, fetching } = useUpdateCharge();
 
@@ -60,7 +54,6 @@ export const Description = ({ data }: Props) => {
             <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
           </Indicator>
         </div>
-        <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
         {hasAlternative && (
           <ConfirmMiniButton
             onClick={() => updateUserDescription(charge.missingInfoSuggestions!.description!)}
@@ -68,7 +61,6 @@ export const Description = ({ data }: Props) => {
           />
         )}
       </div>
-      {toggleDescription && fullDescription}
     </td>
   );
 };

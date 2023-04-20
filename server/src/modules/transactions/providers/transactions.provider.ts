@@ -2,8 +2,11 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { Optional, TimelessDateString } from '@shared/types';
 import type {
   IGetTransactionsByChargeIdsQuery,
+  IGetTransactionsByFiltersParams,
+  IGetTransactionsByFiltersQuery,
   IGetTransactionsByIdsQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
@@ -264,6 +267,32 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
 //   fromDate?: TimelessDateString | null;
 // };
 
+type IGetAdjustedTransactionsByFiltersParams = Optional<
+  Omit<
+    IGetTransactionsByFiltersParams,
+    'isIDs' | 'fromEventDate' | 'toEventDate' | 'fromDebitDate' | 'toDebitDate'
+  >,
+  'IDs' | 'businessIDs'
+> & {
+  fromEventDate?: TimelessDateString | null;
+  toEventDate?: TimelessDateString | null;
+  fromDebitDate?: TimelessDateString | null;
+  toDebitDate?: TimelessDateString | null;
+};
+
+const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
+  SELECT t.*
+  FROM accounter_schema.transactions t
+  WHERE
+    ($isIDs = 0 OR t.id IN $$IDs)
+    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
+    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
+    AND ($fromDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
+    AND ($toDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
+  ORDER BY event_date DESC;
+`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -387,4 +416,22 @@ export class TransactionsProvider {
   //   };
   //   return validateCharges.run(fullParams, this.dbProvider);
   // }
+
+  public getTransactionsByFilters(params: IGetAdjustedTransactionsByFiltersParams) {
+    const isIDs = !!params?.IDs?.length;
+    const isBusinessIDs = !!params?.businessIDs?.length;
+
+    const fullParams: IGetTransactionsByFiltersParams = {
+      isIDs: isIDs ? 1 : 0,
+      isBusinessIDs: isBusinessIDs ? 1 : 0,
+      fromEventDate: null,
+      toEventDate: null,
+      fromDebitDate: null,
+      toDebitDate: null,
+      ...params,
+      IDs: isIDs ? params.IDs! : [null],
+      businessIDs: isBusinessIDs ? params.businessIDs! : [null],
+    };
+    return getTransactionsByFilters.run(fullParams, this.dbProvider);
+  }
 }
