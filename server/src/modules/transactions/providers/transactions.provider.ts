@@ -16,12 +16,12 @@ import type {
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
     SELECT *
-    FROM accounter_schema.transactions
+    FROM accounter_schema.extended_transactions
     WHERE id IN $$transactionIds;`;
 
 const getTransactionsByChargeIds = sql<IGetTransactionsByChargeIdsQuery>`
     SELECT *
-    FROM accounter_schema.transactions
+    FROM accounter_schema.extended_transactions
     WHERE charge_id IN $$chargeIds
     ORDER BY event_date DESC;`;
 
