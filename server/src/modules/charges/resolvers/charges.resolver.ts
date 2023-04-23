@@ -240,11 +240,34 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         };
       }
     },
-    mergeCharges: async (_, { baseChargeID, chargeIdsToMerge }, { injector }) => {
+    mergeCharges: async (_, { baseChargeID, chargeIdsToMerge, fields }, { injector }) => {
       try {
         const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID);
         if (!charge) {
-          throw new Error(`Charge ID="${baseChargeID}" not found`);
+          throw new Error(`Charge not found`);
+        }
+
+        if (fields) {
+          const adjustedFields: IUpdateChargeParams = {
+            accountantReviewed: fields?.accountantApproval?.approved,
+            isConversion: fields?.isConversion,
+            isProperty: fields?.isProperty,
+            ownerId: fields?.ownerId,
+            userDescription: fields?.userDescription,
+            chargeId: baseChargeID,
+          };
+          injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
+          await injector
+            .get(ChargesProvider)
+            .updateCharge({ ...adjustedFields })
+            .catch(e => {
+              throw new Error(
+                `Failed to update charge:\n${
+                  (e as Error)?.message ??
+                  (e as { errors: Error[] })?.errors.map(e => e.message).toString()
+                }`,
+              );
+            });
         }
 
         for (const id of chargeIdsToMerge) {
@@ -272,11 +295,13 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
 
         return charge;
       } catch (e) {
-        throw new GraphQLError(
-          (e as Error)?.message ??
+        return {
+          __typename: 'CommonError',
+          message:
+            (e as Error)?.message ??
             (e as { errors: Error[] })?.errors.map(e => e.message).toString() ??
             'Unknown error',
-        );
+        };
       }
     },
   },

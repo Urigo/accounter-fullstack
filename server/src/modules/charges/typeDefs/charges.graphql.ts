@@ -9,7 +9,11 @@ export default gql`
 
   extend type Mutation {
     updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
-    mergeCharges(baseChargeID: ID!, chargeIdsToMerge: [ID!]!): Charge!
+    mergeCharges(
+      baseChargeID: ID!
+      chargeIdsToMerge: [ID!]!
+      fields: UpdateChargeInput
+    ): MergeChargeResult!
   }
 
   " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
@@ -104,6 +108,9 @@ export default gql`
 
   " result type for updateCharge "
   union UpdateChargeResult = Charge | CommonError
+
+  " result type for mergeCharge "
+  union MergeChargeResult = Charge | CommonError
 
   extend interface Document {
     charge: Charge
