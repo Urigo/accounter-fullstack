@@ -14,7 +14,6 @@ import {
   AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
-  InsertLedgerRecordModal,
   MatchDocumentModal,
   NavBar,
   UploadDocumentModal,
@@ -52,7 +51,6 @@ export const VatMonthlyReport = () => {
   );
 
   // modals state
-  const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
@@ -95,7 +93,6 @@ export const VatMonthlyReport = () => {
             <MissingInfoTable
               data={data?.vatReport}
               setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setUploadDocument={setUploadDocument}
               setMatchDocuments={setMatchDocuments}
@@ -104,7 +101,6 @@ export const VatMonthlyReport = () => {
             <MiscTable
               data={data?.vatReport}
               setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setUploadDocument={setUploadDocument}
               setMatchDocuments={setMatchDocuments}
@@ -113,12 +109,6 @@ export const VatMonthlyReport = () => {
             {/* modification modals */}
             {editCharge && (
               <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />
-            )}
-            {insertLedger && (
-              <InsertLedgerRecordModal
-                insertLedger={insertLedger}
-                setInsertLedger={setInsertLedger}
-              />
             )}
             {insertDocument && (
               <InsertDocumentModal

@@ -7,26 +7,25 @@ import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graph
 /* GraphQL */ `
   fragment LedgerRecordsGeneralDateFields on LedgerRecord {
     id
-    date
-    value_date
-    date3
+    invoiceDate
+    valueDate
   }
 `;
 
 type Props = {
   data: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc>;
-  type: 1 | 2 | 3;
+  type: 1 | 2;
 };
 
 export const GeneralDate = ({ data, type }: Props) => {
-  const { date, value_date, date3 } = getFragmentData(
+  const { invoiceDate, valueDate } = getFragmentData(
     LedgerRecordsGeneralDateFieldsFragmentDoc,
     data,
   );
 
-  const showDate = type === 1 ? date : type === 2 ? value_date : date3;
+  const showDate = type === 1 ? invoiceDate : valueDate;
 
-  const formattedDate = date ? format(new Date(showDate), 'dd/MM/yy') : 'Missing Data';
+  const formattedDate = invoiceDate ? format(new Date(showDate), 'dd/MM/yy') : 'Missing Data';
 
   return <td>{formattedDate}</td>;
 };

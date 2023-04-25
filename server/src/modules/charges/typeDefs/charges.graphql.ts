@@ -89,7 +89,6 @@ export default gql`
   input UpdateChargeInput {
     # createdAt: Date!
     # additionalDocument: [Linkable!]!
-    # ledgerRecords: [LedgerRecord!]!
 
     # transactions: [Transaction!]!
     # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future

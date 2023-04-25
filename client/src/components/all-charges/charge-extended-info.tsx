@@ -1,9 +1,8 @@
 import { Dispatch, SetStateAction, useState } from 'react';
-import { CodePlus, FileUpload, PlaylistAdd, Search } from 'tabler-icons-react';
+import { FileUpload, PlaylistAdd, Search } from 'tabler-icons-react';
 import { Burger, Menu } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql';
 import { ChargeExtendedInfoFieldsFragmentDoc } from '../../gql/graphql';
-import { useGenerateLedgerRecords } from '../../hooks/use-generate-ledger-records';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 import { TransactionsTable } from './transactions/transactions-table';
@@ -28,7 +27,6 @@ import { TransactionsTable } from './transactions/transactions-table';
 
 interface Props {
   chargeProps: FragmentType<typeof ChargeExtendedInfoFieldsFragmentDoc>;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
@@ -36,7 +34,6 @@ interface Props {
 
 export function ChargeExtendedInfo({
   chargeProps,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
@@ -54,7 +51,6 @@ export function ChargeExtendedInfo({
           <div className="w-full flex flex-row justify-end">
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={setUploadDocument}
@@ -78,7 +74,6 @@ export function ChargeExtendedInfo({
 
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
@@ -86,13 +81,11 @@ interface ChargeExtendedInfoMenuProps {
 
 export function ChargeExtendedInfoMenu({
   chargeId,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
 }: ChargeExtendedInfoMenuProps) {
   const [opened, setOpened] = useState(false);
-  const { generateLedger, fetching: generationRunning } = useGenerateLedgerRecords();
 
   function closeMenu() {
     setOpened(false);
@@ -106,25 +99,6 @@ export function ChargeExtendedInfoMenu({
 
       <Menu.Dropdown>
         <Menu.Label>Ledger Records</Menu.Label>
-        <Menu.Item
-          icon={<CodePlus size={14} />}
-          onClick={() => {
-            generateLedger({ chargeId });
-            closeMenu();
-          }}
-          disabled={generationRunning}
-        >
-          Generate Ledger
-        </Menu.Item>
-        <Menu.Item
-          icon={<PlaylistAdd size={14} />}
-          onClick={() => {
-            setInsertLedger(chargeId);
-            closeMenu();
-          }}
-        >
-          Insert Ledger
-        </Menu.Item>
 
         <Menu.Divider />
         <Menu.Label>Documents</Menu.Label>

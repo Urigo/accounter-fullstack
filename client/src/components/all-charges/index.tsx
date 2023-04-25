@@ -15,7 +15,6 @@ import {
   AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
-  InsertLedgerRecordModal,
   MatchDocumentModal,
   NavBar,
   UploadDocumentModal,
@@ -41,7 +40,6 @@ export const AllCharges = () => {
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
-  const [insertLedger, setInsertLedger] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
@@ -100,7 +98,6 @@ export const AllCharges = () => {
         ) : (
           <AllChargesTable
             setEditCharge={setEditCharge}
-            setInsertLedger={setInsertLedger}
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
@@ -110,9 +107,6 @@ export const AllCharges = () => {
         )}
       </div>
       {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
-      {insertLedger && (
-        <InsertLedgerRecordModal insertLedger={insertLedger} setInsertLedger={setInsertLedger} />
-      )}
       {insertDocument && (
         <InsertDocumentModal
           insertDocument={insertDocument}

@@ -22,7 +22,6 @@ interface Props {
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
-  setInsertLedger: React.Dispatch<React.SetStateAction<string | undefined>>;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setMatchDocuments: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -31,7 +30,6 @@ interface Props {
 export const MissingInfoTable = ({
   data,
   setEditCharge,
-  setInsertLedger,
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
@@ -50,7 +48,6 @@ export const MissingInfoTable = ({
       {isOpened && chargesData && (
         <AllChargesTable
           setEditCharge={setEditCharge}
-          setInsertLedger={setInsertLedger}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}

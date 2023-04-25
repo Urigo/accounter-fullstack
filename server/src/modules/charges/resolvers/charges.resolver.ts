@@ -283,12 +283,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
             assertChargeID: baseChargeID,
           });
 
-          // update linked ledger records
-          await injector.get(LedgerProvider).replaceLedgerRecordsChargeId({
-            replaceChargeID: id,
-            assertChargeID: baseChargeID,
-          });
-
           // delete charge
           await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });
         }

@@ -12,10 +12,6 @@ import {
   SourceID,
 } from './cells';
 
-// import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
-// import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
-// import { EditLedgerRecord } from './edit-ledger-record';
-
 /* GraphQL */ `
   fragment TableTransactionsFields on Charge {
     transactions {
@@ -78,7 +74,6 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
             <a href="/#" className="pt-1">
               ID: {editTransactionId}
             </a>
-            {/* {editTransactionId && <DeleteLedgerRecordButton ledgerRecordId={editTransactionId} />} */}
           </div>
         }
         opened={!!editTransactionId}

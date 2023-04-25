@@ -4,8 +4,13 @@ import { LedgerRecordsCreditAccountFieldsFragmentDoc } from '../../../../gql/gra
 /* GraphQL */ `
   fragment LedgerRecordsCreditAccountFields on LedgerRecord {
     id
-    creditAccount {
-      name
+    creditAccount1 {
+      ... on NamedCounterparty {
+        name
+      }
+      ... on TaxCategory {
+        name
+      }
     }
   }
 `;
@@ -15,7 +20,7 @@ type Props = {
 };
 
 export const CreditAccount = ({ data }: Props) => {
-  const { creditAccount } = getFragmentData(LedgerRecordsCreditAccountFieldsFragmentDoc, data);
+  const { creditAccount1 } = getFragmentData(LedgerRecordsCreditAccountFieldsFragmentDoc, data);
 
-  return <td>{creditAccount?.name ?? 'Missing Account'}</td>;
+  return <td>{creditAccount1?.name ?? 'Missing Account'}</td>;
 };

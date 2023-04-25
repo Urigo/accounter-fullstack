@@ -94,7 +94,4 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
             });
         }),
   },
-  LedgerRecord: {
-    hashavshevetId: DbLedgerRecord => DbLedgerRecord.hashavshevet_id,
-  },
 };

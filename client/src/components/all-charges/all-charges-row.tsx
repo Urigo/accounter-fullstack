@@ -80,7 +80,6 @@ interface Props {
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
@@ -90,7 +89,6 @@ interface Props {
 
 export const AllChargesRow = ({
   setEditCharge,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
@@ -129,7 +127,6 @@ export const AllChargesRow = ({
           ) : (
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={setUploadDocument}
@@ -143,7 +140,6 @@ export const AllChargesRow = ({
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo
                 chargeProps={charge}
-                setInsertLedger={setInsertLedger}
                 setInsertDocument={setInsertDocument}
                 setMatchDocuments={setMatchDocuments}
                 setUploadDocument={setUploadDocument}

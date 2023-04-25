@@ -15,7 +15,6 @@ interface Props {
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
@@ -25,7 +24,6 @@ interface Props {
 
 export const AllChargesTable = ({
   setEditCharge,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
@@ -57,7 +55,6 @@ export const AllChargesTable = ({
             key={charge.id}
             data={charge}
             setEditCharge={setEditCharge}
-            setInsertLedger={setInsertLedger}
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}

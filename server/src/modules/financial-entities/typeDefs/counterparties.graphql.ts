@@ -55,18 +55,13 @@ export default gql`
     counterparty: Counterparty
   }
 
+  " represents ledger record counterparty OR tax category"
+  union LedgerCounterparty = NamedCounterparty | TaxCategory
+
   extend type LedgerRecord {
-    creditAccount: Counterparty
-    debitAccount: Counterparty
-  }
-
-  extend input UpdateLedgerRecordInput {
-    creditAccount: CounterpartyInput
-    debitAccount: CounterpartyInput
-  }
-
-  extend input InsertLedgerRecordInput {
-    creditAccount: CounterpartyInput
-    debitAccount: CounterpartyInput
+    debitAccount1: LedgerCounterparty!
+    debitAccount2: LedgerCounterparty
+    creditAccount1: LedgerCounterparty!
+    creditAccount2: LedgerCounterparty
   }
 `;

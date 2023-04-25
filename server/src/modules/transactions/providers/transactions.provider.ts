@@ -5,14 +5,48 @@ import { sql } from '@pgtyped/runtime';
 import { Optional, TimelessDateString } from '@shared/types';
 import type {
   IGetTransactionsByChargeIdsQuery,
+  IGetTransactionsByChargeIdsResult,
   IGetTransactionsByFiltersParams,
   IGetTransactionsByFiltersQuery,
+  IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
   IUpdateTransactionQuery,
 } from '../types.js';
+
+export type TransactionRequiredWrapper<
+  T extends {
+    id: unknown;
+    account_id: unknown;
+    charge_id: unknown;
+    source_id: unknown;
+    currency: unknown;
+    event_date: unknown;
+    amount: unknown;
+    current_balance: unknown;
+  },
+> = Omit<
+  T,
+  | 'id'
+  | 'account_id'
+  | 'charge_id'
+  | 'source_id'
+  | 'currency'
+  | 'event_date'
+  | 'amount'
+  | 'current_balance'
+> & {
+  id: NonNullable<T['id']>;
+  account_id: NonNullable<T['account_id']>;
+  charge_id: NonNullable<T['charge_id']>;
+  source_id: NonNullable<T['source_id']>;
+  currency: NonNullable<T['currency']>;
+  event_date: NonNullable<T['event_date']>;
+  amount: NonNullable<T['amount']>;
+  current_balance: NonNullable<T['current_balance']>;
+};
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
     SELECT *
@@ -282,7 +316,7 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
 
 const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   SELECT t.*
-  FROM accounter_schema.transactions t
+  FROM accounter_schema.extended_transactions t
   WHERE
     ($isIDs = 0 OR t.id IN $$IDs)
     AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
@@ -322,7 +356,11 @@ export class TransactionsProvider {
       },
       this.dbProvider,
     );
-    return chargeIds.map(id => transactions.filter(transaction => transaction.charge_id === id));
+    return chargeIds.map(id =>
+      (transactions as IGetTransactionsByChargeIdsResult[]).filter(
+        transaction => transaction.charge_id === id,
+      ),
+    );
   }
 
   public getTransactionsByChargeIDLoader = new DataLoader(
@@ -432,6 +470,8 @@ export class TransactionsProvider {
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
     };
-    return getTransactionsByFilters.run(fullParams, this.dbProvider);
+    return getTransactionsByFilters.run(fullParams, this.dbProvider) as Promise<
+      IGetTransactionsByFiltersResult[]
+    >;
   }
 }

@@ -34,7 +34,7 @@ generates:
         BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         Charge: '@modules/charges/types.js#IGetChargesByIdsResult'
-        LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargeIdsResult'
+        LedgerRecord: '@shared/types#LedgerProto'
         NamedCounterparty: '@shared/types#CounterpartyProto'
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
