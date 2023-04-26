@@ -19,9 +19,11 @@ import { AccountDetails, GeneralDate } from './cells';
       }
       debitAccount1 {
         ... on NamedCounterparty {
+          id
           name
         }
         ... on TaxCategory {
+          id
           name
         }
       }

@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { DocumentsTypes } from '@modules/documents/index.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';

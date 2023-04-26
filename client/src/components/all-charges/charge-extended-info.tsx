@@ -2,13 +2,13 @@ import { Dispatch, SetStateAction, useState } from 'react';
 import { FileUpload, PlaylistAdd, Search } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Burger, Loader, Menu } from '@mantine/core';
-import { GetChargeDocument } from '../../gql/graphql';
+import { FetchChargeDocument } from '../../gql/graphql';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 import { TransactionsTable } from './transactions/transactions-table';
 
 /* GraphQL */ `
-  query GetCharge($chargeID: ID!) {
+  query FetchCharge($chargeID: ID!) {
     chargeById(id: $chargeID) {
       id
       ledgerRecords {
@@ -41,7 +41,7 @@ export function ChargeExtendedInfo({
   setUploadDocument,
 }: Props) {
   const [{ data, fetching }] = useQuery({
-    query: GetChargeDocument,
+    query: FetchChargeDocument,
     variables: {
       chargeID,
     },

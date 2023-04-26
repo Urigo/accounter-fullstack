@@ -1,25 +1,26 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_SourceIdFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableSourceIdFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_SourceIDFields on Transaction {
+  fragment TransactionsTableSourceIDFields on Transaction {
     id
+    referenceNumber
   }
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_SourceIdFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableSourceIdFieldsFragmentDoc>;
 };
 
 export const SourceID = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_SourceIdFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableSourceIdFieldsFragmentDoc, data);
 
   // TODO(Gil): implement
 
   return (
     <td>
       <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">Missing</div>
+        <div className="flex flex-col justify-center">{transaction.referenceNumber}</div>
       </div>
     </td>
   );

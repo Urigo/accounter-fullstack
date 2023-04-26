@@ -1,8 +1,8 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_DescriptionFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableDescriptionFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_DescriptionFields on Transaction {
+  fragment TransactionsTableDescriptionFields on Transaction {
     id
     ...on CommonTransaction {
       description
@@ -11,11 +11,11 @@ import { Transactions_DescriptionFieldsFragmentDoc } from '../../../../gql/graph
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_DescriptionFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableDescriptionFieldsFragmentDoc>;
 };
 
 export const Description = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_DescriptionFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableDescriptionFieldsFragmentDoc, data);
   const cellText = 'description' in transaction ? transaction.description : 'Missing';
 
   return (

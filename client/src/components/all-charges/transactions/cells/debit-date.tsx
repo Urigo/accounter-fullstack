@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_DebitDateFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableDebitDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_DebitDateFields on Transaction {
+  fragment TransactionsTableDebitDateFields on Transaction {
     id
     ...on CommonTransaction {
       effectiveDate
@@ -12,11 +12,11 @@ import { Transactions_DebitDateFieldsFragmentDoc } from '../../../../gql/graphql
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_DebitDateFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableDebitDateFieldsFragmentDoc>;
 };
 
 export const DebitDate = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_DebitDateFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableDebitDateFieldsFragmentDoc, data);
   const effectiveDate = 'effectiveDate' in transaction ? transaction.effectiveDate : undefined;
 
   return (

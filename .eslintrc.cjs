@@ -34,6 +34,7 @@ module.exports = {
         '@graphql-eslint/strict-id-in-types': [
           'error',
           {
+            acceptedIdTypes: ['ID', 'UUID'],
             exceptions: {
               types: [
                 'AccountantApproval',

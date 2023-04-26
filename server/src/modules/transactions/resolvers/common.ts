@@ -9,7 +9,7 @@ export const commonTransactionFields:
   | TransactionsModule.WireTransactionResolvers
   | TransactionsModule.CommonTransactionResolvers = {
   id: DbTransaction => DbTransaction.id,
-  referenceNumber: () => 'Missing', // TODO(Gil): implement?
+  referenceNumber: DbTransaction => DbTransaction.source_id,
   createdAt: DbTransaction => DbTransaction.event_date,
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
   direction: DbTransaction =>

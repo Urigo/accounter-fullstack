@@ -1,8 +1,8 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_AccountFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_AccountFields on Transaction {
+  fragment TransactionsTableAccountFields on Transaction {
     id
     account {
         id
@@ -18,12 +18,12 @@ import { Transactions_AccountFieldsFragmentDoc } from '../../../../gql/graphql';
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_AccountFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableAccountFieldsFragmentDoc>;
 };
 
 // TODO: this is temp. delete this cell after all_transaction is split into ledger and charge
 export const Account = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_AccountFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;
 
   const accountType =

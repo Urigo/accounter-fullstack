@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { ChargeFilter, Transactions_EntityFieldsFragmentDoc } from '../../../../gql/graphql';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* GraphQL */ `
-  fragment Transactions_EntityFields on Transaction {
+  fragment TransactionsTableEntityFields on Transaction {
     id
     counterparty {
       name
@@ -15,12 +15,12 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_EntityFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
 };
 
 export const Counterparty = ({ data }: Props) => {
   const { get } = useUrlQuery();
-  const { counterparty } = getFragmentData(Transactions_EntityFieldsFragmentDoc, data);
+  const { counterparty } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
   const { name, id } = counterparty || {};
 
   const encodedFilters = get('chargesFilters');

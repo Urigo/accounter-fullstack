@@ -16,13 +16,13 @@ import {
   fragment TableTransactionsFields on Charge {
     transactions {
       id
-      ...Transactions_EventDateFields
-      ...Transactions_DebitDateFields
-      ...Transactions_AmountFields
-      ...Transactions_AccountFields
-      ...Transactions_DescriptionFields
-      ...Transactions_SourceIDFields
-      ...Transactions_EntityFields
+      ...TransactionsTableEventDateFields
+      ...TransactionsTableDebitDateFields
+      ...TransactionsTableAmountFields
+      ...TransactionsTableAccountFields
+      ...TransactionsTableDescriptionFields
+      ...TransactionsTableSourceIDFields
+      ...TransactionsTableEntityFields
     }
   }
 `;
@@ -43,7 +43,7 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
           <th>Amount</th>
           <th>Account</th>
           <th>Description</th>
-          <th>Source ID</th>
+          <th>Reference#</th>
           <th>Counterparty</th>
           {/* <th>Activity Type</th> // TODO: implement */}
           <th>Edit</th>

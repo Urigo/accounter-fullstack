@@ -4,7 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
-  ChargesModule,
   IDeleteChargesByIdsParams,
   IDeleteChargesByIdsQuery,
   IGetChargesByFiltersParams,

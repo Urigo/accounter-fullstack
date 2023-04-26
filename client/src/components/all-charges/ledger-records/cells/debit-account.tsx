@@ -6,9 +6,11 @@ import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/grap
     id
     debitAccount1 {
       ... on NamedCounterparty {
+        id
         name
       }
       ... on TaxCategory {
+        id
         name
       }
     }

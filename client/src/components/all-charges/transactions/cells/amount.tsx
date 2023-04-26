@@ -1,8 +1,8 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_AmountFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_AmountFields on Transaction {
+  fragment TransactionsTableAmountFields on Transaction {
     id
     ...on CommonTransaction {
       amount {
@@ -14,11 +14,11 @@ import { Transactions_AmountFieldsFragmentDoc } from '../../../../gql/graphql';
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_AmountFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableAmountFieldsFragmentDoc>;
 };
 
 export const Amount = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_AmountFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableAmountFieldsFragmentDoc, data);
   const amount = 'amount' in transaction ? transaction.amount : undefined;
 
   return (

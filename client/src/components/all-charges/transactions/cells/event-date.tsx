@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
-import { Transactions_EventDateFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
 /* GraphQL */ `
-  fragment Transactions_EventDateFields on Transaction {
+  fragment TransactionsTableEventDateFields on Transaction {
     id
     ...on CommonTransaction {
       createdAt
@@ -12,11 +12,11 @@ import { Transactions_EventDateFieldsFragmentDoc } from '../../../../gql/graphql
 `;
 
 type Props = {
-  data: FragmentType<typeof Transactions_EventDateFieldsFragmentDoc>;
+  data: FragmentType<typeof TransactionsTableEventDateFieldsFragmentDoc>;
 };
 
 export const EventDate = ({ data }: Props) => {
-  const transaction = getFragmentData(Transactions_EventDateFieldsFragmentDoc, data);
+  const transaction = getFragmentData(TransactionsTableEventDateFieldsFragmentDoc, data);
   const eventDate = 'createdAt' in transaction ? transaction.createdAt : undefined;
 
   return (
