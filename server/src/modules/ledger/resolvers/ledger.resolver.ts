@@ -24,17 +24,17 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
 
     const accountingLedgerEntries: LedgerProto[] = [];
 
+    // Get all invoices for charge
     const documents = await injector
       .get(DocumentsProvider)
       .getDocumentsByChargeIdLoader.load(chargeId);
     const invoices = documents.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type));
 
+    // for each invoice - generate accounting ledger entry
     for (const invoice of invoices) {
       if (!invoice.date) {
         throw new GraphQLError(`Document ID="${invoice.id}" is missing the date`);
       }
-      const invoiceDate = invoice.date;
-      const valueDate = invoice.date;
 
       if (!invoice.debtor_id) {
         throw new GraphQLError(`Document ID="${invoice.id}" is missing the debtor`);
@@ -65,6 +65,8 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       const creditAccountID1 = isCreditorCounterparty
         ? invoice.creditor_id
         : counterpartyTaxCategory;
+      let creditAccountID2: TaxCategory | null = null;
+      let debitAccountID2: TaxCategory | null = null;
 
       if (!invoice.total_amount) {
         throw new GraphQLError(`Document ID="${invoice.id}" is missing amount`);
@@ -79,22 +81,34 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       let amountWithoutVat = totalAmount;
       let foreignAmountWithoutVat: number | null = null;
       let vatAmount = invoice.vat_amount;
+      let foreignVatAmount: number | null = null;
+      let vatTaxCategory: TaxCategory | null = null;
 
       if (vatAmount && vatAmount > 0) {
         amountWithoutVat = amountWithoutVat - vatAmount;
+        // TODO(Gil): Use real tax category
+        vatTaxCategory = {
+          id: charge.id,
+          name: 'VAT [temp]',
+          __typename: 'TaxCategory',
+        };
       }
 
+      // handle non-local currencies
       if (invoice.currency_code !== 'ILS') {
         // get exchange rate for currency
         const exchangeRates = await injector.get(ExchangeProvider).getExchangeRates(invoice.date);
         const exchangeRate = getRateForCurrency(invoice.currency_code, exchangeRates);
+
         // Set foreign amounts
         foreignTotalAmount = totalAmount;
         foreignAmountWithoutVat = amountWithoutVat;
+
         // calculate amounts in ILS
         totalAmount = exchangeRate * totalAmount;
         amountWithoutVat = exchangeRate * amountWithoutVat;
         if (vatAmount && vatAmount > 0) {
+          foreignVatAmount = vatAmount;
           vatAmount = exchangeRate * vatAmount;
         }
       }
@@ -103,18 +117,34 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       let localCurrencyCreditAmount1 = 0;
       let debitAmount1: number | null = null;
       let localCurrencyDebitAmount1 = 0;
+      let creditAmount2: number | null = null;
+      let localCurrencyCreditAmount2: number | null = null;
+      let debitAmount2: number | null = null;
+      let localCurrencyDebitAmount2: number | null = null;
       if (isCreditorCounterparty) {
         localCurrencyCreditAmount1 = amountWithoutVat;
         creditAmount1 = foreignAmountWithoutVat;
         localCurrencyDebitAmount1 = totalAmount;
         debitAmount1 = foreignTotalAmount;
-        // TODO(Gil): add vat to creditor2
+
+        if (vatAmount && vatAmount > 0) {
+          // add vat to creditor2
+          creditAmount2 = foreignVatAmount;
+          localCurrencyCreditAmount2 = vatAmount;
+          creditAccountID2 = vatTaxCategory;
+        }
       } else {
         localCurrencyDebitAmount1 = amountWithoutVat;
         debitAmount1 = foreignAmountWithoutVat;
         localCurrencyCreditAmount1 = totalAmount;
         creditAmount1 = foreignTotalAmount;
-        // TODO(Gil): add vat to debtor2
+
+        if (vatAmount && vatAmount > 0) {
+          // add vat to creditor2
+          debitAmount2 = foreignVatAmount;
+          localCurrencyDebitAmount2 = vatAmount;
+          debitAccountID2 = vatTaxCategory;
+        }
       }
 
       // const date3: null = null; // TODO: rethink
@@ -123,15 +153,21 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
 
       accountingLedgerEntries.push({
         id: invoice.id,
-        invoiceDate,
-        valueDate,
-        debitAccountID1,
-        creditAccountID1,
+        invoiceDate: invoice.date,
+        valueDate: invoice.date,
         currency,
+        creditAccountID1,
         creditAmount1: creditAmount1 ?? undefined,
+        localCurrencyCreditAmount1,
+        debitAccountID1,
         debitAmount1: debitAmount1 ?? undefined,
         localCurrencyDebitAmount1,
-        localCurrencyCreditAmount1,
+        creditAccountID2: creditAccountID2 ?? undefined,
+        creditAmount2: creditAmount2 ?? undefined,
+        localCurrencyCreditAmount2: localCurrencyCreditAmount2 ?? undefined,
+        debitAccountID2: debitAccountID2 ?? undefined,
+        debitAmount2: debitAmount2 ?? undefined,
+        localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
         description: invoice.description ?? undefined,
         reference1: invoice.serial_number ?? undefined,
       });

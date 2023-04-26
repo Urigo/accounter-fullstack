@@ -40,7 +40,6 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     ...AllChargesVatFields
     ...EditChargeFields
     ...SuggestedCharge
-    ...ChargeExtendedInfoFields
   }
 `;
 
@@ -139,7 +138,7 @@ export const AllChargesRow = ({
           <td colSpan={12}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo
-                chargeProps={charge}
+                chargeID={charge.id}
                 setInsertDocument={setInsertDocument}
                 setMatchDocuments={setMatchDocuments}
                 setUploadDocument={setUploadDocument}
