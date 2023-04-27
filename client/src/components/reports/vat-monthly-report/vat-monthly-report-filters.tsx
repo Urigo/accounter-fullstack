@@ -104,13 +104,15 @@ function VatMonthlyReportFilterForm({
             />
           )}
         />
+        {/* TODO(Gil): check new properties for DatePicker (changed after mantine bump) */}
         <DatePicker
           placeholder="Pick month"
-          label="Report Month"
-          inputFormat="MM/YYYY"
-          labelFormat="MM/YYYY"
+          // label="Report Month"
+          // inputFormat="MM/YYYY"
+          monthLabelFormat="MM/YYYY"
+          hideWeekdays
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
-          initialLevel="month"
+          defaultLevel="month"
           onChange={onSelectDate}
         />
         <div className="flex justify-center mt-5 gap-3">

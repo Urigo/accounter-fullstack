@@ -397,7 +397,12 @@ export function ChargesFilters({
         }
       />
       {totalPages > 1 && (
-        <Pagination className="flex-auto" page={activePage} onChange={setPage} total={totalPages} />
+        <Pagination
+          className="flex-auto"
+          value={activePage}
+          onChange={setPage}
+          total={totalPages}
+        />
       )}
       <Indicator inline size={16} disabled={!isFiltered}>
         <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>

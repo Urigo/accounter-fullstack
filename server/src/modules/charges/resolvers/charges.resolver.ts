@@ -6,8 +6,8 @@ import { ChargeSortByField } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
-import { ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IUpdateChargeParams } from '../types.js';
+import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialAccountFields,
@@ -104,12 +104,28 @@ const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, {
 
 export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'UpdateChargeResult'> = {
   Query: {
-    chargeById: async (_, { id }, { injector }) => {
-      const dbCharge = await injector.get(ChargesProvider).getChargeByIdLoader.load(id);
-      if (!dbCharge) {
-        throw new Error(`Charge ID="${id}" not found`);
+    chargesByIDs: async (_, { chargeIDs }, { injector }) => {
+      if (chargeIDs.length === 0) {
+        return [];
       }
-      return dbCharge;
+
+      const dbCharges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIDs);
+      if (!dbCharges) {
+        if (chargeIDs.length === 1) {
+          throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
+        } else {
+          throw new GraphQLError(`Couldn't find any charges`);
+        }
+      }
+
+      const charges = chargeIDs.map(id => {
+        const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
+        if (!charge) {
+          throw new GraphQLError(`Charge ID="${id}" not found`);
+        }
+        return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
+      });
+      return charges;
     },
     allCharges: async (_, { filters, page, limit }, { injector }) => {
       // handle sort column
@@ -307,7 +323,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
   Charge: {
     id: DbCharge => DbCharge.id,
     createdAt: () => new Date('1900-01-01'), // TODO: missing in DB
-    description: () => 'Missing', // TODO: implement
     vat: calculateVat,
     // withholdingTax: undefined, // deprecated for now
     totalAmount: calculateTotalAmount,

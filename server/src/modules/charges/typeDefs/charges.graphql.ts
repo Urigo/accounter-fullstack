@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    chargeById(id: ID!): Charge!
+    chargesByIDs(chargeIDs: [ID!]!): [Charge!]!
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }
 
@@ -21,8 +21,6 @@ export default gql`
     id: ID!
     " when the initial charge was created from the first event we found "
     createdAt: Date!
-    " user description, set manually by the user "
-    description: String
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "
