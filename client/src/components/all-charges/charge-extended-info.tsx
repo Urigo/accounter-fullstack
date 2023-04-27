@@ -8,8 +8,8 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 import { TransactionsTable } from './transactions/transactions-table';
 
 /* GraphQL */ `
-  query FetchCharge($chargeID: ID!) {
-    chargeById(id: $chargeID) {
+  query FetchCharge($chargeIDs: [ID!]!) {
+    chargesByIDs(chargeIDs: $chargeIDs) {
       id
       ledgerRecords {
         id
@@ -43,11 +43,11 @@ export function ChargeExtendedInfo({
   const [{ data, fetching }] = useQuery({
     query: FetchChargeDocument,
     variables: {
-      chargeID,
+      chargeIDs: [chargeID],
     },
   });
 
-  const charge = data?.chargeById;
+  const charge = data?.chargesByIDs?.[0];
 
   return (
     <div className="flex flex-col gap-5">

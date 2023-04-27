@@ -18,6 +18,8 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
+  toggleMergeCharge?: (chargeId: string) => void;
+  mergeSelectedCharges?: string[];
   data?: FragmentType<typeof AllChargesTableFieldsFragmentDoc>[];
   isAllOpened: boolean;
 }
@@ -27,6 +29,8 @@ export const AllChargesTable = ({
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
+  toggleMergeCharge,
+  mergeSelectedCharges,
   data,
   isAllOpened,
 }: Props) => {
@@ -58,6 +62,8 @@ export const AllChargesTable = ({
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
+            toggleMergeCharge={toggleMergeCharge ? () => toggleMergeCharge(charge.id) : undefined}
+            isSelectedForMerge={mergeSelectedCharges?.includes(charge.id) ?? false}
             isAllOpened={isAllOpened}
           />
         ))}

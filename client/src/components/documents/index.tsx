@@ -15,7 +15,7 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
       debtor
       charge {
         id
-        description
+        userDescription
         __typename
         tags {
           name
@@ -24,7 +24,6 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
           formatted
           __typename
         }
-        userDescription
         transactions {
           id
           createdAt

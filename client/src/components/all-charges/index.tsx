@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
@@ -16,6 +16,7 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
+  MergeChargesButton,
   NavBar,
   UploadDocumentModal,
 } from '../common';
@@ -44,6 +45,7 @@ export const AllCharges = () => {
   const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
+  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
   const { get } = useUrlQuery();
   const [activePage, setPage] = useState(get('page') ? Number(get('page')) : 1);
   const [filter, setFilter] = useState<ChargeFilter>(
@@ -58,6 +60,17 @@ export const AllCharges = () => {
         },
   );
 
+  const toggleMergeCharge = useCallback(
+    (chargeId: string) => {
+      if (mergeSelectedCharges.includes(chargeId)) {
+        setMergeSelectedCharges(mergeSelectedCharges.filter(id => id !== chargeId));
+      } else {
+        setMergeSelectedCharges([...mergeSelectedCharges, chargeId]);
+      }
+    },
+    [mergeSelectedCharges],
+  );
+
   const [{ data, fetching }] = useQuery({
     query: AllChargesDocument,
     variables: {
@@ -67,6 +80,10 @@ export const AllCharges = () => {
     },
   });
 
+  function onResetMerge() {
+    setMergeSelectedCharges([]);
+  }
+
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
@@ -74,6 +91,7 @@ export const AllCharges = () => {
           header="All Charges"
           filters={
             <div className="flex flex-row gap-2">
+              <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
               <Tooltip label="Expand all accounts">
                 <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
                   {isAllOpened ? (
@@ -101,6 +119,8 @@ export const AllCharges = () => {
             setInsertDocument={setInsertDocument}
             setMatchDocuments={setMatchDocuments}
             setUploadDocument={setUploadDocument}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={mergeSelectedCharges}
             data={data?.allCharges?.nodes}
             isAllOpened={isAllOpened}
           />

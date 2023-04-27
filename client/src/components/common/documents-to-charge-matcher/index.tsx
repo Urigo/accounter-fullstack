@@ -4,12 +4,12 @@ import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql';
 import { SelectionHandler } from './selection-handler';
 
 /* GraphQL */ `
-  query DocumentsToChargeMatcher($chargeId: ID!) {
+  query DocumentsToChargeMatcher($chargeIds: [ID!]!) {
     documents {
       id
       ...DocumentsToMatchFields
     }
-    chargeById(id: $chargeId) {
+    chargesByIDs(chargeIDs: $chargeIds) {
       id
       transactions {
         id
@@ -31,14 +31,14 @@ interface Props {
 export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
   const [{ data, fetching }] = useQuery({
     query: DocumentsToChargeMatcherDocument,
-    variables: { chargeId },
+    variables: { chargeIds: [chargeId] },
   });
 
   const errorMessage =
     (data?.documents.length === 0 && 'No Document Found') ||
-    (!data?.chargeById && 'Charge was not found') ||
-    (data?.chargeById.totalAmount?.raw == null && 'Charge is missing amount') ||
-    (!data?.chargeById.transactions[0]?.createdAt && 'Charge is missing date') ||
+    ((!data?.chargesByIDs || data.chargesByIDs.length === 0) && 'Charge was not found') ||
+    (data?.chargesByIDs[0].totalAmount?.raw == null && 'Charge is missing amount') ||
+    (!data?.chargesByIDs[0].transactions[0]?.createdAt && 'Charge is missing date') ||
     undefined;
 
   return (
@@ -62,7 +62,7 @@ export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
         {!errorMessage && (
           <div className="flex flex-col gap-3">
             <SelectionHandler
-              chargeProps={data!.chargeById}
+              chargeProps={data!.chargesByIDs[0]}
               documentsProps={data}
               onDone={onDone}
             />

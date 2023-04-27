@@ -7,7 +7,7 @@ import {
   AllChargesTableFieldsFragment,
   EditChargeFieldsFragmentDoc,
 } from '../../gql/graphql';
-import { EditMiniButton } from '../common';
+import { EditMiniButton, ToggleMergeSelected } from '../common';
 import {
   AccountantApproval,
   Amount,
@@ -82,6 +82,8 @@ interface Props {
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
+  toggleMergeCharge?: () => void;
+  isSelectedForMerge: boolean;
   data: AllChargesTableFieldsFragment;
   isAllOpened: boolean;
 }
@@ -91,6 +93,8 @@ export const AllChargesRow = ({
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
+  toggleMergeCharge,
+  isSelectedForMerge,
   data,
   isAllOpened,
 }: Props) => {
@@ -112,7 +116,15 @@ export const AllChargesRow = ({
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />
         <td>
-          <EditMiniButton onClick={() => setEditCharge(charge)} />
+          <div className="flex flex-col gap-2">
+            <EditMiniButton onClick={() => setEditCharge(charge)} />
+            {toggleMergeCharge && (
+              <ToggleMergeSelected
+                toggleMergeSelected={() => toggleMergeCharge()}
+                mergeSelected={isSelectedForMerge}
+              />
+            )}
+          </div>
         </td>
         <td>
           {hasExtendedInfo ? (
