@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Button, Checkbox } from '@mantine/core';
+import { Checkbox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AccounterLoader } from '../';
 import {
@@ -73,6 +73,14 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     if (!mainCharge) {
       showNotification({
         message: 'No main charge selected',
+        color: 'red',
+      });
+      return;
+    }
+    if (distinctChargeIDs.length < 2) {
+      showNotification({
+        message: 'At least 2 charges are required to execute a merge',
+        color: 'red',
       });
       return;
     }
@@ -313,21 +321,31 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
             </tr>
           </table>
           <div className="flex justify-center gap-5 mt-5">
-            <Button disabled={fetching || merging} color="blue" onClick={onMergeCharges}>
+            <button
+              type="button"
+              className=" text-white bg-blue-500 border-0 py-2 px-8 focus:outline-none hover:bg-blue-600 rounded text-lg"
+              disabled={fetching || merging}
+              onClick={onMergeCharges}
+            >
               Accept
-            </Button>
-            <Button color="red" onClick={onDone}>
+            </button>
+            <button
+              type="button"
+              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg"
+              onClick={onDone}
+            >
               Cancel
-            </Button>
-            <Button
-              color="red"
+            </button>
+            <button
+              type="button"
+              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg"
               onClick={() => {
                 resetMerge();
                 onDone();
               }}
             >
               Reset Merge
-            </Button>
+            </button>
           </div>
         </>
       )}
