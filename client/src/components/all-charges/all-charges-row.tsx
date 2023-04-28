@@ -39,39 +39,6 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     ...AllChargesTagsFields
     ...AllChargesVatFields
     ...EditChargeFields
-    ...SuggestedCharge
-  }
-`;
-
-/* GraphQL */ `
-  fragment SuggestedCharge on Charge {
-    id
-    userDescription
-    transactions {
-      id
-      __typename
-      amount {
-        raw
-      }
-      referenceNumber
-      description
-    }
-    beneficiaries {
-      counterparty {
-        id
-        name
-      }
-    }
-    counterparty {
-      id
-      name
-    }
-    vat {
-      raw
-    }
-    tags {
-      name
-    }
   }
 `;
 

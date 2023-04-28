@@ -23,7 +23,7 @@ export const rateOptionalDocumentsMatches = (
 
   for (const document of documents) {
     const dateDiff =
-      new Date(charge.transactions[0].createdAt).getTime() -
+      new Date(charge.transactions[0].eventDate).getTime() -
       new Date((document as { date: string }).date).getTime();
     comparisonDict.dateDiffs[charge.id] = Math.abs(dateDiff);
 
@@ -34,7 +34,7 @@ export const rateOptionalDocumentsMatches = (
     const providerIdent = stringComparer(document.creditor ?? '', charge.counterparty?.name ?? '');
     const providerIdent2 = stringComparer(
       document.creditor ?? '',
-      charge.transactions[0].description,
+      charge.transactions[0].sourceDescription,
     );
     comparisonDict.providerIdents[charge.id] =
       providerIdent > providerIdent2 ? providerIdent : providerIdent2;

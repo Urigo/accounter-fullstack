@@ -4,9 +4,7 @@ import { TransactionsTableDescriptionFieldsFragmentDoc } from '../../../../gql/g
 /* GraphQL */ `
   fragment TransactionsTableDescriptionFields on Transaction {
     id
-    ...on CommonTransaction {
-      description
-    }
+    sourceDescription
   }
 `;
 
@@ -16,7 +14,7 @@ type Props = {
 
 export const Description = ({ data }: Props) => {
   const transaction = getFragmentData(TransactionsTableDescriptionFieldsFragmentDoc, data);
-  const cellText = 'description' in transaction ? transaction.description : 'Missing';
+  const cellText = 'description' in transaction ? transaction.sourceDescription : 'Missing';
 
   return (
     <td>

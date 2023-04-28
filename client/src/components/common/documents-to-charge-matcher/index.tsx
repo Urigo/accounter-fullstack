@@ -13,7 +13,7 @@ import { SelectionHandler } from './selection-handler';
       id
       transactions {
         id
-        createdAt
+        eventDate
       }
       totalAmount {
         raw
@@ -38,7 +38,7 @@ export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
     (data?.documents.length === 0 && 'No Document Found') ||
     ((!data?.chargesByIDs || data.chargesByIDs.length === 0) && 'Charge was not found') ||
     (data?.chargesByIDs[0].totalAmount?.raw == null && 'Charge is missing amount') ||
-    (!data?.chargesByIDs[0].transactions[0]?.createdAt && 'Charge is missing date') ||
+    (!data?.chargesByIDs[0].transactions[0]?.eventDate && 'Charge is missing date') ||
     undefined;
 
   return (

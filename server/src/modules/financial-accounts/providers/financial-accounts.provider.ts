@@ -3,6 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IGetAllFinancialAccountsQuery,
   IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByFinancialEntityIdsQuery,
@@ -22,6 +23,10 @@ const getFinancialAccountsByAccountIDs = sql<IGetFinancialAccountsByAccountIDsQu
 SELECT *
 FROM accounter_schema.financial_accounts
 WHERE id IN $$accountIDs;`;
+
+const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
+    SELECT *
+    FROM accounter_schema.financial_accounts;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -82,4 +87,8 @@ export class FinancialAccountsProvider {
       cache: false,
     },
   );
+
+  public getAllFinancialAccounts() {
+    return getAllFinancialAccounts.run(undefined, this.dbProvider);
+  }
 }

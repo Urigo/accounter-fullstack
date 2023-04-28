@@ -15,15 +15,6 @@ import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
 
-/* GraphQL */ `
-  query AllFinancialEntities {
-    allFinancialEntities {
-      id
-      name
-    }
-  }
-`;
-
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;

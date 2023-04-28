@@ -130,6 +130,11 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
       $currentBalance,
       current_balance,
       NULL
+    ),
+    business_id = COALESCE(
+      $businessId,
+      business_id,
+      NULL
     )
   WHERE
     id = $transactionId

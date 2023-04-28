@@ -6,7 +6,7 @@ import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../../gql/gra
   fragment TransactionsTableEventDateFields on Transaction {
     id
     ...on CommonTransaction {
-      createdAt
+      eventDate
     }
   }
 `;
@@ -17,7 +17,7 @@ type Props = {
 
 export const EventDate = ({ data }: Props) => {
   const transaction = getFragmentData(TransactionsTableEventDateFieldsFragmentDoc, data);
-  const eventDate = 'createdAt' in transaction ? transaction.createdAt : undefined;
+  const eventDate = 'eventDate' in transaction ? transaction.eventDate : undefined;
 
   return (
     <td>

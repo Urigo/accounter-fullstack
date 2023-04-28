@@ -3,7 +3,6 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetAllFinancialEntitiesParams,
   IGetAllFinancialEntitiesQuery,
   IGetFinancialEntitiesByChargeIdsParams,
   IGetFinancialEntitiesByChargeIdsQuery,
@@ -73,8 +72,8 @@ export class FinancialEntitiesProvider {
     },
   );
 
-  public getAllFinancialEntities(params: IGetAllFinancialEntitiesParams) {
-    return getAllFinancialEntities.run(params, this.dbProvider);
+  public getAllFinancialEntities() {
+    return getAllFinancialEntities.run(undefined, this.dbProvider);
   }
 
   public getFinancialEntitiesByChargeIds(params: IGetFinancialEntitiesByChargeIdsParams) {

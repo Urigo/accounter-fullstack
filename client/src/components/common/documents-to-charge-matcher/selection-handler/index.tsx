@@ -26,8 +26,8 @@ import { WideFilteredSelection } from './wide-filtered-selection';
     }
     transactions {
       id
-      createdAt
-      description
+      eventDate
+      sourceDescription
     }
   }
 `;
@@ -132,7 +132,7 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
 
         const chargeAmount = Math.abs(charge.totalAmount!.raw);
         const documentAmount = Math.abs(document.amount.raw);
-        const chargeDate = new Date(charge.transactions[0].createdAt).getTime();
+        const chargeDate = new Date(charge.transactions[0].eventDate).getTime();
         const documentDate = new Date(document.date).getTime();
 
         const fee = documentAmount > 3000 ? 30 : 0;

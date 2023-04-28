@@ -26,8 +26,8 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         }
         transactions {
           id
-          createdAt
-          description
+          eventDate
+          sourceDescription
           effectiveDate
           amount {
             formatted
@@ -198,8 +198,8 @@ export const DocumentsReport = () => {
                     {
                       title: 'Transaction Created At',
                       value: transaction =>
-                        transaction.createdAt
-                          ? format(new Date(transaction.createdAt), 'dd/MM/yy')
+                        transaction.eventDate
+                          ? format(new Date(transaction.eventDate), 'dd/MM/yy')
                           : null,
                     },
                     {
@@ -211,7 +211,7 @@ export const DocumentsReport = () => {
                     },
                     {
                       title: 'Transaction Description',
-                      value: transaction => transaction.description,
+                      value: transaction => transaction.sourceDescription,
                     },
                   ]}
                 />

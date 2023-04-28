@@ -1,6 +1,7 @@
 overwrite: true
 schema: ./server/src/modules/*/typeDefs/*.graphql.ts
-documents: ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts']
+documents:
+  ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts', './client/**/*.graphql.ts']
 config:
   scalars:
     TimelessDate: 'TimelessDateString'

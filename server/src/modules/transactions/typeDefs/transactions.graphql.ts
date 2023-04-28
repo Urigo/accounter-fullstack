@@ -2,8 +2,11 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " mutation root "
-  type Mutation {
+  extend type Query {
+    transactionsByIDs(transactionIDs: [ID!]!): [Transaction!]!
+  }
+
+  extend type Mutation {
     updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   }
 
@@ -18,7 +21,7 @@ export default gql`
     " external key / identifier in the bank or card (אסמכתא) "
     referenceNumber: String!
     " eventDate "
-    createdAt: Date!
+    eventDate: TimelessDate!
     " debitDate "
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
     " either credit or debit "
@@ -26,7 +29,7 @@ export default gql`
     " the amount of the transaction "
     amount: FinancialAmount!
     " description of the transaction, as defined by the bank/card "
-    description: String!
+    sourceDescription: String!
     " effective bank / card balance, after the transaction "
     balance: FinancialAmount!
   }
@@ -41,11 +44,11 @@ export default gql`
   type CommonTransaction implements Transaction {
     id: ID!
     referenceNumber: String!
-    createdAt: Date!
+    eventDate: TimelessDate!
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
     direction: TransactionDirection!
     amount: FinancialAmount!
-    description: String!
+    sourceDescription: String!
     balance: FinancialAmount!
   }
 
@@ -53,11 +56,11 @@ export default gql`
   type WireTransaction implements Transaction {
     id: ID!
     referenceNumber: String!
-    createdAt: Date!
+    eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
     amount: FinancialAmount!
-    description: String!
+    sourceDescription: String!
     balance: FinancialAmount!
   }
 
@@ -65,11 +68,11 @@ export default gql`
   type FeeTransaction implements Transaction {
     id: ID!
     referenceNumber: String!
-    createdAt: Date!
+    eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
     amount: FinancialAmount!
-    description: String!
+    sourceDescription: String!
     balance: FinancialAmount!
   }
 
@@ -77,11 +80,11 @@ export default gql`
   type ConversionTransaction implements Transaction {
     id: ID!
     referenceNumber: String!
-    createdAt: Date!
+    eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
     amount: FinancialAmount!
-    description: String!
+    sourceDescription: String!
     balance: FinancialAmount!
     from: Currency!
     to: Currency!
@@ -93,18 +96,13 @@ export default gql`
 
   " input variables for updateTransaction "
   input UpdateTransactionInput {
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    # createdAt: Date!
     eventDate: TimelessDate
     effectiveDate: TimelessDate
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    # direction: TransactionDirection
     amount: FinancialAmountInput
-    description: String
     sourceDescription: String
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    account: UUID
+    accountId: UUID
     balance: FinancialAmountInput
+    counterpartyId: UUID
   }
 
   " result type for updateTransaction "

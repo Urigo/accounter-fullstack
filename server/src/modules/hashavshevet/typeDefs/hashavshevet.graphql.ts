@@ -21,8 +21,4 @@ export default gql`
   extend type ConversionTransaction {
     hashavshevetId: Int
   }
-
-  extend input UpdateTransactionInput {
-    hashavshevetId: Int
-  }
 `;
