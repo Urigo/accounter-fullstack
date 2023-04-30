@@ -48,4 +48,5 @@ export interface LedgerProto {
   reference1?: string;
   valueDate: Date;
   currency: Currency;
+  isCreditorCounterparty: boolean;
 }

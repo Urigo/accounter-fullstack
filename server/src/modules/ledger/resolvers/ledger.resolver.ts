@@ -2,6 +2,8 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { currency } from '@modules/transactions/types.js';
 import { ChargeResolvers, Currency, TaxCategory } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -29,6 +31,9 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       .get(DocumentsProvider)
       .getDocumentsByChargeIdLoader.load(chargeId);
     const invoices = documents.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type));
+
+    // validate ledger records are balanced
+    let ledgerBalance = 0;
 
     // for each invoice - generate accounting ledger entry
     for (const invoice of invoices) {
@@ -122,28 +127,28 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       let debitAmount2: number | null = null;
       let localCurrencyDebitAmount2: number | null = null;
       if (isCreditorCounterparty) {
-        localCurrencyCreditAmount1 = amountWithoutVat;
-        creditAmount1 = foreignAmountWithoutVat;
+        localCurrencyCreditAmount1 = totalAmount;
+        creditAmount1 = foreignTotalAmount;
+        localCurrencyDebitAmount1 = amountWithoutVat;
+        debitAmount1 = foreignAmountWithoutVat;
+
+        if (vatAmount && vatAmount > 0) {
+          // add vat to debtor2
+          debitAmount2 = foreignVatAmount;
+          localCurrencyDebitAmount2 = vatAmount;
+          debitAccountID2 = vatTaxCategory;
+        }
+      } else {
         localCurrencyDebitAmount1 = totalAmount;
         debitAmount1 = foreignTotalAmount;
+        localCurrencyCreditAmount1 = amountWithoutVat;
+        creditAmount1 = foreignAmountWithoutVat;
 
         if (vatAmount && vatAmount > 0) {
           // add vat to creditor2
           creditAmount2 = foreignVatAmount;
           localCurrencyCreditAmount2 = vatAmount;
           creditAccountID2 = vatTaxCategory;
-        }
-      } else {
-        localCurrencyDebitAmount1 = amountWithoutVat;
-        debitAmount1 = foreignAmountWithoutVat;
-        localCurrencyCreditAmount1 = totalAmount;
-        creditAmount1 = foreignTotalAmount;
-
-        if (vatAmount && vatAmount > 0) {
-          // add vat to creditor2
-          debitAmount2 = foreignVatAmount;
-          localCurrencyDebitAmount2 = vatAmount;
-          debitAccountID2 = vatTaxCategory;
         }
       }
 
@@ -170,10 +175,150 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
         localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
         description: invoice.description ?? undefined,
         reference1: invoice.serial_number ?? undefined,
+        isCreditorCounterparty,
+      });
+
+      if (isCreditorCounterparty) {
+        ledgerBalance += totalAmount;
+      } else {
+        ledgerBalance -= totalAmount;
+      }
+    }
+
+    const financialAccountLedgerEntries: LedgerProto[] = [];
+
+    // Get all transactions
+    const transactions = await injector
+      .get(TransactionsProvider)
+      .getTransactionsByChargeIDLoader.load(chargeId);
+
+    // for each transaction, create a ledger record
+    for (const transaction of transactions) {
+      let amount = Number(transaction.amount);
+      let foreignAmount: number | undefined = undefined;
+
+      const currencyCode = transaction.currency;
+
+      if (!transaction.debit_date) {
+        throw new GraphQLError(
+          `Transaction ID="${transaction.id}" is missing debit date for currency ${currencyCode}`,
+        );
+      }
+
+      if (currencyCode !== 'ILS') {
+        // get exchange rate for currency
+        const exchangeRates = await injector
+          .get(ExchangeProvider)
+          .getExchangeRates(transaction.debit_date);
+        const exchangeRate = getRateForCurrency(currencyCode, exchangeRates);
+
+        foreignAmount = amount;
+        // calculate amounts in ILS
+        amount = exchangeRate * amount;
+      }
+
+      if (!transaction.business_id) {
+        throw new GraphQLError(`Transaction ID="${transaction.id}" is missing business_id`);
+      }
+
+      const counterpartyId = transaction.business_id;
+      const owner = {
+        id: transaction.account_id,
+        name: transaction.account_id,
+        __typename: 'TaxCategory',
+      } as TaxCategory;
+
+      const isCreditorCounterparty = amount > 0;
+      ledgerBalance += amount;
+
+      const currency = formatCurrency(currencyCode);
+
+      financialAccountLedgerEntries.push({
+        id: transaction.id,
+        invoiceDate: transaction.event_date,
+        valueDate: transaction.debit_date,
+        currency,
+        creditAccountID1: isCreditorCounterparty ? counterpartyId : owner,
+        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyCreditAmount1: Math.abs(amount),
+        debitAccountID1: isCreditorCounterparty ? owner : counterpartyId,
+        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyDebitAmount1: Math.abs(amount),
+        description: transaction.source_description ?? undefined,
+        reference1: transaction.source_id,
+        isCreditorCounterparty,
       });
     }
 
-    return accountingLedgerEntries;
+    if (ledgerBalance !== 0) {
+      const dates = new Set<Date>(
+        [...documents.map(doc => doc.date), ...transactions.map(t => t.debit_date)].filter(
+          Boolean,
+        ) as Date[],
+      );
+      const currencies = new Set<currency>(
+        [...documents.map(doc => doc.currency_code), ...transactions.map(t => t.currency)].filter(
+          Boolean,
+        ) as currency[],
+      );
+
+      const hasMultipleDates = dates.size > 1;
+      const hasForeignCurrency = currencies.size > 1 || currencies.has('ILS');
+      if (hasMultipleDates && hasForeignCurrency) {
+        currencies.delete('ILS');
+        if (currencies.size > 1) {
+          throw new GraphQLError(
+            `Ledger records for charge ${chargeId} are not balanced, and has multiple foreign currencies`,
+          );
+        }
+        const currency = [...currencies][0];
+        // calculate foreign balance
+        let foreignBalance = 0;
+        for (const entry of accountingLedgerEntries) {
+          const isCreditorCounterparty = !!entry.debitAccountID2;
+          let foreignAmount = isCreditorCounterparty ? entry.creditAmount1 : entry.debitAmount1;
+          if (foreignAmount == null) {
+            const exchangeRates = await injector
+              .get(ExchangeProvider)
+              .getExchangeRates(entry.invoiceDate);
+            const exchangeRate = getRateForCurrency(currency, exchangeRates);
+            foreignAmount =
+              (isCreditorCounterparty
+                ? entry.localCurrencyCreditAmount1
+                : entry.localCurrencyDebitAmount1) / exchangeRate;
+          }
+          foreignBalance += foreignAmount * (entry.isCreditorCounterparty ? 1 : -1);
+        }
+        for (const entry of financialAccountLedgerEntries) {
+          // amounts are the same on both sides for transactions, so it doesn't matter which is the counterparty
+          let foreignAmount = entry.creditAmount1;
+          if (foreignAmount == null) {
+            const exchangeRates = await injector
+              .get(ExchangeProvider)
+              .getExchangeRates(entry.invoiceDate);
+            const exchangeRate = getRateForCurrency(currency, exchangeRates);
+            foreignAmount = entry.localCurrencyCreditAmount1 / exchangeRate;
+          }
+          foreignBalance += foreignAmount * (entry.isCreditorCounterparty ? 1 : -1);
+        }
+        if (foreignBalance === 0) {
+          throw new GraphQLError(`Yay! we are balanced!`);
+          // TODO: add exchange rate ledger
+        } else {
+          throw new GraphQLError(
+            `Failed to balance ledger records for charge ID="${chargeId}": both local and foreign amounts won't balance`,
+          );
+        }
+      } else {
+        throw new GraphQLError(
+          `Failed to balance ledger records for charge ID="${chargeId}": both local and foreign amounts won't balance`,
+        );
+      }
+    }
+
+    // validate counterparty is consistent
+
+    return [...accountingLedgerEntries, ...financialAccountLedgerEntries];
   } catch (e) {
     throw new GraphQLError(`Failed to generate ledger records for charge ID="${chargeId}"\n${e}`);
   }
