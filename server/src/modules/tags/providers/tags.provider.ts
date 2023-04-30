@@ -13,7 +13,7 @@ const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
   scope: Scope.Singleton,
   global: true,
 })
-export class TAgsProvider {
+export class TagsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public addTagCategory(params: { tagName: string }) {
