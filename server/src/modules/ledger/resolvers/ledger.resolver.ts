@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
@@ -47,8 +48,16 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       if (!invoice.creditor_id) {
         throw new GraphQLError(`Document ID="${invoice.id}" is missing the creditor`);
       }
+      if (!invoice.total_amount) {
+        throw new GraphQLError(`Document ID="${invoice.id}" is missing amount`);
+      }
+      let totalAmount = invoice.total_amount;
 
-      const isCreditorCounterparty = invoice.debtor_id === charge.owner_id;
+      let isCreditorCounterparty = invoice.debtor_id === charge.owner_id;
+      if (totalAmount < 0) {
+        isCreditorCounterparty = !isCreditorCounterparty;
+        totalAmount = Math.abs(totalAmount);
+      }
 
       const counterpartyId = isCreditorCounterparty ? invoice.creditor_id : invoice.debtor_id;
       const taxCategoryInfo = await injector
@@ -73,19 +82,14 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       let creditAccountID2: TaxCategory | null = null;
       let debitAccountID2: TaxCategory | null = null;
 
-      if (!invoice.total_amount) {
-        throw new GraphQLError(`Document ID="${invoice.id}" is missing amount`);
-      }
-
       if (!invoice.currency_code) {
         throw new GraphQLError(`Document ID="${invoice.id}" is missing currency code`);
       }
       const currency = formatCurrency(invoice.currency_code);
-      let totalAmount = invoice.total_amount;
       let foreignTotalAmount: number | null = null;
       let amountWithoutVat = totalAmount;
       let foreignAmountWithoutVat: number | null = null;
-      let vatAmount = invoice.vat_amount;
+      let vatAmount = invoice.vat_amount == null ? null : Math.abs(invoice.vat_amount);
       let foreignVatAmount: number | null = null;
       let vatTaxCategory: TaxCategory | null = null;
 
@@ -222,6 +226,8 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       }
 
       const counterpartyId = transaction.business_id;
+
+      // NOTE: owner is hard coded here, should later be fetched from DB
       const owner = {
         id: transaction.account_id,
         name: transaction.account_id,
@@ -229,6 +235,7 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       } as TaxCategory;
 
       const isCreditorCounterparty = amount > 0;
+
       ledgerBalance += amount;
 
       const currency = formatCurrency(currencyCode);
@@ -253,6 +260,17 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
     // Add ledger completion entries
     const miscLedgerEntries: LedgerProto[] = [];
     if (ledgerBalance !== 0) {
+      if (!accountingLedgerEntries.length) {
+        const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
+          ? financialAccountLedgerEntries[0].creditAccountID1
+          : financialAccountLedgerEntries[0].debitAccountID1;
+        const business = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(counterpartyId as string);
+        if (business?.no_invoices_required) {
+          return financialAccountLedgerEntries;
+        }
+      }
       const dates = new Set<Date>(
         [...documents.map(doc => doc.date), ...transactions.map(t => t.debit_date)].filter(
           Boolean,
@@ -268,8 +286,9 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       const hasForeignCurrency = currencies.size > 1;
       if (hasMultipleDates && hasForeignCurrency) {
         const baseEntry = financialAccountLedgerEntries[0];
+        // NOTE: exchangeCategory is hard coded here, should later be fetched from DB
         const exchangeCategory = {
-          id: baseEntry.id,
+          id: baseEntry.id, // NOTE: this field is dummy
           name: 'Exchange',
           __typename: 'TaxCategory',
         } as TaxCategory;
@@ -284,7 +303,7 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
           : baseEntry.debitAccountID1;
 
         miscLedgerEntries.push({
-          id: baseEntry.id,
+          id: baseEntry.id, // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? counterparty : exchangeCategory,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
@@ -293,11 +312,12 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
-          invoiceDate: baseEntry.invoiceDate,
-          valueDate: baseEntry.valueDate,
-          currency: baseEntry.currency,
-          reference1: baseEntry.reference1,
+          invoiceDate: baseEntry.invoiceDate, // NOTE: this field is dummy
+          valueDate: baseEntry.valueDate, // NOTE: this field is dummy
+          currency: baseEntry.currency, // NOTE: this field is dummy
+          reference1: baseEntry.reference1, // NOTE: this field is dummy
         });
+
         // currencies.delete('ILS');
         // if (currencies.size > 1) {
         //   throw new GraphQLError(
