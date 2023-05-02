@@ -230,7 +230,7 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       // NOTE: owner is hard coded here, should later be fetched from DB
       const owner = {
         id: transaction.account_id,
-        name: transaction.account_id,
+        name: `Account ID:...${transaction.account_id.slice(-6)}`,
         __typename: 'TaxCategory',
       } as TaxCategory;
 
