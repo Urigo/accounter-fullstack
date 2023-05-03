@@ -35,7 +35,6 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     }
     ...AllChargesAccountantApprovalFields
     ...AllChargesAmountFields
-    ...AllChargesBalanceFields
     ...AllChargesDateFields
     ...AllChargesDescriptionFields
     ...AllChargesEntityFields

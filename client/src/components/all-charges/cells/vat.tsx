@@ -24,6 +24,12 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
     validationData {
       missingInfo
     }
+    missingInfoSuggestions {
+      vat {
+        raw
+        formatted
+      }
+    }
   }
 `;
 
@@ -47,6 +53,8 @@ export const Vat = ({ data }: Props) => {
       totalAmount?.currency == Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
+
+  // TODO(Gil): implement update according to suggestion
 
   return (
     <td>

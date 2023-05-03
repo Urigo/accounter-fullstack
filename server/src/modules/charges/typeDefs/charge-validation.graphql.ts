@@ -21,15 +21,11 @@ export default gql`
     TAGS
     VAT
     DOCUMENTS
-    LEDGER_RECORDS
-    BALANCE
   }
 
   extend input ChargeFilter {
     " Include only charges that doesn't have transactions linked "
     withoutTransaction: Boolean
-    " Include only charges that doesn't have Ledger records linked "
-    withoutLedger: Boolean
     " Include only charges that doesn't have documents linked "
     withoutDocuments: Boolean
     " Include only charges that doesn't have invoice document linked "

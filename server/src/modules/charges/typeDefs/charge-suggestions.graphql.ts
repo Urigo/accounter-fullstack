@@ -15,15 +15,4 @@ export default gql`
     tags: [Tag!]!
     vat: FinancialAmount
   }
-
-  " represent a missing info attributes for a charge"
-  enum MissingChargeInfo {
-    COUNTERPARTY
-    TRANSACTION_DESCRIPTION
-    TAGS
-    VAT
-    DOCUMENTS
-    LEDGER_RECORDS
-    BALANCE
-  }
 `;

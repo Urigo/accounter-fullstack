@@ -138,13 +138,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       FROM accounter_schema.documents d
       WHERE d.charge_id = c.id
         AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) END as receipts_count,
-    -- ledger_records_count column, conditional calculation
-    CASE WHEN $preCountLedger = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.ledger l
-      WHERE l.original_id = c.id
-    ) END as ledger_records_count
+    ) END as receipts_count
   FROM accounter_schema.extended_charges c
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
@@ -170,7 +164,6 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   | 'toDate'
   | 'fromDate'
   | 'preCountInvoices'
-  | 'preCountLedger'
   | 'preCountReceipts'
 > & {
   toDate?: TimelessDateString | null;
@@ -191,12 +184,7 @@ const validateCharges = sql<IValidateChargesQuery>`
       FROM accounter_schema.documents d
       WHERE d.charge_id = c.id
         AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) as receipts_count,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.ledger l
-      WHERE l.original_id = c.id
-    ) as ledger_records_count
+    ) as receipts_count
     
   FROM accounter_schema.extended_charges c
 
@@ -318,9 +306,7 @@ export class ChargesProvider {
       isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
       ...params,
-      // preCalculateBalance: params.preCalculateBalance ?? false,
       preCountInvoices: params.preCountInvoices ?? false,
-      preCountLedger: params.preCountLedger ?? false,
       preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,

@@ -4,8 +4,6 @@ export enum MissingChargeInfo {
   Tags = 'TAGS',
   Vat = 'VAT',
   Documents = 'DOCUMENTS',
-  LedgerRecords = 'LEDGER_RECORDS',
-  Balance = 'BALANCE',
 }
 
 export enum ChargeSortByField {

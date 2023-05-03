@@ -1,5 +1,4 @@
 // import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { GraphQLError } from 'graphql';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
@@ -65,8 +64,9 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
       });
 
       if (counterpartyIDs.size > 1) {
-        throw new GraphQLError(`Charge ID ${DbCharge.id} has more than one counterparty`);
-      } else if (counterpartyIDs.size === 1) {
+        return null;
+      }
+      if (counterpartyIDs.size === 1) {
         const [id] = counterpartyIDs;
         return id;
       }

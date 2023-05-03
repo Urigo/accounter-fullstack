@@ -178,7 +178,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           asc: filters?.sortBy?.asc !== false,
           preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
           preCountReceipts: filters?.withoutDocuments,
-          preCountLedger: filters?.withoutLedger,
           chargeType: filters?.chargesType,
         })
         .catch(e => {
@@ -189,16 +188,14 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
       if (
         // filters?.unbalanced ||
         filters?.withoutInvoice ||
-        filters?.withoutDocuments ||
-        filters?.withoutLedger
+        filters?.withoutDocuments
       ) {
         charges = charges.filter(
           c =>
             // (!filters?.unbalanced || Number(c.balance) !== 0) &&
             (!filters?.withoutInvoice || Number(c.invoices_count) === 0) &&
             (!filters?.withoutDocuments ||
-              Number(c.receipts_count) + Number(c.invoices_count) === 0) &&
-            (!filters?.withoutLedger || Number(c.ledger_records_count) === 0),
+              Number(c.receipts_count) + Number(c.invoices_count) === 0),
         );
       }
 

@@ -6,9 +6,7 @@ import {
   ChargeFilter,
   MissingChargeInfo,
 } from '../../../gql/graphql';
-import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { useUrlQuery } from '../../../hooks/use-url-query';
-import { ConfirmMiniButton } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesEntityFields on Charge {
@@ -20,12 +18,6 @@ import { ConfirmMiniButton } from '../../common';
     validationData {
       missingInfo
     }
-    missingInfoSuggestions {
-      business {
-        id
-        name
-      }
-    }
   }
 `;
 
@@ -35,33 +27,9 @@ type Props = {
 
 export const Counterparty = ({ data }: Props) => {
   const { get } = useUrlQuery();
-  const {
-    counterparty,
-    id: chargeId,
-    validationData,
-    missingInfoSuggestions,
-  } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
+  const { counterparty, validationData } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);
-  const hasAlternative = isError && missingInfoSuggestions?.business;
-  const { name, id } = counterparty || {};
-  const alternativeName = hasAlternative ? missingInfoSuggestions.business.name : 'Missing';
-  const cellText = isError ? alternativeName : name;
-
-  const { updateCharge, fetching } = useUpdateCharge();
-
-  const updateTag = useCallback(
-    (businessID?: string) => {
-      if (businessID !== undefined) {
-        updateCharge({
-          chargeId,
-          fields: {
-            counterpartyId: businessID,
-          },
-        });
-      }
-    },
-    [chargeId, updateCharge],
-  );
+  const { name = 'Missing', id } = counterparty || {};
 
   const encodedFilters = get('chargesFilters');
 
@@ -91,27 +59,17 @@ export const Counterparty = ({ data }: Props) => {
     [encodedFilters],
   );
 
-  const content = (
-    <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
-  );
-
   return (
     <td>
       <div className="flex flex-wrap">
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {!isError && (
             <a href={getHref(id)} target="_blank" rel="noreferrer">
-              <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+              <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
             </a>
           )}
-          {isError && content}
+          {isError && name}
         </Indicator>
-        {hasAlternative && (
-          <ConfirmMiniButton
-            onClick={() => updateTag(missingInfoSuggestions.business.id)}
-            disabled={fetching}
-          />
-        )}
       </div>
     </td>
   );

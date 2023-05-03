@@ -272,12 +272,6 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           <span>Missing Information:</span>
 
           <Switch
-            defaultChecked={filter.withoutLedger ?? false}
-            onChange={event => setValue('withoutLedger', event.currentTarget.checked)}
-            label="Without Ledger Records"
-          />
-
-          <Switch
             defaultChecked={filter.withoutInvoice ?? false}
             onChange={event => setValue('withoutInvoice', event.currentTarget.checked)}
             label="Without Invoices"
