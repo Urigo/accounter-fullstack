@@ -11,7 +11,11 @@ import { DragFile, ListCapsule } from '../../common';
       id
     }
     ledgerRecords {
-        id
+      ... on LedgerRecords {
+        records {
+          id
+        }
+      }
     }
     additionalDocuments {
         id
@@ -35,9 +39,10 @@ export const MoreInfo = ({ data }: Props) => {
   const isTransactionsError = false;
   // TODO(Gil): implement isTransactionsError
   // validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
-  const isLedgerError = validationData?.missingInfo?.includes(MissingChargeInfo.LedgerRecords);
+  const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
   const isDocumentsError = validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
 
+  const ledgerRecordsCount = isLedgerError ? 0 : ledgerRecords.records.length;
   return (
     <td>
       <DragFile chargeId={id}>
@@ -59,7 +64,7 @@ export const MoreInfo = ({ data }: Props) => {
               ),
             },
             {
-              style: ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              style: ledgerRecordsCount > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
               content: (
                 <Indicator
                   key="ledger"
@@ -69,7 +74,9 @@ export const MoreInfo = ({ data }: Props) => {
                   color="red"
                   zIndex="auto"
                 >
-                  <div className="whitespace-nowrap">Ledger Records: {ledgerRecords.length}</div>
+                  <div className="whitespace-nowrap">
+                    Ledger Records: {isLedgerError ? 'Error' : ledgerRecordsCount}
+                  </div>
                 </Indicator>
               ),
             },

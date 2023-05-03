@@ -27,7 +27,11 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
       id
     }
     ledgerRecords {
-      id
+      ... on LedgerRecords {
+        records {
+          id
+        }
+      }
     }
     ...AllChargesAccountantApprovalFields
     ...AllChargesAmountFields
@@ -69,7 +73,12 @@ export const AllChargesRow = ({
 
   const charge = getFragmentData(AllChargesRowFieldsFragmentDoc, data);
 
-  const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
+  const hasExtendedInfo = !!(
+    charge.additionalDocuments.length ||
+    (charge.ledgerRecords &&
+      'records' in charge.ledgerRecords &&
+      charge.ledgerRecords.records.length)
+  );
 
   return (
     <>

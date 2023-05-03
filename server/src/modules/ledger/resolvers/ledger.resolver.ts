@@ -5,7 +5,7 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { ChargeResolvers, Currency, TaxCategory } from '@shared/gql-types';
+import { ChargeResolvers, Currency, Resolvers, TaxCategory } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { getRateForCurrency } from '../helpers/exchange.helper.js';
@@ -268,7 +268,7 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
           .get(FinancialEntitiesProvider)
           .getFinancialEntityByIdLoader.load(counterpartyId as string);
         if (business?.no_invoices_required) {
-          return financialAccountLedgerEntries;
+          return { records: financialAccountLedgerEntries };
         }
       }
       const dates = new Set<Date>(
@@ -364,7 +364,7 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
         // }
       } else {
         throw new GraphQLError(
-          `Failed to balance ledger records for charge ID="${chargeId}": ${
+          `Failed to balance: ${
             hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
           } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
         );
@@ -373,13 +373,18 @@ const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
 
     // validate counterparty is consistent
 
-    return [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries];
+    return {
+      records: [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries],
+    };
   } catch (e) {
-    throw new GraphQLError(`Failed to generate ledger records for charge ID="${chargeId}"\n${e}`);
+    return {
+      __typename: 'CommonError',
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
+    };
   }
 };
 
-export const ledgerResolvers: LedgerModule.Resolvers = {
+export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   LedgerRecord: {
     id: () => '',
     debitAmount1: DbLedgerRecord =>
@@ -417,5 +422,11 @@ export const ledgerResolvers: LedgerModule.Resolvers = {
   },
   Charge: {
     ledgerRecords: generateLedgerRecords,
+  },
+  GeneratedLedgerRecords: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'LedgerRecords';
+    },
   },
 };

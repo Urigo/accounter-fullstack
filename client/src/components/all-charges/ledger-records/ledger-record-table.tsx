@@ -5,30 +5,38 @@ import { AccountDetails, GeneralDate } from './cells';
 /* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
-      id
-      ...LedgerRecordsDateFields
-      ...LedgerRecordsCreditAccountFields
-      ...LedgerRecordsDebitAccountFields
-      ...LedgerRecordsAccountDetailsFields
-      ...LedgerRecordsGeneralDateFields
-      creditAmount1 {
-        formatted
-      }
-      localCurrencyCreditAmount1 {
-        formatted
-      }
-      debitAccount1 {
-        ... on NamedCounterparty {
+      __typename
+      ... on LedgerRecords {
+        records {
           id
-          name
-        }
-        ... on TaxCategory {
-          id
-          name
+          ...LedgerRecordsDateFields
+          ...LedgerRecordsCreditAccountFields
+          ...LedgerRecordsDebitAccountFields
+          ...LedgerRecordsAccountDetailsFields
+          ...LedgerRecordsGeneralDateFields
+          creditAmount1 {
+            formatted
+          }
+          localCurrencyCreditAmount1 {
+            formatted
+          }
+          debitAccount1 {
+            ... on NamedCounterparty {
+              id
+              name
+            }
+            ... on TaxCategory {
+              id
+              name
+            }
+          }
+          description
+          reference1
         }
       }
-      description
-      reference1
+      ... on CommonError {
+        message
+      }
     }
   }
 `;
@@ -38,10 +46,15 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
-  const { ledgerRecords } = getFragmentData(
+  const { ledgerRecords: data } = getFragmentData(
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,
   );
+
+  if (!data || data.__typename === 'CommonError') {
+    return <div>{data?.message}</div>;
+  }
+
   return (
     <table style={{ width: '100%', height: '100%' }}>
       <thead>
@@ -57,7 +70,7 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
         </tr>
       </thead>
       <tbody>
-        {ledgerRecords.map(record => (
+        {data.records.map(record => (
           <tr key={record.id}>
             <GeneralDate data={record} type={1} />
             <GeneralDate data={record} type={2} />

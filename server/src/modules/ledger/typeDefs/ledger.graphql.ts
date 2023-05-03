@@ -21,6 +21,14 @@ export default gql`
 
   extend type Charge {
     " ledger records linked to the charge "
-    ledgerRecords: [LedgerRecord!]!
+    ledgerRecords: GeneratedLedgerRecords
   }
+
+  " array of ledger records linked to the charge "
+  type LedgerRecords {
+    records: [LedgerRecord!]!
+  }
+
+  " result type for ledger records "
+  union GeneratedLedgerRecords = LedgerRecords | CommonError
 `;

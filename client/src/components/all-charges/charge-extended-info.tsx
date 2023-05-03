@@ -12,7 +12,11 @@ import { TransactionsTable } from './transactions/transactions-table';
     chargesByIDs(chargeIDs: $chargeIDs) {
       id
       ledgerRecords {
-        id
+        ... on LedgerRecords {
+          records {
+            id
+          }
+        }
       }
       additionalDocuments {
         id
@@ -49,6 +53,11 @@ export function ChargeExtendedInfo({
 
   const charge = data?.chargesByIDs?.[0];
 
+  const hasLedgerRecords = !!(
+    charge?.ledgerRecords &&
+    'records' in charge.ledgerRecords &&
+    charge.ledgerRecords.records.length > 0
+  );
   return (
     <div className="flex flex-col gap-5">
       {fetching && (
@@ -62,7 +71,7 @@ export function ChargeExtendedInfo({
                 <TransactionsTable transactionsProps={charge} />
               </div>
             )}
-            <div className={`flex flex-col w-${charge.ledgerRecords.length > 0 ? '1/6' : 'full'}`}>
+            <div className={`flex flex-col w-${hasLedgerRecords ? '1/6' : 'full'}`}>
               <div className="w-full flex flex-row justify-end">
                 <ChargeExtendedInfoMenu
                   chargeId={charge.id}
@@ -71,14 +80,14 @@ export function ChargeExtendedInfo({
                   setUploadDocument={setUploadDocument}
                 />
               </div>
-              {(charge.ledgerRecords.length > 0 || charge.additionalDocuments.length > 0) && (
+              {(hasLedgerRecords || charge.additionalDocuments.length > 0) && (
                 <div className="flex flex-row justify-start">
                   <DocumentsGallery chargeProps={charge} />
                 </div>
               )}
             </div>
           </div>
-          {charge.ledgerRecords.length > 0 && (
+          {hasLedgerRecords && (
             <div className="flex flex-row justify-start w-full max-w-7/8">
               <LedgerRecordTable ledgerRecordsProps={charge} />
             </div>
