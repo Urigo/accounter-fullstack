@@ -37,7 +37,7 @@ const getDocumentsByChargeId = sql<IGetDocumentsByChargeIdQuery>`
 const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
-  WHERE charge_id IN(
+  WHERE charge_id_new IN(
     SELECT c.id as financial_entity_id
     FROM accounter_schema.charges c
     WHERE c.owner_id IN $$financialEntityIds
@@ -48,11 +48,11 @@ const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQu
 const updateDocument = sql<IUpdateDocumentQuery>`
   UPDATE accounter_schema.documents
   SET
-  charge_id = CASE
+  charge_id_new = CASE
     WHEN $chargeId='NULL' THEN NULL
     ELSE COALESCE(
       $chargeId::UUID,
-      charge_id,
+      charge_id_new,
       NULL
     ) END,
   currency_code = COALESCE(
@@ -126,7 +126,7 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       total_amount,
       currency_code,
       vat_amount,
-      charge_id
+      charge_id_new
     )
     VALUES $$document(
       image,
@@ -162,8 +162,8 @@ type IGetAdjustedDocumentsByFiltersParams = Optional<
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   UPDATE accounter_schema.documents
-  SET charge_id = $assertChargeID
-  WHERE charge_id = $replaceChargeID
+  SET charge_id_new = $assertChargeID
+  WHERE charge_id_new = $replaceChargeID
   RETURNING id;
 `;
 
