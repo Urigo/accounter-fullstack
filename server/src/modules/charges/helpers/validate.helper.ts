@@ -1,40 +1,28 @@
-import { GraphQLError } from 'graphql';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeResolvers, MissingChargeInfo } from '@shared/gql-types';
-import { ChargesProvider } from '../providers/charges.provider.js';
-import type { IValidateChargesResult } from '../types.js';
 
 export const validateCharge: ChargeResolvers['validationData'] = async (
-  DbCharge,
+  charge,
   _,
   { injector },
 ) => {
-  const charge: IValidateChargesResult | undefined =
-    'invoices_count' in DbCharge && DbCharge.invoices_count != null
-      ? (DbCharge as IValidateChargesResult)
-      : await injector.get(ChargesProvider).validateChargeByIdLoader.load(DbCharge.id);
-
-  if (!charge) {
-    throw new GraphQLError(`Charge ID='${DbCharge.id}' not found`);
-  }
-
   const missingInfo: Array<MissingChargeInfo> = [];
 
   const documents = await injector
     .get(DocumentsProvider)
-    .getDocumentsByChargeIdLoader.load(DbCharge.id);
+    .getDocumentsByChargeIdLoader.load(charge.id);
   const transactions = await injector
     .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+    .getTransactionsByChargeIDLoader.load(charge.id);
 
   // check for consistent counterparty business
   const counterpartyIDs = new Set<string>();
   documents.map(d => {
-    if (d.creditor_id && d.creditor_id !== DbCharge.owner_id) counterpartyIDs.add(d.creditor_id);
-    if (d.debtor_id && d.debtor_id !== DbCharge.owner_id) counterpartyIDs.add(d.debtor_id);
+    if (d.creditor_id && d.creditor_id !== charge.owner_id) counterpartyIDs.add(d.creditor_id);
+    if (d.debtor_id && d.debtor_id !== charge.owner_id) counterpartyIDs.add(d.debtor_id);
   });
   transactions.map(t => {
     if (t.business_id) counterpartyIDs.add(t.business_id);
@@ -71,7 +59,7 @@ export const validateCharge: ChargeResolvers['validationData'] = async (
   }
 
   // validate tags
-  const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(DbCharge.id);
+  const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(charge.id);
   const tagsAreFine = tags.length > 0;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);

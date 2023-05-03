@@ -1,6 +1,5 @@
 export { AccountantApproval } from './accountant-approval.js';
 export { Amount } from './amount.js';
-export { Balance } from './balance.js';
 export { Counterparty } from './counterparty.js';
 export { DateCell } from './date.js';
 export { Description } from './description.js';

@@ -21,9 +21,6 @@ import type {
   IUpdateChargeParams,
   IUpdateChargeQuery,
   IUpdateChargeResult,
-  IValidateChargesParams,
-  IValidateChargesQuery,
-  IValidateChargesResult,
 } from '../types.js';
 
 export type ChargeRequiredWrapper<
@@ -124,21 +121,7 @@ const updateCharge = sql<IUpdateChargeQuery>`
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     c.*,
-    ABS(c.event_amount) as abs_event_amount,
-    -- invoices_count column, conditional calculation
-    CASE WHEN $preCountInvoices = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = c.id
-        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
-    ) END as invoices_count,
-    -- receipts_count column, conditional calculation
-    CASE WHEN $preCountReceipts = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = c.id
-        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) END as receipts_count
+    ABS(c.event_amount) as abs_event_amount
   FROM accounter_schema.extended_charges c
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
@@ -157,56 +140,15 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
 
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<IGetChargesByFiltersParams, 'isFinancialEntityIds' | 'isIDs'>,
-  | 'financialEntityIds'
-  | 'IDs'
-  | 'asc'
-  | 'sortColumn'
-  | 'toDate'
-  | 'fromDate'
-  | 'preCountInvoices'
-  | 'preCountReceipts'
+  'financialEntityIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
 };
-
-const validateCharges = sql<IValidateChargesQuery>`
-  SELECT
-    c.*,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = c.id
-        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
-    ) as invoices_count,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = c.id
-        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) as receipts_count
-    
-  FROM accounter_schema.extended_charges c
-
-  WHERE ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
-    AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.event_amount <= 0))
-    AND ($isIDs = 0 OR c.id IN $$IDs)
-    AND ($fromDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY c.transactions_min_event_date DESC;
-`;
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
     DELETE FROM accounter_schema.charges
     WHERE id IN $$chargeIds;`;
-
-type IValidateChargesAdjustedParams = Optional<
-  Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityIds'>,
-  'IDs' | 'toDate' | 'fromDate' | 'financialEntityIds'
-> & {
-  toDate?: TimelessDateString | null;
-  fromDate?: TimelessDateString | null;
-};
 
 @Injectable({
   scope: Scope.Singleton,
@@ -306,8 +248,6 @@ export class ChargesProvider {
       isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
       ...params,
-      preCountInvoices: params.preCountInvoices ?? false,
-      preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
@@ -318,43 +258,6 @@ export class ChargesProvider {
       ChargeRequiredWrapper<IGetChargesByFiltersResult>[]
     >;
   }
-
-  public validateCharges(params: IValidateChargesAdjustedParams) {
-    const isIDs = !!params?.IDs?.length;
-    const isFinancialEntityIds = !!params?.financialEntityIds?.length;
-
-    const fullParams: IValidateChargesParams = {
-      isIDs: isIDs ? 1 : 0,
-      isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
-      ...params,
-      fromDate: params.fromDate ?? null,
-      toDate: params.toDate ?? null,
-      IDs: isIDs ? params.IDs! : [null],
-      financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
-      chargeType: params.chargeType ?? 'ALL',
-    };
-    return validateCharges.run(fullParams, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IValidateChargesResult>[]
-    >;
-  }
-
-  private async batchValidateChargesByIds(ids: readonly string[]) {
-    const isIDs = !!ids?.length;
-    const charges = await this.validateCharges({
-      IDs: isIDs ? ids : [null],
-      fromDate: null,
-      toDate: null,
-      financialEntityIds: null,
-    });
-    return ids.map(id => charges.find(charge => charge.id === id));
-  }
-
-  public validateChargeByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchValidateChargesByIds(keys),
-    {
-      cache: false,
-    },
-  );
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
     return deleteChargesByIds.run(params, this.dbProvider);

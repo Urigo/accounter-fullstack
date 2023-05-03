@@ -4,7 +4,6 @@ import type {
   IGetChargesByFinancialEntityIdsResult as IGetChargesByFinancialEntityIdsResultRaw,
   IGetChargesByIdsResult as IGetChargesByIdsResultRaw,
   IUpdateChargeResult as IUpdateChargeResultRaw,
-  IValidateChargesResult as IValidateChargesResultRaw,
 } from './__generated__/charges.types.js';
 import { ChargeRequiredWrapper } from './providers/charges.provider.js';
 
@@ -16,7 +15,6 @@ export type IGetChargesByFinancialAccountIdsResult =
 export type IGetChargesByFinancialEntityIdsResult =
   ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResultRaw>;
 export type IUpdateChargeResult = ChargeRequiredWrapper<IUpdateChargeResultRaw>;
-export type IValidateChargesResult = ChargeRequiredWrapper<IValidateChargesResultRaw>;
 export type IGetChargesByFiltersResult = ChargeRequiredWrapper<IGetChargesByFiltersResultRaw>;
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment

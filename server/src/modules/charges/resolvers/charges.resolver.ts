@@ -176,8 +176,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           toDate: filters?.toDate,
           sortColumn,
           asc: filters?.sortBy?.asc !== false,
-          preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
-          preCountReceipts: filters?.withoutDocuments,
           chargeType: filters?.chargesType,
         })
         .catch(e => {
@@ -200,18 +198,6 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
       }
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
-
-      if (filters?.unbalanced) {
-        const validationInfo = await injector.get(ChargesProvider).validateCharges({
-          IDs: pageCharges.map(c => c.id),
-        });
-        pageCharges.map(c =>
-          Object.assign(
-            c,
-            validationInfo.find(v => v.id === c.id),
-          ),
-        );
-      }
 
       return {
         __typename: 'PaginatedCharges',
