@@ -53,6 +53,8 @@ module.exports = {
                 'PCNFileResult',
                 'PCNRawData',
                 'ChargeSuggestions',
+                'LedgerRecords',
+                'GeneratedLedgerRecords',
               ],
             },
           },
