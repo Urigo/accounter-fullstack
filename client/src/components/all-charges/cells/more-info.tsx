@@ -40,7 +40,7 @@ export const MoreInfo = ({ data }: Props) => {
         <ListCapsule
           items={[
             {
-              style: ledgerRecords.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              style: ledgerRecords ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
               content: (
                 <Indicator
                   key="ledger"

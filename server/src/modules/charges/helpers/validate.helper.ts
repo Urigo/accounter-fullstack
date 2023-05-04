@@ -39,12 +39,12 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
   const ledgerRecordsCount = Number(charge.ledger_records_count) || 0;
   const ledgerRecordsAreFine = ledgerRecordsCount > 0;
   if (!ledgerRecordsAreFine) {
-    missingInfo.push(MissingChargeInfo.LedgerRecords);
+    // missingInfo.push(MissingChargeInfo.LedgerRecords);
   }
 
   const balanceIsFine = !charge.balance || Number(charge.balance) == 0;
   if (!balanceIsFine) {
-    missingInfo.push(MissingChargeInfo.Balance);
+    // missingInfo.push(MissingChargeInfo.Balance);
   }
 
   const allFine =
@@ -52,9 +52,9 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     businessIsFine &&
     descriptionIsFine &&
     tagsAreFine &&
-    vatIsFine &&
-    ledgerRecordsAreFine &&
-    balanceIsFine;
+    // ledgerRecordsAreFine &&
+    // balanceIsFine &&
+    vatIsFine;
 
   return {
     isValid: allFine,
