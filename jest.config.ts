@@ -1,42 +1,37 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { resolve } = require('node:path');
-const { pathsToModuleNameMapper } = require('ts-jest');
+import { pathsToModuleNameMapper } from 'ts-jest';
+import type { Config } from '@jest/types';
+import tsconfigJson from './tsconfig.json';
 
-const CI = !!process.env.CI;
+function manageKey(key: string): string {
+  return key.includes('(.*)') ? key.slice(0, -1) + '\\.js$' : key;
+}
+function manageMapper(mapper: Record<string, string>): Record<string, string> {
+  const newMapper: Record<string, string> = {};
+  for (const key in mapper) {
+    newMapper[manageKey(key)] = mapper[key];
+  }
+  newMapper['^(.*).js$'] = '$1';
+  return newMapper;
+}
 
-const ROOT_DIR = __dirname;
-const TSCONFIG = resolve(ROOT_DIR, 'tsconfig.json');
-const tsconfig = require(TSCONFIG);
-
-process.env.LC_ALL = 'en_US';
-
-const testMatch = [
-  '<rootDir>/client/**/?(*.)+(spec|test).[jt]s?(x)',
-  '<rootDir>/server/**/?(*.)+(spec|test).[jt]s?(x)',
-];
-
-testMatch.push('!**/dist/**', '!**/.bob/**');
-
-module.exports = {
-  preset: 'ts-jest',
+const config: Config.InitialOptions = {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  transform: {
-    '^.+\\.ts?$': 'ts-jest',
+  verbose: true,
+  globals: {
+    'ts-jest': {
+      tsconfig: './tsconfig.json',
+      useESM: true,
+    },
   },
-  transformIgnorePatterns: ['node_modules', 'dist'],
-  rootDir: ROOT_DIR,
-  restoreMocks: true,
-  reporters: ['default'],
-  modulePathIgnorePatterns: ['dist'],
-  moduleNameMapper: pathsToModuleNameMapper(tsconfig.compilerOptions.paths, {
-    prefix: `${ROOT_DIR}/`,
-    useESM: true,
-  }),
-
-  useESM: true,
-  collectCoverage: false,
-  cacheDirectory: resolve(ROOT_DIR, `${CI ? '' : 'node_modules/'}.cache/jest`),
-  testMatch,
-  resolver: 'bob-the-bundler/jest-resolver',
-  // extensionsToTreatAsEsm: ['.ts'],
+  coverageProvider: 'v8',
+  moduleNameMapper: manageMapper(
+    pathsToModuleNameMapper(tsconfigJson.compilerOptions.paths, { prefix: '<rootDir>/' }) as Record<
+      string,
+      string
+    >,
+  ),
+  transformIgnorePatterns: ['<rootDir>/node_modules/'],
 };
+// eslint-disable-next-line import/no-default-export
+export default config;

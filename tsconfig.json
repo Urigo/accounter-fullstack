@@ -28,7 +28,11 @@
     "emitDecoratorMetadata": true,
 
     "strict": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "paths": {
+      "@client": ["client/src/index.ts"],
+      "@server": ["server/src/index.ts"]
+    }
   },
   "include": ["./server", "./old-accounter", "./client"],
   "exclude": ["**/node_modules", "**/dist"]
