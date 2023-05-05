@@ -58,6 +58,8 @@ export function ChargeExtendedInfo({
     'records' in charge.ledgerRecords &&
     charge.ledgerRecords.records.length > 0
   );
+  const hasTransactions = !!(charge?.transactions && charge.transactions.length > 0);
+  const hasDocs = !!(charge?.additionalDocuments && charge.additionalDocuments.length > 0);
   return (
     <div className="flex flex-col gap-5">
       {fetching && (
@@ -66,7 +68,7 @@ export function ChargeExtendedInfo({
       {!fetching && charge && (
         <>
           <div className="flex flex-row gap-5">
-            {(charge.transactions.length > 0 || charge.additionalDocuments.length > 0) && (
+            {(hasTransactions || hasDocs) && (
               <div className="flex flex-col justify-start items-center w-full max-w-7/8">
                 <h1 className="text-base font-semibold">Transactions</h1>
                 <div className="p-2 flex flex-row w-full">
@@ -74,7 +76,7 @@ export function ChargeExtendedInfo({
                 </div>
               </div>
             )}
-            <div className={`flex flex-col w-${hasLedgerRecords ? '1/6' : 'full'}`}>
+            <div className={`flex flex-col w-${hasTransactions ? '1/6' : 'full'}`}>
               <div className="w-full flex flex-row justify-end">
                 <ChargeExtendedInfoMenu
                   chargeId={charge.id}
@@ -83,7 +85,7 @@ export function ChargeExtendedInfo({
                   setUploadDocument={setUploadDocument}
                 />
               </div>
-              {(hasLedgerRecords || charge.additionalDocuments.length > 0) && (
+              {(hasTransactions || hasDocs) && (
                 <div className="flex flex-col justify-start items-center">
                   <h1 className="text-base font-semibold">Documents</h1>
                   <DocumentsGallery chargeProps={charge} />

@@ -44,7 +44,7 @@ export const AllChargesTable = ({
           <th>Date</th>
           <th>Amount</th>
           <th>Vat</th>
-          <th>Entity</th>
+          <th>Counterparty</th>
           <th>Description</th>
           <th>Tags</th>
           <th>More Info</th>
