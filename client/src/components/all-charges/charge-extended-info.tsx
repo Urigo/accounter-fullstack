@@ -67,8 +67,11 @@ export function ChargeExtendedInfo({
         <>
           <div className="flex flex-row gap-5">
             {(charge.transactions.length > 0 || charge.additionalDocuments.length > 0) && (
-              <div className="flex flex-row justify-start w-full max-w-7/8">
-                <TransactionsTable transactionsProps={charge} />
+              <div className="flex flex-col justify-start items-center w-full max-w-7/8">
+                <h1 className="text-base font-semibold">Transactions</h1>
+                <div className="p-2 flex flex-row w-full">
+                  <TransactionsTable transactionsProps={charge} />
+                </div>
               </div>
             )}
             <div className={`flex flex-col w-${hasLedgerRecords ? '1/6' : 'full'}`}>
@@ -81,15 +84,19 @@ export function ChargeExtendedInfo({
                 />
               </div>
               {(hasLedgerRecords || charge.additionalDocuments.length > 0) && (
-                <div className="flex flex-row justify-start">
+                <div className="flex flex-col justify-start items-center">
+                  <h1 className="text-base font-semibold">Documents</h1>
                   <DocumentsGallery chargeProps={charge} />
                 </div>
               )}
             </div>
           </div>
           {hasLedgerRecords && (
-            <div className="flex flex-row justify-start w-full max-w-7/8">
-              <LedgerRecordTable ledgerRecordsProps={charge} />
+            <div className="flex flex-col justify-start items-center w-full">
+              <h1 className="text-base font-semibold">Ledger Records</h1>
+              <div className="p-2 flex flex-row w-full">
+                <LedgerRecordTable ledgerRecordsProps={charge} />
+              </div>
             </div>
           )}
         </>

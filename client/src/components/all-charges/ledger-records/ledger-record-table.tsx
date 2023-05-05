@@ -56,7 +56,7 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
   }
 
   return (
-    <table style={{ width: '100%', height: '100%' }}>
+    <table className="w-full h-full">
       <thead>
         <tr>
           <th>Invoice Date</th>

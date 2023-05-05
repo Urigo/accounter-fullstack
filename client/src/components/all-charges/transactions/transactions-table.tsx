@@ -36,7 +36,7 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (
     <>
-      <table style={{ width: '100%', height: '100%' }}>
+      <table className="w-full h-full">
         <thead>
           <tr>
             <th>Event Date</th>
