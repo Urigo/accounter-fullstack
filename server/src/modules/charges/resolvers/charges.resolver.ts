@@ -1,6 +1,8 @@
 import { GraphQLError } from 'graphql';
 import type { DocumentsTypes } from '@modules/documents/index.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { tags as tagNames } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
@@ -227,6 +229,32 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         if (!updatedCharge) {
           throw new Error(`Charge ID="${chargeId}" not found`);
         }
+
+        // handle tags
+        if (fields?.tags?.length) {
+          const newTags = fields.tags.map(t => t.name);
+          const pastTagsItems = await injector
+            .get(TagsProvider)
+            .getTagsByChargeIDLoader.load(chargeId);
+          const pastTags = pastTagsItems.map(({ tag_name }) => tag_name);
+          // clear removed tags
+          const tagsToRemove = pastTags.filter(tag => !newTags.includes(tag));
+          if (tagsToRemove.length) {
+            await injector.get(TagsProvider).clearChargeTags({ chargeId, tagNames: tagsToRemove });
+          }
+          // add new tags
+          for (const tag of newTags as tagNames[]) {
+            if (!pastTags.includes(tag)) {
+              await injector
+                .get(TagsProvider)
+                .insertChargeTags({ chargeId, tagName: tag })
+                .catch(() => {
+                  throw new GraphQLError(`Error adding tag "${tag}" to charge ID="${chargeId}"`);
+                });
+            }
+          }
+        }
+
         return updatedCharge;
       } catch (e) {
         return {

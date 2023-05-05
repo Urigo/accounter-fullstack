@@ -5,7 +5,8 @@ import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   // BeneficiariesInput,
-  SimpleGrid, // TagsInput,
+  SimpleGrid,
+  TagsInput,
   TextInput,
 } from '..';
 import { FragmentType, getFragmentData } from '../../../gql';
@@ -139,6 +140,7 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
               />
             )}
           />
+          <TagsInput formManager={useFormManager} />
           <Controller
             name="isProperty"
             control={chargeControl}
@@ -155,8 +157,7 @@ export const EditCharge = ({ chargeProps, onAccept, onCancel }: Props) => {
               return <Switch {...field} checked={value === true} label="Is Conversion" />;
             }}
           />
-          {/* <TagsInput formManager={useFormManager} />
-          <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} /> */}
+          {/* <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} /> */}
         </SimpleGrid>
       </div>
       <div className="mt-10 mb-5 flex justify-center gap-5">

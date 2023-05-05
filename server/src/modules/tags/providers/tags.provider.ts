@@ -2,12 +2,26 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import type { IGetTagsByChargeIDsQuery } from '../types.js';
+import type {
+  IClearChargeTagsParams,
+  IClearChargeTagsQuery,
+  IGetTagsByChargeIDsQuery,
+  IInsertChargeTagsParams,
+  IInsertChargeTagsQuery,
+} from '../types.js';
 
 const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
     SELECT *
     FROM accounter_schema.tags
     WHERE charge_id IN $$chargeIDs;`;
+
+const clearChargeTags = sql<IClearChargeTagsQuery>`
+    DELETE FROM accounter_schema.tags
+    WHERE charge_id = $chargeId
+    AND tag_name NOT IN $$tagNames;`;
+
+const insertChargeTags = sql<IInsertChargeTagsQuery>`
+    INSERT INTO accounter_schema.tags (charge_id, tag_name) VALUES ($chargeId, $tagName) ON CONFLICT DO NOTHING;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -34,4 +48,16 @@ export class TagsProvider {
     (keys: readonly string[]) => this.batchTagsByChargeID(keys),
     { cache: false },
   );
+
+  public async clearChargeTags(params: IClearChargeTagsParams) {
+    return clearChargeTags.run(params, this.dbProvider);
+  }
+
+  public async insertChargeTags(params: IInsertChargeTagsParams) {
+    return insertChargeTags.run(params, this.dbProvider);
+  }
+
+  public getAllTags() {
+    return this.dbProvider.query<{ unnest: string }>('SELECT unnest(enum_range(NULL::tags));');
+  }
 }
