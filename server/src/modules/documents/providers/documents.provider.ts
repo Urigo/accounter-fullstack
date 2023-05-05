@@ -104,6 +104,14 @@ const updateDocument = sql<IUpdateDocumentQuery>`
   is_reviewed = COALESCE(
     $isReviewed,
     is_reviewed
+  ),
+  creditor_id = COALESCE(
+    $creditorId,
+    creditor_id
+  ),
+  debtor_id = COALESCE(
+    $debtorId,
+    debtor_id
   )
   WHERE
     id = $documentId

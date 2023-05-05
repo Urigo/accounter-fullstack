@@ -29,8 +29,6 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
     }
     return url;
   },
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
   isReviewed: documentRoot => documentRoot.is_reviewed,
   documentType,
 };
@@ -47,8 +45,6 @@ export const commonFinancialDocumentsFields:
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
     documentRoot.vat_amount == null ? null : formatFinancialAmount(documentRoot.vat_amount),
-  creditor: documentRoot => documentRoot.creditor,
-  debtor: documentRoot => documentRoot.debtor,
 };
 
 export const commonFinancialEntityFields:

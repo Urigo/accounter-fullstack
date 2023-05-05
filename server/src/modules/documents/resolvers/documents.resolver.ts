@@ -39,6 +39,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           documentId,
           chargeId: fields.chargeId ?? null,
           currencyCode: fields.amount?.currency ?? null,
+          creditorId: fields.creditorId ?? null,
+          debtorId: fields.debtorId ?? null,
           date: fields.date ? new Date(fields.date) : null,
           fileUrl: fields.file ? fields.file.toString() : null,
           imageUrl: fields.image ? fields.image.toString() : null,

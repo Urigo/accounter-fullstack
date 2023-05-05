@@ -27,6 +27,14 @@ import { ModifyDocumentFields } from './modify-document-fields';
         raw
         currency
       }
+      debtor {
+        id
+        name
+      }
+      creditor {
+        id
+        name
+      }
     }
     ... on Proforma {
       vat {
@@ -39,6 +47,14 @@ import { ModifyDocumentFields } from './modify-document-fields';
       amount {
         raw
         currency
+      }
+      debtor {
+        id
+        name
+      }
+      creditor {
+        id
+        name
       }
     }
     ... on Receipt {
@@ -53,6 +69,14 @@ import { ModifyDocumentFields } from './modify-document-fields';
         raw
         currency
       }
+      debtor {
+        id
+        name
+      }
+      creditor {
+        id
+        name
+      }
     }
     ... on InvoiceReceipt {
       vat {
@@ -65,6 +89,14 @@ import { ModifyDocumentFields } from './modify-document-fields';
       amount {
         raw
         currency
+      }
+      debtor {
+        id
+        name
+      }
+      creditor {
+        id
+        name
       }
     }
   }

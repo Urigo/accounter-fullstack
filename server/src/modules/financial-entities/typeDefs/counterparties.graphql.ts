@@ -64,4 +64,34 @@ export default gql`
     creditAccount1: LedgerCounterparty!
     creditAccount2: LedgerCounterparty
   }
+
+  extend interface Document {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Unprocessed {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Invoice {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Proforma {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type Receipt {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type InvoiceReceipt {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
 `;

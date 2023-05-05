@@ -42,7 +42,10 @@ import { WideFilteredSelection } from './wide-filtered-selection';
     image
     file
     documentType
-    creditor
+    creditor {
+      id
+      name
+    }
     ... on Proforma {
       serialNumber
       date

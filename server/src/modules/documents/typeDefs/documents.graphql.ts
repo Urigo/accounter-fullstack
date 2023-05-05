@@ -38,8 +38,6 @@ export default gql`
     " the specific type of the document"
     # eslint-disable-next-line @graphql-eslint/no-typename-prefix
     documentType: DocumentType
-    creditor: String
-    debtor: String
     isReviewed: Boolean
   }
 
@@ -50,8 +48,6 @@ export default gql`
     file: URL
     charge: Charge
     documentType: DocumentType
-    creditor: String
-    debtor: String
     isReviewed: Boolean
   }
 
@@ -63,8 +59,6 @@ export default gql`
     vat: FinancialAmount
     charge: Charge
     documentType: DocumentType
-    creditor: String
-    debtor: String
     isReviewed: Boolean
 
     serialNumber: String
@@ -79,8 +73,6 @@ export default gql`
     file: URL
     vat: FinancialAmount
     documentType: DocumentType
-    creditor: String
-    debtor: String
     isReviewed: Boolean
 
     serialNumber: String
@@ -101,8 +93,6 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
-    creditor: String
-    debtor: String
     isReviewed: Boolean
   }
 
@@ -113,8 +103,6 @@ export default gql`
     file: URL
     vat: FinancialAmount
     documentType: DocumentType
-    creditor: String
-    debtor: String
     isReviewed: Boolean
 
     serialNumber: String
@@ -132,8 +120,8 @@ export default gql`
     image: URL
     file: URL
     chargeId: ID
-    creditor: String
-    debtor: String
+    creditorId: UUID
+    debtorId: UUID
   }
 
   " result type for updateCharge "
@@ -154,8 +142,8 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmountInput
     chargeId: ID
-    creditor: String
-    debtor: String
+    creditorId: UUID
+    debtorId: UUID
   }
 
   " result type for insertDocument "

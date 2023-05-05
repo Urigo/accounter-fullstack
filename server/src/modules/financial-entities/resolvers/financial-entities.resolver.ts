@@ -3,7 +3,11 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
-import { commonFinancialEntityFields, commonTransactionFields } from './common.js';
+import {
+  commonDocumentsFields,
+  commonFinancialEntityFields,
+  commonTransactionFields,
+} from './common.js';
 import { ledgerCounterparty } from './ledger-counterparty.resolver.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
@@ -185,5 +189,20 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
       DbLedgerRecord.debitAccountID2
         ? ledgerCounterparty(DbLedgerRecord, { account: 'DebitAccount2' }, context, info)
         : null,
+  },
+  Invoice: {
+    ...commonDocumentsFields,
+  },
+  InvoiceReceipt: {
+    ...commonDocumentsFields,
+  },
+  Proforma: {
+    ...commonDocumentsFields,
+  },
+  Unprocessed: {
+    ...commonDocumentsFields,
+  },
+  Receipt: {
+    ...commonDocumentsFields,
   },
 };

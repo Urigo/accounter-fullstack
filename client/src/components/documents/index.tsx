@@ -11,8 +11,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
       id
       image
       file
-      creditor
-      debtor
+      creditor {
+        id
+        name
+      }
+      debtor {
+        id
+        name
+      }
       charge {
         id
         userDescription
@@ -40,15 +46,27 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
       }
       ... on Proforma {
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -66,8 +84,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -80,8 +104,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -99,8 +129,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -182,8 +218,8 @@ export const DocumentsReport = () => {
             value: doc => doc.charge?.transactions[0].amount.formatted ?? null,
             style: { whiteSpace: 'nowrap' },
           },
-          { title: 'Creditor', value: doc => doc.creditor ?? null },
-          { title: 'Debtor', value: doc => doc.debtor ?? null },
+          { title: 'Creditor', value: doc => doc.creditor?.name ?? null },
+          { title: 'Debtor', value: doc => doc.debtor?.name ?? null },
           {
             title: 'Related Transaction',
             value: doc =>
