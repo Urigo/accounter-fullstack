@@ -1,11 +1,10 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
-import { validateCharge } from '../helpers/validate.helper.js';
 import type {
-  ChargesModule,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFinancialAccountNumbersParams,
@@ -419,7 +418,10 @@ type IValidateChargesAdjustedParams = Optional<
   global: true,
 })
 export class ChargesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private businessProvider: FinancialEntitiesProvider,
+  ) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(
@@ -541,23 +543,4 @@ export class ChargesProvider {
     };
     return validateCharges.run(fullParams, this.dbProvider);
   }
-
-  private async batchValidateChargesByIds(ids: readonly string[]) {
-    const isIDs = !!ids?.length;
-    const charges = await this.validateCharges({
-      IDs: isIDs ? ids : [null],
-      fromDate: null,
-      toDate: null,
-      financialEntityIds: null,
-    });
-    return ids.map(id => {
-      const charge = charges.find(charge => charge.id === id);
-      return charge ? validateCharge(charge) : null;
-    });
-  }
-
-  public validateChargeByIdLoader = new DataLoader<string, ChargesModule.ValidationData | null>(
-    keys => this.batchValidateChargesByIds(keys),
-    { cache: false },
-  );
 }
