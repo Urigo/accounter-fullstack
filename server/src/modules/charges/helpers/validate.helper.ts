@@ -1,10 +1,14 @@
 import { format } from 'date-fns';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency, MissingChargeInfo, ValidationData } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
 import type { IGetChargesByIdsResult, IValidateChargesResult } from '../types.js';
 
-export function validateCharge(charge: IValidateChargesResult): ValidationData {
+export async function validateCharge(
+  charge: IValidateChargesResult,
+  financialEntitiesProvider: FinancialEntitiesProvider,
+): Promise<ValidationData> {
   const missingInfo: Array<MissingChargeInfo> = [];
 
   const invoicesCount = Number(charge.invoices_count) || 0;
@@ -31,7 +35,15 @@ export function validateCharge(charge: IValidateChargesResult): ValidationData {
     missingInfo.push(MissingChargeInfo.Tags);
   }
 
-  const vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
+  let vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
+  if (!vatIsFine && charge.financial_entity_id) {
+    const counterparty = await financialEntitiesProvider.getFinancialEntityByIdLoader.load(
+      charge.financial_entity_id,
+    );
+    if (counterparty?.country !== 'Israel') {
+      vatIsFine = true;
+    }
+  }
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }

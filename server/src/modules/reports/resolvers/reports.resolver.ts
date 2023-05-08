@@ -202,19 +202,19 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         }
 
         // filter charges with missing info
-        response.missingInfo.push(
-          ...validationCharges.filter(t => {
-            const { isValid } = validateCharge(t);
+        await Promise.all(
+          validationCharges.map(async c => {
+            const { isValid } = await validateCharge(c, injector.get(FinancialEntitiesProvider));
             if (!isValid) {
-              includedChargeIDs.add(t.id);
+              response.missingInfo.push(c);
+              includedChargeIDs.add(c.id);
             }
-            return !isValid;
           }),
         );
 
         // filter charges not included
         response.differentMonthDoc.push(
-          ...validationCharges.filter(t => !includedChargeIDs.has(t.id)),
+          ...validationCharges.filter(c => !includedChargeIDs.has(c.id)),
         );
 
         return response;
