@@ -52,13 +52,12 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       }
       let totalAmount = invoice.total_amount;
 
-      let isCreditorCounterparty = invoice.debtor_id === charge.owner_id;
+      const isCreditorCounterparty = invoice.debtor_id === charge.owner_id;
+      const counterpartyId = isCreditorCounterparty ? invoice.creditor_id : invoice.debtor_id;
       if (totalAmount < 0) {
-        isCreditorCounterparty = !isCreditorCounterparty;
         totalAmount = Math.abs(totalAmount);
       }
 
-      const counterpartyId = isCreditorCounterparty ? invoice.creditor_id : invoice.debtor_id;
       const taxCategoryInfo = await injector
         .get(TaxCategoriesProvider)
         .getFinancialEntityByNameLoader.load({
@@ -74,10 +73,8 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
         __typename: 'TaxCategory',
       };
 
-      const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : invoice.debtor_id;
-      const creditAccountID1 = isCreditorCounterparty
-        ? invoice.creditor_id
-        : counterpartyTaxCategory;
+      const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
+      const creditAccountID1 = isCreditorCounterparty ? counterpartyId : counterpartyTaxCategory;
       let creditAccountID2: TaxCategory | null = null;
       let debitAccountID2: TaxCategory | null = null;
 
@@ -293,13 +290,12 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
         } as TaxCategory;
 
         const amount = Math.abs(ledgerBalance);
-        let isCreditorCounterparty = typeof baseEntry.creditAccountID1 === 'string';
-        if (ledgerBalance > 0) {
-          isCreditorCounterparty = !isCreditorCounterparty;
-        }
-        const counterparty = isCreditorCounterparty
-          ? baseEntry.creditAccountID1
-          : baseEntry.debitAccountID1;
+        const counterparty =
+          typeof baseEntry.creditAccountID1 === 'string'
+            ? baseEntry.creditAccountID1
+            : baseEntry.debitAccountID1;
+
+        const isCreditorCounterparty = ledgerBalance < 0;
 
         miscLedgerEntries.push({
           id: baseEntry.id, // NOTE: this field is dummy
