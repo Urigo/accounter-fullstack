@@ -253,58 +253,29 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     at.*,
     ABS(cast(at.event_amount as DECIMAL)) as abs_event_amount,
     bu.no_invoices_required,
-    -- invoices_count column, conditional calculation
-    CASE WHEN $preCountInvoices = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
-        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
-    ) END as invoices_count,
-    -- receipts_count column, conditional calculation
-    CASE WHEN $preCountReceipts = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
-        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) END as receipts_count,
-    -- ledger_records_count column, conditional calculation
-    CASE WHEN $preCountLedger = false THEN NULL ELSE (
-      SELECT COUNT(*)
-      FROM accounter_schema.ledger l
-      WHERE l.original_id = at.id
-    ) END as ledger_records_count,
-    -- balance column, conditional calculation
-    CASE WHEN $preCalculateBalance = false THEN NULL ELSE (
-      SELECT SUM(lr.amount) as balance
-      FROM (
-        SELECT debit_account_id_1 AS business_id, (debit_amount_1::DECIMAL * -1) AS amount, to_date(invoice_date, 'DD/MM/YYYY') as date, business as financial_entity_id
-        FROM accounter_schema.ledger
-        WHERE debit_amount_1 IS NOT NULL
-        UNION ALL
-        SELECT debit_account_id_2, (debit_amount_2::DECIMAL * -1), to_date(invoice_date, 'DD/MM/YYYY'), business
-        FROM accounter_schema.ledger
-        WHERE debit_amount_2 IS NOT NULL
-        UNION ALL
-        SELECT credit_account_id_1, credit_amount_1::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
-        FROM accounter_schema.ledger
-        WHERE credit_amount_1 IS NOT NULL
-        UNION ALL
-        SELECT credit_account_id_2, credit_amount_2::DECIMAL, to_date(invoice_date, 'DD/MM/YYYY'), business
-        FROM accounter_schema.ledger
-        WHERE credit_amount_2 IS NOT NULL
-      ) lr
-      WHERE lr.date <= (
-        SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
-        FROM accounter_schema.ledger l
-        WHERE l.original_id = at.id
-          AND lr.business_id = at.financial_entity_id
-          AND lr.financial_entity_id = fa.owner)
-    ) END as balance
+    d.invoices_count,
+    d.receipts_count,
+    l.ledger_records_count
   FROM accounter_schema.all_transactions at
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
   ON  at.financial_entity_id = bu.id
+  LEFT JOIN (
+    SELECT charge_id,
+    COUNT(type IN ('INVOICE', 'INVOICE_RECEIPT') OR NULL) AS invoices_count,
+    COUNT(type IN ('RECEIPT', 'INVOICE_RECEIPT') OR NULL) AS receipts_count
+    FROM accounter_schema.documents
+    GROUP BY charge_id
+  ) as d
+  ON d.charge_id = at.id
+  LEFT JOIN (
+    SELECT COUNT (*) as ledger_records_count,
+    original_id
+    FROM accounter_schema.ledger
+    GROUP BY original_id
+  ) as l
+  ON l.original_id = at.id
   WHERE 
   ($isIDs = 0 OR at.id IN $$IDs)
   AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
@@ -335,10 +306,6 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   | 'sortColumn'
   | 'toDate'
   | 'fromDate'
-  | 'preCalculateBalance'
-  | 'preCountInvoices'
-  | 'preCountLedger'
-  | 'preCountReceipts'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
@@ -349,23 +316,9 @@ const validateCharges = sql<IValidateChargesQuery>`
     at.*,
     (bu.country <> 'Israel') as is_foreign,
     bu.no_invoices_required,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
-        AND d.type IN ('INVOICE', 'INVOICE_RECEIPT')
-    ) as invoices_count,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.documents d
-      WHERE d.charge_id = at.id
-        AND d.type IN ('RECEIPT', 'INVOICE_RECEIPT')
-    ) as receipts_count,
-    (
-      SELECT COUNT(*)
-      FROM accounter_schema.ledger l
-      WHERE l.original_id = at.id
-    ) as ledger_records_count,
+    d.invoices_count,
+    d.receipts_count,
+    l.ledger_records_count,
     (
       SELECT SUM(lr.amount) as balance
       FROM (
@@ -385,18 +338,31 @@ const validateCharges = sql<IValidateChargesQuery>`
         FROM accounter_schema.ledger
         WHERE credit_amount_2 IS NOT NULL
       ) lr
-      WHERE lr.date <= (
-        SELECT MAX(to_date(l.invoice_date, 'DD/MM/YYYY'))
-        FROM accounter_schema.ledger l
-        WHERE l.original_id = at.id
-          AND lr.business_id = at.financial_entity_id
-          AND lr.financial_entity_id = fa.owner)
+      WHERE lr.date <= l.date
+      AND lr.business_id = at.financial_entity_id
+      AND lr.financial_entity_id = fa.owner
     ) as balance
   FROM accounter_schema.all_transactions at
   LEFT JOIN accounter_schema.financial_accounts fa
   ON  at.account_number = fa.account_number
   LEFT JOIN accounter_schema.businesses bu
   ON  at.financial_entity_id = bu.id
+  LEFT JOIN (
+    SELECT charge_id,
+    COUNT(type IN ('INVOICE', 'INVOICE_RECEIPT') OR NULL) AS invoices_count,
+    COUNT(type IN ('RECEIPT', 'INVOICE_RECEIPT') OR NULL) AS receipts_count
+    FROM accounter_schema.documents
+    GROUP BY charge_id
+  ) as d
+  ON d.charge_id = at.id
+  LEFT JOIN (
+    SELECT COUNT (*) as ledger_records_count,
+    MAX(to_date(invoice_date, 'DD/MM/YYYY')) as date,
+    original_id
+    FROM accounter_schema.ledger
+    GROUP BY original_id
+  ) as l
+  ON l.original_id = at.id
   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
     AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
     AND ($isIDs = 0 OR at.id IN $$IDs)
@@ -512,10 +478,6 @@ export class ChargesProvider {
       isIDs: isIDs ? 1 : 0,
       isNotBusinessesIDs: isNotBusinessesIDs ? 1 : 0,
       ...params,
-      preCalculateBalance: params.preCalculateBalance ?? false,
-      preCountInvoices: params.preCountInvoices ?? false,
-      preCountLedger: params.preCountLedger ?? false,
-      preCountReceipts: params.preCountReceipts ?? false,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       businessesIDs: isBusinessesIDs ? params.businessesIDs! : [null],

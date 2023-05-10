@@ -41,7 +41,7 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           break;
       }
 
-      let charges = await injector
+      let charges: Array<IGetChargesByFiltersResult & { balance?: string | null }> = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
           financialEntityIds: filters?.byOwners ?? undefined,
@@ -50,15 +50,21 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
           toDate: filters?.toDate,
           sortColumn,
           asc: filters?.sortBy?.asc !== false,
-          preCalculateBalance: filters?.unbalanced,
-          preCountInvoices: filters?.withoutInvoice || filters?.withoutDocuments,
-          preCountReceipts: filters?.withoutDocuments,
-          preCountLedger: filters?.withoutLedger,
           chargeType: filters?.chargesType,
         })
         .catch(e => {
           throw new Error(e.message);
         });
+
+      if (filters?.unbalanced) {
+        const validationInfo = await injector
+          .get(ChargesProvider)
+          .validateCharges({ IDs: charges.map(c => c.id) });
+
+        charges.map(c => {
+          c.balance = validationInfo.find(v => v.id === c.id)?.balance;
+        });
+      }
 
       // apply post-query filters
       if (
@@ -79,16 +85,13 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
 
-      if (filters?.unbalanced) {
+      if (!filters?.unbalanced) {
         const validationInfo = await injector.get(ChargesProvider).validateCharges({
           IDs: pageCharges.map(c => c.id),
         });
-        pageCharges.map(c =>
-          Object.assign(
-            c,
-            validationInfo.find(v => v.id === c.id),
-          ),
-        );
+        pageCharges.map(c => {
+          c.balance = validationInfo.find(v => v.id === c.id)?.balance;
+        });
       }
 
       return {
