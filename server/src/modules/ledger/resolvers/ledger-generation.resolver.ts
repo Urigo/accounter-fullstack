@@ -279,7 +279,7 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       );
 
       const hasMultipleDates = dates.size > 1;
-      const hasForeignCurrency = currencies.size > 1;
+      const hasForeignCurrency = currencies.size > (currencies.has('ILS') ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
         const baseEntry = financialAccountLedgerEntries[0];
         // NOTE: exchangeCategory is hard coded here, should later be fetched from DB
