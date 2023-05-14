@@ -35,13 +35,14 @@ export async function validateCharge(
     missingInfo.push(MissingChargeInfo.Tags);
   }
 
+  ////
   let vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
   if (!vatIsFine && charge.financial_entity_id) {
     const counterparty = await financialEntitiesProvider.getFinancialEntityByIdLoader.load(
       charge.financial_entity_id,
     );
     if (counterparty?.country !== 'Israel') {
-      vatIsFine = true;
+      vatIsFine = charge.vat != null;
     }
   }
   if (!vatIsFine) {
