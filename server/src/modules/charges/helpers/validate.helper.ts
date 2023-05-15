@@ -68,7 +68,8 @@ export const validateCharge: ChargeResolvers['validationData'] = async (
   // validate vat
   const vatIsFine =
     business?.no_invoices_required ||
-    (charge.documents_vat_amount != null && charge.documents_vat_amount != 0);
+    (charge.documents_vat_amount != null &&
+      ((business && business.country !== 'Israel') || charge.documents_vat_amount != 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
