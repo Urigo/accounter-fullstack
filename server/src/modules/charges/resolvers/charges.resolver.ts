@@ -104,7 +104,8 @@ const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, {
   return formatFinancialAmount(amount, currency);
 };
 
-export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'UpdateChargeResult'> = {
+export const chargesResolvers: ChargesModule.Resolvers &
+  Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
   Query: {
     chargesByIDs: async (_, { chargeIDs }, { injector }) => {
       if (chargeIDs.length === 0) {
@@ -309,6 +310,9 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
             assertChargeID: baseChargeID,
           });
 
+          // clear tags
+          await injector.get(TagsProvider).clearAllChargeTags({ chargeId: id });
+
           // delete charge
           await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });
         }
@@ -326,6 +330,12 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
     },
   },
   UpdateChargeResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Charge';
+    },
+  },
+  MergeChargeResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Charge';

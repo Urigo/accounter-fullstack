@@ -3,7 +3,7 @@ import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AccounterLoader } from '../';
+import { AccounterLoader, ListCapsule } from '../';
 import {
   FetchMultipleChargesDocument,
   FetchMultipleChargesQuery,
@@ -24,6 +24,9 @@ import { useMergeCharges } from '../../../hooks/use-merge-charges';
       }
       owner {
         id
+        name
+      }
+      tags {
         name
       }
       conversion
@@ -62,6 +65,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
   const [selectedConversion, setSelectedConversion] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
+  const [selectedTags, setSelectedTags] = useState<{ id: string; value: string } | undefined>(
+    undefined,
+  );
 
   const errorMessage =
     (data?.chargesByIDs.length !== distinctChargeIDs.length && 'Some charges were not Found') ||
@@ -114,9 +120,19 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         isProperty: selectedProperty.value,
       };
     }
+    if (selectedTags && selectedTags.value !== mainCharge.tags.map(tag => tag.name).join(',')) {
+      fields ??= {};
+      fields = {
+        ...fields,
+        tags: selectedTags.value
+          .split(',')
+          .filter(t => t !== '')
+          .map(tag => ({ name: tag })),
+      };
+    }
     await mergeCharges({
       baseChargeID: mainCharge.id,
-      chargeIdsToMerge: distinctChargeIDs.filter(id => id === mainCharge.id),
+      chargeIdsToMerge: distinctChargeIDs.filter(id => id !== mainCharge.id),
       fields,
     });
     return onDone();
@@ -128,6 +144,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedOwner,
     selectedConversion,
     selectedProperty,
+    selectedTags,
     onDone,
   ]);
 
@@ -173,6 +190,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedConversion({
                           id: charge.id,
                           value: charge.conversion ?? false,
+                        });
+                        setSelectedTags({
+                          id: charge.id,
+                          value: (charge.tags.map(tag => tag.name) ?? []).join(','),
                         });
                       }}
                     />
@@ -290,6 +311,35 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       ) : (
                         <SquareX size={20} color="red" />
                       )}
+                    </div>
+                  </button>
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <th>Tags</th>
+              {charges.map(charge => (
+                <td key={charge.id}>
+                  <button
+                    className="w-full px-2"
+                    disabled={
+                      charge.tags == null ||
+                      charge.tags.map(tag => tag.name).join(',') === selectedTags?.value
+                    }
+                    onClick={() => {
+                      setSelectedTags({
+                        id: charge.id,
+                        value: (charge.tags.map(tag => tag.name) ?? []).join(','),
+                      });
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center px-2 py-2 border-x-2"
+                      style={
+                        selectedConversion?.id === charge.id ? { background: '#228be633' } : {}
+                      }
+                    >
+                      <ListCapsule items={charge.tags.map(t => t.name)} />
                     </div>
                   </button>
                 </td>

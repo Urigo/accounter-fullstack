@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IClearAllChargeTagsParams,
+  IClearAllChargeTagsQuery,
   IClearChargeTagsParams,
   IClearChargeTagsQuery,
   IGetTagsByChargeIDsQuery,
@@ -19,6 +21,10 @@ const clearChargeTags = sql<IClearChargeTagsQuery>`
     DELETE FROM accounter_schema.tags
     WHERE charge_id = $chargeId
     AND tag_name NOT IN $$tagNames;`;
+
+const clearAllChargeTags = sql<IClearAllChargeTagsQuery>`
+    DELETE FROM accounter_schema.tags
+    WHERE charge_id = $chargeId;`;
 
 const insertChargeTags = sql<IInsertChargeTagsQuery>`
     INSERT INTO accounter_schema.tags (charge_id, tag_name) VALUES ($chargeId, $tagName) ON CONFLICT DO NOTHING;`;
@@ -51,6 +57,10 @@ export class TagsProvider {
 
   public async clearChargeTags(params: IClearChargeTagsParams) {
     return clearChargeTags.run(params, this.dbProvider);
+  }
+
+  public async clearAllChargeTags(params: IClearAllChargeTagsParams) {
+    return clearAllChargeTags.run(params, this.dbProvider);
   }
 
   public async insertChargeTags(params: IInsertChargeTagsParams) {
