@@ -8,7 +8,6 @@ import {
   commonFinancialEntityFields,
   commonTransactionFields,
 } from './common.js';
-import { ledgerCounterparty } from './ledger-counterparty.resolver.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
@@ -175,20 +174,6 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   },
   CommonTransaction: {
     ...commonTransactionFields,
-  },
-  LedgerRecord: {
-    creditAccount1: (DbLedgerRecord, _, context, info) =>
-      ledgerCounterparty(DbLedgerRecord, { account: 'CreditAccount1' }, context, info),
-    creditAccount2: (DbLedgerRecord, _, context, info) =>
-      DbLedgerRecord.creditAccountID2
-        ? ledgerCounterparty(DbLedgerRecord, { account: 'CreditAccount2' }, context, info)
-        : null,
-    debitAccount1: (DbLedgerRecord, _, context, info) =>
-      ledgerCounterparty(DbLedgerRecord, { account: 'DebitAccount1' }, context, info),
-    debitAccount2: (DbLedgerRecord, _, context, info) =>
-      DbLedgerRecord.debitAccountID2
-        ? ledgerCounterparty(DbLedgerRecord, { account: 'DebitAccount2' }, context, info)
-        : null,
   },
   Invoice: {
     ...commonDocumentsFields,

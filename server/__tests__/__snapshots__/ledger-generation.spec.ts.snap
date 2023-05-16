@@ -1,0 +1,96 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`should generate ledger records correctly 1`] = `
+{
+  "records": [
+    {
+      "creditAccount1": {
+        "name": "Tax Category 1",
+      },
+      "creditAccount2": {
+        "name": "VAT [temp]",
+      },
+      "creditAmount1": {
+        "formatted": "$ 50,000.00",
+      },
+      "creditAmount2": {
+        "formatted": "$ 8,500.00",
+      },
+      "debitAccount1": {
+        "name": "Business 2",
+      },
+      "debitAccount2": null,
+      "debitAmount1": {
+        "formatted": "$ 58,500.00",
+      },
+      "debitAmount2": null,
+      "description": null,
+      "invoiceDate": 2020-10-15T00:00:00.000Z,
+      "localCurrencyCreditAmount1": {
+        "formatted": "₪ 169,700.00",
+      },
+      "localCurrencyCreditAmount2": {
+        "formatted": "₪ 28,849.00",
+      },
+      "localCurrencyDebitAmount1": {
+        "formatted": "₪ 198,549.00",
+      },
+      "localCurrencyDebitAmount2": null,
+      "reference1": null,
+      "valueDate": 2020-10-15T00:00:00.000Z,
+    },
+    {
+      "creditAccount1": {
+        "name": "Business 2",
+      },
+      "creditAccount2": null,
+      "creditAmount1": null,
+      "creditAmount2": null,
+      "debitAccount1": {
+        "name": "Account ID:...1",
+      },
+      "debitAccount2": null,
+      "debitAmount1": null,
+      "debitAmount2": null,
+      "description": "Description for transaction 1",
+      "invoiceDate": 2020-10-19T00:00:00.000Z,
+      "localCurrencyCreditAmount1": {
+        "formatted": "₪ 198,316.00",
+      },
+      "localCurrencyCreditAmount2": null,
+      "localCurrencyDebitAmount1": {
+        "formatted": "₪ 198,316.00",
+      },
+      "localCurrencyDebitAmount2": null,
+      "reference1": "1",
+      "valueDate": 2020-10-19T00:00:00.000Z,
+    },
+    {
+      "creditAccount1": {
+        "name": "Business 2",
+      },
+      "creditAccount2": null,
+      "creditAmount1": null,
+      "creditAmount2": null,
+      "debitAccount1": {
+        "name": "Exchange",
+      },
+      "debitAccount2": null,
+      "debitAmount1": null,
+      "debitAmount2": null,
+      "description": "Exchange ledger record",
+      "invoiceDate": 2020-10-19T00:00:00.000Z,
+      "localCurrencyCreditAmount1": {
+        "formatted": "₪ 233.00",
+      },
+      "localCurrencyCreditAmount2": null,
+      "localCurrencyDebitAmount1": {
+        "formatted": "₪ 233.00",
+      },
+      "localCurrencyDebitAmount2": null,
+      "reference1": "1",
+      "valueDate": 2020-10-19T00:00:00.000Z,
+    },
+  ],
+}
+`;

@@ -1,1 +1,1 @@
-export * from './suggested-transactions';
+export * from './suggested-transactions.js';

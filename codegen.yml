@@ -6,7 +6,6 @@ config:
   scalars:
     TimelessDate: 'TimelessDateString'
     IBAN: string
-    Percentage: number
     URL: 'URL | string'
     FileScalar: 'File | Blob'
 generates:

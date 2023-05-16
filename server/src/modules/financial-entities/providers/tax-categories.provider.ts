@@ -58,7 +58,7 @@ export class TaxCategoriesProvider {
     );
   }
 
-  public getFinancialEntityByNameLoader = new DataLoader(
+  public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
     (keys: readonly { businessID: string; ownerID: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
     {

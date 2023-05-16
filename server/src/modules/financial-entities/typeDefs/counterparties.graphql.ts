@@ -55,16 +55,6 @@ export default gql`
     counterparty: Counterparty
   }
 
-  " represents ledger record counterparty OR tax category"
-  union LedgerCounterparty = NamedCounterparty | TaxCategory
-
-  extend type LedgerRecord {
-    debitAccount1: LedgerCounterparty!
-    debitAccount2: LedgerCounterparty
-    creditAccount1: LedgerCounterparty!
-    creditAccount2: LedgerCounterparty
-  }
-
   extend interface Document {
     creditor: Counterparty
     debtor: Counterparty

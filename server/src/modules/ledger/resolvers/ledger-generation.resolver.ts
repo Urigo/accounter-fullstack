@@ -60,7 +60,7 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
 
       const taxCategoryInfo = await injector
         .get(TaxCategoriesProvider)
-        .getFinancialEntityByNameLoader.load({
+        .taxCategoryByBusinessAndOwnerIDsLoader.load({
           ownerID: charge.owner_id,
           businessID: counterpartyId,
         });
