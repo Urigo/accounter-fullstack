@@ -243,7 +243,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
   VatReportRecord: {
     documentId: raw => raw.document_id,
     chargeId: raw => raw.id,
-    amount: raw => formatFinancialAmount(raw.event_amount, raw.currency_code),
+    amount: raw =>
+      formatFinancialAmount(raw.tax_invoice_amount ?? raw.event_amount, raw.currency_code),
     business: raw => raw.financial_entity_id,
     chargeDate: raw => format(raw.event_date, 'yyyy-MM-dd') as TimelessDateString,
     documentDate: raw =>
