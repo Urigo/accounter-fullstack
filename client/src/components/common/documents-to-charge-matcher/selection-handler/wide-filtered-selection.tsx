@@ -60,7 +60,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
             value: doc => ('serialNumber' in doc ? doc.serialNumber : null),
           },
           { title: 'Amount', value: doc => doc.amount?.formatted ?? null },
-          { title: 'Provider', value: doc => doc.creditor ?? null },
+          { title: 'Provider', value: doc => doc.creditor?.name ?? null },
           {
             title: 'Match',
             value: doc => (

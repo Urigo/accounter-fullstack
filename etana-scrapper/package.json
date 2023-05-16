@@ -12,14 +12,14 @@
   },
   "dependencies": {
     "@whatwg-node/fetch": "0.6.1",
-    "csv-parse": "5.3.3",
-    "diary": "0.4.3",
+    "csv-parse": "5.3.10",
+    "diary": "0.4.4",
     "dotenv": "16.0.3",
-    "pg-promise": "11.0.2"
+    "pg-promise": "11.4.3"
   },
   "devDependencies": {
-    "@types/node": "18.11.18",
-    "tsup": "6.5.0",
+    "@types/node": "20.1.5",
+    "tsup": "6.7.0",
     "typescript": "4.9.4"
   }
 }

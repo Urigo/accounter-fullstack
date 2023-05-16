@@ -31,9 +31,12 @@ export const rateOptionalDocumentsMatches = (
       (charge.totalAmount?.raw ?? 0) - (document as { amount: { raw: number } }).amount!.raw;
     comparisonDict.amountDiffs[charge.id] = Math.abs(amountDiff);
 
-    const providerIdent = stringComparer(document.creditor ?? '', charge.counterparty?.name ?? '');
+    const providerIdent = stringComparer(
+      document.creditor?.name ?? '',
+      charge.counterparty?.name ?? '',
+    );
     const providerIdent2 = stringComparer(
-      document.creditor ?? '',
+      document.creditor?.name ?? '',
       charge.transactions[0].sourceDescription,
     );
     comparisonDict.providerIdents[charge.id] =
