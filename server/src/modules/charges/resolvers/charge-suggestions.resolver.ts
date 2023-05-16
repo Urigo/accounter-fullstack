@@ -511,12 +511,12 @@ const missingInfoSuggestions: Resolver<
     };
     if (formatAmount(DbCharge.event_amount) <= -450) {
       suggested.description = 'Monthly Sponsor for Yaacov and Benjie';
-    } else if (formatAmount(DbCharge.event_amount) == -4) {
+    } else if (formatAmount(DbCharge.event_amount) === -4) {
       suggested.description = 'GitHub CI charges';
     }
     return suggested;
   }
-  if (formatAmount(DbCharge.event_amount) == -4329) {
+  if (formatAmount(DbCharge.event_amount) === -4329) {
     return {
       business: '8069311d-314e-4d1a-8f76-629757070ca0', //name: 'Avi Peretz',
       description: 'Office rent',
@@ -534,7 +534,7 @@ const missingInfoSuggestions: Resolver<
     };
   }
   if (description.includes('APPLE COM BILL/ITUNES.COM')) {
-    const flag = formatAmount(DbCharge.event_amount) == -109.9;
+    const flag = formatAmount(DbCharge.event_amount) === -109.9;
     return {
       business: '6346872a-708d-4910-9428-72019b053ea5', //name: 'Apple',
       taxCategory: 'אתר',
@@ -580,7 +580,7 @@ const missingInfoSuggestions: Resolver<
       tags: [{ name: 'house' }],
     };
   }
-  if (formatAmount(DbCharge.event_amount) == -12_000) {
+  if (formatAmount(DbCharge.event_amount) === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -600,7 +600,7 @@ const missingInfoSuggestions: Resolver<
       tags: [{ name: 'business' }],
     };
   }
-  if (formatAmount(DbCharge.event_amount) == -600) {
+  if (formatAmount(DbCharge.event_amount) === -600) {
     return {
       business: '02d467c9-0818-45e3-9a25-9f99d0101a9e', //name: 'ZAUM',
       description: 'Matic Zavadlal - April 2021',

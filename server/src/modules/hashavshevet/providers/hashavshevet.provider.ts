@@ -135,12 +135,12 @@ export class HashavshevetProvider {
     params: readonly { financialEntityId: string; businessID: string }[],
   ) {
     const dict: Record<string, string[]> = {};
-    params.forEach(({ financialEntityId, businessID }) => {
+    for (const { financialEntityId, businessID } of params) {
       dict[financialEntityId] ||= [];
       if (!dict[financialEntityId].includes(businessID)) {
         dict[financialEntityId].push(businessID);
       }
-    });
+    }
     const financialEntityIds = Object.keys(dict);
     const res = await Promise.all(
       financialEntityIds.map(id =>

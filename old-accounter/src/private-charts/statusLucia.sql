@@ -1,4 +1,4 @@
- -- Overall income last year
+-- Overall income last year
 SELECT
   --        event_date, financial_entity, (event_amount_in_usd_with_vat_if_exists)::numeric(9, 2), user_description
   ABS(

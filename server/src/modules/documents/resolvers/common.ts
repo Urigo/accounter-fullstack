@@ -7,7 +7,7 @@ import type { DocumentsModule } from '../types.js';
 
 export const documentType: DocumentsModule.DocumentResolvers['documentType'] = documentRoot => {
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  if (key == 'Invoice_receipt') {
+  if (key === 'Invoice_receipt') {
     key = 'InvoiceReceipt';
   }
   return DocumentType[key as keyof typeof DocumentType];

@@ -89,7 +89,7 @@ export default gql`
     # additionalDocument: [Linkable!]!
 
     # transactions: [Transaction!]!
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
+
     # description: String
     # vat: Float
     # withholdingTax: Float

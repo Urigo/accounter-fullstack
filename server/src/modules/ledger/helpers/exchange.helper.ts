@@ -7,7 +7,7 @@ export function getRateForCurrency(
   currencyCode: currency,
   exchangeRates: IGetExchangeRatesByDatesResult,
 ) {
-  if (currencyCode == 'ILS') {
+  if (currencyCode === 'ILS') {
     return 1;
   }
   if (currencyCode && ['USD', 'EUR', 'GBP'].includes(currencyCode)) {

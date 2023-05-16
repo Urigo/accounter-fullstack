@@ -28,7 +28,7 @@
     "@graphql-yoga/node": "3.9.1",
     "@pgtyped/cli": "2.2.1",
     "@pgtyped/runtime": "2.1.0",
-    "cloudinary": "1.36.4",
+    "cloudinary": "1.37.0",
     "dataloader": "2.2.2",
     "date-fns": "2.30.0",
     "dotenv": "16.0.3",

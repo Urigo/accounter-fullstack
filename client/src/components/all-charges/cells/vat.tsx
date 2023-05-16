@@ -50,7 +50,7 @@ export const Vat = ({ data }: Props) => {
       isBusiness &&
       !entitiesWithoutInvoice.includes(counterparty?.id ?? '') &&
       !businessesWithoutTaxCategory.includes(counterparty?.id ?? '') &&
-      totalAmount?.currency == Currency.Ils) ||
+      totalAmount?.currency === Currency.Ils) ||
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
 

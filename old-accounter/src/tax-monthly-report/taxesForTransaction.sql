@@ -49,8 +49,7 @@ ORDER BY
   TO_DATE(date_3, 'DD/MM/YYYY'),
   original_id;
 
-DROP FUNCTION
-  get_tax_report_of_transaction (transaction_id UUID);
+DROP FUNCTION get_tax_report_of_transaction (transaction_id UUID);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id UUID) RETURNS TABLE (

@@ -113,19 +113,18 @@ INSERT INTO
     id,
     image_url,
     file_url,
-    TYPE
-,
-      created_at,
-      modified_at,
-      serial_number,
-      date,
-      total_amount,
-      currency_code,
-      vat_amount,
-      charge_id,
-      debtor,
-      creditor,
-      is_reviewed
+    TYPE,
+    created_at,
+    modified_at,
+    serial_number,
+    date,
+    total_amount,
+    currency_code,
+    vat_amount,
+    charge_id,
+    debtor,
+    creditor,
+    is_reviewed
   )
 VALUES
   (
@@ -176,8 +175,7 @@ WHERE
   origin = 'manual_salary'
   AND TO_DATE(hashavshevet.invoice_date, 'DD/MM/YYYY') >= DATE_TRUNC('month', '2020-07-01'::date);
 
-UPDATE
-  accounter_schema.isracard_creditcard_transactions
+UPDATE accounter_schema.isracard_creditcard_transactions
 SET
   full_purchase_date_outbound = TO_CHAR(
     TO_DATE(full_purchase_date_outbound, 'YYYY-MM-DD'),
@@ -186,8 +184,7 @@ SET
 WHERE
   full_purchase_date_outbound IS NOT NULL;
 
-UPDATE
-  accounter_schema.isracard_creditcard_transactions
+UPDATE accounter_schema.isracard_creditcard_transactions
 SET
   full_purchase_date = TO_CHAR(
     TO_DATE(full_purchase_date, 'YYYY-MM-DD'),
@@ -196,8 +193,7 @@ SET
 WHERE
   full_purchase_date IS NOT NULL;
 
-UPDATE
-  accounter_schema.isracard_creditcard_transactions
+UPDATE accounter_schema.isracard_creditcard_transactions
 SET
   full_payment_date = TO_CHAR(
     TO_DATE(full_payment_date, 'YYYY-MM-DD'),
@@ -311,8 +307,7 @@ SELECT
 SELECT
   gen_random_uuid ();
 
-UPDATE
-  accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
+UPDATE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 SET
   id = gen_random_uuid ()
 WHERE
@@ -333,8 +328,7 @@ WHERE
 ORDER BY
   (TO_DATE(date_3, 'DD/MM/YYYY'));
 
-DROP FUNCTION
-  report_to_hashavshevet_by_month (month_report VARCHAR);
+DROP FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR) RETURNS TABLE (
@@ -407,8 +401,7 @@ ORDER BY
   debit_account_1,
   id;
 
-DROP FUNCTION
-  get_unified_tax_report_of_month;
+DROP FUNCTION get_unified_tax_report_of_month;
 
 CREATE
 OR REPLACE FUNCTION get_unified_tax_report_of_month (
@@ -869,8 +862,7 @@ SELECT
 FROM
   get_tax_report_of_month ('2020-12-01');
 
-DROP FUNCTION
-  get_tax_report_of_month (month_input VARCHAR);
+DROP FUNCTION get_tax_report_of_month (month_input VARCHAR);
 
 CREATE
 OR REPLACE FUNCTION get_tax_report_of_month (month_input VARCHAR) RETURNS TABLE (

@@ -99,9 +99,9 @@ function account(
       if (
         hashBusinessIndexes &&
         !Object.values(hashVATIndexes).includes(accountType ?? '') &&
-        hashBusinessIndexes.auto_tax_category != accountType
+        hashBusinessIndexes.auto_tax_category !== accountType
       ) {
-        if (transactionDescription == 'הפקדה לפקדון') {
+        if (transactionDescription === 'הפקדה לפקדון') {
           return 'פקדון';
         }
         if (hashBusinessIndexes.hash_index) {
@@ -123,7 +123,7 @@ function number(rawNumber: unknown, options: { abs?: boolean } = { abs: false })
     parsed = Math.abs(parsed);
   }
   const formatted = parsed.toFixed(2);
-  if (formatted == '0.00') {
+  if (formatted === '0.00') {
     return null;
   }
   return formatted;
