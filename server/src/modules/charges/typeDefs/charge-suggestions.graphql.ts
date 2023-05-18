@@ -9,10 +9,13 @@ export default gql`
 
   " represent charge suggestions for missing info "
   type ChargeSuggestions {
+    " redundant. relevant on transaction level "
     business: Counterparty!
     description: String
+    " redundant. relevant on transaction level "
     beneficiaries: [BeneficiaryCounterparty!]
     tags: [Tag!]!
+    " redundant. relevant on transaction level "
     vat: FinancialAmount
   }
 `;

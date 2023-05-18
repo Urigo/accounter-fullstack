@@ -24,12 +24,6 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
     validationData {
       missingInfo
     }
-    missingInfoSuggestions {
-      vat {
-        raw
-        formatted
-      }
-    }
   }
 `;
 
