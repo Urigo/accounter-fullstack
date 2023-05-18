@@ -4,14 +4,6 @@ import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
 import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql';
 
-/* GraphQL */ `
-  query AllTags {
-    allTags {
-      name
-    }
-  }
-`;
-
 type Props = {
   label?: string;
   formManager: UseFormReturn<UpdateChargeInput, object>;
@@ -28,7 +20,7 @@ export function TagsInput({ label, formManager }: Props) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'tags',
-    rules: { maxLength: 1 },
+    // rules: { maxLength: 1 },
   });
 
   return (

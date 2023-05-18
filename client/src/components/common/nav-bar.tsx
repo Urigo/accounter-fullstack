@@ -56,6 +56,13 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
               />
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="Tags"
+              onClick={() => navigate('/tags')}
+            />
+          </li>
           {extraLinks?.map(link => (
             <li key={link.title}>
               <a

@@ -37,11 +37,11 @@ export class TagsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public addTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags ADD ATTRIBUTE $1 TEXT;', [params.tagName]);
+    return this.dbProvider.query('ALTER TYPE tags ADD ATTRIBUTE $1::TEXT;', [params.tagName]);
   }
 
   public removeTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags DROP ATTRIBUTE $1 TEXT;', [params.tagName]);
+    return this.dbProvider.query('ALTER TYPE tags DROP ATTRIBUTE $1::TEXT;', [params.tagName]);
   }
 
   private async batchTagsByChargeID(params: readonly string[]) {

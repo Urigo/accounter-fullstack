@@ -6,6 +6,11 @@ export default gql`
     allTags: [Tag!]!
   }
 
+  extend type Mutation {
+    addTag(name: String!): Boolean!
+    deleteTag(name: String!): Boolean!
+  }
+
   extend type Charge {
     " user customer tags "
     tags: [Tag!]!
