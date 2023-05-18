@@ -32,6 +32,8 @@ export default gql`
     sourceDescription: String!
     " effective bank / card balance, after the transaction "
     balance: FinancialAmount!
+    " flag indicating if the transaction is valid (has all required data)"
+    isValid: Boolean!
   }
 
   " The direction of the transaction "
@@ -50,6 +52,7 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
+    isValid: Boolean!
   }
 
   " העברה "
@@ -62,6 +65,7 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
+    isValid: Boolean!
   }
 
   " עמלה "
@@ -74,6 +78,7 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
+    isValid: Boolean!
   }
 
   " המרה "
@@ -92,6 +97,7 @@ export default gql`
     bankRate: Rate!
     " בנק ישראל "
     officialRate: Rate
+    isValid: Boolean!
   }
 
   " input variables for updateTransaction "

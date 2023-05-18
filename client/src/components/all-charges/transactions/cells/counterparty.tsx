@@ -11,6 +11,12 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
       name
       id
     }
+    missingInfoSuggestions {
+      business {
+        id
+        name
+      }
+    }
   }
 `;
 

@@ -39,6 +39,7 @@ export default gql`
     # eslint-disable-next-line @graphql-eslint/no-typename-prefix
     documentType: DocumentType
     isReviewed: Boolean
+    isValid: Boolean!
   }
 
   " document that haven't yet been processed"
@@ -49,6 +50,7 @@ export default gql`
     charge: Charge
     documentType: DocumentType
     isReviewed: Boolean
+    isValid: Boolean!
   }
 
   " invoice document "
@@ -64,6 +66,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    isValid: Boolean!
   }
 
   " proforma document "
@@ -78,6 +81,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    isValid: Boolean!
   }
 
   " receipt document "
@@ -94,6 +98,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     isReviewed: Boolean
+    isValid: Boolean!
   }
 
   " Invoice receipt document - חשבונית מס קבלה "
@@ -108,6 +113,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    isValid: Boolean!
   }
 
   " input variables for updateDocument "
