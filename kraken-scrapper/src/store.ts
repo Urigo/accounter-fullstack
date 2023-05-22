@@ -133,7 +133,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           trade_id TEXT PRIMARY KEY,
           account_nickname TEXT NOT NULL,
           pair TEXT NOT NULL,
-          value_date DATE NOT NULL,
+          value_date DATETIME NOT NULL,
           order_type TEXT NOT NULL,
           price NUMERIC NOT NULL,
           cost NUMERIC NOT NULL,
