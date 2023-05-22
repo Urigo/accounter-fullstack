@@ -23,7 +23,8 @@ const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
 
 const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     SELECT *
-    FROM accounter_schema.businesses;`;
+    FROM accounter_schema.businesses
+    ORDER BY name ASC;`;
 
 const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
     SELECT at.id as transaction_id, bu.*
