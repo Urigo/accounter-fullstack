@@ -83,7 +83,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             END),
             new.ledger_id,
             gen_random_uuid(),
-            0,
+            new.balance,
             '',
             (CASE
               WHEN new.trade_ref_id IS NOT NULL
