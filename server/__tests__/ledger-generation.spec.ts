@@ -1,351 +1,201 @@
-import { Application, gql, testkit } from 'graphql-modules';
+import { Application, testkit } from 'graphql-modules';
 import 'reflect-metadata';
-import { chargesModule } from 'server/src/modules/charges';
-import { ChargesProvider } from 'server/src/modules/charges/providers/charges.provider';
-import type { IGetChargesByIdsResult } from 'server/src/modules/charges/types';
-import { commonModule } from 'server/src/modules/common';
-import { DocumentsProvider } from 'server/src/modules/documents/providers/documents.provider';
-import type { IGetAllDocumentsResult } from 'server/src/modules/documents/types';
-import { financialEntitiesModule } from 'server/src/modules/financial-entities';
-import { FinancialEntitiesProvider } from 'server/src/modules/financial-entities/providers/financial-entities.provider';
-import { TaxCategoriesProvider } from 'server/src/modules/financial-entities/providers/tax-categories.provider';
-import { businessesResolvers } from 'server/src/modules/financial-entities/resolvers/business-transactions.resolver';
-import type {
-  IGetFinancialEntitiesByIdsResult,
-  IGetTaxCategoryByBusinessAndOwnerIDsResult,
-} from 'server/src/modules/financial-entities/types';
-import { ledgerModule } from 'server/src/modules/ledger';
-import { ExchangeProvider } from 'server/src/modules/ledger/providers/exchange.provider';
-import type { IGetExchangeRatesByDateResult } from 'server/src/modules/ledger/types';
-import { tagsModule } from 'server/src/modules/tags';
-import { TransactionsProvider } from 'server/src/modules/transactions/providers/transactions.provider';
-import type { IGetTransactionsByIdsResult } from 'server/src/modules/transactions/types';
-import { expect, test } from 'vitest';
+import { beforeAll, describe, it } from 'vitest';
+import { fetchChargeQuery, fetchChargesQuery, getDummyApp } from './ledger-test-data';
 
 let app: Application;
 
-const charges: Array<IGetChargesByIdsResult> = [
-  {
-    accountant_reviewed: false,
-    documents_event_amount: null,
-    documents_max_date: null,
-    documents_min_date: null,
-    documents_vat_amount: null,
-    event_amount: null,
-    id: '1',
-    invoices_count: null,
-    is_conversion: false,
-    is_property: false,
-    owner_id: '1',
-    receipts_count: null,
-    transactions_event_amount: null,
-    transactions_max_debit_date: null,
-    transactions_max_event_date: null,
-    transactions_min_debit_date: null,
-    transactions_min_event_date: null,
-    user_description: null,
-  },
-];
-
-const documents: Array<IGetAllDocumentsResult> = [
-  {
-    charge_id: '1',
-    charge_id_new: null,
-    created_at: new Date(),
-    creditor: null,
-    creditor_id: '1',
-    currency_code: 'USD',
-    date: new Date('2020-10-15'),
-    debtor: null,
-    debtor_id: '2',
-    description: null,
-    file_url: null,
-    id: '1',
-    image_url: null,
-    is_reviewed: false,
-    modified_at: new Date(),
-    serial_number: null,
-    total_amount: 58_500,
-    type: 'INVOICE',
-    vat_amount: 8500,
-  },
-];
-
-const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
-  {
-    business_id: '2',
-    id: '1',
-    name: 'Tax Category 1',
-    owner_id: '1',
-  },
-];
-
-const exchangeRates: Array<IGetExchangeRatesByDateResult> = [
-  {
-    exchange_date: new Date('2020-10-15'),
-    usd: '3.394',
-    eur: '3.9774',
-    gbp: null,
-  },
-];
-
-const transactions: Array<IGetTransactionsByIdsResult> = [
-  {
-    account_id: '1',
-    amount: '198316',
-    business_id: '2',
-    charge_id: '1',
-    currency: 'ILS',
-    current_balance: '198315',
-    debit_date: new Date('2020-10-19'),
-    event_date: new Date('2020-10-19'),
-    id: '1',
-    source_description: 'Description for transaction 1',
-    source_id: '1',
-  },
-];
-
-const businesses: Array<IGetFinancialEntitiesByIdsResult> = [
-  {
-    address: null,
-    address_hebrew: null,
-    advance_tax_rate: null,
-    bank_account_account_number: null,
-    bank_account_bank_number: null,
-    bank_account_branch_number: null,
-    bank_account_IBAN: null,
-    bank_account_swift: null,
-    contract: null,
-    country: 'Israel',
-    email: null,
-    hebrew_name: null,
-    id: '1',
-    name: 'Owner',
-    nikuim: null,
-    no_invoices_required: false,
-    password: null,
-    phone_number: null,
-    pinkas_social_security_2021: null,
-    pinkas_social_security_2022: null,
-    registration_date: null,
-    suggestion_data: null,
-    tax_nikuim_pinkas_number: null,
-    tax_pinkas_number_2020: null,
-    tax_siduri_number_2021: null,
-    tax_siduri_number_2022: null,
-    username_vat_website: null,
-    vat_number: null,
-    vat_report_cadence: null,
-    website: null,
-    website_login_screenshot: null,
-    wizcloud_company_id: null,
-    wizcloud_token: null,
-  },
-  {
-    address: null,
-    address_hebrew: null,
-    advance_tax_rate: null,
-    bank_account_account_number: null,
-    bank_account_bank_number: null,
-    bank_account_branch_number: null,
-    bank_account_IBAN: null,
-    bank_account_swift: null,
-    contract: null,
-    country: 'Israel',
-    email: null,
-    hebrew_name: null,
-    id: '2',
-    name: 'Business 2',
-    nikuim: null,
-    no_invoices_required: false,
-    password: null,
-    phone_number: null,
-    pinkas_social_security_2021: null,
-    pinkas_social_security_2022: null,
-    registration_date: null,
-    suggestion_data: null,
-    tax_nikuim_pinkas_number: null,
-    tax_pinkas_number_2020: null,
-    tax_siduri_number_2021: null,
-    tax_siduri_number_2022: null,
-    username_vat_website: null,
-    vat_number: null,
-    vat_report_cadence: null,
-    website: null,
-    website_login_screenshot: null,
-    wizcloud_company_id: null,
-    wizcloud_token: null,
-  },
-];
-
-beforeAll(async () => {
-  app = testkit.testModule(ledgerModule, {
-    inheritTypeDefs: [commonModule, chargesModule, financialEntitiesModule, tagsModule],
-    typeDefs: gql`
-      type Query {
-        charge(id: ID): Charge
-      }
-    `,
-    resolvers: {
-      Query: {
-        charge(_: unknown, { id }: { id: string }) {
-          return charges.find(c => c.id === id);
-        },
-      },
-      NamedCounterparty: businessesResolvers.NamedCounterparty,
-    },
-    providers: [
-      {
-        provide: ChargesProvider,
-        useValue: {
-          getChargeByIdLoader: {
-            load: (chargeId: string) => {
-              return charges.find(c => c.id === chargeId);
-            },
-          },
-        },
-      },
-      {
-        provide: DocumentsProvider,
-        useValue: {
-          getDocumentsByChargeIdLoader: {
-            load: (chargeId: string) => {
-              return documents.filter(d => d.charge_id === chargeId);
-            },
-          },
-        },
-      },
-      {
-        provide: TaxCategoriesProvider,
-        useValue: {
-          taxCategoryByBusinessAndOwnerIDsLoader: {
-            load: ({ ownerID, businessID }: { ownerID: string; businessID: string }) => {
-              return taxCategories.find(
-                tc => tc.owner_id === ownerID && tc.business_id === businessID,
-              );
-            },
-          },
-        },
-      },
-      {
-        provide: ExchangeProvider,
-        useValue: {
-          getExchangeRates(date: Date) {
-            return exchangeRates.find(r => r.exchange_date?.getTime() === date.getTime());
-          },
-        },
-      },
-      {
-        provide: TransactionsProvider,
-        useValue: {
-          getTransactionsByChargeIDLoader: {
-            load: (chargeId: string) => {
-              return transactions.filter(t => t.charge_id === chargeId);
-            },
-          },
-        },
-      },
-      {
-        provide: FinancialEntitiesProvider,
-        useValue: {
-          getFinancialEntityByIdLoader: {
-            load: async (id: string) => {
-              const business = businesses.find(b => b.id === id);
-              return business;
-            },
-          },
-        },
-      },
-    ],
-    replaceExtensions: true,
-  });
-});
-
-test('should generate ledger records correctly', async () => {
-  const result = await testkit.execute(app, {
-    document: gql`
-      query Test($id: ID!) {
-        charge(id: $id) {
-          ledgerRecords {
-            ... on LedgerRecords {
-              records {
-                creditAccount1 {
-                  ... on NamedCounterparty {
-                    name
-                  }
-                  ... on TaxCategory {
-                    name
-                  }
-                }
-                creditAccount2 {
-                  ... on NamedCounterparty {
-                    name
-                  }
-                  ... on TaxCategory {
-                    name
-                  }
-                }
-                creditAmount1 {
-                  formatted
-                }
-                creditAmount2 {
-                  formatted
-                }
-                debitAccount1 {
-                  ... on NamedCounterparty {
-                    name
-                  }
-                  ... on TaxCategory {
-                    name
-                  }
-                }
-                debitAccount2 {
-                  ... on NamedCounterparty {
-                    name
-                  }
-                  ... on TaxCategory {
-                    name
-                  }
-                }
-                debitAmount1 {
-                  formatted
-                }
-                debitAmount2 {
-                  formatted
-                }
-                description
-                invoiceDate
-                localCurrencyCreditAmount1 {
-                  formatted
-                }
-                localCurrencyCreditAmount2 {
-                  formatted
-                }
-                localCurrencyDebitAmount1 {
-                  formatted
-                }
-                localCurrencyDebitAmount2 {
-                  formatted
-                }
-                reference1
-                valueDate
-              }
-            }
-            ... on CommonError {
-              message
-            }
-          }
-        }
-      }
-    `,
-    variableValues: {
-      id: '1',
-    },
+describe.concurrent('Ledger Generation', () => {
+  beforeAll(async () => {
+    app = getDummyApp();
   });
 
-  expect(result.data?.charge?.ledgerRecords).toBeDefined();
+  describe.concurrent('Local currency (ILS)', () => {
+    it('should generate ledger records for basic ILS charge', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1000',
+        },
+      });
 
-  expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
 
-  expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(2);
+
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+
+    it('dates diff should have no effect', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1001',
+        },
+      });
+
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(2);
+
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+
+    it('Should handle no-invoice businesses', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1002',
+        },
+      });
+
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(1);
+
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+  });
+
+  describe.concurrent('Foreign currency', () => {
+    it('should generate ledger records for basic USD charge', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1100',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(2);
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+
+    it('should generate ledger records including conversion diff ledger for USD charge with dates diff', async ({
+      expect,
+    }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1101',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(3);
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+      const exchangeLedger = result.data?.charge?.ledgerRecords?.records?.[2];
+      expect(exchangeLedger?.description).toBe('Exchange ledger record');
+    });
+
+    it('Conversion diff ledger should be generated based on transaction debit_date', async ({
+      expect,
+    }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargesQuery,
+        variableValues: {
+          IDs: ['1102', '1103'],
+        },
+      });
+      expect(result.data?.chargesById?.length).toBe(2);
+
+      // charge 1102: only debit_daet diff
+      const chargeDebitDateDiff = result.data?.chargesById?.[0];
+      expect(chargeDebitDateDiff?.ledgerRecords?.records?.length).toBe(3);
+
+      // charge 1103: only event_date diff
+      const chargeEventDateDiff = result.data?.chargesById?.[1];
+      expect(chargeEventDateDiff?.ledgerRecords?.records?.length).toBe(2);
+    });
+
+    // it('Conversion diff ledger should should have opposite sides based on what payment/doc chronological order', async ({expect}) => {
+    //   const result = await testkit.execute(app, {
+    //     document: fetchChargesQuery,
+    //     variableValues: {
+    //       IDs: ['1101', '1104'],
+    //     },
+    //   });
+    //   expect(result.data?.chargesById?.length).toBe(2);
+
+    //   // charge 1101: doc first
+    //   const chargeDocFirst = result.data?.chargesById?.[0];
+    //   expect(chargeDocFirst?.ledgerRecords?.records?.length).toBe(3);
+    //   const exchangeLedger1 = chargeDocFirst?.ledgerRecords?.records?.[2];
+    //   expect(exchangeLedger1?.debitAccount1?.name).toBe('Exchange');
+
+    //   // charge 1104: transaction first
+    //   const chargeTransactionFirst = result.data?.chargesById?.[1];
+    //   expect(chargeTransactionFirst?.ledgerRecords?.records?.length).toBe(3);
+    //   const exchangeLedger2 = chargeDocFirst?.ledgerRecords?.records?.[2];
+    //   expect(exchangeLedger2?.creditAccount1?.name).toBe('Exchange');
+    // });
+
+    it('Should handle no-invoice businesses', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1105',
+        },
+      });
+
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(1);
+
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+  });
+
+  describe.concurrent('Conversion', () => {
+    it('should generate ledger records for basic conversion charge', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1200',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(2);
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+
+    it('Unbalances charge should throw', async ({ expect }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1201',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toContain(
+        'Conversion charges must have a ledger balance',
+      );
+    });
+
+    it('should generate ledger records for conversion charge with dates diff', async ({
+      expect,
+    }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1202',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(2);
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+  });
+
+  describe.concurrent('Misc', () => {
+    it('should handle currency AND date diff', async ({ expect }) => {
+      // the odd case of Lance's charge
+      const result = await testkit.execute(app, {
+        document: fetchChargeQuery,
+        variableValues: {
+          id: '1900',
+        },
+      });
+      expect(result.data?.charge?.ledgerRecords.message).toBeUndefined();
+      expect(result.data?.charge?.ledgerRecords?.records?.length).toBe(3);
+      expect(result.data?.charge?.ledgerRecords).toMatchSnapshot();
+    });
+  });
 });

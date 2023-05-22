@@ -256,6 +256,9 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
     // Add ledger completion entries
     const miscLedgerEntries: LedgerProto[] = [];
     if (ledgerBalance !== 0) {
+      if (charge.is_conversion) {
+        throw new GraphQLError('Conversion charges must have a ledger balance');
+      }
       if (!accountingLedgerEntries.length) {
         const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
           ? financialAccountLedgerEntries[0].creditAccountID1
