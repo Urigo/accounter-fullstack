@@ -29,7 +29,7 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
         WHERE owner IN (
             SELECT id
             FROM accounter_schema.charges
-            WHERE owner_id IN $$financialEntityIds
+            WHERE owner_id IN $$ownerIds
         )
     );`;
 

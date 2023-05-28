@@ -71,7 +71,7 @@ const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
 //     FROM accounter_schema.all_transactions at
 //     LEFT JOIN accounter_schema.financial_accounts fa
 //     ON  at.account_number = fa.account_number
-//     WHERE fa.owner IN $$financialEntityIds
+//     WHERE fa.owner IN $$ownerIds
 //     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
 //     AND ($toDate ::TEXT IS NULL OR at.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
 //     ORDER BY at.event_date DESC;`;
@@ -200,7 +200,7 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
 //   ON  at.financial_entity_id = bu.id
 //   WHERE
 //   ($isIDs = 0 OR at.id IN $$IDs)
-//   AND ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+//   AND ($isFinancialEntityIds = 0 OR fa.owner IN $$ownerIds)
 //   AND ($isBusinessesIDs = 0 OR at.financial_entity_id IN $$businessesIDs)
 //   AND ($isNotBusinessesIDs = 0 OR at.financial_entity_id NOT IN $$notBusinessesIDs)
 //   AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
@@ -221,7 +221,7 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
 //     'isBusinesses' | 'isFinancialEntityIds' | 'isIDs' | 'isNotBusinesses'
 //   >,
 //   | 'businessesIDs'
-//   | 'financialEntityIds'
+//   | 'ownerIds'
 //   | 'IDs'
 //   | 'notBusinessesIDs'
 //   | 'asc'
@@ -290,7 +290,7 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
 //   ON  at.account_number = fa.account_number
 //   LEFT JOIN accounter_schema.businesses bu
 //   ON  at.financial_entity_id = bu.id
-//   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$financialEntityIds)
+//   WHERE ($isFinancialEntityIds = 0 OR fa.owner IN $$ownerIds)
 //     AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND at.event_amount > 0) OR ($chargeType = 'EXPENSE' AND at.event_amount <= 0))
 //     AND ($isIDs = 0 OR at.id IN $$IDs)
 //     AND ($fromDate ::TEXT IS NULL OR at.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
@@ -300,7 +300,7 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
 
 // type IValidateChargesAdjustedParams = Optional<
 //   Omit<IValidateChargesParams, 'isIDs' | 'isFinancialEntityIds'>,
-//   'IDs' | 'toDate' | 'fromDate' | 'financialEntityIds'
+//   'IDs' | 'toDate' | 'fromDate' | 'ownerIds'
 // > & {
 //   toDate?: TimelessDateString | null;
 //   fromDate?: TimelessDateString | null;
@@ -383,16 +383,16 @@ export class TransactionsProvider {
   //   return getChargesByFinancialEntityIds.run(params, this.dbProvider);
   // }
 
-  // private async batchChargesByFinancialEntityIds(financialEntityIds: readonly string[]) {
+  // private async batchChargesByFinancialEntityIds(ownerIds: readonly string[]) {
   //   const charges = await getChargesByFinancialEntityIds.run(
   //     {
-  //       financialEntityIds,
+  //       ownerIds,
   //       fromDate: null,
   //       toDate: null,
   //     },
   //     this.dbProvider,
   //   );
-  //   return financialEntityIds.map(id => charges.filter(charge => charge.owner_id === id));
+  //   return ownerIds.map(id => charges.filter(charge => charge.owner_id === id));
   // }
 
   // public getChargeByFinancialEntityIdLoader = new DataLoader(
@@ -412,7 +412,7 @@ export class TransactionsProvider {
 
   // public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
   //   const isBusinessesIDs = !!params?.businessesIDs?.length;
-  //   const isFinancialEntityIds = !!params?.financialEntityIds?.length;
+  //   const isFinancialEntityIds = !!params?.ownerIds?.length;
   //   const isIDs = !!params?.IDs?.length;
   //   const isNotBusinessesIDs = !!params?.notBusinessesIDs?.length;
 
@@ -435,7 +435,7 @@ export class TransactionsProvider {
   //     fromDate: params.fromDate ?? null,
   //     toDate: params.toDate ?? null,
   //     businessesIDs: isBusinessesIDs ? params.businessesIDs! : [null],
-  //     financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
+  //     ownerIds: isFinancialEntityIds ? params.ownerIds! : [null],
   //     IDs: isIDs ? params.IDs! : [null],
   //     notBusinessesIDs: isNotBusinessesIDs ? params.notBusinessesIDs! : [null],
   //     chargeType: params.chargeType ?? 'ALL',
@@ -445,7 +445,7 @@ export class TransactionsProvider {
 
   // public validateCharges(params: IValidateChargesAdjustedParams) {
   //   const isIDs = !!params?.IDs?.length;
-  //   const isFinancialEntityIds = !!params?.financialEntityIds?.length;
+  //   const isFinancialEntityIds = !!params?.ownerIds?.length;
 
   //   const fullParams: IValidateChargesParams = {
   //     isIDs: isIDs ? 1 : 0,
@@ -454,7 +454,7 @@ export class TransactionsProvider {
   //     fromDate: params.fromDate ?? null,
   //     toDate: params.toDate ?? null,
   //     IDs: isIDs ? params.IDs! : [null],
-  //     financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
+  //     ownerIds: isFinancialEntityIds ? params.ownerIds! : [null],
   //     chargeType: params.chargeType ?? 'ALL',
   //   };
   //   return validateCharges.run(fullParams, this.dbProvider);
