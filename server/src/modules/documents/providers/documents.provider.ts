@@ -40,7 +40,7 @@ const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQu
   WHERE charge_id_new IN(
     SELECT c.id as financial_entity_id
     FROM accounter_schema.charges c
-    WHERE c.owner_id IN $$financialEntityIds
+    WHERE c.owner_id IN $$ownerIds
   )
   ORDER BY created_at DESC;
 `;

@@ -68,7 +68,7 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     FROM accounter_schema.extended_charges c
     LEFT JOIN accounter_schema.transactions t
     ON c.id = t.charge_id
-    WHERE owner_id IN $$financialEntityIds
+    WHERE owner_id IN $$ownerIds
     AND t.event_date = (
       SELECT MIN(event_date)
       FROM accounter_schema.transactions as t2
@@ -125,7 +125,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   FROM accounter_schema.extended_charges c
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
-  AND ($isFinancialEntityIds = 0 OR c.owner_id IN $$financialEntityIds)
+  AND ($isFinancialEntityIds = 0 OR c.owner_id IN $$ownerIds)
   AND ($fromDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.event_amount <= 0))
@@ -139,8 +139,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
-  Omit<IGetChargesByFiltersParams, 'isFinancialEntityIds' | 'isIDs'>,
-  'financialEntityIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
+  Omit<IGetChargesByFiltersParams, 'isOwnerIds' | 'isIDs'>,
+  'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
@@ -205,16 +205,16 @@ export class ChargesProvider {
     >;
   }
 
-  private async batchChargesByFinancialEntityIds(financialEntityIds: readonly string[]) {
+  private async batchChargesByFinancialEntityIds(ownerIds: readonly string[]) {
     const charges = (await getChargesByFinancialEntityIds.run(
       {
-        financialEntityIds,
+        ownerIds,
         fromDate: null,
         toDate: null,
       },
       this.dbProvider,
     )) as ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResult>[];
-    return financialEntityIds.map(id => charges.filter(charge => charge.owner_id === id));
+    return ownerIds.map(id => charges.filter(charge => charge.owner_id === id));
   }
 
   public getChargeByFinancialEntityIdLoader = new DataLoader(
@@ -235,7 +235,7 @@ export class ChargesProvider {
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
-    const isFinancialEntityIds = !!params?.financialEntityIds?.length;
+    const isOwnerIds = !!params?.ownerIds?.length;
     const isIDs = !!params?.IDs?.length;
 
     const defaults = {
@@ -245,12 +245,12 @@ export class ChargesProvider {
 
     const fullParams: IGetChargesByFiltersParams = {
       ...defaults,
-      isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
+      isFinancialEntityIds: isOwnerIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
-      financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
+      ownerIds: isOwnerIds ? params.ownerIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
       chargeType: params.chargeType ?? 'ALL',
     };

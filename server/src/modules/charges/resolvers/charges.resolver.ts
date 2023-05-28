@@ -174,7 +174,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .get(ChargesProvider)
         .getChargesByFilters({
           IDs: Array.from(chargeIDs),
-          financialEntityIds: filters?.byOwners ?? undefined,
+          ownerIds: filters?.byOwners ?? undefined,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
           sortColumn,

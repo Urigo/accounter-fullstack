@@ -62,7 +62,7 @@ export const commonFinancialEntityFields:
   documents: async (DbBusiness, _, { injector }) => {
     const documents = await injector
       .get(DocumentsProvider)
-      .getDocumentsByFinancialEntityIds({ financialEntityIds: [DbBusiness.id] });
+      .getDocumentsByFinancialEntityIds({ ownerIds: [DbBusiness.id] });
     return documents;
   },
 };

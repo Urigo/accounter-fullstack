@@ -44,7 +44,7 @@ export const commonFinancialEntityFields:
       charges.push(...newCharges);
     } else {
       const newCharges = await injector.get(ChargesProvider).getChargesByFinancialEntityIds({
-        financialEntityIds: [DbBusiness.id],
+        ownerIds: [DbBusiness.id],
         fromDate: filter?.fromDate,
         toDate: filter?.toDate,
       });

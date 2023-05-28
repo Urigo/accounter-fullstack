@@ -12,7 +12,7 @@ import type {
 const getFinancialAccountsByFinancialEntityIds = sql<IGetFinancialAccountsByFinancialEntityIdsQuery>`
     SELECT *
     FROM accounter_schema.financial_accounts
-    WHERE owner IN $$financialEntityIds;`;
+    WHERE owner IN $$ownerIds;`;
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
 SELECT *
@@ -35,16 +35,14 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
 export class FinancialAccountsProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  private async batchFinancialAccountsByFinancialEntityIds(financialEntityIds: readonly string[]) {
+  private async batchFinancialAccountsByFinancialEntityIds(ownerIds: readonly string[]) {
     const accounts = await getFinancialAccountsByFinancialEntityIds.run(
       {
-        financialEntityIds,
+        ownerIds,
       },
       this.dbProvider,
     );
-    return financialEntityIds.map(financialEntityId =>
-      accounts.filter(charge => charge.owner === financialEntityId),
-    );
+    return ownerIds.map(ownerId => accounts.filter(charge => charge.owner === ownerId));
   }
 
   public getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
