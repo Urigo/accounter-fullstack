@@ -255,7 +255,7 @@ export class ChargesProvider {
       chargeType: params.chargeType ?? 'ALL',
     };
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IGetChargesByFiltersResult>[]
+      IGetChargesByFiltersResult[]
     >;
   }
 

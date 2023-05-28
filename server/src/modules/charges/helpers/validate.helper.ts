@@ -1,38 +1,23 @@
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { Injector } from 'graphql-modules';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { ChargeResolvers, MissingChargeInfo } from '@shared/gql-types';
+import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { IGetChargesByIdsResult } from '../types.js';
 
-export const validateCharge: ChargeResolvers['validationData'] = async (
-  charge,
-  _,
-  { injector },
-) => {
+export const validateCharge = async (
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const documents = await injector
-    .get(DocumentsProvider)
-    .getDocumentsByChargeIdLoader.load(charge.id);
-  const transactions = await injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(charge.id);
-
   // check for consistent counterparty business
-  const counterpartyIDs = new Set<string>();
-  documents.map(d => {
-    if (d.creditor_id && d.creditor_id !== charge.owner_id) counterpartyIDs.add(d.creditor_id);
-    if (d.debtor_id && d.debtor_id !== charge.owner_id) counterpartyIDs.add(d.debtor_id);
-  });
-  transactions.map(t => {
-    if (t.business_id) counterpartyIDs.add(t.business_id);
-  });
+  charge.business_array?.length !== 1;
 
   const business =
-    counterpartyIDs.size === 1
+    charge.business_array?.length === 1
       ? await injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(counterpartyIDs.values().next().value)
+          .getFinancialEntityByIdLoader.load(charge.business_array[0])
       : undefined;
 
   const businessIsFine = !!business;

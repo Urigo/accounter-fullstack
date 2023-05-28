@@ -353,7 +353,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     minEventDate: DbCharge => DbCharge.transactions_min_event_date,
     minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
     minDocumentsDate: DbCharge => DbCharge.documents_min_date,
-    validationData: validateCharge,
+    validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
   },
   // UpdateChargeResult: {
   //   __resolveType: (obj, _context, _info) => {
