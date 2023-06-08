@@ -11,14 +11,11 @@ export const validateCharge = async (
   const missingInfo: Array<MissingChargeInfo> = [];
 
   // check for consistent counterparty business
-  charge.business_array?.length !== 1;
-
-  const business =
-    charge.business_array?.length === 1
-      ? await injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(charge.business_array[0])
-      : undefined;
+  const business = charge.business_id
+    ? await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(charge.business_id)
+    : undefined;
 
   const businessIsFine = !!business;
   if (!businessIsFine) {
