@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { stringify } from 'querystring';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import lodash from 'lodash';
@@ -324,6 +325,8 @@ async function getBankData(pool: pg.Pool, scraper: any) {
         getILSfromBankAndSave(newPoalimInstance, account, pool),
         getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool),
         getDepositsAndSave(newPoalimInstance, account, pool),
+        // getForeignDepositsAndSave(newPoalimInstance, account, pool),
+        getForeignSwiftTransactionsfromBankAndSave(newPoalimInstance, account, pool),
       ]);
       console.log(
         `got and saved ILS and Foreign for ${account.accountNumber} - ${JSON.stringify(results)}`,
@@ -385,6 +388,68 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
         );
       }
     }
+    console.log(`Saved deposits for ${account.accountNumber}`);
+  }
+}
+
+async function getForeignDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
+  console.log('getting Foreign deposits');
+  if (account.accountNumber != 466803) {
+    return null;
+  }
+  const deposits = await newScraperIstance.getForeignDeposits(account);
+  console.log(`finished Foreign getting deposits ${account.accountNumber}`, deposits.isValid);
+  if (!deposits.isValid) {
+    console.log(
+      `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
+      deposits.errors,
+    );
+  }
+
+  if (
+    account.accountNumber != 410915 &&
+    account.accountNumber != 61066 &&
+    account.accountNumber != 466803
+  ) {
+    console.error('UNKNOWN ACCOUNT ', account.accountNumber);
+  } else {
+    console.log(`Saving Foreign deposits for ${account.accountNumber}`);
+
+    if (
+      deposits.data.listRevaluatedForeignCurrencyDepositAccountTypeCode[0]
+        .listRevaluatedForeignCurrencyDepositProductSerialId[0]
+        .listRevaluatedForeignCurrencyCodeDeposits[0].listRevaluatedForeignCurrencyDepositsRows
+        .length != 1
+    ) {
+      console.log('Deposit internal array arong', deposits.data);
+    } else {
+      let foreignDepositsData =
+        deposits.data.listRevaluatedForeignCurrencyDepositAccountTypeCode[0]
+          .listRevaluatedForeignCurrencyDepositProductSerialId[0]
+          .listRevaluatedForeignCurrencyCodeDeposits[0]
+          .listRevaluatedForeignCurrencyDepositsRows[0];
+
+      const internalArrayKeys = Object.keys(foreignDepositsData);
+
+      for (const key of internalArrayKeys) {
+        let pascalKey = camelCase(key);
+        pascalKey = upperFirst(pascalKey);
+        foreignDepositsData[`${pascalKey}`] = foreignDepositsData[key];
+      }
+      // delete deposits.data.list[0].data;
+
+      await saveTransactionsToDB(
+        [foreignDepositsData],
+        'foreign_deposits',
+        {
+          accountNumber: account.accountNumber,
+          branchNumber: account.branchNumber,
+          bankNumber: account.bankNumber,
+        },
+        pool,
+      );
+    }
+
     console.log(`Saved deposits for ${account.accountNumber}`);
   }
 }
@@ -456,6 +521,412 @@ async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) 
     }),
   );
   console.log(`after all creditcard months - ${credentials.ID}`);
+}
+
+async function getForeignSwiftTransactionsfromBankAndSave(
+  newScraperIstance: any,
+  account: any,
+  pool: pg.Pool,
+) {
+  const foreignSwiftTransactions = await newScraperIstance.getForeignSwiftTransactions(account);
+  // fs.writeFile(`./all_swift.json`, JSON.stringify(foreignSwiftTransactions), 'utf8', () => {
+  //   console.log('done dumping query file');
+  // });
+  // fs.writeFile(
+  //   `./all_swift_transaction.json`,
+  //   JSON.stringify(foreignSwiftTransactions.data.swiftsList),
+  //   'utf8',
+  //   () => {
+  //     console.log('done dumping query file');
+  //   },
+  // );
+  // console.log(JSON.stringify(foreignSwiftTransactions));
+  // console.log(
+  //   `finished getting foreignTransactions ${account.accountNumber}`,
+  //   foreignSwiftTransactions.isValid,
+  // );
+  if (!foreignSwiftTransactions.isValid) {
+    console.log(
+      `getForeignSwiftTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
+      foreignSwiftTransactions.errors,
+    );
+  } else if (
+    foreignSwiftTransactions.data.swiftsList &&
+    foreignSwiftTransactions.data.swiftsList.length > 0
+  ) {
+    await Promise.all(
+      foreignSwiftTransactions.data.swiftsList.map(async (foreignSwiftTransaction: any) => {
+        // console.log(JSON.stringify(foreignSwiftTransaction));
+        // console.log(foreignSwiftTransaction.transferCatenatedId);
+        if (foreignSwiftTransaction.dataOriginCode == 2) {
+          let tableName = `poalim_swift_account_transactions`;
+          const queryForExisting = `select transfer_catenated_id from accounter_schema.${tableName} where transfer_catenated_id = $$${foreignSwiftTransaction.transferCatenatedId}$$;`;
+          const findIfAlreadyExistsStatement = await pool.query(queryForExisting);
+          if (findIfAlreadyExistsStatement.rowCount == 0) {
+            try {
+              const foreignSwiftTransactionDetails =
+                await newScraperIstance.getForeignSwiftTransaction(
+                  account,
+                  foreignSwiftTransaction.transferCatenatedId,
+                );
+              // console.log(foreignSwiftTransaction);
+              // console.log(foreignSwiftTransactionDetails);
+
+              // fs.writeFile(
+              //   `./swift_transaction_${foreignSwiftTransaction.transferCatenatedId}.json`,
+              //   JSON.stringify(foreignSwiftTransactionDetails),
+              //   'utf8',
+              //   () => {
+              //     console.log('done dumping query file');
+              //   },
+              // );
+              if (!foreignSwiftTransactionDetails.isValid) {
+                console.log(
+                  `getForeignSwiftTransaction ${JSON.stringify(
+                    foreignSwiftTransaction,
+                  )} schema error: `,
+                  foreignSwiftTransactionDetails.errors,
+                );
+                // console.log(JSON.stringify(foreignSwiftTransactionDetails));
+              } else {
+                console.log(`building ${foreignSwiftTransaction.transferCatenatedId}`);
+                let valueSwift53 = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':53B:',
+                  )
+                ) {
+                  valueSwift53 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':53B:',
+                  ).swiftTransferAttributeValue;
+                } else if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':53A:',
+                  )
+                ) {
+                  valueSwift53 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':53A:',
+                  ).swiftTransferAttributeValue;
+                }
+
+                let valueSwift54A = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':54A:',
+                  )
+                ) {
+                  valueSwift54A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':54A:',
+                  ).swiftTransferAttributeValue;
+                }
+
+                let valueSwift71A = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':71A:',
+                  )
+                ) {
+                  valueSwift71A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':71A:',
+                  ).swiftTransferAttributeValue;
+                }
+
+                let valueSwift52A = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':52A:',
+                  )
+                ) {
+                  valueSwift52A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':52A:',
+                  ).swiftTransferAttributeValue;
+                }
+
+                let valueSwift52D1 = ' ';
+                let valueSwift52D2 = ' ';
+                let valueSwift52D3 = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':52D:',
+                  )
+                ) {
+                  valueSwift52D1 =
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                      (element: any) => element.swiftTransferAttributeCode == ':52D:',
+                    ).swiftTransferAttributeValue;
+
+                  valueSwift52D2 =
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                        (element: any) => element.swiftTransferAttributeCode == ':52D:',
+                      ) + 1
+                    ].swiftTransferAttributeValue;
+
+                  valueSwift52D3 =
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                        (element: any) => element.swiftTransferAttributeCode == ':52D:',
+                      ) + 2
+                    ].swiftTransferAttributeValue;
+                }
+
+                let valueSwift701 = ' ';
+                let valueSwift702 = ' ';
+
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':70:',
+                  )
+                ) {
+                  valueSwift701 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':70:',
+                  ).swiftTransferAttributeValue;
+
+                  valueSwift702 =
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                        (element: any) => element.swiftTransferAttributeCode == ':70:',
+                      ) + 1
+                    ].swiftTransferAttributeValue;
+                }
+
+                let valueSwift71F = ' ';
+                if (
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':71F:',
+                  )
+                ) {
+                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':71F:',
+                  ).swiftTransferAttributeValue;
+                }
+
+                let query = `INSERT INTO accounter_schema.${tableName} (
+                    account_number,
+                    branch_number,
+                    bank_number,
+    
+                    start_date,
+                    formatted_start_date,
+                    swift_status_code,
+                    swift_status_desc,
+                    amount,
+                    currency_code_catenated_key,
+                    currency_long_description,
+                    charge_party_name,
+                    reference_number,
+                    transfer_catenated_id,
+                    data_origin_code,
+      
+                    swift_isn_serial_number,
+                    swift_bank_code,
+                    order_customer_name,
+                    beneficiary_english_street_name,
+                    beneficiary_english_city_name,
+                    beneficiary_english_country_name,
+      
+      
+                    swift_senders_reference_20,
+                    swift_bank_operation_code_23B,
+                    swift_value_date_currency_amount_32A,
+                    swift_currency_instructed_amount_33B,
+              
+                    swift_ordering_customer_50K_1,
+                    swift_ordering_customer_50K_2,
+                    swift_ordering_customer_50K_3,
+                    swift_ordering_customer_50K_4,
+                    swift_ordering_customer_50K_5,
+      
+                    swift_ordering_institution_52A,
+  
+                    swift_ordering_institution_52D_1,
+                    swift_ordering_institution_52D_2,
+                    swift_ordering_institution_52D_3,
+  
+                    swift_senders_correspondent_53A,
+  
+                    swift_receivers_correspondent_54A,
+                    swift_beneficiary_customer_59_1,
+                    swift_beneficiary_customer_59_2,
+                    swift_beneficiary_customer_59_3,
+                    swift_beneficiary_customer_59_4,
+                    swift_beneficiary_customer_59_5,
+                    swift_remittance_information_70_1,
+                    swift_remittance_information_70_2,
+                    swift_details_of_charges_71A,
+                    swift_senders_charges_71F
+                  ) VALUES (
+                    $$${account.accountNumber}$$,
+                    $$${account.branchNumber}$$,
+                    $$${account.bankNumber}$$,
+    
+                    $$${foreignSwiftTransaction.startDate}$$,
+                    $$${foreignSwiftTransaction.formattedStartDate}$$,
+                    $$${foreignSwiftTransaction.swiftStatusCode}$$,
+                    $$${foreignSwiftTransaction.swiftStatusDesc}$$,
+                    $$${foreignSwiftTransaction.amount}$$,
+                    $$${foreignSwiftTransaction.currencyCodeCatenatedKey}$$,
+                    $$${foreignSwiftTransaction.currencyLongDescription}$$,
+                    $$${foreignSwiftTransaction.chargePartyName}$$,
+                    $$${foreignSwiftTransaction.referenceNumber}$$,
+                    $$${foreignSwiftTransaction.transferCatenatedId}$$,
+                    $$${foreignSwiftTransaction.dataOriginCode}$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftBankDetails.swiftIsnSerialNumber
+                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails.swiftBankCode}$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails.orderCustomerName}$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftBankDetails
+                        .beneficiaryEnglishStreetName1
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftBankDetails
+                        .beneficiaryEnglishCityName1
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftBankDetails
+                        .beneficiaryEnglishCountryName
+                    }$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':20:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':23B:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':32A:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':33B:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                        ) + 1
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                        ) + 2
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                        ) + 3
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                        ) + 4
+                      ].swiftTransferAttributeValue
+                    }$$,
+    
+                    $$${valueSwift52A}$$,
+    
+                    $$${valueSwift52D1}$$,
+                    $$${valueSwift52D2}$$,
+                    $$${valueSwift52D3}$$,
+  
+                    $$${valueSwift53}$$,
+  
+                    $$${valueSwift54A}$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                        (element: any) => element.swiftTransferAttributeCode == ':59:',
+                      ).swiftTransferAttributeValue
+                    }$$,
+    
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
+                        ) + 1
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
+                        ) + 2
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
+                        ) + 3
+                      ].swiftTransferAttributeValue
+                    }$$,
+                    $$${
+                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
+                        ) + 4
+                      ].swiftTransferAttributeValue
+                    }$$,
+    
+                    $$${valueSwift701}$$,
+                    $$${valueSwift702}$$,
+    
+                    $$${valueSwift71A}$$,
+  
+                      
+                    $$${valueSwift71F}$$
+                    
+                    );`;
+
+                query = query.replace(/(\r\n|\n|\r)/gm, '');
+                // console.log('query', query);
+                // fs.writeFile(
+                //   `./query_${foreignSwiftTransaction.transferCatenatedId}.txt`,
+                //   query,
+                //   'utf8',
+                //   () => {
+                //     console.log('done dumping query file');
+                //   },
+                // );
+                console.log(`executing ${foreignSwiftTransaction.transferCatenatedId}`);
+                const insertResult: any = await pool.query(query);
+                console.log(`done ${foreignSwiftTransaction.transferCatenatedId}`);
+
+                // console.log(JSON.stringify(insertResult));
+              }
+            } catch (e) {
+              console.log(e);
+            }
+          } else {
+            console.log('skipping ', foreignSwiftTransaction.transferCatenatedId);
+          }
+        }
+      }),
+    );
+  }
 }
 
 (async () => {
