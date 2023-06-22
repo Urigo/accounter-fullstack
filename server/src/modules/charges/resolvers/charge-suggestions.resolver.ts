@@ -481,6 +481,40 @@ const missingInfoSuggestions: Resolver<
     }
     return suggested;
   }
+  if (description.includes('rydzinski')) {
+    return {
+      business: '5a6d074c-f641-42fd-aba1-76ad3fb2bde0',
+      description: 'Support for open-source GraphQL development',
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('yassin eldeeb')) {
+    return {
+      business: '86d112fc-3397-4b9e-a896-a701451bbdcf',
+      description: 'Software Development',
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('aleksandra')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+    return {
+      business: 'b001b503-93ce-497c-bb6c-1c5f1eb6b776',
+      description: `Software Consulting Fees (${previousMonth}/2023)`,
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('denelop')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+    return {
+      business: '737df651-8e02-40dd-b749-228bad16f279',
+      description: `Software Development and Consulting ${previousMonth}/2023`,
+      tags: [{ name: 'business' }],
+    };
+  }
   if (description.includes('גילדה למוצרי תוכנה')) {
     return {
       business: '6a20aa69-57ff-446e-8d6a-1e96d095e988', //name: 'Software Products Guilda Ltd.',
@@ -794,7 +828,7 @@ const missingInfoSuggestions: Resolver<
       tags: [{ name: 'business' }],
     };
   }
-  if (description.includes('AWS EMEA')) {
+  if (description.includes('AWS EMEA') || description.includes('AWS EMEA')) {
     return {
       business: '3f153276-8367-47f4-97ea-e92ba4be3e4e', //name: 'Amazon Web Services EMEA SARL',
       description: 'Infrastructure',
@@ -1035,15 +1069,36 @@ const missingInfoSuggestions: Resolver<
     };
   }
   if (
-    description.includes('העברת מט"ח') &&
-    (description.includes('fbv') || description.includes('fv'))
+    (description.includes('העברת מט"ח') &&
+      (description.includes('fbv') || description.includes('fv'))) ||
+    description.includes('kamil kisiela')
   ) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       business: 'f1749353-979b-46df-8931-93a3aafab1f4', //name: 'Jelly JS Kamil Kisiela',
-      description: `${previousMonth}/22`,
+      description: `Software Development and Consulting ${previousMonth}/23`,
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('slava')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+    return {
+      business: '74c8b843-3819-44a0-abc6-730d4d829e9f',
+      description: `Web Development Services ${previousMonth}/23`,
       beneficiaries: [
         {
           counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
@@ -1216,6 +1271,43 @@ const missingInfoSuggestions: Resolver<
     return {
       business: '5f05b909-bb88-4185-abaa-d3acdbf09808', //name: 'Heroku',
       description: 'accounter DB',
+      tags: [{ name: 'business' }],
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+    };
+  }
+  if (description.includes('COURIER PLUS INC')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: 'long' });
+    return {
+      business: '74c8a4e0-ea3b-4906-a6b3-a868ee6d700d',
+      description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
+      tags: [{ name: 'business' }],
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+    };
+  }
+  if (description.includes('CATS')) {
+    return {
+      business: '13f0fde5-7b57-4943-9646-0c73dbdf7dc4',
+      description: `GraphQL Hive Enterprise License`,
       tags: [{ name: 'business' }],
       beneficiaries: [
         {
@@ -1460,7 +1552,65 @@ const missingInfoSuggestions: Resolver<
       ],
     };
   }
-  if (description.includes('deel')) {
+  if (description.includes('GOBRANDS')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: 'long' });
+    return {
+      business: '011dac15-1a48-447e-91f0-ef4344137caa',
+      description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
+      tags: [{ name: 'business' }],
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+    };
+  }
+  if (description.includes('MEDIC FIRST AI')) {
+    const current = new Date();
+    current.setMonth(current.getMonth() - 1);
+    const previousMonth = current.toLocaleString('default', { month: 'long' });
+    return {
+      business: 'dcb28428-6ba4-4ee3-94a9-ebd188c82822',
+      description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
+      tags: [{ name: 'business' }],
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+    };
+  }
+  if (description.includes('TWITTER')) {
+    return {
+      business: '9b14b7aa-9cea-4fb9-9121-30588f8f0183',
+      description: `Twitter Blue`,
+      tags: [{ name: 'business' }],
+      vat: 0,
+      beneficiaries: [
+        {
+          counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+          percentage: 0.5,
+        },
+        {
+          counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+          percentage: 0.5,
+        },
+      ],
+    };
+  }
+  if (description.includes('deel') || description.includes('laurin')) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     // const previousMonth = current.toLocaleString('default', { month: '2-digit' });
