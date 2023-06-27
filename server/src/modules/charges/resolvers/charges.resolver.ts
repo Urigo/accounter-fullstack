@@ -1,10 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { DocumentsTypes } from '@modules/documents/index.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { ChargeSortByField } from '@shared/enums';
+import { ChargeSortByField, Currency } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
@@ -369,6 +370,46 @@ export const chargesResolvers: ChargesModule.Resolvers &
     minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
     minDocumentsDate: DbCharge => DbCharge.documents_min_date,
     validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
+    currencyRatesAmount: async (DbCharge, _, { injector }) => {
+      const ratesDate =
+        DbCharge.transactions_min_debit_date || DbCharge.transactions_min_event_date;
+
+      if (!ratesDate) {
+        return {
+          id: DbCharge.id,
+          usd: null,
+          gbp: null,
+          eur: null,
+          date: new Date(),
+        };
+      }
+
+      const debitExchangeRates = await injector.get(ExchangeProvider).getExchangeRates(ratesDate);
+      const invoiceExchangeRates = await injector.get(ExchangeProvider).getExchangeRates(ratesDate);
+
+      if (!debitExchangeRates ?? !invoiceExchangeRates) {
+        return {
+          id: DbCharge.id,
+          usd: null,
+          gbp: null,
+          eur: null,
+          date: new Date(),
+        };
+      }
+      return {
+        id: DbCharge.id,
+        usd:
+          formatFinancialAmount(debitExchangeRates.usd ?? invoiceExchangeRates.usd, Currency.Usd) ??
+          null,
+        gbp:
+          formatFinancialAmount(debitExchangeRates.gbp ?? invoiceExchangeRates.gbp, Currency.Gbp) ??
+          null,
+        eur:
+          formatFinancialAmount(debitExchangeRates.eur ?? invoiceExchangeRates.eur, Currency.Eur) ??
+          null,
+        date: debitExchangeRates.exchange_date ? invoiceExchangeRates.exchange_date : new Date(),
+      };
+    },
   },
   // UpdateChargeResult: {
   //   __resolveType: (obj, _context, _info) => {
