@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
+import { FiltersContext } from '../../filters-context';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
@@ -157,6 +158,11 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 export const DocumentsReport = () => {
   const [{ data, fetching }] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
+  const { setFiltersContext } = useContext(FiltersContext);
+
+  useEffect(() => {
+    setFiltersContext('');
+  }, [data]);
 
   return fetching ? (
     <AccounterLoader />
@@ -170,7 +176,6 @@ export const DocumentsReport = () => {
           onClose={() => setOpenedImage(null)}
         />
       )}
-      <div style={{ fontSize: 40 }}>Documents</div>
       <AccounterTable
         stickyHeader
         items={data?.documents ?? ([] as DocumentsQuery['documents'])}

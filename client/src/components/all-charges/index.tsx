@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
+import { FiltersContext } from '../../filters-context';
 import { FragmentType } from '../../gql';
 import {
   AllChargesDocument,
@@ -16,8 +17,6 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
-  MergeChargesButton,
-  NavBar,
   UploadDocumentModal,
 } from '../common';
 import { AllChargesTable } from './all-charges-table';
@@ -38,6 +37,7 @@ import { ChargesFilters } from './charges-filters';
 `;
 
 export const AllCharges = () => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
@@ -82,52 +82,51 @@ export const AllCharges = () => {
     },
   });
 
-  function onResetMerge() {
-    setMergeSelectedCharges([]);
-  }
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <ChargesFilters
+          filter={filter}
+          setFilter={setFilter}
+          activePage={activePage}
+          setPage={setPage}
+          totalPages={data?.allCharges?.pageInfo.totalPages}
+        />
+        <Tooltip label="Expand all accounts">
+          <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
+          </ActionIcon>
+        </Tooltip>
+      </div>,
+    );
+  }, [
+    data,
+    fetching,
+    filter,
+    activePage,
+    isAllOpened,
+    setFiltersContext,
+    setPage,
+    setFilter,
+    setIsAllOpened,
+  ]);
 
   return (
-    <div className="text-gray-600 body-font">
-      <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar
-          header="All Charges"
-          filters={
-            <div className="flex flex-row gap-2">
-              <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
-              <Tooltip label="Expand all accounts">
-                <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
-                  {isAllOpened ? (
-                    <LayoutNavbarCollapse size={20} />
-                  ) : (
-                    <LayoutNavbarExpand size={20} />
-                  )}
-                </ActionIcon>
-              </Tooltip>
-              <ChargesFilters
-                filter={filter}
-                setFilter={setFilter}
-                activePage={activePage}
-                setPage={setPage}
-                totalPages={data?.allCharges?.pageInfo.totalPages}
-              />
-            </div>
-          }
+    <>
+      {fetching ? (
+        <AccounterLoader />
+      ) : (
+        <AllChargesTable
+          setEditCharge={setEditCharge}
+          setInsertDocument={setInsertDocument}
+          setMatchDocuments={setMatchDocuments}
+          setUploadDocument={setUploadDocument}
+          toggleMergeCharge={toggleMergeCharge}
+          mergeSelectedCharges={mergeSelectedCharges}
+          data={data?.allCharges?.nodes}
+          isAllOpened={isAllOpened}
         />
-        {fetching ? (
-          <AccounterLoader />
-        ) : (
-          <AllChargesTable
-            setEditCharge={setEditCharge}
-            setInsertDocument={setInsertDocument}
-            setMatchDocuments={setMatchDocuments}
-            setUploadDocument={setUploadDocument}
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={mergeSelectedCharges}
-            data={data?.allCharges?.nodes}
-            isAllOpened={isAllOpened}
-          />
-        )}
-      </div>
+      )}
       {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
       {insertDocument && (
         <InsertDocumentModal
@@ -148,6 +147,6 @@ export const AllCharges = () => {
           setMatchDocuments={() => setMatchDocuments(undefined)}
         />
       )}
-    </div>
+    </>
   );
 };
