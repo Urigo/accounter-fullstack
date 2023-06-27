@@ -11,6 +11,15 @@ export default gql`
     updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
   }
 
+  " represent a financial amount in a specific currency "
+  type Rates {
+    id: ID!
+    usd: FinancialAmount
+    gbp: FinancialAmount
+    eur: FinancialAmount
+    date: Date!
+  }
+
   " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
   type Charge {
     id: ID!
@@ -26,6 +35,7 @@ export default gql`
     totalAmount: FinancialAmount
     " פחת, ציוד  "
     property: Boolean
+    currencyRatesAmount: Rates
   }
 
   " input variables for charge filtering "

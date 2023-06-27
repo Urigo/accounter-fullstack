@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@0no-co/graphql.web@^1.0.1":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@0no-co/graphql.web/-/graphql.web-1.0.4.tgz#9606eb651955499525d068ce0ad8bea596286ce2"
+  integrity sha512-W3ezhHGfO0MS1PtGloaTpg0PbaT8aZSmmaerL7idtU5F7oCI+uu25k+MsMS31BVFlp4aMkHSrNRxiD72IlK8TA==
+
 "@accounter-toolkit/green-invoice-graphql@0.3.0":
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/@accounter-toolkit/green-invoice-graphql/-/green-invoice-graphql-0.3.0.tgz#74595ff77bd5f3d5fa77b637ab90e9546d0f981a"
@@ -2326,6 +2331,11 @@
   resolved "https://registry.yarnpkg.com/@json-schema-tools/meta-schema/-/meta-schema-1.7.0.tgz#ce3e3a490a6499c44251d6203a40ed96bde8ac4b"
   integrity sha512-3pDzVUssW3hVnf8gvSu1sKaVIpLyvmpbxgGfkUoaBiErFKRS2CZOufHD0pUFoa5e6Cd5oa72s402nJbnDz76CA==
 
+"@kurkle/color@^0.3.0":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@kurkle/color/-/color-0.3.2.tgz#5acd38242e8bde4f9986e7913c8fdf49d3aa199f"
+  integrity sha512-fuscdXJ9G1qb7W8VdHi+IwRqij3lBkosAm4ydQtEmbY58OzHXqQhvlxqEkoz0yssNVn38bcpRWgA9PP+OGoisw==
+
 "@mantine/carousel@5.10.4":
   version "5.10.4"
   resolved "https://registry.yarnpkg.com/@mantine/carousel/-/carousel-5.10.4.tgz#127c5362833c5737c09203c41123b169242e151d"
@@ -2751,6 +2761,13 @@
   dependencies:
     "@types/estree" "*"
 
+"@types/chart.js@2.9.37":
+  version "2.9.37"
+  resolved "https://registry.yarnpkg.com/@types/chart.js/-/chart.js-2.9.37.tgz#8af70862b154fedf938b5b87debdb3a70f6e3208"
+  integrity sha512-9bosRfHhkXxKYfrw94EmyDQcdjMaQPkU1fH2tDxu8DWXxf1mjzWQAV4laJF51ZbC2ycYwNDvIm1rGez8Bug0vg==
+  dependencies:
+    moment "^2.10.2"
+
 "@types/debug@^4.0.0":
   version "4.1.7"
   resolved "https://registry.yarnpkg.com/@types/debug/-/debug-4.1.7.tgz#7cc0ea761509124709b8b2d1090d8f6c17aadb82"
@@ -3008,13 +3025,21 @@
     "@typescript-eslint/types" "5.51.0"
     eslint-visitor-keys "^3.3.0"
 
-"@urql/core@>=3.0.0", "@urql/core@^3.0.3":
+"@urql/core@>=3.0.0":
   version "3.0.5"
   resolved "https://registry.yarnpkg.com/@urql/core/-/core-3.0.5.tgz#a26c326dd788d6d6abb839493bce86147f5a45c9"
   integrity sha512-6/1HG+WEAcPs+hXSFnxWBTWkNUwa8dj2cHysWokMaFIbAioGtUaSdxp2q9FDMtWAIGdc640NFSt2B8itGLdoAA==
   dependencies:
     "@graphql-typed-document-node/core" "^3.1.1"
     wonka "^6.0.0"
+
+"@urql/core@^4.0.0":
+  version "4.0.10"
+  resolved "https://registry.yarnpkg.com/@urql/core/-/core-4.0.10.tgz#b227f161910d6f22d27bb308098e1181b949c302"
+  integrity sha512-Vs3nOSAnYftqOCg034Ostp/uSqWlQg5ryLIzcOrm8+O43s4M+Ew4GQAuemIH7ZDB8dek6h61zzWI3ujd8FH3NA==
+  dependencies:
+    "@0no-co/graphql.web" "^1.0.1"
+    wonka "^6.3.2"
 
 "@urql/exchange-multipart-fetch@1.0.1":
   version "1.0.1"
@@ -3909,6 +3934,13 @@ chardet@^0.7.0:
   resolved "https://registry.yarnpkg.com/chardet/-/chardet-0.7.0.tgz#90094849f0937f2eedc2425d0d28a9e5f0cbad9e"
   integrity sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==
 
+chart.js@4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.3.0.tgz#ac363030ab3fec572850d2d872956f32a46326a1"
+  integrity sha512-ynG0E79xGfMaV2xAHdbhwiPLczxnNNnasrmPEXriXsPJGjmhOBYzFVEsB65w2qMDz+CaBJJuJD0inE/ab/h36g==
+  dependencies:
+    "@kurkle/color" "^0.3.0"
+
 chokidar@^3.3.1, chokidar@^3.5.1, chokidar@^3.5.2, chokidar@^3.5.3:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.3.tgz#1cf37c8707b932bd1af1ae22c0432e2acd1903bd"
@@ -4041,6 +4073,11 @@ clsx@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.1.1.tgz#98b3134f9abbdf23b2663491ace13c5c03a73188"
   integrity sha512-6/bPho624p3S2pMyvP5kKBPXnI3ufHLObBFCfgx+LkeR5lg2XYy2hqZqUf45ypD8COn2bhgGJSUE+l5dhNBieA==
+
+clsx@1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.2.1.tgz#0ddc4a20a549b59c93a4116bb26f5294ca17dc12"
+  integrity sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==
 
 color-convert@^1.9.0:
   version "1.9.3"
@@ -4329,6 +4366,11 @@ decamelize@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/decamelize/-/decamelize-1.2.0.tgz#f6534d15148269b20352e7bee26f501f9a191290"
   integrity sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==
+
+decimal.js@10.4.3:
+  version "10.4.3"
+  resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.4.3.tgz#1044092884d245d1b7f65725fa4ad4c6f781cc23"
+  integrity sha512-VBBaLc1MgL5XpzgIP7ny5Z6Nx3UrRkIViUkPUdtl9aya5amy3De1gsUUSB1g3+3sExYNjCAsAznmukyxCb1GRA==
 
 decode-named-character-reference@^1.0.0:
   version "1.0.2"
@@ -7600,7 +7642,7 @@ modern-poalim-scraper@0.8.4:
     puppeteer "20.1.2"
     uuid "9.0.0"
 
-moment@2.29.4:
+moment@2.29.4, moment@^2.10.2:
   version "2.29.4"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
   integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
@@ -9677,6 +9719,11 @@ tabler-icons-react@1.56.0:
   resolved "https://registry.yarnpkg.com/tabler-icons-react/-/tabler-icons-react-1.56.0.tgz#d2a6cf9160f25b370c38c356fa6284c254e5113e"
   integrity sha512-FOme3w6PJIWDpeXqQ4xjArQqdxzrr9xNy7PSSgWpRzOUQ71RyZ7jt6WThsfyLBz5os78TPJRA8f/0NLjnKcx9A==
 
+tailwind-merge@1.13.2:
+  version "1.13.2"
+  resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-1.13.2.tgz#1d06c9e95ffda2320efc50ed33c65be0cda23091"
+  integrity sha512-R2/nULkdg1VR/EL4RXg4dEohdoxNUJGLMnWIQnPKL+O9Twu7Cn3Rxi4dlXkDzZrEGtR+G+psSXFouWlpTyLhCQ==
+
 tailwindcss@3.2.7:
   version "3.2.7"
   resolved "https://registry.yarnpkg.com/tailwindcss/-/tailwindcss-3.2.7.tgz#5936dd08c250b05180f0944500c01dce19188c07"
@@ -10196,13 +10243,13 @@ urlpattern-polyfill@^6.0.2:
   dependencies:
     braces "^3.0.2"
 
-urql@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/urql/-/urql-3.0.3.tgz#275631f487558354e090d9ffc4ea2030bd56c34a"
-  integrity sha512-aVUAMRLdc5AOk239DxgXt6ZxTl/fEmjr7oyU5OGo8uvpqu42FkeJErzd2qBzhAQ3DyusoZIbqbBLPlnKo/yy2A==
+urql@4.0.4:
+  version "4.0.4"
+  resolved "https://registry.yarnpkg.com/urql/-/urql-4.0.4.tgz#a9a06eb659585c48ceab012321b0e6254b699188"
+  integrity sha512-C5P4BMnAsk+rbytCWglit5ijXbIKXsa9wofSGPbuMyJKsDdL+9GfipS362Nff/Caag+eYOK5W+sox8fwEILT6Q==
   dependencies:
-    "@urql/core" "^3.0.3"
-    wonka "^6.0.0"
+    "@urql/core" "^4.0.0"
+    wonka "^6.3.2"
 
 use-composed-ref@^1.3.0:
   version "1.3.0"
@@ -10450,6 +10497,11 @@ wonka@^6.0.0:
   version "6.1.1"
   resolved "https://registry.yarnpkg.com/wonka/-/wonka-6.1.1.tgz#134ece7d07848477e3a8b7d35f2333af2edde138"
   integrity sha512-shBtyZ0KFvUadtnDGlTRA4mF4pgcRoyZKikdputKhmShoXWcZDvlg6CUw6Jx9nTL7Ub8QUJoIarPpxdlosg9cw==
+
+wonka@^6.3.2:
+  version "6.3.2"
+  resolved "https://registry.yarnpkg.com/wonka/-/wonka-6.3.2.tgz#6f32992b332251d7b696b038990f4dc284b3b33d"
+  integrity sha512-2xXbQ1LnwNS7egVm1HPhW2FyKrekolzhpM3mCwXdQr55gO+tAiY76rhb32OL9kKsW8taj++iP7C6hxlVzbnvrw==
 
 word-wrap@^1.2.3, word-wrap@~1.2.3:
   version "1.2.3"

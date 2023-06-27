@@ -1,4 +1,5 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
 import { ChargeSortByField, Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -252,6 +253,34 @@ export const chargesResolvers: ChargesModule.Resolvers & Pick<Resolvers, 'Update
         ? null
         : formatFinancialAmount(DbCharge.event_amount, DbCharge.currency_code),
     property: DbCharge => DbCharge.is_property,
+    currencyRatesAmount: async (DbCharge, _, { injector }) => {
+      const ratesDate = DbCharge.debit_date || DbCharge.event_date;
+      const debitExchangeRates = await injector.get(ExchangeProvider).getExchangeRates(ratesDate);
+      const invoiceExchangeRates = await injector.get(ExchangeProvider).getExchangeRates(ratesDate);
+
+      if (!debitExchangeRates ?? !invoiceExchangeRates) {
+        return {
+          id: DbCharge.id,
+          usd: null,
+          gbp: null,
+          eur: null,
+          date: new Date(),
+        };
+      }
+      return {
+        id: DbCharge.id,
+        usd:
+          formatFinancialAmount(debitExchangeRates.usd ?? invoiceExchangeRates.usd, Currency.Usd) ??
+          null,
+        gbp:
+          formatFinancialAmount(debitExchangeRates.gbp ?? invoiceExchangeRates.gbp, Currency.Gbp) ??
+          null,
+        eur:
+          formatFinancialAmount(debitExchangeRates.eur ?? invoiceExchangeRates.eur, Currency.Eur) ??
+          null,
+        date: debitExchangeRates.exchange_date ? invoiceExchangeRates.exchange_date : new Date(),
+      };
+    },
     validationData: async (DbCharge, _, { injector }) => {
       return validateCharge(
         DbCharge as IValidateChargesResult,

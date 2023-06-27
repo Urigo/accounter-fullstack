@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
+import { FiltersContext } from '../../filters-context';
 import { FragmentType } from '../../gql';
 import {
   AllChargesDocument,
@@ -17,7 +18,6 @@ import {
   InsertDocumentModal,
   InsertLedgerRecordModal,
   MatchDocumentModal,
-  NavBar,
   UploadDocumentModal,
 } from '../common';
 import { AllChargesTable } from './all-charges-table';
@@ -38,6 +38,7 @@ import { ChargesFilters } from './charges-filters';
 `;
 
 export const AllCharges = () => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
@@ -69,46 +70,50 @@ export const AllCharges = () => {
     },
   });
 
-  return (
-    <div className="text-gray-600 body-font">
-      <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar
-          header="All Charges"
-          filters={
-            <div className="flex flex-row gap-2">
-              <Tooltip label="Expand all accounts">
-                <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
-                  {isAllOpened ? (
-                    <LayoutNavbarCollapse size={20} />
-                  ) : (
-                    <LayoutNavbarExpand size={20} />
-                  )}
-                </ActionIcon>
-              </Tooltip>
-              <ChargesFilters
-                filter={filter}
-                setFilter={setFilter}
-                activePage={activePage}
-                setPage={setPage}
-                totalPages={data?.allCharges?.pageInfo.totalPages}
-              />
-            </div>
-          }
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <ChargesFilters
+          filter={filter}
+          setFilter={setFilter}
+          activePage={activePage}
+          setPage={setPage}
+          totalPages={data?.allCharges?.pageInfo.totalPages}
         />
-        {fetching ? (
-          <AccounterLoader />
-        ) : (
-          <AllChargesTable
-            setEditCharge={setEditCharge}
-            setInsertLedger={setInsertLedger}
-            setInsertDocument={setInsertDocument}
-            setMatchDocuments={setMatchDocuments}
-            setUploadDocument={setUploadDocument}
-            data={data?.allCharges?.nodes}
-            isAllOpened={isAllOpened}
-          />
-        )}
-      </div>
+        <Tooltip label="Expand all accounts">
+          <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
+          </ActionIcon>
+        </Tooltip>
+      </div>,
+    );
+  }, [
+    data,
+    fetching,
+    filter,
+    activePage,
+    isAllOpened,
+    setFiltersContext,
+    setPage,
+    setFilter,
+    setIsAllOpened,
+  ]);
+
+  return (
+    <>
+      {fetching ? (
+        <AccounterLoader />
+      ) : (
+        <AllChargesTable
+          setEditCharge={setEditCharge}
+          setInsertLedger={setInsertLedger}
+          setInsertDocument={setInsertDocument}
+          setMatchDocuments={setMatchDocuments}
+          setUploadDocument={setUploadDocument}
+          data={data?.allCharges?.nodes}
+          isAllOpened={isAllOpened}
+        />
+      )}
       {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
       {insertLedger && (
         <InsertLedgerRecordModal insertLedger={insertLedger} setInsertLedger={setInsertLedger} />
@@ -128,6 +133,6 @@ export const AllCharges = () => {
       {matchDocuments && (
         <MatchDocumentModal matchDocuments={matchDocuments} setMatchDocuments={setMatchDocuments} />
       )}
-    </div>
+    </>
   );
 };

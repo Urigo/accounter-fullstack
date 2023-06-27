@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
+import { FiltersContext } from '../../../filters-context';
 import { FragmentType } from '../../../gql';
 import {
   ChargeFilterType,
@@ -16,7 +17,6 @@ import {
   InsertDocumentModal,
   InsertLedgerRecordModal,
   MatchDocumentModal,
-  NavBar,
   UploadDocumentModal,
 } from '../../common';
 import { ExpensesTable } from './expenses-table';
@@ -39,6 +39,7 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 
 export const VatMonthlyReport = () => {
   const { get } = useUrlQuery();
+  const { setFiltersContext } = useContext(FiltersContext);
   const [filter, setFilter] = useState<VatReportFilter>(
     get('vatMonthlyReportFilters')
       ? (JSON.parse(
@@ -67,80 +68,61 @@ export const VatMonthlyReport = () => {
       filters: filter,
     },
   });
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-2">
+        <PCNGenerator filter={filter} isLoading={fetching} />
+        <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
+      </div>,
+    );
+  }, [data, filter, fetching]);
 
-  return (
-    <div className="text-gray-600 body-font">
-      <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar
-          header="Vat Monthly Report"
-          filters={
-            <div className="flex flex-row gap-2">
-              <PCNGenerator filter={filter} isLoading={fetching} />
-              <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
-            </div>
-          }
+  return fetching ? (
+    <AccounterLoader />
+  ) : (
+    <div className="flex flex-col gap-4">
+      {filter.chargesType !== ChargeFilterType.Expense && <IncomeTable data={data?.vatReport} />}
+
+      {filter.chargesType !== ChargeFilterType.Income && <ExpensesTable data={data?.vatReport} />}
+
+      <MissingInfoTable
+        data={data?.vatReport}
+        setEditCharge={setEditCharge}
+        setInsertLedger={setInsertLedger}
+        setInsertDocument={setInsertDocument}
+        setUploadDocument={setUploadDocument}
+        setMatchDocuments={setMatchDocuments}
+      />
+
+      <MiscTable
+        data={data?.vatReport}
+        setEditCharge={setEditCharge}
+        setInsertLedger={setInsertLedger}
+        setInsertDocument={setInsertDocument}
+        setUploadDocument={setUploadDocument}
+        setMatchDocuments={setMatchDocuments}
+      />
+
+      {/* modification modals */}
+      {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
+      {insertLedger && (
+        <InsertLedgerRecordModal insertLedger={insertLedger} setInsertLedger={setInsertLedger} />
+      )}
+      {insertDocument && (
+        <InsertDocumentModal
+          insertDocument={insertDocument}
+          setInsertDocument={setInsertDocument}
         />
-        {fetching ? (
-          <AccounterLoader />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {filter.chargesType !== ChargeFilterType.Expense && (
-              <IncomeTable data={data?.vatReport} />
-            )}
-
-            {filter.chargesType !== ChargeFilterType.Income && (
-              <ExpensesTable data={data?.vatReport} />
-            )}
-
-            <MissingInfoTable
-              data={data?.vatReport}
-              setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
-              setInsertDocument={setInsertDocument}
-              setUploadDocument={setUploadDocument}
-              setMatchDocuments={setMatchDocuments}
-            />
-
-            <MiscTable
-              data={data?.vatReport}
-              setEditCharge={setEditCharge}
-              setInsertLedger={setInsertLedger}
-              setInsertDocument={setInsertDocument}
-              setUploadDocument={setUploadDocument}
-              setMatchDocuments={setMatchDocuments}
-            />
-
-            {/* modification modals */}
-            {editCharge && (
-              <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />
-            )}
-            {insertLedger && (
-              <InsertLedgerRecordModal
-                insertLedger={insertLedger}
-                setInsertLedger={setInsertLedger}
-              />
-            )}
-            {insertDocument && (
-              <InsertDocumentModal
-                insertDocument={insertDocument}
-                setInsertDocument={setInsertDocument}
-              />
-            )}
-            {uploadDocument && (
-              <UploadDocumentModal
-                uploadDocument={uploadDocument}
-                setUploadDocument={setUploadDocument}
-              />
-            )}
-            {matchDocuments && (
-              <MatchDocumentModal
-                matchDocuments={matchDocuments}
-                setMatchDocuments={setMatchDocuments}
-              />
-            )}
-          </div>
-        )}
-      </div>
+      )}
+      {uploadDocument && (
+        <UploadDocumentModal
+          uploadDocument={uploadDocument}
+          setUploadDocument={setUploadDocument}
+        />
+      )}
+      {matchDocuments && (
+        <MatchDocumentModal matchDocuments={matchDocuments} setMatchDocuments={setMatchDocuments} />
+      )}
     </div>
   );
 };
