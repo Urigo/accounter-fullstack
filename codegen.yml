@@ -49,7 +49,7 @@ generates:
         SortCode: '@modules/hashavshevet/types.js#IGetSortCodesByIdsResult'
         HashavshevetAccount: '@modules/hashavshevet/types.js#IGetAccountCardsBySortCodesResult'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
-        # VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#DecoratedVatReportRecord'
+        VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord2'
         BusinessTransaction: '@modules/financial-entities/types.js#IGetBusinessTransactionsFromLedgerRecordsResult'
     plugins:
       - add:

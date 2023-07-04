@@ -152,17 +152,19 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
 const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
   SELECT d.*
   FROM accounter_schema.documents d
+  LEFT JOIN accounter_schema.charges c ON c.id = d.charge_id_new
   WHERE
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
+    AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
   ORDER BY created_at DESC;
 `;
 
 type IGetAdjustedDocumentsByFiltersParams = Optional<
   Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate'>,
-  'IDs' | 'businessIDs'
+  'IDs' | 'businessIDs' | 'ownerIDs'
 > & {
   fromDate?: TimelessDateString | null;
   toDate?: TimelessDateString | null;
@@ -222,17 +224,20 @@ export class DocumentsProvider {
   }
 
   public getDocumentsByFilters(params: IGetAdjustedDocumentsByFiltersParams) {
-    const isIDs = !!params?.IDs?.length;
-    const isBusinessIDs = !!params?.businessIDs?.length;
+    const isIDs = !!params?.IDs?.filter(Boolean).length;
+    const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
+    const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
+      isOwnerIDs: isOwnerIDs ? 1 : 0,
       fromDate: null,
       toDate: null,
       ...params,
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
+      ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
     return getDocumentsByFilters.run(fullParams, this.dbProvider);
   }

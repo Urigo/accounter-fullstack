@@ -1,15 +1,11 @@
-// import type { ChargesTypes } from '@modules/charges';
-// import type { DocumentsTypes } from '@modules/documents';
-// import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-
-// import {
-//   getClosestRateForDate,
-//   getILSForDate,
-//   getRateForCurrency,
-// } from '@modules/ledger/helpers/exchange.helper.js';
-// import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
-// import type { IGetTaxTransactionsByIDsResult } from '@modules/reports/types.js';
-// import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
+import type { IGetChargesByFiltersResult } from '@modules/charges/types';
+import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
+import {
+  getClosestRateForDate,
+  getRateForCurrency,
+} from '@modules/ledger/helpers/exchange.helper.js';
+import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
+import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 
 // export function mergeChargeDoc(
 //   charge: ChargesTypes.IGetChargesByIdsResult,
@@ -61,117 +57,108 @@
 //   };
 // }
 
-// export type RawVatReportRecord = ReturnType<typeof mergeChargeDoc>;
-// export type DecoratedVatReportRecord = RawVatReportRecord & {
-//   currency_code: string;
-//   vatAfterDeduction?: number;
-//   amountBeforeVAT?: number;
-//   amountBeforeFullVAT?: number;
-//   roundedVATToAdd?: number;
-//   eventAmountILS?: number;
-//   vatAfterDeductionILS?: number;
-// };
+export type RawVatReportRecord = {
+  charge: IGetChargesByFiltersResult;
+  doc: IGetDocumentsByFiltersResult;
+};
+export type DecoratedVatReportRecord = RawVatReportRecord & {
+  currency_code: string;
+  vatAfterDeduction?: number;
+  amountBeforeVAT?: number;
+  amountBeforeFullVAT?: number;
+  roundedVATToAdd?: number;
+  eventAmountILS?: number;
+  vatAfterDeductionILS?: number;
+};
 
-// export function adjustTaxRecords(
-//   rawRecords: Array<RawVatReportRecord>,
-//   referenceTransactions: { [id: string]: IGetTaxTransactionsByIDsResult },
-//   exchangeRatesList: Array<IGetExchangeRatesByDatesResult>,
-// ): DecoratedVatReportRecord[] {
-//   const sharedInvoiceIDs: Array<string> = [];
-//   const records: DecoratedVatReportRecord[] = [];
+export type RawVatReportRecord2 = {
+  amountBeforeVAT?: number;
+  eventAmountILS?: number;
+  roundedVATToAdd?: number;
+  vat: number | null;
+  vatAfterDeduction?: number;
+  vatAfterDeductionILS?: number;
 
-//   for (const rawRecord of rawRecords) {
-//     if (!rawRecord.currency_code) {
-//       throw new Error(`Currency missing for invoice of charge ID=${rawRecord.id}`);
-//     }
-//     const decoratedRecord: DecoratedVatReportRecord = {
-//       ...rawRecord,
-//       currency_code: rawRecord.currency_code,
-//     };
+  //
+  documentId: string;
+  documentUrl: string | null;
+  documentAmount: string;
+  chargeId: string;
+  businessId: string | null;
+  currencyCode: string;
+  chargeDate: Date;
+  documentDate: Date | null;
+  documentSerial: string | null;
+};
 
-//     // handle invoice with multiple charges
-//     const ref = referenceTransactions[rawRecord.id];
-//     if (ref?.id) {
-//       if (sharedInvoiceIDs.includes(ref.id)) {
-//         /* case record was already added to the report by reference transaction */
-//         continue;
-//       } else {
-//         /* case first record of reference transaction */
-//         sharedInvoiceIDs.push(ref.id);
+export function adjustTaxRecords(
+  rawRecords: Array<RawVatReportRecord>,
+  exchangeRatesList: Array<IGetExchangeRatesByDatesResult>,
+): RawVatReportRecord2[] {
+  const records: RawVatReportRecord2[] = [];
 
-//         // TODO: update "taxes" DB table, make tax_invoice_amount and vat required, then remove redundant alternatives here:
-//         decoratedRecord.event_amount = ref.tax_invoice_amount || decoratedRecord.event_amount;
-//         decoratedRecord.tax_invoice_amount = ref.tax_invoice_amount
-//           ? Number(ref.tax_invoice_amount)
-//           : null;
-//         decoratedRecord.vat = ref.vat ? Number(ref.vat) : null;
-//         decoratedRecord.tax_invoice_date = ref.tax_invoice_date;
-//         decoratedRecord.document_image_url = ref.tax_invoice_image;
-//         decoratedRecord.tax_invoice_number = ref.tax_invoice_number;
-//         decoratedRecord.tax_invoice_file = ref.tax_invoice_file;
-//       }
-//     }
+  for (const rawRecord of rawRecords) {
+    const { charge, doc } = rawRecord;
 
-//     // get exchange rates
-//     if (!decoratedRecord.tax_invoice_date) {
-//       throw new Error(`Date is missing for invoice of charge ID=${decoratedRecord.id}`);
-//     }
-//     const exchangeRate = getClosestRateForDate(decoratedRecord.tax_invoice_date, exchangeRatesList);
+    if (!doc.total_amount) {
+      throw new Error(`Amount missing for invoice ID=${doc.id}`);
+    }
 
-//     // update record amounts according to document currency rate
-//     if (decoratedRecord.tax_invoice_currency) {
-//       const amountToUse =
-//         decoratedRecord.tax_invoice_amount ?? parseFloat(decoratedRecord.event_amount);
+    if (!doc.currency_code) {
+      throw new Error(`Currency missing for invoice ID=${doc.id}`);
+    }
+    if (!doc.date) {
+      throw new Error(`Date is missing for invoice ID=${doc.id}`);
+    }
 
-//       const rate = getRateForCurrency(decoratedRecord.tax_invoice_currency, exchangeRate);
+    const partialRecord: RawVatReportRecord2 = {
+      // amountBeforeVAT
+      businessId: charge.business_id,
+      chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
+      chargeId: charge.id,
+      currencyCode: doc.currency_code,
+      documentDate: doc.date,
+      documentId: doc.id,
+      documentSerial: doc.serial_number,
+      documentUrl: doc.image_url,
+      documentAmount: String(doc.total_amount),
+      // eventAmountILS
+      // roundedVATToAdd
+      vat: doc.vat_amount,
+      // vatAfterDeduction
+      // vatAfterDeductionILS
+    };
 
-//       decoratedRecord.event_amount = String(
-//         (decoratedRecord.tax_invoice_amount = amountToUse * rate),
-//       );
-//       decoratedRecord.debit_date = decoratedRecord.tax_invoice_date;
-//       decoratedRecord.vat &&= decoratedRecord.vat * rate;
-//     }
+    // get exchange rate
+    const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
+    const rate = getRateForCurrency(doc.currency_code, exchangeRates);
 
-//     // set default amountBeforeVAT
-//     if (!decoratedRecord.vat) {
-//       const amountToUse =
-//         decoratedRecord.tax_invoice_amount ?? parseFloat(decoratedRecord.event_amount);
-//       const rate = getRateForCurrency(decoratedRecord.currency_code, exchangeRate);
-//       decoratedRecord.amountBeforeVAT = amountToUse * rate;
-//     }
+    // update record amounts according to document currency rate
+    partialRecord.documentAmount = String((doc.total_amount = doc.total_amount * rate));
+    doc.vat_amount &&= doc.vat_amount * rate;
 
-//     if (decoratedRecord.tax_category && decoratedRecord.vat) {
-//       // decorate record with additional fields
-//       const amountToUse =
-//         decoratedRecord.tax_invoice_amount ?? parseFloat(decoratedRecord.event_amount);
-//       const vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(
-//         decoratedRecord.tax_category,
-//       )
-//         ? (decoratedRecord.vat / 3) * 2
-//         : decoratedRecord.vat;
-//       // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
-//       const amountBeforeVAT = amountToUse - vatAfterDeduction;
+    // set default amountBeforeVAT
+    if (!doc.vat_amount) {
+      partialRecord.amountBeforeVAT = doc.total_amount * rate;
+    }
 
-//       const amountBeforeFullVAT = amountToUse - decoratedRecord.vat;
+    if (partialRecord.businessId && doc.vat_amount) {
+      // decorate record with additional fields
+      const vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(partialRecord.businessId)
+        ? (doc.vat_amount / 3) * 2
+        : doc.vat_amount;
+      // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
+      const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
-//       // enrich record with ILS amounts
-//       const ILSAmounts = getILSForDate(
-//         { ...decoratedRecord, vatAfterDeduction, amountBeforeVAT, amountBeforeFullVAT },
-//         exchangeRate,
-//       );
+      partialRecord.vatAfterDeduction = vatAfterDeduction;
+      partialRecord.roundedVATToAdd = Math.round(vatAfterDeduction * rate);
+      partialRecord.amountBeforeVAT = amountBeforeVAT * rate;
+      partialRecord.eventAmountILS = doc.total_amount * rate;
+      partialRecord.vatAfterDeductionILS = vatAfterDeduction * rate;
+    }
 
-//       decoratedRecord.vatAfterDeduction = vatAfterDeduction;
-//       decoratedRecord.amountBeforeFullVAT = amountBeforeFullVAT;
-//       decoratedRecord.roundedVATToAdd = Math.round(ILSAmounts.vatAfterDeductionILS);
-//       decoratedRecord.amountBeforeVAT = ILSAmounts.amountBeforeFullVATILS;
-//       decoratedRecord.eventAmountILS = ILSAmounts.eventAmountILS;
-//       decoratedRecord.vatAfterDeductionILS = ILSAmounts.vatAfterDeductionILS;
-//     }
+    records.push(partialRecord);
+  }
 
-//     records.push(decoratedRecord);
-//   }
-
-//   return records;
-// }
-
-export const dummy = null;
+  return records;
+}

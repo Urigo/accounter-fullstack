@@ -235,7 +235,7 @@ export class ChargesProvider {
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
-    const isOwnerIds = !!params?.ownerIds?.length;
+    const isOwnerIds = !!params?.ownerIds?.filter(Boolean).length;
     const isIDs = !!params?.IDs?.length;
 
     const defaults = {
