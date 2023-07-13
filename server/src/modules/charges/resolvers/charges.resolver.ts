@@ -56,7 +56,10 @@ const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, {
   const totalAmountRecords = documents
     .filter(doc => ['INVOICE', 'INVOICE_RECEIPT'].includes(doc.type))
     .map(doc => ({
-      amount: doc.total_amount,
+      amount:
+        doc.total_amount == null
+          ? null
+          : (doc.creditor_id === charge.owner_id ? 1 : -1) * doc.total_amount,
       currency: doc.currency_code,
       serial: doc.serial_number,
     }));
