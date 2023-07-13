@@ -28,7 +28,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
-        if (fields.chargeId) {
+        if (fields.chargeId && fields.chargeId !== 'NULL') {
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new Error(`Charge ID="${fields.chargeId}" not valid`);
