@@ -265,7 +265,9 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
           : financialAccountLedgerEntries[0].debitAccountID1;
         const business = await injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(counterpartyId as string);
+          .getFinancialEntityByIdLoader.load(
+            typeof counterpartyId === 'string' ? counterpartyId : counterpartyId.id,
+          );
         if (business?.no_invoices_required) {
           return { records: financialAccountLedgerEntries };
         }
