@@ -42,33 +42,44 @@ const missingInfoSuggestions: Resolver<
   GraphQLModules.Context
 > = async (DbCharge, _, { injector }) => {
   const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(DbCharge.id);
+
+  // if all required fields are filled, no need for suggestions
   if (
-    // TODO (Gil): Re-enable tags after migration to new DB structure
     // DbCharge.counterparty_id &&
     tags.length > 0 &&
-    DbCharge.documents_vat_amount != null &&
     // DbCharge.financial_accounts_to_balance &&
     !!DbCharge.user_description?.trim()
   ) {
     return null;
   }
-  const transactions = await injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
-  const description = transactions.map(t => t.source_description).join(' ');
 
-  const businesses = await injector
-    .get(FinancialEntitiesProvider)
-    .getAllFinancialEntities()
-    .then(businesses => businesses.filter(business => business.suggestion_data));
+  // if charge has a businesses, use it's suggestion data
+  if (DbCharge.business_id) {
+    const business = await injector
+      .get(FinancialEntitiesProvider)
+      .getFinancialEntityByIdLoader.load(DbCharge.business_id);
+    if (business?.suggestion_data) {
+      const suggestionData = business.suggestion_data as SuggestionData;
+
+      return {
+        business: business.id,
+        description: suggestionData.description,
+        beneficiaries: suggestionData.beneficiaries,
+        tags: suggestionData.tags,
+        vat: suggestionData.calculatedVat
+          ? calculateVat(DbCharge.event_amount)
+          : suggestionData.vat,
+      };
+    }
+  }
+
+  const allBusinesses = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
   const suggestions: Record<string, Suggestion> = {};
-  const businessIDsFromTransactions = transactions.map(t => t.business_id);
-  for (const business of businesses) {
+  for (const business of allBusinesses) {
     if (!business.suggestion_data) continue;
     const suggestionData = business.suggestion_data as SuggestionData;
 
-    // if transaction has a business, use it's suggestion data
-    if (business.id in businessIDsFromTransactions) {
+    if (business.id in (DbCharge.business_array ?? [])) {
       return {
         business: business.id,
         description: suggestionData.description,
@@ -92,6 +103,11 @@ const missingInfoSuggestions: Resolver<
       };
     }
   }
+
+  const transactions = await injector
+    .get(TransactionsProvider)
+    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+  const description = transactions.map(t => t.source_description).join(' ');
 
   for (const [phrase, suggestion] of Object.entries(suggestions)) {
     if (Array.isArray(phrase) && new RegExp(phrase.join('|')).test(description)) {
