@@ -2,7 +2,9 @@ import { useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql';
+import { useUpdateTransaction } from '../../../../hooks/use-update-transaction';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
+import { ConfirmMiniButton } from '../../../common';
 
 /* GraphQL */ `
   fragment TransactionsTableEntityFields on Transaction {
@@ -26,8 +28,31 @@ type Props = {
 
 export const Counterparty = ({ data }: Props) => {
   const { get } = useUrlQuery();
-  const { counterparty } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
-  const { name, id } = counterparty || {};
+  const {
+    counterparty,
+    missingInfoSuggestions,
+    id: transactionId,
+  } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
+
+  const hasAlternative = !!missingInfoSuggestions?.business;
+  const alternativeName = hasAlternative ? missingInfoSuggestions?.business?.name : 'Missing';
+  const alternativeId = hasAlternative ? missingInfoSuggestions?.business?.id : null;
+
+  const name = counterparty?.name ?? alternativeName;
+  const id = counterparty?.id ?? alternativeId;
+
+  const { updateTransaction, fetching } = useUpdateTransaction();
+  const updateBusiness = useCallback(
+    (counterpartyId: string) => {
+      updateTransaction({
+        transactionId,
+        fields: {
+          counterpartyId,
+        },
+      });
+    },
+    [transactionId, updateTransaction],
+  );
 
   const encodedFilters = get('chargesFilters');
 
@@ -57,15 +82,25 @@ export const Counterparty = ({ data }: Props) => {
     [encodedFilters],
   );
 
-  const content = <p>{name}</p>;
+  const content = (
+    <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{name}</p>
+  );
 
   return (
     <td>
       <div className="flex flex-wrap">
         {id && (
-          <a href={getHref(id)} target="_blank" rel="noreferrer">
-            <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-          </a>
+          <>
+            <a href={getHref(id)} target="_blank" rel="noreferrer">
+              <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+            </a>
+            {hasAlternative && (
+              <ConfirmMiniButton
+                onClick={() => updateBusiness(missingInfoSuggestions.business.id)}
+                disabled={fetching}
+              />
+            )}
+          </>
         )}
       </div>
     </td>

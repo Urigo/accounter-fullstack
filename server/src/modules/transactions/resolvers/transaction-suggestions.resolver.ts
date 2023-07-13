@@ -45,7 +45,7 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  const description = DbTransaction.source_description ?? '';
+  const description = DbTransaction.source_description?.trim() ?? '';
 
   const businesses = await injector
     .get(FinancialEntitiesProvider)
