@@ -14,7 +14,10 @@ import { uploadDocument } from './document-handling.js';
 import { fetchEmailDocument } from './email-handling.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers &
-  Pick<Resolvers, 'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult'> = {
+  Pick<
+    Resolvers,
+    'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult' | 'Document'
+  > = {
   Query: {
     documents: async (_, __, { injector }) => {
       const dbDocs = await injector.get(DocumentsProvider).getAllDocuments();
@@ -123,6 +126,27 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
   },
+  Document: {
+    __resolveType: (documentRoot, _context, _info) => {
+      switch (documentRoot?.type) {
+        case DocumentType.Invoice: {
+          return 'Invoice';
+        }
+        case DocumentType.Receipt: {
+          return 'Receipt';
+        }
+        case DocumentType.InvoiceReceipt: {
+          return 'InvoiceReceipt';
+        }
+        case DocumentType.Proforma: {
+          return 'Proforma';
+        }
+        default: {
+          return 'Unprocessed';
+        }
+      }
+    },
+  },
   UpdateDocumentResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
@@ -160,34 +184,21 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   //   },
   // },
   Invoice: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'INVOICE';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   InvoiceReceipt: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'INVOICE_RECEIPT';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   Proforma: {
-    __isTypeOf: () => false,
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
   Unprocessed: {
-    __isTypeOf(documentRoot) {
-      return !documentRoot.type || documentRoot.type === 'UNPROCESSED';
-    },
     ...commonDocumentsFields,
   },
   Receipt: {
-    __isTypeOf(documentRoot) {
-      return documentRoot.type === 'RECEIPT';
-    },
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
