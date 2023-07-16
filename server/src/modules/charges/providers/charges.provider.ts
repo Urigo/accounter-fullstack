@@ -128,7 +128,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isFinancialEntityIds = 0 OR c.owner_id IN $$ownerIds)
   AND ($fromDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.event_amount <= 0))
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN c.transactions_min_event_date  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN c.transactions_min_event_date  END DESC,
