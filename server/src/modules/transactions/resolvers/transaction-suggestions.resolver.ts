@@ -447,6 +447,26 @@ const missingInfoSuggestions: Resolver<
       business: '245e149b-b328-471f-9e11-bdaa10dc5fb7', //name: 'Arye Kristal',
     };
   }
+  if (description.includes('FLIGHTFOX')) {
+    return {
+      business: '4b712c4c-8a8f-4f23-950b-7b5e85aba5d2', //name: 'FlightFox',
+    };
+  }
+  if (description.includes('NACELLE')) {
+    return {
+      business: '5e68cc2e-8dd8-4dc3-8ef5-74d3cce004b9', //name: 'Nacelle, Inc',
+    };
+  }
+  if (description.includes('BETTERSTACK')) {
+    return {
+      business: 'bc6b03c6-3482-44b1-9c65-708a87e6c5ba', //name: 'Better Stack, Inc.',
+    };
+  }
+  if (description.includes('EASYJET')) {
+    return {
+      business: 'd042c2af-1938-4f25-bc0a-25e9da172523', //name: 'Easyjet',
+    };
+  }
   if (formatAmount(DbTransaction.amount) === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);

@@ -612,6 +612,34 @@ const missingInfoSuggestions: Resolver<
       tags: [{ name: 'house' }],
     };
   }
+  if (description.includes('FLIGHTFOX')) {
+    return {
+      business: '4b712c4c-8a8f-4f23-950b-7b5e85aba5d2', //name: 'FlightFox',
+      description: 'Business Trip - FlightFox booking',
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('NACELLE')) {
+    return {
+      business: '5e68cc2e-8dd8-4dc3-8ef5-74d3cce004b9', //name: 'Nacelle, Inc',
+      description: 'GraphQL Hive Enterprise License',
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('BETTERSTACK')) {
+    return {
+      business: 'bc6b03c6-3482-44b1-9c65-708a87e6c5ba', //name: 'Better Stack, Inc.',
+      description: 'Hive status page and on-call shift management',
+      tags: [{ name: 'business' }],
+    };
+  }
+  if (description.includes('EASYJET')) {
+    return {
+      business: 'd042c2af-1938-4f25-bc0a-25e9da172523', //name: 'Easyjet',
+      description: 'Business Trip - Flights to',
+      tags: [{ name: 'business' }],
+    };
+  }
   if (formatAmount(DbCharge.event_amount) === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
