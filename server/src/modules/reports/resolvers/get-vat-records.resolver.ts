@@ -86,9 +86,9 @@ export const getVatRecords: ResolverFn<
         const business = businesses.find(business => {
           const counterpartyId =
             doc.creditor_id === charge.owner_id
-              ? doc.creditor_id
-              : doc.debtor_id === charge.owner_id
               ? doc.debtor_id
+              : doc.debtor_id === charge.owner_id
+              ? doc.creditor_id
               : null;
           return business.id === counterpartyId;
         });
