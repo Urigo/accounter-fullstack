@@ -1,10 +1,20 @@
+import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
+import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import { formatCurrency } from '@shared/helpers';
+import { normalizeDocumentType } from '../helpers/green-invoice.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
-import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
+import type {
+  DocumentsModule,
+  IInsertDocumentsParams,
+  IInsertDocumentsResult,
+  IUpdateDocumentParams,
+} from '../types.js';
 import {
   commonDocumentsFields,
   commonFinancialDocumentsFields,
@@ -124,6 +134,87 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           }`,
         };
       }
+    },
+    fetchIncomeDocuments: async (_, { ownerId }, { injector }) => {
+      const data = await injector
+        .get(GreenInvoiceProvider)
+        .getSDK()
+        .searchDocuments_query({
+          input: { pageSize: 100, sort: 'creationDate' },
+        });
+      if (!data.searchDocuments?.items) {
+        throw new GraphQLError('Failed to fetch documents');
+      }
+      if (data.searchDocuments.items.length === 0) {
+        return [];
+      }
+
+      const documents = await injector.get(DocumentsProvider).getAllDocuments();
+      const newDocuments = data.searchDocuments.items.filter(
+        item =>
+          item &&
+          !documents.some(
+            doc =>
+              doc.vat_amount === item.vat &&
+              doc.total_amount === item.amount &&
+              doc.serial_number === item.number &&
+              doc.date &&
+              format(doc.date, 'yyyy-MM-dd') === item.documentDate,
+          ),
+      );
+      const addedDocs: IInsertDocumentsResult[] = [];
+
+      await Promise.all(
+        newDocuments.map(async greenInvoiceDoc => {
+          if (!greenInvoiceDoc || greenInvoiceDoc.type === '_300') {
+            // ignore if no doc or חשבונית עסקה
+            return;
+          }
+          try {
+            // generate preview image via cloudinary
+            const { imageUrl } = await injector
+              .get(CloudinaryProvider)
+              .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
+
+            // Generate parent charge
+            const [charge] = await injector.get(ChargesProvider).generateCharge({
+              ownerId,
+              userDescription: 'Green Invoice generated charge',
+            });
+            if (!charge) {
+              throw new Error('Failed to generate charge');
+            }
+            console.log('Generated charge:', charge.id);
+
+            // insert document
+            const rawDocument: IInsertDocumentsParams['document']['0'] = {
+              image: imageUrl,
+              file: greenInvoiceDoc.url.origin,
+              documentType: normalizeDocumentType(greenInvoiceDoc.type),
+              serialNumber: greenInvoiceDoc.number,
+              date: greenInvoiceDoc.documentDate,
+              amount: greenInvoiceDoc.amount,
+              currencyCode: formatCurrency(greenInvoiceDoc.currency),
+              vat: greenInvoiceDoc.vat,
+              chargeId: charge.id,
+            };
+            const newDocument = await injector
+              .get(DocumentsProvider)
+              .insertDocuments({ document: [rawDocument] });
+            addedDocs.push(newDocument[0]);
+          } catch (e) {
+            throw new GraphQLError(
+              `Error adding Green Invoice document: ${e}\n\n${JSON.stringify(
+                greenInvoiceDoc,
+                null,
+                2,
+              )}`,
+            );
+          }
+        }),
+      );
+
+      return addedDocs;
     },
   },
   Document: {

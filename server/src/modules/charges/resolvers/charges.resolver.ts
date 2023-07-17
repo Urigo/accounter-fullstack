@@ -156,8 +156,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
       });
 
       documents.map(doc => {
-        if (doc.charge_id) {
-          chargeIDs.add(doc.charge_id);
+        if (doc.charge_id_new) {
+          chargeIDs.add(doc.charge_id_new);
         }
       });
 

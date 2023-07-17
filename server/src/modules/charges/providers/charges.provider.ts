@@ -6,6 +6,9 @@ import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteChargesByIdsParams,
   IDeleteChargesByIdsQuery,
+  IGenerateChargeParams,
+  IGenerateChargeQuery,
+  IGenerateChargeResult,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
@@ -118,6 +121,12 @@ const updateCharge = sql<IUpdateChargeQuery>`
   RETURNING *;
 `;
 
+const generateCharge = sql<IGenerateChargeQuery>`
+  INSERT INTO accounter_schema.charges (owner_id, is_conversion, is_property, accountant_reviewed, user_description)
+  VALUES ($ownerId, $isConversion, $isProperty, $accountantReviewed, $userDescription)
+  RETURNING *;
+`;
+
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     c.*,
@@ -130,8 +139,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN c.transactions_min_event_date  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN c.transactions_min_event_date  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.transactions_min_event_date, c.documents_min_date)  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(c.transactions_min_event_date, c.documents_min_date)  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN c.event_amount  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN c.event_amount  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(c.event_amount as DECIMAL))  END ASC,
@@ -231,6 +240,19 @@ export class ChargesProvider {
   public updateCharge(params: IUpdateChargeParams) {
     return updateCharge.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateChargeResult>[]
+    >;
+  }
+
+  public generateCharge(params: IGenerateChargeParams) {
+    const fullParams = {
+      accountantReviewed: false,
+      isConversion: false,
+      isProperty: false,
+      userDescription: null,
+      ...params,
+    };
+    return generateCharge.run(fullParams, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IGenerateChargeResult>[]
     >;
   }
 

@@ -12,6 +12,7 @@ export default gql`
     deleteDocument(documentId: ID!): Boolean!
     fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
     uploadDocument(file: FileScalar!, chargeId: ID): UploadDocumentResult!
+    fetchIncomeDocuments(ownerId: ID!): [Document!]!
   }
 
   " All possible document types "
