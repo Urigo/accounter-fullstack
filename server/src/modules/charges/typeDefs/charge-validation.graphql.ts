@@ -17,10 +17,11 @@ export default gql`
   " represent a missing info attributes for a charge"
   enum MissingChargeInfo {
     COUNTERPARTY
-    TRANSACTION_DESCRIPTION
-    TAGS
-    VAT
+    DESCRIPTION
     DOCUMENTS
+    TAGS
+    TRANSACTIONS
+    VAT
   }
 
   extend input ChargeFilter {

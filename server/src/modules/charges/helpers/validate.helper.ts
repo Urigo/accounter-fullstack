@@ -34,10 +34,16 @@ export const validateCharge = async (
     missingInfo.push(MissingChargeInfo.Documents);
   }
 
+  // validate transactions
+  const transactionsAreFine = charge.transactions_event_amount != null;
+  if (!transactionsAreFine) {
+    missingInfo.push(MissingChargeInfo.Transactions);
+  }
+
   // validate description
   const descriptionIsFine = (charge.user_description?.trim().length ?? 0) > 0;
   if (!descriptionIsFine) {
-    missingInfo.push(MissingChargeInfo.TransactionDescription);
+    missingInfo.push(MissingChargeInfo.Description);
   }
 
   // validate tags
@@ -57,9 +63,15 @@ export const validateCharge = async (
   }
 
   //TODO(Gil): validate balance
+  //TODO(Gil): validate ledger
 
   const allFine =
-    documentsAreFine && businessIsFine && descriptionIsFine && tagsAreFine && vatIsFine;
+    documentsAreFine &&
+    businessIsFine &&
+    descriptionIsFine &&
+    tagsAreFine &&
+    vatIsFine &&
+    transactionsAreFine;
 
   return {
     isValid: allFine,

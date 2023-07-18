@@ -38,9 +38,10 @@ type Props = {
 export const MoreInfo = ({ data }: Props) => {
   const { transactions, ledgerRecords, additionalDocuments, counterparty, validationData, id } =
     getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, data);
-  const isTransactionsError = transactions.some(t => !t.isValid);
-  // TODO(Gil): implement isTransactionsError
-  // validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
+  const isTransactionsError =
+    validationData?.missingInfo?.includes(MissingChargeInfo.Transactions) ||
+    transactions.some(t => !t.isValid);
+  // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
   const isDocumentsError =
     validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||

@@ -24,9 +24,7 @@ type Props = {
 
 export const Description = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
-  const isError = charge?.validationData?.missingInfo?.includes(
-    MissingChargeInfo.TransactionDescription,
-  );
+  const isError = charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
   const { userDescription, id: chargeId } = charge;
   const cellText =

@@ -174,12 +174,12 @@ export const getVatRecords: ResolverFn<
       isValid: boolean;
     }>(
       charges.map(
-        c =>
+        charge =>
           new Promise((resolve, reject) => {
-            validateCharge(c, injector)
+            validateCharge(charge, injector)
               .then(res => {
                 if ('isValid' in res) {
-                  resolve({ charge: c, isValid: res.isValid });
+                  resolve({ charge, isValid: res.isValid });
                 } else {
                   reject('Error validating charge');
                 }
