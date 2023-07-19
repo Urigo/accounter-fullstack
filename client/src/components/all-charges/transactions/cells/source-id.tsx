@@ -15,8 +15,6 @@ type Props = {
 export const SourceID = ({ data }: Props) => {
   const transaction = getFragmentData(TransactionsTableSourceIdFieldsFragmentDoc, data);
 
-  // TODO(Gil): implement
-
   return (
     <td>
       <div className="flex flex-wrap">

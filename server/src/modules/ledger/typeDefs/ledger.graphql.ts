@@ -2,7 +2,7 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " represent atomic movement of funds TODO(Gil): rename to LedgerRecord "
+  " represent atomic movement of funds "
   type LedgerRecord {
     id: ID!
     debitAmount1: FinancialAmount

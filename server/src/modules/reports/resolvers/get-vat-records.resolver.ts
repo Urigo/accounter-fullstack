@@ -98,18 +98,6 @@ export const getVatRecords: ResolverFn<
           );
         }
 
-        // // update tax category according to Hashavshevet
-        // TODO(Gil): how to handle this on new architecture?
-        // if (ownerId && charge.business_id) {
-        //   const hashIndex = await injector
-        //     .get(HashavshevetProvider)
-        //     .getHashavshevetBusinessIndexesByOwnerAndBusinessIDLoader.load({
-        //       financialEntityId: ownerId,
-        //       businessID: charge.business_id,
-        //     });
-        //   charge.tax_category = hashIndex?.auto_tax_category ?? charge.tax_category;
-        // }
-
         // add charge to income/expense records
         if (doc.vat_amount && doc.debtor_id === filters?.financialEntityId) {
           includedChargeIDs.add(charge.id);

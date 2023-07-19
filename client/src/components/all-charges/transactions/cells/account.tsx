@@ -21,7 +21,6 @@ type Props = {
   data: FragmentType<typeof TransactionsTableAccountFieldsFragmentDoc>;
 };
 
-// TODO: this is temp. delete this cell after all_transaction is split into ledger and charge
 export const Account = ({ data }: Props) => {
   const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;

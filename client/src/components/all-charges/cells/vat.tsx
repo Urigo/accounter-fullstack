@@ -48,8 +48,6 @@ export const Vat = ({ data }: Props) => {
     ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
     ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
 
-  // TODO(Gil): implement update according to suggestion
-
   return (
     <td>
       <div style={{ color: vatIssueFlag ? 'red' : 'green', whiteSpace: 'nowrap' }}>

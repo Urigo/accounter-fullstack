@@ -446,7 +446,7 @@ const missingInfoSuggestions: Resolver<
     const suggested = {
       business: 'af23ab30-5cf9-4433-abe1-14ae70ab64d7', //name: 'GitHub, Inc',
       description: 'GitHub Actions',
-      beneficiaries: COMMON_BENEFICIARIES as const,
+      beneficiaries: COMMON_BENEFICIARIES,
       tags: [{ name: 'business' }],
     };
     if (formatAmount(DbCharge.event_amount) <= -450) {

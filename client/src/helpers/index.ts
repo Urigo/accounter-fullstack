@@ -1,6 +1,5 @@
 export * from './clipboard.js';
 export * from './consts.js';
-export * from './conversion.js';
 export * from './currency.js';
 export * from './dates.js';
 export * from './document-matches.js';

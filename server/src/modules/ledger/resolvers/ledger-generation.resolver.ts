@@ -317,51 +317,6 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
           currency: baseEntry.currency, // NOTE: this field is dummy
           reference1: baseEntry.reference1, // NOTE: this field is dummy
         });
-
-        // currencies.delete('ILS');
-        // if (currencies.size > 1) {
-        //   throw new GraphQLError(
-        //     `Ledger records for charge ${chargeId} are not balanced, and has multiple foreign currencies`,
-        //   );
-        // }
-        // const currency = [...currencies][0];
-        // // calculate foreign balance
-        // let foreignBalance = 0;
-        // for (const entry of accountingLedgerEntries) {
-        //   const isCreditorCounterparty = !!entry.debitAccountID2;
-        //   let foreignAmount = isCreditorCounterparty ? entry.creditAmount1 : entry.debitAmount1;
-        //   if (foreignAmount == null) {
-        //     const exchangeRates = await injector
-        //       .get(ExchangeProvider)
-        //       .getExchangeRates(entry.invoiceDate);
-        //     const exchangeRate = getRateForCurrency(currency, exchangeRates);
-        //     foreignAmount =
-        //       (isCreditorCounterparty
-        //         ? entry.localCurrencyCreditAmount1
-        //         : entry.localCurrencyDebitAmount1) / exchangeRate;
-        //   }
-        //   foreignBalance += foreignAmount * (entry.isCreditorCounterparty ? 1 : -1);
-        // }
-        // for (const entry of financialAccountLedgerEntries) {
-        //   // amounts are the same on both sides for transactions, so it doesn't matter which is the counterparty
-        //   let foreignAmount = entry.creditAmount1;
-        //   if (foreignAmount == null) {
-        //     const exchangeRates = await injector
-        //       .get(ExchangeProvider)
-        //       .getExchangeRates(entry.invoiceDate);
-        //     const exchangeRate = getRateForCurrency(currency, exchangeRates);
-        //     foreignAmount = entry.localCurrencyCreditAmount1 / exchangeRate;
-        //   }
-        //   foreignBalance += foreignAmount * (entry.isCreditorCounterparty ? 1 : -1);
-        // }
-        // if (foreignBalance === 0) {
-        //   throw new GraphQLError(`Yay! we are balanced!`);
-        //   // TODO: add exchange rate ledger
-        // } else {
-        //   throw new GraphQLError(
-        //     `Failed to balance ledger records for charge ID="${chargeId}": both local and foreign amounts won't balance`,
-        //   );
-        // }
       } else {
         throw new GraphQLError(
           `Failed to balance: ${
@@ -371,7 +326,7 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       }
     }
 
-    // validate counterparty is consistent
+    // TODO: validate counterparty is consistent
 
     return {
       records: [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries],

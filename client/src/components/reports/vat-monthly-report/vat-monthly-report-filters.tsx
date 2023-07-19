@@ -104,11 +104,8 @@ function VatMonthlyReportFilterForm({
             />
           )}
         />
-        {/* TODO(Gil): check new properties for DatePicker (changed after mantine bump) */}
         <MonthPicker
           placeholder="Pick month"
-          // label="Report Month"
-          // inputFormat="MM/YYYY"
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           onChange={onSelectDate}
         />

@@ -37,6 +37,6 @@ export const tagsResolvers: TagsModule.Resolvers = {
       injector
         .get(TagsProvider)
         .getTagsByChargeIDLoader.load(DbCharge.id)
-        .then(tags => tags.map(tag => ({ name: tag.tag_name }))), // TODO(Gil): implement with new table
+        .then(tags => tags.map(tag => ({ name: tag.tag_name }))),
   },
 };

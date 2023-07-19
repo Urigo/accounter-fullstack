@@ -96,10 +96,9 @@ export function adjustTaxRecords(
     }
 
     if (partialRecord.businessId && doc.vat_amount) {
+      const isNotFullVat = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(partialRecord.businessId);
       // decorate record with additional fields
-      const vatAfterDeduction = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(partialRecord.businessId)
-        ? (doc.vat_amount / 3) * 2
-        : doc.vat_amount;
+      const vatAfterDeduction = isNotFullVat ? (doc.vat_amount / 3) * 2 : doc.vat_amount;
       // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
