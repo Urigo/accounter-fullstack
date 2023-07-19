@@ -10,7 +10,7 @@ FROM accounter_schema.ledger l
 LEFT JOIN accounter_schema.all_transactions at
     ON l.original_id = at.id
 LEFT JOIN (SELECT id,
-    (COALESCE(poalim_ils_id::TEXT, poalim_eur_id::TEXT, poalim_gbp_id::TEXT, poalim_usd_id::TEXT, creditcard_id::TEXT, kraken_id)) AS source_id
+    (COALESCE(poalim_ils_id::TEXT, poalim_eur_id::TEXT, poalim_gbp_id::TEXT, poalim_usd_id::TEXT, creditcard_id::TEXT, kraken_id, etana_id, etherscan_id)) AS source_id
         FROM accounter_schema.transactions_raw_list) AS tr
     ON tr.source_id = at.original_id
 LEFT JOIN accounter_schema.transactions t
