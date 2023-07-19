@@ -36,7 +36,7 @@ const missingInfoSuggestions: Resolver<
 > = async (DbTransaction, _, { injector }) => {
   if (
     DbTransaction.business_id
-    // TODO (Gil): Re-enable tags after this feature is re-enabled
+    // TODO: Re-enable beneficiaries after this feature is re-enabled
     // DbTransaction.financial_accounts_to_balance
   ) {
     return null;
