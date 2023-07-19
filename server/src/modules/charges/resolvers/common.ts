@@ -3,12 +3,12 @@ import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
   charge: async (documentRoot, _, { injector }) => {
-    if (!documentRoot.charge_id) {
+    if (!documentRoot.charge_id_new) {
       return null;
     }
     const charge = await injector
       .get(ChargesProvider)
-      .getChargeByIdLoader.load(documentRoot.charge_id);
+      .getChargeByIdLoader.load(documentRoot.charge_id_new);
     return charge ?? null;
   },
 };

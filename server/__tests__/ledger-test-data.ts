@@ -56,7 +56,7 @@ export function getDummyApp() {
         useValue: {
           getDocumentsByChargeIdLoader: {
             load: (chargeId: string) => {
-              return Object.values(documents).filter(d => d.charge_id === chargeId);
+              return Object.values(documents).filter(d => d.charge_id_new === chargeId);
             },
           },
         },
@@ -305,6 +305,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'ILS charge, one doc, one transaction, consistent dates and currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1001': {
     accountant_reviewed: false,
@@ -325,6 +329,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'ILS charge, one doc, one transaction, diff dates, consistent currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1002': {
     accountant_reviewed: false,
@@ -345,6 +353,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'ILS charge, no doc, one transaction, consistent dates and currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1100': {
     accountant_reviewed: false,
@@ -365,6 +377,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'USD charge, one doc, one transaction, consistent dates and currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1101': {
     accountant_reviewed: false,
@@ -385,6 +401,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'USD charge, one doc, one transaction, diff dates, consistent currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1102': {
     accountant_reviewed: false,
@@ -406,6 +426,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_event_date: null,
     user_description:
       'USD charge, one doc, one transaction, diff dates (transaction.debit_date), consistent currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1103': {
     accountant_reviewed: false,
@@ -427,6 +451,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_event_date: null,
     user_description:
       'USD charge, one doc, one transaction, diff dates (transaction.event_date), consistent currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1104': {
     accountant_reviewed: false,
@@ -448,6 +476,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_event_date: null,
     user_description:
       'USD charge, one doc, one transaction, diff dates - transaction first, consistent currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1105': {
     accountant_reviewed: false,
@@ -468,6 +500,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'USD charge, no doc, one transaction, consistent dates and currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1200': {
     accountant_reviewed: false,
@@ -488,6 +524,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'Conversion charge, no docs, two transaction, consistent dates',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1201': {
     accountant_reviewed: false,
@@ -508,6 +548,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'Conversion charge, no docs, two transaction, consistent dates, unbalanced',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1202': {
     accountant_reviewed: false,
@@ -528,6 +572,10 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'Conversion charge, no docs, two transaction, diff dates',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
   '1900': {
     accountant_reviewed: false,
@@ -548,14 +596,18 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
     user_description: 'ILS charge, one doc, one transaction,diff dates and currency',
+    business_id: null,
+    business_array: null,
+    created_on: null,
+    updated_on: null,
   },
 };
 
 const documents: Record<string, IGetAllDocumentsResult> = {
   '3000': {
     id: '3000',
-    charge_id: charges['1000'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1000'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2001'].id,
@@ -575,8 +627,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3001': {
     id: '3001',
-    charge_id: charges['1001'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1001'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2001'].id,
@@ -596,8 +648,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3100': {
     id: '3100',
-    charge_id: charges['1100'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1100'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2003'].id,
@@ -617,8 +669,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3101': {
     id: '3101',
-    charge_id: charges['1101'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1101'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2003'].id,
@@ -638,8 +690,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3102': {
     id: '3102',
-    charge_id: charges['1102'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1102'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2003'].id,
@@ -659,8 +711,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3103': {
     id: '3103',
-    charge_id: charges['1103'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1103'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2003'].id,
@@ -680,8 +732,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3104': {
     id: '3104',
-    charge_id: charges['1104'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1104'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2003'].id,
@@ -701,8 +753,8 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3900': {
     id: '3900',
-    charge_id: charges['1900'].id,
-    charge_id_new: null,
+    charge_id: null,
+    charge_id_new: charges['1900'].id,
     created_at: new Date(),
     creditor: null,
     creditor_id: businesses['2000'].id,
@@ -735,6 +787,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4001': {
     id: '4001',
@@ -748,6 +802,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4002': {
     id: '4002',
@@ -761,6 +817,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4100': {
     id: '4100',
@@ -774,6 +832,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4101': {
     id: '4101',
@@ -787,6 +847,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-02'),
     event_date: new Date('2020-01-02'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4102': {
     id: '4102',
@@ -800,6 +862,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-02'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4103': {
     id: '4103',
@@ -813,6 +877,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-02'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4104': {
     id: '4104',
@@ -826,6 +892,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4105': {
     id: '4105',
@@ -839,6 +907,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '2',
+    created_on: null,
+    updated_on: null,
   },
   '4200a': {
     id: '4200a',
@@ -852,6 +922,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4200b': {
     id: '4200b',
@@ -865,6 +937,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4201a': {
     id: '4201a',
@@ -878,6 +952,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4201b': {
     id: '4201b',
@@ -891,6 +967,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4202a': {
     id: '4202a',
@@ -904,6 +982,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-02'),
     event_date: new Date('2020-01-02'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4202b': {
     id: '4202b',
@@ -917,6 +997,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-01'),
     event_date: new Date('2020-01-01'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
   '4900': {
     id: '4900',
@@ -930,6 +1012,8 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     debit_date: new Date('2020-01-02'),
     event_date: new Date('2020-01-02'),
     source_id: '1',
+    created_on: null,
+    updated_on: null,
   },
 };
 
@@ -939,24 +1023,28 @@ const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
     owner_id: businesses['2000'].id,
     business_id: businesses['2001'].id,
     name: 'Tax Category 1',
+    hashavshevet_name: 'קטגוריית מס 1',
   },
   {
     id: '2',
     owner_id: businesses['2000'].id,
     business_id: businesses['2002'].id,
     name: 'Tax Category 2',
+    hashavshevet_name: 'קטגוריית מס 2',
   },
   {
     id: '3',
     owner_id: businesses['2000'].id,
     business_id: businesses['2003'].id,
     name: 'Tax Category 3',
+    hashavshevet_name: 'קטגוריית מס 3',
   },
   {
     id: '4',
     owner_id: businesses['2000'].id,
     business_id: businesses['2004'].id,
     name: 'Tax Category 4',
+    hashavshevet_name: 'קטגוריית מס 4',
   },
 ];
 
