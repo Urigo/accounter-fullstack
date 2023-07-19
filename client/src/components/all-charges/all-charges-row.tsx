@@ -23,6 +23,9 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id
+    owner {
+      id
+    }
     additionalDocuments {
       id
     }
@@ -46,7 +49,7 @@ interface Props {
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
+  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   toggleMergeCharge?: () => void;
   isSelectedForMerge: boolean;
@@ -104,6 +107,7 @@ export const AllChargesRow = ({
           ) : (
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
+              ownerId={charge.owner.id}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={setUploadDocument}

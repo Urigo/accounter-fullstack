@@ -33,6 +33,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const dbDocs = await injector.get(DocumentsProvider).getAllDocuments();
       return dbDocs;
     },
+    documentsByFilters: async (_, { filters }, { injector }) => {
+      const dbDocs = await injector.get(DocumentsProvider).getDocumentsByFilters(filters);
+      return dbDocs;
+    },
   },
   Mutation: {
     uploadDocument,

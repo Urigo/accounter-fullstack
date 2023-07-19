@@ -42,7 +42,9 @@ export const AllCharges = () => {
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
   >(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
-  const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
+    undefined,
+  );
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
@@ -140,7 +142,11 @@ export const AllCharges = () => {
         />
       )}
       {matchDocuments && (
-        <MatchDocumentModal matchDocuments={matchDocuments} setMatchDocuments={setMatchDocuments} />
+        <MatchDocumentModal
+          chargeId={matchDocuments.id}
+          ownerId={matchDocuments.ownerId}
+          setMatchDocuments={() => setMatchDocuments(undefined)}
+        />
       )}
     </div>
   );

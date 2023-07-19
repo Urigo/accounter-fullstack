@@ -24,7 +24,9 @@ type Props = {
   >;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
-  setMatchDocuments: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setMatchDocuments: React.Dispatch<
+    React.SetStateAction<{ id: string; ownerId: string } | undefined>
+  >;
 };
 
 export const MiscTable = ({

@@ -152,22 +152,24 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
 const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
   SELECT d.*
   FROM accounter_schema.documents d
-  LEFT JOIN accounter_schema.charges c ON c.id = d.charge_id_new
+  LEFT JOIN accounter_schema.extended_charges c ON c.id = d.charge_id_new
   WHERE
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
+    AND ($isUnmatched = 0 OR c.transactions_count = 0 OR c.transactions_count IS NULL)
   ORDER BY created_at DESC;
 `;
 
 type IGetAdjustedDocumentsByFiltersParams = Optional<
-  Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate'>,
+  Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate' | 'isUnmatched'>,
   'IDs' | 'businessIDs' | 'ownerIDs'
 > & {
   fromDate?: TimelessDateString | null;
   toDate?: TimelessDateString | null;
+  unmatched?: boolean | null;
 };
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
@@ -235,6 +237,7 @@ export class DocumentsProvider {
       fromDate: null,
       toDate: null,
       ...params,
+      isUnmatched: params.unmatched ? 1 : 0,
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],

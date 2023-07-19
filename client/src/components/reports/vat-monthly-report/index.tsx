@@ -52,7 +52,9 @@ export const VatMonthlyReport = () => {
 
   // modals state
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
-  const [matchDocuments, setMatchDocuments] = useState<string | undefined>(undefined);
+  const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
+    undefined,
+  );
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
   const [editCharge, setEditCharge] = useState<
     FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
@@ -124,8 +126,9 @@ export const VatMonthlyReport = () => {
             )}
             {matchDocuments && (
               <MatchDocumentModal
-                matchDocuments={matchDocuments}
-                setMatchDocuments={setMatchDocuments}
+                chargeId={matchDocuments.id}
+                ownerId={matchDocuments.ownerId}
+                setMatchDocuments={() => setMatchDocuments(undefined)}
               />
             )}
           </div>

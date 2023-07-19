@@ -96,8 +96,9 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
   const charge = getFragmentData(ChargeToMatchDocumentsFieldsFragmentDoc, chargeProps);
   const documents = useMemo(
     () =>
-      documentsProps?.documents.map(d => getFragmentData(DocumentsToMatchFieldsFragmentDoc, d)) ??
-      [],
+      documentsProps?.documentsByFilters.map(d =>
+        getFragmentData(DocumentsToMatchFieldsFragmentDoc, d),
+      ) ?? [],
     [documentsProps],
   );
 

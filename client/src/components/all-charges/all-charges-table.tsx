@@ -16,7 +16,7 @@ interface Props {
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
+  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   toggleMergeCharge?: (chargeId: string) => void;
   mergeSelectedCharges?: string[];

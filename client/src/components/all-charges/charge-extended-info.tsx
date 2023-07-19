@@ -11,6 +11,9 @@ import { TransactionsTable } from './transactions/transactions-table';
   query FetchCharge($chargeIDs: [ID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
       id
+      owner {
+        id
+      }
       ledgerRecords {
         ... on LedgerRecords {
           records {
@@ -34,7 +37,7 @@ import { TransactionsTable } from './transactions/transactions-table';
 interface Props {
   chargeID: string;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
+  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
 }
 
@@ -79,10 +82,11 @@ export function ChargeExtendedInfo({
             <div className={`flex flex-col w-${hasTransactions ? '1/6' : 'full'}`}>
               <div className="w-full flex flex-row justify-end">
                 <ChargeExtendedInfoMenu
-                  chargeId={charge.id}
-                  setInsertDocument={setInsertDocument}
-                  setMatchDocuments={setMatchDocuments}
-                  setUploadDocument={setUploadDocument}
+                  setInsertDocument={() => setInsertDocument(charge.id)}
+                  setMatchDocuments={() =>
+                    setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
+                  }
+                  setUploadDocument={() => setUploadDocument(charge.id)}
                 />
               </div>
               {(hasTransactions || hasDocs) && (
@@ -109,14 +113,12 @@ export function ChargeExtendedInfo({
 }
 
 interface ChargeExtendedInfoMenuProps {
-  chargeId: string;
-  setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
-  setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
+  setInsertDocument: () => void;
+  setMatchDocuments: () => void;
+  setUploadDocument: () => void;
 }
 
 export function ChargeExtendedInfoMenu({
-  chargeId,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
@@ -141,7 +143,7 @@ export function ChargeExtendedInfoMenu({
         <Menu.Item
           icon={<PlaylistAdd size={14} />}
           onClick={() => {
-            setInsertDocument(chargeId);
+            setInsertDocument();
             closeMenu();
           }}
         >
@@ -150,7 +152,7 @@ export function ChargeExtendedInfoMenu({
         <Menu.Item
           icon={<FileUpload size={14} />}
           onClick={() => {
-            setUploadDocument(chargeId);
+            setUploadDocument();
             closeMenu();
           }}
         >
@@ -159,7 +161,7 @@ export function ChargeExtendedInfoMenu({
         <Menu.Item
           icon={<Search size={14} />}
           onClick={() => {
-            setMatchDocuments(chargeId);
+            setMatchDocuments();
             closeMenu();
           }}
         >

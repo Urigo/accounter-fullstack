@@ -66,7 +66,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const res = await injector
           .get(TransactionsProvider)
           .updateTransaction({ ...adjustedFields });
-        return res[0];
+        const transaction = await injector
+          .get(TransactionsProvider)
+          .getTransactionByIdLoader.load(res[0].id);
+        if (!transaction) {
+          throw new GraphQLError(`Transaction ID="${res[0].id}" not found`);
+        }
+        return transaction as IGetTransactionsByIdsResult;
       } catch (e) {
         return {
           __typename: 'CommonError',

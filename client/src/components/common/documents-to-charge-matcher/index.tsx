@@ -4,8 +4,8 @@ import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql';
 import { SelectionHandler } from './selection-handler';
 
 /* GraphQL */ `
-  query DocumentsToChargeMatcher($chargeIds: [ID!]!) {
-    documents {
+  query DocumentsToChargeMatcher($chargeIds: [ID!]!, $filters: DocumentsFilters!) {
+    documentsByFilters(filters: $filters) {
       id
       ...DocumentsToMatchFields
     }
@@ -25,17 +25,21 @@ import { SelectionHandler } from './selection-handler';
 
 interface Props {
   chargeId: string;
+  ownerId?: string;
   onDone: () => void;
 }
 
-export function DocumentsToChargeMatcher({ chargeId, onDone }: Props) {
+export function DocumentsToChargeMatcher({ chargeId, ownerId, onDone }: Props) {
   const [{ data, fetching }] = useQuery({
     query: DocumentsToChargeMatcherDocument,
-    variables: { chargeIds: [chargeId] },
+    variables: {
+      chargeIds: [chargeId],
+      filters: { unmatched: true, ownerIDs: ownerId ? [ownerId] : undefined },
+    },
   });
 
   const errorMessage =
-    (data?.documents.length === 0 && 'No Document Found') ||
+    (data?.documentsByFilters.length === 0 && 'No Document Found') ||
     ((!data?.chargesByIDs || data.chargesByIDs.length === 0) && 'Charge was not found') ||
     (data?.chargesByIDs[0].totalAmount?.raw == null && 'Charge is missing amount') ||
     (!data?.chargesByIDs[0].transactions[0]?.eventDate && 'Charge is missing date') ||

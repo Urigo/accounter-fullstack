@@ -199,7 +199,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
             // (!filters?.unbalanced || Number(c.balance) !== 0) &&
             (!filters?.withoutInvoice || Number(c.invoices_count) === 0) &&
             (!filters?.withoutDocuments ||
-              Number(c.receipts_count) + Number(c.invoices_count) === 0),
+              Number(c.receipts_count) + Number(c.invoices_count) === 0) &&
+            (!filters?.withoutTransaction || Number(c.transactions_count) === 0),
         );
       }
 

@@ -4,6 +4,17 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     documents: [Document!]!
+    documentsByFilters(filters: DocumentsFilters!): [Document!]!
+  }
+
+  " input variables for documents filtering "
+  input DocumentsFilters {
+    businessIDs: [ID!]
+    ownerIDs: [ID!]
+    fromDate: TimelessDate
+    toDate: TimelessDate
+    " Include only documents without matching transactions "
+    unmatched: Boolean
   }
 
   extend type Mutation {
