@@ -20,4 +20,6 @@ export const commonTransactionFields:
   sourceDescription: DbTransaction => DbTransaction.source_description ?? '',
   balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
   isValid: DbTransaction => !!DbTransaction.business_id && !!DbTransaction.debit_date,
+  createdOn: DbTransaction => DbTransaction.created_on,
+  updatedOn: DbTransaction => DbTransaction.updated_on,
 };

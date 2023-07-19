@@ -20,7 +20,9 @@ export default gql`
   type Charge {
     id: ID!
     " when the initial charge was created from the first event we found "
-    createdAt: Date!
+    createdOn: Date!
+    " when the charge was last updated "
+    updatedOn: Date!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "

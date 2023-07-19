@@ -34,6 +34,10 @@ export default gql`
     balance: FinancialAmount!
     " flag indicating if the transaction is valid (has all required data)"
     isValid: Boolean!
+    " when the initial transaction was created from the first event we found "
+    createdOn: Date!
+    " when the transaction was last updated "
+    updatedOn: Date!
   }
 
   " The direction of the transaction "
@@ -53,6 +57,8 @@ export default gql`
     sourceDescription: String!
     balance: FinancialAmount!
     isValid: Boolean!
+    createdOn: Date!
+    updatedOn: Date!
   }
 
   " העברה "
@@ -66,6 +72,8 @@ export default gql`
     sourceDescription: String!
     balance: FinancialAmount!
     isValid: Boolean!
+    createdOn: Date!
+    updatedOn: Date!
   }
 
   " עמלה "
@@ -79,6 +87,8 @@ export default gql`
     sourceDescription: String!
     balance: FinancialAmount!
     isValid: Boolean!
+    createdOn: Date!
+    updatedOn: Date!
   }
 
   " המרה "
@@ -98,6 +108,8 @@ export default gql`
     " בנק ישראל "
     officialRate: Rate
     isValid: Boolean!
+    createdOn: Date!
+    updatedOn: Date!
   }
 
   " input variables for updateTransaction "

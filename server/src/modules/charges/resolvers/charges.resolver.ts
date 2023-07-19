@@ -346,7 +346,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Charge: {
     id: DbCharge => DbCharge.id,
-    createdAt: () => new Date('1900-01-01'), // TODO: missing in DB
+    createdOn: DbCharge => DbCharge.created_on,
+    updatedOn: DbCharge => DbCharge.updated_on,
     vat: calculateVat,
     // withholdingTax: undefined, // deprecated for now
     totalAmount: calculateTotalAmount,
