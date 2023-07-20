@@ -51,6 +51,7 @@ generates:
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord2'
         BusinessTransaction: '@modules/financial-entities/types.js#IGetBusinessTransactionsFromLedgerRecordsResult'
+        ExchangeRates: 'TimelessDateString'
     plugins:
       - add:
           content: "import { TimelessDateString } from '@shared/types'"

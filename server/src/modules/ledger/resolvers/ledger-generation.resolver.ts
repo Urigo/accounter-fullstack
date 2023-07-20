@@ -1,6 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -8,8 +10,6 @@ import { currency } from '@modules/transactions/types.js';
 import { ChargeResolvers, TaxCategory } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
-import { getRateForCurrency } from '../helpers/exchange.helper.js';
-import { ExchangeProvider } from '../providers/exchange.provider.js';
 
 export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
   DbCharge,
