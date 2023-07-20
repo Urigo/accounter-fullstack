@@ -55,6 +55,7 @@ module.exports = {
                 'ChargeSuggestions',
                 'LedgerRecords',
                 'GeneratedLedgerRecords',
+                'ExchangeRates',
               ],
             },
           },

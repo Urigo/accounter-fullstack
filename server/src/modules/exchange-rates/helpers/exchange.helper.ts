@@ -24,42 +24,6 @@ export function getRateForCurrency(
   throw new Error(`New account currency ${currencyCode}`);
 }
 
-// export function getILSForDate(
-//   charge: Pick<
-//     VatExtendedCharge,
-//     | 'currency_code'
-//     | 'event_amount'
-//     | 'vatAfterDeduction'
-//     | 'amountBeforeVAT'
-//     | 'amountBeforeFullVAT'
-//     | 'id'
-//   > & {
-//     tax_invoice_amount: number | string | null;
-//   },
-//   exchangeRates?: IGetExchangeRatesByDatesResult,
-//   amountToOverride?: number,
-// ): {
-//   eventAmountILS: number;
-//   vatAfterDeductionILS: number;
-//   amountBeforeVATILS: number;
-//   amountBeforeFullVATILS: number;
-// } {
-//   const amountToUse =
-//     amountToOverride ?? parseFloat(charge.tax_invoice_amount?.toString() ?? charge.event_amount);
-
-//   if (!exchangeRates) {
-//     throw new Error(`Exchange rates missing`);
-//   }
-
-//   const rate = getRateForCurrency(charge.currency_code, exchangeRates);
-//   return {
-//     eventAmountILS: amountToUse * rate,
-//     vatAfterDeductionILS: charge.vatAfterDeduction * rate,
-//     amountBeforeVATILS: charge.amountBeforeVAT * rate,
-//     amountBeforeFullVATILS: charge.amountBeforeFullVAT * rate,
-//   };
-// }
-
 export function getClosestRateForDate(
   date: string | Date,
   rates: Array<IGetExchangeRatesByDatesResult>,

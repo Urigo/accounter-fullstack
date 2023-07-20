@@ -1,11 +1,11 @@
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import {
   getClosestRateForDate,
   getRateForCurrency,
-} from '@modules/ledger/helpers/exchange.helper.js';
-import type { IGetExchangeRatesByDatesResult } from '@modules/ledger/types.js';
+} from '@modules/exchange-rates/helpers/exchange.helper.js';
+import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
+import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 
 export type RawVatReportRecord = {

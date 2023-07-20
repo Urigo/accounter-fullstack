@@ -4,8 +4,8 @@ import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { ExchangeProvider } from '@modules/ledger/providers/exchange.provider.js';
 import type {
   QueryVatReportArgs,
   ResolverFn,

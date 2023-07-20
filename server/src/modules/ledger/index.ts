@@ -1,6 +1,5 @@
 import ledger from './typeDefs/ledger.graphql.js';
 import { createModule } from 'graphql-modules';
-import { ExchangeProvider } from './providers/exchange.provider.js';
 import { LedgerProvider } from './providers/ledger.provider.js';
 import { ledgerResolvers } from './resolvers/ledger.resolver.js';
 
@@ -11,7 +10,7 @@ export const ledgerModule = createModule({
   dirname: __dirname,
   typeDefs: [ledger],
   resolvers: [ledgerResolvers],
-  providers: () => [LedgerProvider, ExchangeProvider],
+  providers: () => [LedgerProvider],
 });
 
 export * as LedgerTypes from './types.js';
