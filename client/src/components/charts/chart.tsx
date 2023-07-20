@@ -31,11 +31,11 @@ export const BarChart: React.FC<BarChartProps> = ({ data, datasetsTitle, type })
             datasets: [
               {
                 label: datasetsTitle ? datasetsTitle[0] : 'Income',
-                data: data.map(item => item.income),
+                data: data.map(item => item.income ?? null),
               },
               {
                 label: datasetsTitle ? datasetsTitle[1] : 'Outcome',
-                data: data.map(item => item.outcome),
+                data: data.map(item => item.outcome ?? null),
               },
             ],
           },
