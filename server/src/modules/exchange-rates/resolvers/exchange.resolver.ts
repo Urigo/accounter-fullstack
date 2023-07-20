@@ -20,19 +20,28 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     usd: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(new Date(timelessDate));
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.usd) {
+        return null;
+      }
       return formatFinancialAmount(exchangeRates.usd, Currency.Usd) ?? null;
     },
     gbp: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(new Date(timelessDate));
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.gbp) {
+        return null;
+      }
       return formatFinancialAmount(exchangeRates.gbp, Currency.Gbp) ?? null;
     },
     eur: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(new Date(timelessDate));
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.eur) {
+        return null;
+      }
       return formatFinancialAmount(exchangeRates.eur, Currency.Eur) ?? null;
     },
     date: timelessDate => timelessDate,
