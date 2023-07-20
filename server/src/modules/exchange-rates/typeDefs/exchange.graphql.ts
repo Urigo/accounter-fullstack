@@ -14,4 +14,33 @@ export default gql`
     eur: FinancialAmount
     date: TimelessDate!
   }
+
+  extend type Charge {
+    exchangeRates: ExchangeRates
+  }
+
+  extend interface Transaction {
+    debitExchangeRates: ExchangeRates
+    eventExchangeRates: ExchangeRates
+  }
+
+  extend type CommonTransaction {
+    debitExchangeRates: ExchangeRates
+    eventExchangeRates: ExchangeRates
+  }
+
+  extend type WireTransaction {
+    debitExchangeRates: ExchangeRates
+    eventExchangeRates: ExchangeRates
+  }
+
+  extend type FeeTransaction {
+    debitExchangeRates: ExchangeRates
+    eventExchangeRates: ExchangeRates
+  }
+
+  extend type ConversionTransaction {
+    debitExchangeRates: ExchangeRates
+    eventExchangeRates: ExchangeRates
+  }
 `;

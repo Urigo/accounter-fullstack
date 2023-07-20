@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { DocumentsTypes } from '@modules/documents/index.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
@@ -8,7 +7,6 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { ChargeSortByField } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
@@ -361,15 +359,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
     minDocumentsDate: DbCharge => DbCharge.documents_min_date,
     validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
-    exchangeRates: DbCharge => {
-      const ratesDate = DbCharge.transactions_min_debit_date || DbCharge.documents_min_date;
-
-      if (!ratesDate) {
-        return null;
-      }
-
-      return format(ratesDate, 'yyyy-MM-dd') as TimelessDateString;
-    },
   },
   // UpdateChargeResult: {
   //   __resolveType: (obj, _context, _info) => {

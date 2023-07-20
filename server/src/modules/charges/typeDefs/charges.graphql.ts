@@ -41,7 +41,6 @@ export default gql`
     minDebitDate: Date
     " minimal date from linked documents "
     minDocumentsDate: Date
-    exchangeRates: ExchangeRates
   }
 
   " input variables for charge filtering "
