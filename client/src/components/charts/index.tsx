@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
 import { useQuery } from 'urql';
@@ -75,6 +75,7 @@ export const ChartPage = () => {
       filters: filter,
     },
   });
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
@@ -83,127 +84,129 @@ export const ChartPage = () => {
     );
   }, [data, filter, fetching, setFiltersContext, error]);
 
-  if (!data)
+  function numberToDecimalJS(number: number) {
+    return new Decimal(number).toDP(2).toNumber();
+  }
+
+  const overviewData = useMemo(() => {
+    // For each item in the array, get the month, and group by month
+    const groupedByMonth =
+      data?.allCharges.nodes.reduce((acc, curr) => {
+        const date = new Date(curr.transactions[0].eventDate);
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        const key = `${month} ${year}`;
+        acc[key] ||= [];
+        acc[key].push(curr);
+        return acc;
+      }, {} as Record<string, IncomeChargesChartQuery['allCharges']['nodes']>) ?? {};
+
+    // for each item in the groupedByMonth array, check the currency. If its ILS or EURO, convert to USD. If its USD, do nothing
+    const convertedData = Object.entries(groupedByMonth).map(([key, value]) => {
+      const converted = value.map(item => {
+        if (item.totalAmount?.currency === 'USD') {
+          return item;
+        }
+        if (item.totalAmount?.currency === 'GRT' && item.currencyRatesAmount?.usd) {
+          return {
+            ...item,
+            totalAmount: {
+              ...item.totalAmount,
+              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+              currency: Currency.Usd,
+              formatted: `$${numberToDecimalJS(
+                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
+              )} `,
+            },
+          };
+        }
+        if (item.totalAmount?.currency === 'ILS' && item.currencyRatesAmount?.usd) {
+          return {
+            ...item,
+            totalAmount: {
+              ...item.totalAmount,
+              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+              currency: Currency.Usd,
+              formatted: `$${numberToDecimalJS(
+                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
+              )} `,
+            },
+          };
+        }
+        if (item.totalAmount?.currency === 'EUR' && item.currencyRatesAmount?.usd) {
+          return {
+            ...item,
+            totalAmount: {
+              ...item.totalAmount,
+              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+              currency: Currency.Usd,
+              formatted: `$${numberToDecimalJS(
+                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
+              )} `,
+            },
+          };
+        }
+        return item;
+      });
+      return {
+        month: key,
+        converted,
+      };
+    });
+
+    // for each item in the convertedData array, return the total income and total expenses. Income is when raw is positive, expenses is when raw is negative
+    const incomeAndExpenses = convertedData.map(item => {
+      const income = item.converted.reduce((acc, curr) => {
+        if (!curr.totalAmount?.raw) {
+          return numberToDecimalJS(acc);
+        }
+        if (curr.totalAmount?.raw > 0) {
+          return numberToDecimalJS(acc + curr.totalAmount.raw);
+        }
+        return numberToDecimalJS(acc);
+      }, 0);
+      const outcome = item.converted.reduce((acc, curr) => {
+        if (!curr.totalAmount?.raw) {
+          return numberToDecimalJS(acc);
+        }
+        if (curr.totalAmount?.raw < 0) {
+          return numberToDecimalJS(acc - curr.totalAmount.raw);
+        }
+        return numberToDecimalJS(acc);
+      }, 0);
+      return {
+        date: item.month,
+        income,
+        outcome,
+      };
+    });
+
+    // take the incomeAndExpenses array and sort it by month and return the total income and outcome for month and the month name and year
+    return incomeAndExpenses
+      .sort((a, b) => {
+        const aDate = new Date(a.date);
+        const bDate = new Date(b.date);
+        return aDate.getTime() - bDate.getTime();
+      })
+      .map(item => {
+        const date = new Date(item.date);
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        return {
+          date: month + ' ' + year,
+          income: item.income,
+          outcome: item.outcome,
+        };
+      });
+  }, [data]);
+
+  if (fetching)
     return (
       <div className="mt-40">
         <AccounterLoader />
       </div>
     );
-  if (error) return <div>Something went wrong!</div>;
-
-  function numberToDecimalJS(number: number) {
-    return new Decimal(number).toDP(2).toNumber();
-  }
-
-  // For each item in the array, get the month, and group by month
-  const groupedByMonth = data.allCharges.nodes.reduce((acc, curr) => {
-    const date = new Date(curr.transactions[0].eventDate);
-    const month = date.toLocaleString('default', { month: 'long' });
-    const year = date.getFullYear();
-    const key = `${month} ${year}`;
-    acc[key] ||= [];
-    acc[key].push(curr);
-    return acc;
-  }, {} as Record<string, IncomeChargesChartQuery['allCharges']['nodes']>);
-
-  // for each item in the groupedByMonth array, check the currency. If its ILS or EURO, convert to USD. If its USD, do nothing
-
-  const convertedData = Object.entries(groupedByMonth).map(([key, value]) => {
-    const converted = value.map(item => {
-      if (item.totalAmount?.currency === 'USD') {
-        return item;
-      }
-      if (item.totalAmount?.currency === 'GRT' && item.currencyRatesAmount?.usd) {
-        return {
-          ...item,
-          totalAmount: {
-            ...item.totalAmount,
-            raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
-            currency: Currency.Usd,
-            formatted: `$${numberToDecimalJS(
-              item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-            )} `,
-          },
-        };
-      }
-      if (item.totalAmount?.currency === 'ILS' && item.currencyRatesAmount?.usd) {
-        return {
-          ...item,
-          totalAmount: {
-            ...item.totalAmount,
-            raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
-            currency: Currency.Usd,
-            formatted: `$${numberToDecimalJS(
-              item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-            )} `,
-          },
-        };
-      }
-      if (item.totalAmount?.currency === 'EUR' && item.currencyRatesAmount?.usd) {
-        return {
-          ...item,
-          totalAmount: {
-            ...item.totalAmount,
-            raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
-            currency: Currency.Usd,
-            formatted: `$${numberToDecimalJS(
-              item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-            )} `,
-          },
-        };
-      }
-      return item;
-    });
-    return {
-      month: key,
-      converted,
-    };
-  });
-
-  // for each item in the convertedData array, return the total income and total expenses. Income is when raw is positive, expenses is when raw is negative
-  const incomeAndExpenses = convertedData.map(item => {
-    const income = item.converted.reduce((acc, curr) => {
-      if (!curr.totalAmount?.raw) {
-        return numberToDecimalJS(acc);
-      }
-      if (curr.totalAmount?.raw > 0) {
-        return numberToDecimalJS(acc + curr.totalAmount.raw);
-      }
-      return numberToDecimalJS(acc);
-    }, 0);
-    const outcome = item.converted.reduce((acc, curr) => {
-      if (!curr.totalAmount?.raw) {
-        return numberToDecimalJS(acc);
-      }
-      if (curr.totalAmount?.raw < 0) {
-        return numberToDecimalJS(acc - curr.totalAmount.raw);
-      }
-      return numberToDecimalJS(acc);
-    }, 0);
-    return {
-      date: item.month,
-      income,
-      outcome,
-    };
-  });
-
-  // take the incomeAndExpenses array and sort it by month and return the total income and outcome for month and the month name and year
-  const overviewData = incomeAndExpenses
-    .sort((a, b) => {
-      const aDate = new Date(a.date);
-      const bDate = new Date(b.date);
-      return aDate.getTime() - bDate.getTime();
-    })
-    .map(item => {
-      const date = new Date(item.date);
-      const month = date.toLocaleString('default', { month: 'long' });
-      const year = date.getFullYear();
-      return {
-        date: month + ' ' + year,
-        income: item.income,
-        outcome: item.outcome,
-      };
-    });
+  // if (error) return <div>Something went wrong!</div>;
 
   const totalIncome = overviewData
     .map(i => i.income)
