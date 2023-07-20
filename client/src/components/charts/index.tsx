@@ -21,39 +21,59 @@ import { StatsCard } from './stats-card';
 query IncomeChargesChart($filters: ChargeFilter) {
     allCharges(filters: $filters) {
       nodes {
+        id
         transactions {
           id
           eventDate
+          effectiveDate
+          amount {
+            currency
+            formatted
+            raw
+          }
+          eventExchangeRates {
+            eur {
+              currency
+              formatted
+              raw
+            }
+            gbp {
+              currency
+              formatted
+              raw
+            }
+            usd {
+              currency
+              formatted
+              raw
+            }
+            date
+          }
+          debitExchangeRates {
+            eur {
+              currency
+              formatted
+              raw
+            }
+            gbp {
+              currency
+              formatted
+              raw
+            }
+            usd {
+              currency
+              formatted
+              raw
+            }
+            date
+          }
         }
-        currencyRatesAmount {
-        id
-        eur {
-          currency
-          formatted
-          raw
-        }
-        gbp {
-          currency
-          formatted
-          raw
-        }
-        usd {
-          currency
-          formatted
-          raw
-        }
-        date
       }
-      id
-      totalAmount {
-        currency
-        formatted
-        raw
-      }
-    }
     }
   }
 `;
+
+type Transaction = IncomeChargesChartQuery['allCharges']['nodes'][number]['transactions'][number];
 
 export const ChartPage = () => {
   const { setFiltersContext } = useContext(FiltersContext);
@@ -89,91 +109,121 @@ export const ChartPage = () => {
   }
 
   const overviewData = useMemo(() => {
-    // For each item in the array, get the month, and group by month
-    const groupedByMonth =
-      data?.allCharges.nodes.reduce((acc, curr) => {
-        const date = new Date(curr.transactions[0].eventDate);
+    const transactions: Array<Transaction> = [];
+    data?.allCharges.nodes.map(charge => {
+      charge.transactions.map(transaction => {
+        // Filter crypto as we're lacking the conversion rates
+        if (
+          // TODO: implement crypto exchange and add here
+          [Currency.Eur, Currency.Gbp, Currency.Ils, Currency.Usd].includes(
+            transaction.amount?.currency,
+          )
+        ) {
+          transactions.push(transaction);
+        }
+      });
+    });
+
+    // For each transaction, get the month, and group by month
+    const transactionsByMonth =
+      transactions.reduce((acc, transaction) => {
+        const date = new Date(transaction.effectiveDate || transaction.eventDate);
         const month = date.toLocaleString('default', { month: 'long' });
         const year = date.getFullYear();
         const key = `${month} ${year}`;
         acc[key] ||= [];
-        acc[key].push(curr);
+        acc[key].push(transaction);
         return acc;
-      }, {} as Record<string, IncomeChargesChartQuery['allCharges']['nodes']>) ?? {};
+      }, {} as Record<string, Array<Transaction>>) ?? {};
 
-    // for each item in the groupedByMonth array, check the currency. If its ILS or EURO, convert to USD. If its USD, do nothing
-    const convertedData = Object.entries(groupedByMonth).map(([key, value]) => {
-      const converted = value.map(item => {
-        if (item.totalAmount?.currency === 'USD') {
+    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO or GBP, convert to USD. If its USD, do nothing
+    const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];
+    Object.entries(transactionsByMonth).map(([key, value]) => {
+      let converted: Array<Transaction | null> = value.map(item => {
+        if (item.amount.currency === Currency.Usd) {
           return item;
         }
-        if (item.totalAmount?.currency === 'GRT' && item.currencyRatesAmount?.usd) {
+        if (item.amount.currency === Currency.Ils) {
+          const rate = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          if (!rate) {
+            console.log(`No rate found for transaction ${item.id}`);
+            return null;
+          }
+          const amount = numberToDecimalJS(item.amount.raw * rate);
           return {
             ...item,
-            totalAmount: {
-              ...item.totalAmount,
-              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+            amount: {
+              ...item.amount,
+              raw: amount,
               currency: Currency.Usd,
-              formatted: `$${numberToDecimalJS(
-                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-              )} `,
+              formatted: `$${amount} `,
             },
           };
         }
-        if (item.totalAmount?.currency === 'ILS' && item.currencyRatesAmount?.usd) {
+        if (item.amount.currency === Currency.Eur) {
+          const rateToILS = item.debitExchangeRates?.eur?.raw || item.eventExchangeRates?.eur?.raw;
+          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          if (!rateToILS || !rateToUSD) {
+            console.log(`No rate found for transaction ${item.id}`);
+            return null;
+          }
+          const rate = rateToUSD / rateToILS;
+          const amount = numberToDecimalJS(item.amount.raw * rate);
           return {
             ...item,
-            totalAmount: {
-              ...item.totalAmount,
-              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+            amount: {
+              ...item.amount,
+              raw: amount,
               currency: Currency.Usd,
-              formatted: `$${numberToDecimalJS(
-                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-              )} `,
+              formatted: `$${amount} `,
             },
           };
         }
-        if (item.totalAmount?.currency === 'EUR' && item.currencyRatesAmount?.usd) {
+        if (item.amount.currency === Currency.Gbp) {
+          const rateToILS = item.debitExchangeRates?.gbp?.raw || item.eventExchangeRates?.gbp?.raw;
+          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          if (!rateToILS || !rateToUSD) {
+            console.log(`No rate found for transaction ${item.id}`);
+            return null;
+          }
+          const rate = rateToUSD / rateToILS;
+          const amount = numberToDecimalJS(item.amount.raw * rate);
           return {
             ...item,
-            totalAmount: {
-              ...item.totalAmount,
-              raw: numberToDecimalJS(item.totalAmount.raw * item.currencyRatesAmount?.usd?.raw),
+            amount: {
+              ...item.amount,
+              raw: amount,
               currency: Currency.Usd,
-              formatted: `$${numberToDecimalJS(
-                item.totalAmount.raw * item.currencyRatesAmount.usd.raw,
-              )} `,
+              formatted: `$${amount} `,
             },
           };
         }
-        return item;
+        return null;
       });
-      return {
+      converted = converted.filter(item => item !== null);
+      convertedTransactions.push({
         month: key,
-        converted,
-      };
+        converted: converted as Array<Transaction>,
+      });
     });
 
     // for each item in the convertedData array, return the total income and total expenses. Income is when raw is positive, expenses is when raw is negative
-    const incomeAndExpenses = convertedData.map(item => {
-      const income = item.converted.reduce((acc, curr) => {
-        if (!curr.totalAmount?.raw) {
-          return numberToDecimalJS(acc);
-        }
-        if (curr.totalAmount?.raw > 0) {
-          return numberToDecimalJS(acc + curr.totalAmount.raw);
-        }
-        return numberToDecimalJS(acc);
-      }, 0);
-      const outcome = item.converted.reduce((acc, curr) => {
-        if (!curr.totalAmount?.raw) {
-          return numberToDecimalJS(acc);
-        }
-        if (curr.totalAmount?.raw < 0) {
-          return numberToDecimalJS(acc - curr.totalAmount.raw);
-        }
-        return numberToDecimalJS(acc);
-      }, 0);
+    const incomeAndExpenses = convertedTransactions.map(item => {
+      const [income, outcome] = item.converted.reduce(
+        ([income, outcome], transaction) => {
+          if (!transaction.amount.raw) {
+            return [income, outcome];
+          }
+          if (transaction.amount.raw > 0) {
+            return [numberToDecimalJS(income + transaction.amount.raw), outcome];
+          }
+          if (transaction.amount.raw < 0) {
+            return [income, numberToDecimalJS(outcome - transaction.amount.raw)];
+          }
+          return [income, outcome];
+        },
+        [0, 0],
+      );
       return {
         date: item.month,
         income,
@@ -227,15 +277,15 @@ export const ChartPage = () => {
         items={[
           {
             title: 'Income',
-            number: totalIncome.toLocaleString() as string,
+            number: totalIncome.toLocaleString(),
           },
           {
             title: 'Outcome',
-            number: totalExpenses.toLocaleString() as string,
+            number: totalExpenses.toLocaleString(),
           },
           {
             title: 'Balance for selected period',
-            number: totalBalance.toLocaleString() as string,
+            number: totalBalance.toLocaleString(),
           },
         ]}
       />
