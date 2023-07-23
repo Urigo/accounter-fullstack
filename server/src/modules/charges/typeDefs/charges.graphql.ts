@@ -16,13 +16,9 @@ export default gql`
     ): MergeChargeResult!
   }
 
-  " represrent a complex type for grouped charge with ledger info, bank/card transactions and documents "
+  " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
   type Charge {
     id: ID!
-    " when the initial charge was created from the first event we found "
-    createdOn: Date!
-    " when the charge was last updated "
-    updatedOn: Date!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "
@@ -41,6 +37,8 @@ export default gql`
     minDebitDate: Date
     " minimal date from linked documents "
     minDocumentsDate: Date
+    " metadata about the charge "
+    metadata: ChargeMetadata
   }
 
   " input variables for charge filtering "
@@ -110,6 +108,21 @@ export default gql`
 
   " result type for mergeCharge "
   union MergeChargeResult = Charge | CommonError
+
+  " represent charge's metadata"
+  type ChargeMetadata {
+    " when the initial charge was created from the first event we found "
+    createdOn: Date!
+    " when the charge was last updated "
+    updatedOn: Date!
+    invoicesCount: Int!
+    receiptsCount: Int!
+    documentsCount: Int!
+    invalidDocuments: Boolean!
+    transactionsCount: Int!
+    invalidTransactions: Boolean!
+    optionalBusinesses: [String!]!
+  }
 
   extend interface Document {
     charge: Charge

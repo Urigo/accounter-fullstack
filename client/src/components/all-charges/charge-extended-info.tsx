@@ -21,11 +21,10 @@ import { TransactionsTable } from './transactions/transactions-table';
           }
         }
       }
-      additionalDocuments {
-        id
-      }
-      transactions {
-        id
+      metadata {
+        transactionsCount
+        invoicesCount
+        receiptsCount
       }
       ...DocumentsGalleryFields
       ...TableLedgerRecordsFields
@@ -61,8 +60,8 @@ export function ChargeExtendedInfo({
     'records' in charge.ledgerRecords &&
     charge.ledgerRecords.records.length > 0
   );
-  const hasTransactions = !!(charge?.transactions && charge.transactions.length > 0);
-  const hasDocs = !!(charge?.additionalDocuments && charge.additionalDocuments.length > 0);
+  const hasTransactions = !!charge?.metadata?.transactionsCount;
+  const hasDocs = !!(charge?.metadata?.invoicesCount || charge?.metadata?.receiptsCount);
   return (
     <div className="flex flex-col gap-5">
       {fetching && (

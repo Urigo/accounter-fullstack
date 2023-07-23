@@ -23,11 +23,9 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id
-    additionalDocuments {
-      id
-    }
-    transactions {
-      id
+    metadata {
+      transactionsCount
+      documentsCount
     }
     ...AllChargesAccountantApprovalFields
     ...AllChargesAmountFields
@@ -68,7 +66,7 @@ export const AllChargesRow = ({
 
   const charge = getFragmentData(AllChargesRowFieldsFragmentDoc, data);
 
-  const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.transactions.length);
+  const hasExtendedInfo = !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount);
 
   return (
     <>

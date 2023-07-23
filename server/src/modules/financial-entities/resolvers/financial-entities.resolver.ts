@@ -1,6 +1,4 @@
 // import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 import {
@@ -49,31 +47,8 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     percentage: parent => parent.percentage,
   },
   Charge: {
-    counterparty: async (DbCharge, _, { injector }) => {
-      const counterpartyIDs = new Set<string>();
-      const documents = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const transactions = await injector
-        .get(TransactionsProvider)
-        .getTransactionsByChargeIDLoader.load(DbCharge.id);
-      documents.map(d => {
-        if (d.creditor_id && d.creditor_id !== DbCharge.owner_id)
-          counterpartyIDs.add(d.creditor_id);
-        if (d.debtor_id && d.debtor_id !== DbCharge.owner_id) counterpartyIDs.add(d.debtor_id);
-      });
-      transactions.map(t => {
-        if (t.business_id) counterpartyIDs.add(t.business_id);
-      });
-
-      if (counterpartyIDs.size > 1) {
-        return null;
-      }
-      if (counterpartyIDs.size === 1) {
-        const [id] = counterpartyIDs;
-        return id;
-      }
-      return null;
+    counterparty: async DbCharge => {
+      return DbCharge.business_id;
     },
     beneficiaries: () => [],
     // async (DbCharge, _, { injector }) => {

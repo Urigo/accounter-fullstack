@@ -9,7 +9,6 @@ import { DragFile, ListCapsule } from '../../common';
     id
     transactions {
       id
-      isValid
     }
     ledgerRecords {
       ... on LedgerRecords {
@@ -20,7 +19,6 @@ import { DragFile, ListCapsule } from '../../common';
     }
     additionalDocuments {
         id
-        isValid
     }
     counterparty {
         id
@@ -38,14 +36,10 @@ type Props = {
 export const MoreInfo = ({ data }: Props) => {
   const { transactions, ledgerRecords, additionalDocuments, counterparty, validationData, id } =
     getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, data);
-  const isTransactionsError =
-    validationData?.missingInfo?.includes(MissingChargeInfo.Transactions) ||
-    transactions.some(t => !t.isValid);
+  const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
   // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
-  const isDocumentsError =
-    validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
-    additionalDocuments.some(d => !d.isValid);
+  const isDocumentsError = validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
 
   const ledgerRecordsCount = isLedgerError ? 0 : ledgerRecords.records.length;
   return (
