@@ -31,7 +31,6 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
   },
   isReviewed: documentRoot => documentRoot.is_reviewed,
   documentType,
-  isValid: () => false,
 };
 
 export const commonFinancialDocumentsFields:
@@ -46,18 +45,6 @@ export const commonFinancialDocumentsFields:
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
     documentRoot.vat_amount == null ? null : formatFinancialAmount(documentRoot.vat_amount),
-  isValid: documentRoot => {
-    const temp =
-      !!documentRoot.charge_id_new &&
-      !!documentRoot.creditor_id &&
-      !!documentRoot.debtor_id &&
-      !!documentRoot.currency_code &&
-      !!documentRoot.date &&
-      documentRoot.total_amount != null &&
-      documentRoot.vat_amount != null &&
-      !!documentRoot.serial_number;
-    return temp;
-  },
 };
 
 export const commonFinancialEntityFields:

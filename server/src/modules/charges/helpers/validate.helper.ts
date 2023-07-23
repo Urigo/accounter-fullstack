@@ -28,14 +28,18 @@ export const validateCharge = async (
   const isForeignExpense =
     business?.country !== 'Israel' && Number(charge.transactions_event_amount) < 0;
   const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
+  const dbDocumentsAreValid = !charge.invalid_documents;
   const documentsAreFine =
-    business?.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
+    business?.no_invoices_required ||
+    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt));
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
 
   // validate transactions
-  const transactionsAreFine = charge.transactions_event_amount != null;
+  const hasTransaction = charge.transactions_event_amount != null;
+  const dbTransactionsAreValid = !charge.invalid_transactions;
+  const transactionsAreFine = hasTransaction && dbTransactionsAreValid;
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }

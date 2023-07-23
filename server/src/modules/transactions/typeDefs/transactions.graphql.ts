@@ -32,8 +32,6 @@ export default gql`
     sourceDescription: String!
     " effective bank / card balance, after the transaction "
     balance: FinancialAmount!
-    " flag indicating if the transaction is valid (has all required data)"
-    isValid: Boolean!
     " when the initial transaction was created from the first event we found "
     createdOn: Date!
     " when the transaction was last updated "
@@ -56,7 +54,6 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    isValid: Boolean!
     createdOn: Date!
     updatedOn: Date!
   }
@@ -71,7 +68,6 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    isValid: Boolean!
     createdOn: Date!
     updatedOn: Date!
   }
@@ -86,7 +82,6 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    isValid: Boolean!
     createdOn: Date!
     updatedOn: Date!
   }
@@ -107,7 +102,6 @@ export default gql`
     bankRate: Rate!
     " בנק ישראל "
     officialRate: Rate
-    isValid: Boolean!
     createdOn: Date!
     updatedOn: Date!
   }

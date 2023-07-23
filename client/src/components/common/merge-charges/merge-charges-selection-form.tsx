@@ -15,12 +15,9 @@ import { useMergeCharges } from '../../../hooks/use-merge-charges';
   query FetchMultipleCharges($chargeIds: [ID!]!) {
     chargesByIDs(chargeIDs: $chargeIds) {
       id
-      transactions {
-        id
-      }
-      additionalDocuments {
-        __typename
-        id
+      metadata {
+        transactionsCount
+        invoicesCount
       }
       owner {
         id
@@ -350,7 +347,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
               {charges.map(charge => (
                 <td key={charge.id}>
                   <div className="flex items-center justify-center mx-2 px-2 py-2 border-x-2">
-                    {charge.transactions.length}
+                    {charge.metadata?.transactionsCount ?? 0}
                   </div>
                 </td>
               ))}
@@ -360,11 +357,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
               {charges.map(charge => (
                 <td key={charge.id}>
                   <div className="flex items-center justify-center mx-2 px-2 py-2 border-2 border-t-0 rounded-b-xl">
-                    {
-                      charge.additionalDocuments.filter(doc =>
-                        ['Invoice', 'InvoiceReceipt'].includes(doc.__typename),
-                      ).length
-                    }
+                    {charge.metadata?.invoicesCount ?? 0}
                   </div>
                 </td>
               ))}

@@ -357,10 +357,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Charge: {
     id: DbCharge => DbCharge.id,
-    createdOn: DbCharge => DbCharge.created_on,
-    updatedOn: DbCharge => DbCharge.updated_on,
     vat: calculateVat,
-    // withholdingTax: undefined, // deprecated for now
     totalAmount: calculateTotalAmount,
     property: DbCharge => DbCharge.is_property,
     conversion: DbCharge => DbCharge.is_conversion,
@@ -369,13 +366,21 @@ export const chargesResolvers: ChargesModule.Resolvers &
     minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
     minDocumentsDate: DbCharge => DbCharge.documents_min_date,
     validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
+    metadata: DbCharge => ({
+      createdOn: DbCharge.created_on,
+      updatedOn: DbCharge.updated_on,
+      invoicesCount: Number(DbCharge.invoices_count) ?? 0,
+      receiptsCount: Number(DbCharge.receipts_count) ?? 0,
+      documentsCount: Number(DbCharge.documents_count) ?? 0,
+      invalidDocuments: DbCharge.invalid_documents ?? true,
+      transactionsCount: Number(DbCharge.transactions_count) ?? 0,
+      invalidTransactions: DbCharge.invalid_transactions ?? true,
+      optionalBusinesses:
+        DbCharge.business_array && DbCharge.business_array.length > 1
+          ? DbCharge.business_array
+          : [],
+    }),
   },
-  // UpdateChargeResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'Charge';
-  //   },
-  // },
   Invoice: {
     ...commonDocumentsFields,
   },
