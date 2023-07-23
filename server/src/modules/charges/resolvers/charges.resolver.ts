@@ -188,16 +188,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error(e.message);
         });
 
-      if (filters?.unbalanced) {
-        const validationInfo = await injector
-          .get(ChargesProvider)
-          .validateCharges({ IDs: charges.map(c => c.id) });
-
-        charges.map(c => {
-          c.balance = validationInfo.find(v => v.id === c.id)?.balance;
-        });
-      }
-
       // apply post-query filters
       if (
         // filters?.unbalanced ||
