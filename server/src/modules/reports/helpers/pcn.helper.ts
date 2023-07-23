@@ -6,7 +6,7 @@ import {
   Transaction,
 } from '@accounter-toolkit/pcn874-generator/typings/types.js';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
-import type { RawVatReportRecord2 } from './vat-report.helper';
+import type { RawVatReportRecord } from './vat-report.helper';
 
 export type ExtendedPCNTransaction = Omit<Transaction, 'totalVat'> &
   Required<Pick<Transaction, 'totalVat'>> & { isProperty: boolean };
@@ -114,7 +114,7 @@ const headerPropsFromTransactions = (
   return header;
 };
 
-const transformTransactions = (dbTransactions: RawVatReportRecord2[]): ExtendedPCNTransaction[] => {
+const transformTransactions = (dbTransactions: RawVatReportRecord[]): ExtendedPCNTransaction[] => {
   const transactions: ExtendedPCNTransaction[] = [];
   for (const t of dbTransactions) {
     if (!t.documentDate) {
@@ -146,7 +146,7 @@ const transformTransactions = (dbTransactions: RawVatReportRecord2[]): ExtendedP
 };
 
 export const generatePcnFromCharges = (
-  vatRecords: RawVatReportRecord2[],
+  vatRecords: RawVatReportRecord[],
   vatNumber: string,
   reportMonth: string,
 ) => {

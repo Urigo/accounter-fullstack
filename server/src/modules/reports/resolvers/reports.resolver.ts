@@ -4,7 +4,7 @@ import { Currency } from '@shared/enums';
 import { formatFinancialAmount, formatFinancialIntAmount } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
 import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
-import { RawVatReportRecord2 } from '../helpers/vat-report.helper.js';
+import { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
 
@@ -27,8 +27,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
       const reportMonth = format(new Date(fromDate), 'yyyyMM');
       return generatePcnFromCharges(
         [
-          ...(vatRecords.income as RawVatReportRecord2[]),
-          ...(vatRecords.expenses as RawVatReportRecord2[]),
+          ...(vatRecords.income as RawVatReportRecord[]),
+          ...(vatRecords.expenses as RawVatReportRecord[]),
         ],
         financialEntity.vat_number,
         reportMonth,

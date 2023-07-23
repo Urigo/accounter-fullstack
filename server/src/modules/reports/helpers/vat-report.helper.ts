@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import {
@@ -8,49 +9,38 @@ import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/typ
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 
-export type RawVatReportRecord = {
+export type VatReportRecordSources = {
   charge: IGetChargesByFiltersResult;
   doc: IGetDocumentsByFiltersResult;
   business: IGetFinancialEntitiesByIdsResult;
 };
-export type DecoratedVatReportRecord = RawVatReportRecord & {
-  currency_code: string;
-  vatAfterDeduction?: number;
-  amountBeforeVAT?: number;
-  amountBeforeFullVAT?: number;
-  roundedVATToAdd?: number;
-  eventAmountILS?: number;
-  vatAfterDeductionILS?: number;
-};
 
-export type RawVatReportRecord2 = {
+export type RawVatReportRecord = {
   amountBeforeVAT?: number;
+  businessId: string | null;
+  chargeDate: Date;
+  chargeId: string;
+  currencyCode: string;
+  documentAmount: string;
+  documentId: string;
+  documentDate: Date | null;
+  documentSerial: string | null;
+  documentUrl: string | null;
   eventAmountILS?: number;
+  isExpense: boolean;
+  isProperty: boolean;
   roundedVATToAdd?: number;
   vat: number | null;
   vatAfterDeduction?: number;
   vatAfterDeductionILS?: number;
-
-  //
-  documentId: string;
-  documentUrl: string | null;
-  documentAmount: string;
-  chargeId: string;
-  businessId: string | null;
-  currencyCode: string;
-  chargeDate: Date;
-  documentDate: Date | null;
-  documentSerial: string | null;
-  isProperty: boolean;
   vatNumber?: string | null;
-  isExpense: boolean;
 };
 
 export function adjustTaxRecords(
-  rawRecords: Array<RawVatReportRecord>,
+  rawRecords: Array<VatReportRecordSources>,
   exchangeRatesList: Array<IGetExchangeRatesByDatesResult>,
-): RawVatReportRecord2[] {
-  const records: RawVatReportRecord2[] = [];
+): RawVatReportRecord[] {
+  const records: RawVatReportRecord[] = [];
 
   for (const rawRecord of rawRecords) {
     const { charge, doc, business } = rawRecord;
@@ -66,7 +56,14 @@ export function adjustTaxRecords(
       throw new Error(`Date is missing for invoice ID=${doc.id}`);
     }
 
-    const partialRecord: RawVatReportRecord2 = {
+    // get exchange rate
+    const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
+    const rate = getRateForCurrency(doc.currency_code, exchangeRates);
+
+    // convert document vat to ILS
+    doc.vat_amount &&= doc.vat_amount * rate;
+
+    const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
       chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
@@ -82,24 +79,26 @@ export function adjustTaxRecords(
       isExpense: doc.debtor_id === charge.owner_id,
     };
 
-    // get exchange rate
-    const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
-    const rate = getRateForCurrency(doc.currency_code, exchangeRates);
-
-    // update record amounts according to document currency rate
-    partialRecord.documentAmount = String((doc.total_amount = doc.total_amount * rate));
-    doc.vat_amount &&= doc.vat_amount * rate;
-
     // set default amountBeforeVAT
-    if (!doc.vat_amount) {
+    if (!partialRecord.vat) {
       partialRecord.amountBeforeVAT = doc.total_amount * rate;
     }
 
-    if (partialRecord.businessId && doc.vat_amount) {
-      const isNotFullVat = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(partialRecord.businessId);
-      // decorate record with additional fields
-      const vatAfterDeduction = isNotFullVat ? (doc.vat_amount / 3) * 2 : doc.vat_amount;
+    if (partialRecord.businessId && partialRecord.vat) {
       // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
+      const convertedVat = 17 / 117;
+      if (Math.round(doc.total_amount * convertedVat) !== Math.round(doc.vat_amount!)) {
+        throw new GraphQLError(
+          `VAT amount is not 17% (but ${
+            doc.vat_amount! / (doc.total_amount - doc.vat_amount!)
+          }) for invoice ID=${doc.id}`,
+        );
+      }
+
+      // decorate record with additional fields
+
+      const isNotFullVat = TAX_CATEGORIES_WITH_NOT_FULL_VAT.includes(partialRecord.businessId);
+      const vatAfterDeduction = isNotFullVat ? (partialRecord.vat / 3) * 2 : partialRecord.vat;
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
       partialRecord.vatAfterDeduction = vatAfterDeduction;
