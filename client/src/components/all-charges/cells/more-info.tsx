@@ -7,8 +7,9 @@ import { DragFile, ListCapsule } from '../../common';
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
     id
-    transactions {
-      id
+    metadata {
+      transactionsCount
+      documentsCount
     }
     ledgerRecords {
       ... on LedgerRecords {
@@ -16,9 +17,6 @@ import { DragFile, ListCapsule } from '../../common';
           id
         }
       }
-    }
-    additionalDocuments {
-        id
     }
     counterparty {
         id
@@ -34,8 +32,10 @@ type Props = {
 };
 
 export const MoreInfo = ({ data }: Props) => {
-  const { transactions, ledgerRecords, additionalDocuments, counterparty, validationData, id } =
-    getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, data);
+  const { metadata, ledgerRecords, counterparty, validationData, id } = getFragmentData(
+    AllChargesMoreInfoFieldsFragmentDoc,
+    data,
+  );
   const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
   // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
@@ -48,7 +48,7 @@ export const MoreInfo = ({ data }: Props) => {
         <ListCapsule
           items={[
             {
-              style: transactions.length > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              style: metadata?.transactionsCount ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
               content: (
                 <Indicator
                   key="transactions"
@@ -58,7 +58,9 @@ export const MoreInfo = ({ data }: Props) => {
                   color="red"
                   zIndex="auto"
                 >
-                  <div className="whitespace-nowrap">Transactions: {transactions.length}</div>
+                  <div className="whitespace-nowrap">
+                    Transactions: {metadata?.transactionsCount ?? 0}
+                  </div>
                 </Indicator>
               ),
             },
@@ -89,11 +91,13 @@ export const MoreInfo = ({ data }: Props) => {
                   color="red"
                   zIndex="auto"
                 >
-                  <div className="whitespace-nowrap">Documents: {additionalDocuments.length}</div>
+                  <div className="whitespace-nowrap">
+                    Documents: {metadata?.documentsCount ?? 0}
+                  </div>
                 </Indicator>
               ),
               style:
-                additionalDocuments.length > 0 ||
+                metadata?.documentsCount ||
                 (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },
