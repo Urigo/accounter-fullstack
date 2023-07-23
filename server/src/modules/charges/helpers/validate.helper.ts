@@ -1,93 +1,84 @@
-import { format } from 'date-fns';
+import { Injector } from 'graphql-modules';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { Currency, MissingChargeInfo, ValidationData } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
-import type { IGetChargesByIdsResult, IValidateChargesResult } from '../types.js';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { IGetChargesByIdsResult } from '../types.js';
 
-export async function validateCharge(
-  charge: IValidateChargesResult,
-  financialEntitiesProvider: FinancialEntitiesProvider,
-): Promise<ValidationData> {
+export const validateCharge = async (
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const invoicesCount = Number(charge.invoices_count) || 0;
-  const receiptsCount = Number(charge.receipts_count) || 0;
-  const isForeignExpense = !!charge.is_foreign && Number(charge.event_amount) < 0;
-  const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
-  const documentsAreFine = charge.no_invoices_required || invoicesCount > 0 || canSettleWithReceipt;
-  if (!documentsAreFine) {
-    missingInfo.push(MissingChargeInfo.Documents);
-  }
+  // check for consistent counterparty business
+  const business = charge.business_id
+    ? await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(charge.business_id)
+    : undefined;
 
-  const businessIsFine = !!charge.financial_entity_id;
+  const businessIsFine = !!business;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
 
-  const descriptionIsFine = (charge.user_description?.trim().length ?? 0) > 0;
-  if (!descriptionIsFine) {
-    missingInfo.push(MissingChargeInfo.TransactionDescription);
+  // validate documents
+  const invoicesCount = Number(charge.invoices_count) || 0;
+  const receiptsCount = Number(charge.receipts_count) || 0;
+  const isForeignExpense =
+    business?.country !== 'Israel' && Number(charge.transactions_event_amount) < 0;
+  const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
+  const dbDocumentsAreValid = !charge.invalid_documents;
+  const documentsAreFine =
+    business?.no_invoices_required ||
+    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt));
+  if (!documentsAreFine) {
+    missingInfo.push(MissingChargeInfo.Documents);
   }
 
-  const tagsAreFine = !!charge.personal_category?.trim();
+  // validate transactions
+  const hasTransaction = charge.transactions_event_amount != null;
+  const dbTransactionsAreValid = !charge.invalid_transactions;
+  const transactionsAreFine = hasTransaction && dbTransactionsAreValid;
+  if (!transactionsAreFine) {
+    missingInfo.push(MissingChargeInfo.Transactions);
+  }
+
+  // validate description
+  const descriptionIsFine = (charge.user_description?.trim().length ?? 0) > 0;
+  if (!descriptionIsFine) {
+    missingInfo.push(MissingChargeInfo.Description);
+  }
+
+  // validate tags
+  const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(charge.id);
+  const tagsAreFine = tags.length > 0;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }
 
-  ////
-  let vatIsFine = charge.no_invoices_required || (charge.vat != null && charge.vat != 0);
-  if (!vatIsFine && charge.financial_entity_id) {
-    const counterparty = await financialEntitiesProvider.getFinancialEntityByIdLoader.load(
-      charge.financial_entity_id,
-    );
-    if (counterparty?.country !== 'Israel') {
-      vatIsFine = charge.vat != null;
-    }
-  }
+  // validate vat
+  const vatIsFine =
+    business?.no_invoices_required ||
+    (charge.documents_vat_amount != null &&
+      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
 
-  const ledgerRecordsCount = Number(charge.ledger_records_count) || 0;
-  const ledgerRecordsAreFine = ledgerRecordsCount > 0;
-  if (!ledgerRecordsAreFine) {
-    // missingInfo.push(MissingChargeInfo.LedgerRecords);
-  }
-
-  const balanceIsFine = !charge.balance || Number(charge.balance) == 0;
-  if (!balanceIsFine) {
-    // missingInfo.push(MissingChargeInfo.Balance);
-  }
+  //TODO(Gil): validate balance
+  //TODO(Gil): validate ledger
 
   const allFine =
     documentsAreFine &&
     businessIsFine &&
     descriptionIsFine &&
     tagsAreFine &&
-    // ledgerRecordsAreFine &&
-    // balanceIsFine &&
-    vatIsFine;
+    vatIsFine &&
+    transactionsAreFine;
 
   return {
     isValid: allFine,
     missingInfo,
-    balance: formatFinancialAmount(charge.balance, Currency.Ils),
   };
-}
-
-export function effectiveDateSupplement(transaction: IGetChargesByIdsResult) {
-  if (transaction.account_type != 'creditcard') {
-    if (transaction.debit_date) {
-      return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-    }
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (transaction.debit_date) {
-    return format(transaction.debit_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  if (transaction.currency_code == 'ILS') {
-    return format(transaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
-  }
-  return null;
-}
+};

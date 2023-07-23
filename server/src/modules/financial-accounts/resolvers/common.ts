@@ -13,15 +13,14 @@ export const commonTransactionFields:
   | FinancialAccountsModule.WireTransactionResolvers
   | FinancialAccountsModule.CommonTransactionResolvers = {
   account: async (DbTransaction, _, { injector }) => {
-    // TODO: enhance logic to be based on ID instead of account_number
-    if (!DbTransaction.account_number) {
-      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_number`);
+    if (!DbTransaction.account_id) {
+      throw new Error(`Transaction ID="${DbTransaction.id}" is missing account_id`);
     }
     const account = await injector
       .get(FinancialAccountsProvider)
-      .getFinancialAccountByAccountNumberLoader.load(DbTransaction.account_number);
+      .getFinancialAccountByAccountIDLoader.load(DbTransaction.account_id);
     if (!account) {
-      throw new Error(`Account number "${DbTransaction.account_number}" is missing`);
+      throw new Error(`Account ID "${DbTransaction.account_id}" is missing`);
     }
     return account;
   },

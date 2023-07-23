@@ -2,6 +2,15 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    allTags: [Tag!]!
+  }
+
+  extend type Mutation {
+    addTag(name: String!): Boolean!
+    deleteTag(name: String!): Boolean!
+  }
+
   extend type Charge {
     " user customer tags "
     tags: [Tag!]!

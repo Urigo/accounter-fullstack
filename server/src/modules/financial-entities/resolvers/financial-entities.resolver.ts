@@ -1,7 +1,11 @@
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+// import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
-import { commonFinancialEntityFields } from './common.js';
+import {
+  commonDocumentsFields,
+  commonFinancialEntityFields,
+  commonTransactionFields,
+} from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
@@ -43,84 +47,87 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     percentage: parent => parent.percentage,
   },
   Charge: {
-    counterparty: DbCharge => DbCharge.financial_entity_id,
-    beneficiaries: async (DbCharge, _, { injector }) => {
-      // TODO: update to better implementation after DB is updated
-      try {
-        if (DbCharge.financial_accounts_to_balance) {
-          return JSON.parse(DbCharge.financial_accounts_to_balance);
-        }
-      } catch {
-        null;
-      }
-      switch (DbCharge.financial_accounts_to_balance) {
-        case 'no':
-          return [
-            {
-              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-              percentage: 0.5,
-            },
-            {
-              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-              percentage: 0.5,
-            },
-          ];
-        case 'uri':
-          return [
-            {
-              counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-              percentage: 1,
-            },
-          ];
-        case 'dotan':
-          return [
-            {
-              counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-              percentage: 1,
-            },
-          ];
-        default:
-          {
-            // case Guild account
-            const guildAccounts = await injector
-              .get(FinancialAccountsProvider)
-              .getFinancialAccountsByFinancialEntityIdLoader.load(
-                '6a20aa69-57ff-446e-8d6a-1e96d095e988',
-              );
-            const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
-            if (guildAccountsNumbers.includes(DbCharge.account_number)) {
-              return [
-                {
-                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-                  percentage: 0.5,
-                },
-                {
-                  counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-                  percentage: 0.5,
-                },
-              ];
-            }
-
-            // case UriLTD account
-            const uriAccounts = await injector
-              .get(FinancialAccountsProvider)
-              .getFinancialAccountsByFinancialEntityIdLoader.load(
-                'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
-              );
-            const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
-            if (uriAccountsNumbers.includes(DbCharge.account_number)) {
-              return [
-                {
-                  counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-                  percentage: 1,
-                },
-              ];
-            }
-          }
-          return [];
-      }
+    counterparty: async DbCharge => {
+      return DbCharge.business_id;
     },
-    financialEntity: (DbCharge, _, { injector }) =>
+    beneficiaries: () => [],
+    // async (DbCharge, _, { injector }) => {
+    //   // TODO: update to better implementation after DB is updated
+    //   try {
+    //     if (DbCharge.financial_accounts_to_balance) {
+    //       return JSON.parse(DbCharge.financial_accounts_to_balance);
+    //     }
+    //   } catch {
+    //     null;
+    //   }
+    //   switch (DbCharge.financial_accounts_to_balance) {
+    //     case 'no':
+    //       return [
+    //         {
+    //           counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+    //           percentage: 0.5,
+    //         },
+    //         {
+    //           counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+    //           percentage: 0.5,
+    //         },
+    //       ];
+    //     case 'uri':
+    //       return [
+    //         {
+    //           counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+    //           percentage: 1,
+    //         },
+    //       ];
+    //     case 'dotan':
+    //       return [
+    //         {
+    //           counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+    //           percentage: 1,
+    //         },
+    //       ];
+    //     default:
+    //       {
+    //         // case Guild account
+    //         const guildAccounts = await injector
+    //           .get(FinancialAccountsProvider)
+    //           .getFinancialAccountsByFinancialEntityIdLoader.load(
+    //             '6a20aa69-57ff-446e-8d6a-1e96d095e988',
+    //           );
+    //         const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
+    //         if (guildAccountsNumbers.includes(DbCharge.account_number)) {
+    //           return [
+    //             {
+    //               counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+    //               percentage: 0.5,
+    //             },
+    //             {
+    //               counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
+    //               percentage: 0.5,
+    //             },
+    //           ];
+    //         }
+
+    //         // case UriLTD account
+    //         const uriAccounts = await injector
+    //           .get(FinancialAccountsProvider)
+    //           .getFinancialAccountsByFinancialEntityIdLoader.load(
+    //             'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
+    //           );
+    //         const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
+    //         if (uriAccountsNumbers.includes(DbCharge.account_number)) {
+    //           return [
+    //             {
+    //               counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
+    //               percentage: 1,
+    //             },
+    //           ];
+    //         }
+    //       }
+    //       return [];
+    //   }
+    // },
+    owner: (DbCharge, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)
         .getFinancialEntityByChargeIdsLoader.load(DbCharge.id)
@@ -131,8 +138,31 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
           return res;
         }),
   },
-  LedgerRecord: {
-    creditAccount: DbLedgerRecord => DbLedgerRecord.credit_account_id_1,
-    debitAccount: DbLedgerRecord => DbLedgerRecord.debit_account_id_1,
+  WireTransaction: {
+    ...commonTransactionFields,
+  },
+  FeeTransaction: {
+    ...commonTransactionFields,
+  },
+  ConversionTransaction: {
+    ...commonTransactionFields,
+  },
+  CommonTransaction: {
+    ...commonTransactionFields,
+  },
+  Invoice: {
+    ...commonDocumentsFields,
+  },
+  InvoiceReceipt: {
+    ...commonDocumentsFields,
+  },
+  Proforma: {
+    ...commonDocumentsFields,
+  },
+  Unprocessed: {
+    ...commonDocumentsFields,
+  },
+  Receipt: {
+    ...commonDocumentsFields,
   },
 };

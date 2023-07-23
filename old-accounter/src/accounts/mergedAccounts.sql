@@ -23,95 +23,64 @@ ORDER BY
   AT.event_number,
   GREATEST(pils.serial_number);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_short_product_name_enum CHECK (data_0_short_product_name IN ('פריים'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_short_product_name_enum CHECK (data_0_short_product_name IN ('פריים'));
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_hebrew_purpose_description_enum CHECK (
-    data_0_hebrew_purpose_description IN ('לא רלוונטי')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_hebrew_purpose_description_enum CHECK (
+  data_0_hebrew_purpose_description IN ('לא רלוונטי')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-DROP
-  CONSTRAINT data_0_renewal_description_enum;
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+DROP CONSTRAINT data_0_renewal_description_enum;
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_renewal_description_enum CHECK (
-    data_0_renewal_description IN ('פיקדון מתחדש', 'יפרע לעו"ש')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_renewal_description_enum CHECK (
+  data_0_renewal_description IN ('פיקדון מתחדש', 'יפרע לעו"ש')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_interest_base_description_enum CHECK (data_0_interest_base_description IN ('פריים'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_interest_base_description_enum CHECK (data_0_interest_base_description IN ('פריים'));
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_interest_type_description_enum CHECK (data_0_interest_type_description IN ('משתנה'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_interest_type_description_enum CHECK (data_0_interest_type_description IN ('משתנה'));
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_interest_calculating_method_description_enum CHECK (
-    data_0_interest_calculating_method_description IN ('קו ישר')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_interest_calculating_method_description_enum CHECK (
+  data_0_interest_calculating_method_description IN ('קו ישר')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_interest_crediting_method_description_enum CHECK (
-    data_0_interest_crediting_method_description IN ('לקרן הפיקדון')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_interest_crediting_method_description_enum CHECK (
+  data_0_interest_crediting_method_description IN ('לקרן הפיקדון')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_interest_payment_description_enum CHECK (data_0_interest_payment_description IN ('תחנה'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_interest_payment_description_enum CHECK (data_0_interest_payment_description IN ('תחנה'));
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-DROP
-  CONSTRAINT data_0_lien_description_enum;
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+DROP CONSTRAINT data_0_lien_description_enum;
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_lien_description_enum CHECK (
-    data_0_lien_description IN ('משועבד', 'מבטיח אשראי')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_lien_description_enum CHECK (
+  data_0_lien_description IN ('משועבד', 'מבטיח אשראי')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_time_unit_description_enum CHECK (data_0_time_unit_description IN ('ימים'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_time_unit_description_enum CHECK (data_0_time_unit_description IN ('ימים'));
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-DROP
-  CONSTRAINT data_0_renewal_date_explanation_enum;
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+DROP CONSTRAINT data_0_renewal_date_explanation_enum;
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT data_0_renewal_date_explanation_enum CHECK (
-    data_0_renewal_date_explanation IN ('תחנה קרובה', 'ייפרע לעו"ש בתאריך')
-  );
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT data_0_renewal_date_explanation_enum CHECK (
+  data_0_renewal_date_explanation IN ('תחנה קרובה', 'ייפרע לעו"ש בתאריך')
+);
 
-ALTER TABLE
-  accounter_schema.poalim_deposits_account_transactions
-ADD
-  CONSTRAINT source_enum CHECK (source IN ('israeliCurrencyDeposit'));
+ALTER TABLE accounter_schema.poalim_deposits_account_transactions
+ADD CONSTRAINT source_enum CHECK (source IN ('israeliCurrencyDeposit'));
 
-DROP VIEW
-  merged_tables CASCADE;
+DROP VIEW merged_tables CASCADE;
 
 CREATE OR REPLACE VIEW
   merged_tables AS

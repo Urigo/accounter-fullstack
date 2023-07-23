@@ -3,8 +3,7 @@ SELECT
 FROM
   formatted_merged_tables;
 
-DROP VIEW
-  formatted_merged_tables CASCADE;
+DROP VIEW formatted_merged_tables CASCADE;
 
 CREATE OR REPLACE VIEW
   formatted_merged_tables AS

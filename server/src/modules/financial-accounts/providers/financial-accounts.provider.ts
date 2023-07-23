@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IGetAllFinancialAccountsQuery,
+  IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByFinancialEntityIdsQuery,
 } from '../types.js';
@@ -10,12 +12,21 @@ import type {
 const getFinancialAccountsByFinancialEntityIds = sql<IGetFinancialAccountsByFinancialEntityIdsQuery>`
     SELECT *
     FROM accounter_schema.financial_accounts
-    WHERE owner IN $$financialEntityIds;`;
+    WHERE owner IN $$ownerIds;`;
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
 SELECT *
 FROM accounter_schema.financial_accounts
 WHERE account_number IN $$accountNumbers;`;
+
+const getFinancialAccountsByAccountIDs = sql<IGetFinancialAccountsByAccountIDsQuery>`
+SELECT *
+FROM accounter_schema.financial_accounts
+WHERE id IN $$accountIDs;`;
+
+const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
+    SELECT *
+    FROM accounter_schema.financial_accounts;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -24,16 +35,14 @@ WHERE account_number IN $$accountNumbers;`;
 export class FinancialAccountsProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  private async batchFinancialAccountsByFinancialEntityIds(financialEntityIds: readonly string[]) {
+  private async batchFinancialAccountsByFinancialEntityIds(ownerIds: readonly string[]) {
     const accounts = await getFinancialAccountsByFinancialEntityIds.run(
       {
-        financialEntityIds,
+        ownerIds,
       },
       this.dbProvider,
     );
-    return financialEntityIds.map(financialEntityId =>
-      accounts.filter(charge => charge.owner === financialEntityId),
-    );
+    return ownerIds.map(ownerId => accounts.filter(charge => charge.owner === ownerId));
   }
 
   public getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
@@ -59,4 +68,25 @@ export class FinancialAccountsProvider {
       cache: false,
     },
   );
+
+  private async batchFinancialAccountsByAccountIDs(accountIDs: readonly string[]) {
+    const accounts = await getFinancialAccountsByAccountIDs.run(
+      {
+        accountIDs,
+      },
+      this.dbProvider,
+    );
+    return accountIDs.map(id => accounts.find(charge => charge.id === id));
+  }
+
+  public getFinancialAccountByAccountIDLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchFinancialAccountsByAccountIDs(keys),
+    {
+      cache: false,
+    },
+  );
+
+  public getAllFinancialAccounts() {
+    return getAllFinancialAccounts.run(undefined, this.dbProvider);
+  }
 }

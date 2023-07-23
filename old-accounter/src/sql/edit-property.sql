@@ -1,5 +1,4 @@
-UPDATE
-  accounter_schema.isracard_creditcard_transactions
+UPDATE accounter_schema.isracard_creditcard_transactions
 SET
   personal_category = 'family'
 WHERE

@@ -17,19 +17,16 @@ export default gql`
   " represent a missing info attributes for a charge"
   enum MissingChargeInfo {
     COUNTERPARTY
-    TRANSACTION_DESCRIPTION
-    TAGS
-    VAT
+    DESCRIPTION
     DOCUMENTS
-    LEDGER_RECORDS
-    BALANCE
+    TAGS
+    TRANSACTIONS
+    VAT
   }
 
   extend input ChargeFilter {
     " Include only charges that doesn't have transactions linked "
     withoutTransaction: Boolean
-    " Include only charges that doesn't have Ledger records linked "
-    withoutLedger: Boolean
     " Include only charges that doesn't have documents linked "
     withoutDocuments: Boolean
     " Include only charges that doesn't have invoice document linked "

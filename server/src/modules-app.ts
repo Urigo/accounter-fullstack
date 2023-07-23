@@ -2,6 +2,7 @@ import { createApplication } from 'graphql-modules';
 import postgres from 'pg';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
+import { exchangeRatesModule } from '@modules/exchange-rates/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { businessTripModule } from './modules/business-trip/index.js';
@@ -14,6 +15,7 @@ import { hashavshevetModule } from './modules/hashavshevet/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
 import { reportsModule } from './modules/reports/index.js';
 import { tagsModule } from './modules/tags/index.js';
+import { transactionsModule } from './modules/transactions/index.js';
 
 const { Pool } = postgres;
 
@@ -24,6 +26,8 @@ export async function createGraphQLApp() {
       accountantApprovalModule,
       businessTripModule,
       chargesModule,
+      exchangeRatesModule,
+      transactionsModule,
       documentsModule,
       financialAccountsModule,
       financialEntitiesModule,

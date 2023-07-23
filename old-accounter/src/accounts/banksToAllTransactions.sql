@@ -5,8 +5,7 @@ SELECT DISTINCT
 FROM
   accounter_schema.poalim_ils_account_transactions;
 
-UPDATE
-  accounter_schema.all_transactions
+UPDATE accounter_schema.all_transactions
 SET
   is_conversion = TRUE
 WHERE
@@ -109,15 +108,11 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-DROP TRIGGER
-  new_isracard_transaction_insert_trigger ON accounter_schema.isracard_creditcard_transactions;
+DROP TRIGGER new_isracard_transaction_insert_trigger ON accounter_schema.isracard_creditcard_transactions;
 
-CREATE TRIGGER
-  new_isracard_transaction_insert_trigger
-AFTER
-  INSERT ON accounter_schema.isracard_creditcard_transactions FOR EACH ROW
-EXECUTE
-  PROCEDURE insert_creditcard_transaction_into_merged_table ();
+CREATE TRIGGER new_isracard_transaction_insert_trigger
+AFTER INSERT ON accounter_schema.isracard_creditcard_transactions FOR EACH ROW
+EXECUTE PROCEDURE insert_creditcard_transaction_into_merged_table ();
 
 CREATE
 OR REPLACE FUNCTION insert_ils_transaction_into_merged_table () RETURNS TRIGGER AS $$
@@ -173,12 +168,9 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE TRIGGER
-  new_ils_transaction_insert_trigger
-AFTER
-  INSERT ON accounter_schema.poalim_ils_account_transactions FOR EACH ROW
-EXECUTE
-  PROCEDURE insert_ils_transaction_into_merged_table ();
+CREATE TRIGGER new_ils_transaction_insert_trigger
+AFTER INSERT ON accounter_schema.poalim_ils_account_transactions FOR EACH ROW
+EXECUTE PROCEDURE insert_ils_transaction_into_merged_table ();
 
 CREATE
 OR REPLACE FUNCTION insert_usd_transaction_into_merged_table () RETURNS TRIGGER AS $$
@@ -232,12 +224,9 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE TRIGGER
-  new_usd_transaction_insert_trigger
-AFTER
-  INSERT ON accounter_schema.poalim_usd_account_transactions FOR EACH ROW
-EXECUTE
-  PROCEDURE insert_usd_transaction_into_merged_table ();
+CREATE TRIGGER new_usd_transaction_insert_trigger
+AFTER INSERT ON accounter_schema.poalim_usd_account_transactions FOR EACH ROW
+EXECUTE PROCEDURE insert_usd_transaction_into_merged_table ();
 
 CREATE
 OR REPLACE FUNCTION insert_eur_transaction_into_merged_table () RETURNS TRIGGER AS $$
@@ -291,12 +280,9 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE TRIGGER
-  new_eur_transaction_insert_trigger
-AFTER
-  INSERT ON accounter_schema.poalim_eur_account_transactions FOR EACH ROW
-EXECUTE
-  PROCEDURE insert_eur_transaction_into_merged_table ();
+CREATE TRIGGER new_eur_transaction_insert_trigger
+AFTER INSERT ON accounter_schema.poalim_eur_account_transactions FOR EACH ROW
+EXECUTE PROCEDURE insert_eur_transaction_into_merged_table ();
 
 CREATE
 OR REPLACE FUNCTION insert_gbp_transaction_into_merged_table () RETURNS TRIGGER AS $$
@@ -350,9 +336,6 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE TRIGGER
-  new_gbp_transaction_insert_trigger
-AFTER
-  INSERT ON accounter_schema.poalim_gbp_account_transactions FOR EACH ROW
-EXECUTE
-  PROCEDURE insert_gbp_transaction_into_merged_table ();
+CREATE TRIGGER new_gbp_transaction_insert_trigger
+AFTER INSERT ON accounter_schema.poalim_gbp_account_transactions FOR EACH ROW
+EXECUTE PROCEDURE insert_gbp_transaction_into_merged_table ();

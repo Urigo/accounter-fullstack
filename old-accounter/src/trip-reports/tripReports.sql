@@ -1,4 +1,4 @@
- -- Budapest 04/2019
+-- Budapest 04/2019
 SELECT
   *
 FROM
@@ -229,8 +229,7 @@ WHERE
 ORDER BY
   event_date;
 
-DROP FUNCTION
-  trip_report;
+DROP FUNCTION trip_report;
 
 -- TODO: Send year as a parameter and adjust to it
 CREATE

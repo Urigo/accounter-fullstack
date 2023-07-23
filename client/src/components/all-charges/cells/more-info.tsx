@@ -7,11 +7,16 @@ import { DragFile, ListCapsule } from '../../common';
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
     id
-    ledgerRecords {
-        id
+    metadata {
+      transactionsCount
+      documentsCount
     }
-    additionalDocuments {
-        id
+    ledgerRecords {
+      ... on LedgerRecords {
+        records {
+          id
+        }
+      }
     }
     counterparty {
         id
@@ -27,20 +32,40 @@ type Props = {
 };
 
 export const MoreInfo = ({ data }: Props) => {
-  const { ledgerRecords, additionalDocuments, counterparty, validationData, id } = getFragmentData(
+  const { metadata, ledgerRecords, counterparty, validationData, id } = getFragmentData(
     AllChargesMoreInfoFieldsFragmentDoc,
     data,
   );
-  const isLedgerError = validationData?.missingInfo?.includes(MissingChargeInfo.LedgerRecords);
+  const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
+  // TODO(Gil): implement isLedgerError by server validation
+  const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
   const isDocumentsError = validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
 
+  const ledgerRecordsCount = isLedgerError ? 0 : ledgerRecords.records.length;
   return (
     <td>
       <DragFile chargeId={id}>
         <ListCapsule
           items={[
             {
-              style: ledgerRecords ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              style: metadata?.transactionsCount ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              content: (
+                <Indicator
+                  key="transactions"
+                  inline
+                  size={12}
+                  disabled={!isTransactionsError}
+                  color="red"
+                  zIndex="auto"
+                >
+                  <div className="whitespace-nowrap">
+                    Transactions: {metadata?.transactionsCount ?? 0}
+                  </div>
+                </Indicator>
+              ),
+            },
+            {
+              style: ledgerRecordsCount > 0 ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
               content: (
                 <Indicator
                   key="ledger"
@@ -50,7 +75,9 @@ export const MoreInfo = ({ data }: Props) => {
                   color="red"
                   zIndex="auto"
                 >
-                  <div className="whitespace-nowrap">Ledger Records: {ledgerRecords.length}</div>
+                  <div className="whitespace-nowrap">
+                    Ledger Records: {isLedgerError ? 'Error' : ledgerRecordsCount}
+                  </div>
                 </Indicator>
               ),
             },
@@ -64,11 +91,13 @@ export const MoreInfo = ({ data }: Props) => {
                   color="red"
                   zIndex="auto"
                 >
-                  <div className="whitespace-nowrap">Documents: {additionalDocuments.length}</div>
+                  <div className="whitespace-nowrap">
+                    Documents: {metadata?.documentsCount ?? 0}
+                  </div>
                 </Indicator>
               ),
               style:
-                additionalDocuments.length > 0 ||
+                metadata?.documentsCount ||
                 (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },

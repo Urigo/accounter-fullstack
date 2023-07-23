@@ -1,53 +1,41 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
-import { FragmentType } from '../../gql';
-import { AllChargesTableFieldsFragment, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
-import { EditMiniButton } from '../common';
+import { FragmentType, getFragmentData } from '../../gql';
 import {
-  Account,
+  AllChargesRowFieldsFragmentDoc,
+  AllChargesTableFieldsFragment,
+  EditChargeFieldsFragmentDoc,
+} from '../../gql/graphql';
+import { EditMiniButton, ToggleMergeSelected } from '../common';
+import {
   AccountantApproval,
   Amount,
-  Balance,
+  Counterparty,
   DateCell,
   Description,
-  Entity,
   MoreInfo,
-  ShareWith,
   Tags,
   Vat,
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
 
 /* GraphQL */ `
-  fragment SuggestedCharge on Charge {
+  fragment AllChargesRowFields on Charge {
     id
-    transactions {
-      id
-      __typename
-      amount {
-        raw
-      }
-      userNote
-      referenceNumber
-      description
+    metadata {
+      transactionsCount
+      documentsCount
     }
-    beneficiaries {
-      counterparty {
-        id
-        name
-      }
-    }
-    counterparty {
-      id
-      name
-    }
-    vat {
-      raw
-    }
-    tags {
-      name
-    }
+    ...AllChargesAccountantApprovalFields
+    ...AllChargesAmountFields
+    ...AllChargesDateFields
+    ...AllChargesDescriptionFields
+    ...AllChargesEntityFields
+    ...AllChargesMoreInfoFields
+    ...AllChargesTagsFields
+    ...AllChargesVatFields
+    ...EditChargeFields
   }
 `;
 
@@ -55,26 +43,30 @@ interface Props {
   setEditCharge: Dispatch<
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
-  setInsertLedger: Dispatch<SetStateAction<string | undefined>>;
-  setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<string | undefined>>;
-  setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  charge: AllChargesTableFieldsFragment;
+  setInsertDocument: () => void;
+  setMatchDocuments: () => void;
+  setUploadDocument: () => void;
+  toggleMergeCharge?: () => void;
+  isSelectedForMerge: boolean;
+  data: AllChargesTableFieldsFragment;
   isAllOpened: boolean;
 }
 
 export const AllChargesRow = ({
   setEditCharge,
-  setInsertLedger,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
-  charge,
+  toggleMergeCharge,
+  isSelectedForMerge,
+  data,
   isAllOpened,
 }: Props) => {
   const [opened, setOpen] = useState(false);
 
-  const hasExtendedInfo = !!(charge.additionalDocuments.length || charge.ledgerRecords.length);
+  const charge = getFragmentData(AllChargesRowFieldsFragmentDoc, data);
+
+  const hasExtendedInfo = !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount);
 
   return (
     <>
@@ -82,16 +74,21 @@ export const AllChargesRow = ({
         <DateCell data={charge} />
         <Amount data={charge} />
         <Vat data={charge} />
-        <Entity data={charge} />
-        <Account data={charge} />
+        <Counterparty data={charge} />
         <Description data={charge} />
         <Tags data={charge} />
-        <ShareWith data={charge} />
-        <Balance data={charge} />
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />
         <td>
-          <EditMiniButton onClick={() => setEditCharge(charge)} />
+          <div className="flex flex-col gap-2">
+            <EditMiniButton onClick={() => setEditCharge(charge)} />
+            {toggleMergeCharge && (
+              <ToggleMergeSelected
+                toggleMergeSelected={() => toggleMergeCharge()}
+                mergeSelected={isSelectedForMerge}
+              />
+            )}
+          </div>
         </td>
         <td>
           {hasExtendedInfo ? (
@@ -104,8 +101,6 @@ export const AllChargesRow = ({
             </ActionIcon>
           ) : (
             <ChargeExtendedInfoMenu
-              chargeId={charge.id}
-              setInsertLedger={setInsertLedger}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={setUploadDocument}
@@ -118,8 +113,7 @@ export const AllChargesRow = ({
           <td colSpan={12}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo
-                chargeProps={charge}
-                setInsertLedger={setInsertLedger}
+                chargeID={charge.id}
                 setInsertDocument={setInsertDocument}
                 setMatchDocuments={setMatchDocuments}
                 setUploadDocument={setUploadDocument}

@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import type { ChargesTypes } from '@modules/charges';
+// import type { ChargesTypes } from '@modules/charges';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
@@ -104,43 +104,43 @@ export class HashavshevetProvider {
     return mappedIndexes;
   }
 
-  public async getHashavshevetIsracardIndex(charge: ChargesTypes.IGetChargesByIdsResult) {
-    if (
-      charge.financial_entity_id === '96dba127-90f4-4407-ae89-5a53afa42ca3' &&
-      charge.bank_reference
-    ) {
-      const hashCreditcardIndexResult =
-        await this.financialAccountsProvider.getFinancialAccountByAccountNumberLoader.load(
-          charge.bank_reference,
-        );
-      console.log('charge.bank_reference', charge.bank_reference);
-      console.log('hashCreditcardIndexResult', hashCreditcardIndexResult);
+  // public async getHashavshevetIsracardIndex(charge: ChargesTypes.IGetChargesByIdsResult) {
+  //   if (
+  //     charge.financial_entity_id === '96dba127-90f4-4407-ae89-5a53afa42ca3' &&
+  //     charge.bank_reference
+  //   ) {
+  //     const hashCreditcardIndexResult =
+  //       await this.financialAccountsProvider.getFinancialAccountByAccountNumberLoader.load(
+  //         charge.bank_reference,
+  //       );
+  //     console.log('charge.bank_reference', charge.bank_reference);
+  //     console.log('hashCreditcardIndexResult', hashCreditcardIndexResult);
 
-      // TODO: use ENUM for DB currency_code
-      switch (charge.currency_code) {
-        case 'ILS':
-          return hashCreditcardIndexResult?.hashavshevet_account_ils ?? null;
-        case 'USD':
-          return hashCreditcardIndexResult?.hashavshevet_account_usd ?? null;
-        case 'EUR':
-          return hashCreditcardIndexResult?.hashavshevet_account_eur ?? null;
-        default:
-          throw new Error(`Unknown account type - ${charge.currency_code}`);
-      }
-    }
-    return null;
-  }
+  //     // TODO: use ENUM for DB currency_code
+  //     switch (charge.currency_code) {
+  //       case 'ILS':
+  //         return hashCreditcardIndexResult?.hashavshevet_account_ils ?? null;
+  //       case 'USD':
+  //         return hashCreditcardIndexResult?.hashavshevet_account_usd ?? null;
+  //       case 'EUR':
+  //         return hashCreditcardIndexResult?.hashavshevet_account_eur ?? null;
+  //       default:
+  //         throw new Error(`Unknown account type - ${charge.currency_code}`);
+  //     }
+  //   }
+  //   return null;
+  // }
 
   private async batchHashavshevetBusinessIndexesByOwnerAndBusinessID(
     params: readonly { financialEntityId: string; businessID: string }[],
   ) {
     const dict: Record<string, string[]> = {};
-    params.forEach(({ financialEntityId, businessID }) => {
+    for (const { financialEntityId, businessID } of params) {
       dict[financialEntityId] ||= [];
       if (!dict[financialEntityId].includes(businessID)) {
         dict[financialEntityId].push(businessID);
       }
-    });
+    }
     const financialEntityIds = Object.keys(dict);
     const res = await Promise.all(
       financialEntityIds.map(id =>

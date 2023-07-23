@@ -1,45 +1,64 @@
-import { useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql';
-import { EditMiniButton, PopUpDrawer } from '../../common';
-import { AccountantApproval, AccountDetails, GeneralDate } from './cells';
-import { DeleteLedgerRecordButton } from './delete-ledger-record-button';
-import { EditLedgerRecord } from './edit-ledger-record';
+import { AccountDetails, GeneralDate } from './cells';
 
 /* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
+      __typename
+      ... on LedgerRecords {
+        records {
+          id
+          ...LedgerRecordsDateFields
+          ...LedgerRecordsCreditAccountFields
+          ...LedgerRecordsDebitAccountFields
+          ...LedgerRecordsAccountDetailsFields
+          ...LedgerRecordsGeneralDateFields
+          creditAmount1 {
+            formatted
+          }
+          localCurrencyCreditAmount1 {
+            formatted
+          }
+          debitAccount1 {
+            ... on NamedCounterparty {
+              id
+              name
+            }
+            ... on TaxCategory {
+              id
+              name
+            }
+          }
+          description
+          reference1
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+    # TODO(Gil): Next part is temporary, until we have a new ledger perfected
+    oldLedger {
       id
-      ...LedgerRecordsDateFields
-      ...LedgerRecordsCreditAccountFields
-      ...LedgerRecordsDebitAccountFields
-      # ...LedgerRecordsLocalAmountFields
-      # ...LedgerRecordsOriginalAmountFields
-      # ...LedgerRecordsDescriptionFields
-      # ...LedgerRecordsAccountantApprovalFields
-      # ...LedgerRecordsHashavshevetIdFields
-      ...LedgerRecordsAccountDetailsFields
-      ...LedgerRecordsGeneralDateFields
-      # ...EditLedgerRecordsFields
-      ...EditDbLedgerRecordsFields
-      originalAmount {
-        formatted
-      }
-      localCurrencyAmount {
-        formatted
-      }
-      debitAccount {
-        name
-      }
-      accountantApproval {
-        approved
-      }
-      description
-      hashavshevetId
-      # TEMPORARY: next types used to show the DB current record, should be later removed
-      reference_1
-      reference_2
-      movement_type
+      invoiceDate
+      valueDate
+      creditAccount1
+      creditAccount2
+      debitAccount1
+      debitAccount2
+      debitAmount1
+      creditAmount1
+      debitAmount2
+      creditAmount2
+      foreignDebitAmount1
+      foreignCreditAmount1
+      foreignDebitAmount2
+      foreignCreditAmount2
+      currency
+      details
+      reference1
+      reference2
     }
   }
 `;
@@ -49,94 +68,103 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
-  const { ledgerRecords } = getFragmentData(
+  const { ledgerRecords: data, oldLedger } = getFragmentData(
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,
   );
-  const [editLedgerId, setEditLedgerId] = useState<string | undefined>(undefined);
+
+  if (!data || data.__typename === 'CommonError') {
+    return <div>{data?.message}</div>;
+  }
+
   return (
-    <table style={{ width: '100%', height: '100%' }}>
+    <table className="w-full h-full">
       <thead>
         <tr>
-          {/* <th>Date</th> */}
           <th>Invoice Date</th>
           <th>Value Date</th>
-          <th>Date3</th>
-          {/* <th>Credit Account</th> */}
-          {/* <th>Debit Account</th> */}
           <th>Debit Account1</th>
           <th>Credit Account1</th>
           <th>Debit Account2</th>
           <th>Credit Account2</th>
-          {/* <th>Local Amount</th>
-          <th>Original Amount</th> */}
           <th>Details</th>
           <th>Ref1</th>
-          <th>Ref2</th>
-          <th>Type</th>
-          <th>Hashavshevet ID</th>
-          <th>Accountant Approval</th>
-          <th>Edit</th>
         </tr>
       </thead>
       <tbody>
-        {ledgerRecords.map(record => (
+        {data.records.map(record => (
           <tr key={record.id}>
-            {/* <Date data={record} /> */}
             <GeneralDate data={record} type={1} />
             <GeneralDate data={record} type={2} />
-            <GeneralDate data={record} type={3} />
-            {/* <CreditAccount data={record} />
-            <DebitAccount data={record} /> */}
-            {/* <LocalAmount data={record} /> */}
             <AccountDetails data={record} cred={false} first />
             <AccountDetails data={record} cred first />
             <AccountDetails data={record} cred={false} first={false} />
             <AccountDetails data={record} cred first={false} />
-            {/* <td>{record.localCurrencyAmount.formatted ?? 'Missing Amount'}</td> */}
-            {/* <OriginalAmount data={record} /> */}
-            {/* <td>{record.originalAmount.formatted}</td> */}
-            {/* <Description data={record} /> */}
             <td>{record.description}</td>
-            <td>{record.reference_1}</td>
-            <td>{record.reference_2}</td>
-            {/* <AccountantApproval data={record} /> */}
-            {/* <HashavshevetId data={record} /> */}
-            <td>{record.movement_type}</td>
-            <td>{record.hashavshevetId}</td>
-            <AccountantApproval
-              ledgerRecordId={record.id}
-              approved={record.accountantApproval.approved}
-            />
+            <td>{record.reference1}</td>
+          </tr>
+        ))}
+        {/* TODO(Gil): Next part is temporary, until we have a new ledger perfected */}
+        <tr>
+          <td colSpan={8} />
+        </tr>
+        {oldLedger.map(record => (
+          <tr key={record.id} className="border-4 border-red-500">
+            <td>{record.invoiceDate}</td>
+            <td>{record.valueDate}</td>
             <td>
-              <EditMiniButton onClick={() => setEditLedgerId(record.id)} />
+              {record.debitAccount1}
+              {record.foreignDebitAmount1 && (
+                <>
+                  <br />
+                  {record.foreignDebitAmount1} {record.currency}
+                </>
+              )}
+              <br />
+              {record.debitAmount1} ILS
+            </td>
+            <td>
+              {record.creditAccount1}
+              {record.foreignCreditAmount1 && (
+                <>
+                  <br />
+                  {record.foreignCreditAmount1} {record.currency}
+                </>
+              )}
+              <br />
+              {record.creditAmount1} ILS
+            </td>
+            <td>
+              {record.debitAccount2}
+              {record.foreignDebitAmount2 && (
+                <>
+                  <br />
+                  {record.foreignDebitAmount2} {record.currency}
+                </>
+              )}
+              <br />
+              {record.debitAmount2} ILS
+            </td>
+            <td>
+              {record.creditAccount2}
+              {record.foreignCreditAmount2 && (
+                <>
+                  <br />
+                  {record.foreignCreditAmount2} {record.currency}
+                </>
+              )}
+              <br />
+              {record.creditAmount2} ILS
+            </td>
+            <td>{record.details}</td>
+            <td>
+              {record.reference1}
+              <br />
+              {record.reference2}
             </td>
           </tr>
         ))}
       </tbody>
-      <PopUpDrawer
-        modalSize="40%"
-        position="bottom"
-        title={
-          <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
-            <h1 className="sm:text-2xl font-small text-gray-900">Edit Ledger Record:</h1>
-            <a href="/#" className="pt-1">
-              ID: {editLedgerId}
-            </a>
-            {editLedgerId && <DeleteLedgerRecordButton ledgerRecordId={editLedgerId} />}
-          </div>
-        }
-        opened={!!editLedgerId}
-        onClose={() => setEditLedgerId(undefined)}
-      >
-        {ledgerRecords.some(r => r.id === editLedgerId) ? (
-          <EditLedgerRecord
-            ledgerRecordProps={ledgerRecords.find(r => r.id === editLedgerId)!}
-            onAccept={() => setEditLedgerId(undefined)}
-            onCancel={() => setEditLedgerId(undefined)}
-          />
-        ) : undefined}
-      </PopUpDrawer>
     </table>
   );
 };

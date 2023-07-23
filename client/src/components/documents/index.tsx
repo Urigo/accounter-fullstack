@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
+import { FiltersContext } from '../../filters-context';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
@@ -11,12 +12,17 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
       id
       image
       file
-      creditor
-      debtor
+      creditor {
+        id
+        name
+      }
+      debtor {
+        id
+        name
+      }
       charge {
         id
-        createdAt
-        description
+        userDescription
         __typename
         tags {
           name
@@ -27,14 +33,13 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         }
         transactions {
           id
-          createdAt
-          description
+          eventDate
+          sourceDescription
           effectiveDate
           amount {
             formatted
             __typename
           }
-          userNote
         }
       }
       __typename
@@ -42,15 +47,27 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
       }
       ... on Proforma {
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -68,8 +85,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -82,8 +105,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -101,8 +130,14 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         image
         file
-        creditor
-        debtor
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
         vat {
           raw
           formatted
@@ -123,6 +158,11 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 export const DocumentsReport = () => {
   const [{ data, fetching }] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
+  const { setFiltersContext } = useContext(FiltersContext);
+
+  useEffect(() => {
+    setFiltersContext('');
+  }, [data]);
 
   return fetching ? (
     <AccounterLoader />
@@ -136,7 +176,6 @@ export const DocumentsReport = () => {
           onClose={() => setOpenedImage(null)}
         />
       )}
-      <div style={{ fontSize: 40 }}>Documents</div>
       <AccounterTable
         stickyHeader
         items={data?.documents ?? ([] as DocumentsQuery['documents'])}
@@ -184,10 +223,10 @@ export const DocumentsReport = () => {
             value: doc => doc.charge?.transactions[0].amount.formatted ?? null,
             style: { whiteSpace: 'nowrap' },
           },
-          { title: 'Creditor', value: doc => doc.creditor ?? null },
-          { title: 'Debtor', value: doc => doc.debtor ?? null },
+          { title: 'Creditor', value: doc => doc.creditor?.name ?? null },
+          { title: 'Debtor', value: doc => doc.debtor?.name ?? null },
           {
-            title: 'Realted Transaction',
+            title: 'Related Transaction',
             value: doc =>
               doc.charge?.transactions[0].id ? (
                 <AccounterTable
@@ -200,8 +239,8 @@ export const DocumentsReport = () => {
                     {
                       title: 'Transaction Created At',
                       value: transaction =>
-                        transaction.createdAt
-                          ? format(new Date(transaction.createdAt), 'dd/MM/yy')
+                        transaction.eventDate
+                          ? format(new Date(transaction.eventDate), 'dd/MM/yy')
                           : null,
                     },
                     {
@@ -213,7 +252,7 @@ export const DocumentsReport = () => {
                     },
                     {
                       title: 'Transaction Description',
-                      value: transaction => transaction.description,
+                      value: transaction => transaction.sourceDescription,
                     },
                   ]}
                 />

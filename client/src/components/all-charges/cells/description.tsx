@@ -1,18 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
-import { ConfirmMiniButton, InfoMiniButton } from '../../common';
+import { useUpdateCharge } from '../../../hooks/use-update-charge';
+import { ConfirmMiniButton } from '../../common';
 
 /* GraphQL */ `
   fragment AllChargesDescriptionFields on Charge {
     id
-    transactions {
-      id
-      userNote
-      description
-    }
+    userDescription
     validationData {
       missingInfo
     }
@@ -28,26 +24,24 @@ type Props = {
 
 export const Description = ({ data }: Props) => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
-  const isError = charge?.validationData?.missingInfo?.includes(
-    MissingChargeInfo.TransactionDescription,
-  );
+  const isError = charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
-  const { userNote, id: transactionId, description: fullDescription } = charge.transactions[0];
-  const cellText = userNote?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
-  const [toggleDescription, setToggleDescription] = useState(false);
+  const { userDescription, id: chargeId } = charge;
+  const cellText =
+    userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
 
-  const { updateTransaction, fetching } = useUpdateTransaction();
+  const { updateCharge, fetching } = useUpdateCharge();
 
-  const updateUserNote = useCallback(
+  const updateUserDescription = useCallback(
     (value?: string) => {
       if (value !== undefined) {
-        updateTransaction({
-          transactionId,
-          fields: { userNote: value },
+        updateCharge({
+          chargeId,
+          fields: { userDescription: value },
         });
       }
     },
-    [transactionId, updateTransaction],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -58,15 +52,13 @@ export const Description = ({ data }: Props) => {
             <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
           </Indicator>
         </div>
-        <InfoMiniButton onClick={() => setToggleDescription(!toggleDescription)} />
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={() => updateUserNote(charge.missingInfoSuggestions!.description!)}
+            onClick={() => updateUserDescription(charge.missingInfoSuggestions!.description!)}
             disabled={fetching}
           />
         )}
       </div>
-      {toggleDescription && fullDescription}
     </td>
   );
 };

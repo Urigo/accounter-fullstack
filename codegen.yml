@@ -1,11 +1,11 @@
 overwrite: true
 schema: ./server/src/modules/*/typeDefs/*.graphql.ts
-documents: ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts']
+documents:
+  ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts', './client/**/*.graphql.ts']
 config:
   scalars:
     TimelessDate: 'TimelessDateString'
     IBAN: string
-    Percentage: number
     URL: 'URL | string'
     FileScalar: 'File | Blob'
 generates:
@@ -34,23 +34,24 @@ generates:
         BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         Charge: '@modules/charges/types.js#IGetChargesByIdsResult'
-        LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargeIdsResult'
+        LedgerRecord: '@shared/types#LedgerProto'
         NamedCounterparty: '@shared/types#CounterpartyProto'
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
         Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
-        WireTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
-        FeeTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
-        ConversionTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
-        CommonTransaction: '@modules/charges/types.js#IGetChargesByIdsResult'
+        WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
         BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
         Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult'
         SortCode: '@modules/hashavshevet/types.js#IGetSortCodesByIdsResult'
         HashavshevetAccount: '@modules/hashavshevet/types.js#IGetAccountCardsBySortCodesResult'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
-        VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#DecoratedVatReportRecord'
+        VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord'
         BusinessTransaction: '@modules/financial-entities/types.js#IGetBusinessTransactionsFromLedgerRecordsResult'
+        ExchangeRates: 'TimelessDateString'
     plugins:
       - add:
           content: "import { TimelessDateString } from '@shared/types'"
