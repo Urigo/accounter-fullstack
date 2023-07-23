@@ -7,6 +7,9 @@ import { AllChargesRow } from './all-charges-row';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
+    owner {
+      id
+    }
     ...AllChargesRowFields
   }
 `;
@@ -16,7 +19,15 @@ interface Props {
     SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
   >;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
+  setMatchDocuments: Dispatch<
+    React.SetStateAction<
+      | {
+          id: string;
+          ownerId: string;
+        }
+      | undefined
+    >
+  >;
   setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
   toggleMergeCharge?: (chargeId: string) => void;
   mergeSelectedCharges?: string[];
@@ -59,9 +70,9 @@ export const AllChargesTable = ({
             key={charge.id}
             data={charge}
             setEditCharge={setEditCharge}
-            setInsertDocument={setInsertDocument}
-            setMatchDocuments={setMatchDocuments}
-            setUploadDocument={setUploadDocument}
+            setInsertDocument={() => setInsertDocument(charge.id)}
+            setMatchDocuments={() => setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })}
+            setUploadDocument={() => setUploadDocument(charge.id)}
             toggleMergeCharge={toggleMergeCharge ? () => toggleMergeCharge(charge.id) : undefined}
             isSelectedForMerge={mergeSelectedCharges?.includes(charge.id) ?? false}
             isAllOpened={isAllOpened}
