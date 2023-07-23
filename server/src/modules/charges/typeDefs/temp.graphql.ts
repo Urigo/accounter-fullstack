@@ -10,7 +10,7 @@ export default gql`
   " Old ledger entity"
   type OldLedger {
     business: String!
-    #   chargeId: string;
+    " chargeId: string; "
     creditAccount1: String
     creditAccount2: String
     creditAccountId1: String
