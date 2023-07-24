@@ -1,7 +1,7 @@
-import { Dispatch, SetStateAction, useState } from 'react';
-import { FileUpload, PlaylistAdd, Search } from 'tabler-icons-react';
+import { useState } from 'react';
+import { FileUpload, PlaylistAdd, Plus, Search } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Burger, Loader, Menu } from '@mantine/core';
+import { Accordion, Burger, Loader, Menu } from '@mantine/core';
 import { FetchChargeDocument } from '../../gql/graphql';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
@@ -35,17 +35,9 @@ import { TransactionsTable } from './transactions/transactions-table';
 
 interface Props {
   chargeID: string;
-  setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
-  setMatchDocuments: Dispatch<SetStateAction<{ id: string; ownerId: string } | undefined>>;
-  setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
 }
 
-export function ChargeExtendedInfo({
-  chargeID,
-  setInsertDocument,
-  setMatchDocuments,
-  setUploadDocument,
-}: Props) {
+export function ChargeExtendedInfo({ chargeID }: Props) {
   const [{ data, fetching }] = useQuery({
     query: FetchChargeDocument,
     variables: {
@@ -62,49 +54,62 @@ export function ChargeExtendedInfo({
   );
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!(charge?.metadata?.invoicesCount || charge?.metadata?.receiptsCount);
+
+  const defaultAccordionValue = () => {
+    const tabs = [];
+    if (hasTransactions) {
+      tabs.push('transactions');
+    }
+    if (hasDocs) {
+      tabs.push('documents');
+    }
+    if (hasLedgerRecords) {
+      tabs.push('ledger');
+    }
+    return tabs;
+  };
+
+  // const [openTabs, setOpenTabs] = useState<Array<string>>(defaultAccordionValue.current);
+
   return (
     <div className="flex flex-col gap-5">
       {fetching && (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
       {!fetching && charge && (
-        <>
-          <div className="flex flex-row gap-5">
-            {(hasTransactions || hasDocs) && (
-              <div className="flex flex-col justify-start items-center w-full max-w-7/8">
-                <h1 className="text-base font-semibold">Transactions</h1>
-                <div className="p-2 flex flex-row w-full">
-                  <TransactionsTable transactionsProps={charge} />
-                </div>
-              </div>
-            )}
-            <div className={`flex flex-col w-${hasTransactions ? '1/6' : 'full'}`}>
-              <div className="w-full flex flex-row justify-end">
-                <ChargeExtendedInfoMenu
-                  setInsertDocument={() => setInsertDocument(charge.id)}
-                  setMatchDocuments={() =>
-                    setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
-                  }
-                  setUploadDocument={() => setUploadDocument(charge.id)}
-                />
-              </div>
-              {(hasTransactions || hasDocs) && (
-                <div className="flex flex-col justify-start items-center">
-                  <h1 className="text-base font-semibold">Documents</h1>
-                  <DocumentsGallery chargeProps={charge} />
-                </div>
-              )}
-            </div>
-          </div>
-          {hasLedgerRecords && (
-            <div className="flex flex-col justify-start items-center w-full">
-              <h1 className="text-base font-semibold">Ledger Records</h1>
-              <div className="p-2 flex flex-row w-full">
-                <LedgerRecordTable ledgerRecordsProps={charge} />
-              </div>
-            </div>
-          )}
-        </>
+        <Accordion
+          multiple
+          defaultValue={defaultAccordionValue()}
+          chevron={<Plus size="1rem" />}
+          styles={{
+            chevron: {
+              '&[data-rotate]': {
+                transform: 'rotate(45deg)',
+              },
+            },
+          }}
+        >
+          <Accordion.Item value="transactions">
+            <Accordion.Control disabled={!hasTransactions}>Transactions</Accordion.Control>
+            <Accordion.Panel>
+              <TransactionsTable transactionsProps={charge} />
+            </Accordion.Panel>
+          </Accordion.Item>
+
+          <Accordion.Item value="documents">
+            <Accordion.Control disabled={!hasDocs}>Documents</Accordion.Control>
+            <Accordion.Panel>
+              <DocumentsGallery chargeProps={charge} />
+            </Accordion.Panel>
+          </Accordion.Item>
+
+          <Accordion.Item value="ledger">
+            <Accordion.Control disabled={!hasLedgerRecords}>Ledger Records</Accordion.Control>
+            <Accordion.Panel>
+              <LedgerRecordTable ledgerRecordsProps={charge} />
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
       )}
       {!fetching && !charge && <p>Error fetching extended information for this charge</p>}
     </div>
