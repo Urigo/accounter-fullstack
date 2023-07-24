@@ -94,7 +94,6 @@ export const AllChargesRow = ({
   useEffect(() => {
     const updatedCharge = newData?.chargesByIDs?.[0];
     if (updatedCharge) {
-      console.log('updatedCharge', updatedCharge.id);
       setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, updatedCharge));
     }
   }, [newData]);
