@@ -23,8 +23,7 @@ import { TransactionsTable } from './transactions/transactions-table';
       }
       metadata {
         transactionsCount
-        invoicesCount
-        receiptsCount
+        documentsCount
       }
       ...DocumentsGalleryFields
       ...TableLedgerRecordsFields
@@ -53,9 +52,10 @@ export function ChargeExtendedInfo({ chargeID }: Props) {
     charge.ledgerRecords.records.length > 0
   );
   const hasTransactions = !!charge?.metadata?.transactionsCount;
-  const hasDocs = !!(charge?.metadata?.invoicesCount || charge?.metadata?.receiptsCount);
+  const hasDocs = !!charge?.metadata?.documentsCount;
 
   const defaultAccordionValue = () => {
+    console.log('hasDocs', hasDocs);
     const tabs = [];
     if (hasTransactions) {
       tabs.push('transactions');
