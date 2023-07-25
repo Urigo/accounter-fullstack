@@ -17,6 +17,7 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
+  MergeChargesButton,
   UploadDocumentModal,
 } from '../common';
 import { AllChargesTable } from './all-charges-table';
@@ -82,6 +83,10 @@ export const AllCharges = () => {
     },
   });
 
+  function onResetMerge() {
+    setMergeSelectedCharges([]);
+  }
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
@@ -97,6 +102,7 @@ export const AllCharges = () => {
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
+        <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
       </div>,
     );
   }, [
@@ -109,6 +115,7 @@ export const AllCharges = () => {
     setPage,
     setFilter,
     setIsAllOpened,
+    mergeSelectedCharges,
   ]);
 
   return (
