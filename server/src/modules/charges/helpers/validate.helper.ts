@@ -25,9 +25,7 @@ export const validateCharge = async (
   // validate documents
   const invoicesCount = Number(charge.invoices_count) || 0;
   const receiptsCount = Number(charge.receipts_count) || 0;
-  const isForeignExpense =
-    business?.country !== 'Israel' && Number(charge.transactions_event_amount) < 0;
-  const canSettleWithReceipt = isForeignExpense && receiptsCount > 0;
+  const canSettleWithReceipt = !!(charge.can_settle_with_receipt && receiptsCount > 0);
   const dbDocumentsAreValid = !charge.invalid_documents;
   const documentsAreFine =
     business?.no_invoices_required ||
