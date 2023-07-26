@@ -20,8 +20,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@accounter-toolkit/green-invoice-graphql": "0.4.0-alpha-20230717092739-ac9a64c",
-    "@accounter-toolkit/pcn874-generator": "0.2.0-alpha-20230326113533-8039ee4",
+    "@accounter-toolkit/green-invoice-graphql": "0.5.0-alpha-20230726111518-d1f3c0f",
+    "@accounter-toolkit/pcn874-generator": "0.2.0",
     "@envelop/graphql-modules": "4.0.6",
     "@graphql-tools/mock": "8.7.20",
     "@graphql-tools/schema": "9.0.19",
