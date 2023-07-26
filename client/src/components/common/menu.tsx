@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useMatch, useResolvedPath } from 'react-router-dom';
+import { FetchIncomeDocumentsButton } from './fetch-income-documents-button';
 import { Icon } from './icon';
 
 type Link = {
@@ -48,6 +49,7 @@ export const NavBar = () => {
               {link.label}
             </CustomLink>
           ))}
+          <FetchIncomeDocumentsButton />
         </nav>
       </div>
     </header>
