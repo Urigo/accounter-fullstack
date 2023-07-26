@@ -19,7 +19,7 @@ export function normalizeDocumentType(
       return DocumentType.Invoice;
     case '_300':
       // חשבונית עסקה
-      return DocumentType.Unprocessed;
+      return DocumentType.Proforma;
     case '_305':
       // חשבונית מס
       return DocumentType.Invoice;
