@@ -22,3 +22,4 @@ export * from './nav-bar.js';
 export * from './notification.js';
 export * from './simple-grid.js';
 export * from './toggle-merge-selected.js';
+export * from './fetch-income-documents-button.js';
