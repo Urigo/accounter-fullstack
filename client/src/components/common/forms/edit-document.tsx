@@ -172,7 +172,7 @@ export const EditDocument = ({ documentProps }: Props) => {
         </div>
       </div>
       <Drawer
-        className="overflow-y-auto drop-shadow-lg"
+        classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
         withCloseButton
         withOverlay={false}
         position="right"

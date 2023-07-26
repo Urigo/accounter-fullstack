@@ -55,7 +55,6 @@ export function ChargeExtendedInfo({ chargeID }: Props) {
   const hasDocs = !!charge?.metadata?.documentsCount;
 
   const defaultAccordionValue = () => {
-    console.log('hasDocs', hasDocs);
     const tabs = [];
     if (hasTransactions) {
       tabs.push('transactions');
