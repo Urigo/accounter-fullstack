@@ -26,7 +26,10 @@ export const formatFinancialAmount = (
   };
 };
 
-export const formatCurrency = (raw?: string | null): Currency => {
+export const formatCurrency = <T extends boolean = false>(
+  raw: string | null = null,
+  nullable?: T,
+): Currency | (T extends true ? null : never) => {
   switch (raw) {
     case 'GBP':
       return Currency.Gbp;
@@ -51,6 +54,9 @@ export const formatCurrency = (raw?: string | null): Currency => {
     case undefined:
       return Currency.Ils;
     default:
+      if (nullable) {
+        return null as T extends true ? null : never;
+      }
       console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
       return Currency.Ils;
   }

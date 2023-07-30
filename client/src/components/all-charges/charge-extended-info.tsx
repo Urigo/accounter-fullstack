@@ -26,6 +26,7 @@ import { TransactionsTable } from './transactions/transactions-table';
         documentsCount
       }
       ...DocumentsGalleryFields
+      ...TableDocumentsFields
       ...TableLedgerRecordsFields
       ...TableTransactionsFields
     }

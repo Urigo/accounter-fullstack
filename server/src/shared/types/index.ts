@@ -1,4 +1,5 @@
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { Currency } from '@shared/gql-types';
 
 export type BeneficiaryCounterpartyProto = { counterpartyID: string; percentage: number };
 export type CounterpartyProto = string | null;
@@ -38,5 +39,13 @@ export type VatExtendedCharge = IGetChargesByIdsResult & {
   amountBeforeVAT: number;
   amountBeforeFullVAT: number;
 };
+
+export interface DocumentSuggestionsProto {
+  counterpartyId?: string;
+  amount?: {
+    amount: string;
+    currency: Currency;
+  };
+}
 
 export * from './ledger.js';
