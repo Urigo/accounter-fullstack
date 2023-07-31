@@ -21,18 +21,6 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
     ...DocumentsTableDebtorFields
     ...DocumentFilesFields
     image
-    ... on Invoice {
-      documentType
-    }
-    ... on Proforma {
-      documentType
-    }
-    ... on Receipt {
-      documentType
-    }
-    ... on InvoiceReceipt {
-      documentType
-    }
   }
 `;
 
