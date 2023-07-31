@@ -140,8 +140,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($toDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.transactions_min_event_date, c.documents_min_date)  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(c.transactions_min_event_date, c.documents_min_date)  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN c.event_amount  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN c.event_amount  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(c.event_amount as DECIMAL))  END ASC,
