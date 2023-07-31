@@ -50,7 +50,7 @@ export const getVatRecords: ResolverFn<
 
     // filter invoice documents with linked charge
     const relevantDocuments = documents.filter(doc => {
-      if (!doc.charge_id_new) {
+      if (!doc.charge_id_new || !doc.creditor_id || !doc.debtor_id) {
         return false;
       }
       const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT'].includes(doc.type);
