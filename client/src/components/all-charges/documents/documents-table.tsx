@@ -1,35 +1,15 @@
 import { useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql';
-import { EditDocumentModal, EditMiniButton } from '../../common';
-import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells';
+import { EditDocumentModal } from '../../common';
+import { DocumentsTableRow } from './documents-table-row';
 
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
     additionalDocuments {
       id
-      ...DocumentsTableAmountFields
-      ...DocumentsDateFields
-      ...DocumentsTableVatFields
-      ...DocumentTypeFields
-      ...DocumentSerialFields
-      ...DocumentsTableCreditorFields
-      ...DocumentsTableDebtorFields
-      ...DocumentFilesFields
-      image
-      ... on Invoice {
-        documentType
-      }
-      ... on Proforma {
-        documentType
-      }
-      ... on Receipt {
-        documentType
-      }
-      ... on InvoiceReceipt {
-        documentType
-      }
+      ...TableDocumentsRowFields
     }
   }
 `;
@@ -62,22 +42,11 @@ export const DocumentsTable = ({ documentsProps }: Props) => {
         </thead>
         <tbody>
           {documents.map(document => (
-            <tr key={document.id}>
-              <DateCell data={document} />
-              <Amount data={document} />
-              <Vat data={document} />
-              <TypeCell data={document} />
-              <Serial data={document} />
-              <Creditor data={document} />
-              <Debtor data={document} />
-              <Files data={document} />
-              <td>
-                <EditMiniButton
-                  onClick={() => setEditDocumentId(document.id)}
-                  tooltip="Edit Document"
-                />
-              </td>
-            </tr>
+            <DocumentsTableRow
+              key={document.id}
+              documentData={document}
+              editDocument={() => setEditDocumentId(document.id)}
+            />
           ))}
         </tbody>
       </table>

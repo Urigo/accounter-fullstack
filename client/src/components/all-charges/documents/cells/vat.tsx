@@ -46,7 +46,7 @@ export const Vat = ({ data }: Props) => {
 
   return (
     <td>
-      <Indicator inline size={12} disabled={vat?.formatted == null} color="red" zIndex="auto">
+      <Indicator inline size={12} disabled={vat?.formatted != null} color="red" zIndex="auto">
         <div
           style={{
             color: Number(vat?.raw) > 0 ? 'green' : 'red',

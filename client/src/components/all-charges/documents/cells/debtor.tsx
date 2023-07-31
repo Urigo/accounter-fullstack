@@ -1,39 +1,94 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
-import {
-  ChargeFilter,
-  DocumentsTableDebtorFieldsFragmentDoc,
-  DocumentType,
-} from '../../../../gql/graphql';
+import { DocumentsTableDebtorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql';
+import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
+import { ConfirmMiniButton } from '../../../common';
+import { getBusinessHref } from '../../helpers';
 
 /* GraphQL */ `
   fragment DocumentsTableDebtorFields on Document {
     id
     documentType
     ... on Invoice {
+      creditor {
+        id
+      }
       debtor {
         id
         name
+      }
+      missingInfoSuggestions {
+        isIncome
+        counterparty {
+          id
+          name
+        }
+        owner {
+          id
+          name
+        }
       }
     }
     ... on InvoiceReceipt {
+      creditor {
+        id
+      }
       debtor {
         id
         name
+      }
+      missingInfoSuggestions {
+        isIncome
+        counterparty {
+          id
+          name
+        }
+        owner {
+          id
+          name
+        }
       }
     }
     ... on Proforma {
+      creditor {
+        id
+      }
       debtor {
         id
         name
       }
+      missingInfoSuggestions {
+        isIncome
+        counterparty {
+          id
+          name
+        }
+        owner {
+          id
+          name
+        }
+      }
     }
     ... on Receipt {
+      creditor {
+        id
+      }
       debtor {
         id
         name
+      }
+      missingInfoSuggestions {
+        isIncome
+        counterparty {
+          id
+          name
+        }
+        owner {
+          id
+          name
+        }
       }
     }
   }
@@ -41,60 +96,92 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 type Props = {
   data: FragmentType<typeof DocumentsTableDebtorFieldsFragmentDoc>;
+  refetchDocument: () => void;
 };
 
-export const Debtor = ({ data }: Props) => {
+export const Debtor = ({ data, refetchDocument }: Props) => {
   const { get } = useUrlQuery();
   const document = getFragmentData(DocumentsTableDebtorFieldsFragmentDoc, data);
-  const debtor = 'debtor' in document ? document.debtor : undefined;
+  const dbDebtor = 'debtor' in document ? document.debtor : undefined;
+
   const isError =
-    ![
-      DocumentType.Invoice,
-      DocumentType.InvoiceReceipt,
-      DocumentType.Receipt,
-      DocumentType.Receipt,
-    ].includes(document.documentType as DocumentType) && !debtor?.id;
-  const { name = 'Missing', id } = debtor || {};
+    !dbDebtor?.id || [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
 
   const encodedFilters = get('chargesFilters');
 
   const getHref = useCallback(
-    (businessID: string) => {
-      const currentFilters = encodedFilters
-        ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
-        : {};
-      const encodedNewFilters = {
-        fromDate: currentFilters.fromDate
-          ? `%252C%2522fromDate%2522%253A%2522${currentFilters.fromDate}%2522`
-          : '',
-        toDate: currentFilters.toDate
-          ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
-          : '',
-        financialEntityIds:
-          currentFilters.byOwners && currentFilters.byOwners.length > 0
-            ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
-            : '',
-      };
-      return `/business-transactions?transactionsFilters=%257B%2522financialEntityIds%2522%253A%255B${
-        encodedNewFilters.financialEntityIds
-      }%255D%252C%2522businessIDs%2522%253A%255B%2522${encodeURIComponent(businessID)}%2522%255D${
-        encodedNewFilters.fromDate
-      }${encodedNewFilters.toDate}%257D`;
-    },
+    (businessId: string) => getBusinessHref(businessId, encodedFilters as string),
     [encodedFilters],
   );
+
+  const suggestedDebtor = useMemo(() => {
+    if (dbDebtor || !('missingInfoSuggestions' in document) || !document.missingInfoSuggestions) {
+      // case when creditor is already set or no suggestions
+      return undefined;
+    }
+    const suggestedOwner = document.missingInfoSuggestions.owner;
+    const suggestedCounterparty = document.missingInfoSuggestions.counterparty;
+    if (document.missingInfoSuggestions?.isIncome == null) {
+      // case when we don't know if it's income or outcome
+      if (document.creditor?.id) {
+        const creditorId = document.creditor.id;
+        if (suggestedOwner?.id === creditorId && suggestedCounterparty) {
+          // case when owner is creditor and we have counterparty
+          return suggestedCounterparty;
+        }
+        if (suggestedCounterparty?.id === creditorId && suggestedOwner) {
+          // case when counterparty is creditor and we have owner
+          return suggestedOwner;
+        }
+      }
+    } else if (document.missingInfoSuggestions.isIncome && suggestedCounterparty) {
+      // case when it's income and we have counterparty
+      return suggestedCounterparty;
+    } else if (!document.missingInfoSuggestions.isIncome && suggestedOwner) {
+      // case when it's outcome and we have owner
+      return suggestedOwner;
+    }
+    return undefined;
+  }, [document, dbDebtor]);
+
+  const hasAlternative = !dbDebtor && !!suggestedDebtor;
+
+  const debtor = dbDebtor ?? suggestedDebtor;
+
+  const { updateDocument, fetching } = useUpdateDocument();
+
+  const updateDebtor = useCallback(
+    (debtorId?: string) => {
+      if (debtorId !== undefined) {
+        updateDocument({
+          documentId: document.id,
+          fields: {
+            debtorId,
+          },
+        }).then(refetchDocument);
+      }
+    },
+    [document.id, updateDocument, refetchDocument],
+  );
+
+  const { name = 'Missing', id } = debtor || {};
 
   return (
     <td>
       <div className="flex flex-wrap">
-        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-          {!isError && (
-            <a href={getHref(id)} target="_blank" rel="noreferrer">
-              <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-            </a>
-          )}
-          {isError && name}
-        </Indicator>
+        <div className="flex flex-col justify-center">
+          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+            {!isError && (
+              <a href={getHref(id)} target="_blank" rel="noreferrer">
+                <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+              </a>
+            )}
+            {isError && <p style={{ backgroundColor: 'rgb(236, 207, 57)' }}>{name}</p>}
+          </Indicator>
+        </div>
+        {hasAlternative && (
+          <ConfirmMiniButton onClick={() => updateDebtor(suggestedDebtor.id)} disabled={fetching} />
+        )}
       </div>
     </td>
   );
