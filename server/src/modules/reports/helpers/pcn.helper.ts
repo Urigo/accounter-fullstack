@@ -142,7 +142,7 @@ const transformTransactions = (dbTransactions: RawVatReportRecord[]): ExtendedPC
       isProperty: t.isProperty,
     });
   }
-  return transactions;
+  return transactions.sort((a, b) => a.invoiceDate.localeCompare(b.invoiceDate));
 };
 
 export const generatePcnFromCharges = (
