@@ -41,11 +41,13 @@ export type VatExtendedCharge = IGetChargesByIdsResult & {
 };
 
 export interface DocumentSuggestionsProto {
+  ownerId?: string;
   counterpartyId?: string;
   amount?: {
     amount: string;
     currency: Currency;
   };
+  isIncome?: boolean;
 }
 
 export * from './ledger.js';

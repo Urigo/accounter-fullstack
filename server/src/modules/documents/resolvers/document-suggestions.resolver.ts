@@ -33,12 +33,23 @@ const missingInfoSuggestions: Resolver<
     if (charge?.business_id) {
       response.counterpartyId = charge.business_id;
     }
+    if (charge?.owner_id) {
+      response.ownerId = charge.owner_id;
+    }
+    if (charge?.transactions_event_amount) {
+      const amount = Number(charge.transactions_event_amount);
+      if (!Number.isNaN(amount)) {
+        response.isIncome = Number(charge.transactions_event_amount) > 0;
+      }
+    }
     if (charge?.transactions_event_amount && charge?.transactions_currency) {
+      // use transactions info, if exists
       response.amount = {
         amount: charge.transactions_event_amount,
         currency: formatCurrency(charge.transactions_currency),
       };
     } else if (charge?.documents_event_amount && charge?.documents_currency) {
+      // Use parallel documents (if exists) as documents_event_amount is based on invoices OR receipts
       response.amount = {
         amount: String(charge.documents_event_amount),
         currency: formatCurrency(charge.documents_currency),
@@ -567,9 +578,11 @@ export const documentSuggestionsResolvers: DocumentsModule.Resolvers = {
   },
   DocumentSuggestions: {
     counterparty: suggestion => suggestion.counterpartyId ?? null,
+    owner: suggestion => suggestion.ownerId ?? null,
     amount: suggestion =>
       suggestion.amount
         ? formatFinancialAmount(suggestion.amount.amount, suggestion.amount.currency)
         : null,
+    isIncome: suggestion => (suggestion.isIncome == null ? null : suggestion.isIncome),
   },
 };
