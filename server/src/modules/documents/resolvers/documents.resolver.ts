@@ -37,6 +37,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const dbDocs = await injector.get(DocumentsProvider).getDocumentsByFilters(filters);
       return dbDocs;
     },
+    documentById: async (_, { documentId }, { injector }) => {
+      const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
+      return doc ?? null;
+    },
   },
   Mutation: {
     uploadDocument,
@@ -311,40 +315,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         console.error(e);
         return [];
       }
-    },
-    invoice: async (DbCharge, _, { injector }) => {
-      if (!DbCharge.id) {
-        return null;
-      }
-      const docs = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const invoices = docs.filter(d => ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
-      if (invoices.length > 1) {
-        console.log(
-          `Charge ${DbCharge.id} has more than one invoices: [${invoices
-            .map(r => `"${r.id}"`)
-            .join(', ')}]`,
-        );
-      }
-      return invoices.shift() ?? null;
-    },
-    receipt: async (DbCharge, _, { injector }) => {
-      if (!DbCharge.id) {
-        return null;
-      }
-      const docs = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(DbCharge.id);
-      const receipts = docs.filter(d => ['RECEIPT', 'INVOICE_RECEIPT'].includes(d.type ?? ''));
-      if (receipts.length > 1) {
-        console.log(
-          `Charge ${DbCharge.id} has more than one receipt: [${receipts
-            .map(r => `"${r.id}"`)
-            .join(', ')}]`,
-        );
-      }
-      return receipts.shift() ?? null;
     },
   },
   LtdFinancialEntity: {
