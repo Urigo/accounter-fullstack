@@ -7,7 +7,7 @@ import {
   AllFinancialEntitiesDocument,
   Currency,
   DocumentType,
-  EditDocumentFieldsFragment,
+  EditDocumentQuery,
   InsertDocumentInput,
   UpdateDocumentFieldsInput,
 } from '../../../gql/graphql';
@@ -21,7 +21,7 @@ import {
 import { CurrencyInput, SelectInput, TextInput } from '../../common';
 
 export interface Props {
-  document?: EditDocumentFieldsFragment;
+  document?: EditDocumentQuery['documentById'];
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
   watch: UseFormWatch<UpdateDocumentFieldsInput | InsertDocumentInput>;
   defaultCurrency?: Currency;

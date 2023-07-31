@@ -1,5 +1,5 @@
 import { Copy } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { DeleteDocumentButton, EditDocument, PopUpDrawer, UnlinkDocumentButton } from '..';
 import { writeToClipboard } from '../../../helpers';
 
@@ -21,9 +21,11 @@ export const EditDocumentModal = ({ onDone, documentId }: Props) => {
           <h1 className="sm:text-2xl font-small text-gray-900">Edit Document</h1>
           <div className="flex flex-row gap-2">
             ID: {documentId}
-            <ActionIcon variant="default" onClick={() => writeToClipboard(documentId)} size={30}>
-              <Copy size={20} />
-            </ActionIcon>
+            <Tooltip label="Copy ID">
+              <ActionIcon variant="default" onClick={() => writeToClipboard(documentId)} size={30}>
+                <Copy size={20} />
+              </ActionIcon>
+            </Tooltip>
             <UnlinkDocumentButton documentId={documentId} />
             <DeleteDocumentButton documentId={documentId} />
           </div>

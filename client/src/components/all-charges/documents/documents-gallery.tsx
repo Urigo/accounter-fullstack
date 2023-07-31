@@ -3,15 +3,12 @@ import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
-import { EditDocument, PopUpDrawer } from '../../common';
-import { DeleteDocumentButton } from './delete-document-button';
-import { UnlinkDocumentButton } from './unlink-document-button';
+import { EditDocumentModal } from '../../common';
 
 /* GraphQL */ `
   fragment DocumentsGalleryFields on Charge {
     id
     additionalDocuments {
-      ...EditDocumentFields
       id
       image
       ... on Invoice {
@@ -36,7 +33,7 @@ type Props = {
 
 export const DocumentsGallery = ({ chargeProps }: Props) => {
   const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
-  const [openModal, setOpenModal] = useState<string | null>(null);
+  const [openModal, setOpenModal] = useState<string | undefined>(undefined);
 
   return (
     <div className="container mx-auto text-gray-600 body-font">
@@ -68,26 +65,7 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
               ))}
             </Carousel>
           </div>
-          {openModal && (
-            <PopUpDrawer
-              modalSize="40%"
-              position="bottom"
-              opened
-              onClose={() => setOpenModal(null)}
-              title={
-                <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-5">
-                  <h1 className="sm:text-2xl font-small text-gray-900">Edit Documents</h1>
-                  <a href="/#" className="pt-1">
-                    ID: {openModal}
-                  </a>
-                  <UnlinkDocumentButton documentId={openModal} />
-                  <DeleteDocumentButton documentId={openModal} />
-                </div>
-              }
-            >
-              <EditDocument documentProps={additionalDocuments.find(d => d.id === openModal)!} />
-            </PopUpDrawer>
-          )}
+          <EditDocumentModal documentId={openModal} onDone={() => setOpenModal(undefined)} />
         </>
       ) : (
         <Badge color="red">No Documents Related</Badge>
