@@ -13,6 +13,7 @@ import type {
   IGetDocumentsByFiltersQuery,
   IGetDocumentsByFinancialEntityIdsParams,
   IGetDocumentsByFinancialEntityIdsQuery,
+  IGetDocumentsByIdsQuery,
   IInsertDocumentsParams,
   IInsertDocumentsQuery,
   IReplaceDocumentsChargeIdParams,
@@ -43,6 +44,12 @@ const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQu
     WHERE c.owner_id IN $$ownerIds
   )
   ORDER BY created_at DESC;
+`;
+
+const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
+  SELECT *
+  FROM accounter_schema.documents
+  WHERE id IN $$Ids;
 `;
 
 const updateDocument = sql<IUpdateDocumentQuery>`
@@ -248,4 +255,23 @@ export class DocumentsProvider {
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
     return replaceDocumentsChargeId.run(params, this.dbProvider);
   }
+
+  private async batchDocumentsByIds(ids: readonly string[]) {
+    const uniqueIDs = [...new Set(ids)];
+    try {
+      const docs = await getDocumentsByIds.run({ Ids: uniqueIDs }, this.dbProvider);
+
+      return ids.map(id => docs.find(doc => doc.id === id));
+    } catch (e) {
+      console.error(e);
+      return ids.map(() => null);
+    }
+  }
+
+  public getDocumentsByIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchDocumentsByIds(keys),
+    {
+      cache: false,
+    },
+  );
 }

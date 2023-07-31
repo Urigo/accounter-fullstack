@@ -5,8 +5,8 @@ import { useQuery } from 'urql';
 import { ActionIcon, Modal, Select } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument } from '../../gql/graphql';
-import { useFetchIncomeDocuments } from '../../hooks/use-fetch-income-documents';
+import { AllFinancialEntitiesDocument } from '../../../gql/graphql';
+import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents';
 
 export function FetchIncomeDocumentsButton() {
   const [financialEntities, setFinancialEntities] = useState<

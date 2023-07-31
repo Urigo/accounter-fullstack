@@ -58,6 +58,7 @@ module.exports = {
                 'VatReportResult',
                 'VatReportRecord',
                 'ValidationData',
+                'DocumentSuggestions',
               ],
             },
           },

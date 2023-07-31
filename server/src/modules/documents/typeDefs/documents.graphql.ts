@@ -5,6 +5,7 @@ export default gql`
   extend type Query {
     documents: [Document!]!
     documentsByFilters(filters: DocumentsFilters!): [Document!]!
+    documentById(documentId: ID!): Document
   }
 
   " input variables for documents filtering "
@@ -58,7 +59,6 @@ export default gql`
     id: ID!
     image: URL
     file: URL
-    charge: Charge
     documentType: DocumentType
     isReviewed: Boolean
   }
@@ -69,7 +69,6 @@ export default gql`
     image: URL
     file: URL
     vat: FinancialAmount
-    charge: Charge
     documentType: DocumentType
     isReviewed: Boolean
 
@@ -95,13 +94,10 @@ export default gql`
   " receipt document "
   type Receipt implements Document & Linkable {
     id: ID!
-    " previewable image "
     image: URL
-    " gmail, pdf "
     file: URL
     documentType: DocumentType
     vat: FinancialAmount
-    invoice: Invoice
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
@@ -182,19 +178,9 @@ export default gql`
     document: Document
   }
 
-  " represent every kind of invoice document "
-  union BroadInvoice = Invoice | InvoiceReceipt
-
-  " represent every kind of receipt document "
-  union BroadReceipt = Receipt | InvoiceReceipt
-
   extend type Charge {
     " additional documents attached to the charge "
     additionalDocuments: [Document!]!
-    " linked invoice document "
-    invoice: BroadInvoice
-    " linked receipt document "
-    receipt: BroadReceipt
   }
 
   extend type LtdFinancialEntity {

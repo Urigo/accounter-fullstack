@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useMatch, useResolvedPath } from 'react-router-dom';
-import { FetchIncomeDocumentsButton } from './fetch-income-documents-button';
-import { Icon } from './icon';
+import { FetchIncomeDocumentsButton, Icon } from './index.js';
 
 type Link = {
   label: string;
