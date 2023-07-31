@@ -9,7 +9,7 @@ import { TIMELESS_DATE_REGEX } from '../../helpers';
 import { TimelessDateString } from '../../helpers/dates';
 import { isObjectEmpty } from '../../helpers/form';
 import { useUrlQuery } from '../../hooks/use-url-query';
-import { PopUpModal } from '../common/modal';
+import { PopUpModal } from '../common';
 
 interface ChargeFilterFormProps {
   filter: ChargeFilter;
