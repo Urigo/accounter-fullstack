@@ -12,7 +12,11 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import { adjustTaxRecords, VatReportRecordSources } from '../helpers/vat-report.helper.js';
+import {
+  adjustTaxRecords,
+  RawVatReportRecord,
+  VatReportRecordSources,
+} from '../helpers/vat-report.helper.js';
 
 // TODO(Gil): implement this in a better way, maybe DB flag
 const EXCLUDED_BUSINESS_NAMES = [
@@ -30,8 +34,8 @@ export const getVatRecords: ResolverFn<
 > = async (_, { filters }, { injector }) => {
   try {
     const response = {
-      income: [] as Array<ResolversTypes['VatReportRecord']>,
-      expenses: [] as Array<ResolversTypes['VatReportRecord']>,
+      income: [] as Array<RawVatReportRecord>,
+      expenses: [] as Array<RawVatReportRecord>,
       missingInfo: [] as Array<ResolversTypes['Charge']>,
       differentMonthDoc: [] as Array<ResolversTypes['Charge']>,
     };
@@ -206,6 +210,13 @@ export const getVatRecords: ResolverFn<
         response.missingInfo.push(charge);
       }
     }
+
+    response.income = response.income.sort(
+      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
+    );
+    response.expenses = response.expenses.sort(
+      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
+    );
 
     return response;
   } catch (e) {
