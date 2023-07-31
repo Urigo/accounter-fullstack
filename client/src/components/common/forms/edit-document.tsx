@@ -15,6 +15,7 @@ import { ModifyDocumentFields } from './modify-document-fields';
       id
       image
       file
+      documentType
       __typename
       ... on Invoice {
         vat {
@@ -23,7 +24,6 @@ import { ModifyDocumentFields } from './modify-document-fields';
         }
         serialNumber
         date
-        documentType
         amount {
           raw
           currency
@@ -44,7 +44,6 @@ import { ModifyDocumentFields } from './modify-document-fields';
         }
         serialNumber
         date
-        documentType
         amount {
           raw
           currency
@@ -65,7 +64,6 @@ import { ModifyDocumentFields } from './modify-document-fields';
         }
         serialNumber
         date
-        documentType
         amount {
           raw
           currency
@@ -86,7 +84,6 @@ import { ModifyDocumentFields } from './modify-document-fields';
         }
         serialNumber
         date
-        documentType
         amount {
           raw
           currency

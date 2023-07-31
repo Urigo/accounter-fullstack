@@ -91,7 +91,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         name="documentType"
         control={control}
         rules={{ required: 'Required' }}
-        defaultValue={DocumentType.Unprocessed}
+        defaultValue={document?.documentType ?? DocumentType.Unprocessed}
         render={({ field, fieldState }) => (
           <SelectInput
             {...field}
