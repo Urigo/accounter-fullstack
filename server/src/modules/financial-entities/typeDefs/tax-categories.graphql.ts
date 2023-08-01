@@ -6,6 +6,10 @@ export default gql`
     taxCategories: [TaxCategory!]!
   }
 
+  extend type Charge {
+    taxCategory: TaxCategory
+  }
+
   " Tax category entity used for ledger records "
   type TaxCategory {
     id: UUID!

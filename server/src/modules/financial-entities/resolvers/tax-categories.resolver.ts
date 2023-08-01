@@ -11,4 +11,17 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         .then(res => res.filter(c => !!c.name) as ResolverTypeWrapper<TaxCategory>[]);
     },
   },
+  Charge: {
+    taxCategory: async (DbCharge, _, { injector }) => {
+      if (!DbCharge.tax_category_id) {
+        return null;
+      }
+      return injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByIDsLoader.load(DbCharge.tax_category_id)
+        .then(taxCategory =>
+          taxCategory ? ({ ...taxCategory, __typename: 'TaxCategory' } as TaxCategory) : null,
+        );
+    },
+  },
 };
