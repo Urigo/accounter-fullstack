@@ -19,6 +19,7 @@ import {
   Description,
   MoreInfo,
   Tags,
+  TaxCategory,
   Vat,
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
@@ -38,6 +39,7 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     ...AllChargesMoreInfoFields
     ...AllChargesTagsFields
     ...AllChargesVatFields
+    ...AllChargesTaxCategoryFields
     ...EditChargeFields
   }
 `;
@@ -109,6 +111,7 @@ export const AllChargesRow = ({
         <Counterparty data={charge} />
         <Description data={charge} />
         <Tags data={charge} />
+        <TaxCategory data={charge} />
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />
         <td>

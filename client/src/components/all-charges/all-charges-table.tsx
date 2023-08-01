@@ -58,6 +58,7 @@ export const AllChargesTable = ({
           <th>Counterparty</th>
           <th>Description</th>
           <th>Tags</th>
+          <th>Tax Category</th>
           <th>More Info</th>
           <th>Accountant Approval</th>
           <th>Edit</th>
