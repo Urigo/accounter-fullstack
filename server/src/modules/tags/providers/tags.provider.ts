@@ -40,8 +40,11 @@ export class TagsProvider {
     return this.dbProvider.query('ALTER TYPE tags ADD VALUE $1::TEXT;', [params.tagName]);
   }
 
-  public updateTagCategory(params: { prevTagName: string, newTagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags RENAME VALUE $1::TEXT TO $2::TEXT;', [params.prevTagName, params.newTagName]);
+  public updateTagCategory(params: { prevTagName: string; newTagName: string }) {
+    return this.dbProvider.query('ALTER TYPE tags RENAME VALUE $1::TEXT TO $2::TEXT;', [
+      params.prevTagName,
+      params.newTagName,
+    ]);
   }
 
   public removeTagCategory(params: { tagName: string }) {
