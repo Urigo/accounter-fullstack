@@ -1,8 +1,8 @@
 diff --git a/node_modules/graphql-modules/index.mjs b/node_modules/graphql-modules/index.mjs
-index dd82962..faba338 100644
+index 18d4a6a..894dee0 100644
 --- a/node_modules/graphql-modules/index.mjs
 +++ b/node_modules/graphql-modules/index.mjs
-@@ -1857,7 +1857,7 @@ function isResolveOptions(value) {
+@@ -1880,7 +1880,7 @@ function isResolveOptions(value) {
      return isDefined(value.resolve) || isDefined(value.subscribe);
  }
  function isScalarResolver(obj) {
