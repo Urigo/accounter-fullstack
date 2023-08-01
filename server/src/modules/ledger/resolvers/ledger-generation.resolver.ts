@@ -71,12 +71,9 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
 
         const taxCategoryInfo = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByBusinessAndOwnerIDsLoader.load({
-            ownerID: charge.owner_id,
-            businessID: counterpartyId,
-          });
+          .taxCategoryByChargeIDsLoader.load(charge.id);
         if (!taxCategoryInfo) {
-          throw new GraphQLError(`Tax category not found for counterparty ID="${counterpartyId}"`);
+          throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
         }
         const counterpartyTaxCategory: TaxCategory = {
           id: taxCategoryInfo.id,

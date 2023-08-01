@@ -2,8 +2,10 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { IGetTaxCategoryByBusinessAndOwnerIDsQuery } from '../__generated__/tax-categories.types.js';
-import type {} from '../types.js';
+import type {
+  IGetTaxCategoryByBusinessAndOwnerIDsQuery,
+  IGetTaxCategoryByChargeIDsQuery,
+} from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
 SELECT tc.*, tcm.business_id, tcm.owner_id
@@ -11,6 +13,12 @@ FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.business_tax_category_match tcm ON tcm.tax_category_id = tc.id
 WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
+
+const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
+SELECT tc.*, c.business_id, c.owner_id
+FROM accounter_schema.extended_charges c
+LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
+WHERE c.id IN $$chargeIds;`;
 
 // type IGetBusinessTransactionsSumFromLedgerRecordsParamsAdjusted = Optional<
 //   Omit<
@@ -61,6 +69,23 @@ export class TaxCategoriesProvider {
   public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
     (keys: readonly { businessID: string; ownerID: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
+    const taxCategories = await getTaxCategoryByChargeIDs.run(
+      {
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(id => taxCategories.find(tc => tc.id === id));
+  }
+
+  public taxCategoryByChargeIDsLoader = new DataLoader(
+    (chargeIDs: readonly string[]) => this.batchTaxCategoryByChargeIDs(chargeIDs),
     {
       cache: false,
     },
