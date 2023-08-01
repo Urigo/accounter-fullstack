@@ -1,5 +1,5 @@
 import { useQuery } from 'urql';
-import { AccounterLoader } from '../';
+import { AccounterLoader } from '..';
 import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql';
 import { SelectionHandler } from './selection-handler';
 

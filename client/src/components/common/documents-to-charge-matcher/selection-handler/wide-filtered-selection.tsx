@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Image } from '@mantine/core';
-import { AccounterTable, Button, PopUpModal } from '../../';
+import { AccounterTable, Button, PopUpModal } from '../..';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,

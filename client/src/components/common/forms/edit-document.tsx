@@ -5,7 +5,7 @@ import { Drawer, Image, Loader } from '@mantine/core';
 import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
-import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '../../common';
+import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '..';
 import { ModifyDocumentFields } from './modify-document-fields';
 
 /* GraphQL */ `

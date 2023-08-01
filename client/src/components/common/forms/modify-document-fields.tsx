@@ -18,7 +18,7 @@ import {
   isDocumentProforma,
   isDocumentReceipt,
 } from '../../../helpers/documents';
-import { CurrencyInput, SelectInput, TextInput } from '../../common';
+import { CurrencyInput, SelectInput, TextInput } from '..';
 
 export interface Props {
   document?: EditDocumentQuery['documentById'];
