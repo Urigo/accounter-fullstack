@@ -3,6 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IGetAllTaxCategoriesQuery,
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
 } from '../types.js';
@@ -20,16 +21,9 @@ FROM accounter_schema.extended_charges c
 LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
 WHERE c.id IN $$chargeIds;`;
 
-// type IGetBusinessTransactionsSumFromLedgerRecordsParamsAdjusted = Optional<
-//   Omit<
-//     IGetBusinessTransactionsSumFromLedgerRecordsParams,
-//     'isBusinessIDs' | 'isFinancialEntityIds'
-//   >,
-//   'businessIDs' | 'financialEntityIds' | 'toDate' | 'fromDate'
-// > & {
-//   toDate?: TimelessDateString | null;
-//   fromDate?: TimelessDateString | null;
-// };
+const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
+SELECT *
+FROM accounter_schema.tax_categories;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -90,4 +84,8 @@ export class TaxCategoriesProvider {
       cache: false,
     },
   );
+
+  public getAllTaxCategories() {
+    return getAllTaxCategories.run(undefined, this.dbProvider);
+  }
 }
