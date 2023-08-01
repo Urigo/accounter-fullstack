@@ -1,28 +1,17 @@
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { EditCharge, PopUpDrawer } from '..';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { EditChargeFieldsFragment, EditChargeFieldsFragmentDoc } from '../../../gql/graphql';
 import { writeToClipboard } from '../../../helpers';
 
 interface Props {
-  editCharge: FragmentType<typeof EditChargeFieldsFragmentDoc>;
-  setEditCharge: React.Dispatch<
-    React.SetStateAction<
-      | {
-          ' $fragmentRefs'?:
-            | {
-                EditChargeFieldsFragment: EditChargeFieldsFragment;
-              }
-            | undefined;
-        }
-      | undefined
-    >
-  >;
+  chargeId?: string;
+  onDone: () => void;
 }
 
-export const EditChargeModal = ({ editCharge, setEditCharge }: Props) => {
-  const chargeId = getFragmentData(EditChargeFieldsFragmentDoc, editCharge).id;
+export const EditChargeModal = ({ chargeId, onDone }: Props) => {
+  if (!chargeId) {
+    return null;
+  }
 
   return (
     <PopUpDrawer
@@ -39,14 +28,10 @@ export const EditChargeModal = ({ editCharge, setEditCharge }: Props) => {
           </div>
         </div>
       }
-      opened={!!editCharge}
-      onClose={() => setEditCharge(undefined)}
+      opened={!!chargeId}
+      onClose={onDone}
     >
-      <EditCharge
-        chargeProps={editCharge}
-        onAccept={() => setEditCharge(undefined)}
-        onCancel={() => setEditCharge(undefined)}
-      />
+      <EditCharge chargeId={chargeId} onDone={onDone} />
     </PopUpDrawer>
   );
 };

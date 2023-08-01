@@ -94,28 +94,27 @@ const updateCharge = sql<IUpdateChargeQuery>`
   SET
   owner_id = COALESCE(
     $ownerId,
-    owner_id,
-    NULL
+    owner_id
   ),
   user_description = COALESCE(
     $userDescription,
-    user_description,
-    NULL
+    user_description
   ),
   is_conversion = COALESCE(
     $isConversion,
-    is_conversion,
-    NULL
+    is_conversion
   ),
   is_property = COALESCE(
     $isProperty,
-    is_property,
-    NULL
+    is_property
   ),
   accountant_reviewed = COALESCE(
     $accountantReviewed,
-    accountant_reviewed,
-    NULL
+    accountant_reviewed
+  ),
+  tax_category_id = COALESCE(
+    $taxCategoryId,
+    tax_category_id
   )
   WHERE
     id = $chargeId

@@ -2,13 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
 import { FiltersContext } from '../../../filters-context';
-import { FragmentType } from '../../../gql';
-import {
-  ChargeFilterType,
-  EditChargeFieldsFragmentDoc,
-  VatMonthlyReportDocument,
-  VatReportFilter,
-} from '../../../gql/graphql';
+import { ChargeFilterType, VatMonthlyReportDocument, VatReportFilter } from '../../../gql/graphql';
 import { dedupeFragments, DEFAULT_FINANCIAL_ENTITY_ID, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import {
@@ -57,9 +51,7 @@ export const VatMonthlyReport = () => {
     undefined,
   );
   const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
-  const [editCharge, setEditCharge] = useState<
-    FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
-  >(undefined);
+  const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
 
   // fetch data
   const [{ data, fetching }] = useQuery({
@@ -87,7 +79,7 @@ export const VatMonthlyReport = () => {
 
       <MissingInfoTable
         data={data?.vatReport}
-        setEditCharge={setEditCharge}
+        setEditChargeId={setEditChargeId}
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
@@ -95,14 +87,14 @@ export const VatMonthlyReport = () => {
 
       <MiscTable
         data={data?.vatReport}
-        setEditCharge={setEditCharge}
+        setEditChargeId={setEditChargeId}
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
       />
 
       {/* modification modals */}
-      {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
+      <EditChargeModal chargeId={editChargeId} onDone={() => setEditChargeId(undefined)} />
       {insertDocument && (
         <InsertDocumentModal
           insertDocument={insertDocument}

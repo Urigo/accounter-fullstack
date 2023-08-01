@@ -101,6 +101,7 @@ export default gql`
     # businessTrip: BusinessTrip
     " user custom description "
     userDescription: String
+    defaultTaxCategoryID: ID
   }
 
   " result type for updateCharge "

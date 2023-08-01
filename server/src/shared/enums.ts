@@ -5,6 +5,7 @@ export enum MissingChargeInfo {
   Vat = 'VAT',
   Documents = 'DOCUMENTS',
   Description = 'DESCRIPTION',
+  TaxCategory = 'TAX_CATEGORY',
 }
 
 export enum ChargeSortByField {

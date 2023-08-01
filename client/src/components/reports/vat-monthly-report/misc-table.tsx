@@ -2,10 +2,7 @@ import { Dispatch, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
-import {
-  EditChargeFieldsFragmentDoc,
-  VarReportMiscTableFieldsFragmentDoc,
-} from '../../../gql/graphql';
+import { VarReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
 
 /* GraphQL */ `
@@ -19,9 +16,7 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
 
 type Props = {
   data?: FragmentType<typeof VarReportMiscTableFieldsFragmentDoc>;
-  setEditCharge: Dispatch<
-    SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
-  >;
+  setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setMatchDocuments: React.Dispatch<
@@ -31,7 +26,7 @@ type Props = {
 
 export const MiscTable = ({
   data,
-  setEditCharge,
+  setEditChargeId,
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
@@ -49,7 +44,7 @@ export const MiscTable = ({
       </span>
       {isOpened && chargesData && (
         <AllChargesTable
-          setEditCharge={setEditCharge}
+          setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
