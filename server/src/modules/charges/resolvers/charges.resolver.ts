@@ -223,6 +223,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         isProperty: fields.isProperty,
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
+        taxCategoryId: fields.defaultTaxCategoryID,
         chargeId,
       };
       try {
