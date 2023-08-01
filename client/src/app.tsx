@@ -8,6 +8,7 @@ import { NavBar } from './components/common/menu';
 import { DocumentsReport } from './components/documents';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
+import { TagsManager } from './components/tags';
 import { FiltersContext } from './filters-context';
 
 export function App() {
@@ -23,6 +24,7 @@ export function App() {
         <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
         <Route path="/reports/vat-monthly" element={<VatMonthlyReport />} />
         <Route path="/charts" element={<ChartPage />} />
+        <Route path="/tags" element={<TagsManager />} />
         <Route
           path="*"
           element={

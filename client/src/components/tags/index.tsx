@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, TextInput } from '@mantine/core';
 import { AllTagsDocument } from '../../gql/graphql';
 import { useAddTag } from '../../hooks/use-add-tag';
 import { useDeleteTag } from '../../hooks/use-delete-tag';
-import { AccounterLoader, NavBar } from '../common';
+import { AccounterLoader } from '../common';
+import { FiltersContext } from '../../filters-context';
 
 /* GraphQL */ `
   query AllTags {
@@ -16,12 +17,15 @@ import { AccounterLoader, NavBar } from '../common';
 `;
 
 export const TagsManager = () => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const [newTag, setNewTag] = useState('');
   const [{ data, fetching }, refetch] = useQuery({
     query: AllTagsDocument,
   });
   const { addTag } = useAddTag();
   const { deleteTag } = useDeleteTag();
+
+  setFiltersContext();
 
   const allTags = data?.allTags.map(tag => tag.name) ?? [];
 
@@ -47,7 +51,6 @@ export const TagsManager = () => {
   return (
     <div className="text-gray-600 body-font">
       <div className="container md:px-5 px-2 md:py-12 py-2 mx-auto">
-        <NavBar header="Tags Manager" />
         {fetching ? (
           <AccounterLoader />
         ) : (
