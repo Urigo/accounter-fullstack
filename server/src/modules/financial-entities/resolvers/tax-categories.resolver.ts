@@ -1,5 +1,5 @@
 import type { ResolverTypeWrapper, TaxCategory } from '@shared/gql-types';
-import { TaxCategoriesProvider } from '../providers/tax-categories.provider';
+import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule } from '../types';
 
 export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
