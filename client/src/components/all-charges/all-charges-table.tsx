@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Table } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql';
-import { AllChargesTableFieldsFragmentDoc, EditChargeFieldsFragmentDoc } from '../../gql/graphql';
+import { AllChargesTableFieldsFragmentDoc } from '../../gql/graphql';
 import { AllChargesRow } from './all-charges-row';
 
 /* GraphQL */ `
@@ -15,9 +15,7 @@ import { AllChargesRow } from './all-charges-row';
 `;
 
 interface Props {
-  setEditCharge: Dispatch<
-    SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
-  >;
+  setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
   setMatchDocuments: Dispatch<
     React.SetStateAction<
@@ -36,7 +34,7 @@ interface Props {
 }
 
 export const AllChargesTable = ({
-  setEditCharge,
+  setEditChargeId,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
@@ -70,7 +68,7 @@ export const AllChargesTable = ({
           <AllChargesRow
             key={charge.id}
             data={charge}
-            setEditCharge={setEditCharge}
+            setEditCharge={() => setEditChargeId(charge.id)}
             setInsertDocument={() => setInsertDocument(charge.id)}
             setMatchDocuments={() => setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })}
             setUploadDocument={() => setUploadDocument(charge.id)}

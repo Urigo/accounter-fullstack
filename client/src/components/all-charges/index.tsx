@@ -3,13 +3,7 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { FiltersContext } from '../../filters-context';
-import { FragmentType } from '../../gql';
-import {
-  AllChargesDocument,
-  ChargeFilter,
-  ChargeSortByField,
-  EditChargeFieldsFragmentDoc,
-} from '../../gql/graphql';
+import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import {
@@ -39,9 +33,7 @@ import { ChargesFilters } from './charges-filters';
 
 export const AllCharges = () => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [editCharge, setEditCharge] = useState<
-    FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined
-  >(undefined);
+  const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
@@ -124,7 +116,7 @@ export const AllCharges = () => {
         <AccounterLoader />
       ) : (
         <AllChargesTable
-          setEditCharge={setEditCharge}
+          setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
@@ -134,7 +126,7 @@ export const AllCharges = () => {
           isAllOpened={isAllOpened}
         />
       )}
-      {editCharge && <EditChargeModal editCharge={editCharge} setEditCharge={setEditCharge} />}
+      <EditChargeModal chargeId={editChargeId} onDone={() => setEditChargeId(undefined)} />
       {insertDocument && (
         <InsertDocumentModal
           insertDocument={insertDocument}

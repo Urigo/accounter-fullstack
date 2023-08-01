@@ -1,14 +1,13 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Paper } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../gql';
+import { getFragmentData } from '../../gql';
 import {
   AllChargesRowFieldsFragment,
   AllChargesRowFieldsFragmentDoc,
   AllChargesTableFieldsFragment,
   ChargeForRowDocument,
-  EditChargeFieldsFragmentDoc,
 } from '../../gql/graphql';
 import { EditMiniButton, ToggleMergeSelected } from '../common';
 import {
@@ -40,7 +39,6 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     ...AllChargesTagsFields
     ...AllChargesVatFields
     ...AllChargesTaxCategoryFields
-    ...EditChargeFields
   }
 `;
 
@@ -54,9 +52,7 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 `;
 
 interface Props {
-  setEditCharge: Dispatch<
-    SetStateAction<FragmentType<typeof EditChargeFieldsFragmentDoc> | undefined>
-  >;
+  setEditCharge: () => void;
   setInsertDocument: () => void;
   setMatchDocuments: () => void;
   setUploadDocument: () => void;
@@ -116,7 +112,7 @@ export const AllChargesRow = ({
         <AccountantApproval data={charge} />
         <td>
           <div className="flex flex-col gap-2">
-            <EditMiniButton onClick={() => setEditCharge(charge)} />
+            <EditMiniButton onClick={setEditCharge} />
             {toggleMergeCharge && (
               <ToggleMergeSelected
                 toggleMergeSelected={() => toggleMergeCharge()}
