@@ -3,7 +3,7 @@ import { File, Photo } from 'tabler-icons-react';
 import { ActionIcon, Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentFilesFieldsFragmentDoc } from '../../../../gql/graphql';
-import { ImageMagnifier } from '../../../common/image-magnifier';
+import { ImageMagnifier } from '../../../common';
 
 /* GraphQL */ `
   fragment DocumentFilesFields on Document {

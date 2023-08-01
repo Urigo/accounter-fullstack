@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { BusinessTransactionsSummery } from './components/business-transactions';
 import { ChartPage } from './components/charts';
-import { Footer } from './components/common/footer';
+import { Footer } from './components/common';
 import { NavBar } from './components/common/menu';
 import { DocumentsReport } from './components/documents';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
