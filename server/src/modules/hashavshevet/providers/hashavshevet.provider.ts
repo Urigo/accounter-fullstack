@@ -94,12 +94,15 @@ export class HashavshevetProvider {
       }
     };
 
-    const mappedIndexes = indexes.reduce((newObject, index) => {
-      if (index.gov_entity && index.hash_index) {
-        newObject[convertKey(index.gov_entity)] = index.hash_index;
-      }
-      return newObject;
-    }, {} as Record<VatIndexesKeys, string>);
+    const mappedIndexes = indexes.reduce(
+      (newObject, index) => {
+        if (index.gov_entity && index.hash_index) {
+          newObject[convertKey(index.gov_entity)] = index.hash_index;
+        }
+        return newObject;
+      },
+      {} as Record<VatIndexesKeys, string>,
+    );
 
     return mappedIndexes;
   }

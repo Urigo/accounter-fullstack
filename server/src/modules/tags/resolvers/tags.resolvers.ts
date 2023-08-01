@@ -31,6 +31,16 @@ export const tagsResolvers: TagsModule.Resolvers = {
         })
         .then(() => true);
     },
+    renameTag: (_, { prevName, newName }, { injector }) => {
+      return injector
+        .get(TagsProvider)
+        .updateTagCategory({ prevTagName: prevName, newTagName: newName })
+        .catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error renaming tag "${name}"`);
+        })
+        .then(() => true);
+    },
   },
   Charge: {
     tags: (DbCharge, _, { injector }) =>

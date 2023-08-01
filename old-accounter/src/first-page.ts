@@ -452,40 +452,37 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="financial_entity" ${
             transaction.financial_entity ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
-        transaction.financial_entity
-          ? transaction.financial_entity
-          : `${
-              suggestedTransaction(transaction)?.financialEntity
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialEntity
-            }");'>V</button>`
-      }
+            transaction.financial_entity
+              ? transaction.financial_entity
+              : `${suggestedTransaction(transaction)
+                  ?.financialEntity} <button type="button" onClick='printElement(this, "${suggestedTransaction(
+                  transaction,
+                )?.financialEntity}");'>V</button>`
+          }
             <button type="button" onClick='printElement(this, prompt("New financial entity:"));'>&#x270f;</button>
           </td>
           <td class="user_description" ${
             transaction.user_description ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
-        transaction.user_description
-          ? transaction.user_description
-          : `${
-              suggestedTransaction(transaction)?.userDescription
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.userDescription
-            }");'>V</button>`
-      }
+            transaction.user_description
+              ? transaction.user_description
+              : `${suggestedTransaction(transaction)
+                  ?.userDescription} <button type="button" onClick='printElement(this, "${suggestedTransaction(
+                  transaction,
+                )?.userDescription}");'>V</button>`
+          }
             <button type="button" onClick='printElement(this, prompt("New user description:"));'>&#x270f;</button>
           </td>
           <td class="personal_category" ${
             transaction.personal_category ? '' : 'style="background-color: rgb(236, 207, 57);"'
           }>${
-        transaction.personal_category
-          ? transaction.personal_category
-          : `${
-              suggestedTransaction(transaction)?.personalCategory
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.personalCategory
-            }");'>V</button>`
-      }
+            transaction.personal_category
+              ? transaction.personal_category
+              : `${suggestedTransaction(transaction)
+                  ?.personalCategory} <button type="button" onClick='printElement(this, "${suggestedTransaction(
+                  transaction,
+                )?.personalCategory}");'>V</button>`
+          }
             <button type="button" onClick='printElement(this, prompt("New personal category:"));'>&#x270f;</button>
           </td>
           <td class="vat"  ${
@@ -502,11 +499,10 @@ export const financialStatus = async (query: any): Promise<string> => {
           ${
             transaction.vat || transaction.vat == 0
               ? transaction.vat
-              : `${
-                  suggestedTransaction(transaction)?.vat
-                } <button type="button" onClick='printElement(this, "${
-                  suggestedTransaction(transaction)?.vat
-                }");'>V</button>`
+              : `${suggestedTransaction(transaction)
+                  ?.vat} <button type="button" onClick='printElement(this, "${suggestedTransaction(
+                  transaction,
+                )?.vat}");'>V</button>`
           }
             <button type="button" onClick='printElement(this, prompt("New VAT:"));'>&#x270f;</button>
           </td>
@@ -514,14 +510,13 @@ export const financialStatus = async (query: any): Promise<string> => {
           <td class="financial_accounts_to_balance" ${
             shareWithDotan(transaction) ? 'style="background-color: rgb(236, 207, 57);"' : ''
           }>${
-        transaction.financial_accounts_to_balance
-          ? transaction.financial_accounts_to_balance
-          : `${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            } <button type="button" onClick='printElement(this, "${
-              suggestedTransaction(transaction)?.financialAccountsToBalance
-            }");'>V</button>`
-      }
+            transaction.financial_accounts_to_balance
+              ? transaction.financial_accounts_to_balance
+              : `${suggestedTransaction(transaction)
+                  ?.financialAccountsToBalance} <button type="button" onClick='printElement(this, "${suggestedTransaction(
+                  transaction,
+                )?.financialAccountsToBalance}");'>V</button>`
+          }
             <button type="button" onClick='printElement(this, prompt("New Account to share:"));'>&#x270f;</button>
           </td>
           <td class="tax_category">${transaction.tax_category}
@@ -545,8 +540,10 @@ export const financialStatus = async (query: any): Promise<string> => {
               ? 'style="background-color: rgb(236, 207, 57);"'
               : ''
           }>${
-        transaction.tax_invoice_date ? moment(transaction.tax_invoice_date).format('DD/MM/YY') : ''
-      }
+            transaction.tax_invoice_date
+              ? moment(transaction.tax_invoice_date).format('DD/MM/YY')
+              : ''
+          }
             <button type="button" onClick='printElement(this, prompt("New Invoice Date:"));'>&#x270f;</button>
           </td>
           <td class="tax_invoice_number" ${

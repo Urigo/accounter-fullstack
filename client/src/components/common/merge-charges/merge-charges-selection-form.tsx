@@ -3,7 +3,7 @@ import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AccounterLoader, ListCapsule } from '../';
+import { AccounterLoader, ListCapsule } from '..';
 import {
   FetchMultipleChargesDocument,
   FetchMultipleChargesQuery,

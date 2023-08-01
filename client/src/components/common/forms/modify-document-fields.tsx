@@ -3,6 +3,7 @@ import { Control, Controller, UseFormWatch } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import { CurrencyInput, SelectInput, TextInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   Currency,
@@ -18,7 +19,6 @@ import {
   isDocumentProforma,
   isDocumentReceipt,
 } from '../../../helpers/documents';
-import { CurrencyInput, SelectInput, TextInput } from '../../common';
 
 export interface Props {
   document?: EditDocumentQuery['documentById'];

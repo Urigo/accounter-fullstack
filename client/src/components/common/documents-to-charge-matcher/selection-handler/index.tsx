@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
-import { Button } from '../../';
+import { Button } from '../..';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import {
   ChargeToMatchDocumentsFieldsFragmentDoc,

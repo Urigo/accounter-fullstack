@@ -9,6 +9,7 @@ export default gql`
   extend type Mutation {
     addTag(name: String!): Boolean!
     deleteTag(name: String!): Boolean!
+    renameTag(prevName: String!, newName: String!): Boolean!
   }
 
   extend type Charge {

@@ -82,13 +82,13 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
   >([]);
   const {
     control: transactionControl,
-    handleSubmit: handleChargeSubmit,
+    handleSubmit: handleTransactionSubmit,
     formState: { dirtyFields: dirtyChargeFields },
   } = useFormManager;
 
   const { updateTransaction, fetching: isUpdating } = useUpdateTransaction();
 
-  const onChargeSubmit: SubmitHandler<UpdateTransactionInput> = data => {
+  const onTransactionSubmit: SubmitHandler<UpdateTransactionInput> = data => {
     if (!transaction) {
       return;
     }
@@ -177,7 +177,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
       {!fetchingTransaction && transaction && (
-        <form onSubmit={handleChargeSubmit(onChargeSubmit)}>
+        <form onSubmit={handleTransactionSubmit(onTransactionSubmit)}>
           <div className="flex-row px-10 h-max justify-start block">
             <SimpleGrid cols={3}>
               <Controller
@@ -334,7 +334,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
           <div className="mt-10 mb-5 flex justify-center gap-5">
             <button
               type="submit"
-              onClick={() => handleChargeSubmit(onChargeSubmit)}
+              onClick={() => handleTransactionSubmit(onTransactionSubmit)}
               className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
               disabled={isUpdating || Object.keys(dirtyChargeFields).length === 0}
             >

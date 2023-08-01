@@ -32,6 +32,10 @@ const links: Link[] = [
     label: 'Charts',
     to: '/charts',
   },
+  {
+    label: 'Tags',
+    to: '/tags',
+  },
 ];
 
 export const NavBar = () => {
