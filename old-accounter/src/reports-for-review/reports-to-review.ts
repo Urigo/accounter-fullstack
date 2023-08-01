@@ -209,8 +209,8 @@ export const reportToReview = async (query: any): Promise<string> => {
         <td>${counter++}</td>
         <td>
           <input onchange="changeConfirmation('${transaction.id}', this${
-      movementOrBank ? ", '" + transaction.debit_account_1 + "'" : ''
-    });" type="checkbox" 
+            movementOrBank ? ", '" + transaction.debit_account_1 + "'" : ''
+          });" type="checkbox" 
           id="${transaction.id}" ${transaction.reviewed ? 'checked' : ''}>
         </td>
         <td class="invoiceDate">

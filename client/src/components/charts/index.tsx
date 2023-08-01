@@ -126,15 +126,18 @@ export const ChartPage = () => {
 
     // For each transaction, get the month, and group by month
     const transactionsByMonth =
-      transactions.reduce((acc, transaction) => {
-        const date = new Date(transaction.effectiveDate || transaction.eventDate);
-        const month = date.toLocaleString('default', { month: 'long' });
-        const year = date.getFullYear();
-        const key = `${month} ${year}`;
-        acc[key] ||= [];
-        acc[key].push(transaction);
-        return acc;
-      }, {} as Record<string, Array<Transaction>>) ?? {};
+      transactions.reduce(
+        (acc, transaction) => {
+          const date = new Date(transaction.effectiveDate || transaction.eventDate);
+          const month = date.toLocaleString('default', { month: 'long' });
+          const year = date.getFullYear();
+          const key = `${month} ${year}`;
+          acc[key] ||= [];
+          acc[key].push(transaction);
+          return acc;
+        },
+        {} as Record<string, Array<Transaction>>,
+      ) ?? {};
 
     // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO or GBP, convert to USD. If its USD, do nothing
     const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];

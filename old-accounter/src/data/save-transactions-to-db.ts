@@ -305,13 +305,13 @@ function createWhereClause(
           actualCondition = `
             ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName]}$$ OR 
             ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace(
-            'הנחה',
-            'צבירת',
-          )}$$ OR 
+              'הנחה',
+              'צבירת',
+            )}$$ OR 
             ${dBcolumn.column_name} = $$${transaction[camelCaseColumnName].replace(
-            'צבירת',
-            'הנחה',
-          )}$$
+              'צבירת',
+              'הנחה',
+            )}$$
           `;
         }
         whereClause = whereClause.concat(`  (${actualCondition}) AND  `);
