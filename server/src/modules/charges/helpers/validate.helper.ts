@@ -64,6 +64,12 @@ export const validateCharge = async (
     missingInfo.push(MissingChargeInfo.Vat);
   }
 
+  // validate tax category
+  const taxCategoryIsFine = !!charge.tax_category_id;
+  if (!taxCategoryIsFine) {
+    missingInfo.push(MissingChargeInfo.TaxCategory);
+  }
+
   //TODO(Gil): validate balance
   //TODO(Gil): validate ledger
 
@@ -73,7 +79,8 @@ export const validateCharge = async (
     descriptionIsFine &&
     tagsAreFine &&
     vatIsFine &&
-    transactionsAreFine;
+    transactionsAreFine &&
+    taxCategoryIsFine;
 
   return {
     isValid: allFine,

@@ -22,6 +22,7 @@ export default gql`
     TAGS
     TRANSACTIONS
     VAT
+    TAX_CATEGORY
   }
 
   extend input ChargeFilter {
