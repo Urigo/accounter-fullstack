@@ -1,10 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { AccountCardsProvider } from '../providers/account-cards.provider.js';
 import { SortCodesProvider } from '../providers/sort-codes.provider.js';
-import type { HashavshevetModule } from '../types.js';
-import { commonTransactionFields } from './common.js';
+import type { SortCodesModule } from '../types.js';
 
-export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
+export const sortCodesResolvers: SortCodesModule.Resolvers = {
   Query: {
     allSortCodes: async (_, __, { injector }) => {
       try {
@@ -57,18 +56,6 @@ export const hashavshevetResolvers: HashavshevetModule.Resolvers = {
     },
     name: dbHashAccount => dbHashAccount.name,
     business: dbHashAccount => dbHashAccount.business_id,
-  },
-  // WireTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  // FeeTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  // ConversionTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  CommonTransaction: {
-    ...commonTransactionFields,
   },
   BusinessTransactionSum: {
     sortCode: (rawSum, _, { injector }) =>

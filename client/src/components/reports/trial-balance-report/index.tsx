@@ -121,7 +121,7 @@ export const TrialBalanceReport = () => {
         />
       </div>,
     );
-  }, [data, filter, isAllOpened]);
+  }, [filter, isAllOpened, isShowZeroedAccounts, setFiltersContext]);
 
   const businessTransactionsSum = useMemo(() => {
     return data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'

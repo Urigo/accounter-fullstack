@@ -6,7 +6,7 @@ export default gql`
     allSortCodes: [SortCode!]!
   }
 
-  " Hashavshevet sort code "
+  " Sort Code "
   type SortCode {
     id: Int!
     name: String
