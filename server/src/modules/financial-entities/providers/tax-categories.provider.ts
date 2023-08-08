@@ -17,7 +17,7 @@ WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
 
 const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
-SELECT tc.*, c.business_id, c.owner_id
+SELECT tc.*, c.business_id, c.owner_id, c.id as charge_id
 FROM accounter_schema.extended_charges c
 LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
 WHERE c.id IN $$chargeIds;`;
@@ -81,7 +81,7 @@ export class TaxCategoriesProvider {
       },
       this.dbProvider,
     );
-    return chargeIds.map(id => taxCategories.find(tc => tc.id === id));
+    return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
   }
 
   public taxCategoryByChargeIDsLoader = new DataLoader(
