@@ -1,25 +1,25 @@
-import {useMemo } from 'react';
-import {  Table } from '@mantine/core';
-
+import { useMemo } from 'react';
+import { Table } from '@mantine/core';
+import type { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
+import type { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceReportGroup } from './trial-balance-report-group';
 import type { ExtendedSortCode } from './trial-balance-report-sort-code';
-import type { TrialBalanceReportQuery } from '../../../gql/graphql';
-import type { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
 function roundNearest100(num: number) {
   return Math.floor(num / 100) * 100;
 }
 
 type Props = {
-    businessTransactionsSum: Extract<TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'], {businessTransactionsSum: unknown}>['businessTransactionsSum'],
-    filter: TrialBalanceReportFilters,
-    isAllOpened: boolean
-}
+  businessTransactionsSum: Extract<
+    TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
+    { businessTransactionsSum: unknown }
+  >['businessTransactionsSum'];
+  filter: TrialBalanceReportFilters;
+  isAllOpened: boolean;
+};
 
-export const TrialBalanceTable = ({businessTransactionsSum, filter,
-    isAllOpened}: Props) => {
-
+export const TrialBalanceTable = ({ businessTransactionsSum, filter, isAllOpened }: Props) => {
   const sortCodesGroups = useMemo(() => {
     const adjustedSortCodes: Record<
       number,
@@ -37,11 +37,12 @@ export const TrialBalanceTable = ({businessTransactionsSum, filter,
         continue;
       }
       // ignore if no total sum
-      const sumIsZero = (!record.total.raw || (record.total.raw < 0.001 && record.total.raw > -0.001));
+      const sumIsZero =
+        !record.total.raw || (record.total.raw < 0.001 && record.total.raw > -0.001);
       if (!filter.isShowZeroedAccounts && sumIsZero) {
         continue;
       }
-  
+
       const groupCode = roundNearest100(record.business.sortCode.id);
       adjustedSortCodes[groupCode] ??= {
         sortCodes: {},
@@ -50,16 +51,16 @@ export const TrialBalanceTable = ({businessTransactionsSum, filter,
         sum: 0,
       };
       const group = adjustedSortCodes[groupCode];
-  
+
       group.sortCodes[record.business.sortCode.id] ??= {
         ...record.business.sortCode,
         records: [],
         credit: 0,
         debit: 0,
         sum: 0,
-      }
+      };
       const sortCode = group.sortCodes[record.business.sortCode.id];
-  
+
       if (record.total.raw > 0) {
         sortCode.credit += record.total.raw;
         group.credit += record.total.raw;
@@ -69,14 +70,15 @@ export const TrialBalanceTable = ({businessTransactionsSum, filter,
       }
       sortCode.sum += record.total.raw;
       group.sum += record.total.raw;
-  
+
       sortCode.records.push(record);
     }
 
     return adjustedSortCodes;
   }, [businessTransactionsSum, filter.isShowZeroedAccounts]);
 
-  return <Table highlightOnHover>
+  return (
+    <Table highlightOnHover>
       <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
         <tr className="bg-gray-300">
           <th>Sort Code</th>
@@ -109,4 +111,5 @@ export const TrialBalanceTable = ({businessTransactionsSum, filter,
         </tr>
       </tbody>
     </Table>
+  );
 };

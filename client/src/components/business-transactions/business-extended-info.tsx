@@ -65,17 +65,16 @@ interface Props {
 }
 
 export function BusinessExtendedInfo({ businessID, filter }: Props) {
-  const {
-    fromDate,
-    ownerIds,
-    toDate} = filter ?? {};
+  const { fromDate, ownerIds, toDate } = filter ?? {};
   const [{ data, fetching }] = useQuery({
     query: BusinessTransactionsInfoDocument,
     variables: {
-      filters: { 
+      filters: {
         fromDate,
         ownerIds,
-        toDate, businessIDs: [businessID] },
+        toDate,
+        businessIDs: [businessID],
+      },
     },
   });
 

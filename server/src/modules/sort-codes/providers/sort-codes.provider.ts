@@ -1,9 +1,13 @@
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import type { IGetAllSortCodesQuery, IGetSortCodesByIdsQuery, IGetSortCodesByBusinessIdsQuery } from '../types.js';
-import { GraphQLError } from 'graphql';
+import type {
+  IGetAllSortCodesQuery,
+  IGetSortCodesByBusinessIdsQuery,
+  IGetSortCodesByIdsQuery,
+} from '../types.js';
 
 const getAllSortCodes = sql<IGetAllSortCodesQuery>`
   SELECT *
@@ -52,7 +56,7 @@ export class SortCodesProvider {
   );
 
   private async batchSortCodesByBusinessIds(businessIDs: readonly string[]) {
-    console.log('dbprovider', !!this.dbProvider)
+    console.log('dbprovider', !!this.dbProvider);
     try {
       const sortCodes = await getSortCodesByBusinessIds.run(
         {
@@ -63,11 +67,14 @@ export class SortCodesProvider {
       );
       return businessIDs.map(id => sortCodes.find(sortCode => sortCode.business_id === id));
     } catch (e) {
-      throw new GraphQLError("Error fetching sort codes");
+      throw new GraphQLError('Error fetching sort codes');
     }
   }
 
-  public getSortCodesByBusinessIdsLoader = new DataLoader((ids: readonly string[]) => this.batchSortCodesByBusinessIds(ids), {
-    cache: false,
-  });
+  public getSortCodesByBusinessIdsLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchSortCodesByBusinessIds(ids),
+    {
+      cache: false,
+    },
+  );
 }

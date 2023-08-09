@@ -6,8 +6,10 @@ import { formatStringifyAmount } from '../../../helpers';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
-export type ExtendedBusiness =
-  Extract<TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'], {businessTransactionsSum: unknown}>['businessTransactionsSum'][number];
+export type ExtendedBusiness = Extract<
+  TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
+  { businessTransactionsSum: unknown }
+>['businessTransactionsSum'][number];
 
 interface Props {
   record: ExtendedBusiness;
@@ -26,15 +28,9 @@ export const TrialBalanceReportBusiness = ({ record, sortCodeId, filter, isAllOp
         <td>{record.business.id}</td>
         <td>{record.business.name ?? undefined}</td>
         <td>
-          {rowTotal < -0.001
-            ? formatStringifyAmount(-1 * (record.total.raw ?? 0))
-            : undefined}
+          {rowTotal < -0.001 ? formatStringifyAmount(-1 * (record.total.raw ?? 0)) : undefined}
         </td>
-        <td>
-          {rowTotal > 0.001
-            ? formatStringifyAmount(record.total.raw ?? 0)
-            : undefined}
-        </td>
+        <td>{rowTotal > 0.001 ? formatStringifyAmount(record.total.raw ?? 0) : undefined}</td>
         <td>{}</td>
         <td>
           <Tooltip label="Detailed records">

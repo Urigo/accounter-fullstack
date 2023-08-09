@@ -61,6 +61,6 @@ export type BusinessTransactionProto = {
   foreignAmount: number;
   date: Date;
   reference1?: string;
-}
+};
 
 export * from './ledger.js';

@@ -22,7 +22,8 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     sortCode: (rawSum, _, { injector }, __) =>
       injector
         .get(SortCodesProvider)
-        .getSortCodesByBusinessIdsLoader.load(rawSum.businessID).then(sortCode => sortCode ?? null)
+        .getSortCodesByBusinessIdsLoader.load(rawSum.businessID)
+        .then(sortCode => sortCode ?? null),
   },
   NamedCounterparty: {
     sortCode: (parent, _, { injector }) =>
@@ -32,7 +33,8 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
           typeof parent === 'string'
             ? parent
             : (parent as unknown as { counterpartyID: string })!.counterpartyID,
-        ).then(sortCode => sortCode ?? null)
+        )
+        .then(sortCode => sortCode ?? null),
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,

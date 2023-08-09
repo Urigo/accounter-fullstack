@@ -6,8 +6,7 @@ export const businessTransactionCounterparty: ResolverFn<
   ResolversParentTypes['BusinessTransaction'],
   GraphQLModules.Context,
   object
-> = (DbLedgerRecord) => {
-
+> = DbLedgerRecord => {
   if (typeof DbLedgerRecord.counterAccount === 'string') {
     return DbLedgerRecord.counterAccount;
   }

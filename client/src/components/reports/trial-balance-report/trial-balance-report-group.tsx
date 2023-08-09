@@ -1,6 +1,7 @@
 import { formatStringifyAmount } from '../../../helpers';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-report-sort-code';
+
 interface Props {
   data: {
     sortCodes: Record<number, ExtendedSortCode>;

@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -6,16 +7,22 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes, TaxCategory } from '@shared/gql-types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+  TaxCategory,
+} from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
-import { Injector } from 'graphql-modules';
 
-export const generateLedgerRecords: ResolverFn<Maybe<ResolversTypes['GeneratedLedgerRecords']>, ResolversParentTypes['Charge'], {injector: Injector}, object> = async (
-  charge,
-  _,
-  { injector },
-) => {
+export const generateLedgerRecords: ResolverFn<
+  Maybe<ResolversTypes['GeneratedLedgerRecords']>,
+  ResolversParentTypes['Charge'],
+  { injector: Injector },
+  object
+> = async (charge, _, { injector }) => {
   const chargeId = charge.id;
 
   try {

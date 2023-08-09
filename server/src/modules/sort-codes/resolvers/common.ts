@@ -1,6 +1,6 @@
+import { GraphQLError } from 'graphql';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import type { SortCodesModule } from '../types.js';
-import { GraphQLError } from 'graphql';
 
 export const commonFinancialEntityFields:
   | SortCodesModule.LtdFinancialEntityResolvers
@@ -16,9 +16,7 @@ export const commonFinancialEntityFields:
         .then(sortCode => sortCode ?? null);
     } catch (e) {
       console.error(`Error finding sort code for business id ${DbBusiness.id}:`, e);
-      throw new GraphQLError(
-        `Error finding sort code for business id ${DbBusiness.id}`,
-      );
+      throw new GraphQLError(`Error finding sort code for business id ${DbBusiness.id}`);
     }
   },
 };

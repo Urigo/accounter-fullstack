@@ -84,7 +84,7 @@ export const TrialBalanceReport = () => {
   const [isAllOpened, setIsAllOpened] = useState(false);
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
-  const [ filter , setFilter] = useState<TrialBalanceReportFilters>(
+  const [filter, setFilter] = useState<TrialBalanceReportFilters>(
     get('trialBalanceReportFilters')
       ? (JSON.parse(
           decodeURIComponent(get('trialBalanceReportFilters') as string),
@@ -110,10 +110,7 @@ export const TrialBalanceReport = () => {
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
-        <TrialBalanceReportFilters
-          filter={filter }
-          setFilter={setFilter}
-        />
+        <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
       </div>,
     );
   }, [filter, isAllOpened, setFiltersContext]);
@@ -127,6 +124,10 @@ export const TrialBalanceReport = () => {
   return fetching ? (
     <AccounterLoader />
   ) : (
-    <TrialBalanceTable businessTransactionsSum={businessTransactionsSum} filter={filter} isAllOpened={isAllOpened} />
+    <TrialBalanceTable
+      businessTransactionsSum={businessTransactionsSum}
+      filter={filter}
+      isAllOpened={isAllOpened}
+    />
   );
 };
