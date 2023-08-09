@@ -15,7 +15,7 @@ export default gql`
   " input variables for businessTransactions "
   input BusinessTransactionsFilter {
     businessIDs: [UUID!]
-    financialEntityIds: [UUID!]
+    ownerIds: [UUID!]
     fromDate: TimelessDate
     toDate: TimelessDate
   }

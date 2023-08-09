@@ -1,15 +1,78 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Currency } from '@shared/enums';
-import type { Resolvers } from '@shared/gql-types';
+import type { ResolverTypeWrapper, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
-import type { RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
+import type { LedgerProto, RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessTransactionsSumFromLedgerRecordsParams,
 } from '../types.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { generateLedgerRecords } from '@modules/ledger/resolvers/ledger-generation.resolver.js';
+
+
+function handleBusinessLedgerRecord(rawRes: Record<string, RawBusinessTransactionsSum>, businessID: string, currency: Currency, isCredit: boolean, amount = 0, foreignAmount = 0) {
+  rawRes[businessID] ??= {
+    ils: {
+      credit: 0,
+      debit: 0,
+      total: 0,
+    },
+    eur: {
+      credit: 0,
+      debit: 0,
+      total: 0,
+    },
+    gbp: {
+      credit: 0,
+      debit: 0,
+      total: 0,
+    },
+    usd: {
+      credit: 0,
+      debit: 0,
+      total: 0,
+    },
+    businessID,
+  };
+
+  const business = rawRes[businessID];
+  let currencyField: "eur" | "usd" | "gbp" | "ils" | undefined = undefined;
+  switch (currency) {
+    case Currency.Ils:{
+      currencyField = 'ils';
+
+      break;}
+    case Currency.Eur:{
+      currencyField = 'eur';
+      break}
+    case Currency.Gbp:{
+      currencyField = 'gbp';
+      break;}
+    case Currency.Usd:{
+      currencyField = 'usd';
+      break;}
+      default: {
+        console.log(`currency ${currency} not supported`);
+        return;
+      }
+  }
+
+  business.ils.credit += isCredit ? amount : 0;
+  business.ils.debit += isCredit ? 0 : amount;
+  business.ils.total += (isCredit ? 1 : -1) * amount;
+
+  if (currencyField !== 'ils') {
+    const foreignInfo = business[currencyField];
+
+    foreignInfo.credit += isCredit ? foreignAmount : 0;
+    foreignInfo.debit += isCredit ? 0 : foreignAmount;
+    foreignInfo.total += (isCredit ? 1 : -1) * foreignAmount;
+  }
+};
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -17,65 +80,53 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
   > = {
   Query: {
-    businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }) => {
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
+      const {ownerIds, businessIDs, fromDate, toDate} = filters || {};
       try {
-        const res = await injector
-          .get(BusinessesTransactionsProvider)
-          .getBusinessTransactionsSumFromLedgerRecords(filters);
+        const charges = await injector.get(ChargesProvider).getChargesByFilters({
+          ownerIds: ownerIds ?? undefined,
+          fromDate,
+          toDate,
+          businessIds: businessIDs ?? undefined,
+        });
+        const ledgerRecordSets = await Promise.all(charges.map(charge => generateLedgerRecords(charge, {}, {injector}, info)))
+        const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
+        ledgerRecordSets.map((ledgerRecordSet, i) => {
+          if (!ledgerRecordSet) {
+            console.log(`No ledger records could be generated for charge ${charges[i]?.id}`)
+          } else if (('__typename' in ledgerRecordSet || 'message' in ledgerRecordSet) && ledgerRecordSet.__typename === 'CommonError') {
+            console.log(`Error generating ledger records for charge ${charges[i]?.id}: ${ledgerRecordSet.message}`)
+          } else {
+            ledgerRecordsPromises.push(...(ledgerRecordSet as {records: readonly ResolverTypeWrapper<LedgerProto>[]}).records)
+          }
+        });
+        const ledgerRecords = await Promise.all(ledgerRecordsPromises)
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
-        for (const t of res) {
-          if (!t.business_id) {
-            throw new GraphQLError('business_id is null');
+        for (const ledger of ledgerRecords) {
+          // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
+          if (!!fromDate && ledger.invoiceDate.getTime() < new Date(fromDate).getTime()) {
+            continue;
           }
-          rawRes[t.business_id] ??= {
-            ils: {
-              credit: 0,
-              debit: 0,
-              total: 0,
-            },
-            eur: {
-              credit: 0,
-              debit: 0,
-              total: 0,
-            },
-            gbp: {
-              credit: 0,
-              debit: 0,
-              total: 0,
-            },
-            usd: {
-              credit: 0,
-              debit: 0,
-              total: 0,
-            },
-            businessID: t.business_id,
-          };
+          if (!!toDate && ledger.invoiceDate.getTime() > new Date(toDate).getTime()) {
+            continue;
+          }
 
-          const business = rawRes[t.business_id ?? ''];
-          const currency =
-            t.currency === 'אירו'
-              ? 'eur'
-              : t.currency === '$'
-              ? 'usd'
-              : t.currency === 'לש'
-              ? 'gbp'
-              : 'ils';
-          const amount = Number.isNaN(t.amount) ? 0 : Number(t.amount);
-          const foreignAmount = Number.isNaN(t.foreign_amount) ? 0 : Number(t.foreign_amount);
-          const direction = (t.direction ?? 1) < 1 ? -1 : 1;
+          if (typeof ledger.creditAccountID1 === 'string' && (!businessIDs || businessIDs.includes(ledger.creditAccountID1))) {
+            handleBusinessLedgerRecord(rawRes, ledger.creditAccountID1, ledger.currency, true, ledger.localCurrencyCreditAmount1, ledger.creditAmount1);
+          }
 
-          business.ils.credit += direction > 0 ? amount : 0;
-          business.ils.debit += direction < 0 ? amount : 0;
-          business.ils.total += direction * amount;
+          if (typeof ledger.creditAccountID2 === 'string' && (!businessIDs || businessIDs.includes(ledger.creditAccountID2))) {
+            handleBusinessLedgerRecord(rawRes, ledger.creditAccountID2, ledger.currency, true, ledger.localCurrencyCreditAmount2, ledger.creditAmount2);
+          }
 
-          if (currency !== 'ils') {
-            const foreignInfo = business[currency];
+          if (typeof ledger.debitAccountID1 === 'string' && (!businessIDs || businessIDs.includes(ledger.debitAccountID1))) {
+            handleBusinessLedgerRecord(rawRes, ledger.debitAccountID1, ledger.currency, false, ledger.localCurrencyDebitAmount1, ledger.debitAmount1);
+          }
 
-            foreignInfo.credit += direction > 0 ? foreignAmount : 0;
-            foreignInfo.debit += direction < 0 ? foreignAmount : 0;
-            foreignInfo.total += direction * foreignAmount;
+          if (typeof ledger.debitAccountID2 === 'string' && (!businessIDs || businessIDs.includes(ledger.debitAccountID2))) {
+            handleBusinessLedgerRecord(rawRes, ledger.debitAccountID2, ledger.currency, false, ledger.localCurrencyDebitAmount2, ledger.debitAmount2);
           }
         }
 
@@ -91,16 +142,47 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }) => {
+    businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }, info) => {
+      const {ownerIds, businessIDs, fromDate, toDate} = filters || {};
       try {
-        const isFinancialEntityIds = filters?.financialEntityIds?.length ?? 0;
+        const charges = await injector.get(ChargesProvider).getChargesByFilters({
+          ownerIds: ownerIds ?? undefined,
+          fromDate,
+          toDate,
+          businessIds: businessIDs ?? undefined,
+        });
+        const ledgerRecordSets = await Promise.all(charges.map(charge => generateLedgerRecords(charge, {}, {injector}, info)))
+        const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
+        ledgerRecordSets.map((ledgerRecordSet, i) => {
+          if (!ledgerRecordSet) {
+            console.log(`No ledger records could be generated for charge ${charges[i]?.id}`)
+          } else if (('__typename' in ledgerRecordSet || 'message' in ledgerRecordSet) && ledgerRecordSet.__typename === 'CommonError') {
+            console.log(`Error generating ledger records for charge ${charges[i]?.id}: ${ledgerRecordSet.message}`)
+          } else {
+            ledgerRecordsPromises.push(...(ledgerRecordSet as {records: readonly ResolverTypeWrapper<LedgerProto>[]}).records)
+          }
+        });
+        const ledgerRecords = await Promise.all(ledgerRecordsPromises)
+
+        for (const ledger of ledgerRecords) {
+          // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
+          if (!!fromDate && ledger.invoiceDate.getTime() < new Date(fromDate).getTime()) {
+            continue;
+          }
+          if (!!toDate && ledger.invoiceDate.getTime() > new Date(toDate).getTime()) {
+            continue;
+          }
+        }
+
+
+        const isFinancialEntityIds = filters?.ownerIds?.length ?? 0;
         const isBusinessIDs = filters?.businessIDs?.length ?? 0;
         const adjustedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
           isBusinessIDs,
           businessIDs: isBusinessIDs > 0 ? (filters!.businessIDs as string[]) : [null],
           isFinancialEntityIds,
           financialEntityIds:
-            isFinancialEntityIds > 0 ? (filters!.financialEntityIds as string[]) : [null],
+            isFinancialEntityIds > 0 ? (filters!.ownerIds as string[]) : [null],
           fromDate: isTimelessDateString(filters?.fromDate ?? '')
             ? (filters!.fromDate as TimelessDateString)
             : null,

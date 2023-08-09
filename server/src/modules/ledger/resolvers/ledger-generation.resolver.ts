@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -7,23 +6,19 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { ChargeResolvers, TaxCategory } from '@shared/gql-types';
+import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes, TaxCategory } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
+import { Injector } from 'graphql-modules';
 
-export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
-  DbCharge,
+export const generateLedgerRecords: ResolverFn<Maybe<ResolversTypes['GeneratedLedgerRecords']>, ResolversParentTypes['Charge'], {injector: Injector}, object> = async (
+  charge,
   _,
   { injector },
 ) => {
-  const chargeId = DbCharge.id;
+  const chargeId = charge.id;
 
   try {
-    const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-    if (!charge) {
-      throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-    }
-
     const accountingLedgerEntries: LedgerProto[] = [];
 
     // validate ledger records are balanced
@@ -298,7 +293,7 @@ export const generateLedgerRecords: ChargeResolvers['ledgerRecords'] = async (
       const hasForeignCurrency = currencies.size > (currencies.has('ILS') ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
         const baseEntry = financialAccountLedgerEntries[0];
-        // NOTE: exchangeCategory is hard coded here, should later be fetched from DB
+        // TODO: exchangeCategory is hard coded here, should later be fetched from DB
         const exchangeCategory = {
           id: baseEntry.id, // NOTE: this field is dummy
           name: 'Exchange',

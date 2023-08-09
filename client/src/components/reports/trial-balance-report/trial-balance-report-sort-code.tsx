@@ -1,10 +1,11 @@
-import { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
-import { ExtendedAccount, TrialBalanceReportAccount } from './trial-balance-report-account';
+import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-report-account';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 
-export type ExtendedSortCode = Omit<TrialBalanceReportQuery['allSortCodes'][number], 'accounts'> & {
-  accounts: Array<ExtendedAccount>;
+export type ExtendedSortCode = {
+  id: number;
+  name?: string | null;
+  records: Array<ExtendedBusiness>;
   credit: number;
   debit: number;
   sum: number;
@@ -17,17 +18,17 @@ interface Props {
 }
 
 export const TrialBalanceReportSortCode = ({ sortCode, filter, isAllOpened }: Props) => {
-  return sortCode.accounts.length > 0 ? (
+  return sortCode.records.length > 0 ? (
     <>
       <tr>
         <td colSpan={7}>
           <span className="font-bold">{sortCode.name}</span>
         </td>
       </tr>
-      {sortCode.accounts.map(account => (
-        <TrialBalanceReportAccount
-          key={account.id}
-          account={account}
+      {sortCode.records.map(record => (
+        <TrialBalanceReportBusiness
+          key={record.business.id}
+          record={record}
           sortCodeId={sortCode.id}
           filter={filter}
           isAllOpened={isAllOpened}
@@ -35,7 +36,7 @@ export const TrialBalanceReportSortCode = ({ sortCode, filter, isAllOpened }: Pr
       ))}
 
       <tr className="bg-gray-100">
-        {sortCode.accounts.length > 1 ? (
+        {sortCode.records.length > 1 ? (
           <>
             <td colSpan={2}>Group total:</td>
             <td colSpan={1}>{sortCode.id}</td>

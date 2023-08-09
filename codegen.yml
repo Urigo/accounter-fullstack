@@ -40,7 +40,6 @@ generates:
         DocumentSuggestions: '@shared/types#DocumentSuggestionsProto'
         ExchangeRates: 'TimelessDateString'
         FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
-        HashavshevetAccount: '@modules/sort-codes/types.js#IGetAccountCardsBySortCodesResult'
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         LedgerRecord: '@shared/types#LedgerProto'

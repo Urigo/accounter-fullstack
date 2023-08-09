@@ -10,18 +10,25 @@ export default gql`
   type SortCode {
     id: Int!
     name: String
-    accounts: [HashavshevetAccount!]!
-  }
-
-  " Hashavshevet account "
-  type HashavshevetAccount {
-    id: ID!
-    sortCode: SortCode!
-    name: String
-    business: Counterparty # TODO: (Gil) should be non-nullable
   }
 
   extend type BusinessTransactionSum {
+    sortCode: SortCode
+  }
+
+  extend type LtdFinancialEntity {
+    sortCode: SortCode
+  }
+
+  extend type PersonalFinancialEntity {
+    sortCode: SortCode
+  }
+
+  extend interface Counterparty {
+    sortCode: SortCode
+  }
+
+  extend type NamedCounterparty {
     sortCode: SortCode
   }
 `;
