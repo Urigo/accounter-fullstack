@@ -181,6 +181,7 @@ export const generateLedgerRecords: ResolverFn<Maybe<ResolversTypes['GeneratedLe
           description: document.description ?? undefined,
           reference1: document.serial_number ?? undefined,
           isCreditorCounterparty,
+          ownerId: charge.owner_id,
         });
 
         if (isCreditorCounterparty) {
@@ -260,6 +261,7 @@ export const generateLedgerRecords: ResolverFn<Maybe<ResolversTypes['GeneratedLe
           description: transaction.source_description ?? undefined,
           reference1: transaction.source_id,
           isCreditorCounterparty,
+          ownerId: charge.owner_id,
         });
 
         if (transaction.debit_date) {
@@ -322,6 +324,7 @@ export const generateLedgerRecords: ResolverFn<Maybe<ResolversTypes['GeneratedLe
           valueDate: baseEntry.valueDate, // NOTE: this field is dummy
           currency: baseEntry.currency, // NOTE: this field is dummy
           reference1: baseEntry.reference1, // NOTE: this field is dummy
+          ownerId: baseEntry.ownerId,
         });
       } else {
         throw new GraphQLError(

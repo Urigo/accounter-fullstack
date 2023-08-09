@@ -1,18 +1,17 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Currency } from '@shared/enums';
-import type { ResolverTypeWrapper, Resolvers } from '@shared/gql-types';
-import { formatFinancialAmount, isTimelessDateString } from '@shared/helpers';
-import type { LedgerProto, RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
+import type { ResolverTypeWrapper, Resolvers, TaxCategory } from '@shared/gql-types';
+import { formatFinancialAmount } from '@shared/helpers';
+import type { BusinessTransactionProto, LedgerProto, RawBusinessTransactionsSum, TimelessDateString } from '@shared/types';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type {
   FinancialEntitiesModule,
-  IGetBusinessTransactionsSumFromLedgerRecordsParams,
 } from '../types.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { generateLedgerRecords } from '@modules/ledger/resolvers/ledger-generation.resolver.js';
-
+import { businessTransactionCounterparty } from './business-transaction-counterparty.resolver.js';
 
 function handleBusinessLedgerRecord(rawRes: Record<string, RawBusinessTransactionsSum>, businessID: string, currency: Currency, isCredit: boolean, amount = 0, foreignAmount = 0) {
   rawRes[businessID] ??= {
@@ -73,6 +72,22 @@ function handleBusinessLedgerRecord(rawRes: Record<string, RawBusinessTransactio
     foreignInfo.total += (isCredit ? 1 : -1) * foreignAmount;
   }
 };
+
+function handleBusinessTransaction(record: LedgerProto, businessID: string, counterparty: string | TaxCategory, isCredit: boolean, amount = 0, foreignAmount = 0): BusinessTransactionProto {
+  const rawTransaction: BusinessTransactionProto = {
+    amount,
+    businessID,
+    counterAccount: counterparty,
+    currency: record.currency,
+    details: record.description,
+    isCredit,
+    ownerID: record.ownerId,
+    foreignAmount,
+    date: record.invoiceDate,
+    reference1: record.reference1,
+  }
+  return rawTransaction;
+}
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -164,39 +179,40 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         });
         const ledgerRecords = await Promise.all(ledgerRecordsPromises)
 
-        for (const ledger of ledgerRecords) {
+        const rawTransactions: BusinessTransactionProto[] = [];
+
+        for (const record of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && ledger.invoiceDate.getTime() < new Date(fromDate).getTime()) {
+          if (!!fromDate && record.invoiceDate.getTime() < new Date(fromDate).getTime()) {
             continue;
           }
-          if (!!toDate && ledger.invoiceDate.getTime() > new Date(toDate).getTime()) {
+          if (!!toDate && record.invoiceDate.getTime() > new Date(toDate).getTime()) {
             continue;
+          }
+
+          if (typeof record.creditAccountID1 === 'string' && (!businessIDs || businessIDs.includes(record.creditAccountID1))) {
+            const transaction = handleBusinessTransaction(record, record.creditAccountID1, record.debitAccountID1, true, record.localCurrencyCreditAmount1, record.creditAmount1);
+            rawTransactions.push(transaction);
+          }
+
+          if (typeof record.creditAccountID2 === 'string' && (!businessIDs || businessIDs.includes(record.creditAccountID2))) {
+            const transaction = handleBusinessTransaction(record, record.creditAccountID2, record.debitAccountID2 ?? record.debitAccountID1, true, record.localCurrencyCreditAmount2, record.creditAmount2);
+            rawTransactions.push(transaction);
+          }
+
+          if (typeof record.debitAccountID1 === 'string' && (!businessIDs || businessIDs.includes(record.debitAccountID1))) {
+            const transaction = handleBusinessTransaction(record, record.debitAccountID1, record.creditAccountID1, false, record.localCurrencyDebitAmount1, record.debitAmount1);
+            rawTransactions.push(transaction);
+          }
+
+          if (typeof record.debitAccountID2 === 'string' && (!businessIDs || businessIDs.includes(record.debitAccountID2))) {
+            const transaction = handleBusinessTransaction(record, record.debitAccountID2, record.creditAccountID2 ?? record.creditAccountID1, false, record.localCurrencyDebitAmount2, record.debitAmount2);
+            rawTransactions.push(transaction);
           }
         }
 
-
-        const isFinancialEntityIds = filters?.ownerIds?.length ?? 0;
-        const isBusinessIDs = filters?.businessIDs?.length ?? 0;
-        const adjustedFilters: IGetBusinessTransactionsSumFromLedgerRecordsParams = {
-          isBusinessIDs,
-          businessIDs: isBusinessIDs > 0 ? (filters!.businessIDs as string[]) : [null],
-          isFinancialEntityIds,
-          financialEntityIds:
-            isFinancialEntityIds > 0 ? (filters!.ownerIds as string[]) : [null],
-          fromDate: isTimelessDateString(filters?.fromDate ?? '')
-            ? (filters!.fromDate as TimelessDateString)
-            : null,
-          toDate: isTimelessDateString(filters?.toDate ?? '')
-            ? (filters!.toDate as TimelessDateString)
-            : null,
-        };
-
-        const res = await injector
-          .get(BusinessesTransactionsProvider)
-          .getBusinessTransactionsFromLedgerRecords(adjustedFilters);
-
         return {
-          businessTransactions: res,
+          businessTransactions: rawTransactions,
         };
       } catch (e) {
         console.error(e);
@@ -282,47 +298,45 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         : 'CommonError',
   },
   BusinessTransaction: {
-    __isTypeOf: parent => !!parent.business_id,
+    __isTypeOf: parent => !!parent.businessID,
     amount: parent =>
       formatFinancialAmount(
-        Number.isNaN(parent.foreign_amount)
+        Number.isNaN(parent.foreignAmount)
           ? parent.amount
-          : Number(parent.amount) * (parent.direction ?? 1),
+          : Number(parent.amount) * (parent.isCredit ? 1 : -1),
         Currency.Ils,
       ),
-    business: parent => parent.business_id!,
+    business: parent => parent.businessID!,
     eurAmount: parent =>
-      parent.currency === 'אירו'
+      parent.currency === Currency.Eur
         ? formatFinancialAmount(
-            Number.isNaN(parent.foreign_amount)
-              ? parent.foreign_amount
-              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+            Number.isNaN(parent.foreignAmount)
+              ? parent.foreignAmount
+              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
             Currency.Eur,
           )
         : null,
     gbpAmount: parent =>
-      parent.currency === 'לש'
+      parent.currency === Currency.Gbp
         ? formatFinancialAmount(
-            Number.isNaN(parent.foreign_amount)
-              ? parent.foreign_amount
-              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+            Number.isNaN(parent.foreignAmount)
+              ? parent.foreignAmount
+              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
             Currency.Gbp,
           )
         : null,
     usdAmount: parent =>
-      parent.currency === '$'
-        ? formatFinancialAmount(
-            Number.isNaN(parent.foreign_amount)
-              ? parent.foreign_amount
-              : Number(parent.foreign_amount) * (parent.direction ?? 1),
+      parent.currency === Currency.Usd
+        ? formatFinancialAmount(parent.foreignAmount * (parent.isCredit ? 1 : -1),
             Currency.Usd,
           )
         : null,
 
-    invoiceDate: parent => format(parent.invoice_date!, 'yyyy-MM-dd') as TimelessDateString,
-    reference1: parent => parent.reference_1 ?? null,
-    reference2: parent => parent.reference_2 ?? null,
+    invoiceDate: parent => format(parent.date!, 'yyyy-MM-dd') as TimelessDateString,
+    reference1: parent => parent.reference1 ?? null,
+    reference2: _ => null,
     details: parent => parent.details ?? null,
-    counterAccount: parent => parent.counter_account_id ?? null,
+    counterAccount: (parent, _, context, info) =>
+      businessTransactionCounterparty(parent, {}, context, info),
   },
 };

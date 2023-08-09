@@ -31,7 +31,7 @@ generates:
       mappers:
         BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
-        BusinessTransaction: '@modules/financial-entities/types.js#IGetBusinessTransactionsFromLedgerRecordsResult'
+        BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         Charge: '@modules/charges/types.js#IGetChargesByIdsResult'

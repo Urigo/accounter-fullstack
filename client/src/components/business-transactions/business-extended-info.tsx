@@ -39,8 +39,15 @@ import { AccounterLoader } from '../common';
           reference2
           details
           counterAccount {
-            id
-            name
+            __typename
+            ... on TaxCategory {
+              id
+              name
+            }
+            ... on NamedCounterparty {
+              id
+              name
+            }
           }
         }
       }

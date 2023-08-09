@@ -1,5 +1,5 @@
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { Currency } from '@shared/gql-types';
+import { Currency, TaxCategory } from '@shared/gql-types';
 
 export type BeneficiaryCounterpartyProto = { counterpartyID: string; percentage: number };
 export type CounterpartyProto = string | null;
@@ -48,6 +48,19 @@ export interface DocumentSuggestionsProto {
     currency: Currency;
   };
   isIncome?: boolean;
+}
+
+export type BusinessTransactionProto = {
+  amount: number;
+  businessID: string;
+  counterAccount: string | TaxCategory;
+  currency: Currency;
+  details?: string;
+  isCredit: boolean;
+  ownerID: string;
+  foreignAmount: number;
+  date: Date;
+  reference1?: string;
 }
 
 export * from './ledger.js';
