@@ -32,9 +32,10 @@ export const TrialBalanceTable = ({ businessTransactionsSum, filter, isAllOpened
     > = {};
 
     for (const record of businessTransactionsSum) {
-      // ignore if no sort code
-      if (!record?.business?.sortCode) {
-        continue;
+      // use default group if no sort code
+      record.business.sortCode ??= {
+        id: -999,
+        name: 'Misc',
       }
       // ignore if no total sum
       const sumIsZero =
