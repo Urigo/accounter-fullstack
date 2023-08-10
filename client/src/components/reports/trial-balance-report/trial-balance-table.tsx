@@ -36,7 +36,7 @@ export const TrialBalanceTable = ({ businessTransactionsSum, filter, isAllOpened
       record.business.sortCode ??= {
         id: -999,
         name: 'Misc',
-      }
+      };
       // ignore if no total sum
       const sumIsZero =
         !record.total.raw || (record.total.raw < 0.001 && record.total.raw > -0.001);
