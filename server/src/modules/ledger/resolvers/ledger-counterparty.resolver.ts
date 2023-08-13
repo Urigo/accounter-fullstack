@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import type { ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 
 export const ledgerCounterparty: ResolverFn<
@@ -23,15 +22,5 @@ export const ledgerCounterparty: ResolverFn<
       break;
   }
 
-  if (typeof counterpartyProto === 'string') {
-    return counterpartyProto;
-  }
-  if (typeof counterpartyProto === 'object') {
-    return {
-      __typename: 'TaxCategory',
-      id: counterpartyProto.id,
-      name: counterpartyProto.name,
-    };
-  }
-  throw new GraphQLError(`Invalid counterpartyProto type: ${counterpartyProto}`);
+  return counterpartyProto ?? null;
 };

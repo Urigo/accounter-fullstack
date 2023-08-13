@@ -49,6 +49,7 @@ generates:
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
         Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult'
+        TaxCategory: '@modules/financial-entities/types.js#IGetAllTaxCategoriesResult'
         Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult'
         VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord'
         WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'

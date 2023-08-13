@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { SortCodesProvider } from '../providers/sort-codes.provider.js';
 import type { SortCodesModule } from '../types.js';
 import { commonFinancialEntityFields } from './common.js';
@@ -41,5 +42,20 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,
+  },
+  TaxCategory: {
+    sortCode: async (parent, _, { injector }) => {
+      const sortCode = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByNamesLoader.load(parent.name)
+        .then(res => res?.sort_code);
+      if (!sortCode) {
+        return null;
+      }
+      return injector
+        .get(SortCodesProvider)
+        .getSortCodesByIdLoader.load(sortCode)
+        .then(sortCode => sortCode ?? null);
+    },
   },
 };

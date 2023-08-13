@@ -7,6 +7,7 @@ import type {
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByIDsQuery,
+  IGetTaxCategoryByNamesQuery,
 } from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
@@ -26,6 +27,11 @@ const getTaxCategoryByIDs = sql<IGetTaxCategoryByIDsQuery>`
 SELECT *
 FROM accounter_schema.tax_categories
 WHERE id IN $$Ids;`;
+
+const getTaxCategoryByNames = sql<IGetTaxCategoryByNamesQuery>`
+SELECT *
+FROM accounter_schema.tax_categories
+WHERE name IN $$names;`;
 
 const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
 SELECT *
@@ -111,4 +117,21 @@ export class TaxCategoriesProvider {
   public getAllTaxCategories() {
     return getAllTaxCategories.run(undefined, this.dbProvider);
   }
+
+  private async batchTaxCategoryByNames(names: readonly string[]) {
+    const taxCategories = await getTaxCategoryByNames.run(
+      {
+        names,
+      },
+      this.dbProvider,
+    );
+    return names.map(name => taxCategories.find(tc => tc.name === name));
+  }
+
+  public taxCategoryByNamesLoader = new DataLoader(
+    (names: readonly string[]) => this.batchTaxCategoryByNames(names),
+    {
+      cache: false,
+    },
+  );
 }

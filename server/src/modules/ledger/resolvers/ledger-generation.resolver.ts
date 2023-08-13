@@ -3,17 +3,14 @@ import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import {
-  Maybe,
-  ResolverFn,
-  ResolversParentTypes,
-  ResolversTypes,
-  TaxCategory,
-} from '@shared/gql-types';
+import { VAT_TAX_CATEGORY_NAME } from '@shared/constants';
+import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 
@@ -71,22 +68,17 @@ export const generateLedgerRecords: ResolverFn<
           totalAmount = Math.abs(totalAmount);
         }
 
-        const taxCategoryInfo = await injector
+        const counterpartyTaxCategory = await injector
           .get(TaxCategoriesProvider)
           .taxCategoryByChargeIDsLoader.load(charge.id);
-        if (!taxCategoryInfo) {
+        if (!counterpartyTaxCategory) {
           throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
         }
-        const counterpartyTaxCategory: TaxCategory = {
-          id: taxCategoryInfo.id,
-          name: taxCategoryInfo.name!,
-          __typename: 'TaxCategory',
-        };
 
         const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
         const creditAccountID1 = isCreditorCounterparty ? counterpartyId : counterpartyTaxCategory;
-        let creditAccountID2: TaxCategory | null = null;
-        let debitAccountID2: TaxCategory | null = null;
+        let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
+        let debitAccountID2: IGetAllTaxCategoriesResult | null = null;
 
         if (!document.currency_code) {
           throw new GraphQLError(`Document ID="${document.id}" is missing currency code`);
@@ -97,16 +89,16 @@ export const generateLedgerRecords: ResolverFn<
         let foreignAmountWithoutVat: number | null = null;
         let vatAmount = document.vat_amount == null ? null : Math.abs(document.vat_amount);
         let foreignVatAmount: number | null = null;
-        let vatTaxCategory: TaxCategory | null = null;
+        let vatTaxCategory: IGetAllTaxCategoriesResult | null = null;
 
         if (vatAmount && vatAmount > 0) {
           amountWithoutVat = amountWithoutVat - vatAmount;
-          // TODO(Gil): Use real tax category
-          vatTaxCategory = {
-            id: charge.id,
-            name: 'VAT [temp]',
-            __typename: 'TaxCategory',
-          };
+          await injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME)
+            .then(res => {
+              vatTaxCategory = res ?? null;
+            });
         }
 
         // handle non-local currencies
@@ -241,12 +233,38 @@ export const generateLedgerRecords: ResolverFn<
 
         const counterpartyId = transaction.business_id;
 
-        // NOTE: owner is hard coded here, should later be fetched from DB
-        const taxCategory = {
-          id: transaction.account_id,
-          name: `Account ID:...${transaction.account_id.slice(-6)}`,
-          __typename: 'TaxCategory',
-        } as TaxCategory;
+        const account = await injector
+          .get(FinancialAccountsProvider)
+          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+        if (!account) {
+          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+        }
+        let taxCategoryName = account.hashavshevet_account_ils;
+        switch (transaction.currency) {
+          case 'ILS':
+            taxCategoryName = account.hashavshevet_account_ils;
+            break;
+          case 'USD':
+            taxCategoryName = account.hashavshevet_account_usd;
+            break;
+          case 'EUR':
+            taxCategoryName = account.hashavshevet_account_eur;
+            break;
+          case 'GBP':
+            taxCategoryName = account.hashavshevet_account_gbp;
+            break;
+          default:
+            console.error(`Unknown currency for account's tax category: ${transaction.currency}`);
+        }
+        if (!taxCategoryName) {
+          throw new GraphQLError(`Account ID="${account.id}" is missing tax category name`);
+        }
+        const taxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(taxCategoryName);
+        if (!taxCategory) {
+          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+        }
 
         const isCreditorCounterparty = amount > 0;
 
@@ -302,12 +320,13 @@ export const generateLedgerRecords: ResolverFn<
       const hasForeignCurrency = currencies.size > (currencies.has('ILS') ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
         const baseEntry = financialAccountLedgerEntries[0];
-        // TODO: exchangeCategory is hard coded here, should later be fetched from DB
-        const exchangeCategory = {
-          id: baseEntry.id, // NOTE: this field is dummy
-          name: 'Exchange',
-          __typename: 'TaxCategory',
-        } as TaxCategory;
+
+        const exchangeCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME);
+        if (!exchangeCategory) {
+          throw new GraphQLError(`Tax category "${VAT_TAX_CATEGORY_NAME}" not found`);
+        }
 
         const amount = Math.abs(ledgerBalance);
         const counterparty =

@@ -4,7 +4,8 @@ import type { LedgerModule } from '../types.js';
 import { ledgerCounterparty } from './ledger-counterparty.resolver.js';
 import { generateLedgerRecords } from './ledger-generation.resolver.js';
 
-export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
+export const ledgerResolvers: LedgerModule.Resolvers &
+  Pick<Resolvers, 'GeneratedLedgerRecords' | 'LedgerCounterparty'> = {
   LedgerRecord: {
     id: () => '',
     debitAmount1: DbLedgerRecord =>
@@ -60,5 +61,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'LedgerRecords';
     },
+  },
+  LedgerCounterparty: {
+    __resolveType: parent =>
+      parent == null
+        ? null
+        : typeof parent === 'object' && 'hashavshevet_name' in parent
+        ? 'TaxCategory'
+        : 'NamedCounterparty',
   },
 };

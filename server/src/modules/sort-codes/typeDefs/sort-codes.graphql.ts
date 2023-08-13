@@ -31,4 +31,8 @@ export default gql`
   extend type NamedCounterparty {
     sortCode: SortCode
   }
+
+  extend type TaxCategory {
+    sortCode: SortCode
+  }
 `;

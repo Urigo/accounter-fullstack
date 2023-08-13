@@ -3,10 +3,11 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { generateLedgerRecords } from '@modules/ledger/resolvers/ledger-generation.resolver.js';
 import { Currency } from '@shared/enums';
-import type { Resolvers, ResolverTypeWrapper, TaxCategory } from '@shared/gql-types';
+import type { Resolvers, ResolverTypeWrapper } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type {
   BusinessTransactionProto,
+  CounterAccountProto,
   LedgerProto,
   RawBusinessTransactionsSum,
   TimelessDateString,
@@ -14,7 +15,6 @@ import type {
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
-import { businessTransactionCounterparty } from './business-transaction-counterparty.resolver.js';
 
 function handleBusinessLedgerRecord(
   rawRes: Record<string, RawBusinessTransactionsSum>,
@@ -90,7 +90,7 @@ function handleBusinessLedgerRecord(
 function handleBusinessTransaction(
   record: LedgerProto,
   businessID: string,
-  counterparty: string | TaxCategory,
+  counterparty: CounterAccountProto,
   isCredit: boolean,
   amount = 0,
   foreignAmount = 0,
@@ -113,7 +113,9 @@ function handleBusinessTransaction(
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
     Resolvers,
-    'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
+    | 'BusinessTransactionsSumFromLedgerRecordsResult'
+    | 'BusinessTransactionsFromLedgerRecordsResult'
+    | 'BusinessTransactionCounterparty'
   > = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
@@ -455,7 +457,18 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     reference1: parent => parent.reference1 ?? null,
     reference2: _ => null,
     details: parent => parent.details ?? null,
-    counterAccount: (parent, _, context, info) =>
-      businessTransactionCounterparty(parent, {}, context, info),
+    counterAccount: parent => parent.counterAccount,
+  },
+  BusinessTransactionCounterparty: {
+    __resolveType: parent =>
+      parent == null
+        ? null
+        : typeof parent === 'object' && 'hashavshevet_name' in parent
+        ? 'TaxCategory'
+        : 'NamedCounterparty',
+  },
+  TaxCategory: {
+    id: parent => parent.id,
+    name: parent => parent.name,
   },
 };
