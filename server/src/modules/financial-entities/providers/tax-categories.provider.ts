@@ -21,7 +21,7 @@ const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
 SELECT tc.*, c.business_id, c.owner_id, c.id as charge_id
 FROM accounter_schema.extended_charges c
 LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
-WHERE c.id IN $$chargeIds;`;
+WHERE tc.id IS NOT NULL AND c.id IN $$chargeIds;`;
 
 const getTaxCategoryByIDs = sql<IGetTaxCategoryByIDsQuery>`
 SELECT *

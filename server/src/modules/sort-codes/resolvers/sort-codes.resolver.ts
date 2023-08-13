@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { SortCodesProvider } from '../providers/sort-codes.provider.js';
 import type { SortCodesModule } from '../types.js';
 import { commonFinancialEntityFields } from './common.js';
@@ -19,23 +18,14 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     id: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
   },
-  BusinessTransactionSum: {
-    sortCode: (rawSum, _, { injector }, __) =>
-      injector
-        .get(SortCodesProvider)
-        .getSortCodesByBusinessIdsLoader.load(rawSum.businessID)
-        .then(sortCode => sortCode ?? null),
-  },
   NamedCounterparty: {
     sortCode: (parent, _, { injector }) =>
-      injector
-        .get(SortCodesProvider)
-        .getSortCodesByBusinessIdsLoader.load(
-          typeof parent === 'string'
-            ? parent
-            : (parent as unknown as { counterpartyID: string })!.counterpartyID,
-        )
-        .then(sortCode => sortCode ?? null),
+      parent
+        ? injector
+            .get(SortCodesProvider)
+            .getSortCodesByBusinessIdsLoader.load(parent)
+            .then(sortCode => sortCode ?? null)
+        : null,
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
@@ -44,18 +34,12 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     ...commonFinancialEntityFields,
   },
   TaxCategory: {
-    sortCode: async (parent, _, { injector }) => {
-      const sortCode = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(parent.name)
-        .then(res => res?.sort_code);
-      if (!sortCode) {
-        return null;
-      }
-      return injector
-        .get(SortCodesProvider)
-        .getSortCodesByIdLoader.load(sortCode)
-        .then(sortCode => sortCode ?? null);
-    },
+    sortCode: (parent, _, { injector }) =>
+      parent?.sort_code
+        ? injector
+            .get(SortCodesProvider)
+            .getSortCodesByIdLoader.load(parent.sort_code)
+            .then(sortCode => sortCode ?? null)
+        : null,
   },
 };

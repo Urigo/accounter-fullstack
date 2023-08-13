@@ -16,7 +16,7 @@ export type RawBusinessTransactionsSum = {
   eur: CurrencySum;
   gbp: CurrencySum;
   usd: CurrencySum;
-  businessID: string;
+  business: CounterAccountProto;
 };
 
 type addZero<T> = T | 0;
@@ -54,7 +54,7 @@ export interface DocumentSuggestionsProto {
 export type BusinessTransactionProto = {
   amount: number;
   businessID: string;
-  counterAccount: string | IGetAllTaxCategoriesResult;
+  counterAccount: CounterAccountProto;
   currency: Currency;
   details?: string;
   isCredit: boolean;

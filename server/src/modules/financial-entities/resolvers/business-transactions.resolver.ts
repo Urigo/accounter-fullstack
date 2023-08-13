@@ -18,12 +18,13 @@ import type { FinancialEntitiesModule } from '../types.js';
 
 function handleBusinessLedgerRecord(
   rawRes: Record<string, RawBusinessTransactionsSum>,
-  businessID: string,
+  business: CounterAccountProto,
   currency: Currency,
   isCredit: boolean,
   amount = 0,
   foreignAmount = 0,
 ) {
+  const businessID = typeof business === 'string' ? business : business.id;
   rawRes[businessID] ??= {
     ils: {
       credit: 0,
@@ -45,10 +46,10 @@ function handleBusinessLedgerRecord(
       debit: 0,
       total: 0,
     },
-    businessID,
+    business,
   };
 
-  const business = rawRes[businessID];
+  const record = rawRes[businessID];
   let currencyField: 'eur' | 'usd' | 'gbp' | 'ils' | undefined = undefined;
   switch (currency) {
     case Currency.Ils: {
@@ -74,12 +75,12 @@ function handleBusinessLedgerRecord(
     }
   }
 
-  business.ils.credit += isCredit ? amount : 0;
-  business.ils.debit += isCredit ? 0 : amount;
-  business.ils.total += (isCredit ? 1 : -1) * amount;
+  record.ils.credit += isCredit ? amount : 0;
+  record.ils.debit += isCredit ? 0 : amount;
+  record.ils.total += (isCredit ? 1 : -1) * amount;
 
   if (currencyField !== 'ils') {
-    const foreignInfo = business[currencyField];
+    const foreignInfo = record[currencyField];
 
     foreignInfo.credit += isCredit ? foreignAmount : 0;
     foreignInfo.debit += isCredit ? 0 : foreignAmount;
@@ -113,9 +114,7 @@ function handleBusinessTransaction(
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
     Resolvers,
-    | 'BusinessTransactionsSumFromLedgerRecordsResult'
-    | 'BusinessTransactionsFromLedgerRecordsResult'
-    | 'BusinessTransactionCounterparty'
+    'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
   > = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
@@ -162,7 +161,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof ledger.creditAccountID1 === 'string' &&
+            !!ledger.creditAccountID1 &&
             (!businessIDs || businessIDs.includes(ledger.creditAccountID1))
           ) {
             handleBusinessLedgerRecord(
@@ -176,7 +175,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof ledger.creditAccountID2 === 'string' &&
+            !!ledger.creditAccountID2 &&
             (!businessIDs || businessIDs.includes(ledger.creditAccountID2))
           ) {
             handleBusinessLedgerRecord(
@@ -190,7 +189,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof ledger.debitAccountID1 === 'string' &&
+            !!ledger.debitAccountID1 &&
             (!businessIDs || businessIDs.includes(ledger.debitAccountID1))
           ) {
             handleBusinessLedgerRecord(
@@ -204,7 +203,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof ledger.debitAccountID2 === 'string' &&
+            !!ledger.debitAccountID2 &&
             (!businessIDs || businessIDs.includes(ledger.debitAccountID2))
           ) {
             handleBusinessLedgerRecord(
@@ -364,7 +363,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   NamedCounterparty: {
-    __isTypeOf: parent => !!parent,
+    __isTypeOf: parent => typeof parent === 'string',
     name: (parent, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)
@@ -385,7 +384,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         : (parent as unknown as { counterpartyID: string })!.counterpartyID,
   },
   BusinessTransactionSum: {
-    business: rawSum => rawSum.businessID,
+    business: rawSum => rawSum.business,
     credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
     debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
     total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
@@ -459,15 +458,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     details: parent => parent.details ?? null,
     counterAccount: parent => parent.counterAccount,
   },
-  BusinessTransactionCounterparty: {
-    __resolveType: parent =>
-      parent == null
-        ? null
-        : typeof parent === 'object' && 'hashavshevet_name' in parent
-        ? 'TaxCategory'
-        : 'NamedCounterparty',
-  },
   TaxCategory: {
+    __isTypeOf: parent => 'hashavshevet_name' in parent,
     id: parent => parent.id,
     name: parent => parent.name,
   },

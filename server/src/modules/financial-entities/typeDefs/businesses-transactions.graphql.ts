@@ -57,8 +57,6 @@ export default gql`
   type BusinessTransactionsFromLedgerRecordsSuccessfulResult {
     businessTransactions: [BusinessTransaction!]!
   }
-  " represents business transaction record counterparty OR tax category"
-  union BusinessTransactionCounterparty = NamedCounterparty | TaxCategory
 
   " single business transaction info " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type BusinessTransaction {
@@ -71,6 +69,6 @@ export default gql`
     reference1: String
     reference2: String
     details: String
-    counterAccount: BusinessTransactionCounterparty
+    counterAccount: Counterparty
   }
 `;

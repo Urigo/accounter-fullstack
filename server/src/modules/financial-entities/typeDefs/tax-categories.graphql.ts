@@ -11,7 +11,7 @@ export default gql`
   }
 
   " Tax category entity used for ledger records "
-  type TaxCategory {
+  type TaxCategory implements Counterparty {
     id: UUID!
     name: String!
   }

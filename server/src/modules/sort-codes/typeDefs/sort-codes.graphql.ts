@@ -12,10 +12,6 @@ export default gql`
     name: String
   }
 
-  extend type BusinessTransactionSum {
-    sortCode: SortCode
-  }
-
   extend type LtdFinancialEntity {
     sortCode: SortCode
   }
