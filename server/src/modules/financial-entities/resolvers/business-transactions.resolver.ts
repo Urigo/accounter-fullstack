@@ -121,8 +121,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
-          fromDate,
-          toDate,
+          fromAnyDate: fromDate,
+          toAnyDate: toDate,
           businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(
@@ -233,8 +233,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
-          fromDate,
-          toDate,
+          fromAnyDate: fromDate,
+          toAnyDate: toDate,
           businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(

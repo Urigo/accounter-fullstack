@@ -43,10 +43,14 @@ export default gql`
 
   " input variables for charge filtering "
   input ChargeFilter {
-    " Include only charges occured after this date "
+    " Include only charges with main date occurred after this date "
     fromDate: TimelessDate
-    " Include only charges occured before this date "
+    " Include only charges with main date  occurred before this date "
     toDate: TimelessDate
+    " Include only charges with any doc/transaction date occurred after this date "
+    fromAnyDate: TimelessDate
+    " Include only charges with any doc/transaction date occurred before this date "
+    toAnyDate: TimelessDate
     " Include only charges related to specific owners financial entities "
     byOwners: [ID!]
     " Include only charges related to specific financial accounts "

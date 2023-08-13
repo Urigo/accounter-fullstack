@@ -137,7 +137,9 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
   AND ($isBusinessIds = 0 OR c.business_id IN $$businessIds)
   AND ($fromDate ::TEXT IS NULL OR COALESCE(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+  AND ($fromAnyDate ::TEXT IS NULL OR LEAST(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR COALESCE(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  AND ($toAnyDate ::TEXT IS NULL OR GREATEST(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END ASC,

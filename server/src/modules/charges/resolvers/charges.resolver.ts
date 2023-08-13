@@ -180,6 +180,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
           ownerIds: filters?.byOwners ?? undefined,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
+          fromAnyDate: filters?.fromAnyDate,
+          toAnyDate: filters?.toAnyDate,
           sortColumn,
           asc: filters?.sortBy?.asc !== false,
           chargeType: filters?.chargesType,
