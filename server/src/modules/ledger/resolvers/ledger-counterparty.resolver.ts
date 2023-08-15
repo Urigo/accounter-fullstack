@@ -1,7 +1,7 @@
 import type { ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 
 export const ledgerCounterparty: ResolverFn<
-  ResolversTypes['LedgerCounterparty'],
+  ResolversTypes['Counterparty'],
   ResolversParentTypes['LedgerRecord'],
   GraphQLModules.Context,
   { account: 'CreditAccount1' | 'CreditAccount2' | 'DebitAccount1' | 'DebitAccount2' }
@@ -20,6 +20,8 @@ export const ledgerCounterparty: ResolverFn<
     case 'DebitAccount2':
       counterpartyProto = DbLedgerRecord.debitAccountID2;
       break;
+    default:
+      throw new Error(`Invalid account type: ${account}`);
   }
 
   return counterpartyProto ?? null;

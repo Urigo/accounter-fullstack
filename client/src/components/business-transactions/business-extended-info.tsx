@@ -40,14 +40,8 @@ import { AccounterLoader } from '../common';
           details
           counterAccount {
             __typename
-            ... on TaxCategory {
-              id
-              name
-            }
-            ... on NamedCounterparty {
-              id
-              name
-            }
+            id
+            name
           }
         }
       }

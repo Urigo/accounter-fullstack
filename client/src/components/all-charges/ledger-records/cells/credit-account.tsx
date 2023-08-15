@@ -5,14 +5,8 @@ import { LedgerRecordsCreditAccountFieldsFragmentDoc } from '../../../../gql/gra
   fragment LedgerRecordsCreditAccountFields on LedgerRecord {
     id
     creditAccount1 {
-      ... on NamedCounterparty {
-        id
-        name
-      }
-      ... on TaxCategory {
-        id
-        name
-      }
+      id
+      name
     }
   }
 `;

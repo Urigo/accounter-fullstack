@@ -50,20 +50,10 @@ export class TaxCategoriesProvider {
     const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessID));
     const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerID));
 
-    const BusinessIds = Array.from(BusinessIdsSet);
-    const OwnerIds = Array.from(OwnerIdsSet);
-
-    // if array is empty, add null to it to avoid gptyped error
-    if (BusinessIds.length === 0) {
-      BusinessIds.push(null);
-    }
-    if (OwnerIds.length === 0) {
-      OwnerIds.push(null);
-    }
     const taxCategories = await getTaxCategoryByBusinessAndOwnerIDs.run(
       {
-        BusinessIds,
-        OwnerIds,
+        BusinessIds: BusinessIdsSet.size === 0 ? [null] : Array.from(BusinessIdsSet),
+        OwnerIds: OwnerIdsSet.size === 0 ? [null] : Array.from(OwnerIdsSet),
       },
       this.dbProvider,
     );
