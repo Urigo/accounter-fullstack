@@ -9,7 +9,7 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { VAT_TAX_CATEGORY_NAME } from '@shared/constants';
+import { EXCHANGE_RATE_CATEGORY_NAME, VAT_TAX_CATEGORY_NAME } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -323,9 +323,9 @@ export const generateLedgerRecords: ResolverFn<
 
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME);
+          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
         if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${VAT_TAX_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
         const amount = Math.abs(ledgerBalance);
