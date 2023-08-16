@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllTaxCategoriesQuery,
+  IGetAllTaxCategoriesResult,
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByIDsQuery,
@@ -46,7 +47,7 @@ export class TaxCategoriesProvider {
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
     entries: readonly { businessID: string; ownerID: string }[],
-  ) {
+  ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
     const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessID));
     const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerID));
 

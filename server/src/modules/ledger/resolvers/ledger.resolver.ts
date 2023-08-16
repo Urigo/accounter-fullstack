@@ -4,8 +4,7 @@ import type { LedgerModule } from '../types.js';
 import { ledgerCounterparty } from './ledger-counterparty.resolver.js';
 import { generateLedgerRecords } from './ledger-generation.resolver.js';
 
-export const ledgerResolvers: LedgerModule.Resolvers &
-  Pick<Resolvers, 'GeneratedLedgerRecords'> = {
+export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   LedgerRecord: {
     id: () => '',
     debitAmount1: DbLedgerRecord =>

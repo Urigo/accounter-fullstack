@@ -7,9 +7,10 @@ import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql';
 type Props = {
   label?: string;
   formManager: UseFormReturn<UpdateChargeInput, object>;
+  tags: { name: string }[];
 };
 
-export function TagsInput({ label, formManager }: Props) {
+export function TagsInput({ label, formManager, tags }: Props) {
   const [{ data, fetching }] = useQuery({
     query: AllTagsDocument,
   });
@@ -20,8 +21,11 @@ export function TagsInput({ label, formManager }: Props) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'tags',
-    // rules: { maxLength: 1 },
+    keyName: 'name',
   });
+
+  console.log('fields', fields);
+  console.log('tags', tags);
 
   return (
     <div>
@@ -29,11 +33,11 @@ export function TagsInput({ label, formManager }: Props) {
       <span>Currently adjusted to </span>
       <div className="h-full flex flex-col overflow-hidden">
         {fields?.map((tag, index) => (
-          <div key={String(tag.id)} className=" flex items-center gap-2 text-gray-600 mb-2">
+          <div key={tag.name} className=" flex items-center gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-sm">
               <Controller
                 control={control}
-                name={`tags.${index}.name`}
+                name={`tags.${index}.name` as 'tags.0.name'}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
