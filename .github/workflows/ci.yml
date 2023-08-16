@@ -1,0 +1,104 @@
+name: CI
+env:
+  NODE_NO_WARNINGS: true
+on:
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.5.0
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache Yarn
+        uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{steps.yarn-cache-dir-path.outputs.dir}}
+          key: ${{runner.os}}-19-yarn-${{hashFiles('yarn.lock')}}
+          restore-keys: |
+            ${{runner.os}}-19-yarn-
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Generate
+        run: yarn generate
+
+      - name: Build Packages
+        run: yarn build
+
+      - name: Run Tests
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: yarn test
+
+  esm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup env
+        uses: the-guild-org/shared-config/setup@main
+        with:
+          nodeVersion: 20.5.0
+          packageManager: yarn
+
+      - name: Generate
+        run: yarn generate
+
+      - name: Build Packages
+        run: yarn build
+
+      - name: Run Tests
+        run: yarn test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Master
+        uses: actions/checkout@v3
+
+      - name: Use Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.5.0
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache Yarn
+        uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{steps.yarn-cache-dir-path.outputs.dir}}
+          key: ${{runner.os}}-19-yarn-${{hashFiles('yarn.lock')}}
+          restore-keys: |
+            ${{runner.os}}-19-yarn-
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Lint ESLint
+        run: yarn lint
+
+      - name: Lint Prettier
+        run: yarn prettier:check
