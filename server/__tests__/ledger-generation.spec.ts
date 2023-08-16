@@ -106,27 +106,29 @@ describe.concurrent('Ledger Generation', () => {
       expect(chargeEventDateDiff?.ledgerRecords?.records?.length).toBe(2);
     });
 
-    // it('Conversion diff ledger should should have opposite sides based on what payment/doc chronological order', async ({expect}) => {
-    //   const result = await testkit.execute(app, {
-    //     document: fetchChargesQuery,
-    //     variableValues: {
-    //       IDs: ['1101', '1104'],
-    //     },
-    //   });
-    //   expect(result.data?.chargesById?.length).toBe(2);
+    it('Conversion diff ledger should should have opposite sides based on what payment/doc chronological order', async ({
+      expect,
+    }) => {
+      const result = await testkit.execute(app, {
+        document: fetchChargesQuery,
+        variableValues: {
+          IDs: ['1101', '1104'],
+        },
+      });
+      expect(result.data?.chargesById?.length).toBe(2);
 
-    //   // charge 1101: doc first
-    //   const chargeDocFirst = result.data?.chargesById?.[0];
-    //   expect(chargeDocFirst?.ledgerRecords?.records?.length).toBe(3);
-    //   const exchangeLedger1 = chargeDocFirst?.ledgerRecords?.records?.[2];
-    //   expect(exchangeLedger1?.debitAccount1?.name).toBe('Exchange');
+      // charge 1101: doc first
+      const chargeDocFirst = result.data?.chargesById?.[0];
+      expect(chargeDocFirst?.ledgerRecords?.records?.length).toBe(3);
+      const exchangeLedger1 = chargeDocFirst?.ledgerRecords?.records?.[2];
+      expect(exchangeLedger1?.debitAccount1?.id).toBe('900');
 
-    //   // charge 1104: transaction first
-    //   const chargeTransactionFirst = result.data?.chargesById?.[1];
-    //   expect(chargeTransactionFirst?.ledgerRecords?.records?.length).toBe(3);
-    //   const exchangeLedger2 = chargeDocFirst?.ledgerRecords?.records?.[2];
-    //   expect(exchangeLedger2?.creditAccount1?.name).toBe('Exchange');
-    // });
+      // charge 1104: transaction first
+      const chargeTransactionFirst = result.data?.chargesById?.[1];
+      expect(chargeTransactionFirst?.ledgerRecords?.records?.length).toBe(3);
+      const exchangeLedger2 = chargeDocFirst?.ledgerRecords?.records?.[2];
+      expect(exchangeLedger2?.creditAccount1?.id).toBe('2003');
+    });
 
     it('Should handle no-invoice businesses', async ({ expect }) => {
       const result = await testkit.execute(app, {
