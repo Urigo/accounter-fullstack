@@ -17,10 +17,6 @@ export default gql`
     valueDate: Date!
     description: String
     reference1: String
-    debitAccount1: Counterparty!
-    debitAccount2: Counterparty
-    creditAccount1: Counterparty!
-    creditAccount2: Counterparty
   }
 
   extend type Charge {

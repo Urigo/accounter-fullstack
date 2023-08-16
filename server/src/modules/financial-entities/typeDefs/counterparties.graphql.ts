@@ -84,4 +84,11 @@ export default gql`
     creditor: Counterparty
     debtor: Counterparty
   }
+
+  extend type LedgerRecord {
+    debitAccount1: Counterparty!
+    debitAccount2: Counterparty
+    creditAccount1: Counterparty!
+    creditAccount2: Counterparty
+  }
 `;
