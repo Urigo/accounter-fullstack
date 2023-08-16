@@ -111,7 +111,7 @@ function handleBusinessTransaction(
   return rawTransaction;
 }
 
-export const businessesResolvers: FinancialEntitiesModule.Resolvers &
+export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
     Resolvers,
     'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'

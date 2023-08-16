@@ -7,7 +7,7 @@ import { createModule } from 'graphql-modules';
 import { BusinessesTransactionsProvider } from './providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from './providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from './providers/tax-categories.provider.js';
-import { businessesResolvers } from './resolvers/business-transactions.resolver.js';
+import { businessTransactionsResolvers } from './resolvers/business-transactions.resolver.js';
 import { financialEntitiesResolvers } from './resolvers/financial-entities.resolver.js';
 import { taxCategoriesResolvers } from './resolvers/tax-categories.resolver.js';
 
@@ -23,7 +23,7 @@ export const financialEntitiesModule = createModule({
     financialEntities,
     taxCategories,
   ],
-  resolvers: [financialEntitiesResolvers, businessesResolvers, taxCategoriesResolvers],
+  resolvers: [financialEntitiesResolvers, businessTransactionsResolvers, taxCategoriesResolvers],
   providers: () => [
     FinancialEntitiesProvider,
     BusinessesTransactionsProvider,
