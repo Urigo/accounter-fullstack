@@ -167,13 +167,9 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
     ...commonDocumentsFields,
   },
   LedgerRecord: {
-    creditAccount1:
-      ledgerCounterparty('CreditAccount1'),
-    creditAccount2:
-        ledgerCounterparty('CreditAccount2'),
-    debitAccount1:
-      ledgerCounterparty('DebitAccount1'),
-    debitAccount2:
-      ledgerCounterparty('DebitAccount2'),
-  }
+    creditAccount1: ledgerCounterparty('CreditAccount1'),
+    creditAccount2: ledgerCounterparty('CreditAccount2'),
+    debitAccount1: ledgerCounterparty('DebitAccount1'),
+    debitAccount2: ledgerCounterparty('DebitAccount2'),
+  },
 };
