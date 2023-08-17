@@ -3,6 +3,7 @@ import { AccounterLoader } from '..';
 import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql';
 import { SelectionHandler } from './selection-handler';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query DocumentsToChargeMatcher($chargeIds: [ID!]!, $filters: DocumentsFilters!) {
     documentsByFilters(filters: $filters) {

@@ -9,6 +9,7 @@ import { AccounterLoader } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceTable } from './trial-balance-table';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {

@@ -4,6 +4,7 @@ import { FragmentType, getFragmentData } from '../../gql';
 import { AllChargesTableFieldsFragmentDoc } from '../../gql/graphql';
 import { AllChargesRow } from './all-charges-row';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id

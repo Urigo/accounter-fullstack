@@ -5,6 +5,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
 import { EditDocumentModal } from '../../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment DocumentsGalleryFields on Charge {
     id

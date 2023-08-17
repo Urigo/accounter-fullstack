@@ -8,6 +8,7 @@ import { AccounterLoader, AccounterTable } from '../common';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query BusinessTransactionsSummery($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {

@@ -4,6 +4,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql';
 import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-charge-accountant-approval';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesAccountantApprovalFields on Charge {
     id

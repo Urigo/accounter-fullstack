@@ -9,6 +9,7 @@ import {
 import { EditMiniButton } from '../../common';
 import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TableDocumentsRowFields on Document {
     id
@@ -24,6 +25,7 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query DocumentTableRow($documentId: ID!) {
     documentById(documentId: $documentId) {

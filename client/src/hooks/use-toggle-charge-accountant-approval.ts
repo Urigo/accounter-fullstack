@@ -5,6 +5,7 @@ import {
   ToggleChargeAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation ToggleChargeAccountantApproval($chargeId: ID!, $approved: Boolean!) {
     toggleChargeAccountantApproval(chargeId: $chargeId, approved: $approved)

@@ -7,6 +7,7 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 import { ConfirmMiniButton } from '../../../common';
 import { getBusinessHref } from '../../helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment DocumentsTableCreditorFields on Document {
     id

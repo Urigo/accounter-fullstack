@@ -1,6 +1,7 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment LedgerRecordsDebitAccountFields on LedgerRecord {
     id

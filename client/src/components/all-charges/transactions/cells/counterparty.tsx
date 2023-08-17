@@ -6,6 +6,7 @@ import { useUpdateTransaction } from '../../../../hooks/use-update-transaction';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 import { ConfirmMiniButton } from '../../../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TransactionsTableEntityFields on Transaction {
     id

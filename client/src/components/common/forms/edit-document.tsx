@@ -8,6 +8,7 @@ import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ModifyDocumentFields } from './modify-document-fields';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query EditDocument($documentId: ID!) {
     documentById(documentId: $documentId) {

@@ -6,6 +6,7 @@ import { FiltersContext } from '../../filters-context';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query Documents {
     documents {

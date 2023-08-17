@@ -3,6 +3,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesVatFieldsFragmentDoc, Currency, MissingChargeInfo } from '../../../gql/graphql';
 import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesVatFields on Charge {
     id

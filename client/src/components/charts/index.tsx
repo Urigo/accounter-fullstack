@@ -17,6 +17,7 @@ import { BarChart } from './chart';
 import { ChargeFilterFilter } from './chart-filters';
 import { StatsCard } from './stats-card';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
 query IncomeChargesChart($filters: ChargeFilter) {
     allCharges(filters: $filters) {

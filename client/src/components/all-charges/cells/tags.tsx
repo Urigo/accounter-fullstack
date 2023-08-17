@@ -5,6 +5,7 @@ import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton, ListCapsule } from '../../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesTagsFields on Charge {
     id

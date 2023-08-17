@@ -5,6 +5,7 @@ import { ActionIcon, Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql';
 import { dedupeFragments } from '../../../helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query GeneratePCN($fromDate: TimelessDate!, $toDate: TimelessDate!, $financialEntityId: ID!) {
     pcnFile(

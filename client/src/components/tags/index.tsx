@@ -8,6 +8,7 @@ import { useAddTag } from '../../hooks/use-add-tag';
 import { useDeleteTag } from '../../hooks/use-delete-tag';
 import { AccounterLoader } from '../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query AllTags {
     allTags {

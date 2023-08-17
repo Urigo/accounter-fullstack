@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../../gql/graphql';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TransactionsTableEventDateFields on Transaction {
     id

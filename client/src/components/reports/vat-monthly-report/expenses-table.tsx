@@ -5,6 +5,7 @@ import { FragmentType, getFragmentData } from '../../../gql';
 import { VarReportExpensesFieldsFragmentDoc } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VarReportExpensesFields on VatReportResult {
     expenses {

@@ -1,6 +1,7 @@
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TransactionsTableAccountFields on Transaction {
     id
