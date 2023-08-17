@@ -5,6 +5,7 @@ import { EditCharge, PopUpDrawer } from '..';
 import { EditChargeDocument } from '../../../gql/graphql';
 import { writeToClipboard } from '../../../helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query EditCharge($chargeIDs: [ID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {

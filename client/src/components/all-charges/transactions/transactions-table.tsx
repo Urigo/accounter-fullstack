@@ -12,6 +12,7 @@ import {
   SourceID,
 } from './cells';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TableTransactionsFields on Charge {
     transactions {

@@ -6,6 +6,7 @@ import {
   MergeChargesMutationVariables,
 } from '../gql/graphql.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation MergeCharges($baseChargeID: ID!, $chargeIdsToMerge: [ID!]!, $fields: UpdateChargeInput) {
     mergeCharges(baseChargeID: $baseChargeID, chargeIdsToMerge: $chargeIdsToMerge, fields: $fields) {

@@ -8,6 +8,7 @@ import {
 } from '../../../gql/graphql';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesEntityFields on Charge {
     id

@@ -5,6 +5,7 @@ import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentFilesFieldsFragmentDoc } from '../../../../gql/graphql';
 import { ImageMagnifier } from '../../../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment DocumentFilesFields on Document {
     id

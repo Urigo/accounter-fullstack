@@ -6,6 +6,7 @@ import {
   FetchIncomeDocumentsMutationVariables,
 } from '../gql/graphql.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation FetchIncomeDocuments($ownerId: ID!) {
     fetchIncomeDocuments(ownerId: $ownerId) {

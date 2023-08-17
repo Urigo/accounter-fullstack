@@ -5,6 +5,7 @@ import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql
 import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { ConfirmMiniButton } from '../../../common';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment DocumentsTableAmountFields on Document {
     id

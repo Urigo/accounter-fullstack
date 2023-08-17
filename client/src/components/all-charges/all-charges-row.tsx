@@ -43,6 +43,7 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query ChargeForRow($chargeIDs: [ID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {

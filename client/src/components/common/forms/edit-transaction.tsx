@@ -20,6 +20,7 @@ import {
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query EditTransaction($transactionIDs: [ID!]!) {
     transactionsByIDs(transactionIDs: $transactionIDs) {
