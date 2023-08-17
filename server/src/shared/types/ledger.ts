@@ -1,4 +1,5 @@
-import type { Currency, TaxCategory } from '@shared/gql-types';
+import type { Currency } from '@shared/gql-types';
+import type { CounterAccountProto } from './index.js';
 
 export interface EntryForFinancialAccount {
   creditAccount: string | null;
@@ -31,10 +32,10 @@ export interface EntryForAccounting {
 
 export interface LedgerProto {
   id: string;
-  creditAccountID1: string | TaxCategory;
-  creditAccountID2?: string | TaxCategory;
-  debitAccountID1: string | TaxCategory;
-  debitAccountID2?: string | TaxCategory;
+  creditAccountID1: CounterAccountProto;
+  creditAccountID2?: CounterAccountProto;
+  debitAccountID1: CounterAccountProto;
+  debitAccountID2?: CounterAccountProto;
   creditAmount1?: number;
   creditAmount2?: number;
   debitAmount1?: number;
@@ -49,4 +50,5 @@ export interface LedgerProto {
   valueDate: Date;
   currency: Currency;
   isCreditorCounterparty: boolean;
+  ownerId: string;
 }

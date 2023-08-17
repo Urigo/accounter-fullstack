@@ -5,6 +5,7 @@ import {
   commonDocumentsFields,
   commonFinancialEntityFields,
   commonTransactionFields,
+  ledgerCounterparty,
 } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
@@ -164,5 +165,11 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   },
   Receipt: {
     ...commonDocumentsFields,
+  },
+  LedgerRecord: {
+    creditAccount1: ledgerCounterparty('CreditAccount1'),
+    creditAccount2: ledgerCounterparty('CreditAccount2'),
+    debitAccount1: ledgerCounterparty('DebitAccount1'),
+    debitAccount2: ledgerCounterparty('DebitAccount2'),
   },
 };

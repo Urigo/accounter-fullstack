@@ -14,47 +14,23 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
     id
     creditAccount1 {
       __typename
-      ... on TaxCategory {
-        id
-        name
-      }
-      ... on NamedCounterparty {
-        id
-        name
-      }
+      id
+      name
     }
     creditAccount2 {
       __typename
-      ... on TaxCategory {
-        id
-        name
-      }
-      ... on NamedCounterparty {
-        id
-        name
-      }
+      id
+      name
     }
     debitAccount1 {
       __typename
-      ... on TaxCategory {
-        id
-        name
-      }
-      ... on NamedCounterparty {
-        id
-        name
-      }
+      id
+      name
     }
     debitAccount2 {
       __typename
-      ... on TaxCategory {
-        id
-        name
-      }
-      ... on NamedCounterparty {
-        id
-        name
-      }
+      id
+      name
     }
     creditAmount1 {
       formatted

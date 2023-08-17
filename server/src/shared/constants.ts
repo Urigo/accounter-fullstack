@@ -58,3 +58,7 @@ export const ENTITIES_WITHOUT_ACCOUNTING = [
   'Gil Employee',
   'Tuval Employee',
 ];
+
+// Tax category related
+export const VAT_TAX_CATEGORY_NAME = 'מעמחוז';
+export const EXCHANGE_RATE_CATEGORY_NAME = 'Exchange Rates';

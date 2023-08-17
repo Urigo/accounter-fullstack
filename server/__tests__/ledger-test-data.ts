@@ -2,31 +2,71 @@ import { gql, testkit } from 'graphql-modules';
 import { chargesModule } from 'server/src/modules/charges';
 import { ChargesProvider } from 'server/src/modules/charges/providers/charges.provider';
 import { commonModule } from 'server/src/modules/common';
+import { documentsModule } from 'server/src/modules/documents';
 import { DocumentsProvider } from 'server/src/modules/documents/providers/documents.provider';
 import { ExchangeProvider } from 'server/src/modules/exchange-rates/providers/exchange.provider';
+import { financialAccountsModule } from 'server/src/modules/financial-accounts';
 import { financialEntitiesModule } from 'server/src/modules/financial-entities';
 import { FinancialEntitiesProvider } from 'server/src/modules/financial-entities/providers/financial-entities.provider';
 import { TaxCategoriesProvider } from 'server/src/modules/financial-entities/providers/tax-categories.provider';
-import { businessesResolvers } from 'server/src/modules/financial-entities/resolvers/business-transactions.resolver';
 import { ledgerModule } from 'server/src/modules/ledger';
 import { tagsModule } from 'server/src/modules/tags';
 import { TransactionsProvider } from 'server/src/modules/transactions/providers/transactions.provider';
 import type { IGetChargesByIdsResult } from '../src/modules/charges/types';
 import type { IGetAllDocumentsResult } from '../src/modules/documents/types';
 import type { IGetExchangeRatesByDateResult } from '../src/modules/exchange-rates/types';
+import { FinancialAccountsProvider } from '../src/modules/financial-accounts/providers/financial-accounts.provider';
+import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types';
 import type {
+  IGetAllTaxCategoriesResult,
   IGetFinancialEntitiesByIdsResult,
   IGetTaxCategoryByBusinessAndOwnerIDsResult,
 } from '../src/modules/financial-entities/types';
 import type { IGetTransactionsByIdsResult } from '../src/modules/transactions/types';
 
+const ledgerCounterpartyHelper = (DbLedgerRecord: any, account: string) => {
+  let counterpartyProto = undefined;
+  switch (account) {
+    case 'CreditAccount1':
+      counterpartyProto = DbLedgerRecord.creditAccountID1;
+      break;
+    case 'CreditAccount2':
+      counterpartyProto = DbLedgerRecord.creditAccountID2;
+      break;
+    case 'DebitAccount1':
+      counterpartyProto = DbLedgerRecord.debitAccountID1;
+      break;
+    case 'DebitAccount2':
+      counterpartyProto = DbLedgerRecord.debitAccountID2;
+      break;
+    default:
+      throw new Error(`Invalid account type: ${account}`);
+  }
+  if (!counterpartyProto) return null;
+  return typeof counterpartyProto === 'string'
+    ? { id: counterpartyProto, __typeName: 'NamedCounterparty' }
+    : { ...counterpartyProto, __typeName: 'TaxCategory' };
+};
+
 export function getDummyApp() {
   return testkit.testModule(ledgerModule, {
-    inheritTypeDefs: [commonModule, chargesModule, financialEntitiesModule, tagsModule],
+    inheritTypeDefs: [
+      chargesModule,
+      commonModule,
+      documentsModule,
+      financialAccountsModule,
+      financialEntitiesModule,
+      tagsModule,
+    ],
     typeDefs: gql`
       type Query {
         chargesById(IDs: [ID!]!): [Charge!]!
         charge(id: ID!): Charge!
+      }
+      " represent a counterparty with a name "
+      type NamedCounterparty implements Counterparty {
+        name: String!
+        id: UUID!
       }
     `,
     resolvers: {
@@ -38,7 +78,19 @@ export function getDummyApp() {
           return charges[id];
         },
       },
-      NamedCounterparty: businessesResolvers.NamedCounterparty,
+      LedgerRecord: {
+        creditAccount1: (DbLedgerRecord: any) =>
+          ledgerCounterpartyHelper(DbLedgerRecord, 'CreditAccount1'),
+        creditAccount2: (DbLedgerRecord: any) =>
+          ledgerCounterpartyHelper(DbLedgerRecord, 'CreditAccount2'),
+        debitAccount1: (DbLedgerRecord: any) =>
+          ledgerCounterpartyHelper(DbLedgerRecord, 'DebitAccount1'),
+        debitAccount2: (DbLedgerRecord: any) =>
+          ledgerCounterpartyHelper(DbLedgerRecord, 'DebitAccount2'),
+      },
+      Counterparty: {
+        __resolveType: (obj: any) => obj.__typeName,
+      },
     },
     providers: [
       {
@@ -71,6 +123,17 @@ export function getDummyApp() {
               );
             },
           },
+          taxCategoryByNamesLoader: {
+            load: async (name: string) => {
+              return taxCategories.find(tc => tc.name === name);
+            },
+          },
+          taxCategoryByChargeIDsLoader: {
+            load: (chargeId: string) => {
+              const charge = charges[chargeId];
+              return taxCategories.find(tc => tc.id === charge.tax_category_id);
+            },
+          },
         },
       },
       {
@@ -98,6 +161,23 @@ export function getDummyApp() {
             load: async (id: string) => {
               const business = businesses[id];
               return business;
+            },
+          },
+        },
+      },
+      {
+        provide: FinancialAccountsProvider,
+        useValue: {
+          getFinancialEntityByIdLoader: {
+            load: async (id: string) => {
+              const business = businesses[id];
+              return business;
+            },
+          },
+          getFinancialAccountByAccountIDLoader: {
+            load: async (id: string) => {
+              const account = financialAccounts[id];
+              return account;
             },
           },
         },
@@ -143,6 +223,7 @@ const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
     wizcloud_company_id: null,
     wizcloud_token: null,
     can_settle_with_receipt: false,
+    sort_code: 100,
   },
   '2001': {
     name: 'Local Business 1',
@@ -179,6 +260,7 @@ const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
     wizcloud_company_id: null,
     wizcloud_token: null,
     can_settle_with_receipt: false,
+    sort_code: 100,
   },
   '2002': {
     name: 'Local Business 2 (no invoices)',
@@ -215,6 +297,7 @@ const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
     wizcloud_company_id: null,
     wizcloud_token: null,
     can_settle_with_receipt: false,
+    sort_code: 100,
   },
   '2003': {
     name: 'Foreign Business 1',
@@ -251,6 +334,7 @@ const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
     wizcloud_company_id: null,
     wizcloud_token: null,
     can_settle_with_receipt: false,
+    sort_code: 100,
   },
   '2004': {
     name: 'Foreign Business 2',
@@ -287,6 +371,34 @@ const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
     wizcloud_company_id: null,
     wizcloud_token: null,
     can_settle_with_receipt: false,
+    sort_code: 100,
+  },
+};
+
+const financialAccounts: Record<string, IGetAllFinancialAccountsResult> = {
+  '1': {
+    id: '1',
+    account_agreement_opening_date: null,
+    account_closing_reason_code: null,
+    account_deal_date: null,
+    account_number: 'account 1#',
+    account_update_date: null,
+    bank_number: null,
+    branch_number: null,
+    branch_type_code: null,
+    extended_bank_number: null,
+    hashavshevet_account_eur: 'checking_eur',
+    hashavshevet_account_gbp: 'checking_gbp',
+    hashavshevet_account_ils: 'checking_ils',
+    hashavshevet_account_usd: 'checking_usd',
+    kod_harshaat_peilut: null,
+    meteg_doar_net: null,
+    mymail_entitlement_switch: null,
+    owner: null,
+    party_account_involvement_code: null,
+    party_preferred_indication: null,
+    private_business: 'business',
+    service_authorization_desc: null,
   },
 };
 
@@ -299,7 +411,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1000',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -309,7 +421,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'ILS charge, one doc, one transaction, consistent dates and currency',
     business_id: null,
     business_array: null,
@@ -321,6 +433,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1001': {
     accountant_reviewed: false,
@@ -330,7 +443,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1001',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -340,7 +453,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'ILS charge, one doc, one transaction, diff dates, consistent currency',
     business_id: null,
     business_array: null,
@@ -352,6 +465,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1002': {
     accountant_reviewed: false,
@@ -371,7 +485,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'ILS charge, no doc, one transaction, consistent dates and currency',
     business_id: null,
     business_array: null,
@@ -383,6 +497,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1100': {
     accountant_reviewed: false,
@@ -392,7 +507,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1100',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -402,7 +517,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'USD charge, one doc, one transaction, consistent dates and currency',
     business_id: null,
     business_array: null,
@@ -414,6 +529,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1101': {
     accountant_reviewed: false,
@@ -423,7 +539,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1101',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -433,7 +549,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'USD charge, one doc, one transaction, diff dates, consistent currency',
     business_id: null,
     business_array: null,
@@ -445,6 +561,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1102': {
     accountant_reviewed: false,
@@ -454,7 +571,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1102',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -464,7 +581,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description:
       'USD charge, one doc, one transaction, diff dates (transaction.debit_date), consistent currency',
     business_id: null,
@@ -477,6 +594,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1103': {
     accountant_reviewed: false,
@@ -486,7 +604,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1103',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -496,7 +614,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description:
       'USD charge, one doc, one transaction, diff dates (transaction.event_date), consistent currency',
     business_id: null,
@@ -509,6 +627,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1104': {
     accountant_reviewed: false,
@@ -518,7 +637,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1104',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -528,7 +647,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description:
       'USD charge, one doc, one transaction, diff dates - transaction first, consistent currency',
     business_id: null,
@@ -541,6 +660,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1105': {
     accountant_reviewed: false,
@@ -560,7 +680,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'USD charge, no doc, one transaction, consistent dates and currency',
     business_id: null,
     business_array: null,
@@ -572,6 +692,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1200': {
     accountant_reviewed: false,
@@ -591,7 +712,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '2',
     user_description: 'Conversion charge, no docs, two transaction, consistent dates',
     business_id: null,
     business_array: null,
@@ -603,6 +724,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1201': {
     accountant_reviewed: false,
@@ -622,7 +744,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '2',
     user_description: 'Conversion charge, no docs, two transaction, consistent dates, unbalanced',
     business_id: null,
     business_array: null,
@@ -634,6 +756,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1202': {
     accountant_reviewed: false,
@@ -653,7 +776,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '2',
     user_description: 'Conversion charge, no docs, two transaction, diff dates',
     business_id: null,
     business_array: null,
@@ -665,6 +788,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
   '1900': {
     accountant_reviewed: false,
@@ -674,7 +798,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     documents_vat_amount: null,
     event_amount: null,
     id: '1900',
-    invoices_count: null,
+    invoices_count: '1',
     is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
@@ -684,7 +808,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     transactions_max_event_date: null,
     transactions_min_debit_date: null,
     transactions_min_event_date: null,
-    transactions_count: null,
+    transactions_count: '1',
     user_description: 'ILS charge, one doc, one transaction,diff dates and currency',
     business_id: null,
     business_array: null,
@@ -696,6 +820,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     invalid_transactions: null,
     transactions_currency: null,
     can_settle_with_receipt: null,
+    tax_category_id: '1',
   },
 };
 
@@ -1129,13 +1254,17 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
   },
 };
 
-const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
+const taxCategories: Array<
+  IGetAllTaxCategoriesResult &
+    Partial<Pick<IGetTaxCategoryByBusinessAndOwnerIDsResult, 'business_id' | 'owner_id'>>
+> = [
   {
     id: '1',
     owner_id: businesses['2000'].id,
     business_id: businesses['2001'].id,
     name: 'Tax Category 1',
     hashavshevet_name: 'קטגוריית מס 1',
+    sort_code: 100,
   },
   {
     id: '2',
@@ -1143,6 +1272,7 @@ const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
     business_id: businesses['2002'].id,
     name: 'Tax Category 2',
     hashavshevet_name: 'קטגוריית מס 2',
+    sort_code: 200,
   },
   {
     id: '3',
@@ -1150,6 +1280,7 @@ const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
     business_id: businesses['2003'].id,
     name: 'Tax Category 3',
     hashavshevet_name: 'קטגוריית מס 3',
+    sort_code: 300,
   },
   {
     id: '4',
@@ -1157,6 +1288,43 @@ const taxCategories: Array<IGetTaxCategoryByBusinessAndOwnerIDsResult> = [
     business_id: businesses['2004'].id,
     name: 'Tax Category 4',
     hashavshevet_name: 'קטגוריית מס 4',
+    sort_code: 400,
+  },
+  {
+    id: '900',
+    name: 'Exchange Rates',
+    hashavshevet_name: 'שער',
+    sort_code: 990,
+  },
+  {
+    id: '901',
+    name: 'מעמחוז',
+    hashavshevet_name: 'מעמחוז',
+    sort_code: 510,
+  },
+  {
+    id: '902',
+    name: 'checking_eur',
+    hashavshevet_name: 'checking_eur',
+    sort_code: 110,
+  },
+  {
+    id: '903',
+    name: 'checking_gbp',
+    hashavshevet_name: 'checking_gbp',
+    sort_code: 110,
+  },
+  {
+    id: '904',
+    name: 'checking_ils',
+    hashavshevet_name: 'checking_ils',
+    sort_code: 110,
+  },
+  {
+    id: '905',
+    name: 'checking_usd',
+    hashavshevet_name: 'checking_usd',
+    sort_code: 110,
   },
 ];
 
@@ -1188,20 +1356,10 @@ export const fetchChargeQuery = gql`
         ... on LedgerRecords {
           records {
             creditAccount1 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             creditAccount2 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             creditAmount1 {
               formatted
@@ -1210,20 +1368,10 @@ export const fetchChargeQuery = gql`
               formatted
             }
             debitAccount1 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             debitAccount2 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             debitAmount1 {
               formatted
@@ -1264,20 +1412,10 @@ export const fetchChargesQuery = gql`
         ... on LedgerRecords {
           records {
             creditAccount1 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             creditAccount2 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             creditAmount1 {
               formatted
@@ -1286,20 +1424,10 @@ export const fetchChargesQuery = gql`
               formatted
             }
             debitAccount1 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             debitAccount2 {
-              ... on NamedCounterparty {
-                name
-              }
-              ... on TaxCategory {
-                name
-              }
+              id
             }
             debitAmount1 {
               formatted

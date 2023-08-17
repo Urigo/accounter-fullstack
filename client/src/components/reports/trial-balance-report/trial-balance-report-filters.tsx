@@ -71,7 +71,7 @@ function TrialBalanceReportFilterForm({
       {feLoading || bnLoading ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <Controller
-          name="financialEntityIds"
+          name="ownerIds"
           control={control}
           defaultValue={undefined}
           render={({ field, fieldState }) => (
@@ -85,7 +85,7 @@ function TrialBalanceReportFilterForm({
               }
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={feLoading}
-              label="Financial Entities"
+              label="Owners"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable

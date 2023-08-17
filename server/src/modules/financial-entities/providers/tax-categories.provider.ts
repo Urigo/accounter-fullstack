@@ -4,9 +4,11 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllTaxCategoriesQuery,
+  IGetAllTaxCategoriesResult,
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByIDsQuery,
+  IGetTaxCategoryByNamesQuery,
 } from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
@@ -20,12 +22,17 @@ const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
 SELECT tc.*, c.business_id, c.owner_id, c.id as charge_id
 FROM accounter_schema.extended_charges c
 LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
-WHERE c.id IN $$chargeIds;`;
+WHERE tc.id IS NOT NULL AND c.id IN $$chargeIds;`;
 
 const getTaxCategoryByIDs = sql<IGetTaxCategoryByIDsQuery>`
 SELECT *
 FROM accounter_schema.tax_categories
 WHERE id IN $$Ids;`;
+
+const getTaxCategoryByNames = sql<IGetTaxCategoryByNamesQuery>`
+SELECT *
+FROM accounter_schema.tax_categories
+WHERE name IN $$names;`;
 
 const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
 SELECT *
@@ -40,24 +47,14 @@ export class TaxCategoriesProvider {
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
     entries: readonly { businessID: string; ownerID: string }[],
-  ) {
+  ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
     const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessID));
     const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerID));
 
-    const BusinessIds = Array.from(BusinessIdsSet);
-    const OwnerIds = Array.from(OwnerIdsSet);
-
-    // if array is empty, add null to it to avoid gptyped error
-    if (BusinessIds.length === 0) {
-      BusinessIds.push(null);
-    }
-    if (OwnerIds.length === 0) {
-      OwnerIds.push(null);
-    }
     const taxCategories = await getTaxCategoryByBusinessAndOwnerIDs.run(
       {
-        BusinessIds,
-        OwnerIds,
+        BusinessIds: BusinessIdsSet.size === 0 ? [null] : Array.from(BusinessIdsSet),
+        OwnerIds: OwnerIdsSet.size === 0 ? [null] : Array.from(OwnerIdsSet),
       },
       this.dbProvider,
     );
@@ -111,4 +108,21 @@ export class TaxCategoriesProvider {
   public getAllTaxCategories() {
     return getAllTaxCategories.run(undefined, this.dbProvider);
   }
+
+  private async batchTaxCategoryByNames(names: readonly string[]) {
+    const taxCategories = await getTaxCategoryByNames.run(
+      {
+        names,
+      },
+      this.dbProvider,
+    );
+    return names.map(name => taxCategories.find(tc => tc.name === name));
+  }
+
+  public taxCategoryByNamesLoader = new DataLoader(
+    (names: readonly string[]) => this.batchTaxCategoryByNames(names),
+    {
+      cache: false,
+    },
+  );
 }

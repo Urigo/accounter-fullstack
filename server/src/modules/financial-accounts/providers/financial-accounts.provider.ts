@@ -76,7 +76,7 @@ export class FinancialAccountsProvider {
       },
       this.dbProvider,
     );
-    return accountIDs.map(id => accounts.find(charge => charge.id === id));
+    return accountIDs.map(id => accounts.find(account => account.id === id));
   }
 
   public getFinancialAccountByAccountIDLoader = new DataLoader(

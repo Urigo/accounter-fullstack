@@ -1,7 +1,35 @@
 import { Copy } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
+import { useQuery } from 'urql';
+import { ActionIcon, Loader } from '@mantine/core';
 import { EditCharge, PopUpDrawer } from '..';
+import { EditChargeDocument } from '../../../gql/graphql';
 import { writeToClipboard } from '../../../helpers';
+
+/* GraphQL */ `
+  query EditCharge($chargeIDs: [ID!]!) {
+    chargesByIDs(chargeIDs: $chargeIDs) {
+      id
+      counterparty {
+        id
+        name
+      }
+      owner {
+        id
+        name
+      }
+      property
+      conversion
+      userDescription
+      taxCategory {
+        id
+        name
+      }
+      tags {
+        name
+      }
+    }
+  }
+`;
 
 interface Props {
   chargeId?: string;
@@ -9,9 +37,21 @@ interface Props {
 }
 
 export const EditChargeModal = ({ chargeId, onDone }: Props) => {
-  if (!chargeId) {
-    return null;
-  }
+  return chargeId ? <EditChargeModalContent chargeId={chargeId} onDone={onDone} /> : null;
+};
+
+export const EditChargeModalContent = ({
+  chargeId,
+  onDone,
+}: Omit<Props, 'chargeId'> & { chargeId: string }) => {
+  const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
+    query: EditChargeDocument,
+    variables: {
+      chargeIDs: [chargeId],
+    },
+  });
+
+  const charge = chargeData?.chargesByIDs?.[0];
 
   return (
     <PopUpDrawer
@@ -31,7 +71,11 @@ export const EditChargeModal = ({ chargeId, onDone }: Props) => {
       opened={!!chargeId}
       onClose={onDone}
     >
-      <EditCharge chargeId={chargeId} onDone={onDone} />
+      {fetchingCharge || !charge ? (
+        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+      ) : (
+        <EditCharge charge={charge} onDone={onDone} />
+      )}
     </PopUpDrawer>
   );
 };

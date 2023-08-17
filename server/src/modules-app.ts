@@ -11,9 +11,9 @@ import { commonModule } from './modules/common/index.js';
 import { documentsModule } from './modules/documents/index.js';
 import { financialAccountsModule } from './modules/financial-accounts/index.js';
 import { financialEntitiesModule } from './modules/financial-entities/index.js';
-import { hashavshevetModule } from './modules/hashavshevet/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
 import { reportsModule } from './modules/reports/index.js';
+import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 
@@ -31,7 +31,7 @@ export async function createGraphQLApp() {
       documentsModule,
       financialAccountsModule,
       financialEntitiesModule,
-      hashavshevetModule,
+      sortCodesModule,
       ledgerModule,
       reportsModule,
       tagsModule,

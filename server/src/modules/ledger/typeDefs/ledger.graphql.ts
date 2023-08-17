@@ -17,14 +17,7 @@ export default gql`
     valueDate: Date!
     description: String
     reference1: String
-    debitAccount1: LedgerCounterparty!
-    debitAccount2: LedgerCounterparty
-    creditAccount1: LedgerCounterparty!
-    creditAccount2: LedgerCounterparty
   }
-
-  " represents ledger record counterparty OR tax category"
-  union LedgerCounterparty = NamedCounterparty | TaxCategory
 
   extend type Charge {
     " ledger records linked to the charge "

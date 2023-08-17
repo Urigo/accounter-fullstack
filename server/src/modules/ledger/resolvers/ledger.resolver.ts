@@ -1,7 +1,6 @@
 import { Currency, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type { LedgerModule } from '../types.js';
-import { ledgerCounterparty } from './ledger-counterparty.resolver.js';
 import { generateLedgerRecords } from './ledger-generation.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
@@ -39,18 +38,6 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     valueDate: DbLedgerRecord => DbLedgerRecord.valueDate,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference1: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
-    creditAccount1: (DbLedgerRecord, _, context, info) =>
-      ledgerCounterparty(DbLedgerRecord, { account: 'CreditAccount1' }, context, info),
-    creditAccount2: (DbLedgerRecord, _, context, info) =>
-      DbLedgerRecord.creditAccountID2
-        ? ledgerCounterparty(DbLedgerRecord, { account: 'CreditAccount2' }, context, info)
-        : null,
-    debitAccount1: (DbLedgerRecord, _, context, info) =>
-      ledgerCounterparty(DbLedgerRecord, { account: 'DebitAccount1' }, context, info),
-    debitAccount2: (DbLedgerRecord, _, context, info) =>
-      DbLedgerRecord.debitAccountID2
-        ? ledgerCounterparty(DbLedgerRecord, { account: 'DebitAccount2' }, context, info)
-        : null,
   },
   Charge: {
     ledgerRecords: generateLedgerRecords,

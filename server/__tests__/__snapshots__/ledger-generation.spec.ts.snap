@@ -5,7 +5,7 @@ exports[`Ledger Generation > Conversion > should generate ledger records for bas
   "records": [
     {
       "creditAccount1": {
-        "name": "Foreign Business 2",
+        "id": "2004",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -13,7 +13,7 @@ exports[`Ledger Generation > Conversion > should generate ledger records for bas
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Account ID:...1",
+        "id": "902",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -35,13 +35,13 @@ exports[`Ledger Generation > Conversion > should generate ledger records for bas
     },
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "904",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "debitAccount2": null,
       "debitAmount1": null,
@@ -68,7 +68,7 @@ exports[`Ledger Generation > Conversion > should generate ledger records for con
   "records": [
     {
       "creditAccount1": {
-        "name": "Foreign Business 2",
+        "id": "2004",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -76,7 +76,7 @@ exports[`Ledger Generation > Conversion > should generate ledger records for con
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Account ID:...1",
+        "id": "902",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -98,13 +98,13 @@ exports[`Ledger Generation > Conversion > should generate ledger records for con
     },
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "904",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "debitAccount2": null,
       "debitAmount1": null,
@@ -131,7 +131,7 @@ exports[`Ledger Generation > Foreign currency > Should handle no-invoice busines
   "records": [
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "905",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -139,7 +139,7 @@ exports[`Ledger Generation > Foreign currency > Should handle no-invoice busines
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Foreign Business 2",
+        "id": "2004",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -168,7 +168,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records f
   "records": [
     {
       "creditAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -176,7 +176,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records f
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Tax Category 3",
+        "id": "1",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -198,7 +198,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records f
     },
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "905",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -206,7 +206,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records f
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -235,7 +235,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
   "records": [
     {
       "creditAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -243,7 +243,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Tax Category 3",
+        "id": "1",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -265,7 +265,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
     },
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "905",
       },
       "creditAccount2": null,
       "creditAmount1": {
@@ -273,7 +273,7 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
       },
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -295,13 +295,13 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
     },
     {
       "creditAccount1": {
-        "name": "Foreign Business 1",
+        "id": "2003",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Exchange",
+        "id": "900",
       },
       "debitAccount2": null,
       "debitAmount1": null,
@@ -323,23 +323,53 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
 }
 `;
 
-exports[`Ledger Generation > Local currency (ILS) > Should handle no-invoice businesses 1`] = `
+exports[`Ledger Generation > Local currency (ILS) > dates diff should have no effect 1`] = `
 {
   "records": [
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "2001",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Local Business 2 (no invoices)",
+        "id": "1",
+      },
+      "debitAccount2": {
+        "id": "901",
+      },
+      "debitAmount1": null,
+      "debitAmount2": null,
+      "description": null,
+      "invoiceDate": 2020-01-01T00:00:00.000Z,
+      "localCurrencyCreditAmount1": {
+        "formatted": "₪ 117,000.00",
+      },
+      "localCurrencyCreditAmount2": null,
+      "localCurrencyDebitAmount1": {
+        "formatted": "₪ 100,000.00",
+      },
+      "localCurrencyDebitAmount2": {
+        "formatted": "₪ 17,000.00",
+      },
+      "reference1": null,
+      "valueDate": 2020-01-01T00:00:00.000Z,
+    },
+    {
+      "creditAccount1": {
+        "id": "904",
+      },
+      "creditAccount2": null,
+      "creditAmount1": null,
+      "creditAmount2": null,
+      "debitAccount1": {
+        "id": "2001",
       },
       "debitAccount2": null,
       "debitAmount1": null,
       "debitAmount2": null,
-      "description": "Description for transaction 4002",
+      "description": "Description for transaction 4001",
       "invoiceDate": 2020-01-01T00:00:00.000Z,
       "localCurrencyCreditAmount1": {
         "formatted": "₪ 117,000.00",
@@ -361,10 +391,10 @@ exports[`Ledger Generation > Misc > should handle currency AND date diff 1`] = `
   "records": [
     {
       "creditAccount1": {
-        "name": "Tax Category 1",
+        "id": "1",
       },
       "creditAccount2": {
-        "name": "VAT [temp]",
+        "id": "901",
       },
       "creditAmount1": {
         "formatted": "$ 83,000.00",
@@ -373,7 +403,7 @@ exports[`Ledger Generation > Misc > should handle currency AND date diff 1`] = `
         "formatted": "$ 17,000.00",
       },
       "debitAccount1": {
-        "name": "Local Business 1",
+        "id": "2001",
       },
       "debitAccount2": null,
       "debitAmount1": {
@@ -397,13 +427,13 @@ exports[`Ledger Generation > Misc > should handle currency AND date diff 1`] = `
     },
     {
       "creditAccount1": {
-        "name": "Account ID:...1",
+        "id": "904",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Local Business 1",
+        "id": "2001",
       },
       "debitAccount2": null,
       "debitAmount1": null,
@@ -423,13 +453,13 @@ exports[`Ledger Generation > Misc > should handle currency AND date diff 1`] = `
     },
     {
       "creditAccount1": {
-        "name": "Local Business 1",
+        "id": "2001",
       },
       "creditAccount2": null,
       "creditAmount1": null,
       "creditAmount2": null,
       "debitAccount1": {
-        "name": "Exchange",
+        "id": "900",
       },
       "debitAccount2": null,
       "debitAmount1": null,
