@@ -44,7 +44,9 @@ export const commonFinancialDocumentsFields:
   amount: documentRoot =>
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
-    documentRoot.vat_amount == null ? null : formatFinancialAmount(documentRoot.vat_amount),
+    documentRoot.vat_amount == null
+      ? null
+      : formatFinancialAmount(documentRoot.vat_amount, documentRoot.currency_code),
 };
 
 export const commonFinancialEntityFields:
