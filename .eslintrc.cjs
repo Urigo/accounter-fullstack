@@ -82,6 +82,7 @@ module.exports = {
       rules: {
         'import/extensions': 'off', // TODO @dima!
         'react/hook-use-state': 'off', // TODO @dima!
+        '@typescript-eslint/explicit-function-return-type': 'error',
       },
     },
     {

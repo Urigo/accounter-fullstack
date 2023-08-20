@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
@@ -32,7 +33,7 @@ type Props = {
   data: FragmentType<typeof AllChargesMoreInfoFieldsFragmentDoc>;
 };
 
-export const MoreInfo = ({ data }: Props) => {
+export const MoreInfo = ({ data }: Props): ReactElement => {
   const { metadata, ledgerRecords, counterparty, validationData, id } = getFragmentData(
     AllChargesMoreInfoFieldsFragmentDoc,
     data,

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader } from '@mantine/core';
@@ -37,14 +38,14 @@ interface Props {
   onDone: () => void;
 }
 
-export const EditChargeModal = ({ chargeId, onDone }: Props) => {
+export const EditChargeModal = ({ chargeId, onDone }: Props): ReactElement | null => {
   return chargeId ? <EditChargeModalContent chargeId={chargeId} onDone={onDone} /> : null;
 };
 
 export const EditChargeModalContent = ({
   chargeId,
   onDone,
-}: Omit<Props, 'chargeId'> & { chargeId: string }) => {
+}: Omit<Props, 'chargeId'> & { chargeId: string }): ReactElement => {
   const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,
     variables: {
@@ -63,7 +64,11 @@ export const EditChargeModalContent = ({
           <h1 className="sm:text-2xl font-small text-gray-900">Edit Charge:</h1>
           <div className="flex flex-row gap-2">
             ID: {chargeId}
-            <ActionIcon variant="default" onClick={() => writeToClipboard(chargeId)} size={30}>
+            <ActionIcon
+              variant="default"
+              onClick={(): void => writeToClipboard(chargeId)}
+              size={30}
+            >
               <Copy size={20} />
             </ActionIcon>
           </div>

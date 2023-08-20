@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql';
 import { EditDocumentModal } from '../../common';
@@ -19,7 +19,7 @@ type Props = {
   documentsProps: FragmentType<typeof TableDocumentsFieldsFragmentDoc>;
 };
 
-export const DocumentsTable = ({ documentsProps }: Props) => {
+export const DocumentsTable = ({ documentsProps }: Props): ReactElement => {
   const { additionalDocuments: documents } = getFragmentData(
     TableDocumentsFieldsFragmentDoc,
     documentsProps,
@@ -46,12 +46,15 @@ export const DocumentsTable = ({ documentsProps }: Props) => {
             <DocumentsTableRow
               key={document.id}
               documentData={document}
-              editDocument={() => setEditDocumentId(document.id)}
+              editDocument={(): void => setEditDocumentId(document.id)}
             />
           ))}
         </tbody>
       </table>
-      <EditDocumentModal documentId={editDocumentId} onDone={() => setEditDocumentId(undefined)} />
+      <EditDocumentModal
+        documentId={editDocumentId}
+        onDone={(): void => setEditDocumentId(undefined)}
+      />
     </>
   );
 };

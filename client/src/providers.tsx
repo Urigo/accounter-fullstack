@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 import { createClient, Provider } from 'urql';
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
@@ -11,7 +11,7 @@ const client = createClient({
   exchanges: [multipartFetchExchange],
 });
 
-export function Providers({ children }: { children?: ReactNode }) {
+export function Providers({ children }: { children?: ReactNode }): ReactElement {
   return (
     <MantineProvider
       withNormalizeCSS

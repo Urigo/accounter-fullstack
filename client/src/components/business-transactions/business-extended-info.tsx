@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Mark, Table } from '@mantine/core';
@@ -59,7 +60,7 @@ interface Props {
   filter?: BusinessTransactionsFilter;
 }
 
-export function BusinessExtendedInfo({ businessID, filter }: Props) {
+export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {
   const { fromDate, ownerIds, toDate } = filter ?? {};
   const [{ data, fetching }] = useQuery({
     query: BusinessTransactionsInfoDocument,

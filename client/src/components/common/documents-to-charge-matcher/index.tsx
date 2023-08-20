@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { AccounterLoader } from '..';
 import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql';
@@ -30,7 +31,7 @@ interface Props {
   onDone: () => void;
 }
 
-export function DocumentsToChargeMatcher({ chargeId, ownerId, onDone }: Props) {
+export function DocumentsToChargeMatcher({ chargeId, ownerId, onDone }: Props): ReactElement {
   const [{ data, fetching }] = useQuery({
     query: DocumentsToChargeMatcherDocument,
     variables: {

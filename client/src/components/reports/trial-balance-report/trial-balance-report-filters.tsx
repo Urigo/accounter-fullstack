@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -28,7 +28,7 @@ function TrialBalanceReportFilterForm({
   filter,
   setFilter,
   closeModal,
-}: TrialBalanceReportFilterFormProps) {
+}: TrialBalanceReportFilterFormProps): ReactElement {
   const [isShowZeroedAccounts, setIsShowZeroedAccounts] = useState<boolean>(false);
   const { control, handleSubmit } = useForm<TrialBalanceReportFilters>({
     defaultValues: { ...filter },
@@ -61,7 +61,7 @@ function TrialBalanceReportFilterForm({
     closeModal();
   };
 
-  function clearFilter() {
+  function clearFilter(): void {
     setFilter({});
     closeModal();
   }
@@ -74,7 +74,7 @@ function TrialBalanceReportFilterForm({
           name="ownerIds"
           control={control}
           defaultValue={undefined}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={
@@ -97,7 +97,7 @@ function TrialBalanceReportFilterForm({
           name="businessIDs"
           control={control}
           defaultValue={undefined}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={
@@ -126,7 +126,7 @@ function TrialBalanceReportFilterForm({
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
@@ -145,7 +145,7 @@ function TrialBalanceReportFilterForm({
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
@@ -156,7 +156,7 @@ function TrialBalanceReportFilterForm({
         />
         <Switch
           defaultChecked={filter.isShowZeroedAccounts ?? false}
-          onChange={event => setIsShowZeroedAccounts(event.currentTarget.checked)}
+          onChange={(event): void => setIsShowZeroedAccounts(event.currentTarget.checked)}
           color="gray"
           onLabel={<p>show</p>}
           offLabel={<p>remove</p>}
@@ -195,19 +195,22 @@ interface TrialBalanceReportFilterProps {
   setFilter: (filter: TrialBalanceReportFilters) => void;
 }
 
-export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceReportFilterProps) {
+export function TrialBalanceReportFilters({
+  filter,
+  setFilter,
+}: TrialBalanceReportFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: TrialBalanceReportFilters) {
+  function isFilterApplied(filter: TrialBalanceReportFilters): boolean {
     const changed = Object.entries(filter ?? {}).filter(
       ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
 
-  function onSetFilter(newFilter: TrialBalanceReportFilters) {
+  function onSetFilter(newFilter: TrialBalanceReportFilters): void {
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
@@ -228,17 +231,17 @@ export function TrialBalanceReportFilters({ filter, setFilter }: TrialBalanceRep
     <>
       <PopUpModal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={(): void => setOpened(false)}
         content={
           <TrialBalanceReportFilterForm
             filter={filter}
             setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
+            closeModal={(): void => setOpened(false)}
           />
         }
       />
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
           <Filter size={20} />
         </ActionIcon>
       </Indicator>

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
@@ -22,7 +23,7 @@ type Props = {
   data: FragmentType<typeof TransactionsTableAccountFieldsFragmentDoc>;
 };
 
-export const Account = ({ data }: Props) => {
+export const Account = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;
 

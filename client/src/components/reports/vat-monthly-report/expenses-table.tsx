@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Table } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
@@ -49,7 +49,7 @@ interface Props {
   data?: FragmentType<typeof VarReportExpensesFieldsFragmentDoc>;
 }
 
-export const ExpensesTable = ({ data }: Props) => {
+export const ExpensesTable = ({ data }: Props): ReactElement => {
   const { expenses } = getFragmentData(VarReportExpensesFieldsFragmentDoc, data) ?? {
     expenses: [],
   };
@@ -60,7 +60,7 @@ export const ExpensesTable = ({ data }: Props) => {
   return (
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <ActionIcon variant="default" onClick={() => setOpened(i => !i)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(i => !i)} size={30}>
           {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
         Expenses

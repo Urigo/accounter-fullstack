@@ -14,13 +14,13 @@ export interface ButtonProps {
 
 export const ButtonImage = ({
   children,
-  onClick = () => {
+  onClick = (): void => {
     void 0;
   },
   loading = false,
   disabled = false,
   type = 'button',
-}: ButtonProps) => {
+}: ButtonProps): ReactElement => {
   const buttonDisabled = disabled || loading;
 
   return (

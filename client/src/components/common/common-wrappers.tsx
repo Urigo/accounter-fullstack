@@ -56,7 +56,7 @@ export const PageWrappers = ({
   alignItems,
   alignContent,
   backgroundColor,
-}: FlexProps) => {
+}: FlexProps): ReactElement => {
   gap ??= '0rem';
   alignContent ??= 'flex-start';
   justifyContent ??= 'flex-start';
@@ -87,7 +87,7 @@ export const FlexRow = ({
   alignContent,
   backgroundColor,
   style,
-}: FlexProps & { children?: ReactNode | undefined }) => {
+}: FlexProps & { children?: ReactNode | undefined }): ReactElement => {
   gap ??= '0rem';
   return (
     <div
@@ -111,6 +111,6 @@ export const FlexRow = ({
 export const FlexColumn = ({
   children,
   style,
-}: FlexProps & { children?: ReactNode | undefined }) => {
-  return <div style={style && { display: 'flex', flexDirection: 'column' }}>{children}</div>;
-};
+}: FlexProps & { children?: ReactNode | undefined }): ReactElement => (
+  <div style={style && { display: 'flex', flexDirection: 'column' }}>{children}</div>
+);

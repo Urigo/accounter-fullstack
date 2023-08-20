@@ -9,7 +9,12 @@ import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js
   }
 `;
 
-export const useDeleteTag = () => {
+type UseDeleteTag = {
+  fetching: boolean;
+  deleteTag: (variables: DeleteTagMutationVariables) => Promise<void>;
+};
+
+export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
 
@@ -17,7 +22,7 @@ export const useDeleteTag = () => {
 
   return {
     fetching,
-    deleteTag: (variables: DeleteTagMutationVariables) =>
+    deleteTag: (variables: DeleteTagMutationVariables): Promise<void> =>
       new Promise<void>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {

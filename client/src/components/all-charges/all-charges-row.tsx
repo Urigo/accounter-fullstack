@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Paper } from '@mantine/core';
@@ -73,7 +73,7 @@ export const AllChargesRow = ({
   isSelectedForMerge,
   data,
   isAllOpened,
-}: Props) => {
+}: Props): ReactElement => {
   const [opened, setOpen] = useState(false);
   const [charge, setCharge] = useState<AllChargesRowFieldsFragment>(
     getFragmentData(AllChargesRowFieldsFragmentDoc, data),
@@ -117,7 +117,7 @@ export const AllChargesRow = ({
             <EditMiniButton onClick={setEditCharge} />
             {toggleMergeCharge && (
               <ToggleMergeSelected
-                toggleMergeSelected={() => toggleMergeCharge()}
+                toggleMergeSelected={(): void => toggleMergeCharge()}
                 mergeSelected={isSelectedForMerge}
               />
             )}
@@ -133,7 +133,7 @@ export const AllChargesRow = ({
             {hasExtendedInfo && (
               <ActionIcon
                 variant="default"
-                onClick={() => {
+                onClick={(): void => {
                   updateCharge();
                   setOpen(i => !i);
                 }}

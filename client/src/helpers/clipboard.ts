@@ -1,8 +1,8 @@
-export const writeToClipboard = (text: string) => {
-  const onSuccess = () => {
+export const writeToClipboard = (text: string): void => {
+  const onSuccess = (): void => {
     console.log('clipboard successfully set');
   };
-  const onError = () => {
+  const onError = (): void => {
     console.log('clipboard failed');
   };
 

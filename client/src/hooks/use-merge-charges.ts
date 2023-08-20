@@ -21,7 +21,14 @@ import {
   }
 `;
 
-export const useMergeCharges = () => {
+type Charge = Extract<MergeChargesMutation['mergeCharges'], { __typename: 'Charge' }>;
+
+type UseMergeCharges = {
+  fetching: boolean;
+  mergeCharges: (variables: MergeChargesMutationVariables) => Promise<Charge>;
+};
+
+export const useMergeCharges = (): UseMergeCharges => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
 
@@ -29,46 +36,43 @@ export const useMergeCharges = () => {
 
   return {
     fetching,
-    mergeCharges: (variables: MergeChargesMutationVariables) =>
-      new Promise<Extract<MergeChargesMutation['mergeCharges'], { __typename: 'Charge' }>>(
-        (resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(
-                `Error merging into charge ID [${variables.baseChargeID}]: ${res.error}`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error(
-                `Error merging into charge ID [${variables.baseChargeID}]: No data returned`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject('No data returned');
-            }
-            if (res.data.mergeCharges.__typename === 'CommonError') {
-              console.error(
-                `Error merging into charge ID [${variables.baseChargeID}]: ${res.data.mergeCharges.message}`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject(res.data.mergeCharges.message);
-            }
+    mergeCharges: (variables: MergeChargesMutationVariables): Promise<Charge> =>
+      new Promise<Charge>((resolve, reject) =>
+        mutate(variables).then(res => {
+          if (res.error) {
+            console.error(`Error merging into charge ID [${variables.baseChargeID}]: ${res.error}`);
             showNotification({
-              title: 'Update Success!',
-              message: 'Hey there, your update is awesome!',
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
             });
-            return resolve(res.data.mergeCharges);
-          }),
+            return reject(res.error.message);
+          }
+          if (!res.data) {
+            console.error(
+              `Error merging into charge ID [${variables.baseChargeID}]: No data returned`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject('No data returned');
+          }
+          if (res.data.mergeCharges.__typename === 'CommonError') {
+            console.error(
+              `Error merging into charge ID [${variables.baseChargeID}]: ${res.data.mergeCharges.message}`,
+            );
+            showNotification({
+              title: 'Error!',
+              message: 'Oh no!, we have an error! 🤥',
+            });
+            return reject(res.data.mergeCharges.message);
+          }
+          showNotification({
+            title: 'Update Success!',
+            message: 'Hey there, your update is awesome!',
+          });
+          return resolve(res.data.mergeCharges);
+        }),
       ),
   };
 };

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { showNotification } from '@mantine/notifications';
 import { SimpleGrid } from '..';
@@ -11,7 +11,7 @@ type Props = {
   closeModal?: () => void;
 };
 
-export const InsertDocument = ({ chargeId, closeModal }: Props) => {
+export const InsertDocument = ({ chargeId, closeModal }: Props): ReactElement => {
   const {
     control,
     handleSubmit,

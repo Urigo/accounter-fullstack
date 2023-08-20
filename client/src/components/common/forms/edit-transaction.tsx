@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
@@ -62,7 +62,7 @@ type Props = {
   onDone?: () => void;
 };
 
-export const EditTransaction = ({ transactionID, onDone }: Props) => {
+export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement => {
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: EditTransactionDocument,
     variables: {
@@ -189,7 +189,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                   required: 'Required',
                   minLength: { value: 2, message: 'Must be at least 2 characters' },
                 }}
-                render={({ field: { value, ...field }, fieldState }) => (
+                render={({ field: { value, ...field }, fieldState }): ReactElement => (
                   <TextInput
                     {...field}
                     value={value ?? undefined}
@@ -206,7 +206,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
                     data={financialEntities}
@@ -228,7 +228,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
                     data={financialAccounts}
@@ -246,12 +246,15 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                 name="amount.raw"
                 control={transactionControl}
                 defaultValue={transaction.amount?.raw}
-                render={({ field: amountField, fieldState: amountFieldState }) => (
+                render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
                   <Controller
                     name="amount.currency"
                     control={transactionControl}
                     defaultValue={transaction.amount?.currency ?? Currency.Ils}
-                    render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                    render={({
+                      field: currencyCodeField,
+                      fieldState: currencyCodeFieldState,
+                    }): ReactElement => (
                       <CurrencyInput
                         {...amountField}
                         value={amountField.value ?? undefined}
@@ -269,12 +272,15 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                 name="balance.raw"
                 control={transactionControl}
                 defaultValue={transaction.balance?.raw}
-                render={({ field: amountField, fieldState: amountFieldState }) => (
+                render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
                   <Controller
                     name="amount.currency"
                     control={transactionControl}
                     defaultValue={transaction.amount?.currency ?? Currency.Ils}
-                    render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                    render={({
+                      field: currencyCodeField,
+                      fieldState: currencyCodeFieldState,
+                    }): ReactElement => (
                       <CurrencyInput
                         {...amountField}
                         value={amountField.value ?? undefined}
@@ -296,7 +302,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                 name="eventDate"
                 control={transactionControl}
                 defaultValue={transaction.eventDate}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <DatePickerInput
                     {...field}
                     label="Event Date"
@@ -304,7 +310,9 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                     value={field.value ? new Date(field.value) : undefined}
                     valueFormat="DD/MM/YY"
                     error={fieldState.error?.message}
-                    onChange={date => date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))}
+                    onChange={(date): void | null =>
+                      date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))
+                    }
                   />
                 )}
               />
@@ -318,7 +326,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                     message: 'Date must be im format yyyy-mm-dd',
                   },
                 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <DatePickerInput
                     {...field}
                     label="Effective Date"
@@ -326,7 +334,9 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
                     value={field.value ? new Date(field.value) : undefined}
                     valueFormat="DD/MM/YY"
                     error={fieldState.error?.message}
-                    onChange={date => date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))}
+                    onChange={(date): void | null =>
+                      date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))
+                    }
                   />
                 )}
               />
@@ -335,7 +345,7 @@ export const EditTransaction = ({ transactionID, onDone }: Props) => {
           <div className="mt-10 mb-5 flex justify-center gap-5">
             <button
               type="submit"
-              onClick={() => handleTransactionSubmit(onTransactionSubmit)}
+              onClick={(): (() => void) => handleTransactionSubmit(onTransactionSubmit)}
               className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
               disabled={isUpdating || Object.keys(dirtyChargeFields).length === 0}
             >

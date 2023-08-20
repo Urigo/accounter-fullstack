@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
@@ -32,7 +32,7 @@ type Props = {
   chargeProps: FragmentType<typeof DocumentsGalleryFieldsFragmentDoc>;
 };
 
-export const DocumentsGallery = ({ chargeProps }: Props) => {
+export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
   const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
   const [openModal, setOpenModal] = useState<string | undefined>(undefined);
 
@@ -56,7 +56,7 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
                     <h2 className="text-gray-900 text-base font-medium">
                       {'documentType' in doc ? doc.documentType : 'Unprocessed'}
                     </h2>
-                    <button className="mx-10" onClick={() => setOpenModal(doc.id)}>
+                    <button className="mx-10" onClick={(): void => setOpenModal(doc.id)}>
                       <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
                         <Image src={doc.image?.toString()} withPlaceholder />
                       </div>
@@ -66,7 +66,7 @@ export const DocumentsGallery = ({ chargeProps }: Props) => {
               ))}
             </Carousel>
           </div>
-          <EditDocumentModal documentId={openModal} onDone={() => setOpenModal(undefined)} />
+          <EditDocumentModal documentId={openModal} onDone={(): void => setOpenModal(undefined)} />
         </>
       ) : (
         <Badge color="red">No Documents Related</Badge>

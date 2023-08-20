@@ -1,4 +1,4 @@
-export function parseIntRound(v: number) {
+export function parseIntRound(v: number): number {
   // Note: why not use Math.round?
   return parseInt((v + Math.sign(v) / 2) as unknown as string);
 }

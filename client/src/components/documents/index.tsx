@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
@@ -156,7 +156,7 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
   }
 `;
 
-export const DocumentsReport = () => {
+export const DocumentsReport = (): ReactElement => {
   const [{ data, fetching }] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
   const { setFiltersContext } = useContext(FiltersContext);
@@ -174,7 +174,7 @@ export const DocumentsReport = () => {
           modalSize="45%"
           content={<Image src={openedImage} />}
           opened={!!openedImage}
-          onClose={() => setOpenedImage(null)}
+          onClose={(): void => setOpenedImage(null)}
         />
       )}
       <AccounterTable
@@ -186,7 +186,9 @@ export const DocumentsReport = () => {
             title: 'Image',
             value: doc =>
               doc.image ? (
-                <button onClick={() => setOpenedImage(doc.image ? doc.image.toString() : null)}>
+                <button
+                  onClick={(): void => setOpenedImage(doc.image ? doc.image.toString() : null)}
+                >
                   <img alt="missing img" src={doc.image?.toString()} height={80} width={80} />
                 </button>
               ) : (

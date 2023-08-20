@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableDescriptionFieldsFragmentDoc } from '../../../../gql/graphql';
 
@@ -13,7 +14,7 @@ type Props = {
   data: FragmentType<typeof TransactionsTableDescriptionFieldsFragmentDoc>;
 };
 
-export const Description = ({ data }: Props) => {
+export const Description = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableDescriptionFieldsFragmentDoc, data);
   const cellText = 'sourceDescription' in transaction ? transaction.sourceDescription : 'Missing';
 

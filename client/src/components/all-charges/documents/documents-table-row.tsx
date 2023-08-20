@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
@@ -39,7 +39,7 @@ type Props = {
   editDocument: () => void;
 };
 
-export const DocumentsTableRow = ({ documentData, editDocument }: Props) => {
+export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactElement => {
   const [document, setDocument] = useState<TableDocumentsRowFieldsFragment>(
     getFragmentData(TableDocumentsRowFieldsFragmentDoc, documentData),
   );
@@ -66,12 +66,12 @@ export const DocumentsTableRow = ({ documentData, editDocument }: Props) => {
   return (
     <tr key={document.id}>
       <DateCell data={document} />
-      <Amount data={document} refetchDocument={() => refetchDocument()} />
+      <Amount data={document} refetchDocument={(): void => refetchDocument()} />
       <Vat data={document} />
       <TypeCell data={document} />
       <Serial data={document} />
-      <Creditor data={document} refetchDocument={() => refetchDocument()} />
-      <Debtor data={document} refetchDocument={() => refetchDocument()} />
+      <Creditor data={document} refetchDocument={(): void => refetchDocument()} />
+      <Debtor data={document} refetchDocument={(): void => refetchDocument()} />
       <Files data={document} />
       <td>
         <EditMiniButton onClick={editDocument} tooltip="Edit Document" />

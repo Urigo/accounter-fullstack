@@ -1,7 +1,8 @@
+import { ReactElement } from 'react';
 import { Loader } from '@mantine/core';
 import { Icon } from './icon';
 
-export const AccounterLoader = () => {
+export const AccounterLoader = (): ReactElement => {
   return (
     <div className="flex flex-col justify-center items-center content-center h-screen">
       <Icon name="logo" className="max-w-xs" />

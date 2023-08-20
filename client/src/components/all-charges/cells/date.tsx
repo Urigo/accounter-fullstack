@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDateFieldsFragmentDoc } from '../../../gql/graphql';
@@ -15,7 +16,7 @@ type Props = {
   data: FragmentType<typeof AllChargesDateFieldsFragmentDoc>;
 };
 
-export const DateCell = ({ data }: Props) => {
+export const DateCell = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
   const { minEventDate, minDocumentsDate } = charge;
 

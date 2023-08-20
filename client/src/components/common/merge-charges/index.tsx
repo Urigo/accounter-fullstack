@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
 import { ActionIcon, ActionIconProps, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { MergeChargesSelectionForm } from './merge-charges-selection-form';
 
-export function MergeChargesButton(props: { chargeIDs: string[]; resetMerge: () => void }) {
+export function MergeChargesButton(props: {
+  chargeIDs: string[];
+  resetMerge: () => void;
+}): ReactElement {
   const [opened, { close, open }] = useDisclosure(false);
   const { chargeIDs, resetMerge } = props;
   const distinctIDs = new Set(chargeIDs);
@@ -23,7 +26,7 @@ export function MergeChargesButton(props: { chargeIDs: string[]; resetMerge: () 
   return (
     <>
       <ActionIcon
-        onClick={() => {
+        onClick={(): void => {
           if (isMergable) open();
         }}
         disabled={!isMergable}

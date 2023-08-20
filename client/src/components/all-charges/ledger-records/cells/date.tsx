@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsDateFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -14,7 +15,7 @@ type Props = {
   data: FragmentType<typeof LedgerRecordsDateFieldsFragmentDoc>;
 };
 
-export const DateCell = ({ data }: Props) => {
+export const DateCell = ({ data }: Props): ReactElement => {
   const { invoiceDate } = getFragmentData(LedgerRecordsDateFieldsFragmentDoc, data);
 
   const formattedDate = invoiceDate ? format(new Date(invoiceDate), 'dd/MM/yy') : 'Missing Data';

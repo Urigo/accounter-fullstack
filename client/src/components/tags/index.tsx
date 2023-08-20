@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { ReactElement, useCallback, useContext, useState } from 'react';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, TextInput } from '@mantine/core';
@@ -17,7 +17,7 @@ import { AccounterLoader } from '../common';
   }
 `;
 
-export const TagsManager = () => {
+export const TagsManager = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [newTag, setNewTag] = useState('');
   const [{ data, fetching }, refetch] = useQuery({
@@ -62,7 +62,7 @@ export const TagsManager = () => {
             {allTags?.map(tag => (
               <div key={tag} className=" flex items-center gap-2 text-gray-600 mb-2">
                 <div className="w-full mt-1 relative rounded-md shadow-sm">{tag}</div>
-                <ActionIcon onClick={() => onDeleteTag(tag)}>
+                <ActionIcon onClick={(): void => onDeleteTag(tag)}>
                   <TrashX size={20} />
                 </ActionIcon>
               </div>
@@ -71,12 +71,12 @@ export const TagsManager = () => {
               <div className="w-full mt-1 relative rounded-md shadow-sm">
                 <TextInput
                   value={newTag}
-                  onChange={event => setNewTag(event.currentTarget.value)}
+                  onChange={(event): void => setNewTag(event.currentTarget.value)}
                   placeholder="Add new tag"
                   withAsterisk
                 />
               </div>
-              <ActionIcon disabled={newTag.length < 2} onClick={() => onAddTag(newTag)}>
+              <ActionIcon disabled={newTag.length < 2} onClick={(): void => onAddTag(newTag)}>
                 <PlaylistAdd size={20} />
               </ActionIcon>
             </div>

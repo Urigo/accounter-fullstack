@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactElement, useMemo } from 'react';
 import { Table } from '@mantine/core';
 import type { TrialBalanceReportQuery } from '../../../gql/graphql';
 import { formatStringifyAmount } from '../../../helpers';
@@ -6,7 +6,7 @@ import type { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceReportGroup } from './trial-balance-report-group';
 import type { ExtendedSortCode } from './trial-balance-report-sort-code';
 
-function roundNearest100(num: number) {
+function roundNearest100(num: number): number {
   return Math.floor(num / 100) * 100;
 }
 
@@ -19,7 +19,11 @@ type Props = {
   isAllOpened: boolean;
 };
 
-export const TrialBalanceTable = ({ businessTransactionsSum, filter, isAllOpened }: Props) => {
+export const TrialBalanceTable = ({
+  businessTransactionsSum,
+  filter,
+  isAllOpened,
+}: Props): ReactElement => {
   const sortCodesGroups = useMemo(() => {
     const adjustedSortCodes: Record<
       number,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Drawer, Image, Loader } from '@mantine/core';
@@ -106,7 +106,7 @@ interface Props {
   onDone: () => void;
 }
 
-export const EditDocument = ({ documentId, onDone }: Props) => {
+export const EditDocument = ({ documentId, onDone }: Props): ReactElement => {
   const [{ data: documentData, fetching: fetchingDocument }] = useQuery({
     query: EditDocumentDocument,
     variables: {
@@ -183,7 +183,7 @@ export const EditDocument = ({ documentId, onDone }: Props) => {
           <div className=" w-1/5 h-max flex flex-col ">
             <div className="flex justify-center">
               <Image
-                onClick={() => setOpenImage(!!document.image)}
+                onClick={(): void => setOpenImage(!!document.image)}
                 src={document?.image?.toString()}
                 className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
               />
@@ -196,7 +196,7 @@ export const EditDocument = ({ documentId, onDone }: Props) => {
               withOverlay={false}
               position="right"
               opened={openImage}
-              onClose={() => setOpenImage(false)}
+              onClose={(): void => setOpenImage(false)}
               // padding={padding}
               size="30%"
             >

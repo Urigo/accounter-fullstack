@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -34,7 +34,7 @@ function BusinessTransactionsFilterForm({
   filter,
   setFilter,
   closeModal,
-}: BusinessTransactionsFilterFormProps) {
+}: BusinessTransactionsFilterFormProps): ReactElement {
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
@@ -65,7 +65,7 @@ function BusinessTransactionsFilterForm({
     closeModal();
   };
 
-  function clearFilter() {
+  function clearFilter(): void {
     setFilter({});
     closeModal();
   }
@@ -78,7 +78,7 @@ function BusinessTransactionsFilterForm({
           name="ownerIds"
           control={control}
           defaultValue={undefined}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={
@@ -101,7 +101,7 @@ function BusinessTransactionsFilterForm({
           name="businessIDs"
           control={control}
           defaultValue={undefined}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={
@@ -130,7 +130,7 @@ function BusinessTransactionsFilterForm({
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
@@ -149,7 +149,7 @@ function BusinessTransactionsFilterForm({
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
@@ -193,19 +193,19 @@ interface BusinessTransactionsFilterProps {
 export function BusinessTransactionsFilters({
   filter,
   setFilter,
-}: BusinessTransactionsFilterProps) {
+}: BusinessTransactionsFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: BusinessTransactionsFilter) {
+  function isFilterApplied(filter: BusinessTransactionsFilter): boolean {
     const changed = Object.entries(filter ?? {}).filter(
       ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
 
-  function onSetFilter(newFilter: BusinessTransactionsFilter) {
+  function onSetFilter(newFilter: BusinessTransactionsFilter): void {
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
@@ -226,17 +226,17 @@ export function BusinessTransactionsFilters({
     <>
       <PopUpModal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={(): void => setOpened(false)}
         content={
           <BusinessTransactionsFilterForm
             filter={filter}
             setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
+            closeModal={(): void => setOpened(false)}
           />
         }
       />
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
           <Filter size={20} />
         </ActionIcon>
       </Indicator>

@@ -16,7 +16,9 @@ export const PopUpModal = ({
   content,
   title,
   opened = false,
-  onClose = () => null,
+  onClose = (): void => {
+    return;
+  },
   modalSize,
 }: ModalProps): ReactElement => {
   return (

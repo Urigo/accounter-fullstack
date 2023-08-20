@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
@@ -23,7 +23,7 @@ type Props = {
   onDone: () => void;
 };
 
-export const EditCharge = ({ charge, onDone }: Props) => {
+export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
   const [
     {
@@ -128,7 +128,7 @@ export const EditCharge = ({ charge, onDone }: Props) => {
               required: 'Required',
               minLength: { value: 2, message: 'Must be at least 2 characters' },
             }}
-            render={({ field: { value, ...field }, fieldState }) => (
+            render={({ field: { value, ...field }, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={value ?? undefined}
@@ -145,7 +145,7 @@ export const EditCharge = ({ charge, onDone }: Props) => {
               required: 'Required',
               minLength: { value: 2, message: 'Minimum 2 characters' },
             }}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
                 data={financialEntities}
@@ -163,7 +163,7 @@ export const EditCharge = ({ charge, onDone }: Props) => {
             name="defaultTaxCategoryID"
             control={chargeControl}
             defaultValue={charge.taxCategory?.id}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
                 data={taxCategories}
@@ -182,17 +182,17 @@ export const EditCharge = ({ charge, onDone }: Props) => {
             name="isProperty"
             control={chargeControl}
             defaultValue={charge.property}
-            render={({ field: { value, ...field } }) => {
-              return <Switch {...field} checked={value === true} label="Is Property" />;
-            }}
+            render={({ field: { value, ...field } }): ReactElement => (
+              <Switch {...field} checked={value === true} label="Is Property" />
+            )}
           />
           <Controller
             name="isConversion"
             control={chargeControl}
             defaultValue={charge.conversion}
-            render={({ field: { value, ...field } }) => {
-              return <Switch {...field} checked={value === true} label="Is Conversion" />;
-            }}
+            render={({ field: { value, ...field } }): ReactElement => (
+              <Switch {...field} checked={value === true} label="Is Conversion" />
+            )}
           />
           {/* <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} /> */}
         </SimpleGrid>
@@ -200,7 +200,7 @@ export const EditCharge = ({ charge, onDone }: Props) => {
       <div className="mt-10 mb-5 flex justify-center gap-5">
         <button
           type="submit"
-          onClick={() => handleChargeSubmit(onChargeSubmit)}
+          onClick={(): (() => Promise<void>) => handleChargeSubmit(onChargeSubmit)}
           className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
           disabled={isChargeLoading || Object.keys(dirtyChargeFields).length === 0}
         >

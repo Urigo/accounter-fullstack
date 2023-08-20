@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
@@ -27,7 +27,7 @@ type Props = {
   data: FragmentType<typeof AllChargesTagsFieldsFragmentDoc>;
 };
 
-export const Tags = ({ data }: Props) => {
+export const Tags = ({ data }: Props): ReactElement => {
   const {
     tags: originalTags,
     id: chargeId,
@@ -64,7 +64,7 @@ export const Tags = ({ data }: Props) => {
       </Indicator>
       {hasAlternative && (
         <ConfirmMiniButton
-          onClick={() => updateTag(missingInfoSuggestions.tags)}
+          onClick={(): void => updateTag(missingInfoSuggestions.tags)}
           disabled={fetching}
         />
       )}

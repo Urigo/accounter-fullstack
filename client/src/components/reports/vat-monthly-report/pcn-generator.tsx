@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
@@ -27,7 +27,7 @@ type Props = {
 export const PCNGenerator = ({
   filter: { fromDate, toDate, financialEntityId },
   isLoading,
-}: Props) => {
+}: Props): ReactElement => {
   const [{ data, fetching }, executeQuery] = useQuery({
     query: dedupeFragments(GeneratePcnDocument),
     pause: true,

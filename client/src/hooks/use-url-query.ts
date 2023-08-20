@@ -1,7 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-export function useUrlQuery() {
+type UseUrlQuery = {
+  query: URLSearchParams;
+  queryString: () => string;
+  get: (key: string) => string | null;
+  set: (key: string, value?: string | null) => void;
+};
+
+export function useUrlQuery(): UseUrlQuery {
   const { search } = useLocation();
 
   const query = useMemo(() => new URLSearchParams(search), [search]);
@@ -13,13 +20,13 @@ export function useUrlQuery() {
         window.location.protocol + '//' + window.location.host + window.location.pathname + params;
       window.history.pushState({ path: newurl }, '', newurl);
     }
-  }, []);
+  }, [query]);
 
   return {
     query,
-    queryString: () => query.toString(),
-    get: (key: string) => query.get(key),
-    set: (key: string, value?: string | null) => {
+    queryString: (): string => query.toString(),
+    get: (key: string): string | null => query?.get(key),
+    set: (key: string, value?: string | null): void => {
       if (value == null) {
         query.delete(key);
       } else {

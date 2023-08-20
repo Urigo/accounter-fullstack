@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
@@ -40,7 +40,7 @@ interface Props {
   resetMerge: () => void;
 }
 
-export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Props) {
+export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Props): ReactElement {
   const { mergeCharges, fetching: merging } = useMergeCharges();
   const distinctChargeIDs = Array.from(new Set(chargeIds));
   const [{ data, fetching }] = useQuery({
@@ -171,7 +171,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                     <Checkbox
                       checked={charge.id === mainCharge?.id}
                       size="xl"
-                      onClick={() => {
+                      onClick={(): void => {
                         setMainCharge(charge);
                         setSelectedDescription({
                           id: charge.id,
@@ -209,7 +209,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       !charge.userDescription ||
                       selectedDescription?.value === charge.userDescription
                     }
-                    onClick={() =>
+                    onClick={(): void =>
                       setSelectedDescription({
                         id: charge.id,
                         value: charge.userDescription ?? '',
@@ -235,7 +235,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                   <button
                     className="w-full px-2"
                     disabled={selectedOwner?.value === charge.owner.id}
-                    onClick={() =>
+                    onClick={(): void =>
                       setSelectedOwner({
                         id: charge.id,
                         value: charge.owner.id,
@@ -261,7 +261,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                     disabled={
                       charge.property == null || charge.property === selectedProperty?.value
                     }
-                    onClick={() => {
+                    onClick={(): void => {
                       setSelectedProperty({
                         id: charge.id,
                         value: charge.property ?? false,
@@ -291,7 +291,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                     disabled={
                       charge.conversion == null || charge.conversion === selectedConversion?.value
                     }
-                    onClick={() => {
+                    onClick={(): void => {
                       setSelectedConversion({
                         id: charge.id,
                         value: charge.conversion ?? false,
@@ -324,7 +324,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       charge.tags == null ||
                       charge.tags.map(tag => tag.name).join(',') === selectedTags?.value
                     }
-                    onClick={() => {
+                    onClick={(): void => {
                       setSelectedTags({
                         id: charge.id,
                         value: (charge.tags.map(tag => tag.name) ?? []).join(','),
@@ -383,7 +383,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
             <button
               type="button"
               className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg"
-              onClick={() => {
+              onClick={(): void => {
                 resetMerge();
                 onDone();
               }}

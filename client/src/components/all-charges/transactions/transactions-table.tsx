@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableTransactionsFieldsFragmentDoc } from '../../../gql/graphql';
 import { EditMiniButton, EditTransactionModal } from '../../common';
@@ -32,7 +32,7 @@ type Props = {
   transactionsProps: FragmentType<typeof TableTransactionsFieldsFragmentDoc>;
 };
 
-export const TransactionsTable = ({ transactionsProps }: Props) => {
+export const TransactionsTable = ({ transactionsProps }: Props): ReactElement => {
   const { transactions } = getFragmentData(TableTransactionsFieldsFragmentDoc, transactionsProps);
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (
@@ -62,7 +62,7 @@ export const TransactionsTable = ({ transactionsProps }: Props) => {
               <SourceID data={transaction} />
               <Counterparty data={transaction} />
               <td>
-                <EditMiniButton onClick={() => setEditTransactionId(transaction.id)} />
+                <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
               </td>
             </tr>
           ))}

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -73,7 +73,7 @@ type Props = {
   refetchDocument: () => void;
 };
 
-export const Amount = ({ data, refetchDocument }: Props) => {
+export const Amount = ({ data, refetchDocument }: Props): ReactElement => {
   const document = getFragmentData(DocumentsTableAmountFieldsFragmentDoc, data);
   const dbAmount = 'amount' in document ? document.amount : undefined;
 
@@ -125,7 +125,10 @@ export const Amount = ({ data, refetchDocument }: Props) => {
           </Indicator>
         </div>
         {hasAlternative && (
-          <ConfirmMiniButton onClick={() => updateAmount(suggestedAmount)} disabled={fetching} />
+          <ConfirmMiniButton
+            onClick={(): void => updateAmount(suggestedAmount)}
+            disabled={fetching}
+          />
         )}
       </div>
     </td>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
@@ -11,7 +11,7 @@ type Props = {
   formManager: UseFormReturn<UpdateChargeInput, object>;
 };
 
-export function BeneficiariesInput({ label, formManager }: Props) {
+export function BeneficiariesInput({ label, formManager }: Props): ReactElement {
   const {
     control,
     formState: { errors },
@@ -57,7 +57,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <TextInput {...field} error={fieldState.error?.message} />
                 )}
               />
@@ -68,7 +68,7 @@ export function BeneficiariesInput({ label, formManager }: Props) {
                 control={control}
                 name={`beneficiaries.${index}.percentage`}
                 rules={{ required: 'Required', max: 1, min: 0 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <PercentageInput
                     {...field}
                     error={fieldState.error?.message}
@@ -78,14 +78,14 @@ export function BeneficiariesInput({ label, formManager }: Props) {
               />
             </div>
             <ActionIcon>
-              <TrashX size={20} onClick={() => remove(index)} />
+              <TrashX size={20} onClick={(): void => remove(index)} />
             </ActionIcon>
           </div>
         ))}
         <ActionIcon>
           <PlaylistAdd
             size={20}
-            onClick={() => append({ percentage: 0, counterparty: { id: '' } })}
+            onClick={(): void => append({ percentage: 0, counterparty: { id: '' } })}
           />
         </ActionIcon>
         {errors.beneficiaries?.message && (

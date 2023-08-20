@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, ReactElement, SetStateAction } from 'react';
 import { Table } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql';
 import { AllChargesTableFieldsFragmentDoc } from '../../gql/graphql';
@@ -43,7 +43,7 @@ export const AllChargesTable = ({
   mergeSelectedCharges,
   data,
   isAllOpened,
-}: Props) => {
+}: Props): ReactElement => {
   const charges =
     data?.map(charge => getFragmentData(AllChargesTableFieldsFragmentDoc, charge)) ?? [];
 
@@ -69,11 +69,15 @@ export const AllChargesTable = ({
           <AllChargesRow
             key={charge.id}
             data={charge}
-            setEditCharge={() => setEditChargeId(charge.id)}
-            setInsertDocument={() => setInsertDocument(charge.id)}
-            setMatchDocuments={() => setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })}
-            setUploadDocument={() => setUploadDocument(charge.id)}
-            toggleMergeCharge={toggleMergeCharge ? () => toggleMergeCharge(charge.id) : undefined}
+            setEditCharge={(): void => setEditChargeId(charge.id)}
+            setInsertDocument={(): void => setInsertDocument(charge.id)}
+            setMatchDocuments={(): void =>
+              setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
+            }
+            setUploadDocument={(): void => setUploadDocument(charge.id)}
+            toggleMergeCharge={
+              toggleMergeCharge ? (): void => toggleMergeCharge(charge.id) : undefined
+            }
             isSelectedForMerge={mergeSelectedCharges?.includes(charge.id) ?? false}
             isAllOpened={isAllOpened}
           />

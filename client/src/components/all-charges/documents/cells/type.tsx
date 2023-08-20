@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentType, DocumentTypeFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -14,7 +15,7 @@ type Props = {
   data: FragmentType<typeof DocumentTypeFieldsFragmentDoc>;
 };
 
-export const TypeCell = ({ data }: Props) => {
+export const TypeCell = ({ data }: Props): ReactElement => {
   const { documentType } = getFragmentData(DocumentTypeFieldsFragmentDoc, data);
   const isError = !documentType || documentType === DocumentType.Unprocessed;
   const cellText = documentType ?? 'Missing';

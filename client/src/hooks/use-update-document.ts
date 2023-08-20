@@ -23,7 +23,19 @@ import {
   }
 `;
 
-export const useUpdateDocument = () => {
+type UpdateDocumentSuccessfulResult = Extract<
+  UpdateDocumentMutation['updateDocument'],
+  { __typename: 'UpdateDocumentSuccessfulResult' }
+>;
+
+type UseUpdateDocument = {
+  fetching: boolean;
+  updateDocument: (
+    variables: UpdateDocumentMutationVariables,
+  ) => Promise<UpdateDocumentSuccessfulResult>;
+};
+
+export const useUpdateDocument = (): UseUpdateDocument => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
@@ -31,13 +43,10 @@ export const useUpdateDocument = () => {
 
   return {
     fetching,
-    updateDocument: (variables: UpdateDocumentMutationVariables) =>
-      new Promise<
-        Extract<
-          UpdateDocumentMutation['updateDocument'],
-          { __typename: 'UpdateDocumentSuccessfulResult' }
-        >
-      >((resolve, reject) =>
+    updateDocument: (
+      variables: UpdateDocumentMutationVariables,
+    ): Promise<UpdateDocumentSuccessfulResult> =>
+      new Promise<UpdateDocumentSuccessfulResult>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(`Error updating document ID [${variables.documentId}]: ${res.error}`);

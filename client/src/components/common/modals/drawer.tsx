@@ -24,7 +24,9 @@ export const PopUpDrawer = ({
   withCloseButton = true,
   lockScroll = false,
   opened = false,
-  onClose = () => null,
+  onClose = (): void => {
+    return;
+  },
   padding,
   modalSize,
 }: PopUpDrawerProps): ReactElement => {

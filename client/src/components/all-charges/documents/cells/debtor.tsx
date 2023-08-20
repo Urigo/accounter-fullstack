@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentsTableDebtorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql';
@@ -100,7 +100,7 @@ type Props = {
   refetchDocument: () => void;
 };
 
-export const Debtor = ({ data, refetchDocument }: Props) => {
+export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const document = getFragmentData(DocumentsTableDebtorFieldsFragmentDoc, data);
   const dbDebtor = 'debtor' in document ? document.debtor : undefined;
@@ -181,7 +181,10 @@ export const Debtor = ({ data, refetchDocument }: Props) => {
           </Indicator>
         </div>
         {hasAlternative && (
-          <ConfirmMiniButton onClick={() => updateDebtor(suggestedDebtor.id)} disabled={fetching} />
+          <ConfirmMiniButton
+            onClick={(): void => updateDebtor(suggestedDebtor.id)}
+            disabled={fetching}
+          />
         )}
       </div>
     </td>

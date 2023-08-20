@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { PopUpDrawer } from '..';
@@ -10,7 +11,11 @@ interface Props {
   setMatchDocuments: () => void;
 }
 
-export const MatchDocumentModal = ({ chargeId, ownerId, setMatchDocuments }: Props) => {
+export const MatchDocumentModal = ({
+  chargeId,
+  ownerId,
+  setMatchDocuments,
+}: Props): ReactElement => {
   return (
     <PopUpDrawer
       modalSize="80%"
@@ -20,19 +25,23 @@ export const MatchDocumentModal = ({ chargeId, ownerId, setMatchDocuments }: Pro
           <h1 className="sm:text-2xl font-small text-gray-900">Match Documents:</h1>
           <div className="flex flex-row gap-2">
             Charge ID: {chargeId}
-            <ActionIcon variant="default" onClick={() => writeToClipboard(chargeId)} size={30}>
+            <ActionIcon
+              variant="default"
+              onClick={(): void => writeToClipboard(chargeId)}
+              size={30}
+            >
               <Copy size={20} />
             </ActionIcon>
           </div>
         </div>
       }
       opened={!!chargeId}
-      onClose={() => setMatchDocuments()}
+      onClose={(): void => setMatchDocuments()}
     >
       <DocumentsToChargeMatcher
         chargeId={chargeId}
         ownerId={ownerId}
-        onDone={() => setMatchDocuments()}
+        onDone={(): void => setMatchDocuments()}
       />
     </PopUpDrawer>
   );

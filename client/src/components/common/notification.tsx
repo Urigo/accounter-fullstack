@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Check, X } from 'tabler-icons-react';
 import { Notification } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -8,7 +9,11 @@ export interface NotificationPopUpProps {
   state?: 'success' | 'error';
 }
 
-export const NotificationPopUp = ({ title, content, state }: NotificationPopUpProps) => {
+export const NotificationPopUp = ({
+  title,
+  content,
+  state,
+}: NotificationPopUpProps): ReactElement => {
   return (
     <Notification
       withCloseButton={false}
@@ -16,7 +21,7 @@ export const NotificationPopUp = ({ title, content, state }: NotificationPopUpPr
       icon={state === 'success' ? <Check size={18} /> : <X size={18} />}
       color={state}
       title={title}
-      onClick={() => {
+      onClick={(): void => {
         showNotification({
           id: 'load-data',
           loading: true,

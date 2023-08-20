@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { Image } from '@mantine/core';
 import { AccounterTable, Button, PopUpModal } from '../..';
 import {
@@ -13,7 +13,11 @@ interface Props {
   selectedDocuments: string[];
 }
 
-export function WideFilteredSelection({ documents, toggleDocument, selectedDocuments }: Props) {
+export function WideFilteredSelection({
+  documents,
+  toggleDocument,
+  selectedDocuments,
+}: Props): ReactElement {
   const [openedImage, setOpenedImage] = useState<string | null>(null);
 
   return (
@@ -23,7 +27,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
           modalSize="45%"
           content={<Image src={openedImage} />}
           opened={!!openedImage}
-          onClose={() => setOpenedImage(null)}
+          onClose={(): void => setOpenedImage(null)}
         />
       )}
       <AccounterTable
@@ -35,7 +39,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
             title: 'Image',
             value: doc =>
               doc.image ? (
-                <button onClick={() => setOpenedImage(doc.image?.toString() ?? null)}>
+                <button onClick={(): void => setOpenedImage(doc.image?.toString() ?? null)}>
                   <img alt="missing img" src={doc.image?.toString()} height={80} width={80} />
                 </button>
               ) : (
@@ -65,7 +69,7 @@ export function WideFilteredSelection({ documents, toggleDocument, selectedDocum
             title: 'Match',
             value: doc => (
               <button
-                onClick={() => {
+                onClick={(): void => {
                   toggleDocument(doc.id);
                 }}
                 className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white"

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { DeleteDocumentButton, EditDocument, PopUpDrawer, UnlinkDocumentButton } from '..';
@@ -8,7 +9,7 @@ interface Props {
   onDone: () => void;
 }
 
-export const EditDocumentModal = ({ onDone, documentId }: Props) => {
+export const EditDocumentModal = ({ onDone, documentId }: Props): ReactElement | null => {
   if (!documentId) return null;
   return (
     <PopUpDrawer
@@ -22,7 +23,11 @@ export const EditDocumentModal = ({ onDone, documentId }: Props) => {
           <div className="flex flex-row gap-2">
             ID: {documentId}
             <Tooltip label="Copy ID">
-              <ActionIcon variant="default" onClick={() => writeToClipboard(documentId)} size={30}>
+              <ActionIcon
+                variant="default"
+                onClick={(): void => writeToClipboard(documentId)}
+                size={30}
+              >
                 <Copy size={20} />
               </ActionIcon>
             </Tooltip>

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -10,7 +11,7 @@ type Props = {
   tags: { name: string }[];
 };
 
-export function TagsInput({ label, formManager, tags }: Props) {
+export function TagsInput({ label, formManager, tags }: Props): ReactElement {
   const [{ data, fetching }] = useQuery({
     query: AllTagsDocument,
   });
@@ -42,7 +43,7 @@ export function TagsInput({ label, formManager, tags }: Props) {
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
-                render={({ field, fieldState }) => (
+                render={({ field, fieldState }): ReactElement => (
                   <Select
                     className="w-full"
                     {...field}
@@ -59,12 +60,12 @@ export function TagsInput({ label, formManager, tags }: Props) {
               />
             </div>
             <ActionIcon>
-              <TrashX size={20} onClick={() => remove(index)} />
+              <TrashX size={20} onClick={(): void => remove(index)} />
             </ActionIcon>
           </div>
         ))}
         <ActionIcon>
-          <PlaylistAdd size={20} onClick={() => append({ name: '' })} />
+          <PlaylistAdd size={20} onClick={(): void => append({ name: '' })} />
         </ActionIcon>
         {fields.length > 1 && (
           <p className="text-red-500 text-xs italic">Currently adjusted to accept only one tag</p>
