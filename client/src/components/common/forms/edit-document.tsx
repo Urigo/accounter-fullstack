@@ -189,25 +189,27 @@ export const EditDocument = ({ documentId, onDone }: Props) => {
               />
             </div>
           </div>
-          <Drawer
-            classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
-            withCloseButton
-            withOverlay={false}
-            position="right"
-            opened={!!document.image && openImage}
-            onClose={() => setOpenImage(false)}
-            // padding={padding}
-            size="30%"
-          >
-            <div className="m-2">
-              <ImageMagnifier
-                src={document.image!.toString()}
-                zoomLevel={3}
-                magnifierHeight={300}
-                magnifierWidth={300}
-              />
-            </div>
-          </Drawer>
+          {document.image && (
+            <Drawer
+              classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
+              withCloseButton
+              withOverlay={false}
+              position="right"
+              opened={openImage}
+              onClose={() => setOpenImage(false)}
+              // padding={padding}
+              size="30%"
+            >
+              <div className="m-2">
+                <ImageMagnifier
+                  src={document.image!.toString()}
+                  zoomLevel={3}
+                  magnifierHeight={300}
+                  magnifierWidth={300}
+                />
+              </div>
+            </Drawer>
+          )}
         </>
       )}
     </div>
