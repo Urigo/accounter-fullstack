@@ -21,7 +21,6 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
     ...DocumentsTableCreditorFields
     ...DocumentsTableDebtorFields
     ...DocumentFilesFields
-    image
   }
 `;
 
