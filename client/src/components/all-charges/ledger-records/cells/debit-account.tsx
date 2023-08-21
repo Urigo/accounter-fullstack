@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsDebitAccountFieldsFragmentDoc } from '../../../../gql/graphql';
 
@@ -16,7 +17,7 @@ type Props = {
   data: FragmentType<typeof LedgerRecordsDebitAccountFieldsFragmentDoc>;
 };
 
-export const DebitAccount = ({ data }: Props) => {
+export const DebitAccount = ({ data }: Props): ReactElement => {
   const { debitAccount1 } = getFragmentData(LedgerRecordsDebitAccountFieldsFragmentDoc, data);
 
   return <td>{debitAccount1?.name ?? 'Missing Account'}</td>;

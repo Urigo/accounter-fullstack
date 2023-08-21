@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { FileDownload } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -8,7 +8,7 @@ import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument } from '../../../gql/graphql';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents';
 
-export function FetchIncomeDocumentsButton() {
+export function FetchIncomeDocumentsButton(): ReactElement {
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -65,7 +65,7 @@ export function FetchIncomeDocumentsButton() {
               name="ownerId"
               control={control}
               // defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
-              render={({ field, fieldState }) => (
+              render={({ field, fieldState }): ReactElement => (
                 <Select
                   {...field}
                   data={financialEntities}

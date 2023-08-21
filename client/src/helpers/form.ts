@@ -3,7 +3,7 @@ export type MakeBoolean<T> = T extends Record<string, unknown>
   : boolean | undefined;
 
 /* checks if an object has 'true' value for all keys */
-function isTheTruthOutThere(value: unknown) {
+function isTheTruthOutThere(value: unknown): boolean {
   if (typeof value === 'boolean' && value === true) {
     return true;
   }
@@ -17,7 +17,10 @@ function isTheTruthOutThere(value: unknown) {
   return false;
 }
 
-export function relevantDataPicker<T>(values: T, dirtyFields: MakeBoolean<T>) {
+export function relevantDataPicker<T>(
+  values: T,
+  dirtyFields: MakeBoolean<T>,
+): Partial<T> | undefined {
   if (!dirtyFields) {
     return undefined;
   }

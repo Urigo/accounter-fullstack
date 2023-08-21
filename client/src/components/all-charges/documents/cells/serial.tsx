@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentSerialFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -25,7 +26,7 @@ type Props = {
   data: FragmentType<typeof DocumentSerialFieldsFragmentDoc>;
 };
 
-export const Serial = ({ data }: Props) => {
+export const Serial = ({ data }: Props): ReactElement => {
   const document = getFragmentData(DocumentSerialFieldsFragmentDoc, data);
   const serialNumber = 'serialNumber' in document ? document.serialNumber : undefined;
 

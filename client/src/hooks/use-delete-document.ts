@@ -9,7 +9,12 @@ import { DeleteDocumentDocument, DeleteDocumentMutationVariables } from '../gql/
   }
 `;
 
-export const useDeleteDocument = () => {
+type UseDeleteDocument = {
+  fetching: boolean;
+  deleteDocument: (variables: DeleteDocumentMutationVariables) => Promise<boolean>;
+};
+
+export const useDeleteDocument = (): UseDeleteDocument => {
   // TODO: add authentication
   // TODO: add local data delete method after change
 
@@ -17,7 +22,7 @@ export const useDeleteDocument = () => {
 
   return {
     fetching,
-    deleteDocument: (variables: DeleteDocumentMutationVariables) =>
+    deleteDocument: (variables: DeleteDocumentMutationVariables): Promise<boolean> =>
       new Promise<boolean>((resolve, reject) => {
         mutate(variables).then(res => {
           if (res.error) {

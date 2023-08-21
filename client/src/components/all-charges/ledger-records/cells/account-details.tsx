@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import {
@@ -70,7 +70,7 @@ type Props = {
   first: boolean;
 };
 
-export const AccountDetails = ({ data, cred, first }: Props) => {
+export const AccountDetails = ({ data, cred, first }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const {
     creditAccount1,

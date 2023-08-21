@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Control, Controller, UseFormWatch } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
@@ -27,7 +27,12 @@ export interface Props {
   defaultCurrency?: Currency;
 }
 
-export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency }: Props) => {
+export const ModifyDocumentFields = ({
+  document,
+  control,
+  watch,
+  defaultCurrency,
+}: Props): ReactElement => {
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
@@ -92,7 +97,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         control={control}
         rules={{ required: 'Required' }}
         defaultValue={document?.documentType ?? DocumentType.Unprocessed}
-        render={({ field, fieldState }) => (
+        render={({ field, fieldState }): ReactElement => (
           <SelectInput
             {...field}
             selectionEnum={DocumentType}
@@ -113,7 +118,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
                 message: 'Date must be im format yyyy-mm-dd',
               },
             }}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={field.value ?? undefined}
@@ -127,7 +132,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             name="serialNumber"
             control={control}
             defaultValue={isDocumentProcessed ? document?.serialNumber : undefined}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={!field || field.value === 'Missing' ? '' : field.value!}
@@ -141,7 +146,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             name="debtorId"
             control={control}
             defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
                 data={financialEntities}
@@ -159,7 +164,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             name="creditorId"
             control={control}
             defaultValue={isDocumentProcessed ? document?.creditor?.id : undefined}
-            render={({ field, fieldState }) => (
+            render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
                 data={financialEntities}
@@ -177,14 +182,17 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             name="vat.raw"
             control={control}
             defaultValue={isDocumentProcessed ? document?.vat?.raw : undefined}
-            render={({ field: vatField, fieldState: vatFieldState }) => (
+            render={({ field: vatField, fieldState: vatFieldState }): ReactElement => (
               <Controller
                 name="vat.currency"
                 control={control}
                 defaultValue={
                   isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
                 }
-                render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                render={({
+                  field: currencyCodeField,
+                  fieldState: currencyCodeFieldState,
+                }): ReactElement => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...vatField}
@@ -201,14 +209,17 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
             name="amount.raw"
             control={control}
             defaultValue={isDocumentProcessed ? document?.amount?.raw : undefined}
-            render={({ field: amountField, fieldState: amountFieldState }) => (
+            render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
               <Controller
                 name="amount.currency"
                 control={control}
                 defaultValue={
                   isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
                 }
-                render={({ field: currencyCodeField, fieldState: currencyCodeFieldState }) => (
+                render={({
+                  field: currencyCodeField,
+                  fieldState: currencyCodeFieldState,
+                }): ReactElement => (
                   <CurrencyInput
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...amountField}
@@ -227,7 +238,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         name="image"
         control={control}
         defaultValue={document?.image}
-        render={({ field, fieldState }) => (
+        render={({ field, fieldState }): ReactElement => (
           <TextInput
             {...field}
             value={field.value?.toString()}
@@ -241,7 +252,7 @@ export const ModifyDocumentFields = ({ document, control, watch, defaultCurrency
         name="file"
         control={control}
         defaultValue={document?.file}
-        render={({ field, fieldState }) => (
+        render={({ field, fieldState }): ReactElement => (
           <div className="flex flex-row">
             <TextInput
               className="grow"

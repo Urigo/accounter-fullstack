@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql';
 import { AccountDetails, GeneralDate } from './cells';
@@ -62,7 +63,7 @@ type Props = {
   ledgerRecordsProps: FragmentType<typeof TableLedgerRecordsFieldsFragmentDoc>;
 };
 
-export const LedgerRecordTable = ({ ledgerRecordsProps }: Props) => {
+export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
   const { ledgerRecords: data, oldLedger } = getFragmentData(
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,

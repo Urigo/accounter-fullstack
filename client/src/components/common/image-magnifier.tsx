@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { ZoomIn, ZoomInArea, ZoomOut, ZoomOutArea } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 
@@ -18,7 +18,7 @@ export function ImageMagnifier({
   magnifierHeight: originMagnifierHeight = 100,
   magnifierWidth: originMagnifierWidth = 100,
   zoomLevel: originZoomLevel = 1.5,
-}: Props) {
+}: Props): ReactElement {
   const [[x, y], setXY] = useState([0, 0]);
   const [[imgWidth, imgHeight], setSize] = useState([0, 0]);
   const [zoomLevel, setZoomLevel] = useState(originZoomLevel);
@@ -38,14 +38,14 @@ export function ImageMagnifier({
       <img
         src={src}
         style={{ height, width }}
-        onMouseEnter={e => {
+        onMouseEnter={(e): void => {
           // update image size and turn-on magnifier
           const elem = e.currentTarget;
           const { width, height } = elem.getBoundingClientRect();
           setSize([width, height]);
           setShowMagnifier(true);
         }}
-        onMouseMove={e => {
+        onMouseMove={(e): void => {
           // update cursor position
           const elem = e.currentTarget;
           const { top, left } = elem.getBoundingClientRect();
@@ -55,7 +55,7 @@ export function ImageMagnifier({
           const y = e.pageY - top - window.pageYOffset;
           setXY([x, y]);
         }}
-        onMouseLeave={() => {
+        onMouseLeave={(): void => {
           // close magnifier
           setShowMagnifier(false);
         }}
@@ -91,19 +91,19 @@ export function ImageMagnifier({
       />
       <div className="absolute top-10 right-10 flex flex-row gap-1">
         <Tooltip label="Increase zoom">
-          <ActionIcon variant="transparent" onClick={() => setZoomLevel(i => i * 1.2)}>
+          <ActionIcon variant="transparent" onClick={(): void => setZoomLevel(i => i * 1.2)}>
             <ZoomIn size={18} />
           </ActionIcon>
         </Tooltip>
         <Tooltip label="Decrease zoom">
-          <ActionIcon variant="transparent" onClick={() => setZoomLevel(i => i / 1.2)}>
+          <ActionIcon variant="transparent" onClick={(): void => setZoomLevel(i => i / 1.2)}>
             <ZoomOut size={18} />
           </ActionIcon>
         </Tooltip>
         <Tooltip label="Expand zoom area">
           <ActionIcon
             variant="transparent"
-            onClick={() => setMagnifierSize(i => [i[0] * 1.2, i[1] * 1.2])}
+            onClick={(): void => setMagnifierSize(i => [i[0] * 1.2, i[1] * 1.2])}
           >
             <ZoomInArea size={18} />
           </ActionIcon>
@@ -111,7 +111,7 @@ export function ImageMagnifier({
         <Tooltip label="Reduce zoom area">
           <ActionIcon
             variant="transparent"
-            onClick={() => setMagnifierSize(i => [i[0] / 1.2, i[1] / 1.2])}
+            onClick={(): void => setMagnifierSize(i => [i[0] / 1.2, i[1] / 1.2])}
           >
             <ZoomOutArea size={18} />
           </ActionIcon>

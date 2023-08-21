@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 import { Link, useMatch, useResolvedPath } from 'react-router-dom';
 import { FetchIncomeDocumentsButton, Icon } from './index.js';
 
@@ -38,7 +38,7 @@ const links: Link[] = [
   },
 ];
 
-export const NavBar = () => {
+export const NavBar = (): ReactElement => {
   return (
     <header className="bg-gray-200">
       <div className="flex flex-wrap p-5 flex-col md:flex-row items-center">
@@ -64,7 +64,7 @@ type CustomLinkProps = {
   children: ReactNode;
 };
 
-function CustomLink({ to, children, ...props }: CustomLinkProps) {
+function CustomLink({ to, children, ...props }: CustomLinkProps): ReactElement {
   const resolvedPath = useResolvedPath(to);
   const isActive = useMatch({ path: resolvedPath.pathname });
 

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { formatStringifyAmount } from '../../../helpers';
 import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-report-account';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
@@ -17,7 +18,11 @@ interface Props {
   isAllOpened: boolean;
 }
 
-export const TrialBalanceReportSortCode = ({ sortCode, filter, isAllOpened }: Props) => {
+export const TrialBalanceReportSortCode = ({
+  sortCode,
+  filter,
+  isAllOpened,
+}: Props): ReactElement | null => {
   return sortCode.records.length > 0 ? (
     <>
       <tr>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
@@ -40,7 +40,7 @@ interface Props {
   chargeID: string;
 }
 
-export function ChargeExtendedInfo({ chargeID }: Props) {
+export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
   const [opened, { toggle }] = useDisclosure(false);
   const [{ data, fetching }] = useQuery({
     query: FetchChargeDocument,
@@ -59,7 +59,7 @@ export function ChargeExtendedInfo({ chargeID }: Props) {
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
 
-  const defaultAccordionValue = () => {
+  const defaultAccordionValue = (): string[] => {
     const tabs = [];
     if (hasTransactions) {
       tabs.push('transactions');
@@ -147,17 +147,17 @@ export function ChargeExtendedInfoMenu({
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
-}: ChargeExtendedInfoMenuProps) {
+}: ChargeExtendedInfoMenuProps): ReactElement {
   const [opened, setOpened] = useState(false);
 
-  function closeMenu() {
+  function closeMenu(): void {
     setOpened(false);
   }
 
   return (
     <Menu shadow="md" width={200} opened={opened}>
       <Menu.Target>
-        <Burger opened={opened} onClick={() => setOpened(o => !o)} />
+        <Burger opened={opened} onClick={(): void => setOpened(o => !o)} />
       </Menu.Target>
 
       <Menu.Dropdown>
@@ -167,7 +167,7 @@ export function ChargeExtendedInfoMenu({
         <Menu.Label>Documents</Menu.Label>
         <Menu.Item
           icon={<PlaylistAdd size={14} />}
-          onClick={() => {
+          onClick={(): void => {
             setInsertDocument();
             closeMenu();
           }}
@@ -176,7 +176,7 @@ export function ChargeExtendedInfoMenu({
         </Menu.Item>
         <Menu.Item
           icon={<FileUpload size={14} />}
-          onClick={() => {
+          onClick={(): void => {
             setUploadDocument();
             closeMenu();
           }}
@@ -185,7 +185,7 @@ export function ChargeExtendedInfoMenu({
         </Menu.Item>
         <Menu.Item
           icon={<Search size={14} />}
-          onClick={() => {
+          onClick={(): void => {
             setMatchDocuments();
             closeMenu();
           }}

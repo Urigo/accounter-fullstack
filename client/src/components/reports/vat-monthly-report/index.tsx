@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
 import { FiltersContext } from '../../../filters-context';
@@ -31,7 +31,7 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
   }
 `;
 
-export const VatMonthlyReport = () => {
+export const VatMonthlyReport = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const [filter, setFilter] = useState<VatReportFilter>(
@@ -95,7 +95,7 @@ export const VatMonthlyReport = () => {
       />
 
       {/* modification modals */}
-      <EditChargeModal chargeId={editChargeId} onDone={() => setEditChargeId(undefined)} />
+      <EditChargeModal chargeId={editChargeId} onDone={(): void => setEditChargeId(undefined)} />
       {insertDocument && (
         <InsertDocumentModal
           insertDocument={insertDocument}
@@ -112,7 +112,7 @@ export const VatMonthlyReport = () => {
         <MatchDocumentModal
           chargeId={matchDocuments.id}
           ownerId={matchDocuments.ownerId}
-          setMatchDocuments={() => setMatchDocuments(undefined)}
+          setMatchDocuments={(): void => setMatchDocuments(undefined)}
         />
       )}
     </div>

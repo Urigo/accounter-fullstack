@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './cards';
 
 interface StatsCardProps {
@@ -8,7 +9,7 @@ interface StatsCardProps {
   }[];
 }
 
-export const StatsCard = ({ items }: StatsCardProps) => {
+export const StatsCard = ({ items }: StatsCardProps): ReactElement => {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-10">
       {items.map(item => (

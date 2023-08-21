@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useState } from 'react';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -86,7 +86,11 @@ export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilte
   { label: 'Expense', value: ChargeFilterType.Expense },
 ];
 
-function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFormProps) {
+function ChargesFiltersForm({
+  filter,
+  setFilter,
+  closeModal,
+}: ChargesFiltersFormProps): ReactElement {
   const { control, handleSubmit, watch, setValue } = useForm<ChargeFilter>({
     defaultValues: { ...filter },
   });
@@ -126,7 +130,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
     closeModal();
   };
 
-  function clearFilter() {
+  function clearFilter(): void {
     setFilter({});
     setAsc(false);
     closeModal();
@@ -155,7 +159,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           name="byOwners"
           control={control}
           defaultValue={filter.byOwners}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={financialEntities}
@@ -173,7 +177,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           name="byBusinesses"
           control={control}
           defaultValue={filter.byBusinesses}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
               data={financialEntities}
@@ -197,7 +201,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={field.value || ''}
@@ -216,7 +220,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
               value={field.value || ''}
@@ -229,7 +233,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           name="chargesType"
           control={control}
           defaultValue={filter.chargesType}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
               data={chargesTypeFilterOptions}
@@ -246,7 +250,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           name="sortBy.field"
           control={control}
           defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
               data={fieldsToSort}
@@ -262,7 +266,7 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
           defaultChecked={filter.sortBy?.asc ?? false}
           checked={asc ?? false}
           disabled={!enableAsc}
-          onChange={event => setAsc(event.currentTarget.checked)}
+          onChange={(event): void => setAsc(event.currentTarget.checked)}
           color="gray"
           onLabel={<p>ASC</p>}
           offLabel={<p>DESC</p>}
@@ -273,19 +277,19 @@ function ChargesFiltersForm({ filter, setFilter, closeModal }: ChargesFiltersFor
 
           <Switch
             defaultChecked={filter.withoutInvoice ?? false}
-            onChange={event => setValue('withoutInvoice', event.currentTarget.checked)}
+            onChange={(event): void => setValue('withoutInvoice', event.currentTarget.checked)}
             label="Without Invoices"
           />
 
           <Switch
             defaultChecked={filter.withoutDocuments ?? false}
-            onChange={event => setValue('withoutDocuments', event.currentTarget.checked)}
+            onChange={(event): void => setValue('withoutDocuments', event.currentTarget.checked)}
             label="Without Documents"
           />
 
           <Switch
             defaultChecked={filter.unbalanced ?? false}
-            onChange={event => setValue('unbalanced', event.currentTarget.checked)}
+            onChange={(event): void => setValue('unbalanced', event.currentTarget.checked)}
             label="Unbalanced businesses"
           />
         </div>
@@ -332,7 +336,7 @@ export function ChargesFilters({
   activePage,
   setPage,
   totalPages = 1,
-}: ChargesFiltersProps) {
+}: ChargesFiltersProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
@@ -372,12 +376,12 @@ export function ChargesFilters({
     <div className="flex flex-row gap-5 items-center">
       <PopUpModal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={(): void => setOpened(false)}
         content={
           <ChargesFiltersForm
             filter={filter}
             setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
+            closeModal={(): void => setOpened(false)}
           />
         }
       />
@@ -390,7 +394,7 @@ export function ChargesFilters({
         />
       )}
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
           <Filter size={20} />
         </ActionIcon>
       </Indicator>

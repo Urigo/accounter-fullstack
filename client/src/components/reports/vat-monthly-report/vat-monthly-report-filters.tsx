@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -27,7 +27,7 @@ function VatMonthlyReportFilterForm({
   filter,
   setFilter,
   closeModal,
-}: VatMonthlyReportFilterFormProps) {
+}: VatMonthlyReportFilterFormProps): ReactElement {
   const { control, handleSubmit, setValue } = useForm<VatReportFilter>({
     defaultValues: { ...filter },
   });
@@ -49,12 +49,12 @@ function VatMonthlyReportFilterForm({
     closeModal();
   };
 
-  function clearFilter() {
+  function clearFilter(): void {
     setFilter();
     closeModal();
   }
 
-  function onSelectDate(date: Date) {
+  function onSelectDate(date: Date): void {
     const from = new Date(date.getFullYear(), date.getMonth(), 1);
     const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     setValue('fromDate', format(from, 'yyyy-MM-dd') as TimelessDateString);
@@ -69,7 +69,7 @@ function VatMonthlyReportFilterForm({
           name="financialEntityId"
           control={control}
           defaultValue={undefined}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
               data={
@@ -92,7 +92,7 @@ function VatMonthlyReportFilterForm({
           name="chargesType"
           control={control}
           defaultValue={filter.chargesType}
-          render={({ field, fieldState }) => (
+          render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
               data={chargesTypeFilterOptions}
@@ -141,11 +141,14 @@ interface VatMonthlyReportFilterProps {
   setFilter: (filter: VatReportFilter) => void;
 }
 
-export function VatMonthlyReportFilter({ filter, setFilter }: VatMonthlyReportFilterProps) {
+export function VatMonthlyReportFilter({
+  filter,
+  setFilter,
+}: VatMonthlyReportFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const { get, set } = useUrlQuery();
 
-  function onSetFilter(newFilter?: VatReportFilter) {
+  function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
       financialEntityId: DEFAULT_FINANCIAL_ENTITY_ID,
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
@@ -172,16 +175,16 @@ export function VatMonthlyReportFilter({ filter, setFilter }: VatMonthlyReportFi
     <>
       <PopUpModal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={(): void => setOpened(false)}
         content={
           <VatMonthlyReportFilterForm
             filter={filter}
             setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
+            closeModal={(): void => setOpened(false)}
           />
         }
       />
-      <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
         <Filter size={20} />
       </ActionIcon>
     </>

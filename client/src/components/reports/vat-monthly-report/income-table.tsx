@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Table } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
@@ -48,7 +48,7 @@ interface Props {
   data?: FragmentType<typeof VarReportIncomeFieldsFragmentDoc>;
 }
 
-export const IncomeTable = ({ data }: Props) => {
+export const IncomeTable = ({ data }: Props): ReactElement => {
   const { income } = getFragmentData(VarReportIncomeFieldsFragmentDoc, data) ?? { income: [] };
   const [isOpened, setOpened] = useState(true);
   let incomeCumulativeAmount = 0;
@@ -56,7 +56,7 @@ export const IncomeTable = ({ data }: Props) => {
   return (
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <ActionIcon variant="default" onClick={() => setOpened(i => !i)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(i => !i)} size={30}>
           {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
         Income

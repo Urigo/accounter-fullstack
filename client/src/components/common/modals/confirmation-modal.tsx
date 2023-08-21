@@ -13,7 +13,7 @@ export function ConfirmationModal({
   onConfirm,
   children,
   ...props
-}: Props) {
+}: Props): ReactElement {
   return (
     <Modal closeOnEscape withCloseButton={false} {...props}>
       <div className="flex flex-wrap -mx-4 -mb-10 text-center">

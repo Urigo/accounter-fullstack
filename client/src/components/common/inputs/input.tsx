@@ -36,7 +36,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input({
   className,
   ...props
 }) {
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>): void {
     let value = Number(e.target.value);
     if (Number.isNaN(value)) {
       onChange(null);

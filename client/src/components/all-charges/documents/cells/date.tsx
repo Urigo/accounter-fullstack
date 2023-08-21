@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
@@ -26,7 +27,7 @@ type Props = {
   data: FragmentType<typeof DocumentsDateFieldsFragmentDoc>;
 };
 
-export const DateCell = ({ data }: Props) => {
+export const DateCell = ({ data }: Props): ReactElement => {
   const document = getFragmentData(DocumentsDateFieldsFragmentDoc, data);
   const date = 'date' in document ? document.date : undefined;
 

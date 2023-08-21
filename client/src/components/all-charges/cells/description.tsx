@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
@@ -23,7 +23,7 @@ type Props = {
   data: FragmentType<typeof AllChargesDescriptionFieldsFragmentDoc>;
 };
 
-export const Description = ({ data }: Props) => {
+export const Description = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
   const isError = charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
@@ -55,7 +55,7 @@ export const Description = ({ data }: Props) => {
         </div>
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={() => updateUserDescription(charge.missingInfoSuggestions!.description!)}
+            onClick={(): void => updateUserDescription(charge.missingInfoSuggestions!.description!)}
             disabled={fetching}
           />
         )}

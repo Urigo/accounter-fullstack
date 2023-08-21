@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
@@ -81,7 +81,7 @@ import { TrialBalanceTable } from './trial-balance-table';
   }
 `;
 
-export const TrialBalanceReport = () => {
+export const TrialBalanceReport = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState(false);
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
@@ -107,7 +107,7 @@ export const TrialBalanceReport = () => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <Tooltip label="Expand all accounts">
-          <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>

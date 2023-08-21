@@ -5,11 +5,11 @@ interface Props {
   children?: ReactElement | ReactElement[];
 }
 
-export const HoverHandler = ({ children, hoverElement }: Props) => {
+export const HoverHandler = ({ children, hoverElement }: Props): ReactElement => {
   const [isHover, setIsHover] = useState(false);
 
   return (
-    <div onMouseEnter={() => setIsHover(true)} onMouseLeave={() => setIsHover(false)}>
+    <div onMouseEnter={(): void => setIsHover(true)} onMouseLeave={(): void => setIsHover(false)}>
       {children}
       {isHover && hoverElement}
     </div>

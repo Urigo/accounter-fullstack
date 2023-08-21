@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { formatStringifyAmount } from '../../../helpers';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-report-sort-code';
@@ -14,7 +15,12 @@ interface Props {
   isAllOpened: boolean;
 }
 
-export const TrialBalanceReportGroup = ({ group, data, filter, isAllOpened }: Props) => {
+export const TrialBalanceReportGroup = ({
+  group,
+  data,
+  filter,
+  isAllOpened,
+}: Props): ReactElement => {
   return (
     <>
       {Object.values(data.sortCodes).map((sortCode, i) => (

@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { PopUpDrawer, UploadDocument } from '..';
@@ -8,7 +9,7 @@ interface Props {
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props) => {
+export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props): ReactElement => {
   return (
     <PopUpDrawer
       modalSize="40%"
@@ -20,7 +21,7 @@ export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props
             Charge ID: {uploadDocument}
             <ActionIcon
               variant="default"
-              onClick={() => writeToClipboard(uploadDocument)}
+              onClick={(): void => writeToClipboard(uploadDocument)}
               size={30}
             >
               <Copy size={20} />
@@ -29,9 +30,12 @@ export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props
         </div>
       }
       opened={!!uploadDocument}
-      onClose={() => setUploadDocument(undefined)}
+      onClose={(): void => setUploadDocument(undefined)}
     >
-      <UploadDocument chargeId={uploadDocument} closeModal={() => setUploadDocument(undefined)} />
+      <UploadDocument
+        chargeId={uploadDocument}
+        closeModal={(): void => setUploadDocument(undefined)}
+      />
     </PopUpDrawer>
   );
 };

@@ -1,16 +1,16 @@
-import { ComponentProps } from 'react';
+import { ComponentProps, ReactElement } from 'react';
 import { NumberInput } from './number-input';
 
 type Props = ComponentProps<typeof NumberInput>;
 
-export function PercentageInput({ ...props }: Props) {
+export function PercentageInput({ ...props }: Props): ReactElement {
   // convert 0-1 to 0-100
   if (props.value != null && !Number.isNaN(props.value)) {
     props.value = (props.value as number) * 100;
   }
   if (props.onChange) {
     const temp = props.onChange;
-    props.onChange = (e: unknown) => {
+    props.onChange = (e: unknown): void => {
       if (!Number.isNaN(e)) {
         e = (e as number) / 100;
       }

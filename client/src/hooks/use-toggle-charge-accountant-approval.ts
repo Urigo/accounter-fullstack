@@ -12,7 +12,14 @@ import {
   }
 `;
 
-export const useToggleChargeAccountantApproval = () => {
+type UseToggleChargeAccountantApproval = {
+  fetching: boolean;
+  toggleChargeAccountantApproval: (
+    variables: ToggleChargeAccountantApprovalMutationVariables,
+  ) => Promise<boolean>;
+};
+
+export const useToggleChargeAccountantApproval = (): UseToggleChargeAccountantApproval => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
@@ -20,7 +27,9 @@ export const useToggleChargeAccountantApproval = () => {
 
   return {
     fetching,
-    toggleChargeAccountantApproval: (variables: ToggleChargeAccountantApprovalMutationVariables) =>
+    toggleChargeAccountantApproval: (
+      variables: ToggleChargeAccountantApprovalMutationVariables,
+    ): Promise<boolean> =>
       new Promise<boolean>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {

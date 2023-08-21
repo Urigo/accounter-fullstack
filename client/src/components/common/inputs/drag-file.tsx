@@ -9,10 +9,10 @@ type Props = {
   chargeId: string;
 };
 
-export const DragFile = ({ children, chargeId }: Props) => {
+export const DragFile = ({ children, chargeId }: Props): ReactElement => {
   const [res, mutate] = useMutation(UploadDocumentDocument);
 
-  function onFail(message?: string) {
+  function onFail(message?: string): void {
     showNotification({
       title: 'Error!',
       message: message ?? 'Oh no!, we have an error! 🤥',
@@ -54,8 +54,8 @@ export const DragFile = ({ children, chargeId }: Props) => {
 
   return (
     <Dropzone
-      onDrop={files => onDrop(files[0])}
-      onReject={files =>
+      onDrop={(files): Promise<void> => onDrop(files[0])}
+      onReject={(files): void =>
         onFail(
           `Rejected Files:\n${files.map(file => `"${file.file.name}": ${file.errors}`).join('\n')}`,
         )

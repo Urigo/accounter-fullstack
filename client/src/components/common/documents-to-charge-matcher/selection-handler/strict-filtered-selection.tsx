@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
 import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
 import {
@@ -19,7 +19,7 @@ export function StrictFilteredSelection({
   documents,
   toggleDocument,
   selectedDocuments,
-}: Props) {
+}: Props): ReactElement {
   const [extandedInfoFlag, setExtandedInfoFlag] = useState(false);
 
   const ratedMatches = rateOptionalDocumentsMatches(charge, documents);
@@ -79,7 +79,7 @@ export function StrictFilteredSelection({
                 <li />
                 <li>
                   <button
-                    onClick={() => setExtandedInfoFlag(false)}
+                    onClick={(): void => setExtandedInfoFlag(false)}
                     className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
                     title="read less"
                   >
@@ -91,7 +91,7 @@ export function StrictFilteredSelection({
             ) : (
               <li>
                 <button
-                  onClick={() => setExtandedInfoFlag(true)}
+                  onClick={(): void => setExtandedInfoFlag(true)}
                   className="inline-flex items-center mt-4 font-semibold text-blue-600 lg:mb-0 hover:text-neutral-600"
                   title="read more"
                 >
@@ -149,7 +149,7 @@ export function StrictFilteredSelection({
                   <li />
                   <li>
                     <button
-                      onClick={() => setExtandedInfoFlag(false)}
+                      onClick={(): void => setExtandedInfoFlag(false)}
                       className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
                       title="read less"
                     >
@@ -161,7 +161,7 @@ export function StrictFilteredSelection({
               ) : (
                 <li>
                   <button
-                    onClick={() => setExtandedInfoFlag(true)}
+                    onClick={(): void => setExtandedInfoFlag(true)}
                     className="inline-flex items-center mt-4 font-semibold text-white lg:mb-0 hover:text-neutral-300"
                     title="read more"
                   >
@@ -174,7 +174,7 @@ export function StrictFilteredSelection({
           </div>
           <div className="z-50 mt-6 rounded-lg">
             <button
-              onClick={() => {
+              onClick={(): void => {
                 toggleDocument(document.id);
               }}
               className="w-full items-center block px-10 py-3.5 text-base font-medium text-center text-blue-600 transition duration-500 ease-in-out transform border-2 border-white shadow-md rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-white"

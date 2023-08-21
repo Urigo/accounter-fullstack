@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql';
 import { AllChargesAmountFieldsFragmentDoc } from '../../../gql/graphql';
 
@@ -16,7 +17,7 @@ type Props = {
   data: FragmentType<typeof AllChargesAmountFieldsFragmentDoc>;
 };
 
-export const Amount = ({ data }: Props) => {
+export const Amount = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesAmountFieldsFragmentDoc, data);
 
   return (

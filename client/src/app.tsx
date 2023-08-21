@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { BusinessTransactionsSummery } from './components/business-transactions';
@@ -11,7 +11,7 @@ import { VatMonthlyReport } from './components/reports/vat-monthly-report';
 import { TagsManager } from './components/tags';
 import { FiltersContext } from './filters-context';
 
-export function App() {
+export function App(): ReactElement {
   const [filtersContext, setFiltersContext] = useState('');
   return (
     <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>

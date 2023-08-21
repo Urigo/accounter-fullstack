@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentsTableCreditorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql';
@@ -100,7 +100,7 @@ type Props = {
   refetchDocument: () => void;
 };
 
-export const Creditor = ({ data, refetchDocument }: Props) => {
+export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
@@ -182,7 +182,7 @@ export const Creditor = ({ data, refetchDocument }: Props) => {
         </div>
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={() => updateCreditor(suggestedCreditor.id)}
+            onClick={(): void => updateCreditor(suggestedCreditor.id)}
             disabled={fetching}
           />
         )}

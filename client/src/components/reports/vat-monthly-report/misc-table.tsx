@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
@@ -31,14 +31,14 @@ export const MiscTable = ({
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
-}: Props) => {
+}: Props): ReactElement => {
   const chargesData = getFragmentData(VarReportMiscTableFieldsFragmentDoc, data);
   const [isOpened, setOpened] = useState(true);
 
   return (
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <ActionIcon variant="default" onClick={() => setOpened(i => !i)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setOpened(i => !i)} size={30}>
           {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
         Misc Charges (which are not on the above tables)

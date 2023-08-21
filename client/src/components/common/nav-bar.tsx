@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NavLink } from '@mantine/core';
 
@@ -11,7 +11,7 @@ interface props {
   filters?: ReactNode;
 }
 
-export const NavBar = ({ header, extraLinks, filters }: props) => {
+export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => {
   const navigate = useNavigate();
 
   return (
@@ -25,21 +25,21 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
             <NavLink
               className="text-gray-700 rounded"
               label="All Charges"
-              onClick={() => navigate('/all-charges')}
+              onClick={(): void => navigate('/all-charges')}
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Documents"
-              onClick={() => navigate('/documents')}
+              onClick={(): void => navigate('/documents')}
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Business Transactions"
-              onClick={() => navigate('/business-transactions')}
+              onClick={(): void => navigate('/business-transactions')}
             />
           </li>
           <li>
@@ -47,12 +47,12 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
               <NavLink
                 className="text-gray-700 rounded"
                 label="Trial Balance Report"
-                onClick={() => navigate('/reports/trial-balance')}
+                onClick={(): void => navigate('/reports/trial-balance')}
               />
               <NavLink
                 className="text-gray-700 rounded"
                 label="VAT Monthly Report"
-                onClick={() => navigate('/reports/vat-monthly')}
+                onClick={(): void => navigate('/reports/vat-monthly')}
               />
             </NavLink>
           </li>
@@ -60,7 +60,7 @@ export const NavBar = ({ header, extraLinks, filters }: props) => {
             <NavLink
               className="text-gray-700 rounded"
               label="Tags"
-              onClick={() => navigate('/tags')}
+              onClick={(): void => navigate('/tags')}
             />
           </li>
           {extraLinks?.map(link => (

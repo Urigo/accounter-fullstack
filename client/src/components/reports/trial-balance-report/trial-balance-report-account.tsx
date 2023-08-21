@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { TrialBalanceReportQuery } from '../../../gql/graphql';
@@ -18,7 +18,12 @@ interface Props {
   isAllOpened: boolean;
 }
 
-export const TrialBalanceReportBusiness = ({ record, sortCodeId, filter, isAllOpened }: Props) => {
+export const TrialBalanceReportBusiness = ({
+  record,
+  sortCodeId,
+  filter,
+  isAllOpened,
+}: Props): ReactElement => {
   const [isExtended, setIsExtended] = useState(isAllOpened);
   const rowTotal = record?.total?.raw ?? 0;
   return (
@@ -34,7 +39,7 @@ export const TrialBalanceReportBusiness = ({ record, sortCodeId, filter, isAllOp
         <td>{}</td>
         <td>
           <Tooltip label="Detailed records">
-            <ActionIcon variant="default" onClick={() => setIsExtended(i => !i)} size={30}>
+            <ActionIcon variant="default" onClick={(): void => setIsExtended(i => !i)} size={30}>
               {isExtended || isAllOpened ? (
                 <LayoutNavbarCollapse size={20} />
               ) : (

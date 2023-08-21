@@ -1,11 +1,11 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactElement, ReactNode } from 'react';
 
 type Props = {
   items: Array<ReactNode | { content: ReactNode; style: CSSProperties }>;
   style?: CSSProperties;
 };
 
-export const ListCapsule = ({ items, style }: Props) => {
+export const ListCapsule = ({ items, style }: Props): ReactElement => {
   return (
     <ul
       className="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg"

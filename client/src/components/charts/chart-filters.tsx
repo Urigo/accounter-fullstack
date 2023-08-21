@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -17,7 +17,7 @@ interface ChargeFilterFormProps {
   closeModal: () => void;
 }
 
-function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormProps) {
+function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormProps): ReactElement {
   const { handleSubmit, control } = useForm<ChargeFilter>({
     defaultValues: { ...filter },
   });
@@ -27,7 +27,7 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
     closeModal();
   };
 
-  function clearFilter() {
+  function clearFilter(): void {
     setFilter();
     closeModal();
   }
@@ -45,7 +45,7 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }) => (
+        render={({ field, fieldState }): ReactElement => (
           <TextInput
             {...field}
             value={field.value || ''}
@@ -64,7 +64,7 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }) => (
+        render={({ field, fieldState }): ReactElement => (
           <TextInput
             {...field}
             value={field.value || ''}
@@ -104,11 +104,11 @@ interface ChargeFilterProps {
   setFilter: (filter: ChargeFilter) => void;
 }
 
-export function ChargeFilterFilter({ filter, setFilter }: ChargeFilterProps) {
+export function ChargeFilterFilter({ filter, setFilter }: ChargeFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const { get, set } = useUrlQuery();
 
-  function onSetFilter(newFilter?: ChargeFilter) {
+  function onSetFilter(newFilter?: ChargeFilter): void {
     newFilter ||= {
       fromDate: format(new Date(), 'yyyy-MM-DD') as TimelessDateString,
       toDate: format(new Date(), 'yyyy-MM-DD') as TimelessDateString,
@@ -134,16 +134,16 @@ export function ChargeFilterFilter({ filter, setFilter }: ChargeFilterProps) {
     <>
       <PopUpModal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={(): void => setOpened(false)}
         content={
           <ChargeFilterForm
             filter={filter}
             setFilter={onSetFilter}
-            closeModal={() => setOpened(false)}
+            closeModal={(): void => setOpened(false)}
           />
         }
       />
-      <ActionIcon variant="default" onClick={() => setOpened(true)} size={30}>
+      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
         <Filter size={20} />
       </ActionIcon>
     </>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { ReactElement, useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
 import { Button } from '../..';
 import { FragmentType, getFragmentData } from '../../../../gql';
@@ -94,7 +94,7 @@ interface Props {
   onDone: () => void;
 }
 
-export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props) {
+export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props): ReactElement {
   const charge = getFragmentData(ChargeToMatchDocumentsFieldsFragmentDoc, chargeProps);
   const documents = useMemo(
     () =>
@@ -158,7 +158,7 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
     return <p>No matches found</p>;
   }
 
-  function toggleDocument(documentId: string) {
+  function toggleDocument(documentId: string): void {
     if (selectedDocuments.includes(documentId)) {
       setSelectedDocuments(selectedDocuments.filter(id => id !== documentId));
     } else {
@@ -166,7 +166,7 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
     }
   }
 
-  const onExecuteMatch = () => {
+  const onExecuteMatch = (): void => {
     selectedDocuments.map(documentId =>
       updateDocument({
         documentId,
@@ -182,7 +182,7 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
         {strictFilteredDocuments.length > 0 && (
           <Switch
             checked={filterSuggestions}
-            onChange={() => setFilterSuggestions(!filterSuggestions)}
+            onChange={(): void => setFilterSuggestions(!filterSuggestions)}
             label="Filter Suggestions"
           />
         )}

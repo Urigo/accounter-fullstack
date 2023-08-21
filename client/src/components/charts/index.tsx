@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
 import { useQuery } from 'urql';
@@ -76,7 +76,7 @@ query IncomeChargesChart($filters: ChargeFilter) {
 
 type Transaction = IncomeChargesChartQuery['allCharges']['nodes'][number]['transactions'][number];
 
-export const ChartPage = () => {
+export const ChartPage = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<ChargeFilter>(
@@ -105,7 +105,7 @@ export const ChartPage = () => {
     );
   }, [data, filter, fetching, setFiltersContext, error]);
 
-  function numberToDecimalJS(number: number) {
+  function numberToDecimalJS(number: number): number {
     return new Decimal(number).toDP(2).toNumber();
   }
 

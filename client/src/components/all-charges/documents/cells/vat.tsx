@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { DocumentsTableVatFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -41,7 +42,7 @@ type Props = {
   data: FragmentType<typeof DocumentsTableVatFieldsFragmentDoc>;
 };
 
-export const Vat = ({ data }: Props) => {
+export const Vat = ({ data }: Props): ReactElement => {
   const document = getFragmentData(DocumentsTableVatFieldsFragmentDoc, data);
   const vat = 'vat' in document ? document.vat : undefined;
 

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 import { Pagination, PaginationProps, Paper, Table } from '@mantine/core';
 import { Button } from '.';
 
@@ -28,7 +28,7 @@ export interface AccountTableRow<T, U> {
   rowContext?: (item: T) => U | undefined;
 }
 
-export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
+export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>): ReactElement {
   const [opened, setOpen] = useState(false);
   const moreInfoValue = props.moreInfo ? props.moreInfo(props.item) : null;
 
@@ -47,7 +47,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
             {moreInfoValue === null ? (
               <p>No Data Related</p>
             ) : (
-              <Button title="More Info" onClick={() => setOpen(!opened)} />
+              <Button title="More Info" onClick={(): void => setOpen(!opened)} />
             )}
           </td>
         )}
@@ -65,7 +65,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>) {
   );
 }
 
-export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
+export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNode {
   const [isShowAll, setShowAll] = useState(false);
 
   return (
@@ -76,7 +76,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>) {
           <button
             className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
             type="button"
-            onClick={() => {
+            onClick={(): void => {
               setShowAll(prev => !prev);
             }}
           >

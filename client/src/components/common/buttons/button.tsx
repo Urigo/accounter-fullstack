@@ -1,4 +1,10 @@
-import { ButtonHTMLAttributes, CSSProperties, DetailedHTMLProps, MouseEventHandler } from 'react';
+import {
+  ButtonHTMLAttributes,
+  CSSProperties,
+  DetailedHTMLProps,
+  MouseEventHandler,
+  ReactElement,
+} from 'react';
 
 export interface Props
   extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> {
@@ -21,7 +27,7 @@ export const Button = ({
   type = 'button',
   onClick,
   ...props
-}: Props) => {
+}: Props): ReactElement => {
   return (
     <button
       style={style}

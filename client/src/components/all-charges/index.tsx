@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
@@ -32,7 +32,7 @@ import { ChargesFilters } from './charges-filters';
   }
 `;
 
-export const AllCharges = () => {
+export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
@@ -76,7 +76,7 @@ export const AllCharges = () => {
     },
   });
 
-  function onResetMerge() {
+  function onResetMerge(): void {
     setMergeSelectedCharges([]);
   }
 
@@ -91,7 +91,7 @@ export const AllCharges = () => {
           totalPages={data?.allCharges?.pageInfo.totalPages}
         />
         <Tooltip label="Expand all accounts">
-          <ActionIcon variant="default" onClick={() => setIsAllOpened(i => !i)} size={30}>
+          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
@@ -127,7 +127,7 @@ export const AllCharges = () => {
           isAllOpened={isAllOpened}
         />
       )}
-      <EditChargeModal chargeId={editChargeId} onDone={() => setEditChargeId(undefined)} />
+      <EditChargeModal chargeId={editChargeId} onDone={(): void => setEditChargeId(undefined)} />
       {insertDocument && (
         <InsertDocumentModal
           insertDocument={insertDocument}
@@ -144,7 +144,7 @@ export const AllCharges = () => {
         <MatchDocumentModal
           chargeId={matchDocuments.id}
           ownerId={matchDocuments.ownerId}
-          setMatchDocuments={() => setMatchDocuments(undefined)}
+          setMatchDocuments={(): void => setMatchDocuments(undefined)}
         />
       )}
     </>

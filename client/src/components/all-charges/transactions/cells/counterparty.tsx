@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -27,7 +27,7 @@ type Props = {
   data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
 };
 
-export const Counterparty = ({ data }: Props) => {
+export function Counterparty({ data }: Props): ReactElement {
   const { get } = useUrlQuery();
   const {
     counterparty,
@@ -97,7 +97,7 @@ export const Counterparty = ({ data }: Props) => {
             </a>
             {hasAlternative && (
               <ConfirmMiniButton
-                onClick={() => updateBusiness(missingInfoSuggestions.business.id)}
+                onClick={(): void => updateBusiness(missingInfoSuggestions.business.id)}
                 disabled={fetching}
               />
             )}
@@ -106,4 +106,4 @@ export const Counterparty = ({ data }: Props) => {
       </div>
     </td>
   );
-};
+}

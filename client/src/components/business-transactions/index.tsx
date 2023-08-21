@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import { FiltersContext } from '../../filters-context';
@@ -74,7 +74,7 @@ import { BusinessTransactionsFilters } from './business-transactions-filters';
   }
 `;
 
-export const BusinessTransactionsSummery = () => {
+export const BusinessTransactionsSummery = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
@@ -100,7 +100,9 @@ export const BusinessTransactionsSummery = () => {
   ) : (
     <AccounterTable
       showButton
-      moreInfo={item => <BusinessExtendedInfo businessID={item.business.id} filter={filter} />}
+      moreInfo={(item): ReactElement => (
+        <BusinessExtendedInfo businessID={item.business.id} filter={filter} />
+      )}
       striped
       highlightOnHover
       stickyHeader

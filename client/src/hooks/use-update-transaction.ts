@@ -21,7 +21,14 @@ import {
   }
 `;
 
-export const useUpdateTransaction = () => {
+type UseUpdateTransaction = {
+  fetching: boolean;
+  updateTransaction: (variables: UpdateTransactionMutationVariables) => Promise<{
+    id: string;
+  }>;
+};
+
+export const useUpdateTransaction = (): UseUpdateTransaction => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
@@ -29,7 +36,7 @@ export const useUpdateTransaction = () => {
 
   return {
     fetching,
-    updateTransaction: (variables: UpdateTransactionMutationVariables) =>
+    updateTransaction: (variables: UpdateTransactionMutationVariables): Promise<{ id: string }> =>
       new Promise<
         Extract<UpdateTransactionMutation['updateTransaction'], { __typename: 'CommonTransaction' }>
       >((resolve, reject) =>

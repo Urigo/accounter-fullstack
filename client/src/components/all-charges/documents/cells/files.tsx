@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { File, Photo } from 'tabler-icons-react';
 import { ActionIcon, Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../../gql';
@@ -18,7 +18,7 @@ type Props = {
   data: FragmentType<typeof DocumentFilesFieldsFragmentDoc>;
 };
 
-export const Files = ({ data }: Props) => {
+export const Files = ({ data }: Props): ReactElement => {
   const { image, file } = getFragmentData(DocumentFilesFieldsFragmentDoc, data);
   const [openImage, setOpenImage] = useState<boolean>(false);
 
@@ -29,7 +29,7 @@ export const Files = ({ data }: Props) => {
           <SimpleGrid cols={1}>
             <Tooltip disabled={!image} label="Open Image">
               <Indicator inline size={12} disabled={!!image} color="red" zIndex="auto">
-                <ActionIcon disabled={!image} onClick={() => setOpenImage(!!image)}>
+                <ActionIcon disabled={!image} onClick={(): void => setOpenImage(!!image)}>
                   <Photo size={20} />
                 </ActionIcon>
               </Indicator>
@@ -63,7 +63,7 @@ export const Files = ({ data }: Props) => {
           withOverlay={false}
           position="right"
           opened={openImage}
-          onClose={() => setOpenImage(false)}
+          onClose={(): void => setOpenImage(false)}
           size="30%"
         >
           <div className="m-2">

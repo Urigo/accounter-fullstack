@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../../gql';
 import {
@@ -26,7 +26,7 @@ type Props = {
   data: FragmentType<typeof AllChargesEntityFieldsFragmentDoc>;
 };
 
-export const Counterparty = ({ data }: Props) => {
+export const Counterparty = ({ data }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const { counterparty, validationData } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);

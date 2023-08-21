@@ -23,7 +23,19 @@ import {
   }
 `;
 
-export const useInsertDocument = () => {
+type InsertDocumentSuccessfulResult = Extract<
+  InsertDocumentMutation['insertDocument'],
+  { __typename: 'InsertDocumentSuccessfulResult' }
+>;
+
+type UseInsertDocument = {
+  fetching: boolean;
+  insertDocument: (
+    variables: InsertDocumentMutationVariables,
+  ) => Promise<InsertDocumentSuccessfulResult>;
+};
+
+export const useInsertDocument = (): UseInsertDocument => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
@@ -31,13 +43,10 @@ export const useInsertDocument = () => {
 
   return {
     fetching,
-    insertDocument: (variables: InsertDocumentMutationVariables) =>
-      new Promise<
-        Extract<
-          InsertDocumentMutation['insertDocument'],
-          { __typename: 'InsertDocumentSuccessfulResult' }
-        >
-      >((resolve, reject) =>
+    insertDocument: (
+      variables: InsertDocumentMutationVariables,
+    ): Promise<InsertDocumentSuccessfulResult> =>
+      new Promise<InsertDocumentSuccessfulResult>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(

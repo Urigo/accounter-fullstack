@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { InsertDocument, PopUpDrawer } from '..';
@@ -8,7 +9,7 @@ interface Props {
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export const InsertDocumentModal = ({ insertDocument, setInsertDocument }: Props) => {
+export const InsertDocumentModal = ({ insertDocument, setInsertDocument }: Props): ReactElement => {
   return (
     <PopUpDrawer
       modalSize="40%"
@@ -20,7 +21,7 @@ export const InsertDocumentModal = ({ insertDocument, setInsertDocument }: Props
             Charge ID: {insertDocument}
             <ActionIcon
               variant="default"
-              onClick={() => writeToClipboard(insertDocument)}
+              onClick={(): void => writeToClipboard(insertDocument)}
               size={30}
             >
               <Copy size={20} />
@@ -29,9 +30,12 @@ export const InsertDocumentModal = ({ insertDocument, setInsertDocument }: Props
         </div>
       }
       opened={!!insertDocument}
-      onClose={() => setInsertDocument(undefined)}
+      onClose={(): void => setInsertDocument(undefined)}
     >
-      <InsertDocument chargeId={insertDocument} closeModal={() => setInsertDocument(undefined)} />
+      <InsertDocument
+        chargeId={insertDocument}
+        closeModal={(): void => setInsertDocument(undefined)}
+      />
     </PopUpDrawer>
   );
 };

@@ -15,7 +15,16 @@ import {
   }
 `;
 
-export const useFetchIncomeDocuments = () => {
+type FetchIncomeDocuments = FetchIncomeDocumentsMutation['fetchIncomeDocuments'];
+
+type UseFetchIncomeDocuments = {
+  fetching: boolean;
+  fetchIncomeDocuments: (
+    variables: FetchIncomeDocumentsMutationVariables,
+  ) => Promise<FetchIncomeDocuments>;
+};
+
+export const useFetchIncomeDocuments = (): UseFetchIncomeDocuments => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
@@ -23,8 +32,10 @@ export const useFetchIncomeDocuments = () => {
 
   return {
     fetching,
-    fetchIncomeDocuments: (variables: FetchIncomeDocumentsMutationVariables) =>
-      new Promise<FetchIncomeDocumentsMutation['fetchIncomeDocuments']>((resolve, reject) =>
+    fetchIncomeDocuments: (
+      variables: FetchIncomeDocumentsMutationVariables,
+    ): Promise<FetchIncomeDocuments> =>
+      new Promise<FetchIncomeDocuments>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(`Error fetching documents owned by [${variables.ownerId}]: ${res.error}`);

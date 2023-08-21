@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -18,7 +19,7 @@ type Props = {
   type: 1 | 2;
 };
 
-export const GeneralDate = ({ data, type }: Props) => {
+export const GeneralDate = ({ data, type }: Props): ReactElement => {
   const { invoiceDate, valueDate } = getFragmentData(
     LedgerRecordsGeneralDateFieldsFragmentDoc,
     data,

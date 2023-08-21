@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import { useMutation } from 'urql';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
@@ -26,7 +26,7 @@ type Props = {
   closeModal?: () => void;
 };
 
-export const UploadDocument = ({ chargeId, closeModal }: Props) => {
+export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement => {
   const [res, mutate] = useMutation(UploadDocumentDocument);
   const [value, setValue] = useState<File | null>(null);
 

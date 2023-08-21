@@ -9,7 +9,12 @@ import { AddTagDocument, AddTagMutationVariables } from '../gql/graphql.js';
   }
 `;
 
-export const useAddTag = () => {
+type UseAddTag = {
+  fetching: boolean;
+  addTag: (variables: AddTagMutationVariables) => Promise<void>;
+};
+
+export const useAddTag = (): UseAddTag => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
 
@@ -17,7 +22,7 @@ export const useAddTag = () => {
 
   return {
     fetching,
-    addTag: (variables: AddTagMutationVariables) =>
+    addTag: (variables: AddTagMutationVariables): Promise<void> =>
       new Promise<void>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {

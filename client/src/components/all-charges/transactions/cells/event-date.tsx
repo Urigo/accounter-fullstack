@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -16,7 +17,7 @@ type Props = {
   data: FragmentType<typeof TransactionsTableEventDateFieldsFragmentDoc>;
 };
 
-export const EventDate = ({ data }: Props) => {
+export const EventDate = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableEventDateFieldsFragmentDoc, data);
   const eventDate = 'eventDate' in transaction ? transaction.eventDate : undefined;
 

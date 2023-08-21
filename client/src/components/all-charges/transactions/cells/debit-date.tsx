@@ -1,3 +1,4 @@
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { FragmentType, getFragmentData } from '../../../../gql';
 import { TransactionsTableDebitDateFieldsFragmentDoc } from '../../../../gql/graphql';
@@ -16,7 +17,7 @@ type Props = {
   data: FragmentType<typeof TransactionsTableDebitDateFieldsFragmentDoc>;
 };
 
-export const DebitDate = ({ data }: Props) => {
+export const DebitDate = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableDebitDateFieldsFragmentDoc, data);
   const effectiveDate = 'effectiveDate' in transaction ? transaction.effectiveDate : undefined;
 
