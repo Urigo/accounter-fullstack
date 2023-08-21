@@ -19,13 +19,13 @@ export function ImageMagnifier({
   magnifierWidth: originMagnifierWidth = 100,
   zoomLevel: originZoomLevel = 1.5,
 }: Props): ReactElement {
-  const [[x, y], setXY] = useState([0, 0]);
-  const [[imgWidth, imgHeight], setSize] = useState([0, 0]);
+  const [xy, setXY] = useState({ x: 0, y: 0 });
+  const [imgSize, setImgSize] = useState({ height: 0, width: 0 });
   const [zoomLevel, setZoomLevel] = useState(originZoomLevel);
-  const [[magnifierWidth, magnifierHeight], setMagnifierSize] = useState([
-    originMagnifierWidth,
-    originMagnifierHeight,
-  ]);
+  const [magnifierSize, setMagnifierSize] = useState({
+    width: originMagnifierWidth,
+    height: originMagnifierHeight,
+  });
   const [showMagnifier, setShowMagnifier] = useState(false);
   return (
     <div
@@ -42,7 +42,7 @@ export function ImageMagnifier({
           // update image size and turn-on magnifier
           const elem = e.currentTarget;
           const { width, height } = elem.getBoundingClientRect();
-          setSize([width, height]);
+          setImgSize({ width, height });
           setShowMagnifier(true);
         }}
         onMouseMove={(e): void => {
@@ -53,7 +53,7 @@ export function ImageMagnifier({
           // calculate cursor position on the image
           const x = e.pageX - left - window.pageXOffset;
           const y = e.pageY - top - window.pageYOffset;
-          setXY([x, y]);
+          setXY({ x, y });
         }}
         onMouseLeave={(): void => {
           // close magnifier
@@ -70,11 +70,11 @@ export function ImageMagnifier({
           // prevent magnifier blocks the mousemove event of img
           pointerEvents: 'none',
           // set size of magnifier
-          height: `${magnifierHeight}px`,
-          width: `${magnifierWidth}px`,
+          height: `${magnifierSize.height}px`,
+          width: `${magnifierSize.width}px`,
           // move element center to cursor pos
-          top: `${y - magnifierHeight / 2}px`,
-          left: `${x - magnifierWidth / 2}px`,
+          top: `${xy.y - magnifierSize.height / 2}px`,
+          left: `${xy.x - magnifierSize.width / 2}px`,
           opacity: '1', // reduce opacity so you can verify position
           border: '1px solid lightgray',
           backgroundColor: 'white',
@@ -82,11 +82,11 @@ export function ImageMagnifier({
           backgroundRepeat: 'no-repeat',
 
           //calculate zoomed image size
-          backgroundSize: `${imgWidth * zoomLevel}px ${imgHeight * zoomLevel}px`,
+          backgroundSize: `${imgSize.width * zoomLevel}px ${imgSize.height * zoomLevel}px`,
 
           //calculate position of zoomed image.
-          backgroundPositionX: `${-x * zoomLevel + magnifierWidth / 2}px`,
-          backgroundPositionY: `${-y * zoomLevel + magnifierHeight / 2}px`,
+          backgroundPositionX: `${-xy.x * zoomLevel + magnifierSize.width / 2}px`,
+          backgroundPositionY: `${-xy.y * zoomLevel + magnifierSize.height / 2}px`,
         }}
       />
       <div className="absolute top-10 right-10 flex flex-row gap-1">
@@ -103,7 +103,9 @@ export function ImageMagnifier({
         <Tooltip label="Expand zoom area">
           <ActionIcon
             variant="transparent"
-            onClick={(): void => setMagnifierSize(i => [i[0] * 1.2, i[1] * 1.2])}
+            onClick={(): void =>
+              setMagnifierSize(size => ({ width: size.width * 1.2, height: size.height * 1.2 }))
+            }
           >
             <ZoomInArea size={18} />
           </ActionIcon>
@@ -111,7 +113,9 @@ export function ImageMagnifier({
         <Tooltip label="Reduce zoom area">
           <ActionIcon
             variant="transparent"
-            onClick={(): void => setMagnifierSize(i => [i[0] / 1.2, i[1] / 1.2])}
+            onClick={(): void =>
+              setMagnifierSize(size => ({ width: size.width / 1.2, height: size.height / 1.2 }))
+            }
           >
             <ZoomOutArea size={18} />
           </ActionIcon>

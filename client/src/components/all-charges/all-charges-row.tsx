@@ -74,7 +74,7 @@ export const AllChargesRow = ({
   data,
   isAllOpened,
 }: Props): ReactElement => {
-  const [opened, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false);
   const [charge, setCharge] = useState<AllChargesRowFieldsFragment>(
     getFragmentData(AllChargesRowFieldsFragmentDoc, data),
   );
@@ -135,7 +135,7 @@ export const AllChargesRow = ({
                 variant="default"
                 onClick={(): void => {
                   updateCharge();
-                  setOpen(i => !i);
+                  setOpened(i => !i);
                 }}
                 size={30}
               >

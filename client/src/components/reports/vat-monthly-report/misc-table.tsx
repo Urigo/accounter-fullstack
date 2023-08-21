@@ -33,12 +33,12 @@ export const MiscTable = ({
   setMatchDocuments,
 }: Props): ReactElement => {
   const chargesData = getFragmentData(VarReportMiscTableFieldsFragmentDoc, data);
-  const [isOpened, setOpened] = useState(true);
+  const [isOpened, setIsOpened] = useState(true);
 
   return (
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <ActionIcon variant="default" onClick={(): void => setOpened(i => !i)} size={30}>
+        <ActionIcon variant="default" onClick={(): void => setIsOpened(i => !i)} size={30}>
           {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
         Misc Charges (which are not on the above tables)

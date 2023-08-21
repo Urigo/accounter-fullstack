@@ -43,7 +43,7 @@ export const AllCharges = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
   const { get } = useUrlQuery();
-  const [activePage, setPage] = useState(get('page') ? Number(get('page')) : 1);
+  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
   const [filter, setFilter] = useState<ChargeFilter>(
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
@@ -87,7 +87,7 @@ export const AllCharges = (): ReactElement => {
           filter={filter}
           setFilter={setFilter}
           activePage={activePage}
-          setPage={setPage}
+          setPage={setActivePage}
           totalPages={data?.allCharges?.pageInfo.totalPages}
         />
         <Tooltip label="Expand all accounts">
@@ -105,7 +105,7 @@ export const AllCharges = (): ReactElement => {
     activePage,
     isAllOpened,
     setFiltersContext,
-    setPage,
+    setActivePage,
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
