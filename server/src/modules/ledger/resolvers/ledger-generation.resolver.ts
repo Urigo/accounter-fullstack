@@ -298,7 +298,7 @@ export const generateLedgerRecords: ResolverFn<
 
     // Add ledger completion entries
     const miscLedgerEntries: LedgerProto[] = [];
-    if (ledgerBalance !== 0) {
+    if (Math.abs(ledgerBalance) > 0.005) {
       if (charge.is_conversion) {
         throw new GraphQLError('Conversion charges must have a ledger balance');
       }
