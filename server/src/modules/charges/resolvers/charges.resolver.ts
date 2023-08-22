@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import type { DocumentsTypes } from '@modules/documents/index.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
@@ -16,95 +15,14 @@ import {
   commonFinancialEntityFields,
 } from './common.js';
 
-const calculateVat: ChargeResolvers['vat'] = async (charge, _, { injector }) => {
-  const documents = await injector
-    .get(DocumentsProvider)
-    .getDocumentsByChargeIdLoader.load(charge.id);
-  const vatRecords = documents
-    .filter(doc => ['INVOICE', 'INVOICE_RECEIPT'].includes(doc.type))
-    .map(doc => ({ vat: doc.vat_amount, currency: doc.currency_code }));
-
-  if (vatRecords.length === 0) {
-    return null;
+const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge) => {
+  if (charge.documents_event_amount != null && charge.documents_currency) {
+    return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
   }
-
-  let currency: DocumentsTypes.currency | null = null;
-  let vat = 0;
-  for (const record of vatRecords) {
-    if (record.currency) {
-      currency ||= record.currency;
-      if (record.currency !== currency) {
-        throw new GraphQLError('Cannot calculate VAT for charge with multiple currencies');
-      }
-    }
-    vat += record.vat ?? 0;
+  if (charge.transactions_event_amount != null && charge.transactions_currency) {
+    return formatFinancialAmount(charge.transactions_event_amount, charge.transactions_currency);
   }
-
-  return formatFinancialAmount(vat, currency);
-};
-
-const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge, _, { injector }) => {
-  let currency: DocumentsTypes.currency | null = null;
-  let amount = 0;
-
-  // by default, calculate total amount from documents
-  const documents = await injector
-    .get(DocumentsProvider)
-    .getDocumentsByChargeIdLoader.load(charge.id);
-
-  // filter relevant documents
-  const totalAmountRecords = documents
-    .filter(doc => ['INVOICE', 'INVOICE_RECEIPT'].includes(doc.type))
-    .map(doc => ({
-      amount:
-        doc.total_amount == null
-          ? null
-          : (doc.creditor_id === charge.owner_id ? 1 : -1) * doc.total_amount,
-      currency: doc.currency_code,
-      serial: doc.serial_number,
-    }));
-
-  // make sure we have at least one document
-  if (totalAmountRecords.length > 0) {
-    const invoiceNumbers = new Set<string>();
-    for (const record of totalAmountRecords) {
-      if (record.currency) {
-        currency ||= record.currency;
-        if (record.currency !== currency) {
-          throw new GraphQLError(
-            'Cannot calculate total amount for charge with multiple currencies',
-          );
-        }
-      }
-      if (!invoiceNumbers.has(record.serial ?? '')) {
-        invoiceNumbers.add(record.serial ?? '');
-        amount += record.amount ?? 0;
-      }
-    }
-
-    return formatFinancialAmount(amount, currency);
-  }
-
-  // if no documents, calculate total amount from transactions
-  const transactions = await injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(charge.id);
-
-  if (transactions.length === 0) {
-    return null;
-  }
-
-  for (const transaction of transactions) {
-    if (transaction.currency) {
-      currency ||= transaction.currency;
-      if (transaction.currency !== currency) {
-        throw new GraphQLError('Cannot calculate total amount for charge with multiple currencies');
-      }
-    }
-    amount += Number(transaction.amount);
-  }
-
-  return formatFinancialAmount(amount, currency);
+  return null;
 };
 
 export const chargesResolvers: ChargesModule.Resolvers &
@@ -350,7 +268,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Charge: {
     id: DbCharge => DbCharge.id,
-    vat: calculateVat,
+    vat: DbCharge => DbCharge.documents_vat_amount != null && DbCharge.documents_currency ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency) : null,
     totalAmount: calculateTotalAmount,
     property: DbCharge => DbCharge.is_property,
     conversion: DbCharge => DbCharge.is_conversion,
