@@ -3,7 +3,7 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { FiltersContext } from '../../../filters-context';
-import { TrialBalanceReportDocument } from '../../../gql/graphql';
+import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { AccounterLoader } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';

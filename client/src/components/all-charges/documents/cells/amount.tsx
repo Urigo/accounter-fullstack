@@ -1,7 +1,7 @@
 import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql';
+import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { ConfirmMiniButton } from '../../../common';
 

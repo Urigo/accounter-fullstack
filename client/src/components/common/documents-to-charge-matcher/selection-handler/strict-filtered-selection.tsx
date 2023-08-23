@@ -4,7 +4,7 @@ import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icon
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../../../../gql/graphql';
+} from '../../../../gql/graphql.js';
 import { rateOptionalDocumentsMatches } from '../../../../helpers/document-matches';
 
 interface Props {

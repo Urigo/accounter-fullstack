@@ -2,13 +2,13 @@ import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Paper } from '@mantine/core';
-import { getFragmentData } from '../../gql';
 import {
   AllChargesRowFieldsFragment,
   AllChargesRowFieldsFragmentDoc,
   AllChargesTableFieldsFragment,
   ChargeForRowDocument,
-} from '../../gql/graphql';
+} from '../../gql/graphql.js';
+import { getFragmentData } from '../../gql/index.js';
 import { EditMiniButton, ToggleMergeSelected } from '../common';
 import {
   AccountantApproval,

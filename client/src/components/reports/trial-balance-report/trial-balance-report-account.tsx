@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { TrialBalanceReportQuery } from '../../../gql/graphql';
+import { TrialBalanceReportQuery } from '../../../gql/graphql.js';
 import { formatStringifyAmount } from '../../../helpers';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';

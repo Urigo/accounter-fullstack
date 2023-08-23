@@ -8,7 +8,7 @@ import {
   FetchMultipleChargesDocument,
   FetchMultipleChargesQuery,
   UpdateChargeInput,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
 import { useMergeCharges } from '../../../hooks/use-merge-charges';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

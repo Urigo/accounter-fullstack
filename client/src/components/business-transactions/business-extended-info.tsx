@@ -6,7 +6,7 @@ import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
   BusinessTransactionsInfoQuery,
-} from '../../gql/graphql';
+} from '../../gql/graphql.js';
 import { formatStringifyAmount } from '../../helpers';
 import { AccounterLoader } from '../common';
 

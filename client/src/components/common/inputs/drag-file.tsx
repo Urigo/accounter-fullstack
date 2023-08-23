@@ -2,7 +2,7 @@ import { ReactElement, useCallback } from 'react';
 import { useMutation } from 'urql';
 import { Dropzone } from '@mantine/dropzone';
 import { showNotification } from '@mantine/notifications';
-import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
+import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
 
 type Props = {
   children?: ReactElement | ReactElement[];

@@ -4,7 +4,7 @@ import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { ActionIcon, TextInput } from '@mantine/core';
-import { ChargeFilter } from '../../gql/graphql';
+import { ChargeFilter } from '../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../helpers';
 import { TimelessDateString } from '../../helpers/dates';
 import { isObjectEmpty } from '../../helpers/form';

@@ -1,6 +1,6 @@
 import { ReactElement, useMemo } from 'react';
 import { Table } from '@mantine/core';
-import type { TrialBalanceReportQuery } from '../../../gql/graphql';
+import type { TrialBalanceReportQuery } from '../../../gql/graphql.js';
 import { formatStringifyAmount } from '../../../helpers';
 import type { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceReportGroup } from './trial-balance-report-group';

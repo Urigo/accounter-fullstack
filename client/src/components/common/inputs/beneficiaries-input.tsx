@@ -2,7 +2,7 @@ import { ReactElement, useEffect } from 'react';
 import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { UpdateChargeInput } from '../../../gql/graphql';
+import { UpdateChargeInput } from '../../../gql/graphql.js';
 import { PercentageInput } from './percentage-input';
 import { TextInput } from './text-input';
 

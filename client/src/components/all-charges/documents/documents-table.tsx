@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql';
+import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { EditDocumentModal } from '../../common';
 import { DocumentsTableRow } from './documents-table-row';
 

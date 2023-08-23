@@ -15,7 +15,7 @@ import {
   commonFinancialEntityFields,
 } from './common.js';
 
-const calculateTotalAmount: ChargeResolvers['totalAmount'] = async (charge) => {
+const calculateTotalAmount: ChargeResolvers['totalAmount'] = async charge => {
   if (charge.documents_event_amount != null && charge.documents_currency) {
     return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
   }
@@ -268,7 +268,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Charge: {
     id: DbCharge => DbCharge.id,
-    vat: DbCharge => DbCharge.documents_vat_amount != null && DbCharge.documents_currency ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency) : null,
+    vat: DbCharge =>
+      DbCharge.documents_vat_amount != null && DbCharge.documents_currency
+        ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
+        : null,
     totalAmount: calculateTotalAmount,
     property: DbCharge => DbCharge.is_property,
     conversion: DbCharge => DbCharge.is_conversion,

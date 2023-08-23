@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Table } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { VarReportExpensesFieldsFragmentDoc } from '../../../gql/graphql';
+import { VarReportExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

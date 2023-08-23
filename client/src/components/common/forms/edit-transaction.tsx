@@ -16,7 +16,7 @@ import {
   Currency,
   EditTransactionDocument,
   UpdateTransactionInput,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 

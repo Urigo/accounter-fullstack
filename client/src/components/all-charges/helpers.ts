@@ -1,4 +1,4 @@
-import type { ChargeFilter } from '../../gql/graphql';
+import type { ChargeFilter } from '../../gql/graphql.js';
 
 export const getBusinessHref = (businessID: string, encodedFilters: string): string => {
   const currentFilters = encodedFilters

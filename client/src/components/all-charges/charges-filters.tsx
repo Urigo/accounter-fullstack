@@ -10,7 +10,7 @@ import {
   ChargeFilter,
   ChargeFilterType,
   ChargeSortByField,
-} from '../../gql/graphql';
+} from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';

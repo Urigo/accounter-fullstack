@@ -14,7 +14,7 @@ import {
   AllTaxCategoriesDocument,
   EditChargeQuery,
   UpdateChargeInput,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 

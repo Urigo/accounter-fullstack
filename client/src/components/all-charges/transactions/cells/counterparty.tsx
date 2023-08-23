@@ -1,7 +1,7 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 import { ConfirmMiniButton } from '../../../common';

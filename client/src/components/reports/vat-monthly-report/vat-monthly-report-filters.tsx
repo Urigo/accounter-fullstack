@@ -11,7 +11,7 @@ import {
   AllFinancialEntitiesDocument,
   ChargeFilterType,
   VatReportFilter,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { chargesTypeFilterOptions } from '../../all-charges/charges-filters';

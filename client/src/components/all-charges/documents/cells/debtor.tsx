@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { DocumentsTableDebtorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql';
+import { DocumentsTableDebtorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 import { ConfirmMiniButton } from '../../../common';

@@ -3,7 +3,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Drawer, Image, Loader } from '@mantine/core';
 import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '..';
-import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql';
+import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ModifyDocumentFields } from './modify-document-fields';

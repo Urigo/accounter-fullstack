@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { TransactionsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql';
+import { TransactionsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -1,13 +1,13 @@
 import { ReactElement, useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
 import { Button } from '../..';
-import { FragmentType, getFragmentData } from '../../../../gql';
 import {
   ChargeToMatchDocumentsFieldsFragmentDoc,
   DocumentsToChargeMatcherQuery,
   DocumentsToMatchFieldsFragment,
   DocumentsToMatchFieldsFragmentDoc,
-} from '../../../../gql/graphql';
+} from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { StrictFilteredSelection } from './strict-filtered-selection';
 import { WideFilteredSelection } from './wide-filtered-selection';

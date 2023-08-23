@@ -1,10 +1,10 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../../gql';
 import {
   ChargeFilter,
   LedgerRecordsAccountDetailsFieldsFragmentDoc,
-} from '../../../../gql/graphql';
+} from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 /* TEMPORARY: this component is used for temporary reasons */

@@ -1,7 +1,7 @@
 import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
+import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 import { ConfirmMiniButton } from '../../common';
 

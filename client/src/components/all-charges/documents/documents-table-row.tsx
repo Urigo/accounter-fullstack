@@ -1,11 +1,11 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
-import { FragmentType, getFragmentData } from '../../../gql';
 import {
   DocumentTableRowDocument,
   TableDocumentsRowFieldsFragment,
   TableDocumentsRowFieldsFragmentDoc,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { EditMiniButton } from '../../common';
 import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells';
 

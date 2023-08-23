@@ -3,7 +3,7 @@ import { Controller, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
-import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql';
+import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql.js';
 
 type Props = {
   label?: string;

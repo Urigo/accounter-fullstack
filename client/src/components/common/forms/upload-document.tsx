@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useState } from 'react';
 import { useMutation } from 'urql';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CommonError, UploadDocumentDocument } from '../../../gql/graphql';
+import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

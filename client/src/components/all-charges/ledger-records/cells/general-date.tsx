@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql';
+import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 
 /* TEMPORARY: this component is used for temporary reasons */
 
