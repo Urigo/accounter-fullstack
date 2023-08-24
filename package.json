@@ -37,7 +37,8 @@
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",
     "start": "yarn --cwd old-accounter start",
-    "test": "vitest"
+    "test": "vitest",
+    "graphql:validate": "yarn graphql-inspector validate './client/src/**/*.{ts,tsx}' './schema.graphql'"
   },
   "dependencies": {
     "graphql": "16.7.1",
@@ -54,6 +55,7 @@
     "@graphql-codegen/typescript": "4.0.1",
     "@graphql-codegen/typescript-resolvers": "4.0.1",
     "@graphql-eslint/eslint-plugin": "3.20.1",
+    "@graphql-inspector/cli": "4.0.2",
     "@theguild/eslint-config": "0.11.0",
     "@theguild/prettier-config": "2.0.0",
     "@types/node": "20.4.5",

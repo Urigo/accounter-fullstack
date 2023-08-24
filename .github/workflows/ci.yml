@@ -35,11 +35,11 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
-      # - name: Generate
-      #   run: yarn generate
+      - name: Generate
+        run: yarn codegen # TODO: replace with 'yarn generate' after local DB is implemented
 
-      # - name: Build Packages
-      #   run: yarn build
+      - name: Build Packages
+        run: yarn build
 
       - name: Run Tests
         uses: nick-fields/retry@v2
@@ -102,3 +102,9 @@ jobs:
 
       - name: Lint Prettier
         run: yarn prettier:check
+
+      - name: Generate
+        run: yarn codegen # TODO: replace with 'yarn generate' after local DB is implemented
+      
+      - name: Validate GraphQL schema
+        run: yarn graphql:validate
