@@ -1,28 +1,14 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  AllBusinessesNamesDocument,
-  AllFinancialEntitiesDocument,
-  BusinessTransactionsFilter,
-} from '../../gql/graphql.js';
+import { AllFinancialEntitiesDocument, BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { PopUpModal, TextInput } from '../common';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AllBusinessesNames {
-    businessNamesFromLedgerRecords {
-      id
-      name
-    }
-  }
-`;
 
 interface BusinessTransactionsFilterFormProps {
   filter: BusinessTransactionsFilter;
@@ -41,9 +27,6 @@ function BusinessTransactionsFilterForm({
   const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
-  const [{ data: bnData, fetching: bnLoading, error: bnError }] = useQuery({
-    query: AllBusinessesNamesDocument,
-  });
 
   useEffect(() => {
     if (feError) {
@@ -52,13 +35,18 @@ function BusinessTransactionsFilterForm({
         message: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
-    if (bnError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching business names! 🤥',
-      });
-    }
-  }, [feError, bnError]);
+  }, [feError]);
+
+  const businesses = useMemo(() => {
+    return (
+      feData?.allFinancialEntities
+        .map(entity => ({
+          value: entity.id,
+          label: entity.name,
+        }))
+        .sort((a, b) => (a.label > b.label ? 1 : -1)) ?? []
+    );
+  }, [feData]);
 
   const onSubmit: SubmitHandler<BusinessTransactionsFilter> = data => {
     setFilter(data);
@@ -72,21 +60,16 @@ function BusinessTransactionsFilterForm({
 
   return (
     <>
-      {feLoading || bnLoading ? <div>Loading...</div> : <div />}
+      {feLoading ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <Controller
           name="ownerIds"
           control={control}
-          defaultValue={undefined}
+          defaultValue={filter.ownerIds}
           render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
-              data={
-                feData?.allFinancialEntities.map(entity => ({
-                  value: entity.id,
-                  label: entity.name,
-                })) ?? []
-              }
+              data={businesses}
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
               disabled={feLoading}
               label="Owners"
@@ -100,18 +83,13 @@ function BusinessTransactionsFilterForm({
         <Controller
           name="businessIDs"
           control={control}
-          defaultValue={undefined}
+          defaultValue={filter.businessIDs}
           render={({ field, fieldState }): ReactElement => (
             <MultiSelect
               {...field}
-              data={
-                bnData?.businessNamesFromLedgerRecords.map(entity => ({
-                  value: entity.id,
-                  label: entity.name,
-                })) ?? []
-              }
+              data={businesses}
               value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
-              disabled={bnLoading}
+              disabled={feLoading}
               label="Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
