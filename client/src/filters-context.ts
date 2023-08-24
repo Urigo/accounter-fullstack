@@ -1,4 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createContext } from 'react';
+import { createContext, ReactElement } from 'react';
 
-export const FiltersContext = createContext<any>('Default Value');
+type ContextType = {
+  filtersContext: ReactElement | null;
+  setFiltersContext: (filtersContext: ReactElement | null) => void;
+};
+
+export const FiltersContext = createContext<ContextType>({
+  filtersContext: null,
+  setFiltersContext: () => void 0,
+});

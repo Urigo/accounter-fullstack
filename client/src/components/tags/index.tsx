@@ -26,7 +26,7 @@ export const TagsManager = (): ReactElement => {
   const { addTag } = useAddTag();
   const { deleteTag } = useDeleteTag();
 
-  setFiltersContext();
+  setFiltersContext(null);
 
   const allTags = data?.allTags.map(tag => tag.name) ?? [];
 
