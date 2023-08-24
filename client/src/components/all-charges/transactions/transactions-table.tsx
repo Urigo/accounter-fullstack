@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { TableTransactionsFieldsFragmentDoc } from '../../../gql/graphql';
+import { TableTransactionsFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { EditMiniButton, EditTransactionModal } from '../../common';
 import {
   Account,

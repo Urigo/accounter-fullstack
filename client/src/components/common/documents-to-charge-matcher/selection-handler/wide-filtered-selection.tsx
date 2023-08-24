@@ -4,7 +4,7 @@ import { AccounterTable, Button, PopUpModal } from '../..';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
-} from '../../../../gql/graphql';
+} from '../../../../gql/graphql.js';
 
 interface Props {
   documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[];

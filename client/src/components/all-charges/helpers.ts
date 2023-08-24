@@ -1,4 +1,4 @@
-import type { ChargeFilter } from '../../gql/graphql';
+import type { ChargeFilter } from '../../gql/graphql.js';
 
 export const getBusinessHref = (businessID: string, encodedFilters: string): string => {
   const currentFilters = encodedFilters
@@ -11,13 +11,13 @@ export const getBusinessHref = (businessID: string, encodedFilters: string): str
     toDate: currentFilters.toDate
       ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
       : '',
-    financialEntityIds:
+    ownerIds:
       currentFilters.byOwners && currentFilters.byOwners.length > 0
         ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
         : '',
   };
-  return `/business-transactions?transactionsFilters=%257B%2522financialEntityIds%2522%253A%255B${
-    encodedNewFilters.financialEntityIds
+  return `/business-transactions?transactionsFilters=%257B%2522ownerIds%2522%253A%255B${
+    encodedNewFilters.ownerIds
   }%255D%252C%2522businessIDs%2522%253A%255B%2522${encodeURIComponent(businessID)}%2522%255D${
     encodedNewFilters.fromDate
   }${encodedNewFilters.toDate}%257D`;

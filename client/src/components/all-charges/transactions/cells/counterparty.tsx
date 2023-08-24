@@ -1,7 +1,7 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../../gql';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
 import { ConfirmMiniButton } from '../../../common';
@@ -74,7 +74,7 @@ export function Counterparty({ data }: Props): ReactElement {
             ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
             : '',
       };
-      return `/business-transactions?transactionsFilters=%257B%2522financialEntityIds%2522%253A%255B${
+      return `/business-transactions?transactionsFilters=%257B%2522ownerIds%2522%253A%255B${
         encodedNewFilters.financialEntityIds
       }%255D%252C%2522businessIDs%2522%253A%255B%2522${encodeURIComponent(businessID)}%2522%255D${
         encodedNewFilters.fromDate

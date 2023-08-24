@@ -3,7 +3,7 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { FiltersContext } from '../../filters-context';
-import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql';
+import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import {

@@ -80,7 +80,6 @@ module.exports = {
         browser: true,
       },
       rules: {
-        'import/extensions': 'off', // TODO @dima!
         '@typescript-eslint/explicit-function-return-type': 'error',
       },
     },

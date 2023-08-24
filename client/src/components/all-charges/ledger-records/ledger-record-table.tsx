@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql';
+import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { AccountDetails, GeneralDate } from './cells';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql';
+import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import { DragFile, ListCapsule } from '../../common';
 

@@ -11,7 +11,7 @@ import {
   EditDocumentQuery,
   InsertDocumentInput,
   UpdateDocumentFieldsInput,
-} from '../../../gql/graphql';
+} from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import {
   isDocumentInvoice,

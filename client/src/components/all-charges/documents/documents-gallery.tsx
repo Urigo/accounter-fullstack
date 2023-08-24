@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../../gql';
-import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql';
+import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { EditDocumentModal } from '../../common';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

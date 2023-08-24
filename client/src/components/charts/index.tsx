@@ -8,7 +8,7 @@ import {
   Currency,
   IncomeChargesChartDocument,
   IncomeChargesChartQuery,
-} from '../../gql/graphql';
+} from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { AccounterLoader } from '../common';

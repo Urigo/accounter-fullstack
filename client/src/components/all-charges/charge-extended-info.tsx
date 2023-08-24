@@ -3,7 +3,7 @@ import { FileUpload, Photo, PlaylistAdd, Plus, Search } from 'tabler-icons-react
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { FetchChargeDocument } from '../../gql/graphql';
+import { FetchChargeDocument } from '../../gql/graphql.js';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { DocumentsTable } from './documents/documents-table';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';

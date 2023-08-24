@@ -2,7 +2,7 @@ import { ReactElement, useEffect } from 'react';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql';
+import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
