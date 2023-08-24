@@ -25,6 +25,8 @@
     "dev": "yarn --cwd old-accounter dev",
     "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd server sqlgen\"",
     "get": "yarn --cwd old-accounter get",
+    "graphql:coverage": "yarn graphql-inspector coverage './client/src/**/*.{ts,tsx}' './schema.graphql'",
+    "graphql:validate": "yarn graphql-inspector validate './client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --ignore-path .gitignore .",
     "month": "yarn --cwd old-accounter month",
     "old-accounter:build": "yarn --cwd old-accounter build",
@@ -37,8 +39,7 @@
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",
     "start": "yarn --cwd old-accounter start",
-    "test": "vitest",
-    "graphql:validate": "yarn graphql-inspector validate './client/src/**/*.{ts,tsx}' './schema.graphql'"
+    "test": "vitest"
   },
   "dependencies": {
     "graphql": "16.7.1",
