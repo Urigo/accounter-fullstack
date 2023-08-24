@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useState } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
@@ -161,9 +161,7 @@ export const DocumentsReport = (): ReactElement => {
   const [openedImage, setOpenedImage] = useState<string | null>(null);
   const { setFiltersContext } = useContext(FiltersContext);
 
-  useEffect(() => {
-    setFiltersContext('');
-  }, [data]);
+  setFiltersContext(null);
 
   return fetching ? (
     <AccounterLoader />

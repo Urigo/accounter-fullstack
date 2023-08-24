@@ -12,7 +12,7 @@ import { TagsManager } from './components/tags';
 import { FiltersContext } from './filters-context';
 
 export function App(): ReactElement {
-  const [filtersContext, setFiltersContext] = useState('');
+  const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
   return (
     <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
       <NavBar />

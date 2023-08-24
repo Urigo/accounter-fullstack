@@ -78,7 +78,7 @@ export default gql`
   " meta info for page pagination "
   type PageInfo {
     totalPages: Int!
-    currentage: Int
+    currentPage: Int
     pageSize: Int
   }
 `;
