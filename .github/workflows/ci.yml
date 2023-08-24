@@ -105,6 +105,6 @@ jobs:
 
       - name: Generate
         run: yarn codegen # TODO: replace with 'yarn generate' after local DB is implemented
-      
+
       - name: Validate GraphQL schema
         run: yarn graphql:validate
