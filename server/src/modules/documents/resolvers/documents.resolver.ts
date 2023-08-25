@@ -50,15 +50,49 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
         if (fields.chargeId && fields.chargeId !== 'NULL') {
+          // case new charge ID
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
-            throw new Error(`Charge ID="${fields.chargeId}" not valid`);
+            throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
+          }
+        }
+
+        let chargeId = fields.chargeId;
+        if (fields.chargeId === 'NULL') {
+          // case unlinked from charge
+          const document = await injector
+            .get(DocumentsProvider)
+            .getDocumentsByIdLoader.load(documentId);
+          if (!document) {
+            throw new GraphQLError(`Document ID="${documentId}" not valid`);
+          }
+          if (document.charge_id_new) {
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(document.charge_id_new);
+            if (!charge) {
+              throw new GraphQLError(
+                `Former document's charge ID ("${fields.chargeId}") not valid`,
+              );
+            }
+
+            // generate new charge
+            const newCharge = await injector.get(ChargesProvider).generateCharge({
+              ownerId: charge.owner_id,
+              userDescription: 'Document unlinked from charge',
+            });
+            if (!newCharge || newCharge.length === 0) {
+              throw new GraphQLError(
+                `Failed to generate new charge for document ID="${documentId}"`,
+              );
+            }
+            chargeId = newCharge?.[0]?.id;
           }
         }
 
         const adjustedFields: IUpdateDocumentParams = {
           documentId,
-          chargeId: fields.chargeId ?? null,
+          chargeId: chargeId ?? null,
           currencyCode: fields.amount?.currency ?? null,
           creditorId: fields.creditorId ?? null,
           debtorId: fields.debtorId ?? null,
