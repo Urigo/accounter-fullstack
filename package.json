@@ -20,7 +20,7 @@
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
     "client:build": "yarn --cwd client build",
     "client:dev": "yarn --cwd client dev",
-    "codegen": "graphql-codegen --config codegen.yml",
+    "codegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/ && graphql-codegen --config codegen.yml",
     "deploy": "git push heroku master",
     "dev": "yarn --cwd old-accounter dev",
     "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd server sqlgen\"",
@@ -32,7 +32,6 @@
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
-    "precodegen": "rimraf **/__generated__/types.ts",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
     "scrape": "yarn --cwd old-accounter scrape",
@@ -45,7 +44,8 @@
     "graphql": "16.7.1",
     "graphql-scalars": "1.22.2",
     "patch-package": "8.0.0",
-    "postinstall-postinstall": "2.1.0"
+    "postinstall-postinstall": "2.1.0",
+    "rimraf": "5.0.1"
   },
   "devDependencies": {
     "@graphql-codegen/add": "5.0.0",
