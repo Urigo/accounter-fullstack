@@ -18,8 +18,8 @@
     "pg-promise": "11.5.2"
   },
   "devDependencies": {
-    "@types/node": "20.4.5",
+    "@types/node": "20.5.6",
     "tsup": "6.7.0",
-    "typescript": "5.1.6"
+    "typescript": "5.2.2"
   }
 }
