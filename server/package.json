@@ -14,7 +14,7 @@
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "cd .. && yarn codegen && cd server && yarn sqlgen",
     "pgtyped": "pgtyped -c pgconfig.json",
-    "presqlgen": "rimraf **/*.types.ts",
+    "presqlgen": "rimraf **/__generated__/*.types.ts",
     "prestart": "yarn build",
     "sqlgen": "dotenv -e ../.env yarn pgtyped",
     "start": "node dist/index.js"
@@ -43,8 +43,5 @@
     "nodemon": "3.0.1",
     "pino-pretty": "10.2.0",
     "tsc-alias": "1.8.7"
-  },
-  "resolutions": {
-    "graphql-modules/**/graphql": "16.6.0"
   }
 }
