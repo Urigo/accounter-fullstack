@@ -32,7 +32,6 @@
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
-    "prebuild": "yarn generate",
     "precodegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
