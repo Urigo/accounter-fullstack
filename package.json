@@ -17,7 +17,6 @@
     "node": "20.5.0"
   },
   "scripts": {
-    "prebuild": "yarn generate",
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
     "client:build": "yarn --cwd client build",
     "client:dev": "yarn --cwd client dev",
@@ -33,6 +32,7 @@
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
+    "prebuild": "yarn generate",
     "precodegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
