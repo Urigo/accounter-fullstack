@@ -323,6 +323,39 @@ exports[`Ledger Generation > Foreign currency > should generate ledger records i
 }
 `;
 
+exports[`Ledger Generation > Local currency (ILS) > Should handle no-invoice businesses 1`] = `
+{
+  "records": [
+    {
+      "creditAccount1": {
+        "id": "904",
+      },
+      "creditAccount2": null,
+      "creditAmount1": null,
+      "creditAmount2": null,
+      "debitAccount1": {
+        "id": "2002",
+      },
+      "debitAccount2": null,
+      "debitAmount1": null,
+      "debitAmount2": null,
+      "description": "Description for transaction 4002",
+      "invoiceDate": 2020-01-01T00:00:00.000Z,
+      "localCurrencyCreditAmount1": {
+        "formatted": "₪ 117,000.00",
+      },
+      "localCurrencyCreditAmount2": null,
+      "localCurrencyDebitAmount1": {
+        "formatted": "₪ 117,000.00",
+      },
+      "localCurrencyDebitAmount2": null,
+      "reference1": "1",
+      "valueDate": 2020-01-01T00:00:00.000Z,
+    },
+  ],
+}
+`;
+
 exports[`Ledger Generation > Local currency (ILS) > dates diff should have no effect 1`] = `
 {
   "records": [
