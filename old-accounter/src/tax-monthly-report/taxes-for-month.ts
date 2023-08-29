@@ -496,9 +496,8 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
           const originalCurrency = monthIncomeVATTransaction.currency_code;
           monthIncomeVATTransaction.currency_code = monthIncomeVATTransaction.tax_invoice_currency;
 
-          const transactionsExchnageRates = await getTransactionExchangeRates(
-            monthIncomeVATTransaction,
-          );
+          const transactionsExchnageRates =
+            await getTransactionExchangeRates(monthIncomeVATTransaction);
           const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
 
           monthIncomeVATTransaction.event_amount = monthIncomeVATTransaction.tax_invoice_amount =
@@ -543,9 +542,8 @@ export async function createTaxEntriesForMonth(month: Date, businessName: string
         //   vatNumber: monthIncomeVATTransaction.vatNumber,
         // });
 
-        const transactionsExchnageRates = await getTransactionExchangeRates(
-          monthIncomeVATTransaction,
-        );
+        const transactionsExchnageRates =
+          await getTransactionExchangeRates(monthIncomeVATTransaction);
         const invoiceExchangeRates = transactionsExchnageRates.invoiceExchangeRates;
         const roundedVATToAdd = parseIntRound(
           getILSForDate(monthIncomeVATTransaction, invoiceExchangeRates).vatAfterDiductionILS,
