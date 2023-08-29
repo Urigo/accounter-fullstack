@@ -7,6 +7,7 @@ import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
+  AllTagsDocument,
   ChargeFilter,
   ChargeFilterType,
   ChargeSortByField,
@@ -99,8 +100,12 @@ function ChargesFiltersForm({
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
-  const [{ data, fetching, error: financialEntitiesError }] = useQuery({
+  const [tags, setTags] = useState<Array<{ value: string; label: string }>>([]);
+  const [{ data: feData, fetching: feFetching, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
+  });
+  const [{ data: tagsData, fetching: tagsFetching, error: tagsError }] = useQuery({
+    query: AllTagsDocument,
   });
 
   const sortByField = watch('sortBy.field');
@@ -122,6 +127,15 @@ function ChargesFiltersForm({
     }
   }, [financialEntitiesError]);
 
+  useEffect(() => {
+    if (tagsError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching tags! 🤥',
+      });
+    }
+  }, [tagsError]);
+
   const onSubmit: SubmitHandler<ChargeFilter> = data => {
     if (asc != null && data.sortBy?.field) {
       data.sortBy.asc = asc;
@@ -136,11 +150,11 @@ function ChargesFiltersForm({
     closeModal();
   }
 
-  // On every new data fetch, reorder results by name
+  // On every new financial entities data fetch, reorder results by name
   useEffect(() => {
-    if (data?.allFinancialEntities.length) {
+    if (feData?.allFinancialEntities.length) {
       setFinancialEntities(
-        data.allFinancialEntities
+        feData.allFinancialEntities
           .map(entity => ({
             value: entity.id,
             label: entity.name,
@@ -148,11 +162,25 @@ function ChargesFiltersForm({
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
       );
     }
-  }, [data, setFinancialEntities]);
+  }, [feData, setFinancialEntities]);
+
+  // On every new financial entities data fetch, reorder results by name
+  useEffect(() => {
+    if (tagsData?.allTags.length) {
+      setTags(
+        tagsData.allTags
+          .map(entity => ({
+            value: entity.name,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+      );
+    }
+  }, [tagsData, setTags]);
 
   return (
     <>
-      {fetching ? <div>Loading...</div> : <div />}
+      {feFetching ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* <SimpleGrid cols={4}> */}
         <Controller
@@ -164,7 +192,7 @@ function ChargesFiltersForm({
               {...field}
               data={financialEntities}
               value={field.value ?? []}
-              disabled={fetching}
+              disabled={feFetching}
               label="Owners"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
@@ -182,7 +210,7 @@ function ChargesFiltersForm({
               {...field}
               data={financialEntities}
               value={field.value ?? []}
-              disabled={fetching}
+              disabled={feFetching}
               label="Main Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
@@ -192,7 +220,25 @@ function ChargesFiltersForm({
           )}
         />
         <Controller
-          name="fromDate"
+          name="byTags"
+          control={control}
+          defaultValue={filter.byTags}
+          render={({ field, fieldState }): ReactElement => (
+            <MultiSelect
+              {...field}
+              data={tags}
+              value={field.value ?? []}
+              disabled={tagsFetching}
+              label="Tags"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          name="fromAnyDate"
           control={control}
           defaultValue={filter.fromDate}
           rules={{
@@ -211,7 +257,7 @@ function ChargesFiltersForm({
           )}
         />
         <Controller
-          name="toDate"
+          name="toAnyDate"
           control={control}
           defaultValue={filter.toDate}
           rules={{
@@ -238,7 +284,7 @@ function ChargesFiltersForm({
               {...field}
               data={chargesTypeFilterOptions}
               value={field.value ?? ChargeFilterType.All}
-              disabled={fetching}
+              disabled={feFetching}
               label="Charge Type"
               placeholder="Filter income/expense"
               maxDropdownHeight={160}
@@ -298,6 +344,7 @@ function ChargesFiltersForm({
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
+            disabled={feFetching || tagsFetching}
             className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
           >
             Filter

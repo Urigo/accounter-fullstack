@@ -25,6 +25,7 @@ import type {
   IUpdateChargeParams,
   IUpdateChargeQuery,
   IUpdateChargeResult,
+  tagsArray,
 } from '../types.js';
 
 export type ChargeRequiredWrapper<
@@ -137,10 +138,13 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
   AND ($isBusinessIds = 0 OR c.business_id IN $$businessIds)
   AND ($fromDate ::TEXT IS NULL OR COALESCE(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-  AND ($fromAnyDate ::TEXT IS NULL OR LEAST(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+  AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(c.documents_max_date, c.transactions_max_event_date, c.transactions_max_debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR COALESCE(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-  AND ($toAnyDate ::TEXT IS NULL OR GREATEST(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+  AND ($toAnyDate ::TEXT IS NULL OR LEAST(c.documents_min_date, c.transactions_min_event_date, c.transactions_min_debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
+  AND ($withoutInvoice = FALSE OR COALESCE(c.invoices_count, 0) = 0)
+  AND ($withoutDocuments = FALSE OR COALESCE(c.documents_count, 0) = 0)
+  AND ($isTags = 0 OR c.tags && $tags)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END DESC,
@@ -151,11 +155,12 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
-  Omit<IGetChargesByFiltersParams, 'isOwnerIds' | 'isBusinessIds' | 'isIDs'>,
+  Omit<IGetChargesByFiltersParams, 'isOwnerIds' | 'isBusinessIds' | 'isIDs' | 'isTags' | 'tags'>,
   'ownerIds' | 'businessIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
+  tags?: readonly string[] | null;
 };
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -266,6 +271,7 @@ export class ChargesProvider {
     const isOwnerIds = !!params?.ownerIds?.filter(Boolean).length;
     const isBusinessIds = !!params?.businessIds?.filter(Boolean).length;
     const isIDs = !!params?.IDs?.length;
+    const isTags = !!params?.tags?.length;
 
     const defaults = {
       asc: false,
@@ -277,13 +283,17 @@ export class ChargesProvider {
       isOwnerIds: isOwnerIds ? 1 : 0,
       isBusinessIds: isBusinessIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
+      isTags: isTags ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       ownerIds: isOwnerIds ? params.ownerIds! : [null],
       businessIds: isBusinessIds ? params.businessIds! : [null],
       IDs: isIDs ? params.IDs! : [null],
+      tags: (isTags ? params.tags! : [null]) as null | tagsArray,
       chargeType: params.chargeType ?? 'ALL',
+      withoutInvoice: params.withoutInvoice ?? false,
+      withoutDocuments: params.withoutDocuments ?? false,
     };
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetChargesByFiltersResult[]

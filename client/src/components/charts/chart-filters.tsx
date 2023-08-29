@@ -36,7 +36,7 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Controller
-        name="fromDate"
+        name="fromAnyDate"
         control={control}
         defaultValue="2023-01-01"
         rules={{
@@ -55,7 +55,7 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
         )}
       />
       <Controller
-        name="toDate"
+        name="toAnyDate"
         control={control}
         defaultValue={today}
         rules={{
