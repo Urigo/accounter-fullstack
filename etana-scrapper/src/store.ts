@@ -49,8 +49,31 @@ export async function createAndConnectStore(options: { connectionString: string;
               id, owner
           FROM ${options.schema}.financial_accounts
           WHERE account_number = NEW.account_id;
+
+          -- handle shared charge
+          IF (NEW.action_type = 'fee') THEN
+              SELECT t.charge_id
+              INTO charge_id_var
+              FROM ${options.schema}.${tableName} AS s
+              LEFT JOIN ${options.schema}.transactions_raw_list tr
+              ON tr.etana_id = s.transaction_id::text
+              LEFT JOIN ${options.schema}.transactions t
+              ON tr.id = t.source_id
+              WHERE t.charge_id IS NOT NULL
+              AND s.fee_tx_id = NEW.transaction_id;
+          ELSEIF (NEW.fee IS NOT NULL) THEN
+              SELECT t.charge_id
+              INTO charge_id_var
+              FROM ${options.schema}.${tableName} AS s
+              LEFT JOIN ${options.schema}.transactions_raw_list tr
+              ON tr.etana_id = s.transaction_id::text
+              LEFT JOIN ${options.schema}.transactions t
+              ON tr.id = t.source_id
+              WHERE t.charge_id IS NOT NULL
+              AND s.transaction_id = NEW.fee_tx_id;
+          END IF;
       
-          -- create new charge
+          -- if no match, create new charge
           IF (charge_id_var IS NULL) THEN
               INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
               VALUES (
@@ -78,33 +101,6 @@ export async function createAndConnectStore(options: { connectionString: string;
               new.amount,
               0
           );
-      
-          -- deprecated fields for ref
-          --   INSERT INTO ${options.schema}.all_transactions (
-          --     bank_reference,
-          --     event_number,
-          --     account_type,
-          --     currency_rate,
-          --     contra_currency_code,
-          --     detailed_bank_description,
-          --     fee
-          --   ) VALUES (
-          --     new.transaction_id,
-          --     to_char(new.time, 'YYYYMMDD')::bigint,
-          --     concat('checking_', LOWER(new.currency)),
-          --     0,
-          --     NULL,
-          --     (CASE
-          --       WHEN new.fee_tx_id IS NOT NULL
-          --       THEN (new.fee_tx_id)
-          --       ELSE ''
-          --     END),
-          --     (CASE
-          --       WHEN new.fee IS NOT NULL
-          --       THEN new.fee
-          --       ELSE NULL
-          --     END)
-          --   );
       
             RETURN NEW;
         END;

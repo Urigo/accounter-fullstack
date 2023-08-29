@@ -38,6 +38,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             account_id_var UUID;
             owner_id_var UUID;
             charge_id_var UUID = NULL;
+            is_conversion BOOLEAN = false;
         BEGIN
             -- Create merged raw transactions record:
             INSERT INTO ${options.schema}.transactions_raw_list(kraken_id)
@@ -50,16 +51,34 @@ export async function createAndConnectStore(options: { connectionString: string;
             FROM ${options.schema}.financial_accounts
             WHERE account_number = NEW.account_nickname;
 
-            -- create new charge
+            -- handle conversions
+            IF (NEW.trade_ref_id IS NOT NULL) THEN
+                is_conversion = true;
+
+                SELECT t.charge_id
+                INTO charge_id_var
+                FROM accounter_schema.${ledgerTable} AS s
+                LEFT JOIN accounter_schema.transactions_raw_list tr
+                ON tr.kraken_id = s.id
+                LEFT JOIN accounter_schema.transactions t
+                ON tr.id = t.source_id
+                WHERE t.charge_id IS NOT NULL
+                AND s.trade_ref_id = NEW.trade_ref_id;
+
+                -- update charge's tag to 'conversion'
+                IF (charge_id_var IS NOT NULL) THEN
+                    INSERT INTO accounter_schema.tags (charge_id, tag_name)
+                    VALUES (charge_id_var, 'conversion')
+                    ON CONFLICT DO NOTHING;
+                END IF;
+            END IF;
+
+            -- if no match, create new charge
             IF (charge_id_var IS NULL) THEN
                 INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
                 VALUES (
                     owner_id_var,
-                    (CASE
-                      WHEN new.trade_ref_id IS NOT NULL
-                      THEN true
-                      ELSE false
-                END)
+                    is_conversion
                 )
                 RETURNING id INTO charge_id_var;
             END IF;
@@ -70,10 +89,7 @@ export async function createAndConnectStore(options: { connectionString: string;
                 account_id_var,
                 charge_id_var,
                 merged_id,
-                (CASE
-                      WHEN new.trade_ref_id IS NOT NULL
-                      THEN new.trade_ref_id
-                END),
+                CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
                 NEW.currency::currency,
                 NEW.value_date::text::date,
                 NEW.value_date::text::date,
@@ -81,34 +97,21 @@ export async function createAndConnectStore(options: { connectionString: string;
                 NEW.balance
             );
 
-            -- deprecated fields for ref
-            -- INSERT INTO ${options.schema}.all_transactions (
-            --     bank_reference,
-            --     event_number,
-            --     account_type,
-            --     currency_rate,
-            --     fee
-            -- ) VALUES (
-            --     new.ledger_id,
-            --     to_char(new.value_date, 'YYYYMMDD')::bigint,
-            --     (
-            --         CASE
-            --             WHEN new.currency = 'USD'
-            --                 THEN concat('checking_', LOWER(new.currency))
-            --             ELSE concat('crypto_', LOWER(new.currency))
-            --         END
-            --     ),
-            --     (CASE
-            --           WHEN new.trade_ref_id IS NOT NULL
-            --           THEN (SELECT price FROM ${options.schema}.kraken_trades WHERE trade_id = new.trade_ref_id)
-            --           ELSE 0
-            --     END),
-            --     (CASE
-            --           WHEN new.trade_ref_id IS NOT NULL
-            --           THEN (SELECT fee FROM ${options.schema}.kraken_trades WHERE trade_id = new.trade_ref_id)
-            --           ELSE NULL
-            --     END)
-            -- );
+            -- if fee is not null, create new fee transaction
+            IF (NEW.fee IS NULL) THEN
+              INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
+              VALUES (
+                  account_id_var,
+                  charge_id_var,
+                  merged_id,
+                  CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
+                  NEW.currency::currency,
+                  NEW.value_date::text::date,
+                  NEW.value_date::text::date,
+                  NEW.fee,
+                  (NEW.balance + NEW.fee)
+              );
+            END IF;
 
             RETURN NEW;
         END;
