@@ -66,35 +66,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
           break;
       }
 
-      const chargeIDs = new Set<string>();
-      const documents = await injector.get(DocumentsProvider).getDocumentsByFilters({
-        fromDate: filters?.fromDate,
-        toDate: filters?.toDate,
-        businessIDs: filters?.byBusinesses,
-      });
-
-      documents.map(doc => {
-        if (doc.charge_id_new) {
-          chargeIDs.add(doc.charge_id_new);
-        }
-      });
-
-      const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
-        fromEventDate: filters?.fromDate,
-        toEventDate: filters?.toDate,
-        businessIDs: filters?.byBusinesses,
-      });
-
-      transactions.map(t => {
-        if (t.charge_id) {
-          chargeIDs.add(t.charge_id);
-        }
-      });
-
-      let charges = await injector
+      const charges = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
-          IDs: Array.from(chargeIDs),
           ownerIds: filters?.byOwners ?? undefined,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
@@ -103,26 +77,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
           sortColumn,
           asc: filters?.sortBy?.asc !== false,
           chargeType: filters?.chargesType,
+          businessIds: filters?.byBusinesses,
+          withoutInvoice: filters?.withoutInvoice,
+          withoutDocuments: filters?.withoutDocuments,
+          tags: filters?.byTags,
         })
         .catch(e => {
           throw new Error(e.message);
         });
-
-      // apply post-query filters
-      if (
-        // filters?.unbalanced ||
-        filters?.withoutInvoice ||
-        filters?.withoutDocuments
-      ) {
-        charges = charges.filter(
-          c =>
-            // (!filters?.unbalanced || Number(c.balance) !== 0) &&
-            (!filters?.withoutInvoice || Number(c.invoices_count) === 0) &&
-            (!filters?.withoutDocuments ||
-              Number(c.receipts_count) + Number(c.invoices_count) === 0) &&
-            (!filters?.withoutTransaction || Number(c.transactions_count) === 0),
-        );
-      }
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
 

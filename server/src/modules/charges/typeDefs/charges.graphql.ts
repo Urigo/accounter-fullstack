@@ -57,6 +57,8 @@ export default gql`
     byFinancialAccounts: [ID!]
     " Include only charges including specific business "
     byBusinesses: [ID!]
+    " Include only charges with those tags "
+    byTags: [String!]
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
   }
