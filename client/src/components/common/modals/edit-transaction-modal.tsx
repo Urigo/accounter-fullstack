@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { EditTransaction, PopUpDrawer } from '..';
+import { EditTransaction, PopUpDrawer, UnlinkTransactionButton } from '..';
 import { writeToClipboard } from '../../../helpers';
 
 interface Props {
@@ -30,6 +30,7 @@ export const EditTransactionModal = ({
             >
               <Copy size={20} />
             </ActionIcon>
+            <UnlinkTransactionButton transactionId={transactionID} />
           </div>
         </div>
       }
