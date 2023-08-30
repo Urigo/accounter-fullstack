@@ -136,7 +136,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
   AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
-  AND ($isBusinessIds = 0 OR c.business_id IN $$businessIds)
+  AND ($isBusinessIds = 0 OR c.business_array && $businessIds)
   AND ($fromDate ::TEXT IS NULL OR COALESCE(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(c.documents_max_date, c.transactions_max_event_date, c.transactions_max_debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR COALESCE(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
@@ -155,12 +155,16 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
-  Omit<IGetChargesByFiltersParams, 'isOwnerIds' | 'isBusinessIds' | 'isIDs' | 'isTags' | 'tags'>,
-  'ownerIds' | 'businessIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
+  Omit<
+    IGetChargesByFiltersParams,
+    'isOwnerIds' | 'isBusinessIds' | 'businessIds' | 'isIDs' | 'isTags' | 'tags'
+  >,
+  'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
   toDate?: TimelessDateString | null;
   fromDate?: TimelessDateString | null;
   tags?: readonly string[] | null;
+  businessIds?: readonly string[] | null;
 };
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -288,9 +292,9 @@ export class ChargesProvider {
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
       ownerIds: isOwnerIds ? params.ownerIds! : [null],
-      businessIds: isBusinessIds ? params.businessIds! : [null],
+      businessIds: isBusinessIds ? (params.businessIds! as string[]) : null,
       IDs: isIDs ? params.IDs! : [null],
-      tags: (isTags ? params.tags! : [null]) as null | tagsArray,
+      tags: isTags ? (params.tags! as tagsArray) : null,
       chargeType: params.chargeType ?? 'ALL',
       withoutInvoice: params.withoutInvoice ?? false,
       withoutDocuments: params.withoutDocuments ?? false,

@@ -69,7 +69,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       const charges = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
-          ownerIds: filters?.byOwners ?? undefined,
+          ownerIds: filters?.byOwners,
           fromDate: filters?.fromDate,
           toDate: filters?.toDate,
           fromAnyDate: filters?.fromAnyDate,
