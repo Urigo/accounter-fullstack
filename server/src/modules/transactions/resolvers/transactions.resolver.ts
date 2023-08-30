@@ -102,6 +102,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           sourceDescription: fields.sourceDescription,
           transactionId,
           businessId: fields.counterpartyId,
+          chargeId: chargeId ?? null
         };
 
         injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);
