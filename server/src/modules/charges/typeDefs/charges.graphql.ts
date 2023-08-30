@@ -14,6 +14,7 @@ export default gql`
       chargeIdsToMerge: [ID!]!
       fields: UpdateChargeInput
     ): MergeChargeResult!
+    deleteCharge(chargeId: ID!): Boolean!
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "

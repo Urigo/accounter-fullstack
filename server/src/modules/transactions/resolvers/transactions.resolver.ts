@@ -1,6 +1,8 @@
 import { GraphQLError } from 'graphql';
+import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
 import { ChargesTypes } from '@modules/charges/index.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
@@ -44,6 +46,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   },
   Mutation: {
     updateTransaction: async (_, { transactionId, fields }, { injector }) => {
+      let postUpdateActions = async (): Promise<void> => void 0;
+
       try {
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
@@ -81,6 +85,26 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               );
             }
             chargeId = newCharge?.[0]?.id;
+
+            if (
+              Number(charge.documents_count ?? 0) === 0 &&
+              Number(charge.transactions_count ?? 1) === 1
+            ) {
+              postUpdateActions = async () => {
+                try {
+                  await deleteCharge(
+                    charge.id,
+                    injector.get(ChargesProvider),
+                    injector.get(TagsProvider),
+                  );
+                } catch (e) {
+                  throw new GraphQLError(
+                    `Failed to delete the empty former charge ID="${charge.id}"`,
+                  );
+                }
+                return postUpdateActions();
+              };
+            }
           }
         }
 
@@ -102,7 +126,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           sourceDescription: fields.sourceDescription,
           transactionId,
           businessId: fields.counterpartyId,
-          chargeId: chargeId ?? null
+          chargeId: chargeId ?? null,
         };
 
         injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);
@@ -115,6 +139,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         if (!transaction) {
           throw new GraphQLError(`Transaction ID="${res[0].id}" not found`);
         }
+
+        await postUpdateActions();
+
         return transaction as IGetTransactionsByIdsResult;
       } catch (e) {
         return {

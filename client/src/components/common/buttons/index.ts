@@ -2,6 +2,7 @@ export * from './button.js';
 export * from './button-image.js';
 export * from './button-with-label.js';
 export * from './confirm-mini-button.js';
+export * from './delete-charge-button.js';
 export * from './delete-document-button.js';
 export * from './edit-mini-button.js';
 export * from './fetch-income-documents-button.js';
