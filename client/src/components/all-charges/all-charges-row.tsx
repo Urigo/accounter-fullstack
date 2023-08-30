@@ -126,6 +126,7 @@ export const AllChargesRow = ({
         <td>
           <div className="flex flex-col gap-2">
             <ChargeExtendedInfoMenu
+              chargeId={charge.id}
               setInsertDocument={setInsertDocument}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={setUploadDocument}

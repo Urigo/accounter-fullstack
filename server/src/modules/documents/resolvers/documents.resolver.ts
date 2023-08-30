@@ -4,6 +4,8 @@ import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
+import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
@@ -46,6 +48,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     uploadDocument,
     fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }, { injector }) => {
+      let postUpdateActions = async (): Promise<void> => void 0;
+
       try {
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
@@ -87,6 +91,26 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               );
             }
             chargeId = newCharge?.[0]?.id;
+
+            if (
+              Number(charge.documents_count ?? 1) === 1 &&
+              Number(charge.transactions_count ?? 0) === 0
+            ) {
+              postUpdateActions = async () => {
+                try {
+                  await deleteCharge(
+                    charge.id,
+                    injector.get(ChargesProvider),
+                    injector.get(TagsProvider),
+                  );
+                } catch (e) {
+                  throw new GraphQLError(
+                    `Failed to delete the empty former charge ID="${charge.id}"`,
+                  );
+                }
+                return postUpdateActions();
+              };
+            }
           }
         }
 
@@ -109,6 +133,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         if (!res || res.length === 0) {
           throw new Error(`Document ID="${documentId}" not found`);
         }
+
+        await postUpdateActions();
 
         return {
           document: res[0],

@@ -1,9 +1,11 @@
 import { ReactElement, useState } from 'react';
-import { FileUpload, Photo, PlaylistAdd, Plus, Search } from 'tabler-icons-react';
+import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { FetchChargeDocument } from '../../gql/graphql.js';
+import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
+import { ConfirmationModal } from '../common/index.js';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { DocumentsTable } from './documents/documents-table';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
@@ -138,61 +140,88 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
 }
 
 interface ChargeExtendedInfoMenuProps {
+  chargeId: string;
   setInsertDocument: () => void;
   setMatchDocuments: () => void;
   setUploadDocument: () => void;
 }
 
 export function ChargeExtendedInfoMenu({
+  chargeId,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
 }: ChargeExtendedInfoMenuProps): ReactElement {
+  const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
+  const [modalOpened, setModalOpened] = useState(false);
+
+  function onDelete(): void {
+    deleteCharge({
+      chargeId,
+    });
+    setModalOpened(false);
+  }
 
   function closeMenu(): void {
     setOpened(false);
   }
 
   return (
-    <Menu shadow="md" width={200} opened={opened}>
-      <Menu.Target>
-        <Burger opened={opened} onClick={(): void => setOpened(o => !o)} />
-      </Menu.Target>
+    <>
+      <ConfirmationModal
+        opened={modalOpened}
+        onClose={(): void => setModalOpened(false)}
+        onConfirm={onDelete}
+        title="Are you sure you want to delete this charge?"
+      />
+      <Menu shadow="md" width={200} opened={opened}>
+        <Menu.Target>
+          <Burger opened={opened} onClick={(): void => setOpened(o => !o)} />
+        </Menu.Target>
 
-      <Menu.Dropdown>
-        <Menu.Label>Ledger Records</Menu.Label>
-
-        <Menu.Divider />
-        <Menu.Label>Documents</Menu.Label>
-        <Menu.Item
-          icon={<PlaylistAdd size={14} />}
-          onClick={(): void => {
-            setInsertDocument();
-            closeMenu();
-          }}
-        >
-          Insert Document
-        </Menu.Item>
-        <Menu.Item
-          icon={<FileUpload size={14} />}
-          onClick={(): void => {
-            setUploadDocument();
-            closeMenu();
-          }}
-        >
-          Upload Document
-        </Menu.Item>
-        <Menu.Item
-          icon={<Search size={14} />}
-          onClick={(): void => {
-            setMatchDocuments();
-            closeMenu();
-          }}
-        >
-          Match Document
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+        <Menu.Dropdown>
+          <Menu.Label>Charge</Menu.Label>
+          <Menu.Item
+            icon={<Trash size={14} />}
+            onClick={(): void => {
+              setModalOpened(true);
+              closeMenu();
+            }}
+          >
+            Delete Charge
+          </Menu.Item>
+          <Menu.Divider />
+          <Menu.Label>Documents</Menu.Label>
+          <Menu.Item
+            icon={<PlaylistAdd size={14} />}
+            onClick={(): void => {
+              setInsertDocument();
+              closeMenu();
+            }}
+          >
+            Insert Document
+          </Menu.Item>
+          <Menu.Item
+            icon={<FileUpload size={14} />}
+            onClick={(): void => {
+              setUploadDocument();
+              closeMenu();
+            }}
+          >
+            Upload Document
+          </Menu.Item>
+          <Menu.Item
+            icon={<Search size={14} />}
+            onClick={(): void => {
+              setMatchDocuments();
+              closeMenu();
+            }}
+          >
+            Match Document
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </>
   );
 }

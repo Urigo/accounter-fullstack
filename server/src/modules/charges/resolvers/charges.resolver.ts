@@ -6,6 +6,7 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { ChargeSortByField } from '@shared/enums';
 import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
+import { deleteCharge } from '../helpers/delete-charge.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
@@ -214,6 +215,18 @@ export const chargesResolvers: ChargesModule.Resolvers &
             'Unknown error',
         };
       }
+    },
+    deleteCharge: async (_, { chargeId }, { injector }) => {
+      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+      }
+      if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+        throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
+      }
+
+      await deleteCharge(chargeId, injector.get(ChargesProvider), injector.get(TagsProvider));
+      return true;
     },
   },
   UpdateChargeResult: {
