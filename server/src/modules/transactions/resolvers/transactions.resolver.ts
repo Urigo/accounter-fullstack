@@ -1,4 +1,6 @@
 import { GraphQLError } from 'graphql';
+import { ChargesTypes } from '@modules/charges/index.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
@@ -42,26 +44,66 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   },
   Mutation: {
     updateTransaction: async (_, { transactionId, fields }, { injector }) => {
-      const adjustedFields: IUpdateTransactionParams = {
-        accountId: fields.accountId,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        Amount:
-          fields.amount?.currency && fields.amount.currency !== Currency.Ils
-            ? null
-            : fields.amount?.raw?.toFixed(2),
-        currency: fields.amount?.currency,
-        // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-        currentBalance:
-          fields.balance?.currency && fields.balance.currency !== Currency.Ils
-            ? null
-            : fields.balance?.raw?.toFixed(2),
-        debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
-        eventDate: fields.eventDate ? new Date(fields.eventDate) : null,
-        sourceDescription: fields.sourceDescription,
-        transactionId,
-        businessId: fields.counterpartyId,
-      };
       try {
+        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+
+        let chargeId = fields.chargeId;
+        if (chargeId && chargeId !== 'NULL') {
+          // case new charge ID
+          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+          if (!charge) {
+            throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
+          }
+        } else if (chargeId === 'NULL') {
+          // case unlinked from charge
+          const transaction = await injector
+            .get(TransactionsProvider)
+            .getTransactionByIdLoader.load(transactionId);
+          if (!transaction) {
+            throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
+          }
+          if (transaction.charge_id) {
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(transaction.charge_id);
+            if (!charge) {
+              throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
+            }
+
+            // generate new charge
+            const newCharge = await injector.get(ChargesProvider).generateCharge({
+              ownerId: charge.owner_id,
+              userDescription: 'Transaction unlinked from charge',
+            });
+            if (!newCharge || newCharge.length === 0) {
+              throw new GraphQLError(
+                `Failed to generate new charge for transaction ID="${transactionId}"`,
+              );
+            }
+            chargeId = newCharge?.[0]?.id;
+          }
+        }
+
+        const adjustedFields: IUpdateTransactionParams = {
+          accountId: fields.accountId,
+          // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+          Amount:
+            fields.amount?.currency && fields.amount.currency !== Currency.Ils
+              ? null
+              : fields.amount?.raw?.toFixed(2),
+          currency: fields.amount?.currency,
+          // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
+          currentBalance:
+            fields.balance?.currency && fields.balance.currency !== Currency.Ils
+              ? null
+              : fields.balance?.raw?.toFixed(2),
+          debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
+          eventDate: fields.eventDate ? new Date(fields.eventDate) : null,
+          sourceDescription: fields.sourceDescription,
+          transactionId,
+          businessId: fields.counterpartyId,
+        };
+
         injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);
         const res = await injector
           .get(TransactionsProvider)

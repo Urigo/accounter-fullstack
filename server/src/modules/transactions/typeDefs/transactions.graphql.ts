@@ -115,6 +115,7 @@ export default gql`
     accountId: UUID
     balance: FinancialAmountInput
     counterpartyId: UUID
+    chargeId: ID
   }
 
   " result type for updateTransaction "
