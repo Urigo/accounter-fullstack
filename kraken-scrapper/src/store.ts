@@ -57,17 +57,17 @@ export async function createAndConnectStore(options: { connectionString: string;
 
                 SELECT t.charge_id
                 INTO charge_id_var
-                FROM accounter_schema.${ledgerTable} AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                ON tr.kraken_id = s.id
-                LEFT JOIN accounter_schema.transactions t
+                FROM ${options.schema}.${ledgerTable} AS s
+                LEFT JOIN ${options.schema}.transactions_raw_list tr
+                ON tr.kraken_id = s.ledger_id
+                LEFT JOIN ${options.schema}.transactions t
                 ON tr.id = t.source_id
                 WHERE t.charge_id IS NOT NULL
                 AND s.trade_ref_id = NEW.trade_ref_id;
 
                 -- update charge's tag to 'conversion'
                 IF (charge_id_var IS NOT NULL) THEN
-                    INSERT INTO accounter_schema.tags (charge_id, tag_name)
+                    INSERT INTO ${options.schema}.tags (charge_id, tag_name)
                     VALUES (charge_id_var, 'conversion')
                     ON CONFLICT DO NOTHING;
                 END IF;
