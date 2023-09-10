@@ -51,4 +51,5 @@ export interface LedgerProto {
   currency: Currency;
   isCreditorCounterparty: boolean;
   ownerId: string;
+  currencyRate?: number;
 }

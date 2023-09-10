@@ -96,14 +96,21 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    from: Currency!
-    to: Currency!
+    type: ConversionTransactionType!
     " המרה של הבנק "
     bankRate: Rate!
     " בנק ישראל "
-    officialRate: Rate
+    officialRateToLocal: Rate
     createdOn: Date!
     updatedOn: Date!
+  }
+
+  " Type pf conversion transaction "
+  enum ConversionTransactionType {
+    " קניה "
+    QUOTE
+    " מכירה "
+    BASE
   }
 
   " input variables for updateTransaction "

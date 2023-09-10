@@ -1,7 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import {
+  getConversionCurrencyRate,
+  getRateForCurrency,
+} from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -9,10 +12,21 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { EXCHANGE_RATE_CATEGORY_NAME, VAT_TAX_CATEGORY_NAME } from '@shared/constants';
-import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  EXCHANGE_RATE_CATEGORY_NAME,
+  VAT_TAX_CATEGORY_NAME,
+} from '@shared/constants';
+import {
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
+import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -23,14 +37,14 @@ export const generateLedgerRecords: ResolverFn<
   const chargeId = charge.id;
 
   try {
-    const accountingLedgerEntries: LedgerProto[] = [];
-
     // validate ledger records are balanced
     let ledgerBalance = 0;
 
     const dates = new Set<Date>();
     const currencies = new Set<currency>();
 
+    // generate ledger from documents
+    const accountingLedgerEntries: LedgerProto[] = [];
     if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
       // Get all relevant documents for charge
       const documents = await injector
@@ -39,6 +53,13 @@ export const generateLedgerRecords: ResolverFn<
       const relevantDocuments = documents.filter(d =>
         ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
       );
+
+      const counterpartyTaxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByChargeIDsLoader.load(charge.id);
+      if (!counterpartyTaxCategory) {
+        throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
+      }
 
       // if no relevant documents found and business can settle with receipts, look for receipts
       if (!relevantDocuments.length && charge.can_settle_with_receipt) {
@@ -68,13 +89,6 @@ export const generateLedgerRecords: ResolverFn<
           totalAmount = Math.abs(totalAmount);
         }
 
-        const counterpartyTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByChargeIDsLoader.load(charge.id);
-        if (!counterpartyTaxCategory) {
-          throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
-        }
-
         const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
         const creditAccountID1 = isCreditorCounterparty ? counterpartyId : counterpartyTaxCategory;
         let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
@@ -102,11 +116,11 @@ export const generateLedgerRecords: ResolverFn<
         }
 
         // handle non-local currencies
-        if (document.currency_code !== 'ILS') {
+        if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
           // get exchange rate for currency
           const exchangeRates = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(document.date);
+            .getExchangeRatesByDatesLoader.load(document.date);
           const exchangeRate = getRateForCurrency(document.currency_code, exchangeRates);
 
           // Set foreign amounts
@@ -194,8 +208,8 @@ export const generateLedgerRecords: ResolverFn<
       }
     }
 
+    // generate ledger from transactions
     const financialAccountLedgerEntries: LedgerProto[] = [];
-
     if (charge.transactions_count) {
       // Get all transactions
       const transactions = await injector
@@ -215,11 +229,11 @@ export const generateLedgerRecords: ResolverFn<
           );
         }
 
-        if (currencyCode !== 'ILS') {
+        if (currencyCode !== DEFAULT_LOCAL_CURRENCY) {
           // get exchange rate for currency
           const exchangeRates = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(transaction.debit_date);
+            .getExchangeRatesByDatesLoader.load(transaction.debit_date);
           const exchangeRate = getRateForCurrency(currencyCode, exchangeRates);
 
           foreignAmount = amount;
@@ -241,16 +255,16 @@ export const generateLedgerRecords: ResolverFn<
         }
         let taxCategoryName = account.hashavshevet_account_ils;
         switch (transaction.currency) {
-          case 'ILS':
+          case Currency.Ils:
             taxCategoryName = account.hashavshevet_account_ils;
             break;
-          case 'USD':
+          case Currency.Usd:
             taxCategoryName = account.hashavshevet_account_usd;
             break;
-          case 'EUR':
+          case Currency.Eur:
             taxCategoryName = account.hashavshevet_account_eur;
             break;
-          case 'GBP':
+          case Currency.Gbp:
             taxCategoryName = account.hashavshevet_account_gbp;
             break;
           default:
@@ -287,6 +301,7 @@ export const generateLedgerRecords: ResolverFn<
           reference1: transaction.source_id,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
         });
 
         if (transaction.debit_date) {
@@ -296,12 +311,88 @@ export const generateLedgerRecords: ResolverFn<
       }
     }
 
-    // Add ledger completion entries
     const miscLedgerEntries: LedgerProto[] = [];
-    if (Math.abs(ledgerBalance) > 0.005) {
-      if (charge.is_conversion) {
+    // handle conversion charge
+    if (charge.is_conversion) {
+      if (financialAccountLedgerEntries.length < 2) {
+        throw new GraphQLError('Conversion charges must have at least two ledger records');
+      }
+
+      let baseEntry: LedgerProto | undefined = undefined;
+      let quoteEntry: LedgerProto | undefined = undefined;
+
+      for (const entry of financialAccountLedgerEntries) {
+        // TODO: handle absolute fee records
+        // if () {}
+
+        if (entry.isCreditorCounterparty) {
+          if (quoteEntry) {
+            throw new GraphQLError('Conversion charges must have only one quote ledger record');
+          }
+          quoteEntry ??= entry;
+          if (entry.valueDate.getTime() < quoteEntry.valueDate.getTime()) {
+            quoteEntry = entry;
+          }
+        } else {
+          if (baseEntry) {
+            throw new GraphQLError('Conversion charges must have only one base ledger record');
+          }
+          baseEntry ??= entry;
+          if (entry.valueDate.getTime() < baseEntry.valueDate.getTime()) {
+            baseEntry = entry;
+          }
+        }
+      }
+
+      if (!baseEntry || !quoteEntry) {
+        throw new GraphQLError('Conversion charges must have a base and a quote ledger record');
+      }
+
+      if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
+        throw new GraphQLError('Conversion records must have matching value dates');
+      }
+      const { directRate, toLocalRate } = await getConversionCurrencyRate(
+        injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load,
+        baseEntry.currency,
+        quoteEntry.currency,
+        baseEntry.valueDate,
+      );
+      const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
+
+      const isDebitConversion = conversionFee.localAmount >= 0;
+
+      miscLedgerEntries.push({
+        id: quoteEntry.id, // NOTE: this field is dummy
+        creditAccountID1: isDebitConversion
+          ? baseEntry.creditAccountID1
+          : quoteEntry.creditAccountID1,
+        creditAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
+        localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
+        debitAccountID1: isDebitConversion
+          ? quoteEntry.creditAccountID1
+          : baseEntry.creditAccountID1,
+        debitAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
+        localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
+        description: 'Conversion fee',
+        isCreditorCounterparty: true,
+        invoiceDate: quoteEntry.invoiceDate,
+        valueDate: quoteEntry.valueDate,
+        currency: quoteEntry.currency,
+        reference1: quoteEntry.reference1,
+        ownerId: quoteEntry.ownerId,
+      });
+      ledgerBalance -= conversionFee.localAmount;
+
+      if (Math.abs(ledgerBalance) > 0.005) {
         throw new GraphQLError('Conversion charges must have a ledger balance');
       }
+    }
+    // Add ledger completion entries
+    else if (Math.abs(ledgerBalance) > 0.005) {
       if (!accountingLedgerEntries.length) {
         const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
           ? financialAccountLedgerEntries[0].creditAccountID1
@@ -317,7 +408,7 @@ export const generateLedgerRecords: ResolverFn<
       }
 
       const hasMultipleDates = dates.size > 1;
-      const hasForeignCurrency = currencies.size > (currencies.has('ILS') ? 1 : 0);
+      const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
         const baseEntry = financialAccountLedgerEntries[0];
 

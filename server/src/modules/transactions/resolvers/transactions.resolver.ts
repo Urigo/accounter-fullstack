@@ -2,9 +2,12 @@ import { GraphQLError } from 'graphql';
 import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
 import { ChargesTypes } from '@modules/charges/index.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type {
   IGetTransactionsByIdsResult,
@@ -167,12 +170,32 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   // FeeTransaction: {
   //   ...commonTransactionFields,
   // },
-  // ConversionTransaction: {
-  //   // __isTypeOf: (DbTransaction) => DbTransaction.is_conversion ?? false,
-  //   ...commonTransactionFields,
-  // },
+  ConversionTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.is_conversion ?? false,
+    ...commonTransactionFields,
+    effectiveDate: DbTransaction => {
+      const date = effectiveDateSupplement(DbTransaction);
+      if (!date) {
+        console.error(`Conversion transaction ID="${DbTransaction.id}" has no effective date`);
+        throw new GraphQLError('Conversion transaction must have effective date');
+      }
+      return date;
+    },
+    type: DbTransaction => (Number(DbTransaction.amount) > 0 ? 'QUOTE' : 'BASE'),
+    bankRate: DbTransaction => DbTransaction.currency_rate,
+    officialRateToLocal: async (DbTransaction, _, { injector }) => {
+      const officialRate = await injector
+        .get(ExchangeProvider)
+        .getExchangeRatesByDatesLoader.load(DbTransaction.event_date);
+      if (!officialRate) {
+        console.error(`Conversion transaction ID="${DbTransaction.id}" has no official rate`);
+        throw new GraphQLError('Conversion transaction must have official rate');
+      }
+      return getRateForCurrency(DbTransaction.currency, officialRate);
+    },
+  },
   CommonTransaction: {
-    __isTypeOf: () => true,
+    __isTypeOf: DbTransaction => DbTransaction.is_conversion !== true,
     ...commonTransactionFields,
   },
 };

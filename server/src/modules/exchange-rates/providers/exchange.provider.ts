@@ -8,6 +8,7 @@ import type {
   IGetExchangeRatesByDateQuery,
   IGetExchangeRatesByDatesParams,
   IGetExchangeRatesByDatesQuery,
+  IGetExchangeRatesByDatesResult,
 } from '../types.js';
 
 const getExchangeRatesByDate = sql<IGetExchangeRatesByDateQuery>`
@@ -63,7 +64,11 @@ export class ExchangeProvider {
     );
     return dates.map(date => {
       const stringifiedDate = format(date, 'yyyy-MM-dd');
-      return rates.find(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate);
+      return rates
+        .filter(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate)
+        .reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) =>
+          (prev.exchange_date?.getTime() ?? 0) > (curr.exchange_date?.getTime() ?? 0) ? prev : curr,
+        );
     });
   }
 
