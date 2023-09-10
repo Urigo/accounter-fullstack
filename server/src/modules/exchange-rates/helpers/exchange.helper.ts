@@ -5,7 +5,7 @@ import { Currency } from '@shared/gql-types';
 // import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
-export async function getCurrencyRate(
+export async function getConversionCurrencyRate(
   getExchangeRatesByDate: (date: Date) => Promise<IGetExchangeRatesByDatesResult>,
   baseCurrency: Currency,
   quoteCurrency: Currency,

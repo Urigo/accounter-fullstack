@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import {
-  getCurrencyRate,
+  getConversionCurrencyRate,
   getRateForCurrency,
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -351,7 +351,7 @@ export const generateLedgerRecords: ResolverFn<
       if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
         throw new GraphQLError('Conversion records must have matching value dates');
       }
-      const { directRate, toLocalRate } = await getCurrencyRate(
+      const { directRate, toLocalRate } = await getConversionCurrencyRate(
         injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load,
         baseEntry.currency,
         quoteEntry.currency,
