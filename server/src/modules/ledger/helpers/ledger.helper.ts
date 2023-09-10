@@ -3,6 +3,20 @@ import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { LedgerProto } from '@shared/types';
 
+export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
+  const baseRate = base.currencyRate ?? 0;
+  const quoteRate = quote.currencyRate ?? 0;
+  if (!baseRate && !quoteRate) {
+    throw new GraphQLError('Conversion records are missing currency rate');
+  }
+  if (!!baseRate && !!quoteRate && baseRate !== quoteRate) {
+    throw new GraphQLError('Conversion records have mismatching currency rates');
+  }
+  const bankRate = baseRate || quoteRate;
+
+  return bankRate;
+}
+
 export function conversionFeeCalculator(
   base: LedgerProto,
   quote: LedgerProto,
@@ -12,16 +26,7 @@ export function conversionFeeCalculator(
   if (base.currency === quote.currency) {
     throw new GraphQLError('Conversion records must have different currencies');
   }
-  // figure event rates
-  const baseRate = base.currencyRate ?? 0;
-  const quoteRate = quote.currencyRate ?? 0;
-  if (!baseRate && !quoteRate) {
-    throw new GraphQLError('Conversion records are missing currency rate');
-  }
-  if (!!baseRate && !!quoteRate && baseRate !== quoteRate) {
-    throw new GraphQLError('Conversion records have mismatching currency rates');
-  }
-  const eventRate = baseRate || quoteRate;
+  const eventRate = getConversionBankRate(base, quote);
 
   const baseAmount =
     base.currency === DEFAULT_LOCAL_CURRENCY
