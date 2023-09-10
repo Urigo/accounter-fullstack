@@ -1,7 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { getCurrencyRate, getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import {
+  getCurrencyRate,
+  getRateForCurrency,
+} from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -9,8 +12,18 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { currency } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_CATEGORY_NAME, VAT_TAX_CATEGORY_NAME } from '@shared/constants';
-import { Currency, Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  EXCHANGE_RATE_CATEGORY_NAME,
+  VAT_TAX_CATEGORY_NAME,
+} from '@shared/constants';
+import {
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
@@ -338,18 +351,31 @@ export const generateLedgerRecords: ResolverFn<
       if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
         throw new GraphQLError('Conversion records must have matching value dates');
       }
-      const {directRate, toLocalRate} = await getCurrencyRate(injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load, baseEntry.currency, quoteEntry.currency, baseEntry.valueDate);
+      const { directRate, toLocalRate } = await getCurrencyRate(
+        injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load,
+        baseEntry.currency,
+        quoteEntry.currency,
+        baseEntry.valueDate,
+      );
       const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 
       const isDebitConversion = conversionFee.localAmount >= 0;
 
       miscLedgerEntries.push({
         id: quoteEntry.id, // NOTE: this field is dummy
-        creditAccountID1: isDebitConversion ? baseEntry.creditAccountID1 : quoteEntry.creditAccountID1,
-        creditAmount1: conversionFee.foreignAmount ? Math.abs(conversionFee.foreignAmount) : undefined,
+        creditAccountID1: isDebitConversion
+          ? baseEntry.creditAccountID1
+          : quoteEntry.creditAccountID1,
+        creditAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
         localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
-        debitAccountID1: isDebitConversion ? quoteEntry.creditAccountID1 : baseEntry.creditAccountID1,
-        debitAmount1: conversionFee.foreignAmount ? Math.abs(conversionFee.foreignAmount) : undefined,
+        debitAccountID1: isDebitConversion
+          ? quoteEntry.creditAccountID1
+          : baseEntry.creditAccountID1,
+        debitAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
         localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
         description: 'Conversion fee',
         isCreditorCounterparty: true,
@@ -358,9 +384,8 @@ export const generateLedgerRecords: ResolverFn<
         currency: quoteEntry.currency,
         reference1: quoteEntry.reference1,
         ownerId: quoteEntry.ownerId,
-      })
+      });
       ledgerBalance -= conversionFee.localAmount;
-      
 
       if (Math.abs(ledgerBalance) > 0.005) {
         throw new GraphQLError('Conversion charges must have a ledger balance');

@@ -64,7 +64,11 @@ export class ExchangeProvider {
     );
     return dates.map(date => {
       const stringifiedDate = format(date, 'yyyy-MM-dd');
-      return rates.filter(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate).reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) => (prev.exchange_date?.getTime() ?? 0) > (curr.exchange_date?.getTime() ?? 0) ? prev : curr);
+      return rates
+        .filter(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate)
+        .reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) =>
+          (prev.exchange_date?.getTime() ?? 0) > (curr.exchange_date?.getTime() ?? 0) ? prev : curr,
+        );
     });
   }
 
