@@ -1,7 +1,30 @@
 import { format } from 'date-fns';
 import type { currency } from '@modules/transactions/types.js';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { Currency } from '@shared/gql-types';
 // import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
+
+export async function getCurrencyRate(
+  getExchangeRatesByDate: (date: Date) => Promise<IGetExchangeRatesByDatesResult>,
+  baseCurrency: Currency,
+  quoteCurrency: Currency,
+  date: Date,
+): Promise<{ directRate: number; toLocalRate: number }> {
+  const rates = await getExchangeRatesByDate(date);
+  if (baseCurrency === DEFAULT_LOCAL_CURRENCY) {
+    const rate = getRateForCurrency(quoteCurrency, rates);
+    return { directRate: rate, toLocalRate: rate };
+  }
+  if (quoteCurrency === DEFAULT_LOCAL_CURRENCY) {
+    const rate = 1 / getRateForCurrency(baseCurrency, rates);
+    return { directRate: rate, toLocalRate: rate };
+  }
+  const baseRate = getRateForCurrency(baseCurrency, rates);
+  const quoteRate = getRateForCurrency(quoteCurrency, rates);
+  const directRate = quoteRate / baseRate;
+  return { directRate, toLocalRate: quoteRate };
+}
 
 export function getRateForCurrency(
   currencyCode: currency,

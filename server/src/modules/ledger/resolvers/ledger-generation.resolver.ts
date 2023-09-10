@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { getCurrencyRate, getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -13,6 +13,7 @@ import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_CATEGORY_NAME, VAT_TAX_CATEGORY_N
 import { Currency, Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
+import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -334,68 +335,10 @@ export const generateLedgerRecords: ResolverFn<
         throw new GraphQLError('Conversion charges must have a base and a quote ledger record');
       }
 
-      // eslint-disable-next-line no-inner-declarations
-      function conversionFeeCalculator(base: LedgerProto, quote: LedgerProto, officialRate: number, localCurrencyRate?: number): { localAmount: number, foreignAmount?: number, currency: Currency } {
-        if (base.currency === quote.currency) {
-          throw new GraphQLError('Conversion records must have different currencies');
-        }
-        // figure event rates
-        const baseRate = base.currencyRate ?? 0
-        const quoteRate = quote.currencyRate ?? 0
-        if (!baseRate && !quoteRate) {
-          throw new GraphQLError('Conversion records are missing currency rate');
-        }
-        if (!!baseRate && !!quoteRate && baseRate !== quoteRate) {
-          throw new GraphQLError('Conversion records have mismatching currency rates');
-        }
-        const eventRate = baseRate || quoteRate;
-
-        const baseAmount = base.currency === DEFAULT_LOCAL_CURRENCY ? base.localCurrencyCreditAmount1 : base.creditAmount1 as number
-        const baseAmountConvertedByEventRate = baseAmount / eventRate
-        // Number((baseAmount / eventRate).toFixed(2));
-        const quoteAmount = quote.currency === DEFAULT_LOCAL_CURRENCY ? quote.localCurrencyCreditAmount1 : quote.creditAmount1 as number
-        if (baseAmountConvertedByEventRate - quoteAmount > 0.005) {
-          throw new GraphQLError('Conversion records have mismatching amounts, taking the bank rate into account');
-        }
-        const baseAmountConvertedByOfficialRate = baseAmount / officialRate;
-
-        const feeAmountByQuoteCurrency = quoteAmount - baseAmountConvertedByOfficialRate;
-
-        if (quote.currency === DEFAULT_LOCAL_CURRENCY) {
-          return { localAmount: feeAmountByQuoteCurrency, currency: DEFAULT_LOCAL_CURRENCY };
-        }
-        if (!localCurrencyRate) {
-          if ( base.currency === DEFAULT_LOCAL_CURRENCY) {
-            localCurrencyRate = 1/officialRate;
-          } else {
-            throw new GraphQLError('Conversion records are missing local currency rate');
-          }
-        }
-        const feeAmountByLocalCurrency = feeAmountByQuoteCurrency * localCurrencyRate;
-        return { foreignAmount: feeAmountByQuoteCurrency, localAmount: feeAmountByLocalCurrency, currency: quote.currency };
-      }
-      // eslint-disable-next-line no-inner-declarations
-      async function getCurrencyRate(baseCurrency: Currency, quoteCurrency: Currency, date: Date): Promise<{directRate: number, toLocalRate: number}> {
-        const rates = await injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load(date);
-        if (baseCurrency === DEFAULT_LOCAL_CURRENCY) {
-          const rate = getRateForCurrency(quoteCurrency, rates);
-          return {directRate: rate, toLocalRate: rate};
-        } 
-        if (
-          quoteCurrency === DEFAULT_LOCAL_CURRENCY
-        ) {
-          const rate = 1/getRateForCurrency(baseCurrency, rates);
-          return {directRate: rate, toLocalRate: rate};
-        }
-        const baseRate = getRateForCurrency(baseCurrency, rates);
-        const quoteRate = getRateForCurrency(quoteCurrency, rates);
-        const directRate = quoteRate / baseRate;
-        return {directRate, toLocalRate: quoteRate};
-      }
       if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
         throw new GraphQLError('Conversion records must have matching value dates');
       }
-      const {directRate, toLocalRate} = await getCurrencyRate(baseEntry.currency, quoteEntry.currency, baseEntry.valueDate);
+      const {directRate, toLocalRate} = await getCurrencyRate(injector.get(ExchangeProvider).getExchangeRatesByDatesLoader.load, baseEntry.currency, quoteEntry.currency, baseEntry.valueDate);
       const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 
       const isDebitConversion = conversionFee.localAmount >= 0;
