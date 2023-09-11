@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
@@ -176,10 +175,7 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
-  constructor(
-    private dbProvider: DBProvider,
-    private businessProvider: FinancialEntitiesProvider,
-  ) {}
+  constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = (await getChargesByIds.run(
