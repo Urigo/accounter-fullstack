@@ -4,7 +4,7 @@ import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import type {
   QueryVatReportArgs,
@@ -153,7 +153,7 @@ export const getVatRecords: ResolverFn<
       const fromDate = format(new Date(Math.min(...exchangeDates)), 'yyyy-MM-dd');
       const toDate = format(new Date(Math.max(...exchangeDates)), 'yyyy-MM-dd');
       const exchangeRates = await injector
-        .get(ExchangeProvider)
+        .get(FiatExchangeProvider)
         .getExchangeRatesByDates({ fromDate, toDate });
 
       response.income.push(...adjustTaxRecords(incomeRecords, exchangeRates));

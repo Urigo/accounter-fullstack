@@ -35,7 +35,7 @@ const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
   scope: Scope.Singleton,
   global: true,
 })
-export class ExchangeProvider {
+export class FiatExchangeProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public async getExchangeRates(date: Date) {

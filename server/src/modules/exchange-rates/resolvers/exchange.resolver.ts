@@ -3,7 +3,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { ExchangeProvider } from '../providers/exchange.provider.js';
+import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';
 import { commonTransactionFields } from './common.js';
 
@@ -19,7 +19,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   ExchangeRates: {
     usd: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
-        .get(ExchangeProvider)
+        .get(FiatExchangeProvider)
         .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
       if (!exchangeRates?.usd) {
         return null;
@@ -28,7 +28,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
     gbp: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
-        .get(ExchangeProvider)
+        .get(FiatExchangeProvider)
         .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
       if (!exchangeRates?.gbp) {
         return null;
@@ -37,7 +37,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
     eur: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
-        .get(ExchangeProvider)
+        .get(FiatExchangeProvider)
         .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
       if (!exchangeRates?.eur) {
         return null;
