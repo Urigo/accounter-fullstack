@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { format } from 'date-fns';
+import { format, subHours } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
@@ -22,8 +22,8 @@ const getRateByCurrencyAndDate = sql<IGetRateByCurrencyAndDateQuery>`
     AND date = $date;`;
 
 const insertRates = sql<IInsertRatesQuery>`
-  INSERT INTO accounter_schema.crypto_exchange_rates (date, coin_symbol, value, against)
-  VALUES $$rates(date, coin_symbol, value, against)
+  INSERT INTO accounter_schema.crypto_exchange_rates (date, coin_symbol, value, against, sample_date)
+  VALUES $$rates(date, coin_symbol, value, against, sample_date)
   ON CONFLICT (date, coin_symbol, against) DO UPDATE
   SET value = EXCLUDED.value
   RETURNING *;
@@ -33,6 +33,8 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
     SELECT *
     FROM accounter_schema.crypto_currencies
     WHERE symbol in $$currencySymbols;`;
+
+let flag = false;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -59,13 +61,22 @@ export class CryptoExchangeProvider {
   }
 
   public addCryptoRateLoader = new DataLoader(
-    (keys: readonly { date: Date; currency: string; against?: Currency; value: number }[]) =>
+    (
+      keys: readonly {
+        date: Date;
+        currency: string;
+        against?: Currency;
+        value: number;
+        sampleDate: Date;
+      }[],
+    ) =>
       this.addRates(
-        keys.map(({ date, currency, against, value }) => ({
+        keys.map(({ date, currency, against, value, sampleDate }) => ({
           date,
           coin_symbol: currency,
           against,
           value,
+          sample_date: sampleDate,
         })),
       ),
     {
@@ -93,36 +104,57 @@ export class CryptoExchangeProvider {
   );
 
   public async getCryptoExchangeRatesFromAPI(currencySymbol: string, date: Date) {
-    // Fetch CoinGecko id from DB
+    // Fetch CoinMarketCap id from DB
     const currencyInfo = await this.getCryptoCurrenciesBySymbolLoader.load(currencySymbol);
     if (!currencyInfo) {
       throw new GraphQLError(`No data found for crypto currency ${currencySymbol}`);
     }
-    const coingeckoId = currencyInfo?.coingecko_id;
-    if (!coingeckoId) {
-      throw new GraphQLError(`No coingecko id found for crypto currency ${currencySymbol}`);
+    const coinmarketcapId = currencyInfo?.coinmarketcap_id;
+    if (!coinmarketcapId) {
+      throw new GraphQLError(`No CoinMarketCap id found for crypto currency ${currencySymbol}`);
     }
+
+    const fromDate = subHours(date, 23);
+    const from = fromDate.getTime() / 1000;
+    const to = date.getTime() / 1000;
 
     // Fetch rate from CoinGecko
-    const url = new URL(`https://api.coingecko.com/api/v3/coins/${coingeckoId}/history`);
-    url.searchParams.append('date', format(date, 'dd-MM-yyyy'));
+    const url = new URL(
+      `https://api.coinmarketcap.com/data-api/v3/cryptocurrency/detail/chart?id=${coinmarketcapId}&range=${from}~${to}`,
+    );
 
-    const res = await fetch(url);
-    const rateData = await res.json();
-    const rate: number = rateData?.market_data?.current_price?.[this.fiatCurrency.toLowerCase()];
-    if (rate == null) {
-      throw new GraphQLError(`Error retrieving rate of ${currencySymbol} from CoinGecko`);
+    if (!flag) {
+      flag = true;
+      const res = await fetch(url);
+      flag = false;
+
+      const rateData = await res?.json();
+      const ratesObject = rateData?.data?.points;
+      if (!ratesObject || Object.keys(ratesObject).length === 0) {
+        throw new GraphQLError(`Error retrieving rate of ${currencySymbol} from CoinMarketCap`);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rates = Object.entries(ratesObject).map(([timestamp, rate]: [any, any]) => [
+        timestamp,
+        rate?.['c']?.[0],
+      ]);
+
+      const [timestamp, rate] = rates[rates.length - 1];
+
+      const sampleDate = new Date(Number(timestamp));
+
+      // Add rate to DB
+      await this.addCryptoRateLoader.load({
+        date,
+        currency: currencySymbol,
+        value: rate,
+        against: this.fiatCurrency,
+        sampleDate,
+      });
+
+      return rate;
     }
-
-    // Add rate to DB
-    await this.addCryptoRateLoader.load({
-      date,
-      currency: currencySymbol,
-      value: rate,
-      against: this.fiatCurrency,
-    });
-
-    return rate;
+    throw new GraphQLError('Currently fetching data from CoinMarketCap, please try again later');
   }
 
   public getCryptoExchangeRateLoader = new DataLoader<

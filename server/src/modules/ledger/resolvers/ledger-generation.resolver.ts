@@ -319,10 +319,10 @@ export const generateLedgerRecords: ResolverFn<
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
-        entry => (entry.id === baseTransaction.id),
+        entry => entry.id === baseTransaction.id,
       );
       const quoteEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
-        entry => (entry.id === quoteTransaction.id),
+        entry => entry.id === quoteTransaction.id,
       );
 
       if (!baseEntry || !quoteEntry) {
