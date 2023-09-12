@@ -12,8 +12,16 @@ export default gql`
     renameTag(prevName: String!, newName: String!): Boolean!
   }
 
-  extend type Charge {
+  extend interface Charge {
     " user customer tags "
+    tags: [Tag!]!
+  }
+
+  extend type CommonCharge {
+    tags: [Tag!]!
+  }
+
+  extend type ConversionCharge {
     tags: [Tag!]!
   }
 

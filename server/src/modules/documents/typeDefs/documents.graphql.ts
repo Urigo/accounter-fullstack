@@ -178,8 +178,16 @@ export default gql`
     document: Document
   }
 
-  extend type Charge {
+  extend interface Charge {
     " additional documents attached to the charge "
+    additionalDocuments: [Document!]!
+  }
+
+  extend type CommonCharge {
+    additionalDocuments: [Document!]!
+  }
+
+  extend type ConversionCharge {
     additionalDocuments: [Document!]!
   }
 

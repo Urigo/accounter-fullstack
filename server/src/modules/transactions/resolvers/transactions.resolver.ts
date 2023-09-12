@@ -14,7 +14,7 @@ import type {
   IUpdateTransactionParams,
   TransactionsModule,
 } from '../types.js';
-import { commonTransactionFields } from './common.js';
+import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
   Pick<Resolvers, 'UpdateTransactionResult'> = {
@@ -160,10 +160,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       return 'CommonTransaction';
     },
   },
-  Charge: {
-    transactions: (DbCharge, _, { injector }) =>
-      injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(DbCharge.id),
-  },
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
   // WireTransaction: {
   //   ...commonTransactionFields,
   // },

@@ -25,8 +25,16 @@ export default gql`
     id: UUID!
   }
 
-  extend type Charge {
+  extend interface Charge {
     " calculated counterparty details for the charge "
+    counterparty: Counterparty
+  }
+
+  extend type CommonCharge {
+    counterparty: Counterparty
+  }
+
+  extend type ConversionCharge {
     counterparty: Counterparty
   }
 

@@ -19,8 +19,16 @@ export default gql`
     reference1: String
   }
 
-  extend type Charge {
+  extend interface Charge {
     " ledger records linked to the charge "
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
+  extend type CommonCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
+  extend type ConversionCharge {
     ledgerRecords: GeneratedLedgerRecords
   }
 

@@ -18,8 +18,16 @@ export default gql`
     remark: String
   }
 
-  extend type Charge {
+  extend interface Charge {
     " calculated based on ledger record and transaction approvals "
+    accountantApproval: AccountantApproval!
+  }
+
+  extend type CommonCharge {
+    accountantApproval: AccountantApproval!
+  }
+
+  extend type ConversionCharge {
     accountantApproval: AccountantApproval!
   }
 

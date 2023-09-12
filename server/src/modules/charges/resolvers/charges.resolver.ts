@@ -4,27 +4,16 @@ import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField } from '@shared/enums';
-import type { ChargeResolvers, Resolvers } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
+import type { Resolvers } from '@shared/gql-types';
 import { deleteCharge } from '../helpers/delete-charge.helper.js';
-import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
 import {
+  commonChargeFields,
   commonDocumentsFields,
   commonFinancialAccountFields,
   commonFinancialEntityFields,
 } from './common.js';
-
-const calculateTotalAmount: ChargeResolvers['totalAmount'] = async charge => {
-  if (charge.documents_event_amount != null && charge.documents_currency) {
-    return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
-  }
-  if (charge.transactions_event_amount != null && charge.transactions_currency) {
-    return formatFinancialAmount(charge.transactions_event_amount, charge.transactions_currency);
-  }
-  return null;
-};
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
@@ -232,43 +221,28 @@ export const chargesResolvers: ChargesModule.Resolvers &
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'Charge';
+      if ('is_conversion' in obj && obj.is_conversion === true) {
+        return 'ConversionCharge';
+      }
+      return 'CommonCharge';
     },
   },
   MergeChargeResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'Charge';
+      if ('is_conversion' in obj && obj.is_conversion === true) {
+        return 'ConversionCharge';
+      }
+      return 'CommonCharge';
     },
   },
-  Charge: {
-    id: DbCharge => DbCharge.id,
-    vat: DbCharge =>
-      DbCharge.documents_vat_amount != null && DbCharge.documents_currency
-        ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
-        : null,
-    totalAmount: calculateTotalAmount,
-    property: DbCharge => DbCharge.is_property,
-    conversion: DbCharge => DbCharge.is_conversion,
-    userDescription: DbCharge => DbCharge.user_description,
-    minEventDate: DbCharge => DbCharge.transactions_min_event_date,
-    minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
-    minDocumentsDate: DbCharge => DbCharge.documents_min_date,
-    validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
-    metadata: DbCharge => ({
-      createdOn: DbCharge.created_on,
-      updatedOn: DbCharge.updated_on,
-      invoicesCount: Number(DbCharge.invoices_count) ?? 0,
-      receiptsCount: Number(DbCharge.receipts_count) ?? 0,
-      documentsCount: Number(DbCharge.documents_count) ?? 0,
-      invalidDocuments: DbCharge.invalid_documents ?? true,
-      transactionsCount: Number(DbCharge.transactions_count) ?? 0,
-      invalidTransactions: DbCharge.invalid_transactions ?? true,
-      optionalBusinesses:
-        DbCharge.business_array && DbCharge.business_array.length > 1
-          ? DbCharge.business_array
-          : [],
-    }),
+  CommonCharge: {
+    __isTypeOf: DbCharge => DbCharge.is_conversion !== true,
+    ...commonChargeFields,
+  },
+  ConversionCharge: {
+    __isTypeOf: DbCharge => DbCharge.is_conversion === true,
+    ...commonChargeFields,
   },
   Invoice: {
     ...commonDocumentsFields,

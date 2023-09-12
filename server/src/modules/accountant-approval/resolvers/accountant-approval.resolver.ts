@@ -1,6 +1,7 @@
 import type { ChargesTypes } from '@modules/charges';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { AccountantApprovalModule } from '../types.js';
+import { commonChargeFields } from './common.js';
 
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   Mutation: {
@@ -26,10 +27,6 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
       return res[0].accountant_reviewed || false;
     },
   },
-  Charge: {
-    accountantApproval: DbCharge => ({
-      approved: DbCharge.accountant_reviewed ?? false,
-      remark: 'Missing', // TODO: missing in DB
-    }),
-  },
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
 };

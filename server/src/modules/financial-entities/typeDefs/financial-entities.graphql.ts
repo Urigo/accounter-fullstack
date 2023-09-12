@@ -40,8 +40,16 @@ export default gql`
     linkedEntities: [FinancialEntity!]!
   }
 
-  extend type Charge {
+  extend interface Charge {
     " the financial entity that created the charge "
+    owner: FinancialEntity!
+  }
+
+  extend type CommonCharge {
+    owner: FinancialEntity!
+  }
+
+  extend type ConversionCharge {
     owner: FinancialEntity!
   }
 `;

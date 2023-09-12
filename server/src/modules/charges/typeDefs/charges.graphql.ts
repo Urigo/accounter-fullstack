@@ -18,7 +18,7 @@ export default gql`
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
-  type Charge {
+  interface Charge {
     id: ID!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
@@ -39,6 +39,36 @@ export default gql`
     " minimal date from linked documents "
     minDocumentsDate: Date
     " metadata about the charge "
+    metadata: ChargeMetadata
+  }
+
+  " common charge "
+  type CommonCharge implements Charge {
+    id: ID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+  }
+
+  " charge with conversion transactions "
+  type ConversionCharge implements Charge {
+    id: ID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
     metadata: ChargeMetadata
   }
 
@@ -112,10 +142,10 @@ export default gql`
   }
 
   " result type for updateCharge "
-  union UpdateChargeResult = Charge | CommonError
+  union UpdateChargeResult = CommonCharge | ConversionCharge | CommonError
 
   " result type for mergeCharge "
-  union MergeChargeResult = Charge | CommonError
+  union MergeChargeResult = CommonCharge | ConversionCharge | CommonError
 
   " represent charge's metadata"
   type ChargeMetadata {

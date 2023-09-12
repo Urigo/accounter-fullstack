@@ -2,8 +2,16 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Charge {
+  extend interface Charge {
     " a list of beneficiaries and their part in the charge "
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
+  extend type CommonCharge {
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
+  extend type ConversionCharge {
     beneficiaries: [BeneficiaryCounterparty!]!
   }
 

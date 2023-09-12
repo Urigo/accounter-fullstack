@@ -2,8 +2,16 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Charge {
+  extend interface Charge {
     " should be later in busines trip module? "
+    businessTrip: BusinessTrip
+  }
+
+  extend type CommonCharge {
+    businessTrip: BusinessTrip
+  }
+
+  extend type ConversionCharge {
     businessTrip: BusinessTrip
   }
 

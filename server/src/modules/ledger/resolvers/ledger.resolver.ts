@@ -39,7 +39,10 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference1: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
   },
-  Charge: {
+  CommonCharge: {
+    ledgerRecords: generateLedgerRecords,
+  },
+  ConversionCharge: {
     ledgerRecords: generateLedgerRecords,
   },
   GeneratedLedgerRecords: {

@@ -15,7 +15,15 @@ export default gql`
     date: TimelessDate!
   }
 
-  extend type Charge {
+  extend interface Charge {
+    exchangeRates: ExchangeRates
+  }
+
+  extend type CommonCharge {
+    exchangeRates: ExchangeRates
+  }
+
+  extend type ConversionCharge {
     exchangeRates: ExchangeRates
   }
 

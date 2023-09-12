@@ -559,8 +559,11 @@ const missingInfoSuggestions: Resolver<
   return null;
 };
 
+const commonChargeFields: ChargesModule.ChargeResolvers = {
+  missingInfoSuggestions: missingInfoSuggestions as ChargeResolvers['missingInfoSuggestions'],
+};
+
 export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
-  Charge: {
-    missingInfoSuggestions: missingInfoSuggestions as ChargeResolvers['missingInfoSuggestions'],
-  },
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
 };

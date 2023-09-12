@@ -59,3 +59,20 @@ export const commonFinancialEntityFields:
     return documents;
   },
 };
+
+export const commonChargeFields: DocumentsModule.ChargeResolvers = {
+  additionalDocuments: async (DbCharge, _, { injector }) => {
+    if (!DbCharge.id) {
+      return [];
+    }
+    try {
+      const docs = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(DbCharge.id);
+      return docs;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+};

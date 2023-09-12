@@ -1,5 +1,6 @@
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule } from '../types';
+import { commonTaxChargeFields } from './common.js';
 
 export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
@@ -10,15 +11,6 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         .then(res => res.filter(c => !!c.name));
     },
   },
-  Charge: {
-    taxCategory: async (DbCharge, _, { injector }) => {
-      if (!DbCharge.tax_category_id) {
-        return null;
-      }
-      return injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByIDsLoader.load(DbCharge.tax_category_id)
-        .then(taxCategory => taxCategory ?? null);
-    },
-  },
+  CommonCharge: commonTaxChargeFields,
+  ConversionCharge: commonTaxChargeFields,
 };

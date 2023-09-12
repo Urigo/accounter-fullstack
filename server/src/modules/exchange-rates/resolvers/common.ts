@@ -20,3 +20,15 @@ export const commonTransactionFields:
     return format(DbTransaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
   },
 };
+
+export const commonChargeFields: ExchangeRatesModule.ChargeResolvers = {
+  exchangeRates: DbCharge => {
+    const ratesDate = DbCharge.transactions_min_debit_date || DbCharge.documents_min_date;
+
+    if (!ratesDate) {
+      return null;
+    }
+
+    return format(ratesDate, 'yyyy-MM-dd') as TimelessDateString;
+  },
+};
