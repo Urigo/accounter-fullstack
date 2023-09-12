@@ -13,7 +13,7 @@ import {
   IGetRateByCurrencyAndDateResult,
   IInsertRatesParams,
   IInsertRatesQuery,
-} from '../__generated__/crypto-exchange.types.js';
+} from '../types.js';
 
 const getRateByCurrencyAndDate = sql<IGetRateByCurrencyAndDateQuery>`
     SELECT *

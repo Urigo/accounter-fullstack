@@ -351,11 +351,13 @@ export const generateLedgerRecords: ResolverFn<
       if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
         throw new GraphQLError('Conversion records must have matching value dates');
       }
-      const { directRate, toLocalRate } = await getConversionCurrencyRate(
-        injector.get(FiatExchangeProvider).getExchangeRatesByDatesLoader.load,
+      const rates = await injector
+        .get(FiatExchangeProvider)
+        .getExchangeRatesByDatesLoader.load(baseEntry.valueDate);
+      const { directRate, toLocalRate } = getConversionCurrencyRate(
         baseEntry.currency,
         quoteEntry.currency,
-        baseEntry.valueDate,
+        rates,
       );
       const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 

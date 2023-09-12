@@ -6,11 +6,9 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 /* GraphQL */ `
   fragment TransactionsTableAmountFields on Transaction {
     id
-    ...on CommonTransaction {
-      amount {
-        raw
-        formatted
-    }
+    amount {
+      raw
+      formatted
     }
   }
 `;

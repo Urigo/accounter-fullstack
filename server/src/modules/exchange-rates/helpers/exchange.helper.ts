@@ -5,13 +5,11 @@ import { Currency } from '@shared/gql-types';
 // import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
-export async function getConversionCurrencyRate(
-  getExchangeRatesByDate: (date: Date) => Promise<IGetExchangeRatesByDatesResult>,
+export function getConversionCurrencyRate(
   baseCurrency: Currency,
   quoteCurrency: Currency,
-  date: Date,
-): Promise<{ directRate: number; toLocalRate: number }> {
-  const rates = await getExchangeRatesByDate(date);
+  rates: IGetExchangeRatesByDatesResult,
+): { directRate: number; toLocalRate: number } {
   if (baseCurrency === DEFAULT_LOCAL_CURRENCY) {
     const rate = getRateForCurrency(quoteCurrency, rates);
     return { directRate: rate, toLocalRate: rate };
