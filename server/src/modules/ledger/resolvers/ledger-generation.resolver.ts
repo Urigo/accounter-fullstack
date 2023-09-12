@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import {
+  defineConversionBaseAndQuote,
   getConversionCurrencyRate,
   getRateForCurrency,
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
@@ -11,7 +12,7 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { currency } from '@modules/transactions/types.js';
+import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
@@ -209,10 +210,11 @@ export const generateLedgerRecords: ResolverFn<
     }
 
     // generate ledger from transactions
+    let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
     if (charge.transactions_count) {
       // Get all transactions
-      const transactions = await injector
+      transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(chargeId);
 
@@ -314,43 +316,19 @@ export const generateLedgerRecords: ResolverFn<
     const miscLedgerEntries: LedgerProto[] = [];
     // handle conversion charge
     if (charge.is_conversion) {
-      if (financialAccountLedgerEntries.length < 2) {
-        throw new GraphQLError('Conversion charges must have at least two ledger records');
-      }
+      const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
-      let baseEntry: LedgerProto | undefined = undefined;
-      let quoteEntry: LedgerProto | undefined = undefined;
-
-      for (const entry of financialAccountLedgerEntries) {
-        // TODO: handle absolute fee records
-        // if () {}
-
-        if (entry.isCreditorCounterparty) {
-          if (quoteEntry) {
-            throw new GraphQLError('Conversion charges must have only one quote ledger record');
-          }
-          quoteEntry ??= entry;
-          if (entry.valueDate.getTime() < quoteEntry.valueDate.getTime()) {
-            quoteEntry = entry;
-          }
-        } else {
-          if (baseEntry) {
-            throw new GraphQLError('Conversion charges must have only one base ledger record');
-          }
-          baseEntry ??= entry;
-          if (entry.valueDate.getTime() < baseEntry.valueDate.getTime()) {
-            baseEntry = entry;
-          }
-        }
-      }
+      const baseEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
+        entry => (entry.id = baseTransaction.id),
+      );
+      const quoteEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
+        entry => (entry.id = quoteTransaction.id),
+      );
 
       if (!baseEntry || !quoteEntry) {
-        throw new GraphQLError('Conversion charges must have a base and a quote ledger record');
+        throw new GraphQLError('Conversion charge must have a base and a quote entries');
       }
 
-      if (baseEntry.valueDate.getTime() !== quoteEntry.valueDate.getTime()) {
-        throw new GraphQLError('Conversion records must have matching value dates');
-      }
       const rates = await injector
         .get(FiatExchangeProvider)
         .getExchangeRatesByDatesLoader.load(baseEntry.valueDate);
