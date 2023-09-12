@@ -41,11 +41,11 @@ export class ExchangeProvider {
     const rates = await this.fiatExchangeProvider.getExchangeRatesByDatesLoader.load(date);
     if (baseCurrency !== Currency.Ils) {
       const baseRate = getRateForCurrency(baseCurrency, rates);
-      rate = rate / baseRate;
+      rate = rate * baseRate;
     }
     if (quoteCurrency !== Currency.Ils) {
       const quoteRate = getRateForCurrency(quoteCurrency, rates);
-      rate = rate * quoteRate;
+      rate = rate / quoteRate;
     }
     return rate;
   }
