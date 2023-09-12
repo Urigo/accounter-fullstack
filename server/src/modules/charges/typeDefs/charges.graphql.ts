@@ -160,6 +160,7 @@ export default gql`
     transactionsCount: Int!
     invalidTransactions: Boolean!
     optionalBusinesses: [String!]!
+    isConversion: Boolean!
   }
 
   extend interface Document {

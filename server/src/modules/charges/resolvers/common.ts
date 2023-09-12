@@ -39,6 +39,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     invalidTransactions: DbCharge.invalid_transactions ?? true,
     optionalBusinesses:
       DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
+    isConversion: DbCharge.is_conversion ?? false,
   }),
 };
 
