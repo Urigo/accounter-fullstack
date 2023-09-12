@@ -41,16 +41,9 @@ let flag = false;
   global: true,
 })
 export class CryptoExchangeProvider {
-  apiKey: string;
   fiatCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
 
-  constructor(private dbProvider: DBProvider) {
-    const apiKey = process.env.COINMARKETCAP_API_KEY;
-    if (!apiKey) {
-      throw new GraphQLError('No CoinMarketCap API key provided');
-    }
-    this.apiKey = apiKey;
-  }
+  constructor(private dbProvider: DBProvider) {}
 
   public async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
     return getRateByCurrencyAndDate.run({ currency, date }, this.dbProvider);
