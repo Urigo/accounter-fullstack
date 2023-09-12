@@ -1,5 +1,9 @@
 import { format } from 'date-fns';
+import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
+import { formatCurrency } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
+import { isCryptoCurrency } from '../helpers/exchange.helper.js';
+import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
 import { ExchangeRatesModule } from '../types.js';
 
 export const commonTransactionFields:
@@ -18,6 +22,27 @@ export const commonTransactionFields:
       return null;
     }
     return format(DbTransaction.event_date, 'yyyy-MM-dd') as TimelessDateString;
+  },
+  cryptoExchangeRate: async (DbTransaction, _, { injector }) => {
+    const currency = formatCurrency(DbTransaction.currency);
+    if (!isCryptoCurrency(currency) || !DbTransaction.debit_timestamp) {
+      return null;
+    }
+
+    const { value } = await injector
+      .get(CryptoExchangeProvider)
+      .getCryptoExchangeRateLoader.load({
+        cryptoCurrency: currency,
+        date: DbTransaction.debit_timestamp,
+      });
+
+    const rate = Number(value);
+
+    return {
+      from: currency,
+      to: DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+      rate,
+    };
   },
 };
 
