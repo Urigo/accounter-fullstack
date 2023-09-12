@@ -1,9 +1,9 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
-import { getRateForCurrency, isCryptoCurrency } from '../helpers/exchange.helper';
-import { CryptoExchangeProvider } from './crypto-exchange.provider';
-import { FiatExchangeProvider } from './fiat-exchange.provider';
+import { getRateForCurrency, isCryptoCurrency } from '../helpers/exchange.helper.js';
+import { CryptoExchangeProvider } from './crypto-exchange.provider.js';
+import { FiatExchangeProvider } from './fiat-exchange.provider.js';
 
 @Injectable({
   scope: Scope.Singleton,
