@@ -7,9 +7,7 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 /* GraphQL */ `
   fragment TransactionsTableDebitDateFields on Transaction {
     id
-    ...on CommonTransaction {
-      effectiveDate
-    }
+    effectiveDate
   }
 `;
 

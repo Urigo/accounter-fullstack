@@ -11,7 +11,10 @@ import {
   mutation UpdateCharge($chargeId: ID!, $fields: UpdateChargeInput!) {
     updateCharge(chargeId: $chargeId, fields: $fields) {
       __typename
-      ... on Charge {
+      ... on CommonCharge {
+        id
+      }
+      ... on ConversionCharge {
         id
       }
       ... on CommonError {
@@ -21,7 +24,10 @@ import {
   }
 `;
 
-type Charge = Extract<UpdateChargeMutation['updateCharge'], { __typename: 'Charge' }>;
+type Charge = Extract<
+  UpdateChargeMutation['updateCharge'],
+  { __typename: 'CommonCharge' } | { __typename: 'ConversionCharge' }
+>;
 
 type UseUpdateCharge = {
   fetching: boolean;

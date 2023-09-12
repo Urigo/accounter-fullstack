@@ -26,10 +26,10 @@ export const formatFinancialAmount = (
   };
 };
 
-export const formatCurrency = <T extends boolean = false>(
+export function formatCurrency<T extends boolean = false>(
   raw: string | null = null,
   nullable?: T,
-): Currency | (T extends true ? null : never) => {
+): Currency | (T extends true ? null : never) {
   switch (raw) {
     case 'GBP':
       return Currency.Gbp;
@@ -60,7 +60,7 @@ export const formatCurrency = <T extends boolean = false>(
       console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
       return Currency.Ils;
   }
-};
+}
 
 export function getCurrencySymbol(currency: Currency) {
   switch (currency) {

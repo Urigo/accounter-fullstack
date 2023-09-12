@@ -10,8 +10,16 @@ export default gql`
     updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
   }
 
-  extend type Charge {
+  extend interface Charge {
     " list of financial/bank transactions linked to the charge "
+    transactions: [Transaction!]!
+  }
+
+  extend type CommonCharge {
+    transactions: [Transaction!]!
+  }
+
+  extend type ConversionCharge {
     transactions: [Transaction!]!
   }
 

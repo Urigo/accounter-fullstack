@@ -2,8 +2,16 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Charge {
+  extend interface Charge {
     " missing info validation data "
+    validationData: ValidationData
+  }
+
+  extend type CommonCharge {
+    validationData: ValidationData
+  }
+
+  extend type ConversionCharge {
     validationData: ValidationData
   }
 

@@ -1,17 +1,17 @@
 import { format } from 'date-fns';
-import type { currency } from '@modules/transactions/types.js';
+import { GraphQLError } from 'graphql';
+import type { currency, IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
+import { NoOptionalField } from '@shared/types';
 // import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
-export async function getConversionCurrencyRate(
-  getExchangeRatesByDate: (date: Date) => Promise<IGetExchangeRatesByDatesResult>,
+export function getConversionCurrencyRate(
   baseCurrency: Currency,
   quoteCurrency: Currency,
-  date: Date,
-): Promise<{ directRate: number; toLocalRate: number }> {
-  const rates = await getExchangeRatesByDate(date);
+  rates: IGetExchangeRatesByDatesResult,
+): { directRate: number; toLocalRate: number } {
   if (baseCurrency === DEFAULT_LOCAL_CURRENCY) {
     const rate = getRateForCurrency(quoteCurrency, rates);
     return { directRate: rate, toLocalRate: rate };
@@ -24,6 +24,51 @@ export async function getConversionCurrencyRate(
   const quoteRate = getRateForCurrency(quoteCurrency, rates);
   const directRate = quoteRate / baseRate;
   return { directRate, toLocalRate: quoteRate };
+}
+
+type ValidatedTransaction = NoOptionalField<IGetTransactionsByIdsResult, 'debit_date'>;
+
+export function defineConversionBaseAndQuote(transactions: Array<IGetTransactionsByIdsResult>) {
+  if (transactions.length < 2) {
+    throw new GraphQLError('Conversion charges must have at least two ledger records');
+  }
+
+  let baseTransaction: ValidatedTransaction | undefined = undefined;
+  let quoteTransaction: ValidatedTransaction | undefined = undefined;
+  const miscTransactions: ValidatedTransaction[] = [];
+
+  for (const transaction of transactions) {
+    // TODO: handle absolute fee records
+    // if () {
+    //   miscTransactions.push(transaction as ValidatedTransaction);
+    // }
+
+    if (!transaction.debit_date) {
+      throw new GraphQLError(`Transaction ID="${transaction.id}" is missing debit date`);
+    }
+
+    if (Number(transaction.amount) > 0) {
+      if (quoteTransaction) {
+        throw new GraphQLError('Conversion charges must have only one quote transaction');
+      }
+      quoteTransaction = transaction as ValidatedTransaction;
+    } else {
+      if (baseTransaction) {
+        throw new GraphQLError('Conversion charges must have only one base transaction');
+      }
+      baseTransaction = transaction as ValidatedTransaction;
+    }
+  }
+
+  if (!baseTransaction || !quoteTransaction) {
+    throw new GraphQLError('Conversion charges must have a base and a quote transactions');
+  }
+
+  if (baseTransaction.debit_date.getTime() !== quoteTransaction.debit_date.getTime()) {
+    throw new GraphQLError('Conversion transactions must have matching value dates');
+  }
+
+  return { baseTransaction, quoteTransaction, miscTransactions };
 }
 
 export function getRateForCurrency(
@@ -65,4 +110,8 @@ export function getClosestRateForDate(
     throw new Error(`No exchange rate for date ${stringifiedDate}`);
   }
   return exchageRate;
+}
+
+export function isCryptoCurrency(currency: Currency) {
+  return currency === Currency.Grt || currency === Currency.Usdc;
 }

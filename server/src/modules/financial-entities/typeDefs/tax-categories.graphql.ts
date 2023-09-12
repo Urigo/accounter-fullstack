@@ -6,7 +6,15 @@ export default gql`
     taxCategories: [TaxCategory!]!
   }
 
-  extend type Charge {
+  extend interface Charge {
+    taxCategory: TaxCategory
+  }
+
+  extend type CommonCharge {
+    taxCategory: TaxCategory
+  }
+
+  extend type ConversionCharge {
     taxCategory: TaxCategory
   }
 

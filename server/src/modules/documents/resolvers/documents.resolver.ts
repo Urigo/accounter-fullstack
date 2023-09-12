@@ -18,6 +18,7 @@ import type {
   IUpdateDocumentParams,
 } from '../types.js';
 import {
+  commonChargeFields,
   commonDocumentsFields,
   commonFinancialDocumentsFields,
   commonFinancialEntityFields,
@@ -361,22 +362,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },
-  Charge: {
-    additionalDocuments: async (DbCharge, _, { injector }) => {
-      if (!DbCharge.id) {
-        return [];
-      }
-      try {
-        const docs = await injector
-          .get(DocumentsProvider)
-          .getDocumentsByChargeIdLoader.load(DbCharge.id);
-        return docs;
-      } catch (e) {
-        console.error(e);
-        return [];
-      }
-    },
-  },
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
   },

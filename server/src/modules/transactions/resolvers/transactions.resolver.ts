@@ -3,7 +3,7 @@ import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
 import { ChargesTypes } from '@modules/charges/index.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -14,7 +14,7 @@ import type {
   IUpdateTransactionParams,
   TransactionsModule,
 } from '../types.js';
-import { commonTransactionFields } from './common.js';
+import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
   Pick<Resolvers, 'UpdateTransactionResult'> = {
@@ -160,10 +160,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       return 'CommonTransaction';
     },
   },
-  Charge: {
-    transactions: (DbCharge, _, { injector }) =>
-      injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(DbCharge.id),
-  },
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
   // WireTransaction: {
   //   ...commonTransactionFields,
   // },
@@ -185,7 +183,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     bankRate: DbTransaction => DbTransaction.currency_rate,
     officialRateToLocal: async (DbTransaction, _, { injector }) => {
       const officialRate = await injector
-        .get(ExchangeProvider)
+        .get(FiatExchangeProvider)
         .getExchangeRatesByDatesLoader.load(DbTransaction.event_date);
       if (!officialRate) {
         console.error(`Conversion transaction ID="${DbTransaction.id}" has no official rate`);

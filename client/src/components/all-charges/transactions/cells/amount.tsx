@@ -1,16 +1,18 @@
 import { ReactElement } from 'react';
 import { TransactionsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { formatStringifyAmount } from '../../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TransactionsTableAmountFields on Transaction {
     id
-    ...on CommonTransaction {
-      amount {
-        raw
-        formatted
+    amount {
+      raw
+      formatted
     }
+    cryptoExchangeRate {
+      rate
     }
   }
 `;
@@ -32,6 +34,21 @@ export const Amount = ({ data }: Props): ReactElement => {
         }}
       >
         {amount?.formatted}
+        <br />
+        {transaction.cryptoExchangeRate && (
+          <span
+            style={{
+              color: 'gray',
+              marginLeft: '0.5rem',
+            }}
+          >
+            {`(Rate: ${transaction.cryptoExchangeRate.rate})`}
+            <br />
+            {amount?.raw
+              ? `${formatStringifyAmount(amount.raw * transaction.cryptoExchangeRate.rate)}$`
+              : null}
+          </span>
+        )}
       </div>
     </td>
   );

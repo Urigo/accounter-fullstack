@@ -7,9 +7,7 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 /* GraphQL */ `
   fragment TransactionsTableEventDateFields on Transaction {
     id
-    ...on CommonTransaction {
-      eventDate
-    }
+    eventDate
   }
 `;
 

@@ -36,9 +36,9 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
   // FeeTransaction: {
   //   ...commonTransactionFields,
   // },
-  // ConversionTransaction: {
-  //   ...commonTransactionFields,
-  // },
+  ConversionTransaction: {
+    ...commonTransactionFields,
+  },
   CommonTransaction: {
     ...commonTransactionFields,
   },

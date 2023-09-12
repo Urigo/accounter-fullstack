@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { TagsProvider } from '../providers/tags.provider.js';
 import type { TagsModule } from '../types.js';
+import { commonTaxChargeFields } from './common.js';
 
 export const tagsResolvers: TagsModule.Resolvers = {
   Query: {
@@ -42,11 +43,6 @@ export const tagsResolvers: TagsModule.Resolvers = {
         .then(() => true);
     },
   },
-  Charge: {
-    tags: (DbCharge, _, { injector }) =>
-      injector
-        .get(TagsProvider)
-        .getTagsByChargeIDLoader.load(DbCharge.id)
-        .then(tags => tags.map(tag => ({ name: tag.tag_name }))),
-  },
+  CommonCharge: commonTaxChargeFields,
+  ConversionCharge: commonTaxChargeFields,
 };

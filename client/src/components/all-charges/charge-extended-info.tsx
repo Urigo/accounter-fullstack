@@ -8,6 +8,7 @@ import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { ConfirmationModal } from '../common/index.js';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { DocumentsTable } from './documents/documents-table';
+import { ConversionInfo } from './extended-info/conversion-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 import { TransactionsTable } from './transactions/transactions-table';
 
@@ -15,6 +16,7 @@ import { TransactionsTable } from './transactions/transactions-table';
 /* GraphQL */ `
   query FetchCharge($chargeIDs: [ID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
+      __typename
       id
       owner {
         id
@@ -34,6 +36,9 @@ import { TransactionsTable } from './transactions/transactions-table';
       ...TableDocumentsFields
       ...TableLedgerRecordsFields
       ...TableTransactionsFields
+      ... on ConversionCharge {
+        ...ConversionChargeInfo
+      }
     }
   }
 `;
@@ -95,6 +100,15 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
               },
             }}
           >
+            {charge.__typename === 'ConversionCharge' && (
+              <Accordion.Item value="conversion">
+                <Accordion.Control disabled={!hasTransactions}>Conversion Info</Accordion.Control>
+                <Accordion.Panel>
+                  <ConversionInfo chargeProps={charge} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
             <Accordion.Item value="transactions">
               <Accordion.Control disabled={!hasTransactions}>Transactions</Accordion.Control>
               <Accordion.Panel>

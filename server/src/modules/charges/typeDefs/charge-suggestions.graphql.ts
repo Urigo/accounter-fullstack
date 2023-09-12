@@ -2,8 +2,16 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Charge {
+  extend interface Charge {
     " missing info suggestions data "
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
+  extend type CommonCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
+  extend type ConversionCharge {
     missingInfoSuggestions: ChargeSuggestions
   }
 

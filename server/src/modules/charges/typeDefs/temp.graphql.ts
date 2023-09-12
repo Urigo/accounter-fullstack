@@ -2,8 +2,16 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Charge {
+  extend interface Charge {
     " temp old ledger data "
+    oldLedger: [OldLedger!]!
+  }
+
+  extend type CommonCharge {
+    oldLedger: [OldLedger!]!
+  }
+
+  extend type ConversionCharge {
     oldLedger: [OldLedger!]!
   }
 
