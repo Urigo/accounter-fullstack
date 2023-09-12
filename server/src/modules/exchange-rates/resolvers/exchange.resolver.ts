@@ -87,7 +87,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
 
       let rate: number | undefined = undefined;
       for (const transaction of [baseTransaction, quoteTransaction]) {
-        if (transaction.currency_rate) {
+        if (transaction.currency_rate && transaction.currency_rate !== '0') {
           const transactionRate = Number(transaction.currency_rate);
           if (rate && rate !== transactionRate) {
             throw new GraphQLError(`Multiple rates found for charge ID="${dbCharge.id}"`);
