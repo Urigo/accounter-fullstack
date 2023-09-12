@@ -10,6 +10,9 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
       raw
       formatted
     }
+    cryptoExchangeRate {
+      rate
+    }
   }
 `;
 
@@ -30,6 +33,17 @@ export const Amount = ({ data }: Props): ReactElement => {
         }}
       >
         {amount?.formatted}
+        <br/>
+        {transaction.cryptoExchangeRate && (
+          <span
+            style={{
+              color: 'gray',
+              marginLeft: '0.5rem',
+            }}
+          >
+            {`(${transaction.cryptoExchangeRate.rate})`}
+          </span>
+        )}
       </div>
     </td>
   );
