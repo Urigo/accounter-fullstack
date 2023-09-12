@@ -32,9 +32,8 @@ export default gql`
 
   extend type ConversionCharge {
     exchangeRates: ExchangeRates
-    directRate: ConversionRate
-    toLocalRate: ConversionRate
-    cryptoToFiat: ConversionRate
+    eventRate: ConversionRate
+    officialRate: ConversionRate
   }
 
   extend interface Transaction {

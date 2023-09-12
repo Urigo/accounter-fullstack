@@ -1,11 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { defineConversionBaseAndQuote, isCryptoCurrency } from '../helpers/exchange.helper.js';
-import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
+import { defineConversionBaseAndQuote } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
 import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';
@@ -53,7 +51,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   CommonCharge: commonChargeFields,
   ConversionCharge: {
     ...commonChargeFields,
-    directRate: async (dbCharge, _, { injector }) => {
+    officialRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(dbCharge.id);
@@ -75,57 +73,37 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         rate,
       };
     },
-    toLocalRate: async (dbCharge, _, { injector }) => {
+    eventRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(dbCharge.id);
       if (!transactions) {
         throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
       }
-      const { quoteTransaction } = defineConversionBaseAndQuote(transactions);
-
-      const quoteCurrency = formatCurrency(quoteTransaction.currency);
-
-      const rate = await injector
-        .get(ExchangeProvider)
-        .getExchangeRates(quoteCurrency, DEFAULT_LOCAL_CURRENCY, quoteTransaction.debit_date);
-
-      return {
-        from: quoteCurrency,
-        to: DEFAULT_LOCAL_CURRENCY,
-        rate,
-      };
-    },
-    cryptoToFiat: async (dbCharge, _, { injector }) => {
-      const transactions = await injector
-        .get(TransactionsProvider)
-        .getTransactionsByChargeIDLoader.load(dbCharge.id);
-      if (!transactions) {
-        throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
-      }
-      const { baseTransaction } = defineConversionBaseAndQuote(transactions);
+      const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
+      const quoteCurrency = formatCurrency(quoteTransaction.currency);
 
-      if (isCryptoCurrency(baseCurrency)) {
-        const { value } = await injector
-          .get(CryptoExchangeProvider)
-          .getCryptoExchangeRateLoader.load({
-            cryptoCurrency: baseCurrency,
-            date: baseTransaction.debit_date,
-          });
+      let rate: number | undefined = undefined;
+      for (const transaction of [baseTransaction, quoteTransaction]) {
+        if (transaction.currency_rate) {
+          const transactionRate = Number(transaction.currency_rate);
+          if (rate && rate !== transactionRate) {
+            throw new GraphQLError(`Multiple rates found for charge ID="${dbCharge.id}"`);
+          }
+          rate = transactionRate;
+        }
+      }
 
-        return {
-          from: baseCurrency,
-          to: DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
-          rate: Number(value),
-        };
+      if (!rate) {
+        throw new GraphQLError(`Couldn't find any rate for charge ID="${dbCharge.id}"`);
       }
 
       return {
         from: baseCurrency,
-        to: baseCurrency,
-        rate: 1,
+        to: quoteCurrency,
+        rate,
       };
     },
   },
