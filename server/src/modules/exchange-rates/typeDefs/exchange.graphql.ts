@@ -15,6 +15,7 @@ export default gql`
     date: TimelessDate!
   }
 
+  " represent exchange rate between two currencies "
   type ConversionRate {
     from: Currency!
     to: Currency!
