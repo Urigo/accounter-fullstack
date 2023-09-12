@@ -160,7 +160,8 @@ export async function createAndConnectStore(options: { connectionString: string;
           amount,
           value_date,
           raw_data,
-          transaction_hash
+          transaction_hash,
+          event_date
         ) VALUES (
           $1,
           $2,
@@ -172,6 +173,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           $8,
           $9:json,
           $10
+          $11
         )
         ON CONFLICT DO NOTHING;
       `,
@@ -186,6 +188,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           normalizedTx.date,
           normalizedTx.raw,
           normalizedTx.raw.blockHash,
+          normalizedTx.raw.timeStamp,
         ],
       );
     },
