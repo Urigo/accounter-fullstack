@@ -67,3 +67,4 @@ export type BusinessTransactionProto = {
 export type CounterAccountProto = string | IGetAllTaxCategoriesResult;
 
 export * from './ledger.js';
+export * from './utils.js';

@@ -1,6 +1,7 @@
 import exchange from './typeDefs/exchange.graphql.js';
 import { createModule } from 'graphql-modules';
 import { CryptoExchangeProvider } from './providers/crypto-exchange.provider.js';
+import { ExchangeProvider } from './providers/exchange.provider.js';
 import { FiatExchangeProvider } from './providers/fiat-exchange.provider.js';
 import { exchangeResolvers } from './resolvers/exchange.resolver.js';
 
@@ -11,7 +12,7 @@ export const exchangeRatesModule = createModule({
   dirname: __dirname,
   typeDefs: [exchange],
   resolvers: [exchangeResolvers],
-  providers: () => [FiatExchangeProvider, CryptoExchangeProvider],
+  providers: () => [ExchangeProvider, FiatExchangeProvider, CryptoExchangeProvider],
 });
 
 export * as LedgerTypes from './types.js';
