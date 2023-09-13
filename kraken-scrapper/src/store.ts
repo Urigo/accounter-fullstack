@@ -93,12 +93,12 @@ export async function createAndConnectStore(options: { connectionString: string;
                 NEW.currency::currency,
                 NEW.value_date::text::date,
                 NEW.value_date::text::date,
-                NEW.amount,
+                NEW.amount - NEW.fee,
                 NEW.balance
             );
 
             -- if fee is not null, create new fee transaction
-            IF (NEW.fee IS NULL) THEN
+            IF (NEW.fee IS NOT NULL) THEN
               INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
               VALUES (
                   account_id_var,
