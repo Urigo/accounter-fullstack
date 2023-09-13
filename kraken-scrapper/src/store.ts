@@ -93,8 +93,8 @@ export async function createAndConnectStore(options: { connectionString: string;
                 NEW.currency::currency,
                 NEW.value_date::text::date,
                 NEW.value_date::text::date,
-                NEW.amount - NEW.fee,
-                NEW.balance
+                NEW.amount,
+                (NEW.balance + NEW.fee)
             );
 
             -- if fee is not null, create new fee transaction
@@ -108,8 +108,8 @@ export async function createAndConnectStore(options: { connectionString: string;
                   NEW.currency::currency,
                   NEW.value_date::text::date,
                   NEW.value_date::text::date,
-                  NEW.fee,
-                  (NEW.balance + NEW.fee),
+                  (NEW.fee * -1),
+                  NEW.balance,
                   true
               );
             END IF;
