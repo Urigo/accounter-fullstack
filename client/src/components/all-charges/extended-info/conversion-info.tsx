@@ -8,17 +8,12 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
 /* GraphQL */ `
   fragment ConversionChargeInfo on ConversionCharge {
     id
-    directRate {
+    eventRate {
       from
       to
       rate
     }
-    toLocalRate {
-      from
-      to
-      rate
-    }
-    cryptoToFiat {
+    officialRate {
       from
       to
       rate
@@ -31,49 +26,32 @@ type Props = {
 };
 
 export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
-  const { directRate, toLocalRate, cryptoToFiat } = getFragmentData(
-    ConversionChargeInfoFragmentDoc,
-    chargeProps,
-  );
+  const { eventRate, officialRate } = getFragmentData(ConversionChargeInfoFragmentDoc, chargeProps);
   return (
-    <Grid justify="space-around">
-      {directRate && (
+    <Grid justify="center">
+      {officialRate && (
         <Grid.Col span="content">
           <Card shadow="sm" padding="xs" radius="md" withBorder>
             <Group position="apart">
-              <Text weight={500}>Direct Conversion Rate</Text>
+              <Text weight={500}>Official Conversion Rate</Text>
               <Badge color="green" variant="light">
-                {`${Number(directRate.rate)} ${currencyCodeToSymbol(
-                  directRate.from,
-                )} => ${currencyCodeToSymbol(directRate.to)}`}
+                {`${Number(officialRate.rate)} ${currencyCodeToSymbol(
+                  officialRate.from,
+                )} => ${currencyCodeToSymbol(officialRate.to)}`}
               </Badge>
             </Group>
           </Card>
         </Grid.Col>
       )}
-      {toLocalRate && (
+      {eventRate && (
         <Grid.Col span="content">
           <Card shadow="sm" padding="xs" radius="md" withBorder>
             <Group position="apart">
-              <Text weight={500}>Local Conversion Rate</Text>
+              <Text weight={500}>Bank Conversion Rate</Text>
               <Badge color="green" variant="light">
-                {`${Number(toLocalRate.rate)} ${currencyCodeToSymbol(
-                  toLocalRate.from,
-                )} => ${currencyCodeToSymbol(toLocalRate.to)}`}
-              </Badge>
-            </Group>
-          </Card>
-        </Grid.Col>
-      )}
-      {cryptoToFiat?.rate && Number(cryptoToFiat.rate) !== 1 && (
-        <Grid.Col span="content">
-          <Card shadow="sm" padding="xs" radius="md" withBorder>
-            <Group position="apart">
-              <Text weight={500}>Crypto to Fiat Rate</Text>
-              <Badge color="green" variant="light">
-                {`${Number(cryptoToFiat.rate)} ${currencyCodeToSymbol(
-                  cryptoToFiat.from,
-                )} => ${currencyCodeToSymbol(cryptoToFiat.to)}`}
+                {`${Number(eventRate.rate)} ${currencyCodeToSymbol(
+                  eventRate.from,
+                )} => ${currencyCodeToSymbol(eventRate.to)}`}
               </Badge>
             </Group>
           </Card>

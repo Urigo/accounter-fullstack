@@ -15,6 +15,7 @@ export default gql`
     date: TimelessDate!
   }
 
+  " represent exchange rate between two currencies "
   type ConversionRate {
     from: Currency!
     to: Currency!
@@ -31,9 +32,8 @@ export default gql`
 
   extend type ConversionCharge {
     exchangeRates: ExchangeRates
-    directRate: ConversionRate
-    toLocalRate: ConversionRate
-    cryptoToFiat: ConversionRate
+    eventRate: ConversionRate
+    officialRate: ConversionRate
   }
 
   extend interface Transaction {

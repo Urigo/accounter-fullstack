@@ -41,6 +41,7 @@ module.exports = {
                 'ChargeMetadata',
                 'ChargeSuggestions',
                 'CommonError',
+                'ConversionRate',
                 'DateRange',
                 'ExchangeRates',
                 'FinancialAmount',
