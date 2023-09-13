@@ -24,7 +24,7 @@ export class ExchangeProvider {
         cryptoCurrency: baseCurrency,
         date,
       });
-      rate = rate / Number(value);
+      rate = rate * Number(value);
       baseCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY as Currency;
     }
     if (isCryptoCurrency(quoteCurrency)) {
@@ -32,7 +32,7 @@ export class ExchangeProvider {
         cryptoCurrency: quoteCurrency,
         date,
       });
-      rate = rate * Number(value);
+      rate = rate / Number(value);
       quoteCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY as Currency;
     }
     if (baseCurrency === quoteCurrency) {

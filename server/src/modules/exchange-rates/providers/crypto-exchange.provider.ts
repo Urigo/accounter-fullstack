@@ -34,8 +34,6 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
     FROM accounter_schema.crypto_currencies
     WHERE symbol in $$currencySymbols;`;
 
-let flag = false;
-
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -108,46 +106,59 @@ export class CryptoExchangeProvider {
     }
 
     const fromDate = subHours(date, 23);
-    const from = fromDate.getTime() / 1000;
-    const to = date.getTime() / 1000;
+    const from = Math.floor(fromDate.getTime() / 1000);
+    const to = Math.floor(date.getTime() / 1000);
 
     // Fetch rate from CoinGecko
     const url = new URL(
       `https://api.coinmarketcap.com/data-api/v3/cryptocurrency/detail/chart?id=${coinmarketcapId}&range=${from}~${to}`,
     );
 
-    if (!flag) {
-      flag = true;
-      const res = await fetch(url);
-      flag = false;
+    const res = await fetch(url);
 
-      const rateData = await res?.json();
-      const ratesObject = rateData?.data?.points;
-      if (!ratesObject || Object.keys(ratesObject).length === 0) {
-        throw new GraphQLError(`Error retrieving rate of ${currencySymbol} from CoinMarketCap`);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rates = Object.entries(ratesObject).map(([timestamp, rate]: [any, any]) => [
-        timestamp,
-        rate?.['c']?.[0],
-      ]);
-
-      const [timestamp, rate] = rates[rates.length - 1];
-
-      const sampleDate = new Date(Number(timestamp));
-
-      // Add rate to DB
-      await this.addCryptoRateLoader.load({
-        date,
-        currency: currencySymbol,
-        value: rate,
-        against: this.fiatCurrency,
-        sampleDate,
-      });
-
-      return rate;
+    const rateData = await res?.json();
+    const ratesObject = rateData?.data?.points;
+    if (!ratesObject || Object.keys(ratesObject).length === 0) {
+      console.error(url.toString());
+      throw new GraphQLError(`Error retrieving rate of ${currencySymbol} from CoinMarketCap`);
     }
-    throw new GraphQLError('Currently fetching data from CoinMarketCap, please try again later');
+
+    let timestamp: number | undefined = undefined;
+    let rate: number | undefined = undefined;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const [rawTimestamp, rateData] of Object.entries<{ c?: Array<number> } | undefined>(
+      ratesObject,
+    )) {
+      const newTimestamp = Number(rawTimestamp);
+      if (newTimestamp <= to && rateData?.c?.[0]) {
+        if (!timestamp || !rate) {
+          timestamp = newTimestamp;
+          rate = rateData.c[0];
+        }
+        if (newTimestamp > timestamp) {
+          timestamp = newTimestamp;
+          rate = rateData.c[0];
+        }
+      }
+    }
+
+    if (!rate || !timestamp) {
+      throw new GraphQLError(`No suitable rate of ${currencySymbol} found in CoinMarketCap`);
+    }
+
+    const sampleDate = new Date(timestamp * 1000);
+
+    // Add rate to DB
+    await this.addCryptoRateLoader.load({
+      date,
+      currency: currencySymbol,
+      value: rate,
+      against: this.fiatCurrency,
+      sampleDate,
+    });
+
+    return rate;
   }
 
   public getCryptoExchangeRateLoader = new DataLoader<
