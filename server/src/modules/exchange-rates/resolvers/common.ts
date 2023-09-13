@@ -29,12 +29,10 @@ export const commonTransactionFields:
       return null;
     }
 
-    const { value } = await injector
-      .get(CryptoExchangeProvider)
-      .getCryptoExchangeRateLoader.load({
-        cryptoCurrency: currency,
-        date: DbTransaction.debit_timestamp,
-      });
+    const { value } = await injector.get(CryptoExchangeProvider).getCryptoExchangeRateLoader.load({
+      cryptoCurrency: currency,
+      date: DbTransaction.debit_timestamp,
+    });
 
     const rate = Number(value);
 
