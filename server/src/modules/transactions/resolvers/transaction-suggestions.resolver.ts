@@ -1,10 +1,10 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
-  CommonTransactionResolvers,
   Maybe,
   Resolver,
   ResolversParentTypes,
   ResolversTypes,
+  TransactionResolvers,
 } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
 import type { TransactionsModule } from '../types.js';
@@ -335,11 +335,12 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   // FeeTransaction: {
   //   missingInfoSuggestions: missingInfoSuggestions as FeeTransactionResolvers['missingInfoSuggestions'],
   // },
-  // ConversionTransaction: {
-  //   missingInfoSuggestions: missingInfoSuggestions as ConversionTransactionResolvers['missingInfoSuggestions'],
-  // },
+  ConversionTransaction: {
+    missingInfoSuggestions:
+      missingInfoSuggestions as TransactionResolvers['missingInfoSuggestions'],
+  },
   CommonTransaction: {
     missingInfoSuggestions:
-      missingInfoSuggestions as CommonTransactionResolvers['missingInfoSuggestions'],
+      missingInfoSuggestions as TransactionResolvers['missingInfoSuggestions'],
   },
 };

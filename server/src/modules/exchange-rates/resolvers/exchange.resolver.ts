@@ -62,10 +62,14 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
       const quoteCurrency = formatCurrency(quoteTransaction.currency);
+      const date =
+        baseTransaction.debit_timestamp ||
+        quoteTransaction.debit_timestamp ||
+        baseTransaction.debit_date;
 
       const rate = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(baseCurrency, quoteCurrency, baseTransaction.debit_date);
+        .getExchangeRates(baseCurrency, quoteCurrency, date);
 
       return {
         from: baseCurrency,
@@ -113,9 +117,9 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   // FeeTransaction: {
   //   ...commonTransactionFields,
   // },
-  // ConversionTransaction: {
-  //   ...commonTransactionFields,
-  // },
+  ConversionTransaction: {
+    ...commonTransactionFields,
+  },
   CommonTransaction: {
     ...commonTransactionFields,
   },
