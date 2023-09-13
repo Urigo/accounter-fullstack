@@ -38,10 +38,10 @@ export function defineConversionBaseAndQuote(transactions: Array<IGetTransaction
   const miscTransactions: ValidatedTransaction[] = [];
 
   for (const transaction of transactions) {
-    // TODO: handle absolute fee records
-    // if () {
-    //   miscTransactions.push(transaction as ValidatedTransaction);
-    // }
+    if (transaction.is_fee || transaction.source_description?.includes('Fee:')) {
+      miscTransactions.push(transaction as ValidatedTransaction);
+      continue;
+    }
 
     if (!transaction.debit_date) {
       throw new GraphQLError(`Transaction ID="${transaction.id}" is missing debit date`);

@@ -84,7 +84,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           END IF;
       
           -- create new transaction
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
           VALUES (
               account_id_var,
               charge_id_var,
@@ -99,7 +99,8 @@ export async function createAndConnectStore(options: { connectionString: string;
               NEW.time::text::date,
               NEW.time::text::date,
               new.amount,
-              0
+              0,
+              CASE WHEN NEW.action_type = 'fee' THEN TRUE ELSE FALSE END
           );
       
             RETURN NEW;
@@ -129,7 +130,6 @@ export async function createAndConnectStore(options: { connectionString: string;
         AFTER INSERT
           ON ${options.schema}.${tableName}
           FOR EACH ROW
-          WHEN (new.action_type != 'fee')
         EXECUTE
           PROCEDURE ${tableName}_insert_fn ();
       `);
