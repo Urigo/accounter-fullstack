@@ -94,22 +94,22 @@ export async function createAndConnectStore(options: { connectionString: string;
                 NEW.value_date::text::date,
                 NEW.value_date::text::date,
                 NEW.amount,
-                NEW.balance
+                (NEW.balance + NEW.fee)
             );
 
             -- if fee is not null, create new fee transaction
-            IF (NEW.fee IS NULL) THEN
+            IF (NEW.fee IS NOT NULL) THEN
               INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
               VALUES (
                   account_id_var,
                   charge_id_var,
                   merged_id,
-                  CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
+                  CONCAT_WS(' ', 'Fee:', NEW.trade_ref_id),
                   NEW.currency::currency,
                   NEW.value_date::text::date,
                   NEW.value_date::text::date,
-                  NEW.fee,
-                  (NEW.balance + NEW.fee),
+                  (NEW.fee * -1),
+                  NEW.balance,
                   true
               );
             END IF;
