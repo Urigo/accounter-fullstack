@@ -104,7 +104,7 @@ export async function createAndConnectStore(options: { connectionString: string;
                   account_id_var,
                   charge_id_var,
                   merged_id,
-                  CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
+                  CONCAT_WS(' ', 'Fee:', NEW.trade_ref_id),
                   NEW.currency::currency,
                   NEW.value_date::text::date,
                   NEW.value_date::text::date,
