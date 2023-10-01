@@ -1,6 +1,8 @@
 import { fetch } from './fetch.js';
 import { ensureEnv } from './utils.js';
 
+const GWEY_TO_VALUE = 0.000_000_000_000_000_001; // 10^9
+
 type EtherscanResponse<T> =
   | {
       status: '1';
@@ -50,13 +52,15 @@ function normalizeTx(wallet: string, tx: ERC20Transaction) {
   const decimals = parseInt(tx.tokenDecimal);
   const rawValue = parseInt(tx.value);
   const tokenAmount = rawValue / 10 ** decimals;
-
+  const gasFee = parseFloat(tx.gasPrice) * parseFloat(tx.gasUsed) * GWEY_TO_VALUE;
+  
   return {
     id: `${wallet}-${tx.hash}`,
     date: new Date(parseInt(tx.timeStamp) * 1000),
     tokenAmount,
     currency: tx.tokenSymbol,
     raw: tx,
+    gasFee
   };
 }
 

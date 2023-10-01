@@ -136,6 +136,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           currency TEXT,
           transaction_hash TEXT,
           amount DECIMAL NOT NULL,
+          gas_fee DECIMAL NOT NULL,
           value_date DATE NOT NULL,
           raw_data JSONB NOT NULL
         );
@@ -161,7 +162,8 @@ export async function createAndConnectStore(options: { connectionString: string;
           value_date,
           raw_data,
           transaction_hash,
-          event_date
+          event_date,
+          gas_fee
         ) VALUES (
           $1,
           $2,
@@ -173,7 +175,8 @@ export async function createAndConnectStore(options: { connectionString: string;
           $8,
           $9:json,
           $10
-          $11
+          $11,
+          $12
         )
         ON CONFLICT DO NOTHING;
       `,
@@ -189,6 +192,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           normalizedTx.raw,
           normalizedTx.raw.blockHash,
           normalizedTx.raw.timeStamp,
+          normalizedTx.gasFee
         ],
       );
     },
