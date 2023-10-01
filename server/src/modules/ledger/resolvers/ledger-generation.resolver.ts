@@ -3,7 +3,6 @@ import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import {
   defineConversionBaseAndQuote,
-  getConversionCurrencyRate,
   getRateForCurrency,
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
@@ -28,6 +27,7 @@ import {
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -233,10 +233,9 @@ export const generateLedgerRecords: ResolverFn<
 
         if (currencyCode !== DEFAULT_LOCAL_CURRENCY) {
           // get exchange rate for currency
-          const exchangeRates = await injector
-            .get(FiatExchangeProvider)
-            .getExchangeRatesByDatesLoader.load(transaction.debit_date);
-          const exchangeRate = getRateForCurrency(currencyCode, exchangeRates);
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(currencyCode as Currency, DEFAULT_LOCAL_CURRENCY, transaction.debit_date);
 
           foreignAmount = amount;
           // calculate amounts in ILS
@@ -318,25 +317,27 @@ export const generateLedgerRecords: ResolverFn<
     if (charge.is_conversion) {
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
-      const baseEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
-        entry => entry.id === baseTransaction.id,
-      );
-      const quoteEntry: LedgerProto | undefined = financialAccountLedgerEntries.find(
-        entry => entry.id === quoteTransaction.id,
-      );
+      let conversionBalance = 0;
+      let baseEntry: LedgerProto | undefined = undefined;
+      let quoteEntry: LedgerProto | undefined = undefined;
+      for (const entry of financialAccountLedgerEntries) {
+        if (entry.id === baseTransaction.id) {
+          baseEntry = entry;
+          conversionBalance -= entry.localCurrencyCreditAmount1 ?? 0;
+        }
+        if (entry.id === quoteTransaction.id) {
+          quoteEntry = entry;
+          conversionBalance += entry.localCurrencyCreditAmount1 ?? 0;
+        }
+      };
 
       if (!baseEntry || !quoteEntry) {
         throw new GraphQLError('Conversion charge must have a base and a quote entries');
       }
 
-      const rates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(baseEntry.valueDate);
-      const { directRate, toLocalRate } = getConversionCurrencyRate(
-        baseEntry.currency,
-        quoteEntry.currency,
-        rates,
-      );
+      const [quoteRate, baseRate] = await Promise.all([quoteEntry.currency, baseEntry.currency].map(currency => injector.get(ExchangeProvider).getExchangeRates(currency as Currency, DEFAULT_LOCAL_CURRENCY, baseEntry!.valueDate)));
+      const toLocalRate = quoteRate;
+      const directRate = quoteRate / baseRate;
       const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 
       const isDebitConversion = conversionFee.localAmount >= 0;
@@ -365,9 +366,20 @@ export const generateLedgerRecords: ResolverFn<
         reference1: quoteEntry.reference1,
         ownerId: quoteEntry.ownerId,
       });
-      ledgerBalance -= conversionFee.localAmount;
+      conversionBalance -= conversionFee.localAmount;
 
-      if (Math.abs(ledgerBalance) > 0.005) {
+      if (Math.abs(conversionBalance) > 0.005) {
+        const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
+          ? financialAccountLedgerEntries[0].creditAccountID1
+          : financialAccountLedgerEntries[0].debitAccountID1;
+        const business = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(
+            typeof counterpartyId === 'string' ? counterpartyId : counterpartyId.id,
+          );
+        if (business?.no_invoices_required) {
+          return { records: {...financialAccountLedgerEntries, ...miscLedgerEntries }};
+        }
         throw new GraphQLError('Conversion charges must have a ledger balance');
       }
     }
