@@ -118,7 +118,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   > = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
-      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
+      let { ownerIds, businessIDs, fromDate, toDate } = filters || {};
+      if (businessIDs?.length === 0) {
+        businessIDs = undefined;
+      }
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
@@ -153,10 +156,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const ledger of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && ledger.invoiceDate.getTime() < new Date(fromDate).getTime()) {
+          if (!!fromDate && format(ledger.invoiceDate, 'yyyy-MM-dd') < fromDate) {
             continue;
           }
-          if (!!toDate && ledger.invoiceDate.getTime() > new Date(toDate).getTime()) {
+          if (!!toDate && format(ledger.invoiceDate, 'yyyy-MM-dd') > toDate) {
             continue;
           }
 
@@ -265,10 +268,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const record of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && record.invoiceDate.getTime() < new Date(fromDate).getTime()) {
+          if (!!fromDate && format(record.invoiceDate, 'yyyy-MM-dd') < fromDate) {
             continue;
           }
-          if (!!toDate && record.invoiceDate.getTime() > new Date(toDate).getTime()) {
+          if (!!toDate && format(record.invoiceDate, 'yyyy-MM-dd') > toDate) {
             continue;
           }
 
