@@ -62,7 +62,7 @@ export const ENTITIES_WITHOUT_ACCOUNTING = [
 ];
 
 // Tax category related
-export const VAT_TAX_CATEGORY_NAME = 'מעמחוז';
+export const VAT_TAX_CATEGORY_NAME = 'מעמ';
 export const EXCHANGE_RATE_CATEGORY_NAME = 'Exchange Rates';
 export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
 export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
