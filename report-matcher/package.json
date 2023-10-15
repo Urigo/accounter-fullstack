@@ -1,0 +1,23 @@
+{
+  "name": "report-matcher",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "license": "MIT",
+  "engines": {
+    "node": "20.5.0"
+  },
+  "main": "./src/index.mts",
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "prestart": "yarn build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "graphql": "16.8.0"
+  },
+  "devDependencies": {
+    "nodemon": "3.0.1"
+  }
+}

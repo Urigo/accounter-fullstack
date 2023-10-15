@@ -1,13 +1,12 @@
 overwrite: true
 schema: ./server/src/modules/*/typeDefs/*.graphql.ts
-documents:
-  ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts', './client/**/*.graphql.ts']
 config:
   scalars:
     TimelessDate: 'TimelessDateString'
     IBAN: string
     URL: 'URL | string'
     FileScalar: 'File | Blob'
+
 generates:
   schema.graphql:
     plugins:
@@ -72,8 +71,21 @@ generates:
           content: "import { TimelessDateString } from '@shared/types'"
       - 'typescript'
       - 'typescript-resolvers'
+
   client/src/gql/:
+    documents:
+      ['./client/src/components/**/*.tsx', './client/src/hooks/**/*.ts', './client/**/*.graphql.ts']
     preset: 'client'
+    presetConfig:
+      fragmentMasking:
+        unmaskFunctionName: 'getFragmentData'
+    plugins:
+      - add:
+          content: "import { TimelessDateString } from '../helpers'"
+
+  report-matcher/src/gql/:
+    preset: 'client'
+    documents: ['./report-matcher/src/**/*.ts']
     presetConfig:
       fragmentMasking:
         unmaskFunctionName: 'getFragmentData'
