@@ -105,7 +105,9 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     if (!data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum) {
       return [];
     }
-    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum.sort((a,b) => a.business.name.localeCompare(b.business.name));
+    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum.sort((a, b) =>
+      a.business.name.localeCompare(b.business.name),
+    );
   }, [data?.businessTransactionsSumFromLedgerRecords]);
 
   return fetching ? (
