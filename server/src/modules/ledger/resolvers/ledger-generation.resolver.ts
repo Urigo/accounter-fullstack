@@ -28,7 +28,6 @@ import {
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -48,10 +47,9 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from documents
     const accountingLedgerEntries: LedgerProto[] = [];
     if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
-      const counterpartyTaxCategory = await (charge.tax_category_id ? injector
-        .get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id) : injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id));
+      const counterpartyTaxCategory = await (charge.tax_category_id
+        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
+        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id));
       if (!counterpartyTaxCategory) {
         throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
       }
@@ -245,7 +243,9 @@ export const generateLedgerRecords: ResolverFn<
             .getExchangeRates(
               currencyCode as Currency,
               DEFAULT_LOCAL_CURRENCY,
-              transaction.debit_date,
+              transaction.debit_timestamp
+                ? new Date(transaction.debit_timestamp)
+                : transaction.debit_date,
             );
 
           foreignAmount = amount;
