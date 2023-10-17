@@ -138,6 +138,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           amount DECIMAL NOT NULL,
           gas_fee DECIMAL NOT NULL,
           value_date DATE NOT NULL,
+          eventDate TIMESTAMP NOT NULL,
           raw_data JSONB NOT NULL
         );
       `);
@@ -174,8 +175,8 @@ export async function createAndConnectStore(options: { connectionString: string;
           $7,
           $8,
           $9:json,
-          $10
-          $11,
+          $10,
+          to_timestamp($11),
           $12
         )
         ON CONFLICT DO NOTHING;
