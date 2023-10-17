@@ -113,5 +113,5 @@ export function getClosestRateForDate(
 }
 
 export function isCryptoCurrency(currency: Currency) {
-  return currency === Currency.Grt || currency === Currency.Usdc;
+  return currency === Currency.Grt || currency === Currency.Usdc || currency === Currency.Eth;
 }

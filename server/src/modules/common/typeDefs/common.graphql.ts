@@ -73,6 +73,7 @@ export default gql`
     EUR
     GRT
     USDC
+    ETH
   }
 
   " meta info for page pagination "

@@ -26,6 +26,7 @@ export enum Currency {
   Eur = 'EUR',
   Grt = 'GRT',
   Usdc = 'USDC',
+  Eth = 'ETH',
 }
 
 export enum DocumentType {
