@@ -17,6 +17,9 @@ export function currencyCodeToSymbol(currency_code: string): string {
   } else if (currency_code === 'USDC') {
     // TODO: use symbol
     currencySymbol = 'USDC';
+  } else if (currency_code === 'ETH') {
+    // TODO: use symbol
+    currencySymbol = 'ETH';
   }
   return currencySymbol;
 }

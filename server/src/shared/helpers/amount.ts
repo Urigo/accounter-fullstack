@@ -49,6 +49,8 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Grt;
     case 'USDC':
       return Currency.Usdc;
+    case 'ETH':
+      return Currency.Eth;
     case null:
       return Currency.Ils;
     case undefined:
@@ -78,6 +80,9 @@ export function getCurrencySymbol(currency: Currency) {
     case Currency.Usdc:
       // TODO: use symbol
       return 'USDC';
+    case Currency.Eth:
+      // TODO: use symbol
+      return 'ETH';
     default:
       console.warn(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
       return '₪';

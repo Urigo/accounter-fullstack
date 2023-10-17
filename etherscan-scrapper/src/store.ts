@@ -76,19 +76,23 @@ export async function createAndConnectStore(options: { connectionString: string;
             ),
             0
         );
-    
-        -- deprecated fields for ref
-        -- INSERT INTO ${options.schema}.all_transactions (
-        --     bank_reference,
-        --     event_number,
-        --     account_type,
-        --     contra_currency_code
-        -- ) VALUES (
-        --     new.transaction_hash,
-        --     to_char(new.value_date, 'YYYYMMDD')::bigint,
-        --     concat('crypto_', LOWER(new.currency)),
-        --     NULL
-        -- );
+
+        -- if fee is not null, create new fee transaction
+        IF (NEW.gas_fee IS NOT NULL) THEN
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
+          VALUES (
+              account_id_var,
+              charge_id_var,
+              merged_id,
+              CONCAT_WS(' ', 'Fee:', NEW.tx_id::text),
+              'ETH'::currency,
+              NEW.value_date::text::date,
+              NEW.value_date::text::date,
+              (NEW.gas_fee * -1),
+              0,
+              true
+          );
+        END IF;
     
         RETURN NEW;
       END;
@@ -193,7 +197,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           normalizedTx.raw,
           normalizedTx.raw.blockHash,
           normalizedTx.raw.timeStamp,
-          normalizedTx.gasFee
+          normalizedTx.gasFee,
         ],
       );
     },
