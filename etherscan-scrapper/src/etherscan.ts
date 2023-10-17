@@ -53,14 +53,14 @@ function normalizeTx(wallet: string, tx: ERC20Transaction) {
   const rawValue = parseInt(tx.value);
   const tokenAmount = rawValue / 10 ** decimals;
   const gasFee = parseFloat(tx.gasPrice) * parseFloat(tx.gasUsed) * GWEY_TO_VALUE;
-  
+
   return {
     id: `${wallet}-${tx.hash}`,
     date: new Date(parseInt(tx.timeStamp) * 1000),
     tokenAmount,
     currency: tx.tokenSymbol,
     raw: tx,
-    gasFee
+    gasFee,
   };
 }
 
