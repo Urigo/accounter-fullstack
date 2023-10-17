@@ -204,9 +204,9 @@ export const generateLedgerRecords: ResolverFn<
         });
 
         if (isCreditorCounterparty) {
-          ledgerBalance += totalAmount;
+          ledgerBalance += Number(totalAmount.toFixed(2));
         } else {
-          ledgerBalance -= totalAmount;
+          ledgerBalance -= Number(totalAmount.toFixed(2));
         }
 
         dates.add(document.date);
@@ -279,6 +279,12 @@ export const generateLedgerRecords: ResolverFn<
           case Currency.Gbp:
             taxCategoryName = account.hashavshevet_account_gbp;
             break;
+          case Currency.Usdc:
+            taxCategoryName = account.hashavshevet_account_ils;
+            break;
+          case Currency.Grt:
+            taxCategoryName = account.hashavshevet_account_ils;
+            break;
           default:
             console.error(`Unknown currency for account's tax category: ${transaction.currency}`);
         }
@@ -294,7 +300,7 @@ export const generateLedgerRecords: ResolverFn<
 
         const isCreditorCounterparty = amount > 0;
 
-        ledgerBalance += amount;
+        ledgerBalance += Number(amount.toFixed(2));
 
         const currency = formatCurrency(currencyCode);
 
