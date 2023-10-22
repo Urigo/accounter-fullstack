@@ -3,6 +3,7 @@
 // import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import {
+  CreditInvoiceResolvers,
   InvoiceReceiptResolvers,
   InvoiceResolvers,
   Maybe,
@@ -22,7 +23,8 @@ const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
   | ResolversParentTypes['Invoice']
   | ResolversParentTypes['Receipt']
-  | ResolversParentTypes['InvoiceReceipt'],
+  | ResolversParentTypes['InvoiceReceipt']
+  | ResolversParentTypes['CreditInvoice'],
   GraphQLModules.Context
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};
@@ -70,6 +72,10 @@ export const documentSuggestionsResolvers: DocumentsModule.Resolvers = {
   InvoiceReceipt: {
     missingInfoSuggestions:
       missingInfoSuggestions as InvoiceReceiptResolvers['missingInfoSuggestions'],
+  },
+  CreditInvoice: {
+    missingInfoSuggestions:
+      missingInfoSuggestions as CreditInvoiceResolvers['missingInfoSuggestions'],
   },
   Proforma: {
     missingInfoSuggestions:

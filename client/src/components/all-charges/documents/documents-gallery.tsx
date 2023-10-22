@@ -24,6 +24,9 @@ import { EditDocumentModal } from '../../common';
       ... on InvoiceReceipt {
         documentType
       }
+      ... on CreditInvoice {
+        documentType
+      }
     }
   }
 `;

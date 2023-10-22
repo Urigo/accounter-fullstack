@@ -65,6 +65,20 @@ import { ConfirmMiniButton } from '../../../common';
         }
       }
     }
+    ... on CreditInvoice {
+      amount {
+        raw
+        formatted
+        currency
+      }
+      missingInfoSuggestions {
+        amount {
+          raw
+          formatted
+          currency
+        }
+      }
+    }
   }
 `;
 

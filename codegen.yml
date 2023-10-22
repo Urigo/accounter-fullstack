@@ -38,6 +38,7 @@ generates:
         CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
         ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         DocumentSuggestions: '@shared/types#DocumentSuggestionsProto'
         ExchangeRates: 'TimelessDateString'
         FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'

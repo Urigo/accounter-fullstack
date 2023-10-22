@@ -33,6 +33,7 @@ export enum DocumentType {
   Invoice = 'INVOICE',
   Receipt = 'RECEIPT',
   InvoiceReceipt = 'INVOICE_RECEIPT',
+  CreditInvoice = 'CREDIT_INVOICE',
   Proforma = 'PROFORMA',
   Unprocessed = 'UNPROCESSED',
 }

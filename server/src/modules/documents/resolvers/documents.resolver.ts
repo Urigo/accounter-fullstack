@@ -298,6 +298,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         case DocumentType.InvoiceReceipt: {
           return 'InvoiceReceipt';
         }
+        case DocumentType.CreditInvoice: {
+          return 'CreditInvoice';
+        }
+
         case DocumentType.Proforma: {
           return 'Proforma';
         }
@@ -348,6 +352,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     ...commonFinancialDocumentsFields,
   },
   InvoiceReceipt: {
+    ...commonDocumentsFields,
+    ...commonFinancialDocumentsFields,
+  },
+  CreditInvoice: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
   },

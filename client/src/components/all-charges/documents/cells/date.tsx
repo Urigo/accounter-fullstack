@@ -14,6 +14,9 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
     ... on InvoiceReceipt {
       date
     }
+    ... on CreditInvoice {
+      date
+    }
     ... on Proforma {
       date
     }

@@ -127,7 +127,32 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
           currency
         }
       }
-      ... on Invoice {
+      ... on InvoiceReceipt {
+        id
+        image
+        file
+        creditor {
+          id
+          name
+        }
+        debtor {
+          id
+          name
+        }
+        vat {
+          raw
+          formatted
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          formatted
+          currency
+        }
+      }
+      ... on CreditInvoice {
         id
         image
         file
@@ -221,7 +246,7 @@ export const DocumentsReport = (): ReactElement => {
           },
           {
             title: 'Amount',
-            value: doc => doc.charge?.transactions[0].amount.formatted ?? null,
+            value: doc => doc.charge?.transactions?.[0]?.amount.formatted ?? null,
             style: { whiteSpace: 'nowrap' },
           },
           { title: 'Creditor', value: doc => doc.creditor?.name ?? null },
@@ -229,31 +254,31 @@ export const DocumentsReport = (): ReactElement => {
           {
             title: 'Related Transaction',
             value: doc =>
-              doc.charge?.transactions[0].id ? (
+              doc.charge?.transactions?.[0]?.id ? (
                 <AccounterTable
                   items={doc.charge?.transactions ?? []}
                   columns={[
                     {
                       title: 'Transaction Amount',
-                      value: transaction => transaction.amount.formatted,
+                      value: transaction => transaction?.amount.formatted,
                     },
                     {
                       title: 'Transaction Created At',
                       value: transaction =>
-                        transaction.eventDate
+                        transaction?.eventDate
                           ? format(new Date(transaction.eventDate), 'dd/MM/yy')
                           : null,
                     },
                     {
                       title: 'Transaction Effective Date',
                       value: transaction =>
-                        transaction.effectiveDate
+                        transaction?.effectiveDate
                           ? format(new Date(transaction.effectiveDate), 'dd/MM/yy')
                           : null,
                     },
                     {
                       title: 'Transaction Description',
-                      value: transaction => transaction.sourceDescription,
+                      value: transaction => transaction?.sourceDescription,
                     },
                   ]}
                 />

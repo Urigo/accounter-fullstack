@@ -68,6 +68,11 @@ export default gql`
     debtor: Counterparty
   }
 
+  extend interface FinancialDocument {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
   extend type Unprocessed {
     creditor: Counterparty
     debtor: Counterparty
@@ -89,6 +94,11 @@ export default gql`
   }
 
   extend type InvoiceReceipt {
+    creditor: Counterparty
+    debtor: Counterparty
+  }
+
+  extend type CreditInvoice {
     creditor: Counterparty
     debtor: Counterparty
   }

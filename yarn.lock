@@ -28,10 +28,10 @@
     graphql "16.8.0"
     path "0.12.7"
 
-"@accounter-toolkit/pcn874-generator@0.2.1-alpha-20230828125510-36cf285":
-  version "0.2.1-alpha-20230828125510-36cf285"
-  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.2.1-alpha-20230828125510-36cf285.tgz#09bb0cb269dd633a66bdf7d4137d5a91cc4ff6eb"
-  integrity sha512-/B1qWIfFKJla2W/e8W23EEvt3x3fSR9kfqmjBpZ6N2FKrJNv2IoPOP75sEYiQDOL5kVnmPVgxD8HYY4CJRe8Eg==
+"@accounter-toolkit/pcn874-generator@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.3.0.tgz#a115e334d22c9fe0d313532c94f7b5462fc5b5c1"
+  integrity sha512-EJa4gml16WcmcWm2fGZzkHUe1rrB3E2sho1lThUYjFKSgBvhc/r3pC7lTWBTakqdrwRIOvxUxNV1lnjwQunkBQ==
 
 "@alloc/quick-lru@^5.2.0":
   version "5.2.0"

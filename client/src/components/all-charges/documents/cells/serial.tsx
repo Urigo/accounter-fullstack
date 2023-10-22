@@ -13,6 +13,9 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
     ... on InvoiceReceipt {
       serialNumber
     }
+    ... on CreditInvoice {
+      serialNumber
+    }
     ... on Proforma {
       serialNumber
     }

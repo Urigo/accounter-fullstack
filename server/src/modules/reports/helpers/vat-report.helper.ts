@@ -8,6 +8,7 @@ import {
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
+import { DocumentType } from '@shared/enums';
 
 export type VatReportRecordSources = {
   charge: IGetChargesByFiltersResult;
@@ -72,16 +73,20 @@ export function adjustTaxRecords(
       documentId: doc.id,
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
-      documentAmount: String(doc.total_amount),
+      documentAmount: String((doc.type === DocumentType.CreditInvoice ? -1 : 1) * doc.total_amount),
       vat: doc.vat_amount,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
-      isExpense: doc.debtor_id === charge.owner_id,
+      isExpense:
+        doc.type === DocumentType.CreditInvoice
+          ? doc.debtor_id !== charge.owner_id
+          : doc.debtor_id === charge.owner_id,
     };
 
     // set default amountBeforeVAT
     if (!partialRecord.vat) {
-      partialRecord.amountBeforeVAT = doc.total_amount * rate;
+      partialRecord.amountBeforeVAT =
+        doc.total_amount * rate * (doc.type === DocumentType.CreditInvoice ? -1 : 1);
     }
 
     if (partialRecord.businessId && partialRecord.vat) {

@@ -167,6 +167,10 @@ export default gql`
     charge: Charge
   }
 
+  extend interface FinancialDocument {
+    charge: Charge
+  }
+
   extend type Proforma {
     charge: Charge
   }
@@ -180,6 +184,10 @@ export default gql`
   }
 
   extend type InvoiceReceipt {
+    charge: Charge
+  }
+
+  extend type CreditInvoice {
     charge: Charge
   }
 

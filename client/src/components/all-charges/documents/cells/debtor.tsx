@@ -52,6 +52,27 @@ import { getBusinessHref } from '../../helpers';
         }
       }
     }
+    ... on CreditInvoice {
+      creditor {
+        id
+      }
+      debtor {
+        id
+        name
+      }
+      missingInfoSuggestions {
+        isIncome
+        counterparty {
+          id
+          name
+        }
+        owner {
+          id
+          name
+        }
+      }
+
+    }
     ... on Proforma {
       creditor {
         id

@@ -28,7 +28,7 @@ export function normalizeDocumentType(
       return DocumentType.InvoiceReceipt;
     case '_330':
       // חשבונית זיכוי
-      return DocumentType.Unprocessed;
+      return DocumentType.CreditInvoice;
     case '_400':
       // קבלה
       return DocumentType.Receipt;
