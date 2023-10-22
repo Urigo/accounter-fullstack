@@ -114,16 +114,15 @@ const headerPropsFromTransactions = (
   return header;
 };
 
-const transformTransactions = (dbTransactions: RawVatReportRecord[]): ExtendedPCNTransaction[] => {
+const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTransaction[] => {
   const transactions: ExtendedPCNTransaction[] = [];
-  for (const t of dbTransactions) {
+  for (const t of vatRecords) {
     if (!t.documentDate) {
       console.debug(`Document ${t.documentId} has no tax_invoice_date. Skipping it.`);
       continue;
     }
-    const amountToUse = (t.isExpense ? '-' : '') + t.documentAmount;
     let entryType = EntryType.INPUT_REGULAR;
-    if (Number(amountToUse) > 0) {
+    if (!t.isExpense) {
       if (Number(t.vatAfterDeduction) > 0) {
         entryType = EntryType.SALE_REGULAR;
       } else {
@@ -138,7 +137,7 @@ const transformTransactions = (dbTransactions: RawVatReportRecord[]): ExtendedPC
       refGroup: '0000',
       refNumber: t.documentSerial ?? undefined,
       totalVat: Math.round(Math.abs(Number(t.vatAfterDeduction ?? 0))),
-      invoiceSum: Math.round(Math.abs(Number(t.amountBeforeVAT))),
+      invoiceSum: Math.round(Number(t.amountBeforeVAT)),
       isProperty: t.isProperty,
     });
   }

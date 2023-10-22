@@ -6,11 +6,12 @@ import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import type {
-  QueryVatReportArgs,
-  ResolverFn,
-  ResolversParentTypes,
-  ResolversTypes,
+import {
+  DocumentType,
+  type QueryVatReportArgs,
+  type ResolverFn,
+  type ResolversParentTypes,
+  type ResolversTypes,
 } from '@shared/gql-types';
 import {
   adjustTaxRecords,
@@ -57,7 +58,7 @@ export const getVatRecords: ResolverFn<
       if (!doc.charge_id_new || !doc.creditor_id || !doc.debtor_id) {
         return false;
       }
-      const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT'].includes(doc.type);
+      const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(doc.type);
       if (!isRelevantDoc) {
         notIncludedChargeIDs.add(doc.charge_id_new);
       }
@@ -128,7 +129,9 @@ export const getVatRecords: ResolverFn<
           }
         } else if (
           doc.vat_amount != null &&
-          doc.creditor_id === filters?.financialEntityId &&
+          (doc.type === DocumentType.CreditInvoice
+            ? doc.debtor_id === filters?.financialEntityId
+            : doc.creditor_id === filters?.financialEntityId) &&
           Number(doc.total_amount) > 0
         ) {
           includedChargeIDs.add(charge.id);
