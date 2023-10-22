@@ -97,6 +97,26 @@ import { ModifyDocumentFields } from './modify-document-fields';
           name
         }
       }
+      ... on CreditInvoice {
+        vat {
+          raw
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          currency
+        }
+        debtor {
+          id
+          name
+        }
+        creditor {
+          id
+          name
+        }
+      }
     }
   }
 `;

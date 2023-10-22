@@ -250,6 +250,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
   InvoiceReceipt: {
     ...commonDocumentsFields,
   },
+  CreditInvoice: {
+    ...commonDocumentsFields,
+  },
   Proforma: {
     ...commonDocumentsFields,
   },

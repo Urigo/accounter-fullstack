@@ -9,6 +9,8 @@ export const documentType: DocumentsModule.DocumentResolvers['documentType'] = d
   let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
   if (key === 'Invoice_receipt') {
     key = 'InvoiceReceipt';
+  } else if (key === 'Credit_invoice') {
+    key = 'CreditInvoice';
   }
   return DocumentType[key as keyof typeof DocumentType];
 };

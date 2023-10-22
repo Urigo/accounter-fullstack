@@ -14,6 +14,7 @@ import {
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
 import {
+  isDocumentCreditInvoice,
   isDocumentInvoice,
   isDocumentInvoiceReceipt,
   isDocumentProforma,
@@ -52,7 +53,8 @@ export const ModifyDocumentFields = ({
     isDocumentInvoice(document) ||
     isDocumentReceipt(document) ||
     isDocumentInvoiceReceipt(document) ||
-    isDocumentProforma(document);
+    isDocumentProforma(document) ||
+    isDocumentCreditInvoice(document);
 
   const type = watch('documentType');
 
@@ -63,7 +65,8 @@ export const ModifyDocumentFields = ({
         (type === DocumentType.Invoice ||
           type === DocumentType.Receipt ||
           type === DocumentType.InvoiceReceipt ||
-          type === DocumentType.Proforma),
+          type === DocumentType.Proforma ||
+          type === DocumentType.CreditInvoice),
     );
   }, [type]);
 

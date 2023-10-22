@@ -66,6 +66,15 @@ import { WideFilteredSelection } from './wide-filtered-selection';
         currency
       }
     }
+    ... on CreditInvoice {
+      serialNumber
+      date
+      amount {
+        raw
+        formatted
+        currency
+      }
+    }
     ... on Invoice {
       serialNumber
       date

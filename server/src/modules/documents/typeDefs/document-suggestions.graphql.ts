@@ -17,6 +17,11 @@ export default gql`
     missingInfoSuggestions: DocumentSuggestions
   }
 
+  extend type CreditInvoice {
+    " missing info suggestions data "
+    missingInfoSuggestions: DocumentSuggestions
+  }
+
   extend type Proforma {
     " missing info suggestions data "
     missingInfoSuggestions: DocumentSuggestions

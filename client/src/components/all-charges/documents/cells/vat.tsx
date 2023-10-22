@@ -21,6 +21,13 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
         currency
       }
     }
+    ... on CreditInvoice {
+      vat {
+        raw
+        formatted
+        currency
+      }
+    }
     ... on Proforma {
       vat {
         raw

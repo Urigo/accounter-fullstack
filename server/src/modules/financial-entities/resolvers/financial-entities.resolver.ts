@@ -68,6 +68,9 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   InvoiceReceipt: {
     ...commonDocumentsFields,
   },
+  CreditInvoice: {
+    ...commonDocumentsFields,
+  },
   Proforma: {
     ...commonDocumentsFields,
   },

@@ -32,6 +32,7 @@ export default gql`
     INVOICE
     RECEIPT
     INVOICE_RECEIPT
+    CREDIT_INVOICE
     PROFORMA
     UNPROCESSED
   }
@@ -63,8 +64,22 @@ export default gql`
     isReviewed: Boolean
   }
 
+  " represent a financial document "
+  interface FinancialDocument implements Document & Linkable {
+    id: ID!
+    image: URL
+    file: URL
+    vat: FinancialAmount
+    documentType: DocumentType
+    isReviewed: Boolean
+
+    serialNumber: String
+    date: TimelessDate
+    amount: FinancialAmount
+  }
+
   " invoice document "
-  type Invoice implements Document & Linkable {
+  type Invoice implements FinancialDocument & Document & Linkable {
     id: ID!
     image: URL
     file: URL
@@ -78,7 +93,7 @@ export default gql`
   }
 
   " proforma document "
-  type Proforma implements Document & Linkable {
+  type Proforma implements FinancialDocument & Document & Linkable {
     id: ID!
     image: URL
     file: URL
@@ -92,7 +107,7 @@ export default gql`
   }
 
   " receipt document "
-  type Receipt implements Document & Linkable {
+  type Receipt implements FinancialDocument & Document & Linkable {
     id: ID!
     image: URL
     file: URL
@@ -105,7 +120,21 @@ export default gql`
   }
 
   " Invoice receipt document - חשבונית מס קבלה "
-  type InvoiceReceipt implements Document & Linkable {
+  type InvoiceReceipt implements FinancialDocument & Document & Linkable {
+    id: ID!
+    image: URL
+    file: URL
+    vat: FinancialAmount
+    documentType: DocumentType
+    isReviewed: Boolean
+
+    serialNumber: String
+    date: TimelessDate
+    amount: FinancialAmount
+  }
+
+  " Credit invoice document - חשבונית זיכוי "
+  type CreditInvoice implements FinancialDocument & Document & Linkable {
     id: ID!
     image: URL
     file: URL

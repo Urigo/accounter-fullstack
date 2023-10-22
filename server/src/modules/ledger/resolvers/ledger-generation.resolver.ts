@@ -47,6 +47,13 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from documents
     const accountingLedgerEntries: LedgerProto[] = [];
     if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
+      const counterpartyTaxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByChargeIDsLoader.load(charge.id);
+      if (!counterpartyTaxCategory) {
+        throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
+      }
+
       // Get all relevant documents for charge
       const documents = await injector
         .get(DocumentsProvider)
@@ -55,11 +62,9 @@ export const generateLedgerRecords: ResolverFn<
         ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
       );
 
-      const counterpartyTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id);
-      if (!counterpartyTaxCategory) {
-        throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
+      // if found invoices, looke for & add credit invoices
+      if (relevantDocuments.length >= 1) {
+        relevantDocuments.push(...documents.filter(d => d.type === 'CREDIT_INVOICE'));
       }
 
       // if no relevant documents found and business can settle with receipts, look for receipts
