@@ -52,7 +52,6 @@ export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement =>
               title: 'Upload Success!',
               message: 'Hey there, you add new document!',
             });
-            console.log(res.data.uploadDocument);
             if (closeModal) {
               closeModal();
             }

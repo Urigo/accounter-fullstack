@@ -39,7 +39,7 @@ function BusinessTransactionsFilterForm({
 
   const businesses = useMemo(() => {
     return (
-      feData?.allFinancialEntities
+      feData?.allFinancialEntities?.nodes
         .map(entity => ({
           value: entity.id,
           label: entity.name,

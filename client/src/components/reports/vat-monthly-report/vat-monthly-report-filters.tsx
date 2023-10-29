@@ -73,7 +73,7 @@ function VatMonthlyReportFilterForm({
             <Select
               {...field}
               data={
-                feData?.allFinancialEntities.map(entity => ({
+                feData?.allFinancialEntities?.nodes.map(entity => ({
                   value: entity.id,
                   label: entity.name,
                 })) ?? []

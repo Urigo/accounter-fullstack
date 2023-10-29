@@ -56,7 +56,6 @@ export class SortCodesProvider {
   );
 
   private async batchSortCodesByBusinessIds(businessIDs: readonly string[]) {
-    console.log('dbprovider', !!this.dbProvider);
     try {
       const sortCodes = await getSortCodesByBusinessIds.run(
         {

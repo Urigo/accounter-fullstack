@@ -81,9 +81,9 @@ export const ModifyDocumentFields = ({
   }, [financialEntitiesError]);
 
   useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities.length) {
+    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
       setFinancialEntities(
-        financialEntitiesData.allFinancialEntities
+        financialEntitiesData.allFinancialEntities.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,

@@ -17,6 +17,10 @@ const links: Link[] = [
     to: '/documents',
   },
   {
+    label: 'Businesses',
+    to: '/businesses',
+  },
+  {
     label: 'Business Transactions',
     to: '/business-transactions',
   },
