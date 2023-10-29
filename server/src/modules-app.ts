@@ -5,7 +5,7 @@ import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { exchangeRatesModule } from '@modules/exchange-rates/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
-import { businessTripModule } from './modules/business-trip/index.js';
+import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { commonModule } from './modules/common/index.js';
 import { documentsModule } from './modules/documents/index.js';
@@ -24,7 +24,7 @@ export async function createGraphQLApp() {
     modules: [
       commonModule,
       accountantApprovalModule,
-      businessTripModule,
+      businessTripsModule,
       chargesModule,
       exchangeRatesModule,
       transactionsModule,
