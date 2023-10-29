@@ -6,6 +6,7 @@ import {
   getConversionCurrencyRate,
   getRateForCurrency,
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -233,10 +234,13 @@ export const generateLedgerRecords: ResolverFn<
 
         if (currencyCode !== DEFAULT_LOCAL_CURRENCY) {
           // get exchange rate for currency
-          const exchangeRates = await injector
-            .get(FiatExchangeProvider)
-            .getExchangeRatesByDatesLoader.load(transaction.debit_date);
-          const exchangeRate = getRateForCurrency(currencyCode, exchangeRates);
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(
+              formatCurrency(currencyCode),
+              DEFAULT_LOCAL_CURRENCY,
+              transaction.debit_timestamp ?? transaction.debit_date,
+            );
 
           foreignAmount = amount;
           // calculate amounts in ILS
