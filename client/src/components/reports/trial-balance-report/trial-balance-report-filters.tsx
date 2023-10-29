@@ -55,6 +55,8 @@ function TrialBalanceReportFilterForm({
 
   const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
     data.isShowZeroedAccounts = isShowZeroedAccounts ?? false;
+    if (data.fromDate?.trim() === '') data.fromDate = undefined;
+    if (data.toDate?.trim() === '') data.toDate = undefined;
     setFilter(data);
     closeModal();
   };
@@ -94,7 +96,7 @@ function TrialBalanceReportFilterForm({
             <MultiSelect
               {...field}
               data={businesses}
-              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
+              value={field.value ?? undefined}
               disabled={feLoading}
               label="Businesses"
               placeholder="Scroll to see all options"
