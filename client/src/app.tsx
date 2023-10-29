@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { BusinessTransactionsSummery } from './components/business-transactions';
+import { Businesses } from './components/businesses';
 import { ChartPage } from './components/charts';
 import { Footer } from './components/common';
 import { NavBar } from './components/common/menu';
@@ -19,11 +20,12 @@ export function App(): ReactElement {
       <Routes>
         <Route path="/" element={<AllCharges />} />
         <Route path="/all-charges" element={<AllCharges />} />
-        <Route path="/documents" element={<DocumentsReport />} />
+        <Route path="/businesses" element={<Businesses />} />
         <Route path="/business-transactions" element={<BusinessTransactionsSummery />} />
+        <Route path="/charts" element={<ChartPage />} />
+        <Route path="/documents" element={<DocumentsReport />} />
         <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
         <Route path="/reports/vat-monthly" element={<VatMonthlyReport />} />
-        <Route path="/charts" element={<ChartPage />} />
         <Route path="/tags" element={<TagsManager />} />
         <Route
           path="*"
