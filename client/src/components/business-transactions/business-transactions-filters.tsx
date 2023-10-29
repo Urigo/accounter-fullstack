@@ -88,7 +88,7 @@ function BusinessTransactionsFilterForm({
             <MultiSelect
               {...field}
               data={businesses}
-              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
+              value={field.value ?? undefined}
               disabled={feLoading}
               label="Businesses"
               placeholder="Scroll to see all options"
@@ -111,7 +111,9 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
-              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
+              value={
+                !field.value || (field.value as string) === 'Missing' ? undefined : field.value
+              }
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -130,7 +132,9 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
-              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
+              value={
+                !field.value || (field.value as string) === 'Missing' ? undefined : field.value
+              }
               error={fieldState.error?.message}
               label="To Date"
             />
@@ -184,6 +188,8 @@ export function BusinessTransactionsFilters({
   }
 
   function onSetFilter(newFilter: BusinessTransactionsFilter): void {
+    if (newFilter.fromDate?.trim() === '') newFilter.fromDate = undefined;
+    if (newFilter.toDate?.trim() === '') newFilter.toDate = undefined;
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
