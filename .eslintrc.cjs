@@ -51,6 +51,7 @@ module.exports = {
                 'NamedCounterparty',
                 'PageInfo',
                 'PaginatedCharges',
+                'PaginatedFinancialEntities',
                 'PCNFileResult',
                 'PCNRawData',
                 'SortCode',

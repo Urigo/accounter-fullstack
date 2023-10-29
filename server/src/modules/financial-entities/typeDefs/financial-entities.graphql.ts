@@ -8,6 +8,7 @@ export default gql`
     allFinancialEntities(page: Int, limit: Int): PaginatedFinancialEntities
   }
 
+  " response for paginated Financial Entities "
   type PaginatedFinancialEntities {
     nodes: [FinancialEntity!]!
     pageInfo: PageInfo!
@@ -65,9 +66,10 @@ export default gql`
       fields: UpdateBusinessInput!
     ): UpdateBusinessResponse!
   }
-
+  " result type for updateBusiness "
   union UpdateBusinessResponse = LtdFinancialEntity | CommonError
 
+  " input for updateBusiness "
   input UpdateBusinessInput {
     name: String
     hebrewName: String
