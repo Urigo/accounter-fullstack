@@ -23,9 +23,9 @@ export function FetchIncomeDocumentsButton(): ReactElement {
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
-    if (data?.allFinancialEntities.length) {
+    if (data?.allFinancialEntities?.nodes.length) {
       setFinancialEntities(
-        data.allFinancialEntities
+        data.allFinancialEntities.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,
