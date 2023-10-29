@@ -66,3 +66,5 @@ export const VAT_TAX_CATEGORY_NAME = 'מעמחוז';
 export const EXCHANGE_RATE_CATEGORY_NAME = 'Exchange Rates';
 export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
 export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
+
+export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988'; // TODO: replace with context variable

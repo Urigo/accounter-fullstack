@@ -4,6 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     taxCategories: [TaxCategory!]!
+    taxCategoryByBusinessId(businessId: ID!, ownerId: ID!): TaxCategory # TODO: get owner from server context
   }
 
   extend interface Charge {
@@ -15,6 +16,10 @@ export default gql`
   }
 
   extend type ConversionCharge {
+    taxCategory: TaxCategory
+  }
+
+  extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }
 

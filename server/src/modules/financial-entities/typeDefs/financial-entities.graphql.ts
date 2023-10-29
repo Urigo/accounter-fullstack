@@ -5,7 +5,12 @@ export default gql`
   extend type Query {
     financialEntity(id: ID!): FinancialEntity!
     " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
-    allFinancialEntities: [FinancialEntity!]!
+    allFinancialEntities(page: Int, limit: Int): PaginatedFinancialEntities
+  }
+
+  type PaginatedFinancialEntities {
+    nodes: [FinancialEntity!]!
+    pageInfo: PageInfo!
   }
 
   " Financial entity, identifier by ID, can be a company or individual "
@@ -15,7 +20,7 @@ export default gql`
     name: String!
     address: String!
 
-    englishName: String
+    hebrewName: String
     email: String
     website: String
     phoneNumber: String
@@ -51,5 +56,27 @@ export default gql`
 
   extend type ConversionCharge {
     owner: FinancialEntity!
+  }
+
+  extend type Mutation {
+    updateBusiness(
+      businessId: ID!
+      ownerId: ID!
+      fields: UpdateBusinessInput!
+    ): UpdateBusinessResponse!
+  }
+
+  union UpdateBusinessResponse = LtdFinancialEntity | CommonError
+
+  input UpdateBusinessInput {
+    name: String
+    hebrewName: String
+    address: String
+    email: String
+    website: String
+    phoneNumber: String
+    sortCode: Int
+    governmentId: String
+    taxCategory: UUID
   }
 `;

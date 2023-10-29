@@ -2,8 +2,10 @@
 /* GraphQL */ `
   query AllFinancialEntities {
     allFinancialEntities {
-      id
-      name
+      nodes {
+        id
+        name
+      }
     }
   }
 `;

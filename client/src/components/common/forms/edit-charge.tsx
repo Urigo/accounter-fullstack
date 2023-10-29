@@ -76,9 +76,9 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities.length) {
+    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
       setFinancialEntities(
-        financialEntitiesData.allFinancialEntities
+        financialEntitiesData.allFinancialEntities.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,

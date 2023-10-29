@@ -152,9 +152,9 @@ function ChargesFiltersForm({
 
   // On every new financial entities data fetch, reorder results by name
   useEffect(() => {
-    if (feData?.allFinancialEntities.length) {
+    if (feData?.allFinancialEntities?.nodes.length) {
       setFinancialEntities(
-        feData.allFinancialEntities
+        feData.allFinancialEntities.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,

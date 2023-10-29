@@ -9,6 +9,12 @@ import type {
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByIDsQuery,
   IGetTaxCategoryByNamesQuery,
+  IInsertBusinessTaxCategoryParams,
+  IInsertBusinessTaxCategoryQuery,
+  IUpdateBusinessTaxCategoryParams,
+  IUpdateBusinessTaxCategoryQuery,
+  IUpdateTaxCategoryParams,
+  IUpdateTaxCategoryQuery,
 } from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
@@ -38,6 +44,43 @@ const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
 SELECT *
 FROM accounter_schema.tax_categories;`;
 
+const updateTaxCategory = sql<IUpdateTaxCategoryQuery>`
+UPDATE accounter_schema.tax_categories
+SET
+name = COALESCE(
+  $name,
+  name
+),
+hashavshevet_name = COALESCE(
+  $hashavshevetName,
+  hashavshevet_name
+),
+sort_code = COALESCE(
+  $sortCode,
+  sort_code
+)
+WHERE id = $taxCategoryId
+RETURNING *;
+`;
+
+const updateBusinessTaxCategory = sql<IUpdateBusinessTaxCategoryQuery>`
+UPDATE accounter_schema.business_tax_category_match
+SET
+tax_category_id = COALESCE(
+  $taxCategoryId,
+  tax_category_id
+)
+WHERE
+  owner_id = $ownerId
+  AND business_id = $businessId
+RETURNING *;
+`;
+
+const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
+  INSERT INTO accounter_schema.business_tax_category_match (business_id, owner_id, tax_category_id)
+  VALUES ($businessId, $ownerId, $taxCategoryId)
+  RETURNING *;`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -46,10 +89,10 @@ export class TaxCategoriesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
-    entries: readonly { businessID: string; ownerID: string }[],
+    entries: readonly { businessId: string; ownerId: string }[],
   ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
-    const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessID));
-    const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerID));
+    const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessId));
+    const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerId));
 
     const taxCategories = await getTaxCategoryByBusinessAndOwnerIDs.run(
       {
@@ -58,13 +101,13 @@ export class TaxCategoriesProvider {
       },
       this.dbProvider,
     );
-    return entries.map(({ businessID, ownerID }) =>
-      taxCategories.find(tc => tc.business_id === businessID && tc.owner_id === ownerID),
+    return entries.map(({ businessId, ownerId }) =>
+      taxCategories.find(tc => tc.business_id === businessId && tc.owner_id === ownerId),
     );
   }
 
   public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
-    (keys: readonly { businessID: string; ownerID: string }[]) =>
+    (keys: readonly { businessId: string; ownerId: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
     {
       cache: false,
@@ -125,4 +168,16 @@ export class TaxCategoriesProvider {
       cache: false,
     },
   );
+
+  public updateTaxCategory(params: IUpdateTaxCategoryParams) {
+    return updateTaxCategory.run(params, this.dbProvider);
+  }
+
+  public updateBusinessTaxCategory(params: IUpdateBusinessTaxCategoryParams) {
+    return updateBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
+    return insertBusinessTaxCategory.run(params, this.dbProvider);
+  }
 }
