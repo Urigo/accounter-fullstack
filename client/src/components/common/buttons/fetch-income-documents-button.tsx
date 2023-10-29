@@ -9,10 +9,29 @@ import { AllFinancialEntitiesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents';
 
 export function FetchIncomeDocumentsButton(): ReactElement {
+  const [isLoading, setIsLoading] = useState(false);
+  const [opened, { close, open }] = useDisclosure(false);
+
+  return (
+    <>
+      <ActionIcon loading={isLoading} size={30} onClick={open}>
+        <FileDownload size={20} />
+      </ActionIcon>
+      {opened && <ModalContent opened={opened} close={close} setIsLoading={setIsLoading} />}
+    </>
+  );
+}
+
+type ModalProps = {
+  opened: boolean;
+  close: () => void;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+export function ModalContent({ opened, close, setIsLoading }: ModalProps): ReactElement {
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
-  const [opened, { close, open }] = useDisclosure(false);
   const [{ data, fetching: fetchingBusinesses, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
@@ -46,51 +65,50 @@ export function FetchIncomeDocumentsButton(): ReactElement {
 
   const { fetchIncomeDocuments, fetching: fetchingDocuments } = useFetchIncomeDocuments();
 
+  useEffect(() => {
+    setIsLoading(fetchingBusinesses || fetchingDocuments);
+  }, [fetchingBusinesses, fetchingDocuments, setIsLoading]);
+
   const onSubmit: SubmitHandler<{ ownerId: string }> = data => {
     fetchIncomeDocuments(data);
     close();
   };
 
   return (
-    <>
-      <ActionIcon loading={fetchingDocuments || fetchingBusinesses} size={30} onClick={open}>
-        <FileDownload size={20} />
-      </ActionIcon>
-      <Modal opened={opened} onClose={close} size="auto" centered>
-        <Modal.Title>Fetch Income Documents</Modal.Title>
-        <Modal.Body>
-          {fetchingBusinesses ? <div>Loading...</div> : <div />}
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Controller
-              name="ownerId"
-              control={control}
-              // defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={financialEntities}
-                  value={field.value}
-                  disabled={fetchingBusinesses}
-                  label="Owner:"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
+    <Modal opened={opened} onClose={close} size="auto" centered>
+      <Modal.Title>Fetch Income Documents</Modal.Title>
+      <Modal.Body>
+        {fetchingBusinesses ? <div>Loading...</div> : <div />}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Controller
+            name="ownerId"
+            control={control}
+            // defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                data={financialEntities}
+                value={field.value}
+                disabled={fetchingBusinesses}
+                label="Owner:"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
 
-            <div className="flex justify-center mt-5 gap-3">
-              <button
-                type="submit"
-                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
-              >
-                Fetch
-              </button>
-            </div>
-          </form>
-        </Modal.Body>
-      </Modal>
-    </>
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            >
+              Fetch
+            </button>
+          </div>
+        </form>
+      </Modal.Body>
+    </Modal>
   );
 }
