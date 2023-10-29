@@ -32,7 +32,9 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         .getAllFinancialEntities();
 
       page ??= 1;
-      let pageFinancialEntities = financialEntities.sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1);
+      let pageFinancialEntities = financialEntities.sort((a, b) =>
+        a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
+      );
 
       // handle pagination
       if (limit) {

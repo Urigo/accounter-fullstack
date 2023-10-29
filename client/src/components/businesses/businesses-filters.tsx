@@ -27,12 +27,7 @@ export function BusinessesFilters({
   return (
     <div className="flex flex-row gap-5 items-center">
       {/* {totalPages > 1 && ( */}
-        <Pagination
-          className="flex-auto"
-          value={activePage}
-          onChange={setPage}
-          total={totalPages}
-        />
+      <Pagination className="flex-auto" value={activePage} onChange={setPage} total={totalPages} />
       {/* )} */}
     </div>
   );
