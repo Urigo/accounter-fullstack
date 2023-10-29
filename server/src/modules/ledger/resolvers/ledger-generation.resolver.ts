@@ -47,9 +47,9 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from documents
     const accountingLedgerEntries: LedgerProto[] = [];
     if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
-      const counterpartyTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id);
+      const counterpartyTaxCategory = await (charge.tax_category_id
+        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
+        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id));
       if (!counterpartyTaxCategory) {
         throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
       }
@@ -204,9 +204,9 @@ export const generateLedgerRecords: ResolverFn<
         });
 
         if (isCreditorCounterparty) {
-          ledgerBalance += totalAmount;
+          ledgerBalance += Number(totalAmount.toFixed(2));
         } else {
-          ledgerBalance -= totalAmount;
+          ledgerBalance -= Number(totalAmount.toFixed(2));
         }
 
         dates.add(document.date);
@@ -243,7 +243,9 @@ export const generateLedgerRecords: ResolverFn<
             .getExchangeRates(
               currencyCode as Currency,
               DEFAULT_LOCAL_CURRENCY,
-              transaction.debit_date,
+              transaction.debit_timestamp
+                ? new Date(transaction.debit_timestamp)
+                : transaction.debit_date,
             );
 
           foreignAmount = amount;
@@ -277,6 +279,12 @@ export const generateLedgerRecords: ResolverFn<
           case Currency.Gbp:
             taxCategoryName = account.hashavshevet_account_gbp;
             break;
+          case Currency.Usdc:
+            taxCategoryName = account.hashavshevet_account_ils;
+            break;
+          case Currency.Grt:
+            taxCategoryName = account.hashavshevet_account_ils;
+            break;
           default:
             console.error(`Unknown currency for account's tax category: ${transaction.currency}`);
         }
@@ -292,7 +300,7 @@ export const generateLedgerRecords: ResolverFn<
 
         const isCreditorCounterparty = amount > 0;
 
-        ledgerBalance += amount;
+        ledgerBalance += Number(amount.toFixed(2));
 
         const currency = formatCurrency(currencyCode);
 
@@ -417,7 +425,8 @@ export const generateLedgerRecords: ResolverFn<
       const hasMultipleDates = dates.size > 1;
       const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
-        const baseEntry = financialAccountLedgerEntries[0];
+        const transactionEntry = financialAccountLedgerEntries[0];
+        const documentEntry = accountingLedgerEntries[0];
 
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
@@ -428,14 +437,14 @@ export const generateLedgerRecords: ResolverFn<
 
         const amount = Math.abs(ledgerBalance);
         const counterparty =
-          typeof baseEntry.creditAccountID1 === 'string'
-            ? baseEntry.creditAccountID1
-            : baseEntry.debitAccountID1;
+          typeof transactionEntry.creditAccountID1 === 'string'
+            ? transactionEntry.creditAccountID1
+            : transactionEntry.debitAccountID1;
 
         const isCreditorCounterparty = ledgerBalance < 0;
 
         miscLedgerEntries.push({
-          id: baseEntry.id, // NOTE: this field is dummy
+          id: transactionEntry.id, // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? counterparty : exchangeCategory,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
@@ -444,11 +453,10 @@ export const generateLedgerRecords: ResolverFn<
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
-          invoiceDate: baseEntry.invoiceDate, // NOTE: this field is dummy
-          valueDate: baseEntry.valueDate, // NOTE: this field is dummy
-          currency: baseEntry.currency, // NOTE: this field is dummy
-          reference1: baseEntry.reference1, // NOTE: this field is dummy
-          ownerId: baseEntry.ownerId,
+          invoiceDate: documentEntry.invoiceDate,
+          valueDate: transactionEntry.valueDate,
+          currency: transactionEntry.currency, // NOTE: this field is dummy
+          ownerId: transactionEntry.ownerId,
         });
       } else {
         throw new GraphQLError(

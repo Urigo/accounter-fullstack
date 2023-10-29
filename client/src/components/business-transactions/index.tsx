@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import { FiltersContext } from '../../filters-context';
@@ -98,6 +98,18 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     setFiltersContext(<BusinessTransactionsFilters filter={filter} setFilter={setFilter} />);
   }, [data, filter, setFiltersContext, setFilter]);
 
+  const businessTransactionsSum = useMemo(() => {
+    if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
+      return [];
+    }
+    if (!data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum) {
+      return [];
+    }
+    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum.sort((a, b) =>
+      a.business.name.localeCompare(b.business.name),
+    );
+  }, [data?.businessTransactionsSumFromLedgerRecords]);
+
   return fetching ? (
     <AccounterLoader />
   ) : (
@@ -109,11 +121,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
       striped
       highlightOnHover
       stickyHeader
-      items={
-        data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'
-          ? []
-          : data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum ?? []
-      }
+      items={businessTransactionsSum}
       columns={[
         {
           title: 'Business Name',
