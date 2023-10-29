@@ -111,7 +111,9 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
-              value={(!field.value || (field.value as string) === 'Missing') ? undefined : field.value}
+              value={
+                !field.value || (field.value as string) === 'Missing' ? undefined : field.value
+              }
               error={fieldState.error?.message}
               label="From Date"
             />
@@ -130,7 +132,9 @@ function BusinessTransactionsFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <TextInput
               {...field}
-              value={(!field.value || (field.value as string) === 'Missing') ? undefined : field.value}
+              value={
+                !field.value || (field.value as string) === 'Missing' ? undefined : field.value
+              }
               error={fieldState.error?.message}
               label="To Date"
             />
