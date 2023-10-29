@@ -32,7 +32,7 @@ export function conversionFeeCalculator(
     base.currency === DEFAULT_LOCAL_CURRENCY
       ? base.localCurrencyCreditAmount1
       : (base.creditAmount1 as number);
-  const baseAmountConvertedByEventRate = baseAmount / eventRate;
+  const baseAmountConvertedByEventRate = baseAmount / eventRate; // TODO: seems like it should be divided for FIAT, multiplied for CRYPTO. Check this.
 
   const quoteAmount =
     quote.currency === DEFAULT_LOCAL_CURRENCY

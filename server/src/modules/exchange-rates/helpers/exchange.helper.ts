@@ -1,30 +1,10 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { currency, IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { NoOptionalField } from '@shared/types';
 // import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
-
-export function getConversionCurrencyRate(
-  baseCurrency: Currency,
-  quoteCurrency: Currency,
-  rates: IGetExchangeRatesByDatesResult,
-): { directRate: number; toLocalRate: number } {
-  if (baseCurrency === DEFAULT_LOCAL_CURRENCY) {
-    const rate = getRateForCurrency(quoteCurrency, rates);
-    return { directRate: rate, toLocalRate: rate };
-  }
-  if (quoteCurrency === DEFAULT_LOCAL_CURRENCY) {
-    const rate = 1 / getRateForCurrency(baseCurrency, rates);
-    return { directRate: rate, toLocalRate: rate };
-  }
-  const baseRate = getRateForCurrency(baseCurrency, rates);
-  const quoteRate = getRateForCurrency(quoteCurrency, rates);
-  const directRate = quoteRate / baseRate;
-  return { directRate, toLocalRate: quoteRate };
-}
 
 type ValidatedTransaction = NoOptionalField<IGetTransactionsByIdsResult, 'debit_date'>;
 
