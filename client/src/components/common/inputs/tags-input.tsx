@@ -25,13 +25,8 @@ export function TagsInput({ label, formManager, tags }: Props): ReactElement {
     keyName: 'name',
   });
 
-  console.log('fields', fields);
-  console.log('tags', tags);
-
   return (
     <div>
-      <label className="block text-sm pb-1 font-medium text-gray-700">{label ?? 'Tags'}</label>
-      <span>Currently adjusted to </span>
       <div className="h-full flex flex-col overflow-hidden">
         {fields?.map((tag, index) => (
           <div key={tag.name} className=" flex items-center gap-2 text-gray-600 mb-2">
