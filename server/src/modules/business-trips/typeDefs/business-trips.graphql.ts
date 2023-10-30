@@ -9,22 +9,22 @@ export default gql`
 
   extend type Mutation {
     updateChargeBusinessTrip(chargeId: ID!, businessTripId: ID): Charge
-    insertBusinessTrip(fields: BusinessTripInput!): BusinessTrip!
+    insertBusinessTrip(fields: InsertBusinessTripInput!): BusinessTrip!
     updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip!
   }
 
   " the input for creating a business trip "
-  input BusinessTripInput {
+  input InsertBusinessTripInput {
     name: String!
-    fromDate: Date!
-    toDate: Date!
+    fromDate: TimelessDate
+    toDate: TimelessDate
   }
 
   " the input for updating a business trip "
   input BusinessTripUpdateInput {
     name: String
-    fromDate: Date
-    toDate: Date
+    fromDate: TimelessDate
+    toDate: TimelessDate
   }
 
   extend interface Charge {

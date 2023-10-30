@@ -4,6 +4,7 @@ import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
+  InsertBusinessTripModal,
   // BeneficiariesInput,
   SimpleGrid,
   TagsInput,
@@ -120,10 +121,12 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
   }, [taxCategoriesData, setTaxCategories]);
 
   // handle business trips
-  const [{ data: businessTripsData, fetching: fetchingBusinessTrips, error: businessTripsError }] =
-    useQuery({
-      query: AllBusinessTripsDocument,
-    });
+  const [
+    { data: businessTripsData, fetching: fetchingBusinessTrips, error: businessTripsError },
+    refetchBusinessTrips,
+  ] = useQuery({
+    query: AllBusinessTripsDocument,
+  });
 
   useEffect(() => {
     if (businessTripsError) {
@@ -225,6 +228,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
+                rightSection={<InsertBusinessTripModal onDone={refetchBusinessTrips} />}
               />
             )}
           />
