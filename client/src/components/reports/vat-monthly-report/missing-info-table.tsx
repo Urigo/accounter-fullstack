@@ -1,13 +1,13 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { VarReportMissingInfoFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { VatReportMissingInfoFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment VarReportMissingInfoFields on VatReportResult {
+  fragment VatReportMissingInfoFields on VatReportResult {
     missingInfo {
       id
       ...AllChargesTableFields
@@ -16,7 +16,7 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
 `;
 
 interface Props {
-  data?: FragmentType<typeof VarReportMissingInfoFieldsFragmentDoc>;
+  data?: FragmentType<typeof VatReportMissingInfoFieldsFragmentDoc>;
   setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -32,7 +32,7 @@ export const MissingInfoTable = ({
   setUploadDocument,
   setMatchDocuments,
 }: Props): ReactElement => {
-  const chargesData = getFragmentData(VarReportMissingInfoFieldsFragmentDoc, data);
+  const chargesData = getFragmentData(VatReportMissingInfoFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
 
   return (

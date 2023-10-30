@@ -1,38 +1,38 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { VatReportBusinessTripsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AllChargesTable } from '../../all-charges/all-charges-table';
+import { AllChargesTable } from '../../all-charges/all-charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment VatReportMiscTableFields on VatReportResult {
-    differentMonthDoc {
+  fragment VatReportBusinessTripsFields on VatReportResult {
+    businessTrips {
       id
       ...AllChargesTableFields
     }
   }
 `;
 
-type Props = {
-  data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
+interface Props {
+  data?: FragmentType<typeof VatReportBusinessTripsFieldsFragmentDoc>;
   setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setMatchDocuments: React.Dispatch<
     React.SetStateAction<{ id: string; ownerId: string } | undefined>
   >;
-};
+}
 
-export const MiscTable = ({
+export const BusinessTripsTable = ({
   data,
   setEditChargeId,
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
 }: Props): ReactElement => {
-  const chargesData = getFragmentData(VatReportMiscTableFieldsFragmentDoc, data);
+  const chargesData = getFragmentData(VatReportBusinessTripsFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
 
   return (
@@ -41,7 +41,7 @@ export const MiscTable = ({
         <ActionIcon variant="default" onClick={(): void => setIsOpened(i => !i)} size={30}>
           {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
         </ActionIcon>
-        Misc Charges (which are not on the above tables)
+        Business Trips
       </span>
       {isOpened && chargesData && (
         <AllChargesTable
@@ -49,7 +49,7 @@ export const MiscTable = ({
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
-          data={chargesData.differentMonthDoc}
+          data={chargesData.businessTrips}
           isAllOpened={false}
         />
       )}

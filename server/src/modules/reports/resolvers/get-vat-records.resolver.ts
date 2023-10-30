@@ -39,6 +39,7 @@ export const getVatRecords: ResolverFn<
       expenses: [] as Array<RawVatReportRecord>,
       missingInfo: [] as Array<ResolversTypes['Charge']>,
       differentMonthDoc: [] as Array<ResolversTypes['Charge']>,
+      businessTrips: [] as Array<ResolversTypes['Charge']>,
     };
 
     // get all documents by date filters
@@ -203,7 +204,10 @@ export const getVatRecords: ResolverFn<
     );
 
     for (const { charge, isValid } of validatedCharges) {
-      if (isValid) {
+      if (charge.business_trip_id) {
+        // If valid and has business trip, add to business trips
+        response.businessTrips.push(charge);
+      } else if (isValid) {
         if (!includedChargeIDs.has(charge.id)) {
           // If valid but not yet included, add to charges with different month doc
           response.differentMonthDoc.push(charge);

@@ -20,6 +20,7 @@ export default gql`
     income: [VatReportRecord!]!
     missingInfo: [Charge!]!
     differentMonthDoc: [Charge!]!
+    businessTrips: [Charge!]!
   }
 
   " Vat report record "

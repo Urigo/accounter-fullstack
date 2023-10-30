@@ -22,15 +22,17 @@ import { MiscTable } from './misc-table';
 import { MissingInfoTable } from './missing-info-table';
 import { PCNGenerator } from './pcn-generator';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
+import { BusinessTripsTable } from './business-trips-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query VatMonthlyReport($filters: VatReportFilter) {
     vatReport(filters: $filters) {
-      ...VarReportIncomeFields
-      ...VarReportExpensesFields
-      ...VarReportMissingInfoFields
-      ...VarReportMiscTableFields
+      ...VatReportIncomeFields
+      ...VatReportExpensesFields
+      ...VatReportMissingInfoFields
+      ...VatReportMiscTableFields
+      ...VatReportBusinessTripsFields
     }
   }
 `;
@@ -83,6 +85,14 @@ export const VatMonthlyReport = (): ReactElement => {
       {filter.chargesType !== ChargeFilterType.Income && <ExpensesTable data={data?.vatReport} />}
 
       <MissingInfoTable
+        data={data?.vatReport}
+        setEditChargeId={setEditChargeId}
+        setInsertDocument={setInsertDocument}
+        setUploadDocument={setUploadDocument}
+        setMatchDocuments={setMatchDocuments}
+      />
+
+      <BusinessTripsTable
         data={data?.vatReport}
         setEditChargeId={setEditChargeId}
         setInsertDocument={setInsertDocument}
