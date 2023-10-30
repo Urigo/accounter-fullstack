@@ -138,6 +138,7 @@ export default gql`
     " user custom description "
     userDescription: String
     defaultTaxCategoryID: ID
+    businessTripID: ID
   }
 
   " result type for updateCharge "

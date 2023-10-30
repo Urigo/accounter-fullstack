@@ -13,6 +13,7 @@ import { EditMiniButton, ToggleMergeSelected } from '../common';
 import {
   AccountantApproval,
   Amount,
+  BusinessTrip,
   Counterparty,
   DateCell,
   Description,
@@ -40,6 +41,7 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     ...AllChargesTagsFields
     ...AllChargesVatFields
     ...AllChargesTaxCategoryFields
+    ...AllChargesBusinessTripFields
   }
 `;
 
@@ -110,6 +112,7 @@ export const AllChargesRow = ({
         <Description data={charge} />
         <Tags data={charge} />
         <TaxCategory data={charge} />
+        <BusinessTrip data={charge} />
         <MoreInfo data={charge} />
         <AccountantApproval data={charge} />
         <td>
