@@ -2,6 +2,31 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    allBusinessTrips: [BusinessTrip!]!
+    businessTrip(id: ID!): BusinessTrip
+  }
+
+  extend type Mutation {
+    updateChargeBusinessTrip(chargeId: ID!, businessTripId: ID): Charge
+    insertBusinessTrip(fields: BusinessTripInput!): BusinessTrip!
+    updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip!
+  }
+
+  " the input for creating a business trip "
+  input BusinessTripInput {
+    name: String!
+    fromDate: Date!
+    toDate: Date!
+  }
+
+  " the input for updating a business trip "
+  input BusinessTripUpdateInput {
+    name: String
+    fromDate: Date
+    toDate: Date
+  }
+
   extend interface Charge {
     " should be later in busines trip module? "
     businessTrip: BusinessTrip
@@ -24,6 +49,6 @@ export default gql`
   type BusinessTrip {
     id: ID!
     name: String!
-    dates: DateRange!
+    dates: DateRange
   }
 `;

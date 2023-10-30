@@ -135,7 +135,6 @@ export default gql`
     # invoice: Invoice
     isProperty: Boolean
     isConversion: Boolean
-    # businessTrip: BusinessTrip
     " user custom description "
     userDescription: String
     defaultTaxCategoryID: ID

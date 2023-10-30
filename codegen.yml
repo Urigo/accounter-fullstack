@@ -33,6 +33,7 @@ generates:
         BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
         BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
+        BusinessTrip: '@modules/business-trips/types.js#IGetAllBusinessTripsResult'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
