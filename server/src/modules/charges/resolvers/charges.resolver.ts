@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
@@ -131,6 +132,19 @@ export const chargesResolvers: ChargesModule.Resolvers &
                 });
             }
           }
+        }
+
+        // handle business trip
+        if (fields?.businessTripID) {
+          await injector
+            .get(BusinessTripsProvider)
+            .updateChargeBusinessTrip(
+              chargeId,
+              fields.businessTripID === 'NULL' ? null : fields.businessTripID,
+            )
+            .catch(() => {
+              throw new GraphQLError(`Error updating business trip for charge ID="${chargeId}"`);
+            });
         }
 
         return updatedCharge;

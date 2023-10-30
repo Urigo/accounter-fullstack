@@ -10,6 +10,7 @@ import {
   TextInput,
 } from '..';
 import {
+  AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
   AllTaxCategoriesDocument,
   EditChargeQuery,
@@ -39,6 +40,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
     Array<{ value: string; label: string }>
   >([]);
   const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
+  const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
 
   const useFormManager = useForm<UpdateChargeInput>({
     defaultValues: charge,
@@ -88,6 +90,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
     }
   }, [financialEntitiesData, setFinancialEntities]);
 
+  // handle tax categories
   const [{ data: taxCategoriesData, fetching: fetchingTaxCategories, error: taxCategoriesError }] =
     useQuery({
       query: AllTaxCategoriesDocument,
@@ -115,6 +118,36 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
       );
     }
   }, [taxCategoriesData, setTaxCategories]);
+
+  // handle business trips
+  const [{ data: businessTripsData, fetching: fetchingBusinessTrips, error: businessTripsError }] =
+    useQuery({
+      query: AllBusinessTripsDocument,
+    });
+
+  useEffect(() => {
+    if (businessTripsError) {
+      showNotification({
+        title: 'Error!',
+        message: 'Oh no!, we have an error fetching business trips! 🤥',
+      });
+    }
+  }, [businessTripsError]);
+
+  // On every new data fetch, reorder results by name
+  useEffect(() => {
+    if (businessTripsData?.allBusinessTrips.length) {
+      setBusinessTrips([
+        ...businessTripsData.allBusinessTrips
+          .map(entity => ({
+            value: entity.id,
+            label: entity.name,
+          }))
+          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+        { value: 'NULL', label: 'None' },
+      ]);
+    }
+  }, [businessTripsData, setBusinessTrips]);
 
   return (
     <form onSubmit={handleChargeSubmit(onChargeSubmit)}>
@@ -170,6 +203,24 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
                 value={field.value}
                 disabled={fetchingTaxCategories}
                 label="Tax Category Override"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="businessTripID"
+            control={chargeControl}
+            defaultValue={charge.businessTrip?.id}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                data={businessTrips}
+                value={field.value}
+                disabled={fetchingBusinessTrips}
+                label="Business Trip"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
                 searchable

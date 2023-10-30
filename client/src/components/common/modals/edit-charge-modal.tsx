@@ -29,6 +29,10 @@ import { writeToClipboard } from '../../../helpers';
       tags {
         name
       }
+      businessTrip {
+        id
+        name
+      }
     }
   }
 `;
