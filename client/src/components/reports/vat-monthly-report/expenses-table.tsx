@@ -1,13 +1,13 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Table } from '@mantine/core';
-import { VarReportExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { VatReportExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment VarReportExpensesFields on VatReportResult {
+  fragment VatReportExpensesFields on VatReportResult {
     expenses {
         business {
           id
@@ -46,11 +46,11 @@ import { formatStringifyAmount } from '../../../helpers';
 `;
 
 interface Props {
-  data?: FragmentType<typeof VarReportExpensesFieldsFragmentDoc>;
+  data?: FragmentType<typeof VatReportExpensesFieldsFragmentDoc>;
 }
 
 export const ExpensesTable = ({ data }: Props): ReactElement => {
-  const { expenses } = getFragmentData(VarReportExpensesFieldsFragmentDoc, data) ?? {
+  const { expenses } = getFragmentData(VatReportExpensesFieldsFragmentDoc, data) ?? {
     expenses: [],
   };
   const [isOpened, setIsOpened] = useState(true);

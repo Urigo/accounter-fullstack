@@ -28,10 +28,10 @@ import { BusinessTripsTable } from './business-trips-table';
 /* GraphQL */ `
   query VatMonthlyReport($filters: VatReportFilter) {
     vatReport(filters: $filters) {
-      ...VarReportIncomeFields
-      ...VarReportExpensesFields
-      ...VarReportMissingInfoFields
-      ...VarReportMiscTableFields
+      ...VatReportIncomeFields
+      ...VatReportExpensesFields
+      ...VatReportMissingInfoFields
+      ...VatReportMiscTableFields
       ...VatReportBusinessTripsFields
     }
   }

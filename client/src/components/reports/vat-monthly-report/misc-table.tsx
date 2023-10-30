@@ -1,13 +1,13 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { VarReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { AllChargesTable } from '../../all-charges/all-charges-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment VarReportMiscTableFields on VatReportResult {
+  fragment VatReportMiscTableFields on VatReportResult {
     differentMonthDoc {
       id
       ...AllChargesTableFields
@@ -16,7 +16,7 @@ import { AllChargesTable } from '../../all-charges/all-charges-table';
 `;
 
 type Props = {
-  data?: FragmentType<typeof VarReportMiscTableFieldsFragmentDoc>;
+  data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
   setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
   setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -32,7 +32,7 @@ export const MiscTable = ({
   setUploadDocument,
   setMatchDocuments,
 }: Props): ReactElement => {
-  const chargesData = getFragmentData(VarReportMiscTableFieldsFragmentDoc, data);
+  const chargesData = getFragmentData(VatReportMiscTableFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
 
   return (
