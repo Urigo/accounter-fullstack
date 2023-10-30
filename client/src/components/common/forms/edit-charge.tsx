@@ -120,7 +120,6 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
   }, [taxCategoriesData, setTaxCategories]);
 
   // handle business trips
-
   const [{ data: businessTripsData, fetching: fetchingBusinessTrips, error: businessTripsError }] =
     useQuery({
       query: AllBusinessTripsDocument,
@@ -138,14 +137,15 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
   // On every new data fetch, reorder results by name
   useEffect(() => {
     if (businessTripsData?.allBusinessTrips.length) {
-      setBusinessTrips(
-        businessTripsData.allBusinessTrips
+      setBusinessTrips([
+        ...businessTripsData.allBusinessTrips
           .map(entity => ({
             value: entity.id,
             label: entity.name,
           }))
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
+        { value: 'NULL', label: 'None' },
+      ]);
     }
   }, [businessTripsData, setBusinessTrips]);
 
