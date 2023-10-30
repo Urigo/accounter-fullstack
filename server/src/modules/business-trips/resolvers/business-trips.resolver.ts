@@ -1,10 +1,10 @@
+import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TimelessDateString } from '@shared/types';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 import { commonChargeFields } from './common.js';
-import { format } from 'date-fns';
-import { TimelessDateString } from '@shared/types';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Query: {
@@ -18,7 +18,10 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
     businessTrip: async (_, { id }, { injector }) => {
       try {
-        return injector.get(BusinessTripsProvider).getBusinessTripsByIdLoader.load(id).then(businessTrip => businessTrip ?? null);
+        return injector
+          .get(BusinessTripsProvider)
+          .getBusinessTripsByIdLoader.load(id)
+          .then(businessTrip => businessTrip ?? null);
       } catch (e) {
         console.error('Error fetching business trips', e);
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching business trips');
@@ -28,12 +31,21 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
     updateChargeBusinessTrip: async (_, { chargeId, businessTripId = null }, { injector }) => {
       try {
-        const [updatedChargeId] = await injector.get(BusinessTripsProvider).updateChargeBusinessTrip(chargeId, businessTripId);
+        const [updatedChargeId] = await injector
+          .get(BusinessTripsProvider)
+          .updateChargeBusinessTrip(chargeId, businessTripId);
         if (updatedChargeId) {
-          return injector.get(ChargesProvider).getChargeByIdLoader.load(updatedChargeId.charge_id).then(charge => {if (charge) {return charge};
-            throw new Error(`Updated charge with id ${updatedChargeId} not found`)});
+          return injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(updatedChargeId.charge_id)
+            .then(charge => {
+              if (charge) {
+                return charge;
+              }
+              throw new Error(`Updated charge with id ${updatedChargeId} not found`);
+            });
         }
-        throw new Error()
+        throw new Error();
       } catch (e) {
         console.error(`Error updating charge's business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error updating charge's business trip`);
@@ -46,7 +58,10 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       }
 
       try {
-        return injector.get(BusinessTripsProvider).insertBusinessTrip(fields).then(result => result[0]);
+        return injector
+          .get(BusinessTripsProvider)
+          .insertBusinessTrip(fields)
+          .then(result => result[0]);
       } catch (e) {
         console.error(`Error inserting business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error inserting business trip`);
@@ -54,12 +69,15 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
     updateBusinessTrip: async (_, { fields }, { injector }) => {
       try {
-        return injector.get(BusinessTripsProvider).insertBusinessTrip(fields).then(result => result[0]);
+        return injector
+          .get(BusinessTripsProvider)
+          .insertBusinessTrip(fields)
+          .then(result => result[0]);
       } catch (e) {
         console.error(`Error updating business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error inserting business trip`);
       }
-    }
+    },
   },
   BusinessTrip: {
     id: dbBusinessTrip => dbBusinessTrip.id,
@@ -69,9 +87,10 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         return null;
       }
       return {
-      start: format(dbBusinessTrip.from_date, 'yyyy-MM-dd') as TimelessDateString,
-      end: format(dbBusinessTrip.to_date, 'yyyy-MM-dd') as TimelessDateString,
-    }},
+        start: format(dbBusinessTrip.from_date, 'yyyy-MM-dd') as TimelessDateString,
+        end: format(dbBusinessTrip.to_date, 'yyyy-MM-dd') as TimelessDateString,
+      };
+    },
   },
   CommonCharge: {
     ...commonChargeFields,

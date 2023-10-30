@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 import type {
   IGetAllBusinessTripsQuery,
   IGetBusinessTripsByIdsQuery,
@@ -11,7 +12,6 @@ import type {
   IUpdateBusinessTripQuery,
   IUpdateChargeBusinessTripQuery,
 } from '../types.js';
-import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 
 const getAllBusinessTrips = sql<IGetAllBusinessTripsQuery>`
   SELECT *
@@ -110,7 +110,7 @@ export class BusinessTripsProvider {
   );
 
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
-    return updateChargeBusinessTrip.run({chargeId, businessTripId}, this.dbProvider);
+    return updateChargeBusinessTrip.run({ chargeId, businessTripId }, this.dbProvider);
   }
 
   public updateBusinessTrip(params: IUpdateBusinessTripParams) {
