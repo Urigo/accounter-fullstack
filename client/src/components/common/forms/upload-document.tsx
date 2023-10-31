@@ -70,7 +70,7 @@ export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement =>
   return (
     <div className="px-5 w-max h-max justify-items-center">
       <FileInput
-        icon={res.fetching && <Loader />}
+        leftSection={res.fetching && <Loader />}
         value={value}
         onChange={setValue}
         clearable

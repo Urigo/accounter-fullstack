@@ -32,8 +32,8 @@ export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
       {officialRate && (
         <Grid.Col span="content">
           <Card shadow="sm" padding="xs" radius="md" withBorder>
-            <Group position="apart">
-              <Text weight={500}>Official Conversion Rate</Text>
+            <Group justify="space-between">
+              <Text fw={500}>Official Conversion Rate</Text>
               <Badge color="green" variant="light">
                 {`${Number(officialRate.rate)} ${currencyCodeToSymbol(
                   officialRate.from,
@@ -46,8 +46,8 @@ export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
       {eventRate && (
         <Grid.Col span="content">
           <Card shadow="sm" padding="xs" radius="md" withBorder>
-            <Group position="apart">
-              <Text weight={500}>Bank Conversion Rate</Text>
+            <Group justify="space-between">
+              <Text fw={500}>Bank Conversion Rate</Text>
               <Badge color="green" variant="light">
                 {`${Number(eventRate.rate)} ${currencyCodeToSymbol(
                   eventRate.from,

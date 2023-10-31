@@ -16,13 +16,13 @@ import {
   MatchDocumentModal,
   UploadDocumentModal,
 } from '../../common';
+import { BusinessTripsTable } from './business-trips-table';
 import { ExpensesTable } from './expenses-table';
 import { IncomeTable } from './income-table';
 import { MiscTable } from './misc-table';
 import { MissingInfoTable } from './missing-info-table';
 import { PCNGenerator } from './pcn-generator';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
-import { BusinessTripsTable } from './business-trips-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

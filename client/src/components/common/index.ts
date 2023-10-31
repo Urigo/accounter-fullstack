@@ -1,4 +1,3 @@
-export * from './accounter-basic-table.js';
 export * from './accounter-table.js';
 export * from './buttons/index.js';
 export * from './common-wrappers.js';
