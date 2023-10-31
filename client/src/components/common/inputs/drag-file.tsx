@@ -63,8 +63,7 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
       activateOnClick={false}
       activateOnKeyboard={false}
       radius={0}
-      styles={{ root: { padding: 0 } }}
-      className="border-0 cursor-default w-full h-full z-1"
+      styles={{ root: { padding: 0, borderColor: 'transparent' } }}
       maxFiles={1}
       loading={res.fetching}
     >
