@@ -45,7 +45,9 @@ export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
         <>
           <div className="flex flex-wrap">
             <Carousel
-              sx={{ maxWidth: 320 }}
+              classNames={{
+                root: 'max-w-xs',
+              }}
               mx="auto"
               align="center"
               withControls={additionalDocuments.length > 1}
@@ -61,7 +63,7 @@ export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
                     </h2>
                     <button className="mx-10" onClick={(): void => setOpenModal(doc.id)}>
                       <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
-                        <Image src={doc.image?.toString()} withPlaceholder />
+                        <Image src={doc.image?.toString()} />
                       </div>
                     </button>
                   </div>

@@ -3,7 +3,7 @@ import { Image, ImageProps } from '@mantine/core';
 
 export type IconName = 'logo';
 
-interface IconProps extends ImageProps, RefAttributes<HTMLDivElement> {
+interface IconProps extends ImageProps, RefAttributes<HTMLImageElement> {
   name: IconName;
 }
 

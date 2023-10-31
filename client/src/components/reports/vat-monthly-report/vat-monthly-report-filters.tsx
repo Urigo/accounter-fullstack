@@ -5,7 +5,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
-import { MonthPicker } from '@mantine/dates';
+import { MonthPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -54,11 +54,13 @@ function VatMonthlyReportFilterForm({
     closeModal();
   }
 
-  function onSelectDate(date: Date): void {
-    const from = new Date(date.getFullYear(), date.getMonth(), 1);
-    const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    setValue('fromDate', format(from, 'yyyy-MM-dd') as TimelessDateString);
-    setValue('toDate', format(to, 'yyyy-MM-dd') as TimelessDateString);
+  function onSelectDate(date: Date | null): void {
+    if (date) {
+      const from = new Date(date.getFullYear(), date.getMonth(), 1);
+      const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      setValue('fromDate', format(from, 'yyyy-MM-dd') as TimelessDateString);
+      setValue('toDate', format(to, 'yyyy-MM-dd') as TimelessDateString);
+    }
   }
 
   return (
@@ -104,7 +106,7 @@ function VatMonthlyReportFilterForm({
             />
           )}
         />
-        <MonthPicker
+        <MonthPickerInput
           placeholder="Pick month"
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           onChange={onSelectDate}

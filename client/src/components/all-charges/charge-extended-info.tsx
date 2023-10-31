@@ -92,13 +92,6 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             multiple
             defaultValue={defaultAccordionValue()}
             chevron={<Plus size="1rem" />}
-            styles={{
-              chevron: {
-                '&[data-rotate]': {
-                  transform: 'rotate(45deg)',
-                },
-              },
-            }}
           >
             {charge.__typename === 'ConversionCharge' && (
               <Accordion.Item value="conversion">
@@ -197,7 +190,7 @@ export function ChargeExtendedInfoMenu({
         <Menu.Dropdown>
           <Menu.Label>Charge</Menu.Label>
           <Menu.Item
-            icon={<Trash size={14} />}
+            leftSection={<Trash size={14} />}
             onClick={(): void => {
               setModalOpened(true);
               closeMenu();
@@ -208,7 +201,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Divider />
           <Menu.Label>Documents</Menu.Label>
           <Menu.Item
-            icon={<PlaylistAdd size={14} />}
+            leftSection={<PlaylistAdd size={14} />}
             onClick={(): void => {
               setInsertDocument();
               closeMenu();
@@ -217,7 +210,7 @@ export function ChargeExtendedInfoMenu({
             Insert Document
           </Menu.Item>
           <Menu.Item
-            icon={<FileUpload size={14} />}
+            leftSection={<FileUpload size={14} />}
             onClick={(): void => {
               setUploadDocument();
               closeMenu();
@@ -226,7 +219,7 @@ export function ChargeExtendedInfoMenu({
             Upload Document
           </Menu.Item>
           <Menu.Item
-            icon={<Search size={14} />}
+            leftSection={<Search size={14} />}
             onClick={(): void => {
               setMatchDocuments();
               closeMenu();

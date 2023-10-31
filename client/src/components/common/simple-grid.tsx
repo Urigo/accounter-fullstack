@@ -10,14 +10,17 @@ export interface SimpleGridProps {
 export const SimpleGrid = ({ cols, spacing, children }: SimpleGridProps): ReactElement => {
   return (
     <Grid
-      cols={cols}
-      spacing={spacing}
-      breakpoints={[
-        { maxWidth: 980, cols: 3, spacing: 'md' },
-        { maxWidth: 900, cols: 2, spacing: 'sm' },
-        { maxWidth: 755, cols: 2, spacing: 'sm' },
-        { maxWidth: 600, cols: 1, spacing: 'sm' },
-      ]}
+      cols={{
+        base: cols,
+        xs: 1,
+        sm: 2,
+        md: 3,
+      }}
+      spacing={{
+        base: spacing,
+        xs: 'sm',
+        md: 'md',
+      }}
     >
       {children}
     </Grid>
