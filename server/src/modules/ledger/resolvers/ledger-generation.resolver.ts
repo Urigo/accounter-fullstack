@@ -175,7 +175,6 @@ export const generateLedgerRecords: ResolverFn<
         }
 
         // const date3: null = null; // TODO: rethink
-        // const reference2: string | null = ''; // TODO: rethink
         // const movementType: string | null = ''; // TODO: rethink
 
         const ledgerEntry = {
@@ -197,6 +196,7 @@ export const generateLedgerRecords: ResolverFn<
           localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
           description: document.description ?? undefined,
           reference1: document.serial_number ?? undefined,
+          reference2: document.id ?? undefined,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
         };
@@ -266,7 +266,8 @@ export const generateLedgerRecords: ResolverFn<
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
-          reference1: transaction.source_id,
+          reference1: transaction.source_reference ?? undefined,
+          reference2: transaction.id,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -343,7 +344,8 @@ export const generateLedgerRecords: ResolverFn<
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
-          reference1: transaction.source_id,
+          reference1: transaction.source_reference ?? undefined,
+          reference2: transaction.id,
           isCreditorCounterparty: isSupplementalFee
             ? isCreditorCounterparty
             : !isCreditorCounterparty,
@@ -410,6 +412,8 @@ export const generateLedgerRecords: ResolverFn<
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
+          reference1: transactionEntry.reference1,
+          reference2: transactionEntry.reference2,
         };
         miscLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
