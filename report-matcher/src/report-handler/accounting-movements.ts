@@ -182,11 +182,11 @@ export class AccountingMovementsMap {
   public getMatchedData() {
     const movements = Array.from(this.movements);
 
-    const movementsMap: Record<number, string | undefined> = {}
-    movements.map(([movementSerial, {matched, }]) => {
+    const movementsMap: Record<number, string | undefined> = {};
+    movements.map(([movementSerial, { matched }]) => {
       movementsMap[movementSerial] = matched === false ? undefined : matched;
-    })
-    
+    });
+
     return movementsMap;
   }
 

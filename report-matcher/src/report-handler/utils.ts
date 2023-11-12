@@ -14,7 +14,7 @@ export function cleanField(raw: string, trimZeros = false): string {
   return trimmed;
 }
 
-const accountsDict: Map<string, string[]> = new Map<string, string[]>([
+export const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['Accounting', ['הנחש']],
   ['ActiveCampaign, LLC', []],
   ['Ahrefs Pte. Ltd.', ['Ahrefs']],
@@ -118,11 +118,14 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['קריפטו1', ['קריפטו1']],
 ]);
 
-export function checkAccountsMatch(movementAccount: string, ledgerAccount?: string | null): boolean {
+export function checkAccountsMatch(
+  movementAccount: string,
+  ledgerAccount?: string | null,
+): boolean {
   if (!ledgerAccount) {
     return false;
   }
-  
+
   const options = accountsDict.get(ledgerAccount);
   if (!options) {
     return false;
