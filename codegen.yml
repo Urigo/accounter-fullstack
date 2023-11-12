@@ -51,6 +51,7 @@ generates:
         PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
         Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'
+        Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult'
         SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult'
         TaxCategory: '@modules/financial-entities/types.js#IGetAllTaxCategoriesResult'
         Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult'
