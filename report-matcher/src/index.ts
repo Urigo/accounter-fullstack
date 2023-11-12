@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { format } from 'date-fns';
 import { LedgerForKovetzAchidDocument, type LedgerForKovetzAchidQuery } from 'gql/graphql.js';
 import { print, type ExecutionResult } from 'graphql';
-import { AccountingMovement } from 'report-handler/accounting-movements.js';
-import { checkAccountsMatch } from 'report-handler/utils.js';
+import { AccountingMovementsMap } from 'report-handler/accounting-movements.js';
 import { ReportHandler } from './report-handler/report.js';
+import { filterMatches } from 'filter-utils/index.js';
+import { validateMatches } from 'match-validation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
 /* GraphQL */ `
@@ -118,11 +119,11 @@ query LedgerForKovetzAchid($page: Int, $limit: Int, $filters: ChargeFilter) {
 
 function decodeReport(): ReportHandler {
   const originalFile = readFileSync('./BKMVDATA.txt', 'latin1');
-  const translatedFile = transalateUnicode(originalFile);
+  const translatedFile = translateUnicode(originalFile);
   return new ReportHandler(translatedFile);
 }
 
-function transalateUnicode(rawFile: string): string {
+function translateUnicode(rawFile: string): string {
   const hebrewChars = [
     'א',
     'ב',
@@ -214,87 +215,7 @@ async function fetchAccounterData(year: string) {
   return result.json() as Promise<ExecutionResult<LedgerForKovetzAchidQuery>>;
 }
 
-function filterMatches(
-  accountingMovements: AccountingMovement[],
-  ledgerRecord: LedgerRecord,
-  account: 'credit1' | 'credit2' | 'debit1' | 'debit2',
-  setMatched: (serial: number) => void,
-) {
-  // consider missing accounts as a match
-  let ledgerAccount: string | null | undefined = null;
-  switch (account) {
-    case 'credit1':
-      ledgerAccount = ledgerRecord.creditAccount1.name;
-      break;
-    case 'credit2':
-      ledgerAccount = ledgerRecord.creditAccount2?.name;
-      break;
-    case 'debit1':
-      ledgerAccount = ledgerRecord.debitAccount1?.name;
-      break;
-    case 'debit2':
-      ledgerAccount = ledgerRecord.debitAccount2?.name;
-      break;
-  }
-
-  if (!ledgerAccount) {
-    return true;
-  }
-
-  let ledgerAmount: number | null = null;
-  switch (account) {
-    case 'credit1':
-      ledgerAmount = ledgerRecord.localCurrencyCreditAmount1
-        ? Number(ledgerRecord.localCurrencyCreditAmount1.raw.toFixed(2))
-        : null;
-      break;
-    case 'credit2':
-      ledgerAmount = ledgerRecord.localCurrencyCreditAmount2
-        ? Number(ledgerRecord.localCurrencyCreditAmount2.raw.toFixed(2))
-        : null;
-      break;
-    case 'debit1':
-      ledgerAmount = ledgerRecord.localCurrencyDebitAmount1
-        ? Number(ledgerRecord.localCurrencyDebitAmount1.raw.toFixed(2))
-        : null;
-      break;
-    case 'debit2':
-      ledgerAmount = ledgerRecord.localCurrencyDebitAmount2
-        ? Number(ledgerRecord.localCurrencyDebitAmount2.raw.toFixed(2))
-        : null;
-      break;
-  }
-
-  const isCredit = account === 'credit1' || account === 'credit2';
-
-  const filteredMovements = accountingMovements.filter(movement => {
-    const amountsMatch = movement.amount === ledgerAmount;
-    const sidesMatch = isCredit ? movement.side === 'credit' : movement.side === 'debit';
-    const accountsMatch = checkAccountsMatch(movement.accountInMovement, ledgerAccount as string);
-    return amountsMatch && sidesMatch && accountsMatch;
-  });
-
-  filteredMovements.filter(movement =>
-    checkAccountsMatch(movement.accountInMovement, ledgerAccount as string),
-  );
-  if (filteredMovements.length === 1) {
-    // TODO: add more validations
-    setMatched(accountingMovements[0].serial);
-    return true;
-  }
-  if (filteredMovements.length > 1) {
-    console.warn(
-      `Found ${filteredMovements.length} matches for record ${ledgerRecord.id} in charge ${ledgerRecord.id}`,
-    );
-    return false;
-  }
-
-  // case no movements found
-  console.warn(`Could not find match for record ${ledgerRecord.id} in charge ${ledgerRecord.id}`);
-  return false;
-}
-
-async function main() {
+function getReportAccountingMovements(): AccountingMovementsMap {
   const report = decodeReport().getReport();
   const accountingMovements = report.accountingMovements;
 
@@ -302,18 +223,45 @@ async function main() {
     throw new Error('Could not find accounting movements');
   }
 
-  const year = accountingMovements?.getMovements()?.[0]?.date.slice(0, 4);
+  return accountingMovements;
+}
+
+function getYearFromMovements(accountingMovements: AccountingMovementsMap): string {
+  const year = accountingMovements.getMovements()?.[0]?.date.slice(0, 4);
+
   if (!year) {
     throw new Error('Could not find year');
   }
+
+  return year;
+}
+
+type Charge = LedgerForKovetzAchidQuery['allCharges']['nodes'][number]
+
+async function getAccounterChargesByYear(year: string): Promise<Array<Charge>> {
   const accounterData = await fetchAccounterData(year);
-  const charges = accounterData.data?.allCharges?.nodes ?? [];
+
+  if (!accounterData.data?.allCharges?.nodes) {
+    throw new Error('Could not find Accounter charges');
+  }
+
+  return accounterData.data.allCharges.nodes;
+}
+
+async function main() {
+  const accountingMovements = getReportAccountingMovements();
+
+  const year = getYearFromMovements(accountingMovements);
+
+  const charges = await getAccounterChargesByYear(year);
 
   const accounterMatched = new Map<
     string,
-    { [key: number]: { credit1: boolean; credit2: boolean; debit1: boolean; debit2: boolean } }
+    { [ledgerIndex: number]: { credit1: boolean; credit2: boolean; debit1: boolean; debit2: boolean } }
   >();
   for (const charge of charges) {
+ 
+    // case no ledger records
     if (
       !charge.ledgerRecords ||
       !('records' in charge.ledgerRecords) ||
@@ -322,28 +270,36 @@ async function main() {
       accounterMatched.set(charge.id, {});
       continue;
     }
+
+    // handle match search
     const chargeMatches: {
-      [key: number]: { credit1: boolean; credit2: boolean; debit1: boolean; debit2: boolean };
+      [ledgerIndex: number]: { credit1: boolean; credit2: boolean; debit1: boolean; debit2: boolean };
     } = {};
 
     charge.ledgerRecords.records.map((record, i) => {
+      if (!record.id || record.id === '') {
+        record.id = `${charge.id}|${i}`;
+      }
+
       function setMatched(serial: number) {
         accountingMovements?.setMatch(serial, `${charge.id}|${i}`);
       }
 
-      const possibleMatches = accountingMovements.getMovementsByValueDate(
-        format(new Date(record.valueDate), 'yyyyMMdd'),
-        { unmatchedOnly: true },
-      );
-      if (possibleMatches.length === 0) {
+      function possibleMatches() {
+        return accountingMovements.getMovementsByValueDate(
+          format(new Date(record.valueDate), 'yyyyMMdd'),
+          { unmatchedOnly: true },
+        );
+      }
+      if (possibleMatches().length === 0) {
         console.warn(
           `Could not find possible matches for record ${record.id} in charge ${charge.id}`,
         );
         chargeMatches[i] = {
-          credit1: false,
-          credit2: false,
-          debit1: false,
-          debit2: false,
+          credit1: !record.creditAccount1,
+          credit2: !record.creditAccount2,
+          debit1: !record.debitAccount1,
+          debit2: !record.debitAccount2,
         };
       } else {
         chargeMatches[i] = {
@@ -357,12 +313,24 @@ async function main() {
     accounterMatched.set(charge.id, chargeMatches);
   }
 
-  console.log('here!');
-}
+  for (const [chargeId, matches] of accounterMatched.entries()) {
+    for (const [recordIndex, match] of Object.entries(matches)) {
+      if (
+        match.credit1 === false ||
+        match.credit2 === false ||
+        match.debit1 === false ||
+        match.debit2 === false
+      ) {
+        console.log(`Charge ${chargeId} record ${recordIndex} does not match`);
+      }
+    }
+  };
 
-type LedgerRecord = Extract<
-  LedgerForKovetzAchidQuery['allCharges']['nodes'][number]['ledgerRecords'],
-  { records: Array<unknown> }
->['records'][number];
+  // log match success rate
+  const matchedData = accountingMovements.getMatchedData()
+  console.log(`${Object.values(matchedData).filter(value => !!value).length * 100 / Object.keys(matchedData).length}% of movements matched`);
+
+  validateMatches(matchedData);
+}
 
 main();

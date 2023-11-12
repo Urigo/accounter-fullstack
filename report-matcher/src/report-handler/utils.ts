@@ -25,6 +25,7 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['Amazon.com', ['Amazon.com']],
   ['Arda Tanrikulu', ['Arda Tanrikulu']],
   ['Avi Peretz', ['Avi Peretz']],
+  ['Business Insurance', ['ביטוח עסק']],
   ['Business Trip', ['נסעחול1', 'נסעחול2', 'נסעחול3', 'נסעחול4', 'נסעחול5']],
   ['Cal.com, Inc.', ['CAL']],
   ['Calendly LLC', ['Calendly LLC']],
@@ -37,6 +38,7 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['denelop o.d.', ['Denelop']],
   ['Development', ['פיתוח']],
   ['Development Israel', ['פיתוחארץ']],
+  ['DHL (Israel) LTD', ['DHL (Israel) LT']],
   ['Dividend Tax Deduction Origin', ['ניבמדיב']],
   ['Dotan Dividend', ['Dotan Dividend']],
   ['Dotan Employee', ['DotanEm']],
@@ -90,6 +92,7 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['VAT', ['מעמחוז', 'ריביתמעמ']], // TODO: multiple tax accounts + duplication with מעמ
   ['Vercel Inc.', ['Vercel Inc.']],
   ['Website', ['אתר']],
+  ['Y.T AMIRIM DISTRIBUTION LTD', ['Y.T.Amirim']],
   ['Yahel Mor', ['Yahel Mor']],
   ['Yassin Eldeeb', ['YASSIN']],
   ['Yossi Yaron', []],
@@ -98,11 +101,13 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['ביקורת', ['ביקורת']],
   ['דטה פרינט בעמ', ['דטה פרינט בעמ']],
   ['דמי חבר', ['דמי חבר']],
+  ['הפניקס חברה לביטוח בע"מ', ['הפניקס']],
   ['כא1074', ['כא1074']],
   ['כא1082', ['כא1082']],
   ['כא5972', ['כא5972']],
   ['מגדל השתלמות', ['מגדלהש']],
   ['מגדל פנסיה', ['מגדלפנ']],
+  ['מחשבים', ['מחשבים']],
   ['מנורה פנסיה', ['מנורהפנ']],
   ['מעמ', ['מעמחוז', 'תשו']],
   ['עוש', ['עוש']],
@@ -113,7 +118,11 @@ const accountsDict: Map<string, string[]> = new Map<string, string[]>([
   ['קריפטו1', ['קריפטו1']],
 ]);
 
-export function checkAccountsMatch(movementAccount: string, ledgerAccount: string): boolean {
+export function checkAccountsMatch(movementAccount: string, ledgerAccount?: string | null): boolean {
+  if (!ledgerAccount) {
+    return false;
+  }
+  
   const options = accountsDict.get(ledgerAccount);
   if (!options) {
     return false;

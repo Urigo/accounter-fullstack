@@ -39,6 +39,7 @@ export class AccountingMovementsMap {
   private dateMap = new Map<string, number[]>();
   private valueDateMap = new Map<string, number[]>();
   private amountMap = new Map<number, number[]>();
+  private accountNameMap = new Map<string, number[]>();
   private currencyMap = new Map<string, number[]>();
 
   private getMovementSide(side: string): 'credit' | 'debit' {
@@ -97,6 +98,11 @@ export class AccountingMovementsMap {
         this.amountMap.set(movement.amount, []);
       }
       this.amountMap.get(movement.amount)?.push(movement.serial);
+      // Add to accountNameMap
+      if (!this.accountNameMap.has(movement.accountInMovement)) {
+        this.accountNameMap.set(movement.accountInMovement, []);
+      }
+      this.amountMap.get(movement.amount)?.push(movement.serial);
       // Add to currencyMap
       if (!this.currencyMap.has(movement.currency)) {
         this.currencyMap.set(movement.currency, []);
@@ -121,6 +127,14 @@ export class AccountingMovementsMap {
 
   public getMovementsByValueDate(valueDate: string, filters?: Filters): AccountingMovement[] {
     const serials = this.valueDateMap.get(valueDate);
+    if (!serials) {
+      return [];
+    }
+    return this.getMovementsBySerials(serials, filters);
+  }
+
+  public getMovementsByAccount(accountName: string, filters?: Filters): AccountingMovement[] {
+    const serials = this.accountNameMap.get(accountName);
     if (!serials) {
       return [];
     }
@@ -163,6 +177,17 @@ export class AccountingMovementsMap {
       throw new Error(`Could not find movement with serial ${serial}`);
     }
     return movement.matched === false ? undefined : movement.matched;
+  }
+
+  public getMatchedData() {
+    const movements = Array.from(this.movements);
+
+    const movementsMap: Record<number, string | undefined> = {}
+    movements.map(([movementSerial, {matched, }]) => {
+      movementsMap[movementSerial] = matched === false ? undefined : matched;
+    })
+    
+    return movementsMap;
   }
 
   public setMatch(serial: number, match: string) {
