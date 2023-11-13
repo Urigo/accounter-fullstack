@@ -91,7 +91,7 @@ function handleBusinessLedgerRecord(
 function handleBusinessTransaction(
   record: LedgerProto,
   businessID: string,
-  counterparty: CounterAccountProto,
+  counterparty: CounterAccountProto | undefined = undefined,
   isCredit: boolean,
   amount = 0,
   foreignAmount = 0,
@@ -459,7 +459,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     reference1: parent => parent.reference1 ?? null,
     reference2: _ => null,
     details: parent => parent.details ?? null,
-    counterAccount: parent => parent.counterAccount,
+    counterAccount: parent => parent.counterAccount ?? null,
   },
   TaxCategory: {
     __isTypeOf: parent => 'hashavshevet_name' in parent,

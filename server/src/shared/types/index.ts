@@ -54,7 +54,7 @@ export interface DocumentSuggestionsProto {
 export type BusinessTransactionProto = {
   amount: number;
   businessID: string;
-  counterAccount: CounterAccountProto;
+  counterAccount?: CounterAccountProto;
   currency: Currency;
   details?: string;
   isCredit: boolean;

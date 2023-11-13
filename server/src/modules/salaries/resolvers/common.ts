@@ -1,4 +1,4 @@
-import { isBatchedCharge } from '../helpers/batched-salary.helper.js';
+import { filterSalaryRecordsByCharge } from '../helpers/filter-salaries-by-charge.js';
 import { getSalaryMonth } from '../helpers/get-month.helper.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import { SalariesModule } from '../types.js';
@@ -13,19 +13,11 @@ export const commonSalaryFields: SalariesModule.ChargeResolvers = {
     if (!month) {
       return [];
     }
-    console.log(month);
-    const isBatched = isBatchedCharge(DbCharge);
     return injector
       .get(SalariesProvider)
       .getSalaryRecordsByMonthLoader.load(month)
       .then(
-        res =>
-          res?.filter(
-            record =>
-              isBatched ||
-              DbCharge.transactions_event_amount?.replace('-', '') ===
-                record.direct_payment_amount?.replace('-', ''),
-          ),
+        res => filterSalaryRecordsByCharge(DbCharge, res),
       );
   },
 };
