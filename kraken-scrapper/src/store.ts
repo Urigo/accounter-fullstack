@@ -64,15 +64,8 @@ export async function createAndConnectStore(options: { connectionString: string;
                 ON tr.id = t.source_id
                 WHERE t.charge_id IS NOT NULL
                 AND s.trade_ref_id = NEW.trade_ref_id;
-
-                -- update charge's tag to 'conversion'
-                IF (charge_id_var IS NOT NULL) THEN
-                    INSERT INTO ${options.schema}.tags (charge_id, tag_name)
-                    VALUES (charge_id_var, 'conversion')
-                    ON CONFLICT DO NOTHING;
-                END IF;
             END IF;
-
+                
             -- if no match, create new charge
             IF (charge_id_var IS NULL) THEN
                 INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
@@ -81,6 +74,13 @@ export async function createAndConnectStore(options: { connectionString: string;
                     is_conversion
                 )
                 RETURNING id INTO charge_id_var;
+            END IF;
+                  
+            -- if conversion, update charge's tag
+            IF (charge_id_var IS NOT NULL AND is_conversion IS TRUE) THEN
+                INSERT INTO ${options.schema}.tags (charge_id, tag_name)
+                VALUES (charge_id_var, 'conversion')
+                ON CONFLICT DO NOTHING;
             END IF;
 
             -- create new transaction
@@ -98,7 +98,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             );
 
             -- if fee is not null, create new fee transaction
-            IF (NEW.fee IS NOT NULL) THEN
+            IF (NEW.fee IS NOT NULL AND NEW.fee <> 0) THEN
               INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
               VALUES (
                   account_id_var,
