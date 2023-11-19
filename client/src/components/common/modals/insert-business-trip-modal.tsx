@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { ReactElement } from 'react';
 import { WorldUpload } from 'tabler-icons-react';
 import { ActionIcon, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -11,7 +11,7 @@ interface Props {
 export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
   const [opened, { open, close }] = useDisclosure(false);
 
-  function onInsertDone() {
+  function onInsertDone(): void {
     close();
     if (onDone) {
       onDone();

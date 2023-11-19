@@ -6,12 +6,10 @@ import { ActionIcon, Select } from '@mantine/core';
 import { AllTagsDocument, UpdateChargeInput } from '../../../gql/graphql.js';
 
 type Props = {
-  label?: string;
   formManager: UseFormReturn<UpdateChargeInput, object>;
-  tags: { name: string }[];
 };
 
-export function TagsInput({ label, formManager, tags }: Props): ReactElement {
+export function TagsInput({ formManager }: Props): ReactElement {
   const [{ data, fetching }] = useQuery({
     query: AllTagsDocument,
   });
@@ -62,9 +60,6 @@ export function TagsInput({ label, formManager, tags }: Props): ReactElement {
         <ActionIcon>
           <PlaylistAdd size={20} onClick={(): void => append({ name: '' })} />
         </ActionIcon>
-        {fields.length > 1 && (
-          <p className="text-red-500 text-xs italic">Currently adjusted to accept only one tag</p>
-        )}
       </div>
     </div>
   );
