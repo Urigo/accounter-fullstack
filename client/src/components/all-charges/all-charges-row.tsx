@@ -138,8 +138,12 @@ export const AllChargesRow = ({
               <ActionIcon
                 variant="default"
                 onClick={(): void => {
-                  updateCharge();
-                  setOpened(i => !i);
+                  setOpened(i => {
+                    if (i) {
+                      updateCharge();
+                    }
+                    return !i;
+                  });
                 }}
                 size={30}
               >

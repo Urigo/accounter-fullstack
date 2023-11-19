@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useState } from 'react';
-import { set, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';

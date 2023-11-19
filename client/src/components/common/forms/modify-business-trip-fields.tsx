@@ -35,12 +35,12 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field: { value, ...field }, fieldState }): ReactElement => {
+        render={({ field: { value, ...field } }): ReactElement => {
           const date = value ? new Date(value) : undefined;
           return (
             <DateInput
               {...field}
-              onChange={(date?: Date | string | null) => {
+              onChange={(date?: Date | string | null): void => {
                 const newDate = date
                   ? typeof date === 'string'
                     ? date

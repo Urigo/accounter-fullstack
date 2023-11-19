@@ -3,6 +3,7 @@ import postgres from 'pg';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { exchangeRatesModule } from '@modules/exchange-rates/index.js';
+import { salariesModule } from '@modules/salaries/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
@@ -26,15 +27,16 @@ export async function createGraphQLApp() {
       accountantApprovalModule,
       businessTripsModule,
       chargesModule,
-      exchangeRatesModule,
-      transactionsModule,
       documentsModule,
+      exchangeRatesModule,
       financialAccountsModule,
       financialEntitiesModule,
-      sortCodesModule,
       ledgerModule,
       reportsModule,
+      salariesModule,
+      sortCodesModule,
       tagsModule,
+      transactionsModule,
     ],
     providers: () => [
       {

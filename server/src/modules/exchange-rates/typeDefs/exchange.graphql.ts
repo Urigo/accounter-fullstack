@@ -36,6 +36,10 @@ export default gql`
     officialRate: ConversionRate
   }
 
+  extend type SalaryCharge {
+    exchangeRates: ExchangeRates
+  }
+
   extend interface Transaction {
     debitExchangeRates: ExchangeRates
     eventExchangeRates: ExchangeRates

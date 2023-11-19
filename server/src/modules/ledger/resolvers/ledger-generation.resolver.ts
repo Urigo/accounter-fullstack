@@ -11,11 +11,13 @@ import { FinancialAccountsProvider } from '@modules/financial-accounts/providers
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
+import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
+  SALARY_BATCHED_BUSINESSES,
   VAT_TAX_CATEGORY_NAME,
 } from '@shared/constants';
 import {
@@ -26,8 +28,9 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
+import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -41,182 +44,210 @@ export const generateLedgerRecords: ResolverFn<
     // validate ledger records are balanced
     let ledgerBalance = 0;
 
-    const dates = new Set<Date>();
+    const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    // generate ledger from documents
     const accountingLedgerEntries: LedgerProto[] = [];
-    if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
-      const counterpartyTaxCategory = await (charge.tax_category_id
-        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
-        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id));
-      if (!counterpartyTaxCategory) {
-        throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
-      }
-
-      // Get all relevant documents for charge
-      const documents = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(chargeId);
-      const relevantDocuments = documents.filter(d =>
-        ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
-      );
-
-      // if found invoices, looke for & add credit invoices
-      if (relevantDocuments.length >= 1) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'CREDIT_INVOICE'));
-      }
-
-      // if no relevant documents found and business can settle with receipts, look for receipts
-      if (!relevantDocuments.length && charge.can_settle_with_receipt) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
-      }
-
-      // for each invoice - generate accounting ledger entry
-      for (const document of relevantDocuments) {
-        if (!document.date) {
-          throw new GraphQLError(`Document ID="${document.id}" is missing the date`);
+    const isSalary = !!charge.is_salary;
+    const shouldHaveDocuments = !isSalary;
+    if (shouldHaveDocuments) {
+      // generate ledger from documents
+      if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
+        const counterpartyTaxCategory = await (charge.tax_category_id
+          ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
+          : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id));
+        if (!counterpartyTaxCategory) {
+          throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
         }
 
-        if (!document.debtor_id) {
-          throw new GraphQLError(`Document ID="${document.id}" is missing the debtor`);
-        }
-        if (!document.creditor_id) {
-          throw new GraphQLError(`Document ID="${document.id}" is missing the creditor`);
-        }
-        if (!document.total_amount) {
-          throw new GraphQLError(`Document ID="${document.id}" is missing amount`);
-        }
-        let totalAmount = document.total_amount;
+        // Get all relevant documents for charge
+        const documents = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(chargeId);
+        const relevantDocuments = documents.filter(d =>
+          ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
+        );
 
-        const isCreditorCounterparty = document.debtor_id === charge.owner_id;
-        const counterpartyId = isCreditorCounterparty ? document.creditor_id : document.debtor_id;
-        if (totalAmount < 0) {
-          totalAmount = Math.abs(totalAmount);
+        // if found invoices, looke for & add credit invoices
+        if (relevantDocuments.length >= 1) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'CREDIT_INVOICE'));
         }
 
-        const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
-        const creditAccountID1 = isCreditorCounterparty ? counterpartyId : counterpartyTaxCategory;
-        let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
-        let debitAccountID2: IGetAllTaxCategoriesResult | null = null;
-
-        if (!document.currency_code) {
-          throw new GraphQLError(`Document ID="${document.id}" is missing currency code`);
-        }
-        const currency = formatCurrency(document.currency_code);
-        let foreignTotalAmount: number | null = null;
-        let amountWithoutVat = totalAmount;
-        let foreignAmountWithoutVat: number | null = null;
-        let vatAmount = document.vat_amount == null ? null : Math.abs(document.vat_amount);
-        let foreignVatAmount: number | null = null;
-        let vatTaxCategory: IGetAllTaxCategoriesResult | null = null;
-
-        if (vatAmount && vatAmount > 0) {
-          amountWithoutVat = amountWithoutVat - vatAmount;
-          await injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME)
-            .then(res => {
-              vatTaxCategory = res ?? null;
-            });
+        // if no relevant documents found and business can settle with receipts, look for receipts
+        if (!relevantDocuments.length && charge.can_settle_with_receipt) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
         }
 
-        // handle non-local currencies
-        if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
-          // get exchange rate for currency
-          const exchangeRates = await injector
-            .get(FiatExchangeProvider)
-            .getExchangeRatesByDatesLoader.load(document.date);
-          const exchangeRate = getRateForCurrency(document.currency_code, exchangeRates);
-
-          // Set foreign amounts
-          foreignTotalAmount = totalAmount;
-          foreignAmountWithoutVat = amountWithoutVat;
-
-          // calculate amounts in ILS
-          totalAmount = exchangeRate * totalAmount;
-          amountWithoutVat = exchangeRate * amountWithoutVat;
-          if (vatAmount && vatAmount > 0) {
-            foreignVatAmount = vatAmount;
-            vatAmount = exchangeRate * vatAmount;
+        // for each invoice - generate accounting ledger entry
+        for (const document of relevantDocuments) {
+          if (!document.date) {
+            throw new GraphQLError(`Document ID="${document.id}" is missing the date`);
           }
-        }
 
-        let creditAmount1: number | null = null;
-        let localCurrencyCreditAmount1 = 0;
-        let debitAmount1: number | null = null;
-        let localCurrencyDebitAmount1 = 0;
-        let creditAmount2: number | null = null;
-        let localCurrencyCreditAmount2: number | null = null;
-        let debitAmount2: number | null = null;
-        let localCurrencyDebitAmount2: number | null = null;
-        if (isCreditorCounterparty) {
-          localCurrencyCreditAmount1 = totalAmount;
-          creditAmount1 = foreignTotalAmount;
-          localCurrencyDebitAmount1 = amountWithoutVat;
-          debitAmount1 = foreignAmountWithoutVat;
+          if (!document.debtor_id) {
+            throw new GraphQLError(`Document ID="${document.id}" is missing the debtor`);
+          }
+          if (!document.creditor_id) {
+            throw new GraphQLError(`Document ID="${document.id}" is missing the creditor`);
+          }
+          if (!document.total_amount) {
+            throw new GraphQLError(`Document ID="${document.id}" is missing amount`);
+          }
+          let totalAmount = document.total_amount;
+
+          const isCreditorCounterparty = document.debtor_id === charge.owner_id;
+          const counterpartyId = isCreditorCounterparty ? document.creditor_id : document.debtor_id;
+          if (totalAmount < 0) {
+            totalAmount = Math.abs(totalAmount);
+          }
+
+          const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
+          const creditAccountID1 = isCreditorCounterparty
+            ? counterpartyId
+            : counterpartyTaxCategory;
+          let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
+          let debitAccountID2: IGetAllTaxCategoriesResult | null = null;
+
+          if (!document.currency_code) {
+            throw new GraphQLError(`Document ID="${document.id}" is missing currency code`);
+          }
+          const currency = formatCurrency(document.currency_code);
+          let foreignTotalAmount: number | null = null;
+          let amountWithoutVat = totalAmount;
+          let foreignAmountWithoutVat: number | null = null;
+          let vatAmount = document.vat_amount == null ? null : Math.abs(document.vat_amount);
+          let foreignVatAmount: number | null = null;
+          let vatTaxCategory: IGetAllTaxCategoriesResult | null = null;
 
           if (vatAmount && vatAmount > 0) {
-            // add vat to debtor2
-            debitAmount2 = foreignVatAmount;
-            localCurrencyDebitAmount2 = vatAmount;
-            debitAccountID2 = vatTaxCategory;
+            amountWithoutVat = amountWithoutVat - vatAmount;
+            await injector
+              .get(TaxCategoriesProvider)
+              .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME)
+              .then(res => {
+                vatTaxCategory = res ?? null;
+              });
           }
-        } else {
-          localCurrencyDebitAmount1 = totalAmount;
-          debitAmount1 = foreignTotalAmount;
-          localCurrencyCreditAmount1 = amountWithoutVat;
-          creditAmount1 = foreignAmountWithoutVat;
 
-          if (vatAmount && vatAmount > 0) {
-            // add vat to creditor2
-            creditAmount2 = foreignVatAmount;
-            localCurrencyCreditAmount2 = vatAmount;
-            creditAccountID2 = vatTaxCategory;
+          // handle non-local currencies
+          if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
+            // get exchange rate for currency
+            const exchangeRates = await injector
+              .get(FiatExchangeProvider)
+              .getExchangeRatesByDatesLoader.load(document.date);
+            const exchangeRate = getRateForCurrency(document.currency_code, exchangeRates);
+
+            // Set foreign amounts
+            foreignTotalAmount = totalAmount;
+            foreignAmountWithoutVat = amountWithoutVat;
+
+            // calculate amounts in ILS
+            totalAmount = exchangeRate * totalAmount;
+            amountWithoutVat = exchangeRate * amountWithoutVat;
+            if (vatAmount && vatAmount > 0) {
+              foreignVatAmount = vatAmount;
+              vatAmount = exchangeRate * vatAmount;
+            }
           }
+
+          let creditAmount1: number | null = null;
+          let localCurrencyCreditAmount1 = 0;
+          let debitAmount1: number | null = null;
+          let localCurrencyDebitAmount1 = 0;
+          let creditAmount2: number | null = null;
+          let localCurrencyCreditAmount2: number | null = null;
+          let debitAmount2: number | null = null;
+          let localCurrencyDebitAmount2: number | null = null;
+          if (isCreditorCounterparty) {
+            localCurrencyCreditAmount1 = totalAmount;
+            creditAmount1 = foreignTotalAmount;
+            localCurrencyDebitAmount1 = amountWithoutVat;
+            debitAmount1 = foreignAmountWithoutVat;
+
+            if (vatAmount && vatAmount > 0) {
+              // add vat to debtor2
+              debitAmount2 = foreignVatAmount;
+              localCurrencyDebitAmount2 = vatAmount;
+              debitAccountID2 = vatTaxCategory;
+            }
+          } else {
+            localCurrencyDebitAmount1 = totalAmount;
+            debitAmount1 = foreignTotalAmount;
+            localCurrencyCreditAmount1 = amountWithoutVat;
+            creditAmount1 = foreignAmountWithoutVat;
+
+            if (vatAmount && vatAmount > 0) {
+              // add vat to creditor2
+              creditAmount2 = foreignVatAmount;
+              localCurrencyCreditAmount2 = vatAmount;
+              creditAccountID2 = vatTaxCategory;
+            }
+          }
+
+          // const date3: null = null; // TODO: rethink
+          // const reference2: string | null = ''; // TODO: rethink
+          // const movementType: string | null = ''; // TODO: rethink
+
+          accountingLedgerEntries.push({
+            id: document.id,
+            invoiceDate: document.date,
+            valueDate: document.date,
+            currency,
+            creditAccountID1,
+            creditAmount1: creditAmount1 ?? undefined,
+            localCurrencyCreditAmount1,
+            debitAccountID1,
+            debitAmount1: debitAmount1 ?? undefined,
+            localCurrencyDebitAmount1,
+            creditAccountID2: creditAccountID2 ?? undefined,
+            creditAmount2: creditAmount2 ?? undefined,
+            localCurrencyCreditAmount2: localCurrencyCreditAmount2 ?? undefined,
+            debitAccountID2: debitAccountID2 ?? undefined,
+            debitAmount2: debitAmount2 ?? undefined,
+            localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
+            description: document.description ?? undefined,
+            reference1: document.serial_number ?? undefined,
+            isCreditorCounterparty,
+            ownerId: charge.owner_id,
+          });
+
+          if (isCreditorCounterparty) {
+            ledgerBalance += Number(totalAmount.toFixed(2));
+          } else {
+            ledgerBalance -= Number(totalAmount.toFixed(2));
+          }
+
+          dates.add(document.date.getTime());
+          currencies.add(document.currency_code);
         }
+      }
+    } else if (isSalary) {
+      // generate ledger from salary records
+      const transactionDate =
+        charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
+      if (transactionDate) {
+        transactionDate.setDate(transactionDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
 
-        // const date3: null = null; // TODO: rethink
-        // const reference2: string | null = ''; // TODO: rethink
-        // const movementType: string | null = ''; // TODO: rethink
+        const salaryRecords = await injector
+          .get(SalariesProvider)
+          .getSalaryRecordsByChargeIdLoader.load(charge.id);
 
-        accountingLedgerEntries.push({
-          id: document.id,
-          invoiceDate: document.date,
-          valueDate: document.date,
-          currency,
-          creditAccountID1,
-          creditAmount1: creditAmount1 ?? undefined,
-          localCurrencyCreditAmount1,
-          debitAccountID1,
-          debitAmount1: debitAmount1 ?? undefined,
-          localCurrencyDebitAmount1,
-          creditAccountID2: creditAccountID2 ?? undefined,
-          creditAmount2: creditAmount2 ?? undefined,
-          localCurrencyCreditAmount2: localCurrencyCreditAmount2 ?? undefined,
-          debitAccountID2: debitAccountID2 ?? undefined,
-          debitAmount2: debitAmount2 ?? undefined,
-          localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
-          description: document.description ?? undefined,
-          reference1: document.serial_number ?? undefined,
-          isCreditorCounterparty,
-          ownerId: charge.owner_id,
-        });
+        const { entries, balanceDelta } = generateEntriesFromSalaryRecords(
+          salaryRecords,
+          charge,
+          transactionDate,
+        );
 
-        if (isCreditorCounterparty) {
-          ledgerBalance += Number(totalAmount.toFixed(2));
-        } else {
-          ledgerBalance -= Number(totalAmount.toFixed(2));
-        }
-
-        dates.add(document.date);
-        currencies.add(document.currency_code);
+        accountingLedgerEntries.push(...entries);
+        ledgerBalance += balanceDelta;
+        dates.add(transactionDate.getTime());
+        currencies.add(DEFAULT_LOCAL_CURRENCY);
       }
     }
 
     // generate ledger from transactions
     let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
-    const financialAccountLedgerEntries: LedgerProto[] = [];
+    const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     if (charge.transactions_count) {
       // Get all transactions
       transactions = await injector
@@ -323,20 +354,20 @@ export const generateLedgerRecords: ResolverFn<
         });
 
         if (transaction.debit_date) {
-          dates.add(transaction.debit_date);
+          dates.add(transaction.debit_date.getTime());
         }
         currencies.add(currencyCode);
       }
     }
 
-    const miscLedgerEntries: LedgerProto[] = [];
+    const miscLedgerEntries: StrictLedgerProto[] = [];
     // handle conversion charge
     if (charge.is_conversion) {
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       let conversionBalance = 0;
-      let baseEntry: LedgerProto | undefined = undefined;
-      let quoteEntry: LedgerProto | undefined = undefined;
+      let baseEntry: StrictLedgerProto | undefined = undefined;
+      let quoteEntry: StrictLedgerProto | undefined = undefined;
       for (const entry of financialAccountLedgerEntries) {
         if (entry.id === baseTransaction.id) {
           baseEntry = entry;
@@ -401,7 +432,9 @@ export const generateLedgerRecords: ResolverFn<
             typeof counterpartyId === 'string' ? counterpartyId : counterpartyId.id,
           );
         if (business?.no_invoices_required) {
-          return { records: { ...financialAccountLedgerEntries, ...miscLedgerEntries } };
+          return {
+            records: { ...financialAccountLedgerEntries, ...miscLedgerEntries },
+          };
         }
         throw new GraphQLError('Conversion charges must have a ledger balance');
       }
@@ -465,6 +498,16 @@ export const generateLedgerRecords: ResolverFn<
           } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
         );
       }
+    }
+
+    // handle salary batched charges
+    const hasBatchedCounterparty = financialAccountLedgerEntries
+      .map(ledger =>
+        ledger.isCreditorCounterparty ? ledger.creditAccountID1 : ledger.debitAccountID1,
+      )
+      .some(id => SALARY_BATCHED_BUSINESSES.includes(typeof id === 'string' ? id : id.id));
+    if (isSalary && hasBatchedCounterparty) {
+      // TODO: implement
     }
 
     // TODO: validate counterparty is consistent

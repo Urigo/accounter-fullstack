@@ -98,4 +98,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   ConversionCharge: {
     ...commonChargeFields,
   },
+  SalaryCharge: {
+    ...commonChargeFields,
+  },
 };

@@ -566,4 +566,5 @@ const commonChargeFields: ChargesModule.ChargeResolvers = {
 export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
+  SalaryCharge: commonChargeFields,
 };

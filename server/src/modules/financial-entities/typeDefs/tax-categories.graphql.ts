@@ -19,6 +19,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type SalaryCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }

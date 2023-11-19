@@ -37,3 +37,13 @@ export enum DocumentType {
   Proforma = 'PROFORMA',
   Unprocessed = 'UNPROCESSED',
 }
+
+export enum SalaryChargeTypeEnum {
+  salary = 'SALARY',
+  funds = 'FUNDS',
+  pension = 'PENSION',
+  trainingFund = 'TRAINING_FUND',
+  socialSecurity = 'SOCIAL_SECURITY',
+  incomeTax = 'INCOME_TAX',
+  unknown = 'UNKNOWN',
+}

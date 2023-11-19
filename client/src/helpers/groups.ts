@@ -28,6 +28,8 @@ export const entitiesWithoutInvoice = [
   '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
   'fc2ea992-a2be-4f8a-a639-542a81276beb', // מגדל פנסיה
   '6606735b-49ce-4f6f-8d8e-3416fe27528f', // הלמן פנסיה
+  'd60321ef-9b91-4907-8bd2-9cfd87c83c0a', // Batched Employees
+  '95815c30-0ed1-4ac1-8367-e63829345070', // Pension Group
 ];
 
 export const entitiesWithoutInvoiceNumber = [

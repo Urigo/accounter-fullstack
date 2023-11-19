@@ -372,6 +372,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   },
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
+  SalaryCharge: commonChargeFields,
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
   },

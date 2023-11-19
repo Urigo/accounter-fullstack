@@ -17,6 +17,9 @@ import {
       ... on ConversionCharge {
         id
       }
+      ... on SalaryCharge {
+        id
+      }
       ... on CommonError {
         message
       }
@@ -26,7 +29,9 @@ import {
 
 type Charge = Extract<
   MergeChargesMutation['mergeCharges'],
-  { __typename: 'CommonCharge' } | { __typename: 'ConversionCharge' }
+  | { __typename: 'CommonCharge' }
+  | { __typename: 'ConversionCharge' }
+  | { __typename: 'SalaryCharge' }
 >;
 
 type UseMergeCharges = {

@@ -162,6 +162,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   },
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
+  SalaryCharge: commonChargeFields,
   // WireTransaction: {
   //   ...commonTransactionFields,
   // },

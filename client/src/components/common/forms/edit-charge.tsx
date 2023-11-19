@@ -232,7 +232,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
               />
             )}
           />
-          <TagsInput formManager={useFormManager} tags={charge.tags} />
+          <TagsInput formManager={useFormManager} />
           <Controller
             name="isProperty"
             control={chargeControl}

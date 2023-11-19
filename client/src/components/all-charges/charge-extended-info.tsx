@@ -9,6 +9,7 @@ import { ConfirmationModal } from '../common/index.js';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { DocumentsTable } from './documents/documents-table';
 import { ConversionInfo } from './extended-info/conversion-info.js';
+import { SalariesTable } from './extended-info/salaries-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table';
 import { TransactionsTable } from './transactions/transactions-table';
 
@@ -32,12 +33,20 @@ import { TransactionsTable } from './transactions/transactions-table';
         transactionsCount
         documentsCount
       }
+      tags {
+        name
+      }
       ...DocumentsGalleryFields
       ...TableDocumentsFields
       ...TableLedgerRecordsFields
       ...TableTransactionsFields
       ... on ConversionCharge {
         ...ConversionChargeInfo
+      }
+      ... on SalaryCharge {
+        id
+        type
+        ...TableSalariesFields
       }
     }
   }
@@ -65,6 +74,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
   );
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
+  const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
 
   const defaultAccordionValue = (): string[] => {
     const tabs = [];
@@ -76,6 +86,9 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
     }
     if (hasLedgerRecords) {
       tabs.push('ledger');
+    }
+    if (isSalaryCharge) {
+      tabs.push('salaries');
     }
     return tabs;
   };
@@ -133,6 +146,17 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                 <DocumentsTable documentsProps={charge} />
               </Accordion.Panel>
             </Accordion.Item>
+
+            {charge.__typename === 'SalaryCharge' && (
+              <Accordion.Item value="salaries">
+                <Accordion.Control disabled={!isSalaryCharge}>
+                  Salaries - {charge.type}
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <SalariesTable salaryRecordsProps={charge} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
 
             <Accordion.Item value="ledger">
               <Accordion.Control disabled={!hasLedgerRecords}>Ledger Records</Accordion.Control>

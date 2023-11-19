@@ -7,7 +7,7 @@ import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   CurrencyInput, // BeneficiariesInput,
-  SimpleGrid, // TagsInput,
+  SimpleGrid,
   TextInput,
 } from '..';
 import {
@@ -187,7 +187,10 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                 defaultValue={transaction.sourceDescription}
                 rules={{
                   required: 'Required',
-                  minLength: { value: 2, message: 'Must be at least 2 characters' },
+                  minLength: {
+                    value: 2,
+                    message: 'Must be at least 2 characters',
+                  },
                 }}
                 render={({ field: { value, ...field }, fieldState }): ReactElement => (
                   <TextInput
@@ -262,7 +265,10 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                           amountFieldState.error?.message || currencyCodeFieldState.error?.message
                         }
                         label="Amount"
-                        currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
+                        currencyCodeProps={{
+                          ...currencyCodeField,
+                          label: 'Currency',
+                        }}
                       />
                     )}
                   />

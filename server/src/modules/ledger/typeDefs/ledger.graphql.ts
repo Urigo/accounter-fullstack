@@ -9,7 +9,7 @@ export default gql`
     debitAmount2: FinancialAmount
     creditAmount1: FinancialAmount
     creditAmount2: FinancialAmount
-    localCurrencyDebitAmount1: FinancialAmount!
+    localCurrencyDebitAmount1: FinancialAmount
     localCurrencyDebitAmount2: FinancialAmount
     localCurrencyCreditAmount1: FinancialAmount!
     localCurrencyCreditAmount2: FinancialAmount
@@ -29,6 +29,10 @@ export default gql`
   }
 
   extend type ConversionCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
+  extend type SalaryCharge {
     ledgerRecords: GeneratedLedgerRecords
   }
 

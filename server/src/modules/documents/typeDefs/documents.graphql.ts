@@ -220,6 +220,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type SalaryCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type LtdFinancialEntity {
     documents: [Document]
   }
