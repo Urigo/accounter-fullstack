@@ -30,6 +30,8 @@ export default gql`
     property: Boolean
     " is currency conversion "
     conversion: Boolean
+    " is salary "
+    salary: Boolean
     " user custom description "
     userDescription: String
     " minimal event date from linked transactions "
@@ -50,6 +52,7 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     conversion: Boolean
+    salary: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -65,6 +68,23 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     conversion: Boolean
+    salary: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+  }
+
+  " charge with conversion transactions "
+  type SalaryCharge implements Charge {
+    id: ID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -142,10 +162,10 @@ export default gql`
   }
 
   " result type for updateCharge "
-  union UpdateChargeResult = CommonCharge | ConversionCharge | CommonError
+  union UpdateChargeResult = CommonCharge | ConversionCharge | SalaryCharge | CommonError
 
   " result type for mergeCharge "
-  union MergeChargeResult = CommonCharge | ConversionCharge | CommonError
+  union MergeChargeResult = CommonCharge | ConversionCharge | SalaryCharge | CommonError
 
   " represent charge's metadata"
   type ChargeMetadata {
@@ -161,6 +181,7 @@ export default gql`
     invalidTransactions: Boolean!
     optionalBusinesses: [String!]!
     isConversion: Boolean!
+    isSalary: Boolean!
   }
 
   extend interface Document {

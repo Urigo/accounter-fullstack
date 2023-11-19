@@ -65,7 +65,7 @@ export const Counterparty = ({ data }: Props): ReactElement => {
     <td>
       <div className="flex flex-wrap">
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-          {!isError && (
+          {!isError && id && (
             <a href={getHref(id)} target="_blank" rel="noreferrer">
               <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
             </a>

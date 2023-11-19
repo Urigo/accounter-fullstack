@@ -43,7 +43,11 @@ import { TransactionsTable } from './transactions/transactions-table';
       ... on ConversionCharge {
         ...ConversionChargeInfo
       }
-      ...TableSalariesFields
+      ... on SalaryCharge {
+        id
+        type
+        ...TableSalariesFields
+      }
     }
   }
 `;
@@ -143,9 +147,11 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
               </Accordion.Panel>
             </Accordion.Item>
 
-            {isSalaryCharge && (
+            {charge.__typename === 'SalaryCharge' && (
               <Accordion.Item value="salaries">
-                <Accordion.Control disabled={!isSalaryCharge}>Salaries</Accordion.Control>
+                <Accordion.Control disabled={!isSalaryCharge}>
+                  Salaries - {charge.type}
+                </Accordion.Control>
                 <Accordion.Panel>
                   <SalariesTable salaryRecordsProps={charge} />
                 </Accordion.Panel>

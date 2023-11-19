@@ -12,6 +12,7 @@ import { DragFile, ListCapsule } from '../../common';
     metadata {
       transactionsCount
       documentsCount
+      isSalary
     }
     ledgerRecords {
       ... on LedgerRecords {
@@ -100,6 +101,7 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
               ),
               style:
                 metadata?.documentsCount ||
+                metadata?.isSalary ||
                 (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },

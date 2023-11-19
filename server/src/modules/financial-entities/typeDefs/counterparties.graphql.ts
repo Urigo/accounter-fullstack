@@ -38,6 +38,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type SalaryCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID

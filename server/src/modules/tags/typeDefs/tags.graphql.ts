@@ -25,6 +25,10 @@ export default gql`
     tags: [Tag!]!
   }
 
+  extend type SalaryCharge {
+    tags: [Tag!]!
+  }
+
   " defines a tag / category for charge arrangement" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type Tag {
     name: String!

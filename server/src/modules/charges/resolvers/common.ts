@@ -1,3 +1,4 @@
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { ChargeResolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
@@ -5,6 +6,9 @@ import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.pro
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 const calculateTotalAmount: ChargeResolvers['totalAmount'] = async charge => {
+  if (charge.is_salary && charge.transactions_event_amount != null) {
+    return formatFinancialAmount(charge.transactions_event_amount, DEFAULT_LOCAL_CURRENCY);
+  }
   if (charge.documents_event_amount != null && charge.documents_currency) {
     return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
   }
@@ -23,6 +27,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   totalAmount: calculateTotalAmount,
   property: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.is_conversion,
+  salary: DbCharge => DbCharge.is_salary,
   userDescription: DbCharge => DbCharge.user_description,
   minEventDate: DbCharge => DbCharge.transactions_min_event_date,
   minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
@@ -40,6 +45,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     optionalBusinesses:
       DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
     isConversion: DbCharge.is_conversion ?? false,
+    isSalary: DbCharge.is_salary ?? false,
   }),
 };
 

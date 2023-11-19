@@ -5,7 +5,7 @@ import { generateLedgerRecords } from './ledger-generation.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   LedgerRecord: {
-    id: () => '',
+    id: DbLedgerRecord => DbLedgerRecord.id,
     debitAmount1: DbLedgerRecord =>
       DbLedgerRecord.debitAmount1 == null
         ? null
@@ -43,6 +43,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     ledgerRecords: generateLedgerRecords,
   },
   ConversionCharge: {
+    ledgerRecords: generateLedgerRecords,
+  },
+  SalaryCharge: {
     ledgerRecords: generateLedgerRecords,
   },
   GeneratedLedgerRecords: {

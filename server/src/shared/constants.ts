@@ -13,53 +13,6 @@ export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
   'מידע',
   'מחשבים',
 ];
-export const TAX_CATEGORIES_WITHOUT_INVOICE_DATE = [
-  'f1d58fb2-58be-4bc8-a436-860ab57c5ef3', // אוריח
-  // TODO: delete next values after DB migration to business ID done
-  'אוריח',
-];
-export const ENTITIES_WITHOUT_INVOICE_DATE = [
-  '147d3415-55e3-497f-acba-352dcc37cb8d', // Uri Goldshtein
-  '8fa16264-de32-4592-bffb-64a1914318ad', // Poalim
-  '96dba127-90f4-4407-ae89-5a53afa42ca3', // Isracard
-  // TODO: delete next values after DB migration to business ID done
-  'Uri Goldshtein',
-  'Poalim',
-  'Isracard',
-];
-export const ENTITIES_WITHOUT_ACCOUNTING = [
-  '96dba127-90f4-4407-ae89-5a53afa42ca3', // Isracard
-  'c7fdf6f6-e075-44ee-b251-cbefea366826', // VAT
-  '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa', // Social Security Deductions
-  'f1ade516-4999-4919-9d94-6b013221536d', // Tax Deductions
-  '9d3a8a88-6958-4119-b509-d50a7cdc0744', // Tax
-  '8f347f1f-293d-4a88-889a-8043b91f34d5', // Dividend Tax Deduction Origin
-  '8fa16264-de32-4592-bffb-64a1914318ad', // Poalim
-  '0117c1b0-c1f3-4564-9bc5-bdc27a8895f0', // Halman Aldubi Training Fund
-  'c80775bc-1028-4836-9599-f5ebccbe5d06', // Uri Goldshtein Hoz
-  'd57ff56d-08ef-454b-88e9-37c4e9d0328c', // Halman Aldubi Pension
-  '147d3415-55e3-497f-acba-352dcc37cb8d', // Uri Goldshtein
-  'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df', // Dotan Employee
-  '7843b805-3bb7-4d1c-9219-ff783100334b', // Uri Employee
-  'f4b591f3-d817-4e3d-9ecb-35b38d2df7ef', // Gil Employee
-  '4420accf-da13-43b0-9aaa-3b94758598e4', // Tuval Employee
-  // TODO: delete next values after DB migration to business ID done
-  'Isracard',
-  'VAT',
-  'Social Security Deductions',
-  'Tax Deductions',
-  'Tax',
-  'Dividend Tax Deduction Origin',
-  'Poalim',
-  'Halman Aldubi Training Fund',
-  'Halman Aldubi Pension',
-  'Uri Goldshtein Hoz',
-  'Uri Goldshtein',
-  'Dotan Employee',
-  'Uri Employee',
-  'Gil Employee',
-  'Tuval Employee',
-];
 
 // Tax category related
 export const VAT_TAX_CATEGORY_NAME = 'מעמ';
@@ -68,3 +21,20 @@ export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
 export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
 
 export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988'; // TODO: replace with context variable
+export const BATCHED_EMPLOYEE_BUSINESS_ID = 'd60321ef-9b91-4907-8bd2-9cfd87c83c0a'; // TODO: replace with context variable // Batched Employee
+export const BATCHED_PENSION_BUSINESS_ID = '95815c30-0ed1-4ac1-8367-e63829345070'; // TODO: replace with context variable // Batched Employee
+export const PENSION_BUSINESS_IDS = [
+  BATCHED_PENSION_BUSINESS_ID, // Pension Group
+  'af386033-a577-4c9a-880a-d49acd15141d', // מנורה פנסיה
+  'fc2ea992-a2be-4f8a-a639-542a81276beb', // מגדל פנסיה
+  '6606735b-49ce-4f6f-8d8e-3416fe27528f', // הלמן פנסיה
+  '340c3552-0a15-4e22-ba03-19ae9322859c', // איילון פנסיה
+];
+export const TAX_DEDUCTIONS_BUSINESS_ID = 'f1ade516-4999-4919-9d94-6b013221536d'; // TODO: replace with context variable // מהני
+export const SOCIAL_SECURITY_BUSINESS_ID = '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa'; // TODO: replace with context variable // בלני
+export const SALARY_BATCHED_BUSINESSES = [
+  SOCIAL_SECURITY_BUSINESS_ID,
+  TAX_DEDUCTIONS_BUSINESS_ID,
+  BATCHED_PENSION_BUSINESS_ID,
+  BATCHED_EMPLOYEE_BUSINESS_ID,
+];

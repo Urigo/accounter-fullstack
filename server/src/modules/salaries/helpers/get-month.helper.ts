@@ -61,7 +61,7 @@ export function getSalaryMonth(charge: IGetChargesByIdsResult): string | null {
   if (charge.user_description?.length) {
     const description = charge.user_description?.toLocaleLowerCase();
     // search for "yyyy-mm" in description
-    const dateRegex = /(\d{4})-(\d{2})/;
+    const dateRegex = /\b(\d{4})-(\d{2})\b/;
     const matches = description.match(dateRegex);
     if (matches?.length) {
       const month = matches[0];
@@ -69,7 +69,7 @@ export function getSalaryMonth(charge: IGetChargesByIdsResult): string | null {
     }
 
     // search for "mm-yyyy" in description
-    const dateRegex2 = /(\d{2})-(\d{4})/;
+    const dateRegex2 = /\b(\d{2})-(\d{4})\b/;
     const matches2 = description.match(dateRegex2);
     if (matches2?.length) {
       const month = matches2[0];
@@ -77,32 +77,51 @@ export function getSalaryMonth(charge: IGetChargesByIdsResult): string | null {
       return adjustedMonth;
     }
 
-    // search for month name in description
-    const dateRegex3 =
-      /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?)\b/;
-
+    // search for "mm/yyyy" in description
+    const dateRegex3 = /\b(\d{2})\/(\d{4})\b/;
     const matches3 = description.match(dateRegex3);
     if (matches3?.length) {
-      const monthName = matches3[0];
+      const month = matches3[0];
+      const adjustedMonth = month.split('/').reverse().join('-');
+      return adjustedMonth;
+    }
+
+    // search for "mm/yy" in description
+    const dateRegex4 = /\b(\d{2})\/(\d{2})\b/;
+    const matches4 = description.match(dateRegex4);
+    if (matches4?.length) {
+      const month = matches4[0];
+      const adjustedMonth = '20' + month.split('/').reverse().join('-');
+      return adjustedMonth;
+    }
+
+    // search for month name in description
+    const dateRegex5 =
+      /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?)\b/;
+
+    const matches5 = description.match(dateRegex5);
+    if (matches5?.length) {
+      const monthName = matches5[0];
       const month = convertMonthNameToNumber(monthName);
 
       if (month) {
         // try to search for year in description
-        const dateRegex4 =
-          /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:19[7-9]\d|2\d{3})\b/
-        const matches4 = description.match(dateRegex4);
-        if (matches4?.length) {
-          const year = matches4[0].split(' ')[1];
+        const dateRegex5 =
+          /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:19[7-9]\d|2\d{3})\b/;
+        const matches5 = description.match(dateRegex5);
+        if (matches5?.length) {
+          const year = matches5[0].split(' ')[1];
           if (year) {
             const adjustedMonth = `${year}-${month}`;
             return adjustedMonth;
           }
         }
 
-        const transactionDate = charge.transactions_min_event_date ?? charge.transactions_min_debit_date;
+        const transactionDate =
+          charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
         if (transactionDate) {
           let year = transactionDate.getFullYear();
-          
+
           // case payment date is in Jan/Feb and salary month is Nov/Dec, use date's prev year
           if (transactionDate.getMonth() < 2 && month > '10') {
             year--;
@@ -111,10 +130,9 @@ export function getSalaryMonth(charge: IGetChargesByIdsResult): string | null {
           return adjustedMonth;
         }
       }
-
     }
   }
-  const date = charge.transactions_min_event_date;
+  const date = charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
   if (date) {
     const day = date.getDate();
     if (day > 25) {

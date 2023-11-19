@@ -32,6 +32,10 @@ export default gql`
     ledgerRecords: GeneratedLedgerRecords
   }
 
+  extend type SalaryCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
   " array of ledger records linked to the charge "
   type LedgerRecords {
     records: [LedgerRecord!]!

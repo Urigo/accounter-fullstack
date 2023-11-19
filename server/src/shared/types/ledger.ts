@@ -54,7 +54,10 @@ export interface LedgerProto {
   currencyRate?: number;
 }
 
-export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'localCurrencyDebitAmount1'> & {
+export type StrictLedgerProto = Omit<
+  LedgerProto,
+  'debitAccountID1' | 'localCurrencyDebitAmount1'
+> & {
   debitAccountID1: CounterAccountProto;
   localCurrencyDebitAmount1: number;
 };

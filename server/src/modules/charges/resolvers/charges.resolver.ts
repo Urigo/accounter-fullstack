@@ -238,6 +238,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       if ('is_conversion' in obj && obj.is_conversion === true) {
         return 'ConversionCharge';
       }
+      if ('is_salary' in obj && obj.is_salary === true) {
+        return 'SalaryCharge';
+      }
       return 'CommonCharge';
     },
   },
@@ -247,15 +250,22 @@ export const chargesResolvers: ChargesModule.Resolvers &
       if ('is_conversion' in obj && obj.is_conversion === true) {
         return 'ConversionCharge';
       }
+      if ('is_salary' in obj && obj.is_salary === true) {
+        return 'SalaryCharge';
+      }
       return 'CommonCharge';
     },
   },
   CommonCharge: {
-    __isTypeOf: DbCharge => DbCharge.is_conversion !== true,
+    __isTypeOf: DbCharge => (DbCharge.is_conversion || DbCharge.is_salary) !== true,
     ...commonChargeFields,
   },
   ConversionCharge: {
     __isTypeOf: DbCharge => DbCharge.is_conversion === true,
+    ...commonChargeFields,
+  },
+  SalaryCharge: {
+    __isTypeOf: DbCharge => DbCharge.is_salary === true,
     ...commonChargeFields,
   },
   Invoice: {

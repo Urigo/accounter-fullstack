@@ -17,7 +17,7 @@ export const validateCharge = async (
         .getFinancialEntityByIdLoader.load(charge.business_id)
     : undefined;
 
-  const businessIsFine = !!business;
+  const businessIsFine = !!business || !!charge.is_salary;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
@@ -29,7 +29,8 @@ export const validateCharge = async (
   const dbDocumentsAreValid = !charge.invalid_documents;
   const documentsAreFine =
     business?.no_invoices_required ||
-    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt));
+    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt)) ||
+    !!charge.is_salary;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
@@ -59,7 +60,8 @@ export const validateCharge = async (
   const vatIsFine =
     business?.no_invoices_required ||
     (charge.documents_vat_amount != null &&
-      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0));
+      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0)) ||
+    !!charge.is_salary;
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
