@@ -31,8 +31,8 @@ export const Account = ({ data }: Props): ReactElement => {
     account.__typename === 'BankFinancialAccount'
       ? 'Bank'
       : account.__typename === 'CardFinancialAccount'
-      ? 'Card'
-      : undefined;
+        ? 'Card'
+        : undefined;
   const accountNumber =
     account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
 

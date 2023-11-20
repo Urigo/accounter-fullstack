@@ -47,7 +47,7 @@ async function main() {
   for (const [ledgerId, record] of Object.entries(ledger)) {
     // creating serially to enable the TRIGGER to properly match trade records
     await store.createLedgerRecord(accountPrefix, ledgerId, record);
-  };
+  }
 
   await store.close();
   logger.info(`✅ Done!`);

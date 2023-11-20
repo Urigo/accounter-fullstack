@@ -264,7 +264,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     try {
       const res = await pool.query(whereClause);
 
-      if (res.rowCount > 0) {
+      if ((res.rowCount ?? 0) > 0) {
         // console.log('found');
       } else {
         console.log('Account not found!!');

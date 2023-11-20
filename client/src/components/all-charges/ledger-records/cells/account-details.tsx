@@ -92,24 +92,24 @@ export const AccountDetails = ({ data, cred, first }: Props): ReactElement => {
       ? creditAccount1
       : creditAccount2
     : first
-    ? debitAccount1
-    : debitAccount2;
+      ? debitAccount1
+      : debitAccount2;
 
   const localAmount = cred
     ? first
       ? localCurrencyCreditAmount1
       : localCurrencyCreditAmount2
     : first
-    ? localCurrencyDebitAmount1
-    : localCurrencyDebitAmount2;
+      ? localCurrencyDebitAmount1
+      : localCurrencyDebitAmount2;
 
   const foreignAmount = cred
     ? first
       ? creditAmount1
       : creditAmount2
     : first
-    ? debitAmount1
-    : debitAmount2;
+      ? debitAmount1
+      : debitAmount2;
 
   const isForeign = foreignAmount != null && foreignAmount.currency !== 'ILS';
 

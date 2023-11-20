@@ -142,8 +142,8 @@ const missingInfoSuggestions: Resolver<
       transactions.length === 0
         ? 'Missing'
         : transactions.length === 1
-        ? transactions[0].id
-        : `['${transactions.map(t => t.id).join("','")}']`;
+          ? transactions[0].id
+          : `['${transactions.map(t => t.id).join("','")}']`;
     return {
       business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
       tags: [{ name: 'financial' }],

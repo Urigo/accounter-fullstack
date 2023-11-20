@@ -123,7 +123,7 @@ export async function saveTransactionsToDB(
       const res = await pool.query(whereClause);
 
       // console.log('pg result - ', res.rowCount);
-      if (res.rowCount > 0) {
+      if ((res.rowCount ?? 0) > 0) {
         // console.log('found');
       } else {
         console.log('not found');
