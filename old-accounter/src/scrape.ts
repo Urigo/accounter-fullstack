@@ -264,7 +264,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     try {
       const res = await pool.query(whereClause);
 
-      if ((res.rowCount ?? 0) > 0) {
+      if (res.rowCount > 0) {
         // console.log('found');
       } else {
         console.log('Account not found!!');
@@ -696,7 +696,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                     (element: any) => element.swiftTransferAttributeCode == ':71F:',
                   )
                 ) {
-                  foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                  valueSwift71F = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
                     (element: any) => element.swiftTransferAttributeCode == ':71F:',
                   ).swiftTransferAttributeValue;
                 }
