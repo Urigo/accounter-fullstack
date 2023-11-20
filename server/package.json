@@ -20,28 +20,28 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@accounter-toolkit/green-invoice-graphql": "0.5.2-alpha-20230828125510-36cf285",
+    "@accounter-toolkit/green-invoice-graphql": "0.5.2",
     "@accounter-toolkit/pcn874-generator": "0.3.0",
-    "@envelop/graphql-modules": "5.0.0",
+    "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
-    "@pgtyped/cli": "2.2.1",
-    "@pgtyped/runtime": "2.1.0",
-    "cloudinary": "1.40.0",
+    "@pgtyped/cli": "2.3.0",
+    "@pgtyped/runtime": "2.3.0",
+    "cloudinary": "1.41.0",
     "dataloader": "2.2.2",
     "date-fns": "2.30.0",
     "dotenv": "16.3.1",
     "dotenv-cli": "7.3.0",
-    "fastify": "4.22.0",
-    "graphql": "16.8.0",
-    "graphql-modules": "2.2.0",
-    "graphql-yoga": "4.0.4",
+    "fastify": "4.24.3",
+    "graphql": "16.8.1",
+    "graphql-modules": "2.3.0",
+    "graphql-yoga": "5.0.0",
     "pg": "8.11.3",
     "reflect-metadata": "0.1.13"
   },
   "devDependencies": {
-    "@types/pg": "8.10.2",
+    "@types/pg": "8.10.9",
     "nodemon": "3.0.1",
-    "pino-pretty": "10.2.0",
-    "tsc-alias": "1.8.7"
+    "pino-pretty": "10.2.3",
+    "tsc-alias": "1.8.8"
   }
 }

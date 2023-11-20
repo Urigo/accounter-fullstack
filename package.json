@@ -42,8 +42,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "graphql": "16.8.0",
-    "graphql-scalars": "1.22.2",
+    "graphql": "16.8.1",
+    "graphql-scalars": "1.22.4",
     "patch-package": "8.0.0",
     "postinstall-postinstall": "2.1.0"
   },
@@ -57,20 +57,19 @@
     "@graphql-codegen/typescript-resolvers": "4.0.1",
     "@graphql-eslint/eslint-plugin": "3.20.1",
     "@graphql-inspector/cli": "4.0.2",
-    "@theguild/eslint-config": "0.11.0",
-    "@theguild/prettier-config": "2.0.1",
-    "@types/node": "20.5.7",
+    "@theguild/eslint-config": "0.11.1",
+    "@theguild/prettier-config": "2.0.2",
+    "@types/node": "20.9.2",
     "bob-the-bundler": "7.0.1",
-    "concurrently": "8.2.1",
-    "eslint": "8.48.0",
-    "prettier": "3.0.2",
-    "prettier-plugin-sql": "0.15.1",
+    "concurrently": "8.2.2",
+    "eslint": "8.54.0",
+    "prettier": "3.1.0",
+    "prettier-plugin-sql": "0.16.0",
     "typescript": "5.2.2",
-    "vite-tsconfig-paths": "4.2.0",
-    "vitest": "0.34.3"
+    "vite-tsconfig-paths": "4.2.1",
+    "vitest": "0.34.6"
   },
   "resolutions": {
-    "": "urql resolution due to @urql/exchange-multipart-fetch mismatch",
-    "@urql/core": "^4.1.0"
+    "graphql": "16.8.1"
   }
 }
