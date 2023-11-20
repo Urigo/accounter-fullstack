@@ -14,10 +14,10 @@
     "@whatwg-node/fetch": "0.6.1",
     "diary": "0.4.4",
     "dotenv": "16.3.1",
-    "pg-promise": "11.5.2"
+    "pg-promise": "11.5.4"
   },
   "devDependencies": {
-    "@types/node": "20.5.7",
+    "@types/node": "20.9.2",
     "tsup": "6.7.0",
     "typescript": "5.2.2"
   }

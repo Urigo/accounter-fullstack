@@ -51,10 +51,10 @@ function parseRecord(input: string[]): EtanaAccountTransaction {
     actionType: description.includes('Withdrawal: ')
       ? 'withdrawal'
       : description.includes('Transfer from')
-      ? 'deposit'
-      : description.includes('Withdrawal fee')
-      ? 'fee'
-      : null,
+        ? 'deposit'
+        : description.includes('Withdrawal fee')
+          ? 'fee'
+          : null,
   };
 }
 

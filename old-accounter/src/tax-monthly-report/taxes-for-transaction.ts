@@ -548,8 +548,8 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
       transaction.tax_category == 'פלאפון'
         ? (entryForAccounting.movementType = 'פלא')
         : transaction.is_property
-        ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
-        : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
+          ? (entryForAccounting.movementType = hashVATIndexes.vatExpensesPropertyMovementTypeIndex)
+          : (entryForAccounting.movementType = hashVATIndexes.vatExpensesMovementTypeIndex);
     } else {
       entryForAccounting.movementType = null;
     }
@@ -646,11 +646,11 @@ export async function createTaxEntriesForTransaction(transactionId: string) {
         ? transaction.debit_date
           ? transaction.debit_date
           : !taxCategoriesWithoutInvoiceDate.includes(transaction.tax_category)
-          ? transaction.tax_invoice_date
-          : transaction.event_date
+            ? transaction.tax_invoice_date
+            : transaction.event_date
         : transaction.tax_invoice_date
-        ? transaction.tax_invoice_date
-        : transaction.debit_date,
+          ? transaction.tax_invoice_date
+          : transaction.debit_date,
     ),
     hashDateFormat(transaction.event_date),
     transaction.id,

@@ -34,6 +34,5 @@
       "@server": ["server/src/index.ts"]
     }
   },
-  "include": ["./server", "./old-accounter", "./client"],
   "exclude": ["**/node_modules", "**/dist"]
 }

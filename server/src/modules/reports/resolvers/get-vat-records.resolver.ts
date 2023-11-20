@@ -112,8 +112,8 @@ export const getVatRecords: ResolverFn<
             doc.creditor_id === charge.owner_id
               ? doc.debtor_id
               : doc.debtor_id === charge.owner_id
-              ? doc.creditor_id
-              : null;
+                ? doc.creditor_id
+                : null;
           return business.id === counterpartyId;
         });
         if (!business) {

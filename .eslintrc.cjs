@@ -8,6 +8,9 @@ module.exports = {
   rules: {
     'no-console': 1,
   },
+  parserOptions: {
+    project: ['tsconfig.json', '*/tsconfig.json'],
+  },
   overrides: [
     {
       // Setup GraphQL Parser
@@ -92,5 +95,12 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['old-accounter/**', '**/__generated__/**', 'schema.graphql', '**/__tests__/**'],
+  ignorePatterns: [
+    'old-accounter/**',
+    '**/__generated__/**',
+    'schema.graphql',
+    '**/__tests__/**',
+    '.eslintrc.cjs',
+    '.*rc.cjs',
+  ],
 };
