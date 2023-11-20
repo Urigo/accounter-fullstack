@@ -450,10 +450,12 @@ const missingInfoSuggestions: Resolver<
       beneficiaries: COMMON_BENEFICIARIES,
       tags: [{ name: 'business' }],
     };
-    if (formatAmount(DbCharge.event_amount) <= -450) {
-      suggested.description = 'Monthly Sponsor for Yaacov and Benjie';
-    } else if (formatAmount(DbCharge.event_amount) === -4) {
-      suggested.description = 'GitHub CI charges';
+    if (formatAmount(DbCharge.event_amount) <= -2100) {
+      suggested.description = 'Monthly Sponsor for Andaris, notrab, warrenday';
+    } else if (formatAmount(DbCharge.event_amount) <= -2000) {
+      suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
+    } else {
+      suggested.description = 'GitHub Actions';
     }
     return suggested;
   }
