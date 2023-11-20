@@ -264,7 +264,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     try {
       const res = await pool.query(whereClause);
 
-      if (res.rowCount > 0) {
+      if (res.rowCount && res.rowCount > 0) {
         // console.log('found');
       } else {
         console.log('Account not found!!');
@@ -772,79 +772,66 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                     $$${foreignSwiftTransaction.transferCatenatedId}$$,
                     $$${foreignSwiftTransaction.dataOriginCode}$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftBankDetails.swiftIsnSerialNumber
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails.swiftIsnSerialNumber
+                  }$$,
                     $$${foreignSwiftTransactionDetails.data.swiftBankDetails.swiftBankCode}$$,
                     $$${foreignSwiftTransactionDetails.data.swiftBankDetails.orderCustomerName}$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftBankDetails
-                        .beneficiaryEnglishStreetName1
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftBankDetails
-                        .beneficiaryEnglishCityName1
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftBankDetails
-                        .beneficiaryEnglishCountryName
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails
+                    .beneficiaryEnglishStreetName1
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails
+                    .beneficiaryEnglishCityName1
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftBankDetails
+                    .beneficiaryEnglishCountryName
+                  }$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':20:',
-                      ).swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':23B:',
-                      ).swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':32A:',
-                      ).swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':33B:',
-                      ).swiftTransferAttributeValue
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':20:',
+                  ).swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':23B:',
+                  ).swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':32A:',
+                  ).swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':33B:',
+                  ).swiftTransferAttributeValue
+                  }$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
-                      ).swiftTransferAttributeValue
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                  ).swiftTransferAttributeValue
+                  }$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
-                        ) + 1
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
-                        ) + 2
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
-                        ) + 3
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':50K:',
-                        ) + 4
-                      ].swiftTransferAttributeValue
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                    ) + 1
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                    ) + 2
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                    ) + 3
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                    ) + 4
+                  ].swiftTransferAttributeValue
+                  }$$,
     
                     $$${valueSwift52A}$$,
     
@@ -856,40 +843,35 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   
                     $$${valueSwift54A}$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        (element: any) => element.swiftTransferAttributeCode == ':59:',
-                      ).swiftTransferAttributeValue
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
+                    (element: any) => element.swiftTransferAttributeCode == ':59:',
+                  ).swiftTransferAttributeValue
+                  }$$,
     
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':59:',
-                        ) + 1
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':59:',
-                        ) + 2
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':59:',
-                        ) + 3
-                      ].swiftTransferAttributeValue
-                    }$$,
-                    $$${
-                      foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
-                        foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          (element: any) => element.swiftTransferAttributeCode == ':59:',
-                        ) + 4
-                      ].swiftTransferAttributeValue
-                    }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':59:',
+                    ) + 1
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':59:',
+                    ) + 2
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':59:',
+                    ) + 3
+                  ].swiftTransferAttributeValue
+                  }$$,
+                    $$${foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
+                    foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
+                      (element: any) => element.swiftTransferAttributeCode == ':59:',
+                    ) + 4
+                  ].swiftTransferAttributeValue
+                  }$$,
     
                     $$${valueSwift701}$$,
                     $$${valueSwift702}$$,
