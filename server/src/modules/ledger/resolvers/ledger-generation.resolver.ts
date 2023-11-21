@@ -361,7 +361,8 @@ export const generateLedgerRecords: ResolverFn<
     }
 
     const miscLedgerEntries: StrictLedgerProto[] = [];
-    const maxExpectedBalance = 0.005 * Math.max(financialAccountLedgerEntries.length, accountingLedgerEntries.length);
+    const maxExpectedBalance =
+      0.005 * Math.max(financialAccountLedgerEntries.length, accountingLedgerEntries.length);
     // handle conversion charge
     if (charge.is_conversion) {
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
@@ -434,7 +435,7 @@ export const generateLedgerRecords: ResolverFn<
           );
         if (business?.no_invoices_required) {
           return {
-            records: [ ...financialAccountLedgerEntries, ...miscLedgerEntries ],
+            records: [...financialAccountLedgerEntries, ...miscLedgerEntries],
           };
         }
         throw new GraphQLError('Conversion charges must have a ledger balance');

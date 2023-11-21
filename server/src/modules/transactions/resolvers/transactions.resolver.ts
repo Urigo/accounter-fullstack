@@ -157,7 +157,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   UpdateTransactionResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return ('is_conversion' in obj && obj.is_conversion) ? 'ConversionTransaction' : 'CommonTransaction';
+      return 'is_conversion' in obj && obj.is_conversion
+        ? 'ConversionTransaction'
+        : 'CommonTransaction';
     },
   },
   CommonCharge: commonChargeFields,
