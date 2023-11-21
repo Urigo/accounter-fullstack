@@ -156,6 +156,8 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
 
     const dataToUpdate = relevantDataPicker(data, dirtyBusinessFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
+      dataToUpdate.sortCode &&= parseInt(dataToUpdate.sortCode.toString());
+
       updateDbBusiness({
         businessId: business.id,
         ownerId: DEFAULT_FINANCIAL_ENTITY_ID,

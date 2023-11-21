@@ -138,5 +138,5 @@ export default gql`
   }
 
   " result type for updateTransaction "
-  union UpdateTransactionResult = CommonTransaction | CommonError # TODO: update to match more than common transaction
+  union UpdateTransactionResult = CommonTransaction | ConversionTransaction | CommonError # TODO: update to match more than common transaction
 `;
