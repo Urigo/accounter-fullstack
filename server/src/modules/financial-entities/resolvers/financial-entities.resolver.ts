@@ -73,7 +73,8 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
           fields.email ||
           fields.governmentId ||
           fields.phoneNumber ||
-          fields.website
+          fields.website ||
+          fields.sortCode
         ) {
           await injector
             .get(FinancialEntitiesProvider)
