@@ -38,10 +38,10 @@ export const useUpdateTransaction = (): UseUpdateTransaction => {
     fetching,
     updateTransaction: (variables: UpdateTransactionMutationVariables): Promise<{ id: string }> =>
       new Promise<
-        Extract<UpdateTransactionMutation['updateTransaction'], { __typename: 'CommonTransaction' }>
+        Extract<UpdateTransactionMutation['updateTransaction'], { __typename: 'CommonTransaction' | 'ConversionTransaction' }>
       >((resolve, reject) =>
         mutate(variables).then(res => {
-          if (res.error) {
+          if ('error' in res && res.error) {
             console.error(
               `Error updating transaction ID [${variables.transactionId}]: ${res.error}`,
             );
