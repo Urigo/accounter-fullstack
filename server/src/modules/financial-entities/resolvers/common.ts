@@ -22,7 +22,7 @@ export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   },
 };
 
-export const commonChargeFields: FinancialEntitiesModule.CommonChargeResolvers = {
+export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   counterparty: async DbCharge => {
     return DbCharge.business_id;
   },

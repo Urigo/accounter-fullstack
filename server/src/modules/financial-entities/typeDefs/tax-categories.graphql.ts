@@ -23,6 +23,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type InternalTransferCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }

@@ -1,7 +1,7 @@
 import { TagsProvider } from '../providers/tags.provider.js';
 import { TagsModule } from '../types.js';
 
-export const commonTaxChargeFields: TagsModule.ChargeResolvers = {
+export const commonTagsChargeFields: TagsModule.ChargeResolvers = {
   tags: (DbCharge, _, { injector }) =>
     injector
       .get(TagsProvider)

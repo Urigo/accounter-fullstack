@@ -48,6 +48,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   SalaryCharge: {
     ledgerRecords: generateLedgerRecords,
   },
+  InternalTransferCharge: {
+    ledgerRecords: generateLedgerRecords,
+  },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';

@@ -101,4 +101,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   SalaryCharge: {
     ...commonChargeFields,
   },
+  InternalTransferCharge: {
+    ...commonChargeFields,
+  },
 };

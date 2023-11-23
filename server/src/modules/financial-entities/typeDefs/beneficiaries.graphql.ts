@@ -19,6 +19,10 @@ export default gql`
     beneficiaries: [BeneficiaryCounterparty!]!
   }
 
+  extend type InternalTransferCharge {
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
   " input variables for beneficiary"
   input BeneficiaryInput {
     counterparty: CounterpartyInput!

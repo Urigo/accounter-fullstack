@@ -40,6 +40,10 @@ export default gql`
     exchangeRates: ExchangeRates
   }
 
+  extend type InternalTransferCharge {
+    exchangeRates: ExchangeRates
+  }
+
   extend interface Transaction {
     debitExchangeRates: ExchangeRates
     eventExchangeRates: ExchangeRates

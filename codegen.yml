@@ -43,6 +43,7 @@ generates:
         DocumentSuggestions: '@shared/types#DocumentSuggestionsProto'
         ExchangeRates: 'TimelessDateString'
         FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         LedgerRecord: '@shared/types#LedgerProto'

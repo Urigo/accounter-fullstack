@@ -42,6 +42,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type InternalTransferCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID

@@ -63,6 +63,10 @@ export default gql`
     owner: FinancialEntity!
   }
 
+  extend type InternalTransferCharge {
+    owner: FinancialEntity!
+  }
+
   extend type Mutation {
     updateBusiness(
       businessId: ID!

@@ -15,6 +15,7 @@ import {
   commonFinancialAccountFields,
   commonFinancialEntityFields,
 } from './common.js';
+import { INTERNAL_WALLETS_IDS } from '@shared/constants';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
@@ -147,7 +148,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             });
         }
 
-        return updatedCharge;
+        return {charge: updatedCharge};
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -208,7 +209,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });
         }
 
-        return charge;
+        return {charge};
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -234,26 +235,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      if ('is_conversion' in obj && obj.is_conversion === true) {
-        return 'ConversionCharge';
-      }
-      if ('is_salary' in obj && obj.is_salary === true) {
-        return 'SalaryCharge';
-      }
-      return 'CommonCharge';
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj) return 'CommonError';
+      return 'UpdateChargeSuccessfulResult';
     },
   },
   MergeChargeResult: {
     __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      if ('is_conversion' in obj && obj.is_conversion === true) {
-        return 'ConversionCharge';
-      }
-      if ('is_salary' in obj && obj.is_salary === true) {
-        return 'SalaryCharge';
-      }
-      return 'CommonCharge';
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj) return 'CommonError';
+      return 'MergeChargeSuccessfulResult';
     },
   },
   CommonCharge: {
@@ -266,6 +255,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   SalaryCharge: {
     __isTypeOf: DbCharge => DbCharge.is_salary === true,
+    ...commonChargeFields,
+  },
+  InternalTransferCharge: {
+    __isTypeOf: DbCharge => (DbCharge.business_array?.filter(businessId => INTERNAL_WALLETS_IDS.includes(businessId))?.length ?? 0) > 0,
     ...commonChargeFields,
   },
   Invoice: {
