@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": "20.10.0"
+    "node": "21.2.0"
   },
   "scripts": {
     "build": "tsc && vite build",
