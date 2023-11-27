@@ -11,15 +11,13 @@ import {
   EXCHANGE_RATE_CATEGORY_NAME,
   SALARY_BATCHED_BUSINESSES,
 } from '@shared/constants';
-import {
-  Maybe,
-  ResolverFn,
-  ResolversParentTypes,
-  ResolversTypes,
-} from '@shared/gql-types';
+import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
-import { getTaxCategoryNameByAccountCurrency, validateTransactionBasicVariables } from '../helpers/utils.helper.js';
+import {
+  getTaxCategoryNameByAccountCurrency,
+  validateTransactionBasicVariables,
+} from '../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForSalary: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -71,20 +69,16 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     // for each transaction, create a ledger record
     for (const transaction of transactions) {
-      const { currency, valueDate, transactionBusinessId } = validateTransactionBasicVariables(transaction);
+      const { currency, valueDate, transactionBusinessId } =
+        validateTransactionBasicVariables(transaction);
       let amount = Number(transaction.amount);
       let foreignAmount: number | undefined = undefined;
-
 
       if (currency !== DEFAULT_LOCAL_CURRENCY) {
         // get exchange rate for currency
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(
-            currency,
-            DEFAULT_LOCAL_CURRENCY,
-            valueDate,
-          );
+          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
 
         foreignAmount = amount;
         // calculate amounts in ILS
