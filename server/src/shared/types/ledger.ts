@@ -40,9 +40,9 @@ export interface LedgerProto {
   creditAmount2?: number;
   debitAmount1?: number;
   debitAmount2?: number;
-  localCurrencyCreditAmount1?: number;
+  localCurrencyCreditAmount1: number;
   localCurrencyCreditAmount2?: number;
-  localCurrencyDebitAmount1?: number;
+  localCurrencyDebitAmount1: number;
   localCurrencyDebitAmount2?: number;
   description?: string;
   invoiceDate: Date;
@@ -54,15 +54,7 @@ export interface LedgerProto {
   currencyRate?: number;
 }
 
-export type StrictLedgerProto = Omit<
-  LedgerProto,
-  | 'debitAccountID1'
-  | 'localCurrencyDebitAmount1'
-  | 'creditAccountID1'
-  | 'localCurrencyCreditAmount1'
-> & {
+export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'creditAccountID1'> & {
   debitAccountID1: CounterAccountProto;
-  localCurrencyDebitAmount1: number;
   creditAccountID1: CounterAccountProto;
-  localCurrencyCreditAmount1: number;
 };
