@@ -8,7 +8,10 @@
         name
       }
       ... on CardFinancialAccount {
-        name: number
+        name
+      }
+      ... on CryptoWalletFinancialAccount {
+        name
       }
     }
   }

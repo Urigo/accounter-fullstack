@@ -40,6 +40,7 @@ generates:
         ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
         CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult'
+        CryptoWalletFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         DocumentSuggestions: '@shared/types#DocumentSuggestionsProto'
         ExchangeRates: 'TimelessDateString'
         FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'

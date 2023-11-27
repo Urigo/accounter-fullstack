@@ -13,7 +13,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     },
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => !!DbAccount.bank_number,
+    __isTypeOf: DbAccount => DbAccount.type === 'bank',
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
@@ -22,13 +22,23 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     iban: () => '', // TODO: missing in DB
     swift: () => '', // TODO: missing in DB
     country: () => '', // TODO: missing in DB
-    name: DbAccount => DbAccount.account_number,
+    name: DbAccount => `${DbAccount.bank_number}-${DbAccount.account_number}`,
   },
   CardFinancialAccount: {
-    __isTypeOf: DbAccount => !DbAccount.bank_number,
+    __isTypeOf: DbAccount => DbAccount.type === 'creditcard',
     ...commonFinancialAccountFields,
     number: DbAccount => DbAccount.account_number,
     fourDigits: DbAccount => DbAccount.account_number,
+    name: DbAccount => DbAccount.account_number,
+  },
+  CryptoWalletFinancialAccount: {
+    __isTypeOf: DbAccount => DbAccount.type === 'crypto',
+    ...commonFinancialAccountFields,
+    number: DbAccount => DbAccount.account_number,
+    name: DbAccount =>
+      DbAccount.account_number.length >= 20
+        ? DbAccount.account_number.slice(-8)
+        : DbAccount.account_number,
   },
   // WireTransaction: {
   //   ...commonTransactionFields,

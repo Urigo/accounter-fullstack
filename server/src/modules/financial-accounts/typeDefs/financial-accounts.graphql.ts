@@ -9,11 +9,17 @@ export default gql`
   " Represent something external that we scrape, like bank or card "
   interface FinancialAccount {
     id: ID!
+    " the name of the account"
+    name: String!
+    " the general type of the account"
+    type: String!
   }
 
   " represent a single bank account"
   type BankFinancialAccount implements FinancialAccount {
     id: ID!
+    name: String!
+    type: String!
     " the external identifier of the bank account "
     accountNumber: String!
     bankNumber: String!
@@ -26,16 +32,25 @@ export default gql`
     swift: String!
     " country "
     country: String!
-    " the name of the bank account"
-    name: String!
   }
 
   " represent a single credit card "
   type CardFinancialAccount implements FinancialAccount {
     id: ID!
+    name: String!
+    type: String!
     " the external identifier of the card "
     number: String!
     fourDigits: String!
+  }
+
+  " represent a single credit card "
+  type CryptoWalletFinancialAccount implements FinancialAccount {
+    id: ID!
+    name: String!
+    type: String!
+    " the external identifier of the wallet "
+    number: String!
   }
 
   extend interface Transaction {
