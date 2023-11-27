@@ -51,6 +51,7 @@ export const AllChargesTable = ({
     <Table striped highlightOnHover>
       <thead className="sticky top-0 z-20">
         <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+          <th>Type</th>
           <th>Date</th>
           <th>Amount</th>
           <th>Vat</th>

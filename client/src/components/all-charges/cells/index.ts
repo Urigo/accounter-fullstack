@@ -7,4 +7,5 @@ export { Description } from './description.js';
 export { MoreInfo } from './more-info.js';
 export { Tags } from './tags.js';
 export { TaxCategory } from './tax-category.js';
+export { TypeCell } from './type.js';
 export { Vat } from './vat.js';
