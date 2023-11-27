@@ -17,6 +17,7 @@ export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
 // Tax category related
 export const VAT_TAX_CATEGORY_NAME = 'מעמ';
 export const EXCHANGE_RATE_CATEGORY_NAME = 'Exchange Rates';
+export const FEE_CATEGORY_NAME = 'Fee';
 export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
 export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
 
@@ -39,9 +40,10 @@ export const SALARY_BATCHED_BUSINESSES = [
   BATCHED_EMPLOYEE_BUSINESS_ID,
 ];
 
-export const INTERNAL_WALLETS_IDS = [ // TODO: replace with context variable
+export const INTERNAL_WALLETS_IDS = [
+  // TODO: replace with context variable
   '4d2dd0f9-38ea-4546-9cdf-296ed5b0aef4', // kraken
   'f2ae3379-b970-45c9-a998-aced20c25b31', // etherscan
   '4ea86b9b-1c8f-46de-b25e-532f8e34001c', // etana
   '8fa16264-de32-4592-bffb-64a1914318ad', // poalim
-]
+];

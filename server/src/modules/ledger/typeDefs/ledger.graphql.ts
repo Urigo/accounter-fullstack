@@ -11,7 +11,7 @@ export default gql`
     creditAmount2: FinancialAmount
     localCurrencyDebitAmount1: FinancialAmount
     localCurrencyDebitAmount2: FinancialAmount
-    localCurrencyCreditAmount1: FinancialAmount!
+    localCurrencyCreditAmount1: FinancialAmount
     localCurrencyCreditAmount2: FinancialAmount
     invoiceDate: Date!
     valueDate: Date!

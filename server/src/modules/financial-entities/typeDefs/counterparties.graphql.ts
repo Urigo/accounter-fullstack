@@ -114,7 +114,7 @@ export default gql`
   extend type LedgerRecord {
     debitAccount1: Counterparty
     debitAccount2: Counterparty
-    creditAccount1: Counterparty!
+    creditAccount1: Counterparty
     creditAccount2: Counterparty
   }
 `;
