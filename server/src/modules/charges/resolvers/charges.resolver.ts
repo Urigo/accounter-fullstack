@@ -16,7 +16,6 @@ import {
   commonFinancialAccountFields,
   commonFinancialEntityFields,
 } from './common.js';
-import { INTERNAL_WALLETS_IDS } from '@shared/constants';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
@@ -265,7 +264,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: DbCharge => (DbCharge.business_array?.filter(businessId => INTERNAL_WALLETS_IDS.includes(businessId))?.length ?? 0) > 0,
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'InternalTransferCharge',
     ...commonChargeFields,
   },
   Invoice: {
