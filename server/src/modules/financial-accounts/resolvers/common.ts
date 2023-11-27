@@ -1,10 +1,9 @@
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule } from '../types.js';
 
-export const commonFinancialAccountFields:
-  | FinancialAccountsModule.CardFinancialAccountResolvers
-  | FinancialAccountsModule.BankFinancialAccountResolvers = {
+export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAccountResolvers = {
   id: DbAccount => DbAccount.id,
+  type: DbAccount => DbAccount.type,
 };
 
 export const commonTransactionFields:

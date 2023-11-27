@@ -32,7 +32,7 @@ export interface EntryForAccounting {
 
 export interface LedgerProto {
   id: string;
-  creditAccountID1: CounterAccountProto;
+  creditAccountID1?: CounterAccountProto;
   creditAccountID2?: CounterAccountProto;
   debitAccountID1?: CounterAccountProto;
   debitAccountID2?: CounterAccountProto;
@@ -40,7 +40,7 @@ export interface LedgerProto {
   creditAmount2?: number;
   debitAmount1?: number;
   debitAmount2?: number;
-  localCurrencyCreditAmount1: number;
+  localCurrencyCreditAmount1?: number;
   localCurrencyCreditAmount2?: number;
   localCurrencyDebitAmount1?: number;
   localCurrencyDebitAmount2?: number;
@@ -56,8 +56,13 @@ export interface LedgerProto {
 
 export type StrictLedgerProto = Omit<
   LedgerProto,
-  'debitAccountID1' | 'localCurrencyDebitAmount1'
+  | 'debitAccountID1'
+  | 'localCurrencyDebitAmount1'
+  | 'creditAccountID1'
+  | 'localCurrencyCreditAmount1'
 > & {
   debitAccountID1: CounterAccountProto;
   localCurrencyDebitAmount1: number;
+  creditAccountID1: CounterAccountProto;
+  localCurrencyCreditAmount1: number;
 };

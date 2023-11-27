@@ -92,6 +92,22 @@ export default gql`
     metadata: ChargeMetadata
   }
 
+  " charge of internal transfer "
+  type InternalTransferCharge implements Charge {
+    id: ID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+  }
+
   " input variables for charge filtering "
   input ChargeFilter {
     " Include only charges with main date occurred after this date "
@@ -162,10 +178,20 @@ export default gql`
   }
 
   " result type for updateCharge "
-  union UpdateChargeResult = CommonCharge | ConversionCharge | SalaryCharge | CommonError
+  union UpdateChargeResult = UpdateChargeSuccessfulResult | CommonError
+
+  " successful result type for updateCharge "
+  type UpdateChargeSuccessfulResult {
+    charge: Charge!
+  }
 
   " result type for mergeCharge "
-  union MergeChargeResult = CommonCharge | ConversionCharge | SalaryCharge | CommonError
+  union MergeChargeResult = MergeChargeSuccessfulResult | CommonError
+
+  " successful result type for mergeCharge "
+  type MergeChargeSuccessfulResult {
+    charge: Charge!
+  }
 
   " represent charge's metadata"
   type ChargeMetadata {
@@ -225,6 +251,10 @@ export default gql`
   }
 
   extend type CardFinancialAccount {
+    charges(filter: ChargeFilter): [Charge!]!
+  }
+
+  extend type CryptoWalletFinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }
 

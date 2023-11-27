@@ -11,14 +11,10 @@ import {
   mutation MergeCharges($baseChargeID: ID!, $chargeIdsToMerge: [ID!]!, $fields: UpdateChargeInput) {
     mergeCharges(baseChargeID: $baseChargeID, chargeIdsToMerge: $chargeIdsToMerge, fields: $fields) {
       __typename
-      ... on CommonCharge {
-        id
-      }
-      ... on ConversionCharge {
-        id
-      }
-      ... on SalaryCharge {
-        id
+      ... on MergeChargeSuccessfulResult {
+        charge {
+          id
+        }
       }
       ... on CommonError {
         message
@@ -29,10 +25,8 @@ import {
 
 type Charge = Extract<
   MergeChargesMutation['mergeCharges'],
-  | { __typename: 'CommonCharge' }
-  | { __typename: 'ConversionCharge' }
-  | { __typename: 'SalaryCharge' }
->;
+  { __typename: 'MergeChargeSuccessfulResult' }
+>['charge'];
 
 type UseMergeCharges = {
   fetching: boolean;
@@ -82,7 +76,7 @@ export const useMergeCharges = (): UseMergeCharges => {
             title: 'Update Success!',
             message: 'Hey there, your update is awesome!',
           });
-          return resolve(res.data.mergeCharges);
+          return resolve(res.data.mergeCharges.charge);
         }),
       ),
   };

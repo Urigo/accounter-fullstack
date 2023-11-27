@@ -11,14 +11,10 @@ import {
   mutation UpdateCharge($chargeId: ID!, $fields: UpdateChargeInput!) {
     updateCharge(chargeId: $chargeId, fields: $fields) {
       __typename
-      ... on CommonCharge {
-        id
-      }
-      ... on ConversionCharge {
-        id
-      }
-      ... on SalaryCharge {
-        id
+      ... on UpdateChargeSuccessfulResult {
+        charge {
+          id
+        }
       }
       ... on CommonError {
         message
@@ -29,10 +25,8 @@ import {
 
 type Charge = Extract<
   UpdateChargeMutation['updateCharge'],
-  | { __typename: 'CommonCharge' }
-  | { __typename: 'ConversionCharge' }
-  | { __typename: 'SalaryCharge' }
->;
+  { __typename: 'UpdateChargeSuccessfulResult' }
+>['charge'];
 
 type UseUpdateCharge = {
   fetching: boolean;
@@ -80,7 +74,7 @@ export const useUpdateCharge = (): UseUpdateCharge => {
             title: 'Update Success!',
             message: 'Hey there, your update is awesome!',
           });
-          return resolve(res.data.updateCharge);
+          return resolve(res.data.updateCharge.charge);
         }),
       ),
   };

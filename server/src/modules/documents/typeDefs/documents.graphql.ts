@@ -224,6 +224,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type InternalTransferCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type LtdFinancialEntity {
     documents: [Document]
   }

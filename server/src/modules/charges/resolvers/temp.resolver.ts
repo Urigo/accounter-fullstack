@@ -40,4 +40,5 @@ export const tempResolvers: ChargesModule.Resolvers = {
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
+  InternalTransferCharge: commonChargeFields,
 };

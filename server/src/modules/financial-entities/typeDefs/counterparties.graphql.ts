@@ -42,6 +42,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type InternalTransferCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID
@@ -110,7 +114,7 @@ export default gql`
   extend type LedgerRecord {
     debitAccount1: Counterparty
     debitAccount2: Counterparty
-    creditAccount1: Counterparty!
+    creditAccount1: Counterparty
     creditAccount2: Counterparty
   }
 `;

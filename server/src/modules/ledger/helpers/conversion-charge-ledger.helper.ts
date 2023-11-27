@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
-import { LedgerProto } from '@shared/types';
+import { LedgerProto, StrictLedgerProto } from '@shared/types';
 
 export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
   const baseRate = base.currencyRate ?? 0;
@@ -18,8 +18,8 @@ export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
 }
 
 export function conversionFeeCalculator(
-  base: LedgerProto,
-  quote: LedgerProto,
+  base: StrictLedgerProto,
+  quote: StrictLedgerProto,
   officialRate: number,
   localCurrencyRate?: number,
 ): { localAmount: number; foreignAmount?: number; currency: Currency } {

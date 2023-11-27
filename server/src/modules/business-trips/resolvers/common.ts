@@ -2,9 +2,7 @@ import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
-export const commonChargeFields:
-  | BusinessTripsModule.CommonChargeResolvers
-  | BusinessTripsModule.ConversionChargeResolvers = {
+export const commonChargeFields: BusinessTripsModule.ChargeResolvers = {
   businessTrip: (dbCharge, _, { injector }) => {
     if (!dbCharge.business_trip_id) {
       return null;

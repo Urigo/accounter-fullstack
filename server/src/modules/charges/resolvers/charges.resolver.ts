@@ -6,6 +6,7 @@ import { tags as tagNames } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharge } from '../helpers/delete-charge.helper.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
@@ -147,7 +148,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             });
         }
 
-        return updatedCharge;
+        return { charge: updatedCharge };
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -208,7 +209,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });
         }
 
-        return charge;
+        return { charge };
       } catch (e) {
         return {
           __typename: 'CommonError',
@@ -234,38 +235,32 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      if ('is_conversion' in obj && obj.is_conversion === true) {
-        return 'ConversionCharge';
-      }
-      if ('is_salary' in obj && obj.is_salary === true) {
-        return 'SalaryCharge';
-      }
-      return 'CommonCharge';
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'UpdateChargeSuccessfulResult';
     },
   },
   MergeChargeResult: {
     __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      if ('is_conversion' in obj && obj.is_conversion === true) {
-        return 'ConversionCharge';
-      }
-      if ('is_salary' in obj && obj.is_salary === true) {
-        return 'SalaryCharge';
-      }
-      return 'CommonCharge';
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'MergeChargeSuccessfulResult';
     },
   },
   CommonCharge: {
-    __isTypeOf: DbCharge => (DbCharge.is_conversion || DbCharge.is_salary) !== true,
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'CommonCharge',
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: DbCharge => DbCharge.is_conversion === true,
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'ConversionCharge',
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: DbCharge => DbCharge.is_salary === true,
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'SalaryCharge',
+    ...commonChargeFields,
+  },
+  InternalTransferCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'InternalTransferCharge',
     ...commonChargeFields,
   },
   Invoice: {

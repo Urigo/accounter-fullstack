@@ -9,12 +9,8 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
     account {
         id
         __typename
-        ... on BankFinancialAccount {
-            accountNumber
-        }
-        ... on CardFinancialAccount {
-            fourDigits
-        }
+        name
+        type
     }
   }
 `;
@@ -27,20 +23,14 @@ export const Account = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;
 
-  const accountType =
-    account.__typename === 'BankFinancialAccount'
-      ? 'Bank'
-      : account.__typename === 'CardFinancialAccount'
-        ? 'Card'
-        : undefined;
-  const accountNumber =
-    account.__typename === 'BankFinancialAccount' ? account.accountNumber : account.fourDigits;
+  const accountType = account.type;
+  const accountName = account.name;
 
   return (
     <td>
       <div className="flex flex-col gap-2 items-center">
-        <p>{accountNumber}</p>
         <p>{accountType}</p>
+        <p>{accountName}</p>
       </div>
     </td>
   );

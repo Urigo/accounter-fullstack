@@ -20,6 +20,7 @@ import {
   MoreInfo,
   Tags,
   TaxCategory,
+  TypeCell,
   Vat,
 } from './cells';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info';
@@ -34,14 +35,15 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
     }
     ...AllChargesAccountantApprovalFields
     ...AllChargesAmountFields
+    ...AllChargesBusinessTripFields
     ...AllChargesDateFields
     ...AllChargesDescriptionFields
     ...AllChargesEntityFields
     ...AllChargesMoreInfoFields
     ...AllChargesTagsFields
-    ...AllChargesVatFields
     ...AllChargesTaxCategoryFields
-    ...AllChargesBusinessTripFields
+    ...AllChargesTypeFields
+    ...AllChargesVatFields
   }
 `;
 
@@ -105,6 +107,7 @@ export const AllChargesRow = ({
   return (
     <>
       <tr>
+        <TypeCell data={charge} />
         <DateCell data={charge} />
         <Amount data={charge} />
         <Vat data={charge} />

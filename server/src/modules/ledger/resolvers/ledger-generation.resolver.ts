@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import {
   defineConversionBaseAndQuote,
@@ -29,15 +30,22 @@ import {
 } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
-import { conversionFeeCalculator } from '../helpers/ledger.helper.js';
+import { conversionFeeCalculator } from '../helpers/conversion-charge-ledger.helper.js';
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
+import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   { injector: Injector },
   object
-> = async (charge, _, { injector }) => {
+> = async (charge, args, { injector }, info) => {
+  const chargeType = getChargeType(charge);
+  switch (chargeType) {
+    case 'InternalTransferCharge': {
+      return generateLedgerRecordsForInternalTransfer(charge, args, { injector }, info);
+    }
+  }
   const chargeId = charge.id;
 
   try {

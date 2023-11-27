@@ -146,6 +146,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
+  InternalTransferCharge: commonChargeFields,
   WireTransaction: {
     ...commonTransactionFields,
   },
