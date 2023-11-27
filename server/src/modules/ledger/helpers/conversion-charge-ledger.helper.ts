@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
-import { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 
 export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
   const baseRate = base.currencyRate ?? 0;
@@ -18,8 +18,8 @@ export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
 }
 
 export function conversionFeeCalculator(
-  base: StrictLedgerProto,
-  quote: StrictLedgerProto,
+  base: LedgerProto,
+  quote: LedgerProto,
   officialRate: number,
   localCurrencyRate?: number,
 ): { localAmount: number; foreignAmount?: number; currency: Currency } {
@@ -32,12 +32,12 @@ export function conversionFeeCalculator(
     base.currency === DEFAULT_LOCAL_CURRENCY
       ? base.localCurrencyCreditAmount1
       : (base.creditAmount1 as number);
-  const baseAmountConvertedByEventRate = baseAmount / eventRate; // TODO: seems like it should be divided for FIAT, multiplied for CRYPTO. Check this.
 
   const quoteAmount =
     quote.currency === DEFAULT_LOCAL_CURRENCY
       ? quote.localCurrencyCreditAmount1
       : (quote.creditAmount1 as number);
+  const baseAmountConvertedByEventRate = baseAmount / eventRate;
   if (baseAmountConvertedByEventRate - quoteAmount > 0.005) {
     throw new GraphQLError(
       'Conversion records have mismatching amounts, taking the bank rate into account',

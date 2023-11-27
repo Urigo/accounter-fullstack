@@ -30,6 +30,7 @@ export function isSupplementalFeeTransaction(
   const supplementalFeeBusinesses: string[] = [
     'f2ae3379-b970-45c9-a998-aced20c25b31', // etherscan
     '4ea86b9b-1c8f-46de-b25e-532f8e34001c', //etana
+    '4d2dd0f9-38ea-4546-9cdf-296ed5b0aef4', // kraken
   ];
   if (supplementalFeeBusinesses.includes(transaction.business_id)) {
     return true;

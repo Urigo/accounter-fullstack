@@ -32,6 +32,7 @@ import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/conversion-charge-ledger.helper.js';
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
+import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
 
 export const generateLedgerRecords: ResolverFn<
@@ -44,6 +45,9 @@ export const generateLedgerRecords: ResolverFn<
   switch (chargeType) {
     case 'InternalTransferCharge': {
       return generateLedgerRecordsForInternalTransfer(charge, args, { injector }, info);
+    }
+    case 'ConversionCharge': {
+      return generateLedgerRecordsForConversion(charge, args, { injector }, info);
     }
   }
   const chargeId = charge.id;

@@ -4,14 +4,20 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { currency } from '@modules/transactions/types.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
   FEE_CATEGORY_NAME,
 } from '@shared/constants';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
+import { conversionFeeCalculator } from '../helpers/conversion-charge-ledger.helper.js';
 import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
   getTaxCategoryNameByAccountCurrency,
@@ -19,7 +25,7 @@ import {
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
 
-export const generateLedgerRecordsForInternalTransfer: ResolverFn<
+export const generateLedgerRecordsForConversion: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   { injector: Injector },
@@ -31,14 +37,11 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     // validate ledger records are balanced
     let ledgerBalance = 0;
 
-    const dates = new Set<number>();
-    const currencies = new Set<currency>();
-
     // generate ledger from transactions
     const mainFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
-    let originEntry: LedgerProto | undefined = undefined;
-    let destinationEntry: LedgerProto | undefined = undefined;
+    let baseEntry: LedgerProto | undefined = undefined;
+    let quoteEntry: LedgerProto | undefined = undefined;
 
     // Get all transactions
     const transactions = await injector
@@ -47,16 +50,16 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
-      throw new GraphQLError(`Internal transfer Charge must include two main transactions`);
+      throw new GraphQLError(`Conversion Charge must include two main transactions`);
     }
 
     if (!isTransactionsOppositeSign(mainTransactions)) {
       throw new GraphQLError(
-        `Internal transfer Charge must include two main transactions with opposite sign`,
+        `Conversion Charge must include two main transactions with opposite sign`,
       );
     }
 
-    // create a ledger record for main transactions
+    // for each transaction, create a ledger record
     for (const transaction of mainTransactions) {
       const { currency, valueDate } = validateTransactionBasicVariables(transaction);
 
@@ -102,10 +105,10 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           : {
               creditAccountID1: taxCategory,
             }),
-        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-        localCurrencyDebitAmount1: Math.abs(amount),
         creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyCreditAmount1: Math.abs(amount),
+        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyDebitAmount1: Math.abs(amount),
         description: transaction.source_description ?? undefined,
         reference1: transaction.source_id,
         isCreditorCounterparty,
@@ -114,20 +117,18 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       };
 
       if (amount < 0) {
-        originEntry = ledgerEntry;
+        baseEntry = ledgerEntry;
       } else if (amount > 0) {
-        destinationEntry = ledgerEntry;
+        quoteEntry = ledgerEntry;
       }
 
       mainFinancialAccountLedgerEntries.push(ledgerEntry);
 
       ledgerBalance += amount;
-      dates.add(valueDate.getTime());
-      currencies.add(currency);
     }
 
-    if (!originEntry || !destinationEntry) {
-      throw new GraphQLError(`Internal transfer Charge must include two main transactions`);
+    if (!baseEntry || !quoteEntry) {
+      throw new GraphQLError(`Conversion Charge must include two main transactions`);
     }
 
     // create a ledger record for fee transactions
@@ -196,7 +197,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
         });
       } else {
-        const businessTaxCategory = destinationEntry.debitAccountID1!;
+        const businessTaxCategory = quoteEntry.debitAccountID1!;
         if (!businessTaxCategory) {
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
@@ -220,50 +221,58 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         });
 
         ledgerBalance -= amount;
-        dates.add(valueDate.getTime());
-        currencies.add(currency);
       }
     }
 
     const miscLedgerEntries: LedgerProto[] = [];
-    // Add ledger completion entries
-    if (Math.abs(ledgerBalance) > 0.005) {
-      const hasMultipleDates = dates.size > 1;
-      const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
-      if (hasMultipleDates && hasForeignCurrency) {
-        const exchangeCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
-        if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
-        }
 
-        const amount = Math.abs(ledgerBalance);
+    // calculate conversion fee
+    const [quoteRate, baseRate] = await Promise.all(
+      [quoteEntry.currency, baseEntry.currency].map(currency =>
+        injector
+          .get(ExchangeProvider)
+          .getExchangeRates(currency as Currency, DEFAULT_LOCAL_CURRENCY, baseEntry!.valueDate),
+      ),
+    );
+    const toLocalRate = quoteRate;
+    const directRate = quoteRate / baseRate;
+    const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 
-        const isCreditorCounterparty = ledgerBalance > 0;
-
-        miscLedgerEntries.push({
-          id: destinationEntry.id, // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? exchangeCategory : undefined,
-          creditAmount1: undefined,
-          localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
-          debitAmount1: undefined,
-          localCurrencyDebitAmount1: amount,
-          description: 'Exchange ledger record',
-          isCreditorCounterparty,
-          invoiceDate: originEntry.invoiceDate,
-          valueDate: destinationEntry.valueDate,
-          currency: destinationEntry.currency, // NOTE: this field is dummy
-          ownerId: destinationEntry.ownerId,
-        });
-      } else {
-        throw new GraphQLError(
-          `Failed to balance: ${
-            hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
-          } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
-        );
+    if (conversionFee.localAmount !== 0) {
+      const feeTaxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+      if (!feeTaxCategory) {
+        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
       }
+
+      const isDebitConversion = conversionFee.localAmount >= 0;
+
+      miscLedgerEntries.push({
+        id: quoteEntry.id + '|fee', // NOTE: this field is dummy
+        creditAccountID1: isDebitConversion ? feeTaxCategory : undefined,
+        creditAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
+        localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
+        debitAccountID1: isDebitConversion ? undefined : feeTaxCategory,
+        debitAmount1: conversionFee.foreignAmount
+          ? Math.abs(conversionFee.foreignAmount)
+          : undefined,
+        localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
+        description: 'Conversion fee',
+        isCreditorCounterparty: true,
+        invoiceDate: quoteEntry.invoiceDate,
+        valueDate: quoteEntry.valueDate,
+        currency: quoteEntry.currency,
+        reference1: quoteEntry.reference1,
+        ownerId: quoteEntry.ownerId,
+      });
+      ledgerBalance -= conversionFee.localAmount;
+    }
+
+    if (Math.abs(ledgerBalance) > 0.005) {
+      throw new GraphQLError('Conversion charges must have a ledger balance');
     }
 
     return {

@@ -25,6 +25,7 @@ function generateEntryRaw(
     currency: DEFAULT_LOCAL_CURRENCY,
     creditAccountID1: accountId,
     localCurrencyCreditAmount1: amount,
+    localCurrencyDebitAmount1: amount,
     description: `${month} salary (${salaryType}): ${accountId}`,
     isCreditorCounterparty: true, // TODO: check
     ownerId,
