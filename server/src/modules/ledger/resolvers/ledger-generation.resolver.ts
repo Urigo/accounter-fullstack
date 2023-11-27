@@ -34,6 +34,7 @@ import { conversionFeeCalculator } from '../helpers/conversion-charge-ledger.hel
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
 import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
+import { generateLedgerRecordsForSalary } from './salary-ledger-generation.resolver.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -48,6 +49,9 @@ export const generateLedgerRecords: ResolverFn<
     }
     case 'ConversionCharge': {
       return generateLedgerRecordsForConversion(charge, args, { injector }, info);
+    }
+    case 'SalaryCharge': {
+      return generateLedgerRecordsForSalary(charge, args, { injector }, info);
     }
   }
   const chargeId = charge.id;
