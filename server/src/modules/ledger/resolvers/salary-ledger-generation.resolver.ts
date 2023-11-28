@@ -60,7 +60,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     // generate ledger from transactions
     let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
-    const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const financialAccountLedgerEntries: LedgerProto[] = [];
+    let hasBatchedCounterparty: boolean = false;
 
     // Get all transactions
     transactions = await injector
@@ -73,6 +74,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         validateTransactionBasicVariables(transaction);
       let amount = Number(transaction.amount);
       let foreignAmount: number | undefined = undefined;
+
+      if (SALARY_BATCHED_BUSINESSES.includes(transactionBusinessId)) {
+        hasBatchedCounterparty = true;
+      }
 
       if (currency !== DEFAULT_LOCAL_CURRENCY) {
         // get exchange rate for currency
@@ -106,10 +111,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         invoiceDate: transaction.event_date,
         valueDate,
         currency,
-        creditAccountID1: isCreditorCounterparty ? transactionBusinessId : taxCategory,
+        creditAccountID1: isCreditorCounterparty ? undefined : taxCategory,
         creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyCreditAmount1: Math.abs(amount),
-        debitAccountID1: isCreditorCounterparty ? taxCategory : transactionBusinessId,
+        debitAccountID1: isCreditorCounterparty ? taxCategory : undefined,
         debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyDebitAmount1: Math.abs(amount),
         description: transaction.source_description ?? undefined,
@@ -124,15 +129,13 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       currencies.add(currency);
     }
 
-    const miscLedgerEntries: StrictLedgerProto[] = [];
-    // const maxExpectedBalance =
-    //   0.005 * Math.max(financialAccountLedgerEntries.length, accountingLedgerEntries.length);
+    const miscLedgerEntries: LedgerProto[] = [];
     if (Math.abs(ledgerBalance) > 0.005) {
       const hasMultipleDates = dates.size > 1;
       const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
         const transactionEntry = financialAccountLedgerEntries[0];
-        const documentEntry = accountingLedgerEntries[0];
+        const salaryEntry = accountingLedgerEntries[0];
 
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
@@ -142,24 +145,20 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         }
 
         const amount = Math.abs(ledgerBalance);
-        const counterparty =
-          typeof transactionEntry.creditAccountID1 === 'string'
-            ? transactionEntry.creditAccountID1
-            : transactionEntry.debitAccountID1;
 
         const isCreditorCounterparty = ledgerBalance < 0;
 
         miscLedgerEntries.push({
-          id: transactionEntry.id + '|fee',
-          creditAccountID1: isCreditorCounterparty ? counterparty : exchangeCategory,
+          id: transactionEntry.id,
+          creditAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? exchangeCategory : counterparty,
+          debitAccountID1: isCreditorCounterparty ? exchangeCategory : undefined,
           debitAmount1: undefined,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
-          invoiceDate: documentEntry.invoiceDate,
+          invoiceDate: salaryEntry.invoiceDate,
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
@@ -174,11 +173,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     }
 
     // handle salary batched charges
-    const hasBatchedCounterparty = financialAccountLedgerEntries
-      .map(ledger =>
-        ledger.isCreditorCounterparty ? ledger.creditAccountID1 : ledger.debitAccountID1,
-      )
-      .some(id => SALARY_BATCHED_BUSINESSES.includes(typeof id === 'string' ? id : id.id));
     if (hasBatchedCounterparty) {
       // TODO: implement
       console.log('hasBatchedCounterparty');
