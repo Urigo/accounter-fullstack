@@ -263,10 +263,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: DbCharge => getChargeType(DbCharge) === 'InternalTransferCharge',
     ...commonChargeFields,
   },
-  InternalTransferCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'InternalTransferCharge',
-    ...commonChargeFields,
-  },
   Invoice: {
     ...commonDocumentsFields,
   },
