@@ -186,9 +186,10 @@ export class FinancialEntitiesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialEntitiesByIds(ids: readonly string[]) {
+    const uniqueIds = [...new Set(ids)];
     const financialEntities = await getFinancialEntitiesByIds.run(
       {
-        ids,
+        ids: uniqueIds,
       },
       this.dbProvider,
     );

@@ -4,10 +4,10 @@ import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/ty
 import { Currency } from '@shared/enums';
 import { formatCurrency } from '@shared/helpers';
 
-export function isTransactionsOppositeSign(
-  first: IGetTransactionsByChargeIdsResult,
-  second: IGetTransactionsByChargeIdsResult,
-) {
+export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
+  if (!first || !second) {
+    throw new GraphQLError('Transactions are missing');
+  }
   const firstAmount = Number(first.amount);
   const secondAmount = Number(second.amount);
   if (Number.isNaN(firstAmount) || Number.isNaN(secondAmount)) {

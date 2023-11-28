@@ -19,12 +19,13 @@ function generateEntryRaw(
   ownerId: string,
 ): LedgerProto {
   return {
-    id: `${month}|${accountId}|${salaryType}`,
+    id: `${accountId}|${salaryType}|${month}`,
     invoiceDate: transactionDate,
     valueDate: transactionDate,
     currency: DEFAULT_LOCAL_CURRENCY,
-    creditAccountID1: accountId,
+    debitAccountID1: accountId,
     localCurrencyCreditAmount1: amount,
+    localCurrencyDebitAmount1: amount,
     description: `${month} salary (${salaryType}): ${accountId}`,
     isCreditorCounterparty: true, // TODO: check
     ownerId,
