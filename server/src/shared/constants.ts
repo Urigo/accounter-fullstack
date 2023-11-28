@@ -47,3 +47,10 @@ export const INTERNAL_WALLETS_IDS = [
   '4ea86b9b-1c8f-46de-b25e-532f8e34001c', // etana
   '8fa16264-de32-4592-bffb-64a1914318ad', // poalim
 ];
+
+export const DIVIDEND_BUSINESS_IDS = [
+  // TODO: replace with context variable
+  '8f347f1f-293d-4a88-889a-8043b91f34d5', // Dividend Tax Deduction Origin
+  '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
+  '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
+];
