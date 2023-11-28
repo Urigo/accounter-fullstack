@@ -12,7 +12,7 @@ import {
   SALARY_BATCHED_BUSINESSES,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
 import {
   getTaxCategoryNameByAccountCurrency,
