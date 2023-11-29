@@ -29,14 +29,14 @@
     "dotenv": "16.3.1",
     "graphql": "16.8.1",
     "lodash": "4.17.21",
-    "modern-poalim-scraper": "0.9.0",
+    "modern-poalim-scraper": "0.9.9",
     "moment": "2.29.4",
     "pg": "8.11.3",
     "pixl-xml": "1.0.13",
     "uuid": "9.0.1"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.201",
+    "@types/lodash": "4.14.202",
     "@types/pg": "8.10.9",
     "@types/pixl-xml": "1.0.5",
     "@types/uuid": "9.0.7",

@@ -89,7 +89,7 @@ export async function saveTransactionsToDB(
       // TODO: Check if we want to save it to DB
       optionalTransactionKeys = ['data0ExpectedRepaymentSwitch'];
     } else if (accountType == 'isracard') {
-      optionalTransactionKeys = ['clientIpAddress', 'bcKey', 'chargingDate'];
+      optionalTransactionKeys = ['clientIpAddress', 'bcKey', 'chargingDate', 'requestNumber'];
     }
     optionalTransactionKeys = optionalTransactionKeys.concat(['id']);
     findMissingTransactionKeys(
@@ -101,6 +101,7 @@ export async function saveTransactionsToDB(
 
     const additionalColumnsToExcludeFromTransactionComparison = [];
     additionalColumnsToExcludeFromTransactionComparison.push('cardIndex'); // If you get a new creditcard, all indexes will change and you could get duplicates
+    additionalColumnsToExcludeFromTransactionComparison.push('kodMatbeaMekori');
     if (oldContraAccountFieldNameLableAPI) {
       additionalColumnsToExcludeFromTransactionComparison.push('contraAccountFieldNameLable');
     }
@@ -559,6 +560,7 @@ function transactionValuesToArray(transaction: any, accountType: AccountTypes) {
       transaction.clientIpAddress,
       transaction.card,
       null,
+      transaction.kodMatbeaMekori,
     ];
   } else if (accountType == 'deposits') {
     values = [
