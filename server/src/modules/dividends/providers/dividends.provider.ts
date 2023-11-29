@@ -17,9 +17,11 @@ const getAllDividends = sql<IGetAllDividendsQuery>`
 `;
 
 const getDividendsByChargeId = sql<IGetDividendsByChargeIdQuery>`
-  SELECT *
-  FROM accounter_schema.dividends
-  WHERE charge_id in $$chargeIds
+  SELECT d.*, t.charge_id
+  FROM accounter_schema.dividends d
+  LEFT JOIN accounter_schema.transactions t
+  ON d.transaction_id = t.id
+  WHERE t.charge_id in $$chargeIds
   ORDER BY date DESC;
 `;
 
