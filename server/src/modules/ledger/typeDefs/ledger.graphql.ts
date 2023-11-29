@@ -40,6 +40,10 @@ export default gql`
     ledgerRecords: GeneratedLedgerRecords
   }
 
+  extend type DividendCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
   " array of ledger records linked to the charge "
   type LedgerRecords {
     records: [LedgerRecord!]!

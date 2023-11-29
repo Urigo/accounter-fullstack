@@ -113,6 +113,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   },
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
+  DividendCharge: commonChargeFields,
   // WireTransaction: {
   //   ...commonTransactionFields,
   // },

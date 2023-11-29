@@ -31,6 +31,10 @@ export default gql`
     transactions: [Transaction!]!
   }
 
+  extend type DividendCharge {
+    transactions: [Transaction!]!
+  }
+
   " Represent a general transaction object "
   interface Transaction {
     id: ID!

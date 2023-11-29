@@ -35,9 +35,13 @@ export default gql`
     accountantApproval: AccountantApproval!
   }
 
-  extend type InternalTransferCharge {
-    accountantApproval: AccountantApproval!
-  }
+extend type InternalTransferCharge {
+  accountantApproval: AccountantApproval!
+}
+
+extend type DividendCharge {
+  accountantApproval: AccountantApproval!
+}
 
   extend input UpdateChargeInput {
     accountantApproval: AccountantApprovalInput

@@ -46,6 +46,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type DividendCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID
