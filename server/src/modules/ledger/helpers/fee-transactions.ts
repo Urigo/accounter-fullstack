@@ -4,7 +4,7 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
   const feeTransactions = [];
   const mainTransactions = [];
   for (const transaction of transactions) {
-    if (transaction.is_fee || transaction.business_id === 'a62a631b-54b2-4bc1-bd61-6672c3c5d45a') {
+    if (transaction.is_fee) {
       // TODO: ugly workaround to set swift as fee
       feeTransactions.push(transaction);
     } else {
