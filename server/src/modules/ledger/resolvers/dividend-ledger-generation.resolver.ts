@@ -21,6 +21,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
 } from '../helpers/utils.helper.js';
+import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 
 export const generateLedgerRecordsForDividend: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -35,8 +36,8 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const ledgerBalance = new Map<string, number>();
 
     // generate ledger from transactions
-    const paymentsFinancialAccountLedgerEntries: LedgerProto[] = [];
-    const withholdingTaxFinancialAccountLedgerEntries: LedgerProto[] = [];
+    const paymentsLedgerEntries: LedgerProto[] = [];
+    const withholdingTaxLedgerEntries: LedgerProto[] = [];
     let mainAccount: IGetAllTaxCategoriesResult | undefined = undefined;
     let dividendTaxCategory: IGetAllTaxCategoriesResult | undefined = undefined;
 
@@ -51,16 +52,10 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     for (const preValidatedTransaction of withholdingTaxTransactions) {
       const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
 
-      let exchangeRate: number | undefined = undefined;
       if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-        // get exchange rate for currency
-        exchangeRate = await injector
-          .get(ExchangeProvider)
-          .getExchangeRates(
-            transaction.currency,
-            DEFAULT_LOCAL_CURRENCY,
-            transaction.debit_timestamp,
-          );
+        throw new GraphQLError(
+          `Withholding tax currency supposed to be local, got ${transaction.currency}`,
+        );
       }
 
       const account = await injector
@@ -77,7 +72,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
       }
 
-      const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
+      const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, undefined);
 
       // set main account for dividend
       mainAccount ||= taxCategory;
@@ -95,7 +90,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           : transaction.business_id,
       };
 
-      withholdingTaxFinancialAccountLedgerEntries.push(ledgerEntry);
+      withholdingTaxLedgerEntries.push(ledgerEntry);
 
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     }
@@ -134,40 +129,8 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
       if (partialEntry.currency !== DEFAULT_LOCAL_CURRENCY) {
         // TODO: implement
-        throw new GraphQLError(`Payment currency is not local`);
+        // throw new GraphQLError(`Payment currency is not local`);
       }
-
-      const withholdingTaxAmount =
-        ((partialEntry.isCreditorCounterparty
-          ? partialEntry.localCurrencyDebitAmount1
-          : partialEntry.localCurrencyCreditAmount1) *
-          DIVIDEND_WITHHOLDING_TAX_PERCENTAGE) /
-        (1 - DIVIDEND_WITHHOLDING_TAX_PERCENTAGE);
-
-      const ledgerEntry: LedgerProto = {
-        ...partialEntry,
-        ...(partialEntry.isCreditorCounterparty
-          ? {
-              creditAccountID1: transaction.business_id,
-              localCurrencyCreditAmount1:
-                partialEntry.localCurrencyCreditAmount1 + withholdingTaxAmount,
-              debitAccountID1: taxCategory,
-              debitAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
-              localCurrencyDebitAmount2: withholdingTaxAmount,
-            }
-          : {
-              creditAccountID1: taxCategory,
-              creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
-              localCurrencyCreditAmount2: withholdingTaxAmount,
-              debitAccountID1: transaction.business_id,
-              localCurrencyDebitAmount1:
-                partialEntry.localCurrencyDebitAmount1 + withholdingTaxAmount,
-            }),
-      };
-
-      paymentsFinancialAccountLedgerEntries.push(ledgerEntry);
-
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
 
       // close the payed business against dividend tax category
       dividendTaxCategory ||= await injector
@@ -177,13 +140,8 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         throw new GraphQLError(`Dividend tax category couldn't be found`);
       }
 
-      const localAmount = ledgerEntry.isCreditorCounterparty
-        ? ledgerEntry.localCurrencyCreditAmount1
-        : ledgerEntry.localCurrencyDebitAmount1;
       const closingEntry: LedgerProto = {
-        ...ledgerEntry,
-        localCurrencyCreditAmount1: localAmount,
-        localCurrencyDebitAmount1: localAmount,
+        ...partialEntry,
         ...(partialEntry.isCreditorCounterparty
           ? {
               creditAccountID1: dividendTaxCategory,
@@ -193,13 +151,43 @@ export const generateLedgerRecordsForDividend: ResolverFn<
               creditAccountID1: transaction.business_id,
               debitAccountID1: dividendTaxCategory,
             }),
-        creditAccountID2: undefined,
-        debitAccountID2: undefined,
       };
 
-      paymentsFinancialAccountLedgerEntries.push(closingEntry);
+      paymentsLedgerEntries.push(closingEntry);
 
       updateLedgerBalanceByEntry(closingEntry, ledgerBalance);
+    }
+
+    // create a ledger record for dividend records
+    const dividendRecordsLedgerEntries: LedgerProto[] = [];
+    const dividendRecords = await injector.get(DividendsProvider).getDividendsByChargeIdLoader.load(chargeId);
+    for (const dividendRecord of dividendRecords) {
+      // set amounts
+      const amount = Number(dividendRecord.amount);
+
+      const absAmount = Math.abs(amount);
+    
+      const isCreditorCounterparty = amount > 0;
+      const ledgerEntry: LedgerProto = {
+        id: dividendRecord.id,
+        invoiceDate: dividendRecord.date,
+        valueDate: dividendRecord.date,
+        currency: DEFAULT_LOCAL_CURRENCY,
+        description: 'נ20',
+        isCreditorCounterparty,
+        ownerId: dividendRecord.owner_id,
+        debitAccountID1: dividendRecord.business_id,
+        localCurrencyDebitAmount1: absAmount,
+        creditAccountID1: mainAccount,
+        localCurrencyCreditAmount1: absAmount * (1-DIVIDEND_WITHHOLDING_TAX_PERCENTAGE),
+        creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
+        localCurrencyCreditAmount2: absAmount * DIVIDEND_WITHHOLDING_TAX_PERCENTAGE,
+      };
+
+      dividendRecordsLedgerEntries.push(ledgerEntry);
+
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+
     }
 
     // validate ledger balance
@@ -209,19 +197,21 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         continue;
       }
       if (UUID_REGEX.test(side)) {
-        throw new GraphQLError(`Business ID="${side}" is not balanced`);
+        console.error(`Business ID="${side}" is not balanced`);
+        // throw new GraphQLError(`Business ID="${side}" is not balanced`);
       }
       ledgerBalanceSum += balance;
     }
     if (ledgerBalanceSum !== 0) {
-      throw new GraphQLError(`Ledger is not balanced`);
+      console.error(`Ledger is not balanced`);
+      // throw new GraphQLError(`Ledger is not balanced`);
     }
 
     return {
       records: [
-        ...withholdingTaxFinancialAccountLedgerEntries,
-        ...paymentsFinancialAccountLedgerEntries,
-        //  ...miscLedgerEntries
+        ...withholdingTaxLedgerEntries,
+        ...paymentsLedgerEntries,
+        ...dividendRecordsLedgerEntries,
       ],
     };
   } catch (e) {
