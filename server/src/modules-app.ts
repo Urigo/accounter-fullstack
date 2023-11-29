@@ -9,6 +9,7 @@ import { DBProvider } from './modules/app-providers/db.provider.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { commonModule } from './modules/common/index.js';
+import { dividendsModule } from './modules/dividends/index.js';
 import { documentsModule } from './modules/documents/index.js';
 import { financialAccountsModule } from './modules/financial-accounts/index.js';
 import { financialEntitiesModule } from './modules/financial-entities/index.js';
@@ -28,6 +29,7 @@ export async function createGraphQLApp() {
       businessTripsModule,
       chargesModule,
       documentsModule,
+      dividendsModule,
       exchangeRatesModule,
       financialAccountsModule,
       financialEntitiesModule,
