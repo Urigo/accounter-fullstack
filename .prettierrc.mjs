@@ -1,5 +1,5 @@
-import * as prettierPluginSql from 'prettier-plugin-sql';
-import * as prettierConfig from '@theguild/prettier-config';
+import prettierPluginSql from 'prettier-plugin-sql';
+import prettierConfig from '@theguild/prettier-config';
 
 const config = {
   ...prettierConfig,
