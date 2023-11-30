@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createContext, ReactElement } from 'react';
 
 type ContextType = {

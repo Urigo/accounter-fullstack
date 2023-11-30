@@ -126,7 +126,6 @@ export class CryptoExchangeProvider {
     let timestamp: number | undefined = undefined;
     let rate: number | undefined = undefined;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const [rawTimestamp, rateData] of Object.entries<{ c?: Array<number> } | undefined>(
       ratesObject,
     )) {

@@ -19,14 +19,17 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   } = useForm<InsertBusinessTripInput>();
   const { insertBusinessTrip, fetching } = useInsertBusinessTrip();
 
-  const onInsertDone = useCallback(async (data: InsertBusinessTripInput) => {
-    setIsInserting(true);
-    await insertBusinessTrip({
-      fields: data,
-    });
-    onDone();
-    setIsInserting(false);
-  }, []);
+  const onInsertDone = useCallback(
+    async (data: InsertBusinessTripInput) => {
+      setIsInserting(true);
+      await insertBusinessTrip({
+        fields: data,
+      });
+      onDone();
+      setIsInserting(false);
+    },
+    [insertBusinessTrip, onDone],
+  );
   const onSubmit: SubmitHandler<InsertBusinessTripInput> = data => {
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
     if (data.toDate?.trim() === '') data.fromDate = undefined;
