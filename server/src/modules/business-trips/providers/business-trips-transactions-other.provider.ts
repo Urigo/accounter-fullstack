@@ -71,7 +71,7 @@ export class BusinessTripOtherTransactionsProvider {
       this.dbProvider,
     );
     return chargeIds.map(id =>
-      businessTripsOtherTransactions.find(record => record.charge_id === id),
+      businessTripsOtherTransactions.filter(record => record.charge_id === id),
     );
   }
 

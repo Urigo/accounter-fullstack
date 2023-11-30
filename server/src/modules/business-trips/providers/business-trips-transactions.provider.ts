@@ -10,6 +10,10 @@ import type {
   IUpdateBusinessTripTransactionParams,
   IUpdateBusinessTripTransactionQuery,
 } from '../types.js';
+import { BusinessTripAccommodationsTransactionsProvider } from './business-trips-transactions-accommodations.provider.js';
+import { BusinessTripFlightsTransactionsProvider } from './business-trips-transactions-flights.provider.js';
+import { BusinessTripOtherTransactionsProvider } from './business-trips-transactions-other.provider.js';
+import { BusinessTripTravelAndSubsistenceTransactionsProvider } from './business-trips-transactions-travel-and-subsistence.provider.js';
 
 const getAllBusinessTripsTransactions = sql<IGetAllBusinessTripsTransactionsQuery>`
   SELECT *
@@ -68,7 +72,13 @@ const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
   global: true,
 })
 export class BusinessTripTransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private flightTransactionsProvider: BusinessTripFlightsTransactionsProvider,
+    private accommodationsTransactionsProvider: BusinessTripAccommodationsTransactionsProvider,
+    private travelAndSubsistenceTransactionsProvider: BusinessTripTravelAndSubsistenceTransactionsProvider,
+    private otherTransactionsProvider: BusinessTripOtherTransactionsProvider,
+  ) {}
 
   public getAllBusinessTripsTransactions() {
     return getAllBusinessTripsTransactions.run(undefined, this.dbProvider);
@@ -82,7 +92,7 @@ export class BusinessTripTransactionsProvider {
       },
       this.dbProvider,
     );
-    return chargeIds.map(id => businessTrips.find(record => record.charge_id === id));
+    return chargeIds.map(id => businessTrips.filter(record => record.charge_id === id));
   }
 
   public getBusinessTripsTransactionsByChargeIdLoader = new DataLoader(
@@ -98,5 +108,44 @@ export class BusinessTripTransactionsProvider {
 
   public insertBusinessTripTransaction(params: IInsertBusinessTripTransactionParams) {
     return insertBusinessTripTransaction.run(params, this.dbProvider);
+  }
+
+  public async getBusinessTripExtendedTransactions(chargeId: string) {
+    const [
+      allTransactions,
+      flightTransactions,
+      accommodationsTransactions,
+      travelAndSubsistenceTransactions,
+      otherTransactions,
+    ] = await Promise.all([
+      this.getBusinessTripsTransactionsByChargeIdLoader.load(chargeId),
+      this.flightTransactionsProvider.getBusinessTripsFlightsTransactionsByChargeIdLoader.load(
+        chargeId,
+      ),
+      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationTransactionsByChargeIdLoader.load(
+        chargeId,
+      ),
+      this.travelAndSubsistenceTransactionsProvider.getBusinessTripsTravelAndSubsistenceTransactionsByChargeIdLoader.load(
+        chargeId,
+      ),
+      this.otherTransactionsProvider.getBusinessTripsOtherTransactionsByChargeIdLoader.load(
+        chargeId,
+      ),
+    ]);
+
+    const extendedIds = [
+      ...flightTransactions,
+      ...accommodationsTransactions,
+      ...travelAndSubsistenceTransactions,
+      ...otherTransactions,
+    ].map(t => t.id);
+
+    return {
+      nonExtendedTransactions: allTransactions?.filter(t => !extendedIds.includes(t.id)),
+      flightTransactions,
+      accommodationsTransactions,
+      travelAndSubsistenceTransactions,
+      otherTransactions,
+    };
   }
 }

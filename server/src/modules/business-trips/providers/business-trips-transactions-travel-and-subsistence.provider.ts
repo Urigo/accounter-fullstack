@@ -70,7 +70,7 @@ export class BusinessTripTravelAndSubsistenceTransactionsProvider {
         this.dbProvider,
       );
     return chargeIds.map(id =>
-      businessTripsTravelAndSubsistenceTransactions.find(record => record.charge_id === id),
+      businessTripsTravelAndSubsistenceTransactions.filter(record => record.charge_id === id),
     );
   }
 
