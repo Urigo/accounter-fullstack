@@ -23,6 +23,10 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
+  extend type DividendCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
   " represent charge suggestions for missing info "
   type ChargeSuggestions {
     " redundant. relevant on transaction level "

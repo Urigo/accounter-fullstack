@@ -228,6 +228,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type DividendCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type LtdFinancialEntity {
     documents: [Document]
   }

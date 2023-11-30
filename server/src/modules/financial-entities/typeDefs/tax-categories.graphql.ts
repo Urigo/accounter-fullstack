@@ -27,6 +27,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type DividendCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }

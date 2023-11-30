@@ -23,6 +23,10 @@ export default gql`
     beneficiaries: [BeneficiaryCounterparty!]!
   }
 
+  extend type DividendCharge {
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
   " input variables for beneficiary"
   input BeneficiaryInput {
     counterparty: CounterpartyInput!

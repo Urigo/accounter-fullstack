@@ -4,6 +4,9 @@ import { Currency } from './enums.js';
 export const TIMELESS_DATE_REGEX =
   /^((?:1[6-9]|[2]\d)\d{2})(-)(?:((?:0[13578]|1[02])(-31))|(?:(?:0[1,3-9]|1[0-2])(-)(?:29|30)))$|^(?:(?:(?:1[6-9]|[2]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(-02-29)$|^(?:(?:1[6-9]|[2-9]\d)\d{2})(-)(?:(?:0[1-9])|(?:1[0-2]))(-)(?:0[1-9]|1\d|2[0-8])$/;
 
+export const UUID_REGEX =
+  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
+
 export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
   '7d250948-8506-4e60-a61b-7d3a3d8390d9', // פלאפון
   'd4e1400d-3abd-4059-a4bb-a25ad1ec87f8', // מידע
@@ -46,4 +49,18 @@ export const INTERNAL_WALLETS_IDS = [
   'f2ae3379-b970-45c9-a998-aced20c25b31', // etherscan
   '4ea86b9b-1c8f-46de-b25e-532f8e34001c', // etana
   '8fa16264-de32-4592-bffb-64a1914318ad', // poalim
+];
+
+export const DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID = '8f347f1f-293d-4a88-889a-8043b91f34d5'; // Dividend Withholding Tax // TODO: replace with context variable
+export const DIVIDEND_WITHHOLDING_TAX_PERCENTAGE = 0.2;
+export const DIVIDEND_TAX_CATEGORY_ID = '4270b157-145e-4b11-ba67-919ab465d4d9'; // Dividend
+export const DIVIDEND_PAYMENT_BUSINESS_IDS = [
+  '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
+  '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
+];
+
+export const DIVIDEND_BUSINESS_IDS = [
+  // TODO: replace with context variable
+  DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID, // Dividend Tax Deduction Origin
+  ...DIVIDEND_PAYMENT_BUSINESS_IDS,
 ];

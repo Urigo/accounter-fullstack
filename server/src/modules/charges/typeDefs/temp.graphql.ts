@@ -23,6 +23,10 @@ export default gql`
     oldLedger: [OldLedger!]!
   }
 
+  extend type DividendCharge {
+    oldLedger: [OldLedger!]!
+  }
+
   " Old ledger entity"
   type OldLedger {
     business: String!

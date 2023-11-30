@@ -48,6 +48,10 @@ export default gql`
     businessTrip: BusinessTrip
   }
 
+  extend type DividendCharge {
+    businessTrip: BusinessTrip
+  }
+
   extend input ChargeFilter {
     " filter by business trip (should be later in busines trip module?) "
     businessTrip: ID

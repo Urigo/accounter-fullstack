@@ -24,6 +24,7 @@ import {
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
 import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
+import { generateLedgerRecordsForDividend } from './dividend-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from './salary-ledger-generation.resolver.js';
 
@@ -43,6 +44,9 @@ export const generateLedgerRecords: ResolverFn<
     }
     case 'SalaryCharge': {
       return generateLedgerRecordsForSalary(charge, args, { injector }, info);
+    }
+    case 'DividendCharge': {
+      return generateLedgerRecordsForDividend(charge, args, { injector }, info);
     }
   }
   const chargeId = charge.id;

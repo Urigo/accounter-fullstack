@@ -108,6 +108,22 @@ export default gql`
     metadata: ChargeMetadata
   }
 
+  " charge of dividends "
+  type DividendCharge implements Charge {
+    id: ID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+  }
+
   " input variables for charge filtering "
   input ChargeFilter {
     " Include only charges with main date occurred after this date "
