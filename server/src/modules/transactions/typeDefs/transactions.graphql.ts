@@ -42,8 +42,10 @@ export default gql`
   " Represent a general transaction object "
   interface Transaction {
     id: ID!
+    " Source DB ID "
+    referenceId: String!
     " external key / identifier in the bank or card (אסמכתא) "
-    referenceNumber: String!
+    referenceKey: String
     " eventDate "
     eventDate: TimelessDate!
     " debitDate "
@@ -71,7 +73,8 @@ export default gql`
   " temp type until DB  supports transactions differenciation"
   type CommonTransaction implements Transaction {
     id: ID!
-    referenceNumber: String!
+    referenceId: String!
+    referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
     direction: TransactionDirection!
@@ -85,7 +88,8 @@ export default gql`
   " העברה "
   type WireTransaction implements Transaction {
     id: ID!
-    referenceNumber: String!
+    referenceId: String!
+    referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
@@ -99,7 +103,8 @@ export default gql`
   " עמלה "
   type FeeTransaction implements Transaction {
     id: ID!
-    referenceNumber: String!
+    referenceId: String!
+    referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
@@ -113,7 +118,8 @@ export default gql`
   " המרה "
   type ConversionTransaction implements Transaction {
     id: ID!
-    referenceNumber: String!
+    referenceId: String!
+    referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate!
     direction: TransactionDirection!
