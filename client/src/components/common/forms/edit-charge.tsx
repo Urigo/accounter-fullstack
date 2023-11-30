@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
@@ -128,6 +128,10 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
     query: AllBusinessTripsDocument,
   });
 
+  const refetchBusinessTripsCallback = useCallback(() => {
+    refetchBusinessTrips();
+  }, [refetchBusinessTrips]);
+
   useEffect(() => {
     if (businessTripsError) {
       showNotification({
@@ -228,7 +232,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
-                rightSection={<InsertBusinessTripModal onDone={refetchBusinessTrips} />}
+                rightSection={<InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />}
               />
             )}
           />

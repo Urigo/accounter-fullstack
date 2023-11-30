@@ -103,6 +103,6 @@ module.exports = {
     'schema.graphql',
     '**/__tests__/**',
     '.eslintrc.cjs',
-    '.*rc.cjs',
+    '.*rc.*js',
   ],
 };
