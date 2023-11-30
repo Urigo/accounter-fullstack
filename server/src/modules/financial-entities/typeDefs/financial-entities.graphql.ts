@@ -71,6 +71,10 @@ export default gql`
     owner: FinancialEntity!
   }
 
+  extend type BusinessTripCharge {
+    owner: FinancialEntity!
+  }
+
   extend type Mutation {
     updateBusiness(
       businessId: ID!

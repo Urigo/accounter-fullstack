@@ -43,6 +43,10 @@ export default gql`
     accountantApproval: AccountantApproval!
   }
 
+  extend type BusinessTripCharge {
+    accountantApproval: AccountantApproval!
+  }
+
   extend input UpdateChargeInput {
     accountantApproval: AccountantApprovalInput
   }

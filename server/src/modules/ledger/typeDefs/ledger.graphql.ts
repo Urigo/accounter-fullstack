@@ -44,6 +44,10 @@ export default gql`
     ledgerRecords: GeneratedLedgerRecords
   }
 
+  extend type BusinessTripCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
   " array of ledger records linked to the charge "
   type LedgerRecords {
     records: [LedgerRecord!]!

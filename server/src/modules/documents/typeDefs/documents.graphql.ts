@@ -232,6 +232,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type BusinessTripCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type LtdFinancialEntity {
     documents: [Document]
   }

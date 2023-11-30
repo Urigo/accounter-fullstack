@@ -107,4 +107,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   DividendCharge: {
     ...commonChargeFields,
   },
+  BusinessTripCharge: {
+    ...commonChargeFields,
+  },
 };

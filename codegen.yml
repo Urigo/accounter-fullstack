@@ -34,6 +34,7 @@ generates:
         BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         BusinessTrip: '@modules/business-trips/types.js#IGetAllBusinessTripsResult'
+        BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'

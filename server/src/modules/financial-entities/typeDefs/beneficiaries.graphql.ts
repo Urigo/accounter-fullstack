@@ -27,6 +27,10 @@ export default gql`
     beneficiaries: [BeneficiaryCounterparty!]!
   }
 
+  extend type BusinessTripCharge {
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
   " input variables for beneficiary"
   input BeneficiaryInput {
     counterparty: CounterpartyInput!

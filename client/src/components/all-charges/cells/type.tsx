@@ -22,8 +22,8 @@ export const TypeCell = ({ data }: Props): ReactElement => {
     switch (__typename) {
       case 'CommonCharge':
         return 'Common';
-      // case 'BusinessTripCharge':
-      //   return 'Business Trip';
+      case 'BusinessTripCharge':
+        return 'Business Trip';
       case 'DividendCharge':
         return 'Dividend';
       case 'ConversionCharge':

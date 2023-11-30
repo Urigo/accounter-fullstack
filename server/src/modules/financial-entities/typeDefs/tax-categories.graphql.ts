@@ -31,6 +31,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type BusinessTripCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }

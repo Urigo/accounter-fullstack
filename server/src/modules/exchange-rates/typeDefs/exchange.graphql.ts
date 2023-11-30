@@ -48,6 +48,10 @@ export default gql`
     exchangeRates: ExchangeRates
   }
 
+  extend type BusinessTripCharge {
+    exchangeRates: ExchangeRates
+  }
+
   extend interface Transaction {
     debitExchangeRates: ExchangeRates
     eventExchangeRates: ExchangeRates
