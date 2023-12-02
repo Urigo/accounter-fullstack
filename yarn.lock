@@ -8037,10 +8037,10 @@ mlly@^1.2.0, mlly@^1.4.0:
     pkg-types "^1.0.3"
     ufo "^1.3.0"
 
-modern-poalim-scraper@0.9.9:
-  version "0.9.9"
-  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.9.9.tgz#499941452467e617b547b5890ee0d6865b7b9160"
-  integrity sha512-jnx6abvwKb6RtL12uzq3C50N+gobH27UIBrK5jvDDuWdzDxI7IGc4pb2/o6BgRy3vgojC9KmrexyQH12V8jbtQ==
+modern-poalim-scraper@0.9.10:
+  version "0.9.10"
+  resolved "https://registry.yarnpkg.com/modern-poalim-scraper/-/modern-poalim-scraper-0.9.10.tgz#5f72dedd8bce4633062a87619b79bbb5a15c2b2e"
+  integrity sha512-XAkcGW0u+ZADOFZdShoKH0aFuCSGevpqc6iju7aM6HaEiWk0vnvFW68JOub5H7Dq4FNpNHPesbnNZisIk06uog==
   dependencies:
     ajv "8.12.0"
     ajv-formats "2.1.1"
