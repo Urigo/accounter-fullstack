@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllBusinessTripsTransactionsQuery,
+  IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
   IInsertBusinessTripTransactionParams,
   IInsertBusinessTripTransactionQuery,
@@ -25,6 +26,11 @@ const getBusinessTripsTransactionsByChargeIds = sql<IGetBusinessTripsTransaction
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON btt.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
+
+const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTransactionsByBusinessTripIdsQuery>`
+  SELECT *
+  FROM accounter_schema.business_trips_transactions
+  WHERE ($isBusinessTripIds = 0 OR business_trip_id IN $$businessTripIds);`;
 
 const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions
@@ -102,6 +108,28 @@ export class BusinessTripTransactionsProvider {
     },
   );
 
+  private async batchBusinessTripsTransactionsByBusinessTripIds(
+    businessTripIds: readonly string[],
+  ) {
+    const businessTrips = await getBusinessTripsTransactionsByBusinessTripIds.run(
+      {
+        isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
+        businessTripIds,
+      },
+      this.dbProvider,
+    );
+    return businessTripIds.map(id =>
+      businessTrips.filter(record => record.business_trip_id === id),
+    );
+  }
+
+  public getBusinessTripsTransactionsByBusinessTripIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
   public updateBusinessTripTransaction(params: IUpdateBusinessTripTransactionParams) {
     return updateBusinessTripTransaction.run(params, this.dbProvider);
   }
@@ -110,7 +138,7 @@ export class BusinessTripTransactionsProvider {
     return insertBusinessTripTransaction.run(params, this.dbProvider);
   }
 
-  public async getBusinessTripExtendedTransactions(chargeId: string) {
+  public async getBusinessTripExtendedTransactionsByChargeId(chargeId: string) {
     const [
       allTransactions,
       flightTransactions,
@@ -133,15 +161,58 @@ export class BusinessTripTransactionsProvider {
       ),
     ]);
 
-    const extendedIds = [
-      ...flightTransactions,
-      ...accommodationsTransactions,
-      ...travelAndSubsistenceTransactions,
-      ...otherTransactions,
-    ].map(t => t.id);
+    const extendedIds = new Set<string>(
+      [
+        ...flightTransactions,
+        ...accommodationsTransactions,
+        ...travelAndSubsistenceTransactions,
+        ...otherTransactions,
+      ].map(t => t.id),
+    );
 
     return {
-      nonExtendedTransactions: allTransactions?.filter(t => !extendedIds.includes(t.id)),
+      nonExtendedTransactions: allTransactions?.filter(t => !extendedIds.has(t.id)),
+      flightTransactions,
+      accommodationsTransactions,
+      travelAndSubsistenceTransactions,
+      otherTransactions,
+    };
+  }
+
+  public async getBusinessTripExtendedTransactionsByBusinessTripId(businessTripId: string) {
+    const [
+      allTransactions,
+      flightTransactions,
+      accommodationsTransactions,
+      travelAndSubsistenceTransactions,
+      otherTransactions,
+    ] = await Promise.all([
+      this.getBusinessTripsTransactionsByBusinessTripIdLoader.load(businessTripId),
+      this.flightTransactionsProvider.getBusinessTripsFlightsTransactionsByBusinessTripIdLoader.load(
+        businessTripId,
+      ),
+      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader.load(
+        businessTripId,
+      ),
+      this.travelAndSubsistenceTransactionsProvider.getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdLoader.load(
+        businessTripId,
+      ),
+      this.otherTransactionsProvider.getBusinessTripsOtherTransactionsByBusinessTripIdLoader.load(
+        businessTripId,
+      ),
+    ]);
+
+    const extendedIds = new Set<string>(
+      [
+        ...flightTransactions,
+        ...accommodationsTransactions,
+        ...travelAndSubsistenceTransactions,
+        ...otherTransactions,
+      ].map(t => t.id),
+    );
+
+    return {
+      nonExtendedTransactions: allTransactions?.filter(t => !extendedIds.has(t.id)),
       flightTransactions,
       accommodationsTransactions,
       travelAndSubsistenceTransactions,
