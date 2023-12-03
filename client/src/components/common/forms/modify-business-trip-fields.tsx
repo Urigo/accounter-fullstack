@@ -51,31 +51,47 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
               value={date}
               label="Start Date"
               placeholder="Start Date"
-              maw={400}
-              mx="auto"
             />
           );
         }}
       />
-      <Controller
-        name="toDate"
-        control={control}
-        rules={{
-          pattern: {
-            value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
-          },
-        }}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            isDirty={fieldState.isDirty}
-            label="End Date"
-          />
-        )}
-      />
+      <div className="mb-40">
+        <Controller
+          name="toDate"
+          control={control}
+          rules={{
+            pattern: {
+              value: TIMELESS_DATE_REGEX,
+              message: 'Date must be im format yyyy-mm-dd',
+            },
+          }}
+          render={({ field: { value, ...field } }): ReactElement => {
+            const date = value ? new Date(value) : undefined;
+            return (
+              <DateInput
+                {...field}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== value) field.onChange(newDate);
+                }}
+                value={date}
+                label="End Date"
+                placeholder="End Date"
+                popoverProps={{
+                  position: 'bottom-start',
+                  onPositionChange: pos => {
+                    console.log('pos:', pos);
+                  },
+                }}
+              />
+            );
+          }}
+        />
+      </div>
     </>
   );
 };
