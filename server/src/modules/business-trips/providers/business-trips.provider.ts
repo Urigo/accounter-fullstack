@@ -58,8 +58,8 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
 `;
 
 const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
-  INSERT INTO accounter_schema.business_trips (name, from_date, to_date)
-  VALUES($name, $fromDate, $toDate)
+  INSERT INTO accounter_schema.business_trips (name, from_date, to_date, destination, trip_purpose)
+  VALUES($name, $fromDate, $toDate, $destination, $tripPurpose)
   RETURNING *;`;
 
 @Injectable({

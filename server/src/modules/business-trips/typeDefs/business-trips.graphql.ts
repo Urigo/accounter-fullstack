@@ -18,6 +18,8 @@ export default gql`
     name: String!
     fromDate: TimelessDate
     toDate: TimelessDate
+    destination: String
+    tripPurpose: String
   }
 
   " the input for updating a business trip "
