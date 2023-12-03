@@ -1,7 +1,12 @@
 import { Currency, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type { LedgerModule } from '../types.js';
+import { generateLedgerRecordsForBusinessTrip } from './business-trip-ledger-generation.resolver.js';
+import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
+import { generateLedgerRecordsForDividend } from './dividend-ledger-generation.resolver.js';
+import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
 import { generateLedgerRecords } from './ledger-generation.resolver.js';
+import { generateLedgerRecordsForSalary } from './salary-ledger-generation.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   LedgerRecord: {
@@ -43,19 +48,19 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     ledgerRecords: generateLedgerRecords,
   },
   ConversionCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForConversion,
   },
   SalaryCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForSalary,
   },
   InternalTransferCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForInternalTransfer,
   },
   DividendCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForDividend,
   },
   BusinessTripCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForBusinessTrip,
   },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {

@@ -126,17 +126,17 @@ export class BusinessTripAccommodationsTransactionsProvider {
   );
 
   private async batchBusinessTripsAccommodationTransactionsByIds(
-    businessTripTransactionIds: readonly string[],
+    transactionIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
       await getBusinessTripsAccommodationsTransactionsByIds.run(
         {
-          isIds: businessTripTransactionIds.length > 0 ? 1 : 0,
-          businessTripTransactionIds,
+          isIds: transactionIds.length > 0 ? 1 : 0,
+          transactionIds,
         },
         this.dbProvider,
       );
-    return businessTripTransactionIds.map(id =>
+    return transactionIds.map(id =>
       businessTripsAccommodationsTransactions.filter(record => record.id === id),
     );
   }
