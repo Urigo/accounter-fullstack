@@ -2,9 +2,10 @@ import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { TimelessDateString } from '@shared/types';
+import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
-import { commonChargeFields } from './common.js';
+import { commonBusinessTransactionFields, commonChargeFields } from './common.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Query: {
@@ -91,6 +92,62 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         end: format(dbBusinessTrip.to_date, 'yyyy-MM-dd') as TimelessDateString,
       };
     },
+    transactions: async (dbBusinessTrip, _, { injector }) => {
+      try {
+        const {
+          nonExtendedTransactions,
+          flightTransactions,
+          accommodationsTransactions,
+          travelAndSubsistenceTransactions,
+          otherTransactions,
+        } = await injector
+          .get(BusinessTripTransactionsProvider)
+          .getBusinessTripExtendedTransactionsByBusinessTripId(dbBusinessTrip.id);
+        return [
+          ...nonExtendedTransactions,
+          ...flightTransactions,
+          ...accommodationsTransactions,
+          ...travelAndSubsistenceTransactions,
+          ...otherTransactions,
+        ];
+      } catch (e) {
+        console.error(`Error fetching business trip transactions`, e);
+        throw new GraphQLError(
+          (e as Error)?.message ?? `Error fetching business trip transactions`,
+        );
+      }
+    },
+  },
+  BusinessTripUncategorizedTransaction: {
+    __isTypeOf: DbTransaction => !DbTransaction.category,
+    ...commonBusinessTransactionFields,
+  },
+  BusinessTripAccommodationTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'ACCOMMODATION',
+    ...commonBusinessTransactionFields,
+    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
+    country: dbTransaction => dbTransaction.country,
+    nightsCount: dbTransaction => dbTransaction.nights_count,
+  },
+  BusinessTripFlightTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'FLIGHT',
+    ...commonBusinessTransactionFields,
+    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
+    origin: dbTransaction => dbTransaction.origin,
+    destination: dbTransaction => dbTransaction.destination,
+    class: dbTransaction => dbTransaction.class,
+  },
+  BusinessTripTravelAndSubsistenceTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'TRAVEL_AND_SUBSISTENCE',
+    ...commonBusinessTransactionFields,
+    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
+    expenseType: dbTransaction => dbTransaction.expense_type,
+  },
+  BusinessTripOtherTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'OTHER',
+    ...commonBusinessTransactionFields,
+    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
+    expenseType: dbTransaction => dbTransaction.expense_type,
   },
   CommonCharge: {
     ...commonChargeFields,

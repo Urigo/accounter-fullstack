@@ -6,6 +6,7 @@ import type {
   IGetAllBusinessTripsTransactionsQuery,
   IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
+  IGetBusinessTripsTransactionsByIdsQuery,
   IInsertBusinessTripTransactionParams,
   IInsertBusinessTripTransactionQuery,
   IUpdateBusinessTripTransactionParams,
@@ -31,6 +32,11 @@ const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTrans
   SELECT *
   FROM accounter_schema.business_trips_transactions
   WHERE ($isBusinessTripIds = 0 OR business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsTransactionsByIds = sql<IGetBusinessTripsTransactionsByIdsQuery>`
+  SELECT *
+  FROM accounter_schema.business_trips_transactions
+  WHERE ($isIds = 0 OR id IN $$transactionIds);`;
 
 const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions
@@ -125,6 +131,24 @@ export class BusinessTripTransactionsProvider {
 
   public getBusinessTripsTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsTransactionsByIds(transactionIds: readonly string[]) {
+    const businessTripsTransactions = await getBusinessTripsTransactionsByIds.run(
+      {
+        isIds: transactionIds.length > 0 ? 1 : 0,
+        transactionIds,
+      },
+      this.dbProvider,
+    );
+    return transactionIds.map(id => businessTripsTransactions.filter(record => record.id === id));
+  }
+
+  public getBusinessTripsTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsTransactionsByIds(ids),
     {
       cache: false,
     },

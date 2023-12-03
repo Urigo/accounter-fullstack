@@ -6,6 +6,7 @@ import type {
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsQuery,
   IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTravelAndSubsistenceTransactionsByChargeIdsQuery,
+  IGetBusinessTripsTravelAndSubsistenceTransactionsByIdsQuery,
   IInsertBusinessTripTravelAndSubsistenceTransactionParams,
   IInsertBusinessTripTravelAndSubsistenceTransactionQuery,
   IUpdateBusinessTripTravelAndSubsistenceTransactionParams,
@@ -34,16 +35,23 @@ const getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIds = sql<IG
     ON a.id = t.id
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
+const getBusinessTripsTravelAndSubsistenceTransactionsByIds = sql<IGetBusinessTripsTravelAndSubsistenceTransactionsByIdsQuery>`
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  FROM accounter_schema.business_trips_transactions_tns a
+  LEFT JOIN accounter_schema.business_trips_transactions t
+    ON a.id = t.id
+  WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
+
 const updateBusinessTripTravelAndSubsistenceTransaction = sql<IUpdateBusinessTripTravelAndSubsistenceTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_tns
   SET
-  paying_employee = COALESCE(
-    $payingEmployee,
-    paying_employee
+  payed_by_employee = COALESCE(
+    $payedByEmployee,
+    payed_by_employee
   ),
-  expanse_type = COALESCE(
+  expense_type = COALESCE(
     $expanseType,
-    expanse_type
+    expense_type
   )
   WHERE
     id = $businessTripTransactionId
@@ -51,8 +59,8 @@ const updateBusinessTripTravelAndSubsistenceTransaction = sql<IUpdateBusinessTri
 `;
 
 const insertBusinessTripTravelAndSubsistenceTransaction = sql<IInsertBusinessTripTravelAndSubsistenceTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_tns (id, paying_employee, expanse_type)
-  VALUES($id, $payingEmployee, $expanseType)
+  INSERT INTO accounter_schema.business_trips_transactions_tns (id, payed_by_employee, expense_type)
+  VALUES($id, $payedByEmployee, $expanseType)
   RETURNING *;`;
 
 @Injectable({
@@ -111,6 +119,29 @@ export class BusinessTripTravelAndSubsistenceTransactionsProvider {
   public getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) =>
       this.batchBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsTravelAndSubsistenceTransactionsByIds(
+    transactionIds: readonly string[],
+  ) {
+    const businessTripsTravelAndSubsistenceTransactions =
+      await getBusinessTripsTravelAndSubsistenceTransactionsByIds.run(
+        {
+          isIds: transactionIds.length > 0 ? 1 : 0,
+          transactionIds,
+        },
+        this.dbProvider,
+      );
+    return transactionIds.map(id =>
+      businessTripsTravelAndSubsistenceTransactions.filter(record => record.id === id),
+    );
+  }
+
+  public getBusinessTripsTravelAndSubsistenceTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsTravelAndSubsistenceTransactionsByIds(ids),
     {
       cache: false,
     },

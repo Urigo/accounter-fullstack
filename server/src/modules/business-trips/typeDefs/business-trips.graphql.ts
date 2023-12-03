@@ -59,7 +59,7 @@ export default gql`
   }
 
   extend input ChargeFilter {
-    " filter by business trip (should be later in busines trip module?) "
+    " filter by business trip (should be later in business trip module?) "
     businessTrip: ID
   }
 
@@ -68,5 +68,89 @@ export default gql`
     id: ID!
     name: String!
     dates: DateRange
+    transactions: [BusinessTripTransaction!]!
+  }
+
+  " business trip transaction prototype "
+  interface BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+  }
+
+  " represent a business trip uncategorized transaction "
+  type BusinessTripUncategorizedTransaction implements BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+  }
+
+  " represent a business trip accommodation transaction "
+  type BusinessTripAccommodationTransaction implements BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
+    country: String
+    nightsCount: Int
+  }
+
+  " represent a business trip flight transaction "
+  type BusinessTripFlightTransaction implements BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
+    origin: String
+    destination: String
+    class: String
+  }
+
+  " represent a business trip travel and subsistence transaction "
+  type BusinessTripTravelAndSubsistenceTransaction implements BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
+    " סוג ההוצאה "
+    expenseType: String
+  }
+
+  " represent a business trip other transaction "
+  type BusinessTripOtherTransaction implements BusinessTripTransaction {
+    id: ID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    amount: FinancialAmount
+    employee: Counterparty
+    transaction: Transaction
+
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
+    " הוצאה מוכרת "
+    deductibleExpense: Boolean
+    " סוג ההוצאה "
+    expenseType: String
   }
 `;

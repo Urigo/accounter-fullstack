@@ -6,6 +6,7 @@ import type {
   IGetAllBusinessTripsFlightsTransactionsQuery,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsFlightsTransactionsByChargeIdsQuery,
+  IGetBusinessTripsFlightsTransactionsByIdsQuery,
   IInsertBusinessTripFlightTransactionParams,
   IInsertBusinessTripFlightTransactionQuery,
   IUpdateBusinessTripFlightTransactionParams,
@@ -33,6 +34,13 @@ const getBusinessTripsFlightsTransactionsByBusinessTripIds = sql<IGetBusinessTri
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON f.id = t.id
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsFlightsTransactionsByIds = sql<IGetBusinessTripsFlightsTransactionsByIdsQuery>`
+  SELECT f.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  FROM accounter_schema.business_trips_transactions_flights f
+  LEFT JOIN accounter_schema.business_trips_transactions t
+    ON f.id = t.id
+  WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripFlightTransaction = sql<IUpdateBusinessTripFlightTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_flights
@@ -113,6 +121,26 @@ export class BusinessTripFlightsTransactionsProvider {
 
   public getBusinessTripsFlightsTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsFlightsTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsFlightsTransactionsByIds(transactionIds: readonly string[]) {
+    const businessTripsFlightsTransactions = await getBusinessTripsFlightsTransactionsByIds.run(
+      {
+        isIds: transactionIds.length > 0 ? 1 : 0,
+        transactionIds,
+      },
+      this.dbProvider,
+    );
+    return transactionIds.map(id =>
+      businessTripsFlightsTransactions.filter(record => record.id === id),
+    );
+  }
+
+  public getBusinessTripsFlightsTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsFlightsTransactionsByIds(ids),
     {
       cache: false,
     },

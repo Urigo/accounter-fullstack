@@ -6,6 +6,7 @@ import type {
   IGetAllBusinessTripsOtherTransactionsQuery,
   IGetBusinessTripsOtherTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsOtherTransactionsByChargeIdsQuery,
+  IGetBusinessTripsOtherTransactionsByIdsQuery,
   IInsertBusinessTripOtherTransactionParams,
   IInsertBusinessTripOtherTransactionQuery,
   IUpdateBusinessTripOtherTransactionParams,
@@ -33,6 +34,13 @@ const getBusinessTripsOtherTransactionsByBusinessTripIds = sql<IGetBusinessTrips
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsOtherTransactionsByIds = sql<IGetBusinessTripsOtherTransactionsByIdsQuery>`
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  FROM accounter_schema.business_trips_transactions_other a
+  LEFT JOIN accounter_schema.business_trips_transactions t
+    ON a.id = t.id
+  WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_other
@@ -108,6 +116,26 @@ export class BusinessTripOtherTransactionsProvider {
 
   public getBusinessTripsOtherTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsOtherTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsOtherTransactionsByIds(transactionIds: readonly string[]) {
+    const businessTripsOtherTransactions = await getBusinessTripsOtherTransactionsByIds.run(
+      {
+        isIds: transactionIds.length > 0 ? 1 : 0,
+        transactionIds,
+      },
+      this.dbProvider,
+    );
+    return transactionIds.map(id =>
+      businessTripsOtherTransactions.filter(record => record.id === id),
+    );
+  }
+
+  public getBusinessTripsOtherTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsOtherTransactionsByIds(ids),
     {
       cache: false,
     },

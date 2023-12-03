@@ -6,6 +6,7 @@ import type {
   IGetAllBusinessTripsAccommodationsTransactionsQuery,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery,
+  IGetBusinessTripsAccommodationsTransactionsByIdsQuery,
   IInsertBusinessTripAccommodationTransactionParams,
   IInsertBusinessTripAccommodationTransactionQuery,
   IUpdateBusinessTripAccommodationTransactionParams,
@@ -33,6 +34,13 @@ const getBusinessTripsAccommodationsTransactionsByBusinessTripIds = sql<IGetBusi
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsAccommodationsTransactionsByIds = sql<IGetBusinessTripsAccommodationsTransactionsByIdsQuery>`
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  FROM accounter_schema.business_trips_transactions_accommodations a
+  LEFT JOIN accounter_schema.business_trips_transactions t
+    ON a.id = t.id
+  WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccommodationTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_accommodations
@@ -112,6 +120,29 @@ export class BusinessTripAccommodationsTransactionsProvider {
   public getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) =>
       this.batchBusinessTripsAccommodationTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsAccommodationTransactionsByIds(
+    businessTripTransactionIds: readonly string[],
+  ) {
+    const businessTripsAccommodationsTransactions =
+      await getBusinessTripsAccommodationsTransactionsByIds.run(
+        {
+          isIds: businessTripTransactionIds.length > 0 ? 1 : 0,
+          businessTripTransactionIds,
+        },
+        this.dbProvider,
+      );
+    return businessTripTransactionIds.map(id =>
+      businessTripsAccommodationsTransactions.filter(record => record.id === id),
+    );
+  }
+
+  public getBusinessTripsAccommodationTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsAccommodationTransactionsByIds(ids),
     {
       cache: false,
     },
