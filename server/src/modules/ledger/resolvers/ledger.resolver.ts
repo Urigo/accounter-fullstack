@@ -63,7 +63,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     ledgerRecords: generateLedgerRecordsForBusinessTrip,
   },
   BusinessTripCharge: {
-    ledgerRecords: generateLedgerRecords,
+    ledgerRecords: generateLedgerRecordsForBusinessTrip,
   },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {

@@ -48,6 +48,9 @@ import { TransactionsTable } from './transactions/transactions-table';
         type
         ...TableSalariesFields
       }
+      ... on BusinessTripCharge {
+        
+      }
     }
   }
 `;
