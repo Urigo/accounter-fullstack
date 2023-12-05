@@ -53,6 +53,10 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
     $date,
     date
   ),
+  value_date = COALESCE(
+    $valueDate,
+    value_date
+  ),
   amount = COALESCE(
     $amount,
     amount
@@ -65,6 +69,10 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
     $employeeBusinessId,
     employee_business_id
   ),
+  payed_by_employee = COALESCE(
+    $payedByEmployee,
+    payed_by_employee
+  ),
   transaction_id = COALESCE(
     $transactionId,
     transaction_id
@@ -75,8 +83,8 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
 `;
 
 const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, date, amount, currency, employee_business_id, transaction_id)
-  VALUES($business_trip_id, $category, $date, $amount, $currency, $employeeBusinessId, $transactionId)
+  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, date, value_date, amount, currency, employee_business_id, payed_by_employee, transaction_id)
+  VALUES($business_trip_id, $category, $date, $valueDate, $amount, $currency, $employeeBusinessId, $payedByEmployee, $transactionId)
   RETURNING *;`;
 
 @Injectable({

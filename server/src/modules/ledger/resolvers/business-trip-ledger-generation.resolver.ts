@@ -1,33 +1,25 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { getChargeType } from '@modules/charges/helpers/charge-type.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { DEFAULT_LOCAL_CURRENCY, UUID_REGEX } from '@shared/constants';
 import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_CATEGORY_NAME,
-  UUID_REGEX,
-  VAT_TAX_CATEGORY_NAME,
-} from '@shared/constants';
-import { Currency, Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import { formatCurrency } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
+import type { StrictLedgerProto } from '@shared/types';
 import {
   generatePartialLedgerEntry,
   getTaxCategoryNameByAccountCurrency,
   updateLedgerBalanceByEntry,
-  validateTransactionBasicVariables,
   validateTransactionRequiredVariables,
 } from '../helpers/utils.helper.js';
-import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
 
 export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -53,10 +45,15 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(chargeId);
-    const businessTripTransactionsPromise = injector.get(BusinessTripTransactionsProvider).getBusinessTripsTransactionsByChargeIdLoader.load(chargeId);
-    const [transactions, businessTripTransactions] = await Promise.all([transactionsPromise, businessTripTransactionsPromise]);
+      .get(TransactionsProvider)
+      .getTransactionsByChargeIDLoader.load(chargeId);
+    const businessTripTransactionsPromise = injector
+      .get(BusinessTripTransactionsProvider)
+      .getBusinessTripsTransactionsByChargeIdLoader.load(chargeId);
+    const [transactions, businessTripTransactions] = await Promise.all([
+      transactionsPromise,
+      businessTripTransactionsPromise,
+    ]);
 
     // generate ledger from transactions
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
@@ -112,30 +109,39 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     for (const businessTripTransaction of businessTripTransactions) {
       const isTransactionBased = !!businessTripTransaction.transaction_id;
       if (isTransactionBased) {
-        const matchingEntry =  financialAccountLedgerEntries.find(entry => entry.id === businessTripTransaction.transaction_id);
+        const matchingEntry = financialAccountLedgerEntries.find(
+          entry => entry.id === businessTripTransaction.transaction_id,
+        );
         if (!matchingEntry) {
-         throw new GraphQLError(`Flight transaction ID="${businessTripTransaction.transaction_id}" is missing from transactions`);
-       }
+          throw new GraphQLError(
+            `Flight transaction ID="${businessTripTransaction.transaction_id}" is missing from transactions`,
+          );
+        }
 
-       const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
-       const businessId = isCreditorCounterparty ? matchingEntry.debitAccountID1: matchingEntry.creditAccountID1;
-       const ledgerEntry: StrictLedgerProto = {
-         ...matchingEntry,
-         id: businessTripTransaction.id,
-         isCreditorCounterparty,
-         creditAccountID1: isCreditorCounterparty
-         ? businessId
-         : tripTaxCategory,
-         debitAccountID1: isCreditorCounterparty
-         ? tripTaxCategory
-         : businessId,
-       };
+        const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
+        const businessId = isCreditorCounterparty
+          ? matchingEntry.debitAccountID1
+          : matchingEntry.creditAccountID1;
+        const ledgerEntry: StrictLedgerProto = {
+          ...matchingEntry,
+          id: businessTripTransaction.id,
+          isCreditorCounterparty,
+          creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
+          debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
+        };
 
-       financialAccountLedgerEntries.push(ledgerEntry);
-       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        financialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       } else {
-        if (!businessTripTransaction.employee_business_id || !businessTripTransaction.date || !businessTripTransaction.amount || !businessTripTransaction.currency) {
-          throw new GraphQLError(`Business trip flight transaction ID="${businessTripTransaction.id}" is missing required fields`);
+        if (
+          !businessTripTransaction.employee_business_id ||
+          !businessTripTransaction.date ||
+          !businessTripTransaction.amount ||
+          !businessTripTransaction.currency
+        ) {
+          throw new GraphQLError(
+            `Business trip flight transaction ID="${businessTripTransaction.id}" is missing required fields`,
+          );
         }
 
         // preparations for core ledger entries
@@ -161,9 +167,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
         const absAmount = Math.abs(amount);
         const absForeignAmount = foreignAmount ? Math.abs(foreignAmount) : undefined;
-      
+
         const isCreditorCounterparty = amount > 0;
-        const ledgerEntry: StrictLedgerProto =  {
+        const ledgerEntry: StrictLedgerProto = {
           id: businessTripTransaction.id,
           invoiceDate: businessTripTransaction.date,
           valueDate: businessTripTransaction.date,
@@ -192,7 +198,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const allowedUnbalancedBusinesses = [
       '7843b805-3bb7-4d1c-9219-ff783100334b', // Uri Employee
       'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df', // Dotan Employee
-    ]
+    ];
 
     // validate ledger balance
     let ledgerBalanceSum = 0;

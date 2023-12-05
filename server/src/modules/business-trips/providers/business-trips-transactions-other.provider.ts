@@ -14,13 +14,13 @@ import type {
 } from '../types.js';
 
 const getAllBusinessTripsOtherTransactions = sql<IGetAllBusinessTripsOtherTransactionsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_other a
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id`;
 
 const getBusinessTripsOtherTransactionsByChargeIds = sql<IGetBusinessTripsOtherTransactionsByChargeIdsQuery>`
-  SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_other a
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id
@@ -29,14 +29,14 @@ const getBusinessTripsOtherTransactionsByChargeIds = sql<IGetBusinessTripsOtherT
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsOtherTransactionsByBusinessTripIds = sql<IGetBusinessTripsOtherTransactionsByBusinessTripIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_other a
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsOtherTransactionsByIds = sql<IGetBusinessTripsOtherTransactionsByIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.amount, t.currency, t.employee_business_id, t.transaction_id
+  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_other a
   LEFT JOIN accounter_schema.business_trips_transactions t
     ON a.id = t.id
@@ -45,10 +45,6 @@ const getBusinessTripsOtherTransactionsByIds = sql<IGetBusinessTripsOtherTransac
 const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_other
   SET
-  payed_by_employee = COALESCE(
-    $payedByEmployee,
-    payed_by_employee
-  ),
   deductible_expense = COALESCE(
     $deductibleExpense,
     deductible_expense
@@ -63,8 +59,8 @@ const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransacti
 `;
 
 const insertBusinessTripOtherTransaction = sql<IInsertBusinessTripOtherTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_other (id, payed_by_employee, deductible_expense, expense_type)
-  VALUES($id, $payedByEmployee, $deductibleExpense, $expenseType)
+  INSERT INTO accounter_schema.business_trips_transactions_other (id, deductible_expense, expense_type)
+  VALUES($id, $deductibleExpense, $expenseType)
   RETURNING *;`;
 
 @Injectable({

@@ -76,9 +76,12 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
   }
 
   " represent a business trip uncategorized transaction "
@@ -86,9 +89,11 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
+    payedByEmployee: Boolean
   }
 
   " represent a business trip accommodation transaction "
@@ -96,12 +101,12 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
-
-    " שולם על ידי העובד "
     payedByEmployee: Boolean
+
     country: String
     nightsCount: Int
   }
@@ -111,12 +116,12 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
-
-    " שולם על ידי העובד "
     payedByEmployee: Boolean
+
     origin: String
     destination: String
     class: String
@@ -127,12 +132,12 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
-
-    " שולם על ידי העובד "
     payedByEmployee: Boolean
+
     " סוג ההוצאה "
     expenseType: String
   }
@@ -142,12 +147,12 @@ export default gql`
     id: ID!
     businessTrip: BusinessTrip!
     date: TimelessDate
+    valueDate: TimelessDate
     amount: FinancialAmount
     employee: Counterparty
     transaction: Transaction
-
-    " שולם על ידי העובד "
     payedByEmployee: Boolean
+
     " הוצאה מוכרת "
     deductibleExpense: Boolean
     " סוג ההוצאה "

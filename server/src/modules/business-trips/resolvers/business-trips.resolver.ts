@@ -125,14 +125,12 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripAccommodationTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.category === 'ACCOMMODATION',
     ...commonBusinessTransactionFields,
-    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
     country: dbTransaction => dbTransaction.country,
     nightsCount: dbTransaction => dbTransaction.nights_count,
   },
   BusinessTripFlightTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.category === 'FLIGHT',
     ...commonBusinessTransactionFields,
-    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
     origin: dbTransaction => dbTransaction.origin,
     destination: dbTransaction => dbTransaction.destination,
     class: dbTransaction => dbTransaction.class,
@@ -140,13 +138,11 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripTravelAndSubsistenceTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.category === 'TRAVEL_AND_SUBSISTENCE',
     ...commonBusinessTransactionFields,
-    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
     expenseType: dbTransaction => dbTransaction.expense_type,
   },
   BusinessTripOtherTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.category === 'OTHER',
     ...commonBusinessTransactionFields,
-    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
     expenseType: dbTransaction => dbTransaction.expense_type,
   },
   CommonCharge: {

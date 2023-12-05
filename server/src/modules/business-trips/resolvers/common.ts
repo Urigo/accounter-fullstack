@@ -41,6 +41,10 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
         }),
     date: DbTransaction =>
       DbTransaction.date ? (format(DbTransaction.date, 'yyyy-MM-dd') as TimelessDateString) : null,
+    valueDate: DbTransaction =>
+      DbTransaction.value_date
+        ? (format(DbTransaction.value_date, 'yyyy-MM-dd') as TimelessDateString)
+        : null,
     amount: DbTransaction =>
       DbTransaction.amount && DbTransaction.currency
         ? formatFinancialAmount(DbTransaction.amount, DbTransaction.currency)
@@ -60,4 +64,5 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
               return res as IGetTransactionsByIdsResult;
             })
         : await null,
+    payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
   };
