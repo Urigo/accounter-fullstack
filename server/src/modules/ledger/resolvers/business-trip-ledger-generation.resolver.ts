@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
@@ -50,9 +51,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const businessTripTransactionsPromise = injector
       .get(BusinessTripTransactionsProvider)
       .getBusinessTripsTransactionsByChargeIdLoader.load(chargeId);
-    const [transactions, businessTripTransactions] = await Promise.all([
+    const businessTripAttendeesPromise = injector
+      .get(BusinessTripAttendeesProvider)
+      .getBusinessTripsAttendeesByChargeIdLoader.load(chargeId);
+    const [transactions, businessTripTransactions, businessTripAttendees] = await Promise.all([
       transactionsPromise,
       businessTripTransactionsPromise,
+      businessTripAttendeesPromise,
     ]);
 
     // generate ledger from transactions
@@ -195,10 +200,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     }
 
-    const allowedUnbalancedBusinesses = [
-      '7843b805-3bb7-4d1c-9219-ff783100334b', // Uri Employee
-      'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df', // Dotan Employee
-    ];
+    const allowedUnbalancedBusinesses = businessTripAttendees.map(attendee => attendee.id);
 
     // validate ledger balance
     let ledgerBalanceSum = 0;
