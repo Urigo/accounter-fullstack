@@ -1,9 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
+import { DEFAULT_LOCAL_CURRENCY, UUID_REGEX } from '@shared/constants';
 import { Currency } from '@shared/enums';
-import { formatCurrency } from '@shared/helpers';
-import { LedgerProto, StrictLedgerProto } from '@shared/types';
+import { ResolversTypes } from '@shared/gql-types';
+import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+import { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
   if (!first || !second) {
@@ -135,48 +137,84 @@ export function generatePartialLedgerEntry(
 
 export function updateLedgerBalanceByEntry(
   entry: LedgerProto,
-  ledgerBalance: Map<string, number>,
+  ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
 ): void {
   if (entry.creditAccountID1) {
     const name =
       typeof entry.creditAccountID1 === 'string'
         ? entry.creditAccountID1
         : entry.creditAccountID1.name;
-    ledgerBalance.set(
-      name,
-      (ledgerBalance.get(name) ?? 0) + (entry.localCurrencyCreditAmount1 ?? 0),
-    );
+    ledgerBalance.set(name, {
+      amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount1 ?? 0),
+      entity: entry.creditAccountID1,
+    });
   }
   if (entry.debitAccountID1) {
     const name =
       typeof entry.debitAccountID1 === 'string'
         ? entry.debitAccountID1
         : entry.debitAccountID1.name;
-    ledgerBalance.set(
-      name,
-      (ledgerBalance.get(name) ?? 0) - (entry.localCurrencyDebitAmount1 ?? 0),
-    );
+    ledgerBalance.set(name, {
+      amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount1 ?? 0),
+      entity: entry.debitAccountID1,
+    });
   }
   if (entry.creditAccountID2) {
     const name =
       typeof entry.creditAccountID2 === 'string'
         ? entry.creditAccountID2
         : entry.creditAccountID2.name;
-    ledgerBalance.set(
-      name,
-      (ledgerBalance.get(name) ?? 0) + (entry.localCurrencyCreditAmount2 ?? 0),
-    );
+    ledgerBalance.set(name, {
+      amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount2 ?? 0),
+      entity: entry.creditAccountID2,
+    });
   }
   if (entry.debitAccountID2) {
     const name =
       typeof entry.debitAccountID2 === 'string'
         ? entry.debitAccountID2
         : entry.debitAccountID2.name;
-    ledgerBalance.set(
-      name,
-      (ledgerBalance.get(name) ?? 0) - (entry.localCurrencyDebitAmount2 ?? 0),
-    );
+    ledgerBalance.set(name, {
+      amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount2 ?? 0),
+      entity: entry.debitAccountID2,
+    });
   }
 
   return;
+}
+
+export function getLedgerBalanceInfo(
+  ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
+  allowedUnbalancedBusinesses: Set<string> = new Set(),
+): ResolversTypes['LedgerBalanceInfo'] {
+  let ledgerBalanceSum = 0;
+  let isBalanced = true;
+  const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
+  for (const { amount, entity } of ledgerBalance.values()) {
+    if (Math.abs(amount) < 0.005) {
+      continue;
+    }
+    if (typeof entity === 'string' && UUID_REGEX.test(entity)) {
+      console.error(`Business ID="${entity}" is not balanced`);
+      if (allowedUnbalancedBusinesses.has(entity)) {
+        continue;
+      } else {
+        isBalanced = false;
+        unbalancedEntities.push({
+          entity,
+          balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
+        });
+      }
+    }
+    ledgerBalanceSum += amount;
+  }
+  if (Math.abs(ledgerBalanceSum) >= 0.005) {
+    console.error(`Ledger is not balanced`);
+    isBalanced = false;
+  }
+
+  return {
+    isBalanced,
+    unbalancedEntities,
+  };
 }

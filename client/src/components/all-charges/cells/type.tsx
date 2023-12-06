@@ -1,4 +1,6 @@
 import { ReactElement, useMemo } from 'react';
+import { Gift, Plane, TransferIn, Transform, Wallet } from 'tabler-icons-react';
+import { ThemeIcon } from '@mantine/core';
 import { AllChargesTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 
@@ -18,25 +20,31 @@ export const TypeCell = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesTypeFieldsFragmentDoc, data);
   const { __typename } = charge;
 
-  const type = useMemo(() => {
+  const type = useMemo((): {
+    text: string;
+    icon: ReactElement;
+  } => {
     switch (__typename) {
       case 'CommonCharge':
-        return 'Common';
+        return { text: 'Common', icon: <Transform /> };
       case 'BusinessTripCharge':
-        return 'Business Trip';
+        return { text: 'Business Trip', icon: <Plane /> };
       case 'DividendCharge':
-        return 'Dividend';
+        return { text: 'Dividend', icon: <Gift /> };
       case 'ConversionCharge':
-        return 'Conversion';
+        return { text: 'Conversion', icon: <Transform /> };
       case 'SalaryCharge':
-        return 'Salary';
+        return { text: 'Salary', icon: <Wallet /> };
       case 'InternalTransferCharge':
-        return 'Internal Transfer';
+        return { text: 'Internal Transfer', icon: <TransferIn /> };
     }
   }, [__typename]);
   return (
     <td>
-      <div>{type}</div>
+      <div>{type.text}</div>
+      <ThemeIcon radius="xl" size="xl">
+        {type.icon}
+      </ThemeIcon>
     </td>
   );
 };
