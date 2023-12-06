@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import { DEFAULT_LOCAL_CURRENCY, UUID_REGEX } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import { ResolversTypes } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
@@ -186,7 +186,7 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): ResolversTypes['LedgerBalanceInfo'] {
+): ResolversTypes['LedgerBalanceInfo'] & {balanceSum: number} {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
@@ -194,11 +194,9 @@ export function getLedgerBalanceInfo(
     if (Math.abs(amount) < 0.005) {
       continue;
     }
-    if (typeof entity === 'string' && UUID_REGEX.test(entity)) {
+    if (typeof entity === 'string') {
       console.error(`Business ID="${entity}" is not balanced`);
-      if (allowedUnbalancedBusinesses.has(entity)) {
-        continue;
-      } else {
+      if (!allowedUnbalancedBusinesses.has(entity)) {
         isBalanced = false;
         unbalancedEntities.push({
           entity,
@@ -216,5 +214,6 @@ export function getLedgerBalanceInfo(
   return {
     isBalanced,
     unbalancedEntities,
+    balanceSum: ledgerBalanceSum
   };
 }

@@ -6,7 +6,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, UUID_REGEX } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -17,6 +17,7 @@ import {
 import type { CounterAccountProto, StrictLedgerProto } from '@shared/types';
 import {
   generatePartialLedgerEntry,
+  getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
@@ -200,29 +201,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     }
 
-    const allowedUnbalancedBusinesses = businessTripAttendees.map(attendee => attendee.id);
+    const allowedUnbalancedBusinesses = new Set(businessTripAttendees.map(attendee => attendee.id));
 
-    // validate ledger balance
-    let ledgerBalanceSum = 0;
-    for (const { entity, amount } of ledgerBalance.values()) {
-      if (Math.abs(amount) < 0.005) {
-        continue;
-      }
-      if (typeof entity === 'string' && UUID_REGEX.test(entity)) {
-        if (allowedUnbalancedBusinesses.includes(entity)) {
-          console.error(`Business ID="${entity}" is not balanced`);
-        } else {
-          throw new GraphQLError(`Business ID="${entity}" is not balanced`);
-        }
-      }
-      ledgerBalanceSum += amount;
-    }
-    if (Math.abs(ledgerBalanceSum) >= 0.005) {
-      throw new GraphQLError(`Ledger is not balanced`);
-    }
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
     return {
       records: [...financialAccountLedgerEntries],
+      balance: ledgerBalanceInfo,
     };
   } catch (e) {
     return {
