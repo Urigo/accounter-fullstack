@@ -51,6 +51,8 @@ module.exports = {
                 'FinancialAmount',
                 'FinancialIntAmount',
                 'GeneratedLedgerRecords',
+                'LedgerBalanceInfo',
+                'LedgerBalanceUnbalancedEntities',
                 'LedgerRecords',
                 'MergeChargeSuccessfulResult',
                 'NamedCounterparty',

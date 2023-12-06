@@ -14,7 +14,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, StrictLedgerProto } from '@shared/types';
 import {
   generatePartialLedgerEntry,
   getTaxCategoryNameByAccountCurrency,
@@ -42,7 +42,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, number>();
+    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
@@ -204,28 +204,25 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // validate ledger balance
     let ledgerBalanceSum = 0;
-    for (const [side, balance] of ledgerBalance.entries()) {
-      if (Math.abs(balance) < 0.005) {
+    for (const { entity, amount } of ledgerBalance.values()) {
+      if (Math.abs(amount) < 0.005) {
         continue;
       }
-      if (UUID_REGEX.test(side)) {
-        if (allowedUnbalancedBusinesses.includes(side)) {
-          console.error(`Business ID="${side}" is not balanced`);
+      if (typeof entity === 'string' && UUID_REGEX.test(entity)) {
+        if (allowedUnbalancedBusinesses.includes(entity)) {
+          console.error(`Business ID="${entity}" is not balanced`);
         } else {
-          throw new GraphQLError(`Business ID="${side}" is not balanced`);
+          throw new GraphQLError(`Business ID="${entity}" is not balanced`);
         }
       }
-      ledgerBalanceSum += balance;
+      ledgerBalanceSum += amount;
     }
     if (Math.abs(ledgerBalanceSum) >= 0.005) {
       throw new GraphQLError(`Ledger is not balanced`);
     }
 
     return {
-      records: [
-        ...financialAccountLedgerEntries,
-        //  ...miscLedgerEntries
-      ],
+      records: [...financialAccountLedgerEntries],
     };
   } catch (e) {
     return {
