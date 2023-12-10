@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
 import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
@@ -15,9 +15,13 @@ import { DragFile, ListCapsule } from '../../common';
       isSalary
     }
     ledgerRecords {
+      __typename
       ... on LedgerRecords {
         records {
           id
+        }
+        balance {
+          isBalanced
         }
       }
     }
@@ -35,14 +39,31 @@ type Props = {
 };
 
 export const MoreInfo = ({ data }: Props): ReactElement => {
-  const { metadata, ledgerRecords, counterparty, validationData, id } = getFragmentData(
+  const { metadata, ledgerRecords, counterparty, validationData, id, __typename } = getFragmentData(
     AllChargesMoreInfoFieldsFragmentDoc,
     data,
   );
+
+  const shouldHaveDocuments = useMemo((): boolean => {
+    switch (__typename) {
+      case 'BusinessTripCharge':
+      case 'ConversionCharge':
+      case 'DividendCharge':
+      case 'InternalTransferCharge':
+      case 'SalaryCharge':
+        return false;
+      default:
+        return true;
+    }
+  }, [__typename]);
+
   const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
   // TODO(Gil): implement isLedgerError by server validation
-  const isLedgerError = !(ledgerRecords && 'records' in ledgerRecords);
-  const isDocumentsError = validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
+  const isLedgerError = !ledgerRecords || ledgerRecords.__typename === 'CommonError';
+  const isLedgerUnbalanced =
+    !isLedgerError && ledgerRecords.balance && !ledgerRecords.balance.isBalanced;
+  const isDocumentsError =
+    shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
 
   const ledgerRecordsCount = isLedgerError ? 0 : ledgerRecords.records.length;
   return (
@@ -74,7 +95,7 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
                   key="ledger"
                   inline
                   size={12}
-                  disabled={!isLedgerError}
+                  disabled={!isLedgerError && !isLedgerUnbalanced}
                   color="red"
                   zIndex="auto"
                 >
@@ -101,7 +122,7 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
               ),
               style:
                 metadata?.documentsCount ||
-                metadata?.isSalary ||
+                !shouldHaveDocuments ||
                 (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },

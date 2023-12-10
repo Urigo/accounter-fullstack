@@ -11,13 +11,13 @@ import {
   DIVIDEND_TAX_CATEGORY_ID,
   DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
   DIVIDEND_WITHHOLDING_TAX_PERCENTAGE,
-  UUID_REGEX,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../helpers/dividend-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
+  getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
@@ -33,7 +33,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, number>();
+    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
 
     // generate ledger from transactions
     const paymentsLedgerEntries: LedgerProto[] = [];
@@ -290,32 +290,11 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     }
 
-    // validate ledger balance
-    let ledgerBalanceSum = 0;
-    for (const [side, balance] of ledgerBalance.entries()) {
-      if (Math.abs(balance) < 0.005) {
-        continue;
-      }
-      if (UUID_REGEX.test(side)) {
-        if (allowedUnbalancedBusinesses.has(side)) {
-          console.error(`Business ID="${side}" is not balanced`);
-          continue;
-        } else {
-          throw new GraphQLError(`Business ID="${side}" is not balanced`);
-        }
-      }
-      ledgerBalanceSum += balance;
-    }
-    if (Math.abs(ledgerBalanceSum) >= 0.005) {
-      throw new GraphQLError(`Ledger is not balanced`);
-    }
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
     return {
-      records: [
-        ...withholdingTaxLedgerEntries,
-        ...paymentsLedgerEntries,
-        // ...dividendRecordsLedgerEntries,
-      ],
+      records: [...withholdingTaxLedgerEntries, ...paymentsLedgerEntries],
+      balance: ledgerBalanceInfo,
     };
   } catch (e) {
     return {
