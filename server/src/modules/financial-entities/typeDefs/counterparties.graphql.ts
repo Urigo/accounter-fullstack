@@ -50,6 +50,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type BusinessTripCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID

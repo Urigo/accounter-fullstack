@@ -32,4 +32,5 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
   DividendCharge: commonChargeFields,
+  BusinessTripCharge: commonChargeFields,
 };

@@ -6,7 +6,7 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 /* GraphQL */ `
   fragment TransactionsTableSourceIDFields on Transaction {
     id
-    referenceNumber
+    referenceKey
   }
 `;
 
@@ -20,7 +20,7 @@ export const SourceID = ({ data }: Props): ReactElement => {
   return (
     <td>
       <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">{transaction.referenceNumber}</div>
+        <div className="flex flex-col justify-center">{transaction.referenceKey}</div>
       </div>
     </td>
   );

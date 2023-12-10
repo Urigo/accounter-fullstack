@@ -48,4 +48,5 @@ export const tagsResolvers: TagsModule.Resolvers = {
   SalaryCharge: commonTagsChargeFields,
   InternalTransferCharge: commonTagsChargeFields,
   DividendCharge: commonTagsChargeFields,
+  BusinessTripCharge: commonTagsChargeFields,
 };

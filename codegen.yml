@@ -34,6 +34,7 @@ generates:
         BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         BusinessTrip: '@modules/business-trips/types.js#IGetAllBusinessTripsResult'
+        BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         CardFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
@@ -61,6 +62,11 @@ generates:
         Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult'
         VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord'
         WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        BusinessTripUncategorizedTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsTransactionsResult'
+        BusinessTripAccommodationTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsTransactionsResult'
+        BusinessTripFlightTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsTransactionsResult'
+        BusinessTripTravelAndSubsistenceTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult'
+        BusinessTripOtherTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsOtherTransactionsResult'
     plugins:
       - add:
           content: "import { TimelessDateString } from '@shared/types'"

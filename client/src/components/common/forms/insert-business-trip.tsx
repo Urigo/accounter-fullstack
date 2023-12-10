@@ -49,8 +49,8 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   return isInserting ? (
     <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
   ) : (
-    <div className="px-5">
-      <form>
+    <form>
+      <div className="px-5 flex flex-col gap-5">
         <ModifyBusinessTripFields control={control} />
         <div className="flex justify-right gap-5 mt-5">
           <button
@@ -62,7 +62,7 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
             Accept
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 };

@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -23,32 +22,13 @@ import {
   getTaxCategoryNameByAccountCurrency,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
-import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
-import { generateLedgerRecordsForDividend } from './dividend-ledger-generation.resolver.js';
-import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
-import { generateLedgerRecordsForSalary } from './salary-ledger-generation.resolver.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   { injector: Injector },
   object
-> = async (charge, args, { injector }, info) => {
-  const chargeType = getChargeType(charge);
-  switch (chargeType) {
-    case 'InternalTransferCharge': {
-      return generateLedgerRecordsForInternalTransfer(charge, args, { injector }, info);
-    }
-    case 'ConversionCharge': {
-      return generateLedgerRecordsForConversion(charge, args, { injector }, info);
-    }
-    case 'SalaryCharge': {
-      return generateLedgerRecordsForSalary(charge, args, { injector }, info);
-    }
-    case 'DividendCharge': {
-      return generateLedgerRecordsForDividend(charge, args, { injector }, info);
-    }
-  }
+> = async (charge, _, { injector }) => {
   const chargeId = charge.id;
 
   try {

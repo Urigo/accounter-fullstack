@@ -12,7 +12,8 @@ export const commonTransactionFields:
   | TransactionsModule.WireTransactionResolvers
   | TransactionsModule.CommonTransactionResolvers = {
   id: DbTransaction => DbTransaction.id,
-  referenceNumber: DbTransaction => DbTransaction.source_id,
+  referenceId: DbTransaction => DbTransaction.source_id,
+  referenceKey: DbTransaction => DbTransaction.source_reference,
   eventDate: DbTransaction => format(DbTransaction.event_date, 'yyyy-MM-dd') as TimelessDateString,
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
   direction: DbTransaction =>

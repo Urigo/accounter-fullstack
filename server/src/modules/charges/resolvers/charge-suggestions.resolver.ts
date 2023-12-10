@@ -571,4 +571,5 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
   DividendCharge: commonChargeFields,
+  BusinessTripCharge: commonChargeFields,
 };

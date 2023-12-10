@@ -10,6 +10,10 @@ export function getChargeType(charge: IGetChargesByIdsResult) {
     return 'SalaryCharge';
   }
 
+  if (charge.business_trip_id) {
+    return 'BusinessTripCharge';
+  }
+
   if (
     (charge.business_array?.filter(businessId => INTERNAL_WALLETS_IDS.includes(businessId))
       ?.length ?? 0) > 1
