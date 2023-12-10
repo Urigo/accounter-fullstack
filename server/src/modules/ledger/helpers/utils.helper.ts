@@ -186,7 +186,7 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): ResolversTypes['LedgerBalanceInfo'] & {balanceSum: number} {
+): ResolversTypes['LedgerBalanceInfo'] & { balanceSum: number } {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
@@ -214,6 +214,6 @@ export function getLedgerBalanceInfo(
   return {
     isBalanced,
     unbalancedEntities,
-    balanceSum: ledgerBalanceSum
+    balanceSum: ledgerBalanceSum,
   };
 }
