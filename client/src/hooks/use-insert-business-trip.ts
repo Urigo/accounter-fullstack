@@ -1,8 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
 import {
-  BusinessTrip,
   InsertBusinessTripDocument,
+  InsertBusinessTripMutation,
   InsertBusinessTripMutationVariables,
 } from '../gql/graphql.js';
 
@@ -18,7 +18,7 @@ import {
 
 type UseInsertBusinessTrip = {
   fetching: boolean;
-  insertBusinessTrip: (variables: InsertBusinessTripMutationVariables) => Promise<BusinessTrip>;
+  insertBusinessTrip: (variables: InsertBusinessTripMutationVariables) => Promise<InsertBusinessTripMutation['insertBusinessTrip']>;
 };
 
 export const useInsertBusinessTrip = (): UseInsertBusinessTrip => {
@@ -29,8 +29,8 @@ export const useInsertBusinessTrip = (): UseInsertBusinessTrip => {
 
   return {
     fetching,
-    insertBusinessTrip: (variables: InsertBusinessTripMutationVariables): Promise<BusinessTrip> =>
-      new Promise<BusinessTrip>((resolve, reject) =>
+    insertBusinessTrip: (variables: InsertBusinessTripMutationVariables): Promise<InsertBusinessTripMutation['insertBusinessTrip']> =>
+      new Promise<InsertBusinessTripMutation['insertBusinessTrip']>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(`Error inserting business trip: ${res.error}`);
