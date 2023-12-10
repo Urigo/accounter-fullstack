@@ -20,7 +20,7 @@ const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
 const clearChargeTags = sql<IClearChargeTagsQuery>`
     DELETE FROM accounter_schema.tags
     WHERE charge_id = $chargeId
-    AND tag_name NOT IN $$tagNames;`;
+    AND tag_name IN $$tagNames;`;
 
 const clearAllChargeTags = sql<IClearAllChargeTagsQuery>`
     DELETE FROM accounter_schema.tags
