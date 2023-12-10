@@ -235,7 +235,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     }
 
-    const {balanceSum} = getLedgerBalanceInfo(ledgerBalance)
+    const { balanceSum } = getLedgerBalanceInfo(ledgerBalance);
 
     const miscLedgerEntries: LedgerProto[] = [];
     // Add ledger completion entries
@@ -268,14 +268,14 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           valueDate: destinationEntry.valueDate,
           currency: destinationEntry.currency, // NOTE: this field is dummy
           ownerId: destinationEntry.ownerId,
-        }
+        };
 
         miscLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       }
     }
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance)
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
 
     return {
       records: [

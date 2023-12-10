@@ -6,7 +6,6 @@ export default gql`
     salaryRecords: [Salary!]!
     salaryRecordsSuggestions: [Salary!]!
     employees: [LtdFinancialEntity!]!
-    type: SalaryChargeType!
   }
 
   " defines salary records for charge arrangement" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
@@ -26,16 +25,5 @@ export default gql`
     socialSecurityEmployerAmount: FinancialAmount
     incomeTaxAmount: FinancialAmount
     healthInsuranceAmount: FinancialAmount
-  }
-
-  " represent a type of salary charge"
-  enum SalaryChargeType {
-    SALARY
-    FUNDS
-    PENSION
-    TRAINING_FUND
-    SOCIAL_SECURITY
-    INCOME_TAX
-    UNKNOWN
   }
 `;
