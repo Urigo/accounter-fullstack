@@ -37,8 +37,6 @@ export const PENSION_BUSINESS_IDS = [
 export const TAX_DEDUCTIONS_BUSINESS_ID = 'f1ade516-4999-4919-9d94-6b013221536d'; // TODO: replace with context variable // מהני
 export const SOCIAL_SECURITY_BUSINESS_ID = '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa'; // TODO: replace with context variable // בלני
 export const SALARY_BATCHED_BUSINESSES = [
-  SOCIAL_SECURITY_BUSINESS_ID,
-  TAX_DEDUCTIONS_BUSINESS_ID,
   BATCHED_PENSION_BUSINESS_ID,
   BATCHED_EMPLOYEE_BUSINESS_ID,
 ];
