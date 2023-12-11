@@ -44,13 +44,7 @@ const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>
 export class UnbalancedBusinessesProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  public getChargeUnbalancedBusinessesByChargeIds(
-    params: IGetChargeUnbalancedBusinessesByChargeIdsParams,
-  ) {
-    return getChargeUnbalancedBusinessesByChargeIds.run(params, this.dbProvider);
-  }
-
-  private async batchChargesByFinancialEntityIds(chargeIds: readonly string[]) {
+  private async batchChargeUnbalancedBusinessesByChargeIds(chargeIds: readonly string[]) {
     const ids = new Set(chargeIds);
     const unbalancedBusinesses = await getChargeUnbalancedBusinessesByChargeIds.run(
       {
@@ -63,8 +57,8 @@ export class UnbalancedBusinessesProvider {
     );
   }
 
-  public getChargeByFinancialEntityIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesByFinancialEntityIds(keys),
+  public getChargeUnbalancedBusinessesByChargeIds = new DataLoader(
+    (keys: readonly string[]) => this.batchChargeUnbalancedBusinessesByChargeIds(keys),
     {
       cache: false,
     },

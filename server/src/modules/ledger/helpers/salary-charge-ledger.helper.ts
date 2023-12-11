@@ -2,9 +2,16 @@ import { GraphQLError } from 'graphql';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
 import {
+  COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
+  PENSION_EXPENSES_TAX_CATEGORY_ID,
+  SALARY_EXPENSES_TAX_CATEGORY_ID,
   SOCIAL_SECURITY_BUSINESS_ID,
+  SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
   TAX_DEDUCTIONS_BUSINESS_ID,
+  TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
+  ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
+  ZKUFOT_INCOME_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { CounterAccountProto, LedgerProto } from '@shared/types';
 
@@ -48,18 +55,15 @@ function getTotalTrainingFund(salaryRecord: IGetSalaryRecordsByChargeIdsResult) 
   return totalTrainingFund;
 }
 
+type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boolean };
+
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
   transactionDate: Date,
 ): {
   entries: LedgerProto[];
-  salaryExpensesAmount: number;
-  socialSecurityExpensesAmount: number;
-  pensionFundExpensesAmount: number;
-  compensationProvidentFundExpensesAmount: number;
-  trainingFundExpensesAmount: number;
-  zkufotAmount: number;
+  monthlyEntriesProto: MonthlyLedgerProto[];
   month: string;
 } {
   const chargeId = charge.id;
@@ -127,7 +131,8 @@ export function generateEntriesFromSalaryRecords(
       Number(salaryRecord.global_additional_hours ?? '0') +
       Number(salaryRecord.bonus ?? '0') +
       Number(salaryRecord.gift ?? '0') +
-      Number(salaryRecord.recovery ?? '0'); // TODO: make sure that "gift" really should be here
+      Number(salaryRecord.recovery ?? '0') +
+      Number(salaryRecord.vacation_takeout ?? '0');
 
     // social security handling
     const socialSecurityEmployeeAmount = Number(
@@ -195,14 +200,74 @@ export function generateEntriesFromSalaryRecords(
     }
   }
 
-  return {
-    entries,
+  const monthlyEntriesProto = getMonthlyExpensesEntriesProto({
     salaryExpensesAmount,
     socialSecurityExpensesAmount,
     pensionFundExpensesAmount,
     compensationProvidentFundExpensesAmount,
     trainingFundExpensesAmount,
     zkufotAmount,
+  });
+
+  return {
+    entries,
+    monthlyEntriesProto,
     month,
   };
+}
+
+export function getMonthlyExpensesEntriesProto({
+  salaryExpensesAmount,
+  socialSecurityExpensesAmount,
+  pensionFundExpensesAmount,
+  compensationProvidentFundExpensesAmount,
+  trainingFundExpensesAmount,
+  zkufotAmount,
+}: {
+  salaryExpensesAmount: number;
+  socialSecurityExpensesAmount: number;
+  pensionFundExpensesAmount: number;
+  compensationProvidentFundExpensesAmount: number;
+  trainingFundExpensesAmount: number;
+  zkufotAmount: number;
+}) {
+  const monthlyEntriesProto: MonthlyLedgerProto[] = [
+    {
+      taxCategoryId: ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
+      amount: zkufotAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: ZKUFOT_INCOME_TAX_CATEGORY_ID,
+      amount: zkufotAmount,
+      isCredit: true,
+    },
+    {
+      taxCategoryId: SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
+      amount: socialSecurityExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: SALARY_EXPENSES_TAX_CATEGORY_ID,
+      amount: salaryExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
+      amount: trainingFundExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: PENSION_EXPENSES_TAX_CATEGORY_ID,
+      amount: pensionFundExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
+      amount: compensationProvidentFundExpensesAmount,
+      isCredit: false,
+    },
+  ];
+
+  return monthlyEntriesProto;
 }

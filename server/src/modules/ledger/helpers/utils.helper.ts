@@ -194,15 +194,12 @@ export function getLedgerBalanceInfo(
     if (Math.abs(amount) < 0.005) {
       continue;
     }
-    if (typeof entity === 'string') {
-      console.error(`Business ID="${entity}" is not balanced`);
-      if (!allowedUnbalancedBusinesses.has(entity)) {
-        isBalanced = false;
-        unbalancedEntities.push({
-          entity,
-          balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
-        });
-      }
+    if (typeof entity === 'string' && !allowedUnbalancedBusinesses.has(entity)) {
+      isBalanced = false;
+      unbalancedEntities.push({
+        entity,
+        balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
+      });
     }
     ledgerBalanceSum += amount;
   }
