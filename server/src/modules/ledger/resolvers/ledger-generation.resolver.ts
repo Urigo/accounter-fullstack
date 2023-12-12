@@ -17,9 +17,11 @@ import {
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
+  getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
+  updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
 
@@ -33,7 +35,7 @@ export const generateLedgerRecords: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    let ledgerBalance = 0;
+    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
@@ -174,7 +176,7 @@ export const generateLedgerRecords: ResolverFn<
         // const reference2: string | null = ''; // TODO: rethink
         // const movementType: string | null = ''; // TODO: rethink
 
-        accountingLedgerEntries.push({
+        const ledgerEntry = {
           id: document.id,
           invoiceDate: document.date,
           valueDate: document.date,
@@ -195,14 +197,10 @@ export const generateLedgerRecords: ResolverFn<
           reference1: document.serial_number ?? undefined,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
-        });
+        };
 
-        if (isCreditorCounterparty) {
-          ledgerBalance += Number(totalAmount.toFixed(2));
-        } else {
-          ledgerBalance -= Number(totalAmount.toFixed(2));
-        }
-
+        accountingLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(document.date.getTime());
         currencies.add(document.currency_code);
       }
@@ -252,7 +250,7 @@ export const generateLedgerRecords: ResolverFn<
 
         const isCreditorCounterparty = amount > 0;
 
-        financialAccountLedgerEntries.push({
+        const ledgerEntry = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -268,9 +266,10 @@ export const generateLedgerRecords: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        });
-
-        ledgerBalance += Number(amount.toFixed(2)); // TODO: remove rounding, see how it goes
+        };
+        
+        financialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(valueDate.getTime());
         currencies.add(currency);
       }
@@ -280,7 +279,8 @@ export const generateLedgerRecords: ResolverFn<
     const maxExpectedBalance =
       0.005 * Math.max(financialAccountLedgerEntries.length, accountingLedgerEntries.length);
     // Add ledger completion entries
-    if (Math.abs(ledgerBalance) > maxExpectedBalance) {
+    const {balanceSum} = getLedgerBalanceInfo(ledgerBalance);
+    if (Math.abs(balanceSum) > maxExpectedBalance) {
       if (!accountingLedgerEntries.length) {
         const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
           ? financialAccountLedgerEntries[0].creditAccountID1
@@ -308,13 +308,13 @@ export const generateLedgerRecords: ResolverFn<
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
-        const amount = Math.abs(ledgerBalance);
+        const amount = Math.abs(balanceSum);
         const counterparty =
           typeof transactionEntry.creditAccountID1 === 'string'
             ? transactionEntry.creditAccountID1
             : transactionEntry.debitAccountID1;
 
-        const isCreditorCounterparty = ledgerBalance < 0;
+        const isCreditorCounterparty = balanceSum < 0;
 
         miscLedgerEntries.push({
           id: transactionEntry.id + '|fee', // NOTE: this field is dummy
@@ -340,10 +340,10 @@ export const generateLedgerRecords: ResolverFn<
       }
     }
 
-    // TODO: validate counterparty is consistent
-
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
     return {
       records: [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries],
+      ledgerBalanceInfo,
     };
   } catch (e) {
     return {
