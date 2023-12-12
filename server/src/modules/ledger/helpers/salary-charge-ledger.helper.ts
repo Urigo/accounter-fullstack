@@ -113,7 +113,7 @@ export function generateEntriesFromSalaryRecords(
 
     month ??= salaryRecord.month;
 
-    const salaryExpense = 
+    const salaryExpense =
       Number(salaryRecord.base_salary ?? '0') +
       Number(salaryRecord.global_additional_hours ?? '0') +
       Number(salaryRecord.bonus ?? '0') +
@@ -128,7 +128,7 @@ export function generateEntriesFromSalaryRecords(
       Number(salaryRecord.tax_amount ?? '0') -
       Number(salaryRecord.pension_employee_amount ?? '0') -
       Number(salaryRecord.training_fund_employee_amount ?? '0');
-    
+
     // generate salary entry
     const salaryDate = new Date(transactionDate);
     salaryDate.setDate(salaryDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
