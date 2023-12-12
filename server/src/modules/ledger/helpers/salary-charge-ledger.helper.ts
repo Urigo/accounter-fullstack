@@ -105,20 +105,37 @@ export function generateEntriesFromSalaryRecords(
 
   for (const salaryRecord of salaryRecords) {
     // record validations
-    if (!salaryRecord.direct_payment_amount) {
+    if (!salaryRecord.base_salary) {
       throw new GraphQLError(
-        `Salary record for ${salaryRecord.month}, employee ${salaryRecord.employee}  is missing amount`,
+        `Base salary record for ${salaryRecord.month}, employee ${salaryRecord.employee}  is missing amount`,
       );
     }
 
     month ??= salaryRecord.month;
+
+    const salaryExpense = 
+      Number(salaryRecord.base_salary ?? '0') +
+      Number(salaryRecord.global_additional_hours ?? '0') +
+      Number(salaryRecord.bonus ?? '0') +
+      Number(salaryRecord.gift ?? '0') +
+      Number(salaryRecord.recovery ?? '0') +
+      Number(salaryRecord.vacation_takeout ?? '0');
+
+    const directPayment =
+      salaryExpense -
+      Number(salaryRecord.social_security_amount_employee ?? '0') -
+      Number(salaryRecord.health_payment_amount ?? '0') -
+      Number(salaryRecord.tax_amount ?? '0') -
+      Number(salaryRecord.pension_employee_amount ?? '0') -
+      Number(salaryRecord.training_fund_employee_amount ?? '0');
+    
     // generate salary entry
     const salaryDate = new Date(transactionDate);
     salaryDate.setDate(salaryDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
     entries.push(
       generateEntry(
         salaryRecord.employee_id,
-        Number(salaryRecord.direct_payment_amount),
+        directPayment,
         salaryRecord.month,
         undefined,
         salaryDate,
@@ -126,13 +143,7 @@ export function generateEntriesFromSalaryRecords(
     );
 
     // salary expenses handling
-    salaryExpensesAmount +=
-      Number(salaryRecord.base_salary ?? '0') +
-      Number(salaryRecord.global_additional_hours ?? '0') +
-      Number(salaryRecord.bonus ?? '0') +
-      Number(salaryRecord.gift ?? '0') +
-      Number(salaryRecord.recovery ?? '0') +
-      Number(salaryRecord.vacation_takeout ?? '0');
+    salaryExpensesAmount += salaryExpense;
 
     // social security handling
     const socialSecurityEmployeeAmount = Number(

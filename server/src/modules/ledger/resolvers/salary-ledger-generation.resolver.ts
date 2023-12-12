@@ -337,11 +337,11 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         miscLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       } else {
-        // throw new GraphQLError(
-        //   `Failed to balance: ${
-        //     hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
-        //   } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
-        // );
+        throw new GraphQLError(
+          `Failed to balance: ${
+            hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
+          } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
+        );
       }
     }
 
@@ -349,8 +349,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
-
-    console.log('ledgerBalanceInfo', JSON.stringify(ledgerBalanceInfo, null, 2));
 
     return {
       records: [
