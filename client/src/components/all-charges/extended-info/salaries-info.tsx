@@ -6,7 +6,6 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
 /* GraphQL */ `
   fragment TableSalariesFields on SalaryCharge {
     id
-    type
     salaryRecords {
       directAmount {
         formatted

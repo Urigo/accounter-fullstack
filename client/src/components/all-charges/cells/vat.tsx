@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
 import {
   AllChargesVatFieldsFragmentDoc,
@@ -11,6 +11,7 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesVatFields on Charge {
+    __typename
     id
     vat {
       raw
@@ -38,10 +39,28 @@ type Props = {
 };
 
 export const Vat = ({ data }: Props): ReactElement => {
-  const { vat, totalAmount, counterparty, owner, validationData } = getFragmentData(
+  const { vat, totalAmount, counterparty, owner, validationData, __typename } = getFragmentData(
     AllChargesVatFieldsFragmentDoc,
     data,
   );
+
+  const shouldHaveVat = useMemo((): boolean => {
+    switch (__typename) {
+      case 'BusinessTripCharge':
+      case 'DividendCharge':
+      case 'ConversionCharge':
+      case 'SalaryCharge':
+      case 'InternalTransferCharge':
+        return false;
+      default:
+        return true;
+    }
+  }, [__typename]);
+
+  if (!shouldHaveVat) {
+    return <td />;
+  }
+
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Vat);
   const isBusiness = owner?.__typename === 'LtdFinancialEntity';
 

@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import {
   AllChargesEntityFieldsFragmentDoc,
@@ -11,6 +11,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesEntityFields on Charge {
+    __typename
     id
     counterparty {
       name
@@ -28,8 +29,26 @@ type Props = {
 
 export const Counterparty = ({ data }: Props): ReactElement => {
   const { get } = useUrlQuery();
-  const { counterparty, validationData } = getFragmentData(AllChargesEntityFieldsFragmentDoc, data);
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);
+  const { counterparty, validationData, __typename } = getFragmentData(
+    AllChargesEntityFieldsFragmentDoc,
+    data,
+  );
+
+  const shouldHaveCounterparty = useMemo((): boolean => {
+    switch (__typename) {
+      case 'BusinessTripCharge':
+      case 'DividendCharge':
+      case 'ConversionCharge':
+      case 'SalaryCharge':
+      case 'InternalTransferCharge':
+        return false;
+      default:
+        return true;
+    }
+  }, [__typename]);
+
+  const isError =
+    shouldHaveCounterparty && validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);
   const { name = 'Missing', id } = counterparty || {};
 
   const encodedFilters = get('chargesFilters');

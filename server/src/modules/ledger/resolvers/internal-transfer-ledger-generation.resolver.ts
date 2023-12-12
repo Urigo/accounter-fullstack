@@ -11,11 +11,13 @@ import {
   FEE_CATEGORY_NAME,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto } from '@shared/types';
 import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
+  getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
   isTransactionsOppositeSign,
+  updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
 
@@ -29,7 +31,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    let ledgerBalance = 0;
+    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
@@ -120,8 +122,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
 
       mainFinancialAccountLedgerEntries.push(ledgerEntry);
-
-      ledgerBalance += amount;
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       dates.add(valueDate.getTime());
       currencies.add(currency);
     }
@@ -178,7 +179,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
         }
 
-        feeFinancialAccountLedgerEntries.push({
+        const ledgerEntry = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -194,22 +195,30 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        });
+        };
+
+        feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       } else {
-        const businessTaxCategory = destinationEntry.debitAccountID1!;
+        const businessTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByBusinessAndOwnerIDsLoader.load({
+            businessId: transactionBusinessId,
+            ownerId: charge.owner_id,
+          });
         if (!businessTaxCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(`Business ID="${transactionBusinessId}" is missing tax category`);
         }
 
-        feeFinancialAccountLedgerEntries.push({
+        const ledgerEntry = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : transactionBusinessId,
+          creditAccountID1: isCreditorCounterparty ? businessTaxCategory : undefined,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? transactionBusinessId : feeTaxCategory,
+          debitAccountID1: isCreditorCounterparty ? undefined : businessTaxCategory,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
@@ -217,17 +226,20 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           isCreditorCounterparty: !isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        });
+        };
 
-        ledgerBalance -= amount;
+        feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(valueDate.getTime());
         currencies.add(currency);
       }
     }
 
+    const { balanceSum } = getLedgerBalanceInfo(ledgerBalance);
+
     const miscLedgerEntries: LedgerProto[] = [];
     // Add ledger completion entries
-    if (Math.abs(ledgerBalance) > 0.005) {
+    if (Math.abs(balanceSum) > 0.005) {
       const hasMultipleDates = dates.size > 1;
       const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
@@ -238,16 +250,16 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
-        const amount = Math.abs(ledgerBalance);
+        const amount = Math.abs(balanceSum);
 
-        const isCreditorCounterparty = ledgerBalance > 0;
+        const isCreditorCounterparty = balanceSum > 0;
 
-        miscLedgerEntries.push({
+        const ledgerEntry = {
           id: destinationEntry.id, // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? exchangeCategory : undefined,
+          creditAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
+          debitAccountID1: isCreditorCounterparty ? exchangeCategory : undefined,
           debitAmount1: undefined,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
@@ -256,15 +268,14 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           valueDate: destinationEntry.valueDate,
           currency: destinationEntry.currency, // NOTE: this field is dummy
           ownerId: destinationEntry.ownerId,
-        });
-      } else {
-        throw new GraphQLError(
-          `Failed to balance: ${
-            hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
-          } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
-        );
+        };
+
+        miscLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       }
     }
+
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
 
     return {
       records: [
@@ -272,6 +283,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         ...feeFinancialAccountLedgerEntries,
         ...miscLedgerEntries,
       ],
+      balance: ledgerBalanceInfo,
     };
   } catch (e) {
     return {

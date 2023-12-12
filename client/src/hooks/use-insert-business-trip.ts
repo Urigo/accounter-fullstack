@@ -18,7 +18,9 @@ import {
 
 type UseInsertBusinessTrip = {
   fetching: boolean;
-  insertBusinessTrip: (variables: InsertBusinessTripMutationVariables) => Promise<InsertBusinessTripMutation['insertBusinessTrip']>;
+  insertBusinessTrip: (
+    variables: InsertBusinessTripMutationVariables,
+  ) => Promise<InsertBusinessTripMutation['insertBusinessTrip']>;
 };
 
 export const useInsertBusinessTrip = (): UseInsertBusinessTrip => {
@@ -29,7 +31,9 @@ export const useInsertBusinessTrip = (): UseInsertBusinessTrip => {
 
   return {
     fetching,
-    insertBusinessTrip: (variables: InsertBusinessTripMutationVariables): Promise<InsertBusinessTripMutation['insertBusinessTrip']> =>
+    insertBusinessTrip: (
+      variables: InsertBusinessTripMutationVariables,
+    ): Promise<InsertBusinessTripMutation['insertBusinessTrip']> =>
       new Promise<InsertBusinessTripMutation['insertBusinessTrip']>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
