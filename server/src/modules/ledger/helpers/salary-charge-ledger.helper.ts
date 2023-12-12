@@ -1,33 +1,38 @@
 import { GraphQLError } from 'graphql';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
-import { getSalaryChargeType } from '@modules/salaries/helpers/salary-charge-type.js';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
 import {
+  COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
+  PENSION_EXPENSES_TAX_CATEGORY_ID,
+  SALARY_EXPENSES_TAX_CATEGORY_ID,
   SOCIAL_SECURITY_BUSINESS_ID,
+  SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
   TAX_DEDUCTIONS_BUSINESS_ID,
+  TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
+  ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
+  ZKUFOT_INCOME_TAX_CATEGORY_ID,
 } from '@shared/constants';
-import { SalaryChargeTypeEnum } from '@shared/enums';
-import type { LedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto } from '@shared/types';
 
 function generateEntryRaw(
-  accountId: string,
+  accountId: CounterAccountProto,
   amount: number,
   month: string,
   transactionDate: Date,
-  salaryType: SalaryChargeTypeEnum,
   ownerId: string,
+  isCreditor: boolean,
 ): LedgerProto {
   return {
-    id: `${accountId}|${salaryType}|${month}`,
+    id: `${accountId}|${month}`,
     invoiceDate: transactionDate,
     valueDate: transactionDate,
     currency: DEFAULT_LOCAL_CURRENCY,
-    debitAccountID1: accountId,
+    ...(isCreditor ? { creditAccountID1: accountId } : { debitAccountID1: accountId }),
     localCurrencyCreditAmount1: amount,
     localCurrencyDebitAmount1: amount,
-    description: `${month} salary (${salaryType}): ${accountId}`,
-    isCreditorCounterparty: true, // TODO: check
+    description: `${month} salary: ${accountId}`,
+    isCreditorCounterparty: false, // TODO: check
     ownerId,
   };
 }
@@ -50,174 +55,219 @@ function getTotalTrainingFund(salaryRecord: IGetSalaryRecordsByChargeIdsResult) 
   return totalTrainingFund;
 }
 
+type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boolean };
+
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
   transactionDate: Date,
-): { entries: LedgerProto[]; balanceDelta: number } {
+): {
+  entries: LedgerProto[];
+  monthlyEntriesProto: MonthlyLedgerProto[];
+  month: string;
+} {
   const chargeId = charge.id;
 
   if (!salaryRecords.length) {
     throw new GraphQLError(`No salary records found for charge ${chargeId}`);
   }
 
-  const salaryType = getSalaryChargeType(salaryRecords, chargeId);
-  if (salaryType === SalaryChargeTypeEnum.unknown) {
-    throw new GraphQLError(`Salary charge id ${chargeId} type is unknown`);
-  }
-
   const entries: LedgerProto[] = [];
-  let balanceDelta = 0;
 
-  function generateEntry(accountId: string, amount: number, month: string) {
-    return generateEntryRaw(accountId, amount, month, transactionDate, salaryType, charge.owner_id);
+  function generateEntry(
+    accountId: string,
+    amount: number,
+    month: string,
+    isCreditor = true,
+    date?: Date,
+  ) {
+    return generateEntryRaw(
+      accountId,
+      amount,
+      month,
+      date ?? transactionDate,
+      charge.owner_id,
+      isCreditor,
+    );
   }
 
-  switch (salaryType) {
-    case SalaryChargeTypeEnum.salary: {
-      for (const salaryRecord of salaryRecords) {
-        if (!salaryRecord.direct_payment_amount) {
-          throw new GraphQLError(
-            `Salary record for ${salaryRecord.month}, employee ${salaryRecord.employee}  is missing amount`,
-          );
-        }
+  const amountPerBusiness: Record<string, number> = {};
+  const taxAmountPerMonth: Record<string, number> = {};
+  let month: string | undefined = undefined;
 
-        entries.push(
-          generateEntry(
-            salaryRecord.employee_id,
-            Number(salaryRecord.direct_payment_amount),
-            salaryRecord.month,
-          ),
-        );
-        balanceDelta += Number(salaryRecord.direct_payment_amount);
-      }
-      break;
+  // expenses
+  let salaryExpensesAmount = 0;
+  let socialSecurityExpensesAmount = 0;
+  let pensionFundExpensesAmount = 0;
+  let compensationProvidentFundExpensesAmount = 0;
+  let trainingFundExpensesAmount = 0;
+  let zkufotAmount = 0;
+
+  for (const salaryRecord of salaryRecords) {
+    // record validations
+    if (!salaryRecord.direct_payment_amount) {
+      throw new GraphQLError(
+        `Salary record for ${salaryRecord.month}, employee ${salaryRecord.employee}  is missing amount`,
+      );
     }
-    case SalaryChargeTypeEnum.funds: {
-      const amountPerBusiness: Record<string, number> = {};
 
-      for (const salaryRecord of salaryRecords) {
-        const totalPension = getTotalPension(salaryRecord);
-        const pensionAccount = salaryRecord.pension_fund;
-        if (totalPension > 0) {
-          if (!pensionAccount) {
-            throw new GraphQLError(`Missing pension account for ${chargeId}`);
-          }
-          amountPerBusiness[pensionAccount] ??= 0;
-          amountPerBusiness[pensionAccount] += totalPension;
-        }
+    month ??= salaryRecord.month;
+    // generate salary entry
+    const salaryDate = new Date(transactionDate);
+    salaryDate.setDate(salaryDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
+    entries.push(
+      generateEntry(
+        salaryRecord.employee_id,
+        Number(salaryRecord.direct_payment_amount),
+        salaryRecord.month,
+        undefined,
+        salaryDate,
+      ),
+    );
 
-        const totalTrainingFund = getTotalTrainingFund(salaryRecord);
-        const trainingFundAccount = salaryRecord.training_fun;
-        if (totalTrainingFund > 0) {
-          if (!trainingFundAccount) {
-            throw new GraphQLError(`Missing training fund account for ${chargeId}`);
-          }
-          amountPerBusiness[trainingFundAccount] ??= 0;
-          amountPerBusiness[trainingFundAccount] += totalTrainingFund;
-        }
+    // salary expenses handling
+    salaryExpensesAmount +=
+      Number(salaryRecord.base_salary ?? '0') +
+      Number(salaryRecord.global_additional_hours ?? '0') +
+      Number(salaryRecord.bonus ?? '0') +
+      Number(salaryRecord.gift ?? '0') +
+      Number(salaryRecord.recovery ?? '0') +
+      Number(salaryRecord.vacation_takeout ?? '0');
+
+    // social security handling
+    const socialSecurityEmployeeAmount = Number(
+      salaryRecord.social_security_amount_employee ?? '0',
+    );
+    const socialSecurityEmployerAmount = Number(
+      salaryRecord.social_security_amount_employer ?? '0',
+    );
+    const HealthPaymentAmount = Number(salaryRecord.health_payment_amount ?? '0');
+    amountPerBusiness[SOCIAL_SECURITY_BUSINESS_ID] ??= 0;
+    amountPerBusiness[SOCIAL_SECURITY_BUSINESS_ID] +=
+      socialSecurityEmployeeAmount + socialSecurityEmployerAmount + HealthPaymentAmount;
+    socialSecurityExpensesAmount += Number(salaryRecord.social_security_amount_employer ?? '0');
+
+    // pension handling
+    const totalPension = getTotalPension(salaryRecord);
+    const pensionAccount = salaryRecord.pension_fund;
+    if (totalPension > 0) {
+      if (!pensionAccount) {
+        throw new GraphQLError(`Missing pension account for ${chargeId}`);
       }
-
-      for (const [accountId, amount] of Object.entries(amountPerBusiness)) {
-        entries.push(generateEntry(accountId, amount, salaryRecords[0].month));
-        balanceDelta += amount;
-      }
-      break;
+      amountPerBusiness[pensionAccount] ??= 0;
+      amountPerBusiness[pensionAccount] += totalPension;
     }
-    case SalaryChargeTypeEnum.pension: {
-      const amountPerBusiness: Record<string, number> = {};
+    pensionFundExpensesAmount += Number(salaryRecord.pension_employer_amount ?? '0');
+    compensationProvidentFundExpensesAmount += Number(
+      salaryRecord.compensations_employer_amount ?? '0',
+    );
 
-      for (const salaryRecord of salaryRecords) {
-        const totalPension = getTotalPension(salaryRecord);
-        const pensionAccount = salaryRecord.pension_fund;
-        if (totalPension > 0) {
-          if (!pensionAccount) {
-            throw new GraphQLError(`Missing pension account for ${chargeId}`);
-          }
-          if (pensionAccount !== charge.business_id) {
-            throw new GraphQLError(
-              `Pension account ${pensionAccount} does not match transaction business id ${charge.business_id}`,
-            );
-          }
-          amountPerBusiness[pensionAccount] ??= 0;
-          amountPerBusiness[pensionAccount] += totalPension;
-        }
+    // training fund handling
+    const totalTrainingFund = getTotalTrainingFund(salaryRecord);
+    const trainingFundAccount = salaryRecord.training_fun;
+    if (totalTrainingFund > 0) {
+      if (!trainingFundAccount) {
+        throw new GraphQLError(`Missing training fund account for ${chargeId}`);
       }
-
-      for (const [accountId, amount] of Object.entries(amountPerBusiness)) {
-        entries.push(generateEntry(accountId, amount, salaryRecords[0].month));
-        balanceDelta += amount;
-      }
-      break;
+      amountPerBusiness[trainingFundAccount] ??= 0;
+      amountPerBusiness[trainingFundAccount] += totalTrainingFund;
     }
-    case SalaryChargeTypeEnum.trainingFund: {
-      const amountPerBusiness: Record<string, number> = {};
+    trainingFundExpensesAmount += Number(salaryRecord.training_fund_employer_amount ?? '0');
 
-      for (const salaryRecord of salaryRecords) {
-        const totalTrainingFund = getTotalTrainingFund(salaryRecord);
-        const trainingFundAccount = salaryRecord.training_fun;
-        if (totalTrainingFund > 0) {
-          if (!trainingFundAccount) {
-            throw new GraphQLError(`Missing training fund account for ${chargeId}`);
-          }
-          if (trainingFundAccount !== charge.business_id) {
-            throw new GraphQLError(
-              `Training fund account ${trainingFundAccount} does not match transaction business id ${charge.business_id}`,
-            );
-          }
-          amountPerBusiness[trainingFundAccount] ??= 0;
-          amountPerBusiness[trainingFundAccount] += totalTrainingFund;
-        }
-      }
+    // tax handling
+    taxAmountPerMonth[salaryRecord.month] ??= 0;
+    taxAmountPerMonth[salaryRecord.month] += Number(salaryRecord.tax_amount ?? '0');
 
-      for (const [accountId, amount] of Object.entries(amountPerBusiness)) {
-        entries.push(generateEntry(accountId, amount, salaryRecords[0].month));
-        balanceDelta += amount;
-      }
-      break;
-    }
-    case SalaryChargeTypeEnum.socialSecurity: {
-      const amountPerMonth: Record<string, number> = {};
-      for (const salaryRecord of salaryRecords) {
-        const socialSecurityEmployeeAmount = Number(
-          salaryRecord.social_security_amount_employee ?? '0',
-        );
-        const socialSecurityEmployerAmount = Number(
-          salaryRecord.social_security_amount_employer ?? '0',
-        );
-        const HealthPaymentAmount = Number(salaryRecord.health_payment_amount ?? '0');
-        amountPerMonth[salaryRecord.month] ??= 0;
-        amountPerMonth[salaryRecord.month] +=
-          socialSecurityEmployeeAmount + socialSecurityEmployerAmount + HealthPaymentAmount;
-      }
+    // zkufot handling
+    zkufotAmount += Number(salaryRecord.zkufot ?? '0');
+  }
 
-      for (const [month, amount] of Object.entries(amountPerMonth)) {
-        if (amount > 0) {
-          entries.push(generateEntry(SOCIAL_SECURITY_BUSINESS_ID, amount, month));
-          balanceDelta += amount;
-        }
-      }
-      break;
-    }
-    case SalaryChargeTypeEnum.incomeTax: {
-      const amountPerMonth: Record<string, number> = {};
-      for (const salaryRecord of salaryRecords) {
-        amountPerMonth[salaryRecord.month] ??= 0;
-        amountPerMonth[salaryRecord.month] += Number(salaryRecord.tax_amount ?? '0');
-      }
+  if (!month) {
+    throw new GraphQLError(`No month found for salary charge ${chargeId}`);
+  }
 
-      for (const [month, amount] of Object.entries(amountPerMonth)) {
-        if (amount > 0) {
-          entries.push(generateEntry(TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
-          balanceDelta += amount;
-        }
-      }
-      break;
+  // generate pension/training funds entries
+  for (const [businessId, amount] of Object.entries(amountPerBusiness)) {
+    if (amount) {
+      entries.push(generateEntry(businessId, amount, month));
     }
   }
+
+  // generate tax entries
+  for (const [month, amount] of Object.entries(taxAmountPerMonth)) {
+    if (amount > 0) {
+      entries.push(generateEntry(TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
+    }
+  }
+
+  const monthlyEntriesProto = getMonthlyExpensesEntriesProto({
+    salaryExpensesAmount,
+    socialSecurityExpensesAmount,
+    pensionFundExpensesAmount,
+    compensationProvidentFundExpensesAmount,
+    trainingFundExpensesAmount,
+    zkufotAmount,
+  });
 
   return {
     entries,
-    balanceDelta,
+    monthlyEntriesProto,
+    month,
   };
+}
+
+export function getMonthlyExpensesEntriesProto({
+  salaryExpensesAmount,
+  socialSecurityExpensesAmount,
+  pensionFundExpensesAmount,
+  compensationProvidentFundExpensesAmount,
+  trainingFundExpensesAmount,
+  zkufotAmount,
+}: {
+  salaryExpensesAmount: number;
+  socialSecurityExpensesAmount: number;
+  pensionFundExpensesAmount: number;
+  compensationProvidentFundExpensesAmount: number;
+  trainingFundExpensesAmount: number;
+  zkufotAmount: number;
+}) {
+  const monthlyEntriesProto: MonthlyLedgerProto[] = [
+    {
+      taxCategoryId: ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
+      amount: zkufotAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: ZKUFOT_INCOME_TAX_CATEGORY_ID,
+      amount: zkufotAmount,
+      isCredit: true,
+    },
+    {
+      taxCategoryId: SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
+      amount: socialSecurityExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: SALARY_EXPENSES_TAX_CATEGORY_ID,
+      amount: salaryExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
+      amount: trainingFundExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: PENSION_EXPENSES_TAX_CATEGORY_ID,
+      amount: pensionFundExpensesAmount,
+      isCredit: false,
+    },
+    {
+      taxCategoryId: COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
+      amount: compensationProvidentFundExpensesAmount,
+      isCredit: false,
+    },
+  ];
+
+  return monthlyEntriesProto;
 }

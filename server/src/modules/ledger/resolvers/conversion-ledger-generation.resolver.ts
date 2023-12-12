@@ -276,7 +276,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     }
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
-  
+
     return {
       records: [
         ...mainFinancialAccountLedgerEntries,

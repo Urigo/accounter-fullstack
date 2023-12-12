@@ -186,7 +186,7 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): ResolversTypes['LedgerBalanceInfo'] & {balanceSum: number} {
+): ResolversTypes['LedgerBalanceInfo'] & { balanceSum: number } {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
@@ -194,15 +194,12 @@ export function getLedgerBalanceInfo(
     if (Math.abs(amount) < 0.005) {
       continue;
     }
-    if (typeof entity === 'string') {
-      console.error(`Business ID="${entity}" is not balanced`);
-      if (!allowedUnbalancedBusinesses.has(entity)) {
-        isBalanced = false;
-        unbalancedEntities.push({
-          entity,
-          balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
-        });
-      }
+    if (typeof entity === 'string' && !allowedUnbalancedBusinesses.has(entity)) {
+      isBalanced = false;
+      unbalancedEntities.push({
+        entity,
+        balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
+      });
     }
     ledgerBalanceSum += amount;
   }
@@ -214,6 +211,6 @@ export function getLedgerBalanceInfo(
   return {
     isBalanced,
     unbalancedEntities,
-    balanceSum: ledgerBalanceSum
+    balanceSum: ledgerBalanceSum,
   };
 }

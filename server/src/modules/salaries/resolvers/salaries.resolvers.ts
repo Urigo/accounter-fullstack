@@ -4,7 +4,6 @@ import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { formatFinancialAmount } from '@shared/helpers';
 import { filterSalaryRecordsByCharge } from '../helpers/filter-salaries-by-charge.js';
 import { getSalaryMonth } from '../helpers/get-month.helper.js';
-import { getSalaryChargeType } from '../helpers/salary-charge-type.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 
@@ -26,12 +25,6 @@ export const salariesResolvers: SalariesModule.Resolvers = {
         .get(SalariesProvider)
         .getSalaryRecordsByMonthLoader.load(month)
         .then(res => filterSalaryRecordsByCharge(DbCharge, res));
-    },
-    type: async (DbCharge, _, { injector }) => {
-      return injector
-        .get(SalariesProvider)
-        .getSalaryRecordsByChargeIdLoader.load(DbCharge.id)
-        .then(res => getSalaryChargeType(res, DbCharge.id));
     },
     employees: async (DbCharge, _, { injector }) => {
       const salaryRecords = await injector
