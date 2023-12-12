@@ -5,7 +5,6 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IDeleteChargeUnbalancedBusinessesParams,
   IDeleteChargeUnbalancedBusinessesQuery,
-  IGetChargeUnbalancedBusinessesByChargeIdsParams,
   IGetChargeUnbalancedBusinessesByChargeIdsQuery,
   IInsertChargeUnbalancedBusinessesParams,
   IInsertChargeUnbalancedBusinessesQuery,
