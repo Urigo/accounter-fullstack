@@ -3,9 +3,9 @@ import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
-import { ResolversTypes } from '@shared/gql-types';
+import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
   if (!first || !second) {
@@ -186,10 +186,14 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): ResolversTypes['LedgerBalanceInfo'] & { balanceSum: number } {
+): {
+  isBalanced: boolean;
+  unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }>;
+  balanceSum: number;
+} {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
-  const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
+  const unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }> = [];
   for (const { amount, entity } of ledgerBalance.values()) {
     if (Math.abs(amount) < 0.005) {
       continue;
