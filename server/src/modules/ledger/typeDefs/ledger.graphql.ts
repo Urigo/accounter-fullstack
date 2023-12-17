@@ -17,6 +17,7 @@ export default gql`
     valueDate: Date!
     description: String
     reference1: String
+    reference2: String
   }
 
   extend interface Charge {

@@ -332,6 +332,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
+          reference1: transactionEntry.reference1,
+          reference2: transactionEntry.reference2,
         };
 
         miscLedgerEntries.push(ledgerEntry);

@@ -10,14 +10,15 @@
       "old-accounter",
       "etherscan-scrapper",
       "kraken-scrapper",
-      "etana-scrapper"
+      "etana-scrapper",
+      "report-matcher"
     ]
   },
   "engines": {
     "node": "21.3.0"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
+    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn report-matcher:build\"",
     "client:build": "yarn --cwd client build",
     "client:dev": "yarn --cwd client dev",
     "codegen": "graphql-codegen --config codegen.yml",
@@ -32,9 +33,11 @@
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
-    "precodegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/",
+    "precodegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/ report-matcher/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
+    "report-matcher:build": "yarn --cwd report-matcher build",
+    "report-matcher:dev": "yarn --cwd report-matcher dev",
     "scrape": "yarn --cwd old-accounter scrape",
     "server:build": "yarn --cwd server build",
     "server:dev": "yarn --cwd server dev",

@@ -3,9 +3,9 @@ import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
-import { ResolversTypes } from '@shared/gql-types';
+import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
   if (!first || !second) {
@@ -128,7 +128,8 @@ export function generatePartialLedgerEntry(
     debitAmount1: absForeignAmount,
     localCurrencyDebitAmount1: absAmount,
     description: transaction.source_description ?? undefined,
-    reference1: transaction.source_id,
+    reference1: transaction.source_reference ?? undefined,
+    reference2: transaction.id,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -186,10 +187,14 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): ResolversTypes['LedgerBalanceInfo'] & { balanceSum: number } {
+): {
+  isBalanced: boolean;
+  unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }>;
+  balanceSum: number;
+} {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
-  const unbalancedEntities: Array<ResolversTypes['LedgerBalanceUnbalancedEntities']> = [];
+  const unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }> = [];
   for (const { amount, entity } of ledgerBalance.values()) {
     if (Math.abs(amount) < 0.005) {
       continue;
