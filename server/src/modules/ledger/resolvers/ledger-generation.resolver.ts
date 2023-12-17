@@ -13,11 +13,13 @@ import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/trans
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
+  FEE_CATEGORY_NAME,
   VAT_TAX_CATEGORY_NAME,
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
@@ -209,14 +211,16 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from transactions
     let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: StrictLedgerProto[] = [];
     if (charge.transactions_count) {
       // Get all transactions
       transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(chargeId);
+      const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
       // for each transaction, create a ledger record
-      for (const transaction of transactions) {
+      for (const transaction of mainTransactions) {
         const { currency, valueDate, transactionBusinessId } =
           validateTransactionBasicVariables(transaction);
 
@@ -272,6 +276,83 @@ export const generateLedgerRecords: ResolverFn<
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(valueDate.getTime());
         currencies.add(currency);
+      }
+
+      // create a ledger record for fee transactions
+      for (const transaction of feeTransactions) {
+        if (!transaction.is_fee) {
+          continue;
+        }
+
+        const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+        const { currency, valueDate, transactionBusinessId } =
+          validateTransactionBasicVariables(transaction);
+
+        let amount = Number(transaction.amount);
+        let foreignAmount: number | undefined = undefined;
+
+        if (currency !== DEFAULT_LOCAL_CURRENCY) {
+          // get exchange rate for currency
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+
+          foreignAmount = amount;
+          // calculate amounts in ILS
+          amount = exchangeRate * amount;
+        }
+
+        const feeTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+        if (!feeTaxCategory) {
+          throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+        }
+
+        const isCreditorCounterparty = amount > 0;
+
+        let mainAccount: CounterAccountProto = transactionBusinessId;
+
+        if (isSupplementalFee) {
+          const account = await injector
+            .get(FinancialAccountsProvider)
+            .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+          if (!account) {
+            throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+          }
+          const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+          const businessTaxCategory = await injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByNamesLoader.load(taxCategoryName);
+          if (!businessTaxCategory) {
+            throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+          }
+
+          mainAccount = businessTaxCategory;
+        }
+
+        const ledgerEntry: StrictLedgerProto = {
+          id: transaction.id,
+          invoiceDate: transaction.event_date,
+          valueDate,
+          currency,
+          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
+          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description: transaction.source_description ?? undefined,
+          reference1: transaction.source_id,
+          isCreditorCounterparty: isSupplementalFee
+            ? isCreditorCounterparty
+            : !isCreditorCounterparty,
+          ownerId: charge.owner_id,
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        };
+
+        feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       }
     }
 
@@ -343,7 +424,12 @@ export const generateLedgerRecords: ResolverFn<
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
     return {
-      records: [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries],
+      records: [
+        ...accountingLedgerEntries,
+        ...financialAccountLedgerEntries,
+        ...feeFinancialAccountLedgerEntries,
+        ...miscLedgerEntries,
+      ],
       ledgerBalanceInfo,
     };
   } catch (e) {
