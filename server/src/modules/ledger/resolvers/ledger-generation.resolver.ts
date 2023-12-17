@@ -13,13 +13,17 @@ import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/trans
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
+  FEE_CATEGORY_NAME,
   VAT_TAX_CATEGORY_NAME,
 } from '@shared/constants';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
+  getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
+  updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
 
@@ -33,7 +37,7 @@ export const generateLedgerRecords: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    let ledgerBalance = 0;
+    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
@@ -174,7 +178,7 @@ export const generateLedgerRecords: ResolverFn<
         // const reference2: string | null = ''; // TODO: rethink
         // const movementType: string | null = ''; // TODO: rethink
 
-        accountingLedgerEntries.push({
+        const ledgerEntry = {
           id: document.id,
           invoiceDate: document.date,
           valueDate: document.date,
@@ -195,14 +199,10 @@ export const generateLedgerRecords: ResolverFn<
           reference1: document.serial_number ?? undefined,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
-        });
+        };
 
-        if (isCreditorCounterparty) {
-          ledgerBalance += Number(totalAmount.toFixed(2));
-        } else {
-          ledgerBalance -= Number(totalAmount.toFixed(2));
-        }
-
+        accountingLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(document.date.getTime());
         currencies.add(document.currency_code);
       }
@@ -211,14 +211,16 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from transactions
     let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: StrictLedgerProto[] = [];
     if (charge.transactions_count) {
       // Get all transactions
       transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(chargeId);
+      const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
       // for each transaction, create a ledger record
-      for (const transaction of transactions) {
+      for (const transaction of mainTransactions) {
         const { currency, valueDate, transactionBusinessId } =
           validateTransactionBasicVariables(transaction);
 
@@ -252,7 +254,7 @@ export const generateLedgerRecords: ResolverFn<
 
         const isCreditorCounterparty = amount > 0;
 
-        financialAccountLedgerEntries.push({
+        const ledgerEntry = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -268,36 +270,120 @@ export const generateLedgerRecords: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        });
+        };
 
-        ledgerBalance += Number(amount.toFixed(2)); // TODO: remove rounding, see how it goes
+        financialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(valueDate.getTime());
         currencies.add(currency);
+      }
+
+      // create a ledger record for fee transactions
+      for (const transaction of feeTransactions) {
+        if (!transaction.is_fee) {
+          continue;
+        }
+
+        const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+        const { currency, valueDate, transactionBusinessId } =
+          validateTransactionBasicVariables(transaction);
+
+        let amount = Number(transaction.amount);
+        let foreignAmount: number | undefined = undefined;
+
+        if (currency !== DEFAULT_LOCAL_CURRENCY) {
+          // get exchange rate for currency
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+
+          foreignAmount = amount;
+          // calculate amounts in ILS
+          amount = exchangeRate * amount;
+        }
+
+        const feeTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+        if (!feeTaxCategory) {
+          throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+        }
+
+        const isCreditorCounterparty = amount > 0;
+
+        let mainAccount: CounterAccountProto = transactionBusinessId;
+
+        if (isSupplementalFee) {
+          const account = await injector
+            .get(FinancialAccountsProvider)
+            .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+          if (!account) {
+            throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+          }
+          const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+          const businessTaxCategory = await injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByNamesLoader.load(taxCategoryName);
+          if (!businessTaxCategory) {
+            throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+          }
+
+          mainAccount = businessTaxCategory;
+        }
+
+        const ledgerEntry: StrictLedgerProto = {
+          id: transaction.id,
+          invoiceDate: transaction.event_date,
+          valueDate,
+          currency,
+          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
+          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description: transaction.source_description ?? undefined,
+          reference1: transaction.source_id,
+          isCreditorCounterparty: isSupplementalFee
+            ? isCreditorCounterparty
+            : !isCreditorCounterparty,
+          ownerId: charge.owner_id,
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        };
+
+        feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       }
     }
 
     const miscLedgerEntries: StrictLedgerProto[] = [];
-    const maxExpectedBalance =
-      0.005 * Math.max(financialAccountLedgerEntries.length, accountingLedgerEntries.length);
     // Add ledger completion entries
-    if (Math.abs(ledgerBalance) > maxExpectedBalance) {
-      if (!accountingLedgerEntries.length) {
-        const counterpartyId = financialAccountLedgerEntries[0].isCreditorCounterparty
-          ? financialAccountLedgerEntries[0].creditAccountID1
-          : financialAccountLedgerEntries[0].debitAccountID1;
+    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(ledgerBalance);
+    if (Math.abs(balanceSum) > 0.005) {
+      throw new GraphQLError(
+        `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are unbalanced`,
+      );
+    } else if (!isBalanced) {
+      // check if business doesn't require documents
+      if (!accountingLedgerEntries.length && charge.business_id) {
         const business = await injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(
-            typeof counterpartyId === 'string' ? counterpartyId : counterpartyId.id,
-          );
+          .getFinancialEntityByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
-          return { records: financialAccountLedgerEntries };
+          return {
+            records: financialAccountLedgerEntries,
+            ledgerBalanceInfo: { balanceSum, isBalanced, unbalancedEntities },
+          };
         }
       }
 
+      // check if exchange rate record is needed
       const hasMultipleDates = dates.size > 1;
-      const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
-      if (hasMultipleDates && hasForeignCurrency) {
+      const foreignCurrencyCount =
+        currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
+      const mightRequireExchangeRateRecord =
+        (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
+      if (mightRequireExchangeRateRecord && unbalancedEntities.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
         const documentEntry = accountingLedgerEntries[0];
 
@@ -308,21 +394,15 @@ export const generateLedgerRecords: ResolverFn<
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
-        const amount = Math.abs(ledgerBalance);
-        const counterparty =
-          typeof transactionEntry.creditAccountID1 === 'string'
-            ? transactionEntry.creditAccountID1
-            : transactionEntry.debitAccountID1;
+        const { entity, balance } = unbalancedEntities[0];
+        const amount = Math.abs(balance.raw);
+        const isCreditorCounterparty = balance.raw < 0;
 
-        const isCreditorCounterparty = ledgerBalance < 0;
-
-        miscLedgerEntries.push({
+        const ledgerEntry = {
           id: transactionEntry.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? counterparty : exchangeCategory,
-          creditAmount1: undefined,
+          creditAccountID1: isCreditorCounterparty ? entity : exchangeCategory,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? exchangeCategory : counterparty,
-          debitAmount1: undefined,
+          debitAccountID1: isCreditorCounterparty ? exchangeCategory : entity,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
@@ -330,20 +410,27 @@ export const generateLedgerRecords: ResolverFn<
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
-        });
+        };
+        miscLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       } else {
         throw new GraphQLError(
           `Failed to balance: ${
             hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
-          } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
+          } and ${foreignCurrencyCount ? 'currencies are foreign' : 'currencies are local'}`,
         );
       }
     }
 
-    // TODO: validate counterparty is consistent
-
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
     return {
-      records: [...accountingLedgerEntries, ...financialAccountLedgerEntries, ...miscLedgerEntries],
+      records: [
+        ...accountingLedgerEntries,
+        ...financialAccountLedgerEntries,
+        ...feeFinancialAccountLedgerEntries,
+        ...miscLedgerEntries,
+      ],
+      ledgerBalanceInfo,
     };
   } catch (e) {
     return {

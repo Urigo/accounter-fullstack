@@ -102,6 +102,10 @@ export const AllChargesRow = ({
     }
   }, [newData]);
 
+  useEffect(() => {
+    setOpened(isAllOpened);
+  }, [isAllOpened]);
+
   const hasExtendedInfo = !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount);
 
   return (
@@ -150,17 +154,13 @@ export const AllChargesRow = ({
                 }}
                 size={30}
               >
-                {isAllOpened || opened ? (
-                  <LayoutNavbarCollapse size={20} />
-                ) : (
-                  <LayoutNavbarExpand size={20} />
-                )}
+                {opened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
               </ActionIcon>
             )}
           </div>
         </td>
       </tr>
-      {hasExtendedInfo && (isAllOpened || opened) && (
+      {hasExtendedInfo && opened && (
         <tr>
           <td colSpan={12}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
