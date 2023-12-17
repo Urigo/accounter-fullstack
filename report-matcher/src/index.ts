@@ -3,7 +3,7 @@ import { validateMatches } from 'match-validation.js';
 import { matchesHandler } from 'matching-utils/index.js';
 import { AccountingMovementsMap } from 'report-handler/accounting-movements.js';
 import { logMatchSuccessRate } from 'utils/logger.js';
-import { updateChargesAccountantApproval } from 'utils/server-requests.js';
+// import { updateChargesAccountantApproval } from 'utils/server-requests.js';
 import { ReportHandler } from './report-handler/report-handler.js';
 
 function getReportAccountingMovements(

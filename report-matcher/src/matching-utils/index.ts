@@ -125,11 +125,16 @@ function getAllRelevantMovementsForSubLedger(
   accountingMovementsHandler: AccountingMovementsMap,
 ): Array<AccountingMovement> {
   const allRelevantMovements = new Map<number, AccountingMovement>();
-
-  let accountNames = accountsDict.get(subLedger.account.name);
-  if (!accountNames) {
-    console.warn(`Could not find account ${subLedger.account.name} in accounts dict`);
-    accountNames = [];
+  
+  let accountNames: string[] | undefined = [];
+  if (subLedger.account) {
+    accountNames = accountsDict.get(subLedger.account.name);
+    if (!accountNames) {
+      console.warn(`Could not find account ${subLedger.account.name} in accounts dict`);
+      accountNames = [];
+    }
+  } else {
+    console.warn(`Could not find account ${subLedger.id} in accounts dict`);
   }
 
   const movements = [
@@ -166,7 +171,7 @@ function strictestMatch(subLedger: SubLedger, movement: AccountingMovement) {
     movement.foreignAmount === subLedger.amount ||
     (movement.foreignAmount === 0 && subLedger.amount === null);
   const sidesMatch = subLedger.isCredit ? movement.side === 'credit' : movement.side === 'debit';
-  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account.name);
+  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account?.name);
   const valueDatesMatch = movement.valueDate === format(new Date(subLedger.valueDate), 'yyyyMMdd');
   const invoiceDatesMatch = movement.date === format(new Date(subLedger.invoiceDate), 'yyyyMMdd');
 
@@ -193,7 +198,7 @@ function secondaryMatch(subLedger: SubLedger, movement: AccountingMovement) {
     movement.foreignAmount === subLedger.amount ||
     (movement.foreignAmount === 0 && subLedger.amount === null);
   const sidesMatch = subLedger.isCredit ? movement.side === 'credit' : movement.side === 'debit';
-  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account.name);
+  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account?.name);
   const valueDatesMatch = movement.valueDate === format(new Date(subLedger.valueDate), 'yyyyMMdd');
   const invoiceDatesMatch = movement.date === format(new Date(subLedger.invoiceDate), 'yyyyMMdd');
 
@@ -211,7 +216,7 @@ function matchIgnoringLocalAmounts(subLedger: SubLedger, movement: AccountingMov
     movement.foreignAmount === subLedger.amount ||
     (movement.foreignAmount === 0 && subLedger.amount === null);
   const sidesMatch = subLedger.isCredit ? movement.side === 'credit' : movement.side === 'debit';
-  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account.name);
+  const accountsMatch = checkAccountsMatch(movement.accountInMovement, subLedger.account?.name);
   const valueDatesMatch = movement.valueDate === format(new Date(subLedger.valueDate), 'yyyyMMdd');
   const invoiceDatesMatch = movement.date === format(new Date(subLedger.invoiceDate), 'yyyyMMdd');
 

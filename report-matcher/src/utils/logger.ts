@@ -32,7 +32,7 @@ function lineGenerator(header: string, firstVal: string, secondVal: unknown): st
 
 export function logMatch(movement: AccountingMovement, subLedger: SubLedger) {
   const linesVariables: Array<[string, string, unknown]> = [
-    ['Account:', movement.accountInMovement, subLedger.account.name],
+    ['Account:', movement.accountInMovement, subLedger.account?.name],
     ['Value date:', movement.valueDate, format(new Date(subLedger.valueDate), 'yyyyMMdd')],
     ['Date:', movement.date, format(new Date(subLedger.invoiceDate), 'yyyyMMdd')],
     ['Local amount:', movement.amount.toFixed(2), subLedger.localCurrencyAmount?.toFixed(2)],
