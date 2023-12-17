@@ -18,14 +18,13 @@ async function doRequest<T, U>(document: TypedDocumentNode<T, U>, variables: U) 
 /* GraphQL */ `
 mutation updateChargeAccountantApproval($chargeId: ID!, $fields: UpdateChargeInput!) {
     updateCharge(chargeId: $chargeId, fields: $fields) {
-        ... on CommonCharge {
+        ... on UpdateChargeSuccessfulResult {
+          charge {
             id
+          }
         }
         ... on CommonError {
             message
-        }
-        ... on ConversionCharge {
-            id
         }
     }
 }`;
