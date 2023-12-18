@@ -26,6 +26,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
+import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 
 export const generateLedgerRecords: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -211,7 +212,7 @@ export const generateLedgerRecords: ResolverFn<
     // generate ledger from transactions
     let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
-    const feeFinancialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     if (charge.transactions_count) {
       // Get all transactions
       transactions = await injector
@@ -313,6 +314,24 @@ export const generateLedgerRecords: ResolverFn<
 
         let mainAccount: CounterAccountProto = transactionBusinessId;
 
+        const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
+          id: transaction.id,
+          invoiceDate: transaction.event_date,
+          valueDate,
+          currency,
+          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description: transaction.source_description ?? undefined,
+          reference1: transaction.source_id,
+          isCreditorCounterparty: isSupplementalFee
+            ? isCreditorCounterparty
+            : !isCreditorCounterparty,
+          ownerId: charge.owner_id,
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        };
+
         if (isSupplementalFee) {
           const account = await injector
             .get(FinancialAccountsProvider)
@@ -329,26 +348,23 @@ export const generateLedgerRecords: ResolverFn<
           }
 
           mainAccount = businessTaxCategory;
+        } else {
+          const mainBusiness = charge.business_id ?? undefined;
+
+          const ledgerEntry: LedgerProto = {
+            ...partialLedgerEntry,
+            creditAccountID1: isCreditorCounterparty ? mainAccount : mainBusiness,
+            debitAccountID1: isCreditorCounterparty ? mainBusiness : mainAccount,
+          };
+  
+          feeFinancialAccountLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         }
 
         const ledgerEntry: StrictLedgerProto = {
-          id: transaction.id,
-          invoiceDate: transaction.event_date,
-          valueDate,
-          currency,
+          ...partialLedgerEntry,
           creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
-          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyCreditAmount1: Math.abs(amount),
           debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
-          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyDebitAmount1: Math.abs(amount),
-          description: transaction.source_description ?? undefined,
-          reference1: transaction.source_id,
-          isCreditorCounterparty: isSupplementalFee
-            ? isCreditorCounterparty
-            : !isCreditorCounterparty,
-          ownerId: charge.owner_id,
-          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
         };
 
         feeFinancialAccountLedgerEntries.push(ledgerEntry);
@@ -356,9 +372,16 @@ export const generateLedgerRecords: ResolverFn<
       }
     }
 
+    const unbalancedBusinesses = await injector
+      .get(UnbalancedBusinessesProvider)
+      .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
+    const allowedUnbalancedBusinesses = new Set(
+      unbalancedBusinesses.map(({ business_id }) => business_id),
+    );
+
     const miscLedgerEntries: StrictLedgerProto[] = [];
     // Add ledger completion entries
-    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(ledgerBalance);
+    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
     if (Math.abs(balanceSum) > 0.005) {
       throw new GraphQLError(
         `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are unbalanced`,
@@ -422,7 +445,7 @@ export const generateLedgerRecords: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
+    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
     return {
       records: [
         ...accountingLedgerEntries,
