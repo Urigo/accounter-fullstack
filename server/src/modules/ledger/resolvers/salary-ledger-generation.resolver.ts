@@ -11,6 +11,7 @@ import {
   BATCHED_PENSION_BUSINESS_ID,
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
+  FEE_CATEGORY_NAME,
   SALARY_BATCHED_BUSINESSES,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -21,11 +22,13 @@ import {
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
   updateLedgerBalanceByEntry,
+  validateTransactionBasicVariables,
   validateTransactionRequiredVariables,
 } from '../helpers/utils.helper.js';
 import { SalariesLedgerProvider } from '../providers/salaries-ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecords } from './ledger-generation.resolver.js';
+import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 
 export const generateLedgerRecordsForSalary: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -120,11 +123,12 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       dates.add(ledgerEntry.valueDate.getTime());
     }
 
-    // generate ledger from transactions
+    const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
+    // generate ledger from main transactions
     const batchedLedgerEntries: LedgerProto[] = [];
 
     const transactionEntriesMaterials = await Promise.all(
-      transactions.map(async preValidatedTransaction => {
+      mainTransactions.map(async preValidatedTransaction => {
         const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
 
         // preparations for core ledger entries
@@ -297,6 +301,88 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       currencies.add(transaction.currency);
     }
 
+    // create a ledger record for fee transactions
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    for (const transaction of feeTransactions) {
+      if (!transaction.is_fee) {
+        continue;
+      }
+
+      const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+      const { currency, valueDate, transactionBusinessId } =
+        validateTransactionBasicVariables(transaction);
+
+      let amount = Number(transaction.amount);
+      let foreignAmount: number | undefined = undefined;
+
+      if (currency !== DEFAULT_LOCAL_CURRENCY) {
+        // get exchange rate for currency
+        const exchangeRate = await injector
+          .get(ExchangeProvider)
+          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+
+        foreignAmount = amount;
+        // calculate amounts in ILS
+        amount = exchangeRate * amount;
+      }
+
+      const feeTaxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+      if (!feeTaxCategory) {
+        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+      }
+
+      const isCreditorCounterparty = amount > 0;
+
+      let mainAccount: CounterAccountProto = transactionBusinessId;
+
+      const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
+        id: transaction.id,
+        invoiceDate: transaction.event_date,
+        valueDate,
+        currency,
+        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyCreditAmount1: Math.abs(amount),
+        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyDebitAmount1: Math.abs(amount),
+        description: transaction.source_description ?? undefined,
+        reference1: transaction.source_id,
+        isCreditorCounterparty: isSupplementalFee
+          ? isCreditorCounterparty
+          : !isCreditorCounterparty,
+        ownerId: charge.owner_id,
+        currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+      };
+
+      if (isSupplementalFee) {
+        const account = await injector
+          .get(FinancialAccountsProvider)
+          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+        if (!account) {
+          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+        }
+        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+        const businessTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(taxCategoryName);
+        if (!businessTaxCategory) {
+          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+        }
+
+        mainAccount = businessTaxCategory;
+      }
+
+      const ledgerEntry: StrictLedgerProto = {
+        ...partialLedgerEntry,
+        creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
+        debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+      };
+
+      feeFinancialAccountLedgerEntries.push(ledgerEntry);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+    }
+
     const tempLedgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
 
     const miscLedgerEntries: LedgerProto[] = [];
@@ -355,6 +441,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         ...accountingLedgerEntries,
         ...financialAccountLedgerEntries,
         ...batchedLedgerEntries,
+        ...feeFinancialAccountLedgerEntries,
         ...miscLedgerEntries,
       ],
       balance: ledgerBalanceInfo,
