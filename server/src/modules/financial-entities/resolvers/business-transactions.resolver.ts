@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { generateLedgerRecords } from '@modules/ledger/resolvers/ledger-generation.resolver.js';
+import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-generation-by-charge.helper.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers, ResolverTypeWrapper } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -130,7 +130,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => generateLedgerRecords(charge, {}, { injector }, info)),
+          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
         );
         const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
         ledgerRecordSets.map((ledgerRecordSet, i) => {
@@ -242,7 +242,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => generateLedgerRecords(charge, {}, { injector }, info)),
+          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
         );
         const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
         ledgerRecordSets.map((ledgerRecordSet, i) => {

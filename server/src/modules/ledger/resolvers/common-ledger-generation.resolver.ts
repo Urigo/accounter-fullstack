@@ -28,7 +28,7 @@ import {
 } from '../helpers/utils.helper.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 
-export const generateLedgerRecords: ResolverFn<
+export const generateLedgerRecordsForCommonCharge: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   { injector: Injector },
@@ -314,23 +314,24 @@ export const generateLedgerRecords: ResolverFn<
 
         let mainAccount: CounterAccountProto = transactionBusinessId;
 
-        const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
-          id: transaction.id,
-          invoiceDate: transaction.event_date,
-          valueDate,
-          currency,
-          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyCreditAmount1: Math.abs(amount),
-          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyDebitAmount1: Math.abs(amount),
-          description: transaction.source_description ?? undefined,
-          reference1: transaction.source_id,
-          isCreditorCounterparty: isSupplementalFee
-            ? isCreditorCounterparty
-            : !isCreditorCounterparty,
-          ownerId: charge.owner_id,
-          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        };
+        const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> =
+          {
+            id: transaction.id,
+            invoiceDate: transaction.event_date,
+            valueDate,
+            currency,
+            creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+            localCurrencyCreditAmount1: Math.abs(amount),
+            debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+            localCurrencyDebitAmount1: Math.abs(amount),
+            description: transaction.source_description ?? undefined,
+            reference1: transaction.source_id,
+            isCreditorCounterparty: isSupplementalFee
+              ? isCreditorCounterparty
+              : !isCreditorCounterparty,
+            ownerId: charge.owner_id,
+            currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          };
 
         if (isSupplementalFee) {
           const account = await injector
@@ -356,7 +357,7 @@ export const generateLedgerRecords: ResolverFn<
             creditAccountID1: isCreditorCounterparty ? mainAccount : mainBusiness,
             debitAccountID1: isCreditorCounterparty ? mainBusiness : mainAccount,
           };
-  
+
           feeFinancialAccountLedgerEntries.push(ledgerEntry);
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         }
@@ -397,10 +398,7 @@ export const generateLedgerRecords: ResolverFn<
           .getFinancialEntityByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
           return {
-            records: [
-              ...financialAccountLedgerEntries,
-              ...feeFinancialAccountLedgerEntries,
-            ],
+            records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
             ledgerBalanceInfo: tempLedgerBalanceInfo,
           };
         }

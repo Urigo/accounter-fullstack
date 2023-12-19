@@ -16,6 +16,7 @@ import {
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import { generateEntriesFromSalaryRecords } from '../helpers/salary-charge-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
@@ -27,8 +28,7 @@ import {
 } from '../helpers/utils.helper.js';
 import { SalariesLedgerProvider } from '../providers/salaries-ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
-import { generateLedgerRecords } from './ledger-generation.resolver.js';
-import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
+import { generateLedgerRecordsForCommonCharge } from './common-ledger-generation.resolver.js';
 
 export const generateLedgerRecordsForSalary: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -38,7 +38,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 > = async (charge, _args, { injector }, _info) => {
   if (charge.business_array?.length === 1) {
     // for one business, use the default ledger generation
-    return generateLedgerRecords(charge, _args, { injector }, _info);
+    return generateLedgerRecordsForCommonCharge(charge, _args, { injector }, _info);
   }
   const chargeId = charge.id;
 
