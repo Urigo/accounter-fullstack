@@ -369,6 +369,8 @@ export const generateLedgerRecords: ResolverFn<
 
         feeFinancialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        dates.add(ledgerEntry.valueDate.getTime());
+        currencies.add(ledgerEntry.currency);
       }
     }
 
@@ -381,7 +383,8 @@ export const generateLedgerRecords: ResolverFn<
 
     const miscLedgerEntries: StrictLedgerProto[] = [];
     // Add ledger completion entries
-    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
+    const tempLedgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
+    const { balanceSum, isBalanced, unbalancedEntities } = tempLedgerBalanceInfo;
     if (Math.abs(balanceSum) > 0.005) {
       throw new GraphQLError(
         `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are unbalanced`,
@@ -394,8 +397,11 @@ export const generateLedgerRecords: ResolverFn<
           .getFinancialEntityByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
           return {
-            records: financialAccountLedgerEntries,
-            ledgerBalanceInfo: { balanceSum, isBalanced, unbalancedEntities },
+            records: [
+              ...financialAccountLedgerEntries,
+              ...feeFinancialAccountLedgerEntries,
+            ],
+            ledgerBalanceInfo: tempLedgerBalanceInfo,
           };
         }
       }
