@@ -2,7 +2,7 @@ import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Select } from '@mantine/core';
+import { Loader, Select, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
@@ -53,6 +53,7 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
       }
       eventDate
       effectiveDate
+      isFee
     }
   }
 `;
@@ -344,6 +345,14 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                       date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))
                     }
                   />
+                )}
+              />
+              <Controller
+                name="isFee"
+                control={transactionControl}
+                defaultValue={transaction.isFee}
+                render={({ field: { value, ...field } }): ReactElement => (
+                  <Switch {...field} checked={value === true} label="Is Fee" />
                 )}
               />
             </SimpleGrid>

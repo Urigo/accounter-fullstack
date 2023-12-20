@@ -27,6 +27,9 @@ import { TransactionsTable } from './transactions/transactions-table';
           records {
             id
           }
+          balance {
+            isBalanced
+          }
         }
       }
       metadata {

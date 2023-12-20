@@ -47,6 +47,7 @@ export const INTERNAL_WALLETS_IDS = [
   'f2ae3379-b970-45c9-a998-aced20c25b31', // etherscan
   '4ea86b9b-1c8f-46de-b25e-532f8e34001c', // etana
   '8fa16264-de32-4592-bffb-64a1914318ad', // poalim
+  '96dba127-90f4-4407-ae89-5a53afa42ca3', // isracard
 ];
 
 export const DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID = '8f347f1f-293d-4a88-889a-8043b91f34d5'; // Dividend Withholding Tax // TODO: replace with context variable

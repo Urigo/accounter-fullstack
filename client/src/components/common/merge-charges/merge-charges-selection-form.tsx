@@ -133,6 +133,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
       chargeIdsToMerge: distinctChargeIDs.filter(id => id !== mainCharge.id),
       fields,
     });
+    resetMerge();
     return onDone();
   }, [
     mainCharge,
