@@ -9,7 +9,7 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { currency, IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import type { currency } from '@modules/transactions/types.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
@@ -43,20 +43,39 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    // generate ledger from documents
+    const shouldFetchDocuments = Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0;
+    const shouldFetchTransactions = !!charge.transactions_count;
+
+    const documentsTaxCategoryPromise = shouldFetchDocuments ? ((charge.tax_category_id
+      ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
+      : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id))) : undefined;
+
+    const documentsPromise = shouldFetchDocuments ? injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId) : [];
+
+    const transactionsPromise = shouldFetchTransactions ? injector
+      .get(TransactionsProvider)
+      .getTransactionsByChargeIDLoader.load(chargeId) : [];
+    
+    const unbalancedBusinessesPromise = await injector
+      .get(UnbalancedBusinessesProvider)
+      .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
+
+    const [documentsTaxCategory, documents, transactions, unbalancedBusinesses] = await Promise.all([documentsTaxCategoryPromise, documentsPromise, transactionsPromise, unbalancedBusinessesPromise]);
+
+    const entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
-    if (Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0) {
-      const counterpartyTaxCategory = await (charge.tax_category_id
-        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
-        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id));
-      if (!counterpartyTaxCategory) {
+    const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+
+    // generate ledger from documents
+    if (shouldFetchDocuments) {
+      if (!documentsTaxCategory) {
         throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
       }
 
       // Get all relevant documents for charge
-      const documents = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(chargeId);
       const relevantDocuments = documents.filter(d =>
         ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
       );
@@ -72,7 +91,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
 
       // for each invoice - generate accounting ledger entry
-      for (const document of relevantDocuments) {
+      const documentsEntriesPromises = relevantDocuments.map(async document => {
         if (!document.date) {
           throw new GraphQLError(`Document ID="${document.id}" is missing the date`);
         }
@@ -94,8 +113,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           totalAmount = Math.abs(totalAmount);
         }
 
-        const debitAccountID1 = isCreditorCounterparty ? counterpartyTaxCategory : counterpartyId;
-        const creditAccountID1 = isCreditorCounterparty ? counterpartyId : counterpartyTaxCategory;
+        const debitAccountID1 = isCreditorCounterparty ? documentsTaxCategory : counterpartyId;
+        const creditAccountID1 = isCreditorCounterparty ? counterpartyId : documentsTaxCategory;
         let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
         let debitAccountID2: IGetAllTaxCategoriesResult | null = null;
 
@@ -206,22 +225,17 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(document.date.getTime());
         currencies.add(document.currency_code);
-      }
+      })
+
+      entriesPromises.push(...documentsEntriesPromises);
     }
 
     // generate ledger from transactions
-    let transactions: Array<IGetTransactionsByChargeIdsResult> = [];
-    const financialAccountLedgerEntries: StrictLedgerProto[] = [];
-    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
-    if (charge.transactions_count) {
-      // Get all transactions
-      transactions = await injector
-        .get(TransactionsProvider)
-        .getTransactionsByChargeIDLoader.load(chargeId);
+    if (shouldFetchTransactions) {
       const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
       // for each transaction, create a ledger record
-      for (const transaction of mainTransactions) {
+      const mainTransactionsPromises = mainTransactions.map(async transaction => {
         const { currency, valueDate, transactionBusinessId } =
           validateTransactionBasicVariables(transaction);
 
@@ -277,12 +291,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(valueDate.getTime());
         currencies.add(currency);
-      }
+      });
 
       // create a ledger record for fee transactions
-      for (const transaction of feeTransactions) {
+      const feeTransactionsPromises = feeTransactions.map(async transaction => {
         if (!transaction.is_fee) {
-          continue;
+          return;
         }
 
         const isSupplementalFee = isSupplementalFeeTransaction(transaction);
@@ -372,12 +386,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
-      }
+      });
+
+      entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
     }
 
-    const unbalancedBusinesses = await injector
-      .get(UnbalancedBusinessesProvider)
-      .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
+    await Promise.all(entriesPromises);
+
     const allowedUnbalancedBusinesses = new Set(
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
@@ -399,7 +414,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         if (business?.no_invoices_required) {
           return {
             records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
-            ledgerBalanceInfo: tempLedgerBalanceInfo,
+            balance: tempLedgerBalanceInfo,
           };
         }
       }
@@ -457,7 +472,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         ...feeFinancialAccountLedgerEntries,
         ...miscLedgerEntries,
       ],
-      ledgerBalanceInfo,
+      balance: ledgerBalanceInfo,
     };
   } catch (e) {
     return {
