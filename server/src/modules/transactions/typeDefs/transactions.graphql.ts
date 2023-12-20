@@ -62,6 +62,8 @@ export default gql`
     createdOn: Date!
     " when the transaction was last updated "
     updatedOn: Date!
+    " is this transaction a fee? "
+    isFee: Boolean
   }
 
   " The direction of the transaction "
@@ -83,6 +85,7 @@ export default gql`
     balance: FinancialAmount!
     createdOn: Date!
     updatedOn: Date!
+    isFee: Boolean
   }
 
   " העברה "
@@ -98,6 +101,7 @@ export default gql`
     balance: FinancialAmount!
     createdOn: Date!
     updatedOn: Date!
+    isFee: Boolean
   }
 
   " עמלה "
@@ -113,6 +117,7 @@ export default gql`
     balance: FinancialAmount!
     createdOn: Date!
     updatedOn: Date!
+    isFee: Boolean
   }
 
   " המרה "
@@ -133,6 +138,7 @@ export default gql`
     officialRateToLocal: Rate
     createdOn: Date!
     updatedOn: Date!
+    isFee: Boolean
   }
 
   " Type pf conversion transaction "
@@ -153,6 +159,7 @@ export default gql`
     balance: FinancialAmountInput
     counterpartyId: UUID
     chargeId: ID
+    isFee: Boolean
   }
 
   " result type for updateTransaction "

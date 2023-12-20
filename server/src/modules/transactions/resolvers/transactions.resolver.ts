@@ -130,6 +130,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           transactionId,
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
+          isFee: fields.isFee,
         };
 
         injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);

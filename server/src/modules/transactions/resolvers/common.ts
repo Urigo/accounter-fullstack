@@ -23,6 +23,7 @@ export const commonTransactionFields:
   balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
   createdOn: DbTransaction => DbTransaction.created_on,
   updatedOn: DbTransaction => DbTransaction.updated_on,
+  isFee: DbTransaction => DbTransaction.is_fee,
 };
 
 export const commonChargeFields: TransactionsModule.ChargeResolvers = {

@@ -118,6 +118,11 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
       $businessId,
       business_id,
       NULL
+    ),
+    is_fee = COALESCE(
+      $isFee,
+      is_fee,
+      NULL
     )
   WHERE
     id = $transactionId
