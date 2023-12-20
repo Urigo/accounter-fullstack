@@ -14,6 +14,7 @@ import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
   FEE_CATEGORY_NAME,
+  INTERNAL_WALLETS_IDS,
   VAT_TAX_CATEGORY_NAME,
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -43,26 +44,36 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    const shouldFetchDocuments = Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0;
+    const shouldFetchDocuments =
+      Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0;
     const shouldFetchTransactions = !!charge.transactions_count;
 
-    const documentsTaxCategoryPromise = shouldFetchDocuments ? ((charge.tax_category_id
-      ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
-      : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id))) : undefined;
+    const documentsTaxCategoryPromise = shouldFetchDocuments
+      ? charge.tax_category_id
+        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
+        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id)
+      : undefined;
 
-    const documentsPromise = shouldFetchDocuments ? injector
-      .get(DocumentsProvider)
-      .getDocumentsByChargeIdLoader.load(chargeId) : [];
+    const documentsPromise = shouldFetchDocuments
+      ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
+      : [];
 
-    const transactionsPromise = shouldFetchTransactions ? injector
-      .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId) : [];
-    
+    const transactionsPromise = shouldFetchTransactions
+      ? injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(chargeId)
+      : [];
+
     const unbalancedBusinessesPromise = await injector
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
-    const [documentsTaxCategory, documents, transactions, unbalancedBusinesses] = await Promise.all([documentsTaxCategoryPromise, documentsPromise, transactionsPromise, unbalancedBusinessesPromise]);
+    const [documentsTaxCategory, documents, transactions, unbalancedBusinesses] = await Promise.all(
+      [
+        documentsTaxCategoryPromise,
+        documentsPromise,
+        transactionsPromise,
+        unbalancedBusinessesPromise,
+      ],
+    );
 
     const entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
@@ -225,7 +236,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(document.date.getTime());
         currencies.add(document.currency_code);
-      })
+      });
 
       entriesPromises.push(...documentsEntriesPromises);
     }
@@ -238,6 +249,32 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const mainTransactionsPromises = mainTransactions.map(async transaction => {
         const { currency, valueDate, transactionBusinessId } =
           validateTransactionBasicVariables(transaction);
+
+        let mainAccount: CounterAccountProto = transactionBusinessId;
+        //
+        if (
+          !shouldFetchDocuments &&
+          transaction.source_reference &&
+          charge.business_id &&
+          INTERNAL_WALLETS_IDS.includes(charge.business_id)
+        ) {
+          const account = await injector
+            .get(FinancialAccountsProvider)
+            .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
+          if (!account) {
+            throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+          }
+          const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+          const taxCategory = await injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByNamesLoader.load(taxCategoryName);
+
+          if (!taxCategory) {
+            throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+          }
+
+          mainAccount = taxCategory;
+        }
 
         let amount = Number(transaction.amount);
         let foreignAmount: number | undefined = undefined;
@@ -269,15 +306,15 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         const isCreditorCounterparty = amount > 0;
 
-        const ledgerEntry = {
+        const ledgerEntry: StrictLedgerProto = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? transactionBusinessId : taxCategory,
+          creditAccountID1: isCreditorCounterparty ? mainAccount : taxCategory,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? taxCategory : transactionBusinessId,
+          debitAccountID1: isCreditorCounterparty ? taxCategory : mainAccount,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
