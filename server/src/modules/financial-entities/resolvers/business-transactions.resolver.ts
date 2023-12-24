@@ -3,113 +3,21 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-generation-by-charge.helper.js';
 import { Currency } from '@shared/enums';
-import type { Resolvers, ResolverTypeWrapper } from '@shared/gql-types';
+import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type {
   BusinessTransactionProto,
-  CounterAccountProto,
-  LedgerProto,
   RawBusinessTransactionsSum,
   TimelessDateString,
 } from '@shared/types';
+import {
+  getLedgerRecordsFromSets,
+  handleBusinessLedgerRecord,
+  handleBusinessTransaction,
+} from '../helpers/business-transactions.helper.js';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
-
-function handleBusinessLedgerRecord(
-  rawRes: Record<string, RawBusinessTransactionsSum>,
-  business: CounterAccountProto,
-  currency: Currency,
-  isCredit: boolean,
-  amount = 0,
-  foreignAmount = 0,
-) {
-  const businessID = typeof business === 'string' ? business : business.id;
-  rawRes[businessID] ??= {
-    ils: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    eur: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    gbp: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    usd: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    business,
-  };
-
-  const record = rawRes[businessID];
-  let currencyField: 'eur' | 'usd' | 'gbp' | 'ils' | undefined = undefined;
-  switch (currency) {
-    case Currency.Ils: {
-      currencyField = 'ils';
-
-      break;
-    }
-    case Currency.Eur: {
-      currencyField = 'eur';
-      break;
-    }
-    case Currency.Gbp: {
-      currencyField = 'gbp';
-      break;
-    }
-    case Currency.Usd: {
-      currencyField = 'usd';
-      break;
-    }
-    default: {
-      console.log(`currency ${currency} not supported`);
-      return;
-    }
-  }
-
-  record.ils.credit += isCredit ? amount : 0;
-  record.ils.debit += isCredit ? 0 : amount;
-  record.ils.total += (isCredit ? 1 : -1) * amount;
-
-  if (currencyField !== 'ils') {
-    const foreignInfo = record[currencyField];
-
-    foreignInfo.credit += isCredit ? foreignAmount : 0;
-    foreignInfo.debit += isCredit ? 0 : foreignAmount;
-    foreignInfo.total += (isCredit ? 1 : -1) * foreignAmount;
-  }
-}
-
-function handleBusinessTransaction(
-  record: LedgerProto,
-  businessID: string,
-  counterparty: CounterAccountProto | undefined = undefined,
-  isCredit: boolean,
-  amount = 0,
-  foreignAmount = 0,
-): BusinessTransactionProto {
-  const rawTransaction: BusinessTransactionProto = {
-    amount,
-    businessID,
-    counterAccount: counterparty,
-    currency: record.currency,
-    details: record.description,
-    isCredit,
-    ownerID: record.ownerId,
-    foreignAmount,
-    date: record.invoiceDate,
-    reference1: record.reference1,
-  };
-  return rawTransaction;
-}
 
 export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -132,25 +40,8 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         const ledgerRecordSets = await Promise.all(
           charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
         );
-        const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
-        ledgerRecordSets.map((ledgerRecordSet, i) => {
-          if (!ledgerRecordSet) {
-            console.log(`No ledger records could be generated for charge ${charges[i]?.id}`);
-          } else if (
-            ('__typename' in ledgerRecordSet || 'message' in ledgerRecordSet) &&
-            ledgerRecordSet.__typename === 'CommonError'
-          ) {
-            console.log(
-              `Error generating ledger records for charge ${charges[i]?.id}: ${ledgerRecordSet.message}`,
-            );
-          } else {
-            ledgerRecordsPromises.push(
-              ...(ledgerRecordSet as { records: readonly ResolverTypeWrapper<LedgerProto>[] })
-                .records,
-            );
-          }
-        });
-        const ledgerRecords = await Promise.all(ledgerRecordsPromises);
+
+        const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
@@ -165,7 +56,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             !!ledger.creditAccountID1 &&
-            (!businessIDs || businessIDs.includes(ledger.creditAccountID1))
+            (!businessIDs?.length || businessIDs.includes(ledger.creditAccountID1))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -179,7 +70,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             !!ledger.creditAccountID2 &&
-            (!businessIDs || businessIDs.includes(ledger.creditAccountID2))
+            (!businessIDs?.length || businessIDs.includes(ledger.creditAccountID2))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -193,7 +84,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             !!ledger.debitAccountID1 &&
-            (!businessIDs || businessIDs.includes(ledger.debitAccountID1))
+            (!businessIDs?.length || businessIDs.includes(ledger.debitAccountID1))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -207,7 +98,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             !!ledger.debitAccountID2 &&
-            (!businessIDs || businessIDs.includes(ledger.debitAccountID2))
+            (!businessIDs?.length || businessIDs.includes(ledger.debitAccountID2))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -244,25 +135,8 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         const ledgerRecordSets = await Promise.all(
           charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
         );
-        const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
-        ledgerRecordSets.map((ledgerRecordSet, i) => {
-          if (!ledgerRecordSet) {
-            console.log(`No ledger records could be generated for charge ${charges[i]?.id}`);
-          } else if (
-            ('__typename' in ledgerRecordSet || 'message' in ledgerRecordSet) &&
-            ledgerRecordSet.__typename === 'CommonError'
-          ) {
-            console.log(
-              `Error generating ledger records for charge ${charges[i]?.id}: ${ledgerRecordSet.message}`,
-            );
-          } else {
-            ledgerRecordsPromises.push(
-              ...(ledgerRecordSet as { records: readonly ResolverTypeWrapper<LedgerProto>[] })
-                .records,
-            );
-          }
-        });
-        const ledgerRecords = await Promise.all(ledgerRecordsPromises);
+
+        const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);
 
         const rawTransactions: BusinessTransactionProto[] = [];
 
@@ -277,7 +151,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             typeof record.creditAccountID1 === 'string' &&
-            (!businessIDs || businessIDs.includes(record.creditAccountID1))
+            (!businessIDs?.length || businessIDs.includes(record.creditAccountID1))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -292,7 +166,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             typeof record.creditAccountID2 === 'string' &&
-            (!businessIDs || businessIDs.includes(record.creditAccountID2))
+            (!businessIDs?.length || businessIDs.includes(record.creditAccountID2))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -307,7 +181,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             typeof record.debitAccountID1 === 'string' &&
-            (!businessIDs || businessIDs.includes(record.debitAccountID1))
+            (!businessIDs?.length || businessIDs.includes(record.debitAccountID1))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -322,7 +196,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             typeof record.debitAccountID2 === 'string' &&
-            (!businessIDs || businessIDs.includes(record.debitAccountID2))
+            (!businessIDs?.length || businessIDs.includes(record.debitAccountID2))
           ) {
             const transaction = handleBusinessTransaction(
               record,
