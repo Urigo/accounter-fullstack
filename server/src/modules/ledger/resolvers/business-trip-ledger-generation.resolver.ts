@@ -6,7 +6,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, FEE_CATEGORY_NAME } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -14,12 +14,14 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { CounterAccountProto, StrictLedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
   updateLedgerBalanceByEntry,
+  validateTransactionBasicVariables,
   validateTransactionRequiredVariables,
 } from '../helpers/utils.helper.js';
 
@@ -62,10 +64,15 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ]);
 
     // generate ledger from transactions
+    const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+
+    // generate ledger from transactions
+    const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     // for each transaction, create a ledger record
-    for (const preValidatedTransaction of transactions) {
+    const mainTransactionsPromises = mainTransactions.map(async preValidatedTransaction => {
       const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
 
       // get tax category
@@ -109,7 +116,102 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       financialAccountLedgerEntries.push(ledgerEntry);
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-    }
+    });
+
+    // create a ledger record for fee transactions
+    const feeTransactionsPromises = feeTransactions.map(async transaction => {
+      if (!transaction.is_fee) {
+        return;
+      }
+
+      const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+      const { currency, valueDate, transactionBusinessId } =
+        validateTransactionBasicVariables(transaction);
+
+      let amount = Number(transaction.amount);
+      let foreignAmount: number | undefined = undefined;
+
+      if (currency !== DEFAULT_LOCAL_CURRENCY) {
+        // get exchange rate for currency
+        const exchangeRate = await injector
+          .get(ExchangeProvider)
+          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+
+        foreignAmount = amount;
+        // calculate amounts in ILS
+        amount = exchangeRate * amount;
+      }
+
+      const feeTaxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+      if (!feeTaxCategory) {
+        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+      }
+
+      const isCreditorCounterparty = amount > 0;
+
+      let mainAccount: CounterAccountProto = transactionBusinessId;
+
+      const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
+        id: transaction.id,
+        invoiceDate: transaction.event_date,
+        valueDate,
+        currency,
+        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyCreditAmount1: Math.abs(amount),
+        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyDebitAmount1: Math.abs(amount),
+        description: transaction.source_description ?? undefined,
+        reference1: transaction.source_id,
+        isCreditorCounterparty: isSupplementalFee
+          ? isCreditorCounterparty
+          : !isCreditorCounterparty,
+        ownerId: charge.owner_id,
+        currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+      };
+
+      if (isSupplementalFee) {
+        const account = await injector
+          .get(FinancialAccountsProvider)
+          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+        if (!account) {
+          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+        }
+        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+        const businessTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByNamesLoader.load(taxCategoryName);
+        if (!businessTaxCategory) {
+          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+        }
+
+        mainAccount = businessTaxCategory;
+      } else {
+        const mainBusiness = charge.business_id ?? undefined;
+
+        const ledgerEntry: LedgerProto = {
+          ...partialLedgerEntry,
+          creditAccountID1: isCreditorCounterparty ? mainAccount : mainBusiness,
+          debitAccountID1: isCreditorCounterparty ? mainBusiness : mainAccount,
+        };
+
+        feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      }
+
+      const ledgerEntry: StrictLedgerProto = {
+        ...partialLedgerEntry,
+        creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
+        debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+      };
+
+      feeFinancialAccountLedgerEntries.push(ledgerEntry);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+    });
+
+    entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
+    await Promise.all(entriesPromises);
 
     // generate ledger from business trip transactions
     for (const businessTripTransaction of businessTripTransactions) {
@@ -206,7 +308,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
     return {
-      records: [...financialAccountLedgerEntries],
+      records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
       balance: ledgerBalanceInfo,
     };
   } catch (e) {
