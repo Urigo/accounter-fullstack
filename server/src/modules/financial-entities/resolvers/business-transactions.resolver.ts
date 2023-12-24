@@ -27,16 +27,27 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   > = {
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
-      let { ownerIds, businessIDs, fromDate, toDate } = filters || {};
-      if (businessIDs?.length === 0) {
-        businessIDs = undefined;
-      }
+      const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
+
+      const [businesses, taxCategories] = await Promise.all([
+        injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
+        injector.get(TaxCategoriesProvider).getAllTaxCategories(),
+      ]);
+
+      const businessIDs = businesses
+        ?.filter(business => business && 'id' in business)
+        .map(business => (business as IGetFinancialEntitiesByIdsResult).id);
+      const taxCategoriesIDs = taxCategories
+        .map(taxCategory => taxCategory.id)
+        .filter(id => financialEntitiesIDs?.includes(id));
+
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
           fromAnyDate: fromDate,
           toAnyDate: toDate,
-          businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(
           charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
@@ -56,8 +67,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            !!ledger.creditAccountID1 &&
-            (!businessIDs?.length || businessIDs.includes(ledger.creditAccountID1))
+            ledger.creditAccountID1 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof ledger.creditAccountID1 === 'string' &&
+                businessIDs.includes(ledger.creditAccountID1)) ||
+              (typeof ledger.creditAccountID1 === 'object' &&
+                taxCategoriesIDs.includes(ledger.creditAccountID1.id)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -70,8 +85,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            !!ledger.creditAccountID2 &&
-            (!businessIDs?.length || businessIDs.includes(ledger.creditAccountID2))
+            ledger.creditAccountID2 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof ledger.creditAccountID2 === 'string' &&
+                businessIDs.includes(ledger.creditAccountID2)) ||
+              (typeof ledger.creditAccountID2 === 'object' &&
+                taxCategoriesIDs.includes(ledger.creditAccountID2.id)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -84,8 +103,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            !!ledger.debitAccountID1 &&
-            (!businessIDs?.length || businessIDs.includes(ledger.debitAccountID1))
+            ledger.debitAccountID1 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof ledger.debitAccountID1 === 'string' &&
+                businessIDs.includes(ledger.debitAccountID1)) ||
+              (typeof ledger.debitAccountID1 === 'object' &&
+                taxCategoriesIDs.includes(ledger.debitAccountID1.id)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -98,8 +121,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            !!ledger.debitAccountID2 &&
-            (!businessIDs?.length || businessIDs.includes(ledger.debitAccountID2))
+            ledger.debitAccountID2 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof ledger.debitAccountID2 === 'string' &&
+                businessIDs.includes(ledger.debitAccountID2)) ||
+              (typeof ledger.debitAccountID2 === 'object' &&
+                taxCategoriesIDs.includes(ledger.debitAccountID2.id)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -242,7 +269,33 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         }
 
         return {
-          businessTransactions: rawTransactions.sort((a, b) => a.date.getTime() - b.date.getTime()),
+          businessTransactions: rawTransactions.sort((a, b) => {
+            const chargeA = charges.find(charge => charge.id === a.chargeId);
+            const chargeB = charges.find(charge => charge.id === b.chargeId);
+            const dateA = Math.min(
+              ...([
+                chargeA?.documents_min_date?.getTime(),
+                chargeA?.transactions_min_event_date?.getTime(),
+              ].filter(Boolean) as number[]),
+            );
+            const dateB = Math.min(
+              ...([
+                chargeB?.documents_min_date?.getTime(),
+                chargeB?.transactions_min_event_date?.getTime(),
+              ].filter(Boolean) as number[]),
+            );
+
+            if (dateA < dateB) return -1;
+            if (dateA > dateB) return 1;
+
+            if (a.chargeId < b.chargeId) return -1;
+            if (a.chargeId > b.chargeId) return 1;
+
+            if (a.date.getTime() < b.date.getTime()) return -1;
+            if (a.date.getTime() > b.date.getTime()) return 1;
+
+            return 0;
+          }),
         };
       } catch (e) {
         console.error(e);

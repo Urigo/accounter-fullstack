@@ -132,6 +132,7 @@ export function generatePartialLedgerEntry(
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+    chargeId: transaction.charge_id,
   };
 }
 

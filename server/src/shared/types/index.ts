@@ -62,6 +62,7 @@ export type BusinessTransactionProto = {
   foreignAmount: number;
   date: Date;
   reference1?: string;
+  chargeId: string;
 };
 
 export type CounterAccountProto = string | IGetAllTaxCategoriesResult;

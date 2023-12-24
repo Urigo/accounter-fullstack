@@ -52,6 +52,7 @@ export interface LedgerProto {
   isCreditorCounterparty: boolean;
   ownerId: string;
   currencyRate?: number;
+  chargeId: string;
 }
 
 export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'creditAccountID1'> & {

@@ -220,7 +220,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         // const reference2: string | null = ''; // TODO: rethink
         // const movementType: string | null = ''; // TODO: rethink
 
-        const ledgerEntry = {
+        const ledgerEntry: StrictLedgerProto = {
           id: document.id,
           invoiceDate: document.date,
           valueDate: document.date,
@@ -241,6 +241,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           reference1: document.serial_number ?? undefined,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
+          chargeId,
         };
 
         accountingLedgerEntries.push(ledgerEntry);
@@ -333,6 +334,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         };
 
         financialAccountLedgerEntries.push(ledgerEntry);
@@ -392,6 +394,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             : !isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         };
 
         if (isSupplementalFee) {
@@ -499,6 +502,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: financialAccountEntry.currencyRate,
+        chargeId,
       };
 
       miscLedgerEntries.push(ledgerEntry);
@@ -553,7 +557,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
-        const ledgerEntry = {
+        const ledgerEntry: StrictLedgerProto = {
           id: transactionEntry.id + '|fee', // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? entity : exchangeCategory,
           localCurrencyCreditAmount1: amount,
@@ -565,6 +569,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
+          chargeId,
         };
         miscLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);

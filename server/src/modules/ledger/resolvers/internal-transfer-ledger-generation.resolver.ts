@@ -11,7 +11,7 @@ import {
   FEE_CATEGORY_NAME,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { CounterAccountProto, LedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
   getLedgerBalanceInfo,
@@ -113,6 +113,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        chargeId,
       };
 
       if (amount < 0) {
@@ -179,7 +180,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
         }
 
-        const ledgerEntry = {
+        const ledgerEntry: StrictLedgerProto = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -195,6 +196,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         };
 
         feeFinancialAccountLedgerEntries.push(ledgerEntry);
@@ -210,7 +212,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           throw new GraphQLError(`Business ID="${transactionBusinessId}" is missing tax category`);
         }
 
-        const ledgerEntry = {
+        const ledgerEntry: LedgerProto = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -226,6 +228,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           isCreditorCounterparty: !isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         };
 
         feeFinancialAccountLedgerEntries.push(ledgerEntry);
@@ -254,7 +257,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         const isCreditorCounterparty = balanceSum > 0;
 
-        const ledgerEntry = {
+        const ledgerEntry: LedgerProto = {
           id: destinationEntry.id, // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
           creditAmount1: undefined,
@@ -268,6 +271,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           valueDate: destinationEntry.valueDate,
           currency: destinationEntry.currency, // NOTE: this field is dummy
           ownerId: destinationEntry.ownerId,
+          chargeId,
         };
 
         miscLedgerEntries.push(ledgerEntry);

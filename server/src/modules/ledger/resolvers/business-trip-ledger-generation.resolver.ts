@@ -169,6 +169,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           : !isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        chargeId: transaction.charge_id,
       };
 
       if (isSupplementalFee) {
@@ -296,6 +297,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: exchangeRate,
+          chargeId: charge.id,
         };
 
         financialAccountLedgerEntries.push(ledgerEntry);

@@ -8,7 +8,6 @@ import { Currency } from '@shared/enums';
 import type {
   BusinessTransactionProto,
   CounterAccountProto,
-  CounterpartyProto,
   LedgerProto,
   RawBusinessTransactionsSum,
 } from '@shared/types';
@@ -76,7 +75,6 @@ export function handleBusinessLedgerRecord(
   switch (currency) {
     case Currency.Ils: {
       currencyField = 'ils';
-
       break;
     }
     case Currency.Eur: {
@@ -93,7 +91,7 @@ export function handleBusinessLedgerRecord(
     }
     default: {
       console.log(`currency ${currency} not supported`);
-      return;
+      currencyField = 'ils';
     }
   }
 
@@ -129,6 +127,7 @@ export function handleBusinessTransaction(
     foreignAmount,
     date: record.invoiceDate,
     reference1: record.reference1,
+    chargeId: record.chargeId,
   };
   return rawTransaction;
 }

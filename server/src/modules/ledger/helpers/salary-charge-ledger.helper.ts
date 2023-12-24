@@ -22,6 +22,7 @@ function generateEntryRaw(
   transactionDate: Date,
   ownerId: string,
   isCreditor: boolean,
+  chargeId: string,
 ): LedgerProto {
   return {
     id: `${accountId}|${month}`,
@@ -34,6 +35,7 @@ function generateEntryRaw(
     description: `${month} salary: ${accountId}`,
     isCreditorCounterparty: false, // TODO: check
     ownerId,
+    chargeId,
   };
 }
 
@@ -75,6 +77,7 @@ export function generateEntriesFromSalaryRecords(
   const entries: LedgerProto[] = [];
 
   function generateEntry(
+    chargeId: string,
     accountId: string,
     amount: number,
     month: string,
@@ -88,6 +91,7 @@ export function generateEntriesFromSalaryRecords(
       date ?? transactionDate,
       charge.owner_id,
       isCreditor,
+      chargeId,
     );
   }
 
@@ -134,6 +138,7 @@ export function generateEntriesFromSalaryRecords(
     salaryDate.setDate(salaryDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
     entries.push(
       generateEntry(
+        charge.id,
         salaryRecord.employee_id,
         directPayment,
         salaryRecord.month,
@@ -200,14 +205,14 @@ export function generateEntriesFromSalaryRecords(
   // generate pension/training funds entries
   for (const [businessId, amount] of Object.entries(amountPerBusiness)) {
     if (amount) {
-      entries.push(generateEntry(businessId, amount, month));
+      entries.push(generateEntry(charge.id, businessId, amount, month));
     }
   }
 
   // generate tax entries
   for (const [month, amount] of Object.entries(taxAmountPerMonth)) {
     if (amount > 0) {
-      entries.push(generateEntry(TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
+      entries.push(generateEntry(charge.id, TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
     }
   }
 
