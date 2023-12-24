@@ -8,6 +8,7 @@ import { Currency } from '@shared/enums';
 import type {
   BusinessTransactionProto,
   CounterAccountProto,
+  CounterpartyProto,
   LedgerProto,
   RawBusinessTransactionsSum,
 } from '@shared/types';
@@ -111,7 +112,7 @@ export function handleBusinessLedgerRecord(
 
 export function handleBusinessTransaction(
   record: LedgerProto,
-  businessID: string,
+  businessID: CounterAccountProto,
   counterparty: CounterAccountProto | undefined = undefined,
   isCredit: boolean,
   amount = 0,

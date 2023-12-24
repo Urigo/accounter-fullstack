@@ -17,7 +17,8 @@ import {
 } from '../helpers/business-transactions.helper.js';
 import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
-import type { FinancialEntitiesModule } from '../types.js';
+import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
+import type { FinancialEntitiesModule, IGetFinancialEntitiesByIdsResult } from '../types.js';
 
 export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -124,13 +125,27 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       }
     },
     businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }, info) => {
-      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
+      const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
+
+      const [businesses, taxCategories] = await Promise.all([
+        injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
+        injector.get(TaxCategoriesProvider).getAllTaxCategories(),
+      ]);
+
+      const businessIDs = businesses
+        ?.filter(business => business && 'id' in business)
+        .map(business => (business as IGetFinancialEntitiesByIdsResult).id);
+      const taxCategoriesIDs = taxCategories
+        .map(taxCategory => taxCategory.id)
+        .filter(id => financialEntitiesIDs?.includes(id));
+
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
           fromAnyDate: fromDate,
           toAnyDate: toDate,
-          businessIds: businessIDs ?? undefined,
         });
         const ledgerRecordSets = await Promise.all(
           charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
@@ -150,8 +165,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof record.creditAccountID1 === 'string' &&
-            (!businessIDs?.length || businessIDs.includes(record.creditAccountID1))
+            record.creditAccountID1 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof record.creditAccountID1 === 'string' &&
+                businessIDs.includes(record.creditAccountID1)) ||
+              (typeof record.creditAccountID1 === 'object' &&
+                taxCategoriesIDs.includes(record.creditAccountID1.id)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -165,8 +184,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof record.creditAccountID2 === 'string' &&
-            (!businessIDs?.length || businessIDs.includes(record.creditAccountID2))
+            record.creditAccountID2 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof record.creditAccountID2 === 'string' &&
+                businessIDs.includes(record.creditAccountID2)) ||
+              (typeof record.creditAccountID2 === 'object' &&
+                taxCategoriesIDs.includes(record.creditAccountID2.id)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -180,8 +203,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof record.debitAccountID1 === 'string' &&
-            (!businessIDs?.length || businessIDs.includes(record.debitAccountID1))
+            record.debitAccountID1 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof record.debitAccountID1 === 'string' &&
+                businessIDs.includes(record.debitAccountID1)) ||
+              (typeof record.debitAccountID1 === 'object' &&
+                taxCategoriesIDs.includes(record.debitAccountID1.id)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -195,8 +222,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            typeof record.debitAccountID2 === 'string' &&
-            (!businessIDs?.length || businessIDs.includes(record.debitAccountID2))
+            record.debitAccountID2 &&
+            (!financialEntitiesIDs?.length ||
+              (typeof record.debitAccountID2 === 'string' &&
+                businessIDs.includes(record.debitAccountID2)) ||
+              (typeof record.debitAccountID2 === 'object' &&
+                taxCategoriesIDs.includes(record.debitAccountID2.id)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -211,7 +242,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         }
 
         return {
-          businessTransactions: rawTransactions,
+          businessTransactions: rawTransactions.sort((a, b) => a.date.getTime() - b.date.getTime()),
         };
       } catch (e) {
         console.error(e);
