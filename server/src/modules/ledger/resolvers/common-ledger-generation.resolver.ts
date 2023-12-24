@@ -11,6 +11,7 @@ import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/typ
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import {
+  BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
   FEE_CATEGORY_NAME,
@@ -27,6 +28,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../helpers/utils.helper.js';
+import { BalanceCancellationProvider } from '../providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 
 export const generateLedgerRecordsForCommonCharge: ResolverFn<
@@ -62,18 +64,27 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       ? injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(chargeId)
       : [];
 
-    const unbalancedBusinessesPromise = await injector
+    const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
-    const [documentsTaxCategory, documents, transactions, unbalancedBusinesses] = await Promise.all(
-      [
-        documentsTaxCategoryPromise,
-        documentsPromise,
-        transactionsPromise,
-        unbalancedBusinessesPromise,
-      ],
-    );
+    const chargeBallanceCancellationsPromise = injector
+      .get(BalanceCancellationProvider)
+      .getBalanceCancellationByChargesIdLoader.load(chargeId);
+
+    const [
+      documentsTaxCategory,
+      documents,
+      transactions,
+      unbalancedBusinesses,
+      balanceCancellations,
+    ] = await Promise.all([
+      documentsTaxCategoryPromise,
+      documentsPromise,
+      transactionsPromise,
+      unbalancedBusinessesPromise,
+      chargeBallanceCancellationsPromise,
+    ]);
 
     const entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
@@ -365,24 +376,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         let mainAccount: CounterAccountProto = transactionBusinessId;
 
-        const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> =
-          {
-            id: transaction.id,
-            invoiceDate: transaction.event_date,
-            valueDate,
-            currency,
-            creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyCreditAmount1: Math.abs(amount),
-            debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyDebitAmount1: Math.abs(amount),
-            description: transaction.source_description ?? undefined,
-            reference1: transaction.source_id,
-            isCreditorCounterparty: isSupplementalFee
-              ? isCreditorCounterparty
-              : !isCreditorCounterparty,
-            ownerId: charge.owner_id,
-            currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-          };
+        const partialLedgerEntry: LedgerProto = {
+          id: transaction.id,
+          invoiceDate: transaction.event_date,
+          valueDate,
+          currency,
+          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description: transaction.source_description ?? undefined,
+          reference1: transaction.source_id,
+          isCreditorCounterparty: isSupplementalFee
+            ? isCreditorCounterparty
+            : !isCreditorCounterparty,
+          ownerId: charge.owner_id,
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        };
 
         if (isSupplementalFee) {
           const account = await injector
@@ -430,14 +440,80 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     await Promise.all(entriesPromises);
 
+    const miscLedgerEntries: LedgerProto[] = [];
+
+    // generate ledger from balance cancellation
+    for (const balanceCancellation of balanceCancellations) {
+      const entityBalance = ledgerBalance.get(balanceCancellation.business_id);
+      if (!entityBalance) {
+        console.log(
+          `Balance cancellation for business ${balanceCancellation.business_id} redundant - already balanced`,
+        );
+        continue;
+      }
+
+      const { amount, entity } = entityBalance;
+
+      const financialAccountEntry = financialAccountLedgerEntries.find(entry =>
+        [
+          entry.creditAccountID1,
+          entry.creditAccountID2,
+          entry.debitAccountID1,
+          entry.debitAccountID2,
+        ].includes(balanceCancellation.business_id),
+      );
+      if (!financialAccountEntry) {
+        throw new GraphQLError(
+          `Balance cancellation for business ${balanceCancellation.business_id} failed - no financial account entry found`,
+        );
+      }
+
+      let foreignAmount: number | undefined = undefined;
+
+      if (
+        financialAccountEntry.currency !== DEFAULT_LOCAL_CURRENCY &&
+        financialAccountEntry.currencyRate
+      ) {
+        foreignAmount = financialAccountEntry.currencyRate * amount;
+      }
+
+      const taxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByIDsLoader.load(BALANCE_CANCELLATION_TAX_CATEGORY_ID);
+
+      const isCreditorCounterparty = amount > 0;
+
+      const ledgerEntry: LedgerProto = {
+        id: balanceCancellation.charge_id,
+        invoiceDate: financialAccountEntry.invoiceDate,
+        valueDate: financialAccountEntry.valueDate,
+        currency: financialAccountEntry.currency,
+        creditAccountID1: isCreditorCounterparty ? taxCategory : entity,
+        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyCreditAmount1: Math.abs(amount),
+        debitAccountID1: isCreditorCounterparty ? entity : taxCategory,
+        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+        localCurrencyDebitAmount1: Math.abs(amount),
+        description: balanceCancellation.description ?? undefined,
+        reference1: financialAccountEntry.reference1,
+        isCreditorCounterparty,
+        ownerId: charge.owner_id,
+        currencyRate: financialAccountEntry.currencyRate,
+      };
+
+      miscLedgerEntries.push(ledgerEntry);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+    }
+
     const allowedUnbalancedBusinesses = new Set(
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
 
-    const miscLedgerEntries: StrictLedgerProto[] = [];
     // Add ledger completion entries
-    const tempLedgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
-    const { balanceSum, isBalanced, unbalancedEntities } = tempLedgerBalanceInfo;
+    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(
+      ledgerBalance,
+      allowedUnbalancedBusinesses,
+    );
     if (Math.abs(balanceSum) > 0.005) {
       throw new GraphQLError(
         `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are unbalanced`,
@@ -451,7 +527,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         if (business?.no_invoices_required) {
           return {
             records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
-            balance: tempLedgerBalanceInfo,
+            balance: { balanceSum, isBalanced, unbalancedEntities },
           };
         }
       }
