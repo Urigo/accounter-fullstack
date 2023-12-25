@@ -25,9 +25,11 @@ import { TrialBalanceTable } from './trial-balance-table';
           }
           credit {
             formatted
+            raw
           }
           debit {
             formatted
+            raw
           }
           total {
             formatted
