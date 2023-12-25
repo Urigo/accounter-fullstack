@@ -36,12 +36,12 @@ export const TrialBalanceReportBusiness = ({
         <td>{record.business.name ?? undefined}</td>
         <td>
           {rowTotal < -0.001 ? formatStringifyAmount(-1 * (record.total.raw ?? 0)) : undefined}
-          <br/>
+          <br />
           {rowDebit ? `(${formatStringifyAmount(rowDebit)})` : undefined}
         </td>
         <td>
           {rowTotal > 0.001 ? formatStringifyAmount(record.total.raw ?? 0) : undefined}
-          <br/>
+          <br />
           {rowDebit ? `(${formatStringifyAmount(rowCredit)})` : undefined}
         </td>
         <td>{}</td>
