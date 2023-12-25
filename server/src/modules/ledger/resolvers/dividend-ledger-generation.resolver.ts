@@ -146,6 +146,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         creditAccountID1: dividendRecord.business_id,
         localCurrencyCreditAmount1: dividendRecordAbsAmount,
         localCurrencyDebitAmount1: dividendRecordAbsAmount,
+        chargeId,
       };
 
       paymentsLedgerEntries.push(closingEntry);
@@ -215,6 +216,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
           creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
           localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
+          chargeId,
         };
 
         paymentsLedgerEntries.push(coreLedgerEntry);
@@ -243,6 +245,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
           debitAccountID1: mainAccount,
           localCurrencyDebitAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
+          chargeId,
         };
 
         paymentsLedgerEntries.push(conversionEntry2);
@@ -284,6 +287,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         localCurrencyCreditAmount1: sum,
         debitAccountID1: dividendTaxCategory,
         localCurrencyDebitAmount1: sum,
+        chargeId,
       };
 
       paymentsLedgerEntries.push(ledgerEntry);

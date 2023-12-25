@@ -26,6 +26,8 @@ export const TrialBalanceReportBusiness = ({
 }: Props): ReactElement => {
   const [isExtended, setIsExtended] = useState(isAllOpened);
   const rowTotal = record?.total?.raw ?? 0;
+  const rowDebit = record?.debit?.raw ?? 0;
+  const rowCredit = record?.credit?.raw ?? 0;
   return (
     <>
       <tr key={record.business.id}>
@@ -34,8 +36,14 @@ export const TrialBalanceReportBusiness = ({
         <td>{record.business.name ?? undefined}</td>
         <td>
           {rowTotal < -0.001 ? formatStringifyAmount(-1 * (record.total.raw ?? 0)) : undefined}
+          <br />
+          {rowDebit ? `(${formatStringifyAmount(rowDebit)})` : undefined}
         </td>
-        <td>{rowTotal > 0.001 ? formatStringifyAmount(record.total.raw ?? 0) : undefined}</td>
+        <td>
+          {rowTotal > 0.001 ? formatStringifyAmount(record.total.raw ?? 0) : undefined}
+          <br />
+          {rowDebit ? `(${formatStringifyAmount(rowCredit)})` : undefined}
+        </td>
         <td>{}</td>
         <td>
           <Tooltip label="Detailed records">

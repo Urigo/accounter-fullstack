@@ -16,7 +16,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { CounterAccountProto, LedgerProto } from '@shared/types';
+import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../helpers/conversion-charge-ledger.helper.js';
 import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
@@ -116,6 +116,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        chargeId,
       };
 
       if (amount < 0) {
@@ -196,6 +197,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         });
       } else {
         const businessTaxCategory = quoteEntry.debitAccountID1!;
@@ -203,7 +205,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
-        const ledgerEntry = {
+        const ledgerEntry: StrictLedgerProto = {
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
@@ -219,6 +221,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           isCreditorCounterparty: !isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
         };
 
         feeFinancialAccountLedgerEntries.push(ledgerEntry);
@@ -250,7 +253,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
       const isDebitConversion = conversionFee.localAmount >= 0;
 
-      const ledgerEntry = {
+      const ledgerEntry: LedgerProto = {
         id: quoteEntry.id + '|fee', // NOTE: this field is dummy
         creditAccountID1: isDebitConversion ? feeTaxCategory : undefined,
         creditAmount1: conversionFee.foreignAmount
@@ -269,6 +272,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         currency: quoteEntry.currency,
         reference1: quoteEntry.reference1,
         ownerId: quoteEntry.ownerId,
+        chargeId,
       };
 
       miscLedgerEntries.push(ledgerEntry);

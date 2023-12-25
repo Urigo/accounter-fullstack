@@ -111,6 +111,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
             description: `${month} salary: ${taxCategory.name}`,
             isCreditorCounterparty: false, // TODO: check
             ownerId: charge.owner_id,
+            chargeId,
           };
 
           return ledgerEntry;
@@ -337,7 +338,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
       let mainAccount: CounterAccountProto = transactionBusinessId;
 
-      const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
+      const partialLedgerEntry: LedgerProto = {
         id: transaction.id,
         invoiceDate: transaction.event_date,
         valueDate,
@@ -353,6 +354,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           : !isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+        chargeId,
       };
 
       if (isSupplementalFee) {
@@ -404,7 +406,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
         const isCreditorCounterparty = tempLedgerBalanceInfo.balanceSum < 0;
 
-        const ledgerEntry = {
+        const ledgerEntry: LedgerProto = {
           id: transactionEntry.id,
           creditAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
           creditAmount1: undefined,
@@ -418,6 +420,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           valueDate: transactionEntry.valueDate,
           currency: transactionEntry.currency, // NOTE: this field is dummy
           ownerId: transactionEntry.ownerId,
+          chargeId,
         };
 
         miscLedgerEntries.push(ledgerEntry);
