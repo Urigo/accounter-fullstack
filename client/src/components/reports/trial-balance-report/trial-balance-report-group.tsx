@@ -6,6 +6,8 @@ import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-re
 interface Props {
   data: {
     sortCodes: Record<number, ExtendedSortCode>;
+    totalCredit: number;
+    totalDebit: number;
     credit: number;
     debit: number;
     sum: number;
@@ -23,19 +25,21 @@ export const TrialBalanceReportGroup = ({
 }: Props): ReactElement => {
   return (
     <>
-      {Object.values(data.sortCodes).map((sortCode, i) => (
-        <TrialBalanceReportSortCode
-          key={`${sortCode.id} ${i}`}
-          sortCode={sortCode}
-          filter={filter}
-          isAllOpened={isAllOpened}
-        />
-      ))}
+      {Object.values(data.sortCodes)
+        .sort((a, b) => a.id - b.id)
+        .map((sortCode, i) => (
+          <TrialBalanceReportSortCode
+            key={`${sortCode.id} ${i}`}
+            sortCode={sortCode}
+            filter={filter}
+            isAllOpened={isAllOpened}
+          />
+        ))}
       <tr key={'group' + group} className="bg-gray-100">
         <td colSpan={2}>Group total:</td>
         <td colSpan={1}>{group.replaceAll('0', '*')}</td>
-        <td colSpan={1}>{}</td>
-        <td colSpan={1}>{}</td>
+        <td colSpan={1}>({formatStringifyAmount(data.totalDebit)})</td>
+        <td colSpan={1}>({formatStringifyAmount(data.totalCredit)})</td>
         <td colSpan={1}>{formatStringifyAmount(data.sum)}</td>
       </tr>
     </>
