@@ -41,7 +41,7 @@ export async function createAndConnectStore(options: { connectionString: string;
     BEGIN
         -- Create merged raw transactions record:
         INSERT INTO ${options.schema}.transactions_raw_list(etherscan_id)
-        VALUES (NEW.tx_id::text)
+        VALUES (NEW.id::text)
         RETURNING id INTO merged_id;
     
         -- get account and owner IDs
@@ -84,7 +84,7 @@ export async function createAndConnectStore(options: { connectionString: string;
               account_id_var,
               charge_id_var,
               merged_id,
-              CONCAT_WS(' ', 'Fee:', NEW.tx_id::text),
+              CONCAT_WS(' ', 'Fee:', NEW.id::text),
               'ETH'::currency,
               NEW.value_date::text::date,
               NEW.value_date::text::date,
@@ -140,10 +140,11 @@ export async function createAndConnectStore(options: { connectionString: string;
           currency TEXT,
           transaction_hash TEXT,
           amount DECIMAL NOT NULL,
-          gas_fee DECIMAL NOT NULL,
           value_date DATE NOT NULL,
           eventDate TIMESTAMP NOT NULL,
-          raw_data JSONB NOT NULL
+          raw_data JSONB NOT NULL,
+          gas_fee NUMERIC NOT NULL,
+          id UUID DEFAULT uuid_generate_v4()
         );
       `);
     },
