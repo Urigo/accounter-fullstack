@@ -1,5 +1,11 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
+  ETANA_BUSINESS_ID,
+  ETHERSCAN_BUSINESS_ID,
+  KRAKEN_BUSINESS_ID,
+  POALIM_BUSINESS_ID,
+} from '@shared/constants';
+import {
   Maybe,
   Resolver,
   ResolversParentTypes,
@@ -84,6 +90,70 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
+  switch (DbTransaction.source_origin) {
+    case 'ETANA': {
+      if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
+        return {
+          business: ETANA_BUSINESS_ID,
+        };
+      }
+      const amount = formatAmount(DbTransaction.amount);
+      if (amount < 0) {
+        return {
+          business: POALIM_BUSINESS_ID,
+        };
+      }
+      if (amount > 0) {
+        return {
+          business: KRAKEN_BUSINESS_ID,
+        };
+      }
+      break;
+    }
+    case 'ETHERSCAN': {
+      if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
+        return {
+          business: ETHERSCAN_BUSINESS_ID,
+        };
+      }
+      const amount = formatAmount(DbTransaction.amount);
+      if (amount < 0) {
+        return {
+          business: KRAKEN_BUSINESS_ID,
+        };
+      }
+      if (amount > 0) {
+        return {
+          business: '73519067-c8fe-4073-aec6-608ff596f8a8', // name: 'The Graph Foundation'
+        };
+      }
+      break;
+    }
+    case 'KRAKEN': {
+      if (
+        DbTransaction.is_fee ||
+        /\bfee\b/.test(description.toLowerCase()) ||
+        /\btrade\b/.test(description.toLowerCase())
+      ) {
+        return {
+          business: KRAKEN_BUSINESS_ID,
+        };
+      }
+      const amount = formatAmount(DbTransaction.amount);
+      if (amount < 0) {
+        return {
+          business: ETANA_BUSINESS_ID,
+        };
+      }
+      if (amount > 0) {
+        return {
+          business: ETHERSCAN_BUSINESS_ID,
+        };
+      }
+      break;
+    }
+  }
+
   if (
     description.includes('ע\' העברת מט"ח') ||
     (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
@@ -94,7 +164,7 @@ const missingInfoSuggestions: Resolver<
     description.includes('FEE')
   ) {
     return {
-      business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
+      business: POALIM_BUSINESS_ID,
     };
   }
   if (description.includes('דותן שמחה') || description.includes('שמחה דותן')) {
@@ -253,17 +323,17 @@ const missingInfoSuggestions: Resolver<
     description.includes('FEE')
   ) {
     return {
-      business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
+      business: POALIM_BUSINESS_ID,
     };
   }
   if (description.includes('ריבית זכות')) {
     return {
-      business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
+      business: POALIM_BUSINESS_ID,
     };
   }
   if (description.includes('פועלים- דמי כרטיס')) {
     return {
-      business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
+      business: POALIM_BUSINESS_ID,
     };
   }
   if (description.includes('אריה קריסטל')) {
