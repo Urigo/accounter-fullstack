@@ -41,7 +41,7 @@ export async function createAndConnectStore(options: { connectionString: string;
     BEGIN
         -- Create merged raw transactions record:
         INSERT INTO ${options.schema}.transactions_raw_list(etherscan_id)
-        VALUES (NEW.id::text)
+        VALUES (NEW.id)
         RETURNING id INTO merged_id;
     
         -- get account and owner IDs
