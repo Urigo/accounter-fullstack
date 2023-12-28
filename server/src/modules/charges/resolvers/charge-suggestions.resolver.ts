@@ -397,10 +397,10 @@ const missingInfoSuggestions: Resolver<
       description: 'GitHub Actions',
       tags: [{ name: 'business' }],
     };
-    if (formatAmount(DbCharge.event_amount) <= -2100) {
-      suggested.description = 'Monthly Sponsor for Andaris, notrab, warrenday';
-    } else if (formatAmount(DbCharge.event_amount) <= -2000) {
+    if (formatAmount(DbCharge.event_amount) <= -2000) {
       suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
+    } else if (formatAmount(DbCharge.event_amount) <= -1000) {
+        suggested.description = 'Monthly Sponsor for Andarist, warrenday';
     } else {
       suggested.description = 'GitHub Actions';
     }
