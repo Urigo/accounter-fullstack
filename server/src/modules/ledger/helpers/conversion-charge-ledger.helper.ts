@@ -38,7 +38,7 @@ export function conversionFeeCalculator(
       ? quote.localCurrencyCreditAmount1
       : (quote.creditAmount1 as number);
   const baseAmountConvertedByEventRate = baseAmount / eventRate;
-  if (baseAmountConvertedByEventRate - quoteAmount > 0.005) {
+  if (baseAmountConvertedByEventRate - quoteAmount > (baseAmount / 10_000_000)) {
     throw new GraphQLError(
       'Conversion records have mismatching amounts, taking the bank rate into account',
     );
