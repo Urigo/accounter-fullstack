@@ -1,5 +1,4 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   ChargeResolvers,
@@ -52,12 +51,10 @@ const missingInfoSuggestions: Resolver<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context
 > = async (DbCharge, _, { injector }) => {
-  const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(DbCharge.id);
-
   // if all required fields are filled, no need for suggestions
   if (
     // DbCharge.counterparty_id &&
-    tags.length > 0 &&
+    !!DbCharge.tags?.length &&
     // DbCharge.financial_accounts_to_balance &&
     !!DbCharge.user_description?.trim()
   ) {
@@ -142,8 +139,8 @@ const missingInfoSuggestions: Resolver<
       transactions.length === 0
         ? 'Missing'
         : transactions.length === 1
-          ? transactions[0].id
-          : `['${transactions.map(t => t.id).join("','")}']`;
+          ? transactions[0].source_reference
+          : `['${transactions.map(t => t.source_reference).join("','")}']`;
     return {
       business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
       tags: [{ name: 'financial' }],
@@ -491,7 +488,7 @@ const missingInfoSuggestions: Resolver<
     return {
       business: '8fa16264-de32-4592-bffb-64a1914318ad', //name: 'Poalim',
       tags: [{ name: 'financial' }],
-      description: `Fees for bank_reference=${transactions[0].source_id ?? 'Missing'}`,
+      description: `Fees for bank_reference=${transactions[0].source_reference ?? 'Missing'}`,
     };
   }
   if (description.includes('ריבית זכות')) {

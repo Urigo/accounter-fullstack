@@ -29,6 +29,8 @@ export const TrialBalanceTable = ({
       number,
       {
         sortCodes: Record<number, ExtendedSortCode>;
+        totalCredit: number;
+        totalDebit: number;
         credit: number;
         debit: number;
         sum: number;
@@ -51,6 +53,8 @@ export const TrialBalanceTable = ({
       const groupCode = roundNearest100(record.business.sortCode.id);
       adjustedSortCodes[groupCode] ??= {
         sortCodes: {},
+        totalCredit: 0,
+        totalDebit: 0,
         credit: 0,
         debit: 0,
         sum: 0,
@@ -59,12 +63,21 @@ export const TrialBalanceTable = ({
 
       group.sortCodes[record.business.sortCode.id] ??= {
         ...record.business.sortCode,
+        totalCredit: 0,
+        totalDebit: 0,
         records: [],
         credit: 0,
         debit: 0,
         sum: 0,
       };
       const sortCode = group.sortCodes[record.business.sortCode.id];
+
+      sortCode.totalCredit += record.credit.raw;
+      sortCode.totalDebit += record.debit.raw;
+      sortCode.sum += record.total.raw;
+      group.totalCredit += record.credit.raw;
+      group.totalDebit += record.debit.raw;
+      group.sum += record.total.raw;
 
       if (record.total.raw > 0) {
         sortCode.credit += record.total.raw;
@@ -73,8 +86,6 @@ export const TrialBalanceTable = ({
         sortCode.debit += record.total.raw;
         group.debit += record.total.raw;
       }
-      sortCode.sum += record.total.raw;
-      group.sum += record.total.raw;
 
       sortCode.records.push(record);
     }
@@ -107,7 +118,27 @@ export const TrialBalanceTable = ({
         ))}
         <tr className="bg-gray-100">
           <td colSpan={2}>Report total:</td>
-          <td colSpan={3}>{}</td>
+          <td />
+          <td>
+            (
+            {formatStringifyAmount(
+              Object.values(sortCodesGroups).reduce(
+                (totalDebit, row) => totalDebit + row.totalDebit,
+                0,
+              ),
+            )}
+            )
+          </td>
+          <td>
+            (
+            {formatStringifyAmount(
+              Object.values(sortCodesGroups).reduce(
+                (totalCredit, row) => totalCredit + row.totalCredit,
+                0,
+              ),
+            )}
+            )
+          </td>
           <td colSpan={1}>
             {formatStringifyAmount(
               Object.values(sortCodesGroups).reduce((total, row) => total + row.sum, 0),

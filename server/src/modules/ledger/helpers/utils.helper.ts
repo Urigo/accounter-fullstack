@@ -74,7 +74,7 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
 }
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> };
-type ValidateTransaction = Omit<
+export type ValidateTransaction = Omit<
   WithRequired<IGetTransactionsByChargeIdsResult, 'debit_date' | 'business_id' | 'debit_timestamp'>,
   'currency'
 > & { currency: Currency };
