@@ -140,6 +140,7 @@ export default gql`
     metadata: ChargeMetadata
   }
 
+  " charge of monthly VAT payment "
   type MonthlyVatCharge implements Charge {
     id: ID!
     vat: FinancialAmount
