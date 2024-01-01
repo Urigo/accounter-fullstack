@@ -19,8 +19,10 @@ import type {
   IGetChargesByFinancialEntityIdsQuery,
   IGetChargesByFinancialEntityIdsResult,
   IGetChargesByIdsQuery,
-  IGetChargesByIdsResult, // IGetConversionOtherSideParams,
-  // IGetConversionOtherSideQuery,
+  IGetChargesByIdsResult,
+  IUpdateAccountantApprovalParams,
+  IUpdateAccountantApprovalQuery,
+  IUpdateAccountantApprovalResult,
   IUpdateChargeParams,
   IUpdateChargeQuery,
   IUpdateChargeResult,
@@ -82,13 +84,6 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     AND ($toDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY t.event_date DESC;`;
 
-// const getConversionOtherSide = sql<IGetConversionOtherSideQuery>`
-//     SELECT event_amount, currency_code
-//     FROM accounter_schema.all_transactions
-//     WHERE bank_reference = $bankReference
-//       AND id <> $chargeId
-//       LIMIT 1;`;
-
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
   SET
@@ -116,6 +111,15 @@ const updateCharge = sql<IUpdateChargeQuery>`
     $taxCategoryId,
     tax_category_id
   )
+  WHERE
+    id = $chargeId
+  RETURNING *;
+`;
+
+const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
+  UPDATE accounter_schema.charges
+  SET
+    accountant_reviewed = $accountantReviewed
   WHERE
     id = $chargeId
   RETURNING *;
@@ -244,13 +248,15 @@ export class ChargesProvider {
     },
   );
 
-  // public getConversionOtherSide(params: IGetConversionOtherSideParams) {
-  //   return getConversionOtherSide.run(params, this.dbProvider);
-  // }
-
   public updateCharge(params: IUpdateChargeParams) {
     return updateCharge.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateChargeResult>[]
+    >;
+  }
+
+  public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
+    return updateAccountantApproval.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IUpdateAccountantApprovalResult>[]
     >;
   }
 

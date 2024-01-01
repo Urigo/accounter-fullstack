@@ -52,34 +52,30 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  if (DbCharge.business_array) {
-    if (DbCharge.business_array.length > 1) {
-      const isKrakenIncluded = DbCharge.business_array.includes(KRAKEN_BUSINESS_ID);
-      const isEtherscanIncluded = DbCharge.business_array.includes(ETHERSCAN_BUSINESS_ID);
-      const isEtanaIncluded = DbCharge.business_array.includes(ETANA_BUSINESS_ID);
-      const isPoalimIncluded = DbCharge.business_array.includes(POALIM_BUSINESS_ID);
+  if (DbCharge.business_array && DbCharge.business_array.length > 1) {
+    const isKrakenIncluded = DbCharge.business_array.includes(KRAKEN_BUSINESS_ID);
+    const isEtherscanIncluded = DbCharge.business_array.includes(ETHERSCAN_BUSINESS_ID);
+    const isEtanaIncluded = DbCharge.business_array.includes(ETANA_BUSINESS_ID);
+    const isPoalimIncluded = DbCharge.business_array.includes(POALIM_BUSINESS_ID);
 
-      if (isKrakenIncluded && isEtherscanIncluded) {
-        return {
-          description: 'Etherscan to Kraken transfer',
-          tags: [],
-        };
-      }
-      if (isKrakenIncluded && isEtanaIncluded) {
-        return {
-          description: 'Kraken to Etana transfer',
-          tags: [],
-        };
-      }
-      if (isPoalimIncluded && isEtanaIncluded) {
-        return {
-          description: 'Etana to Poalim transfer',
-          tags: [],
-        };
-      }
+    if (isKrakenIncluded && isEtherscanIncluded) {
+      return {
+        description: 'Etherscan to Kraken transfer',
+        tags: [],
+      };
     }
-
-    console.log('temp');
+    if (isKrakenIncluded && isEtanaIncluded) {
+      return {
+        description: 'Kraken to Etana transfer',
+        tags: [],
+      };
+    }
+    if (isPoalimIncluded && isEtanaIncluded) {
+      return {
+        description: 'Etana to Poalim transfer',
+        tags: [],
+      };
+    }
   }
 
   const allBusinesses = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();

@@ -45,7 +45,7 @@ export async function createGraphQLApp() {
         provide: Pool,
         useFactory: () =>
           new Pool({
-            connectionString: process.env.PGURI,
+            connectionString: process.env.DATABASE_URL,
             ssl: {
               rejectUnauthorized: false,
             },

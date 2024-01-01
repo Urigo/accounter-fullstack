@@ -9,12 +9,12 @@ export function PercentageInput({ ...props }: Props): ReactElement {
     props.value = (props.value as number) * 100;
   }
   if (props.onChange) {
-    const temp = props.onChange;
+    const internalOnChange = props.onChange;
     props.onChange = (e: unknown): void => {
       if (!Number.isNaN(e)) {
         e = (e as number) / 100;
       }
-      temp(e);
+      internalOnChange(e);
     };
   }
 
