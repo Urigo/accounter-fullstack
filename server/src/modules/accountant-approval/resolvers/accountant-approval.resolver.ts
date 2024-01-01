@@ -6,15 +6,13 @@ import { commonChargeFields } from './common.js';
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   Mutation: {
     toggleChargeAccountantApproval: async (_, { chargeId, approved }, { injector }) => {
-      const adjustedFields: ChargesTypes.IUpdateChargeParams = {
+      const adjustedFields: ChargesTypes.IUpdateAccountantApprovalParams = {
         accountantReviewed: approved,
         chargeId,
-        isConversion: null,
-        isProperty: null,
-        ownerId: null,
-        userDescription: null,
       };
-      const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
+      const res = await injector
+        .get(ChargesProvider)
+        .updateAccountantApproval({ ...adjustedFields });
 
       if (!res || res.length === 0) {
         throw new Error(`Failed to update charge ID='${chargeId}'`);
