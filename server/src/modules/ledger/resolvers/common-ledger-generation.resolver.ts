@@ -15,8 +15,9 @@ import {
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
   FEE_CATEGORY_NAME,
+  INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
-  VAT_TAX_CATEGORY_NAME,
+  OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
@@ -155,7 +156,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           amountWithoutVat = amountWithoutVat - vatAmount;
           await injector
             .get(TaxCategoriesProvider)
-            .taxCategoryByNamesLoader.load(VAT_TAX_CATEGORY_NAME)
+            .taxCategoryByIDsLoader.load(
+              isCreditorCounterparty ? OUTPUT_VAT_TAX_CATEGORY_ID : INPUT_VAT_TAX_CATEGORY_ID,
+            )
             .then(res => {
               vatTaxCategory = res ?? null;
             });
@@ -542,7 +545,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       const mightRequireExchangeRateRecord =
         (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
-      if (mightRequireExchangeRateRecord && unbalancedEntities.length === 1) {
+      const unbalancedBusinesses = unbalancedEntities.filter(
+        ({ entity }) => typeof entity === 'string',
+      );
+      if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
         const documentEntry = accountingLedgerEntries[0];
 
@@ -553,7 +559,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
         }
 
-        const { entity, balance } = unbalancedEntities[0];
+        const { entity, balance } = unbalancedBusinesses[0];
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 

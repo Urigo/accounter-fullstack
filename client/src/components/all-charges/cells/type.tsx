@@ -1,5 +1,5 @@
 import { ReactElement, useMemo } from 'react';
-import { Gift, Plane, TransferIn, Transform, Wallet } from 'tabler-icons-react';
+import { Coin, Gift, Plane, ReceiptTax, TransferIn, Transform, Wallet } from 'tabler-icons-react';
 import { ThemeIcon } from '@mantine/core';
 import { AllChargesTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
@@ -26,7 +26,7 @@ export const TypeCell = ({ data }: Props): ReactElement => {
   } => {
     switch (__typename) {
       case 'CommonCharge':
-        return { text: 'Common', icon: <Transform /> };
+        return { text: 'Common', icon: <Coin /> };
       case 'BusinessTripCharge':
         return { text: 'Business Trip', icon: <Plane /> };
       case 'DividendCharge':
@@ -37,6 +37,8 @@ export const TypeCell = ({ data }: Props): ReactElement => {
         return { text: 'Salary', icon: <Wallet /> };
       case 'InternalTransferCharge':
         return { text: 'Internal Transfer', icon: <TransferIn /> };
+      case 'MonthlyVatCharge':
+        return { text: 'Monthly VAT', icon: <ReceiptTax /> };
     }
   }, [__typename]);
   return (

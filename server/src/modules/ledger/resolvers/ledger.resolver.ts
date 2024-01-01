@@ -6,6 +6,7 @@ import { generateLedgerRecordsForCommonCharge } from './common-ledger-generation
 import { generateLedgerRecordsForConversion } from './conversion-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDividend } from './dividend-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from './internal-transfer-ledger-generation.resolver.js';
+import { generateLedgerRecordsForMonthlyVat } from './monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from './salary-ledger-generation.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
@@ -61,6 +62,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   BusinessTripCharge: {
     ledgerRecords: generateLedgerRecordsForBusinessTrip,
+  },
+  MonthlyVatCharge: {
+    ledgerRecords: generateLedgerRecordsForMonthlyVat,
   },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {

@@ -47,6 +47,10 @@ export default gql`
     accountantApproval: AccountantApproval!
   }
 
+  extend type MonthlyVatCharge {
+    accountantApproval: AccountantApproval!
+  }
+
   extend input UpdateChargeInput {
     accountantApproval: AccountantApprovalInput
   }

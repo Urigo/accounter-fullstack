@@ -26,7 +26,8 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
   > = {
   Query: {
-    businessTransactionsSumFromLedgerRecords: async (_, { filters }, { injector }, info) => {
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }, context, info) => {
+      const injector = context.injector;
       const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
 
       const [businesses, taxCategories] = await Promise.all([
@@ -50,7 +51,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           toAnyDate: toDate,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
+          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, context, info)),
         );
 
         const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);
@@ -151,7 +152,8 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    businessTransactionsFromLedgerRecords: async (_, { filters }, { injector }, info) => {
+    businessTransactionsFromLedgerRecords: async (_, { filters }, context, info) => {
+      const injector = context.injector;
       const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
 
       const [businesses, taxCategories] = await Promise.all([
@@ -175,7 +177,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           toAnyDate: toDate,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, { injector }, info)),
+          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, context, info)),
         );
 
         const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);

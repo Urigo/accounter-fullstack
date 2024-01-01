@@ -92,10 +92,13 @@ export function adjustTaxRecords(
     if (partialRecord.businessId && partialRecord.vat) {
       // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
       const convertedVat = 17 / 117;
-      if (Math.round(doc.total_amount * convertedVat) !== Math.round(doc.vat_amount!)) {
+      const tiplessTotalAmount =
+        doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);
+      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount!);
+      if (vatDiff > 0.005) {
         throw new GraphQLError(
           `VAT amount is not 17% (but ${
-            doc.vat_amount! / (doc.total_amount - doc.vat_amount!)
+            doc.vat_amount! / (tiplessTotalAmount - doc.vat_amount!)
           }) for invoice ID=${doc.id}`,
         );
       }

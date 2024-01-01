@@ -31,6 +31,10 @@ export default gql`
     oldLedger: [OldLedger!]!
   }
 
+  extend type MonthlyVatCharge {
+    oldLedger: [OldLedger!]!
+  }
+
   " Old ledger entity"
   type OldLedger {
     business: String!

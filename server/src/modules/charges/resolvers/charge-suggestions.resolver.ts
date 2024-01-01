@@ -400,7 +400,7 @@ const missingInfoSuggestions: Resolver<
     if (formatAmount(DbCharge.event_amount) <= -2000) {
       suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
     } else if (formatAmount(DbCharge.event_amount) <= -1000) {
-        suggested.description = 'Monthly Sponsor for Andarist, warrenday';
+      suggested.description = 'Monthly Sponsor for Andarist, warrenday';
     } else {
       suggested.description = 'GitHub Actions';
     }
@@ -505,4 +505,5 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
   InternalTransferCharge: commonChargeFields,
   DividendCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,
+  MonthlyVatCharge: commonChargeFields,
 };

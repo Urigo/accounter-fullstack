@@ -4,11 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_CATEGORY_NAME,
-  FEE_CATEGORY_NAME,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, FEE_CATEGORY_NAME } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -202,7 +198,9 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       } else {
         const businessTaxCategory = quoteEntry.debitAccountID1!;
         if (!businessTaxCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(
+            `Quote ledger entry for charge ID=${chargeId} is missing Tax category`,
+          );
         }
 
         const ledgerEntry: StrictLedgerProto = {

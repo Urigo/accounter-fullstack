@@ -51,6 +51,7 @@ generates:
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         LedgerRecord: '@shared/types#LedgerProto'
         LtdFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         NamedCounterparty: '@shared/types#CounterpartyProto'
         PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'

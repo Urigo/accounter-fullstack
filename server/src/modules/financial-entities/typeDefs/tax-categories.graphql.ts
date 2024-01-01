@@ -35,6 +35,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type MonthlyVatCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type LtdFinancialEntity {
     taxCategory: TaxCategory
   }

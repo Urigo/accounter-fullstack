@@ -271,6 +271,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: DbCharge => getChargeType(DbCharge) === 'BusinessTripCharge',
     ...commonChargeFields,
   },
+  MonthlyVatCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'MonthlyVatCharge',
+    ...commonChargeFields,
+  },
   Invoice: {
     ...commonDocumentsFields,
   },
