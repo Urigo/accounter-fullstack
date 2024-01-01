@@ -169,6 +169,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   InternalTransferCharge: commonChargeFields,
   DividendCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,
+  MonthlyVatCharge: commonChargeFields,
   // WireTransaction: {
   //   ...commonTransactionFields,
   // },

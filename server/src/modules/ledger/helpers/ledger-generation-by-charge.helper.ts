@@ -5,6 +5,7 @@ import { generateLedgerRecordsForCommonCharge } from '../resolvers/common-ledger
 import { generateLedgerRecordsForConversion } from '../resolvers/conversion-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDividend } from '../resolvers/dividend-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from '../resolvers/internal-transfer-ledger-generation.resolver.js';
+import { generateLedgerRecordsForMonthlyVat } from '../resolvers/monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/salary-ledger-generation.resolver.js';
 
 export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
@@ -22,6 +23,8 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
       return generateLedgerRecordsForDividend;
     case 'BusinessTripCharge':
       return generateLedgerRecordsForBusinessTrip;
+    case 'MonthlyVatCharge':
+      return generateLedgerRecordsForMonthlyVat;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }

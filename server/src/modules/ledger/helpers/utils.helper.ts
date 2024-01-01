@@ -128,7 +128,7 @@ export function generatePartialLedgerEntry(
     debitAmount1: absForeignAmount,
     localCurrencyDebitAmount1: absAmount,
     description: transaction.source_description ?? undefined,
-    reference1: transaction.source_id,
+    reference1: transaction.source_reference ?? undefined,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -201,15 +201,14 @@ export function getLedgerBalanceInfo(
     }
     if (typeof entity === 'string' && !allowedUnbalancedBusinesses.has(entity)) {
       isBalanced = false;
-      unbalancedEntities.push({
-        entity,
-        balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
-      });
     }
+    unbalancedEntities.push({
+      entity,
+      balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
+    });
     ledgerBalanceSum += amount;
   }
   if (Math.abs(ledgerBalanceSum) >= 0.005) {
-    console.error(`Ledger is not balanced`);
     isBalanced = false;
   }
 

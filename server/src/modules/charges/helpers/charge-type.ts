@@ -1,4 +1,4 @@
-import { DIVIDEND_BUSINESS_IDS, INTERNAL_WALLETS_IDS } from '@shared/constants';
+import { DIVIDEND_BUSINESS_IDS, INTERNAL_WALLETS_IDS, VAT_BUSINESS_ID } from '@shared/constants';
 import type { IGetChargesByIdsResult } from '../types.js';
 
 export function getChargeType(charge: IGetChargesByIdsResult) {
@@ -23,6 +23,10 @@ export function getChargeType(charge: IGetChargesByIdsResult) {
 
   if (charge.business_array?.some(businessId => DIVIDEND_BUSINESS_IDS.includes(businessId))) {
     return 'DividendCharge';
+  }
+
+  if (charge.business_id === VAT_BUSINESS_ID) {
+    return 'MonthlyVatCharge';
   }
 
   return 'CommonCharge';

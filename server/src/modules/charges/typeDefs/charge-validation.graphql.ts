@@ -31,6 +31,10 @@ export default gql`
     validationData: ValidationData
   }
 
+  extend type MonthlyVatCharge {
+    validationData: ValidationData
+  }
+
   " represent a validation data for missing info "
   type ValidationData {
     isValid: Boolean!

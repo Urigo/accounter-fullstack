@@ -48,6 +48,10 @@ export default gql`
     ledgerRecords: GeneratedLedgerRecords
   }
 
+  extend type MonthlyVatCharge {
+    ledgerRecords: GeneratedLedgerRecords
+  }
+
   " unbalanced entity over ledger records "
   type LedgerBalanceUnbalancedEntities {
     entity: Counterparty!

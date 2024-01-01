@@ -54,6 +54,10 @@ export default gql`
     counterparty: Counterparty
   }
 
+  extend type MonthlyVatCharge {
+    counterparty: Counterparty
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID

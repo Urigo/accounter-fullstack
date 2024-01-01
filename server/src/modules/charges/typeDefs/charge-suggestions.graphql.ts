@@ -31,6 +31,10 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
+  extend type MonthlyVatCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
   " represent charge suggestions for missing info "
   type ChargeSuggestions {
     description: String

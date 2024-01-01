@@ -31,6 +31,10 @@ export default gql`
     beneficiaries: [BeneficiaryCounterparty!]!
   }
 
+  extend type MonthlyVatCharge {
+    beneficiaries: [BeneficiaryCounterparty!]!
+  }
+
   " input variables for beneficiary"
   input BeneficiaryInput {
     counterparty: CounterpartyInput!

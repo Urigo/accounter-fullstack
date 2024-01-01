@@ -18,7 +18,8 @@ export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
 ];
 
 // Tax category related
-export const VAT_TAX_CATEGORY_NAME = 'מעמ';
+export const INPUT_VAT_TAX_CATEGORY_ID = 'b022d08b-62d8-48f7-9203-7c175646dbac';
+export const OUTPUT_VAT_TAX_CATEGORY_ID = '7a798add-800d-4a06-87df-d0b85682be19';
 export const EXCHANGE_RATE_CATEGORY_NAME = 'Exchange Rates';
 export const FEE_CATEGORY_NAME = 'Fee';
 export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
@@ -81,3 +82,12 @@ export const COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID = '34191f12-c0f2-4d4b-ab
 export const ZKUFOT_INCOME_TAX_CATEGORY_ID = '52d4309c-f26f-4bbb-8413-971160067fb9';
 
 export const BALANCE_CANCELLATION_TAX_CATEGORY_ID = 'fe4b3698-ee5a-4764-a1dc-0c133239fa2b';
+
+export const VAT_BUSINESS_ID = 'c7fdf6f6-e075-44ee-b251-cbefea366826';
+
+// TODO(Gil): implement this in a better way, maybe DB flag
+export const VAT_REPORT_EXCLUDED_BUSINESS_NAMES = [
+  SOCIAL_SECURITY_BUSINESS_ID, // Social Security Deductions
+  '9d3a8a88-6958-4119-b509-d50a7cdc0744', // Tax
+  VAT_BUSINESS_ID,
+];
