@@ -45,20 +45,17 @@ export const getVatRecords: ResolverFn<
         ownerIDs: [filters?.financialEntityId],
       })
       .then(documents =>
-        documents
-          .filter(doc => {
-            if (doc.charge_id_new) {
-              docsChargesIDs.add(doc.charge_id_new);
-            }
-            // filter invoice documents with linked charge
-            if (!doc.charge_id_new || !doc.creditor_id || !doc.debtor_id) {
-              return false;
-            }
-            const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(
-              doc.type,
-            );
-            return isRelevantDoc;
-          }),
+        documents.filter(doc => {
+          if (doc.charge_id_new) {
+            docsChargesIDs.add(doc.charge_id_new);
+          }
+          // filter invoice documents with linked charge
+          if (!doc.charge_id_new || !doc.creditor_id || !doc.debtor_id) {
+            return false;
+          }
+          const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(doc.type);
+          return isRelevantDoc;
+        }),
       );
 
     // get all businesses
