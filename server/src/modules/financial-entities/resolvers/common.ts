@@ -106,7 +106,7 @@ export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   owner: (DbCharge, _, { injector }) =>
     injector
       .get(FinancialEntitiesProvider)
-      .getFinancialEntityByChargeIdsLoader.load(DbCharge.id)
+      .getFinancialEntityByIdLoader.load(DbCharge.owner_id)
       .then(res => {
         if (!res) {
           throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);

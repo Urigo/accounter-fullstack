@@ -1,7 +1,9 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import { Optional, TimelessDateString } from '@shared/types';
 import type {
   IGetTransactionsByChargeIdsQuery,
@@ -160,7 +162,14 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   global: true,
 })
 export class TransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
+  constructor(
+    private dbProvider: DBProvider,
+    private chargesProvider: ChargesProvider,
+  ) {}
 
   private async batchTransactionsByIds(ids: readonly string[]) {
     const transactions = await getTransactionsByIds.run(
@@ -199,10 +208,12 @@ export class TransactionsProvider {
   );
 
   public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
+    this.clearCache();
     return replaceTransactionsChargeId.run(params, this.dbProvider);
   }
 
   public updateTransaction(params: IUpdateTransactionParams) {
+    this.clearCache();
     return updateTransaction.run(params, this.dbProvider);
   }
 
@@ -224,5 +235,14 @@ export class TransactionsProvider {
     return getTransactionsByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetTransactionsByFiltersResult[]
     >;
+  }
+
+  public clearCache() {
+    this.cache.clear();
+    this.chargesProvider.clearCache();
+
+    // should be cleared on change in:
+    // transactions_raw_list
+    // financial_accounts
   }
 }

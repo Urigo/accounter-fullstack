@@ -32,7 +32,9 @@ const getSortCodesByBusinessIds = sql<IGetSortCodesByBusinessIdsQuery>`
   global: true,
 })
 export class SortCodesProvider {
-  cache = getCacheInstance();
+  cache = getCacheInstance({
+    stdTTL: 60 * 60 * 24,
+  });
 
   constructor(private dbProvider: DBProvider) {}
 

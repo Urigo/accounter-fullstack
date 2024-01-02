@@ -1,13 +1,16 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from 'modules/app-providers/db.provider.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteDocumentParams,
   IDeleteDocumentQuery,
   IGetAllDocumentsParams,
   IGetAllDocumentsQuery,
+  IGetAllDocumentsResult,
   IGetDocumentsByChargeIdQuery,
   IGetDocumentsByFiltersParams,
   IGetDocumentsByFiltersQuery,
@@ -191,10 +194,25 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   global: true,
 })
 export class DocumentsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
+  constructor(
+    private dbProvider: DBProvider,
+    private chargesProvider: ChargesProvider,
+  ) {}
 
   public async getAllDocuments(params: IGetAllDocumentsParams) {
-    return getAllDocuments.run(params, this.dbProvider);
+    const cachedResult = this.cache.get<IGetAllDocumentsResult[]>('getAllDocuments');
+    if (cachedResult) {
+      return Promise.resolve(cachedResult);
+    }
+
+    return getAllDocuments.run(params, this.dbProvider).then(result => {
+      this.cache.set('getAllDocuments', result);
+      return result;
+    });
   }
 
   private async batchDocumentsByChargeIds(chargeIds: readonly string[]) {
@@ -209,10 +227,15 @@ export class DocumentsProvider {
     }
   }
 
+  private getDocumentsByChargeIdKey(chargeId: string) {
+    return `chargeId-${chargeId}`;
+  }
+
   public getDocumentsByChargeIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
     {
-      cache: false,
+      cacheKeyFn: this.getDocumentsByChargeIdKey,
+      cacheMap: this.cache,
     },
   );
 
@@ -221,10 +244,12 @@ export class DocumentsProvider {
   }
 
   public async updateDocument(params: IUpdateDocumentParams) {
+    this.clearCache();
     return updateDocument.run(params, this.dbProvider);
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {
+    this.clearCache();
     return deleteDocument.run(params, this.dbProvider);
   }
 
@@ -249,10 +274,19 @@ export class DocumentsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getDocumentsByFilters.run(fullParams, this.dbProvider);
+    return getDocumentsByFilters.run(fullParams, this.dbProvider).then(documents => {
+      documents.map(document => {
+        this.cache.set(document.id, document);
+        if (document.charge_id_new) {
+          this.cache.set(this.getDocumentsByChargeIdKey(document.charge_id_new), document);
+        }
+      });
+      return documents;
+    });
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
+    this.clearCache();
     return replaceDocumentsChargeId.run(params, this.dbProvider);
   }
 
@@ -271,7 +305,12 @@ export class DocumentsProvider {
   public getDocumentsByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchDocumentsByIds(keys),
     {
-      cache: false,
+      cacheMap: this.cache,
     },
   );
+
+  public clearCache() {
+    this.cache.clear();
+    this.chargesProvider.clearCache();
+  }
 }

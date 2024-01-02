@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
@@ -86,6 +87,10 @@ const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
   global: true,
 })
 export class TaxCategoriesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 60 * 24,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
@@ -106,11 +111,16 @@ export class TaxCategoriesProvider {
     );
   }
 
+  private taxCategoryByBusinessAndOwnerIDsKey(key: { businessId: string; ownerId: string }) {
+    return `business&owner-${key.businessId}-${key.ownerId}`;
+  }
+
   public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
     (keys: readonly { businessId: string; ownerId: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
     {
-      cache: false,
+      cacheKeyFn: this.taxCategoryByBusinessAndOwnerIDsKey,
+      cacheMap: this.cache,
     },
   );
 
@@ -124,10 +134,15 @@ export class TaxCategoriesProvider {
     return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
   }
 
+  private taxCategoryByChargeIDsKey(cahrgeId: string) {
+    return `chargeId-${cahrgeId}`;
+  }
+
   public taxCategoryByChargeIDsLoader = new DataLoader(
     (chargeIDs: readonly string[]) => this.batchTaxCategoryByChargeIDs(chargeIDs),
     {
-      cache: false,
+      cacheKeyFn: this.taxCategoryByChargeIDsKey,
+      cacheMap: this.cache,
     },
   );
 
@@ -144,12 +159,20 @@ export class TaxCategoriesProvider {
   public taxCategoryByIDsLoader = new DataLoader(
     (IDs: readonly string[]) => this.batchTaxCategoryByIDs(IDs),
     {
-      cache: false,
+      cacheMap: this.cache,
     },
   );
 
   public getAllTaxCategories() {
-    return getAllTaxCategories.run(undefined, this.dbProvider);
+    const cachedResult = this.cache.get<IGetAllTaxCategoriesResult[]>('getAllTaxCategories');
+    if (cachedResult) {
+      return Promise.resolve(cachedResult);
+    }
+
+    return getAllTaxCategories.run(undefined, this.dbProvider).then(result => {
+      this.cache.set('getAllTaxCategories', result);
+      return result;
+    });
   }
 
   private async batchTaxCategoryByNames(names: readonly string[]) {
@@ -162,22 +185,34 @@ export class TaxCategoriesProvider {
     return names.map(name => taxCategories.find(tc => tc.name === name));
   }
 
+  private taxCategoryByNamesKey(name: string) {
+    return `name-${name}`;
+  }
+
   public taxCategoryByNamesLoader = new DataLoader(
     (names: readonly string[]) => this.batchTaxCategoryByNames(names),
     {
-      cache: false,
+      cacheKeyFn: this.taxCategoryByNamesKey,
+      cacheMap: this.cache,
     },
   );
 
   public updateTaxCategory(params: IUpdateTaxCategoryParams) {
+    this.clearCache();
     return updateTaxCategory.run(params, this.dbProvider);
   }
 
   public updateBusinessTaxCategory(params: IUpdateBusinessTaxCategoryParams) {
+    this.clearCache();
     return updateBusinessTaxCategory.run(params, this.dbProvider);
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
+    this.clearCache();
     return insertBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

@@ -5,11 +5,7 @@ import { commonTagsChargeFields } from './common.js';
 
 export const tagsResolvers: TagsModule.Resolvers = {
   Query: {
-    allTags: (_, __, { injector }) =>
-      injector
-        .get(TagsProvider)
-        .getAllTags()
-        .then(res => res.rows.map(tag => ({ name: tag.unnest }))),
+    allTags: (_, __, { injector }) => injector.get(TagsProvider).getAllTags(),
   },
   Mutation: {
     addTag: (_, { name }, { injector }) => {

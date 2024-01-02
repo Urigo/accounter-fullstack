@@ -1,7 +1,9 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteChargesByIdsParams,
@@ -54,35 +56,23 @@ const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuer
     SELECT c.*, t.account_id
     FROM accounter_schema.extended_charges c
     LEFT JOIN accounter_schema.transactions t
-    ON c.id = t.charge_id
+    ON c.id = t.charge_id AND t.event_date = c.transactions_min_event_date
     WHERE c.id IN (
       SELECT charge_id
       FROM accounter_schema.transactions
       WHERE account_id IN $$financialAccountIDs
-      AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-      AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+      AND ($fromDate ::TEXT IS NULL OR transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+      AND ($toDate ::TEXT IS NULL OR transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     )
-    AND t.event_date = (
-      SELECT MIN(event_date)
-      FROM accounter_schema.transactions as t2
-      WHERE t2.charge_id = c.id
-    )
-    ORDER BY t.event_date DESC;`;
+    ORDER BY c.transactions_min_event_date DESC;`;
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT c.*
     FROM accounter_schema.extended_charges c
-    LEFT JOIN accounter_schema.transactions t
-    ON c.id = t.charge_id
     WHERE owner_id IN $$ownerIds
-    AND t.event_date = (
-      SELECT MIN(event_date)
-      FROM accounter_schema.transactions as t2
-      WHERE t2.charge_id = c.id
-    )
-    AND ($fromDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY t.event_date DESC;`;
+    AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY t.transactions_min_event_date DESC;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
@@ -181,6 +171,10 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
@@ -195,7 +189,9 @@ export class ChargesProvider {
 
   public getChargeByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchChargesByIds(keys),
-    { cache: false },
+    {
+      cacheMap: this.cache,
+    },
   );
 
   public getChargesByFinancialAccountIds(params: IGetChargesByFinancialAccountIdsParams) {
@@ -218,10 +214,15 @@ export class ChargesProvider {
     );
   }
 
+  private getChargeByFinancialAccountIDKey(id: string) {
+    return `financialAccount-${id}`;
+  }
+
   public getChargeByFinancialAccountIDsLoader = new DataLoader(
     (keys: readonly string[]) => this.batchChargesByFinancialAccountIds(keys),
     {
-      cache: false,
+      cacheKeyFn: this.getChargeByFinancialAccountIDKey,
+      cacheMap: this.cache,
     },
   );
 
@@ -243,20 +244,27 @@ export class ChargesProvider {
     return ownerIds.map(id => charges.filter(charge => charge.owner_id === id));
   }
 
+  private getChargeByFinancialEntityIDKey(id: string) {
+    return `financialEntity-${id}`;
+  }
+
   public getChargeByFinancialEntityIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchChargesByFinancialEntityIds(keys),
     {
-      cache: false,
+      cacheKeyFn: this.getChargeByFinancialEntityIDKey,
+      cacheMap: this.cache,
     },
   );
 
   public updateCharge(params: IUpdateChargeParams) {
+    this.clearCache();
     return updateCharge.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateChargeResult>[]
     >;
   }
 
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
+    this.clearCache();
     return updateAccountantApproval.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateAccountantApprovalResult>[]
     >;
@@ -303,12 +311,24 @@ export class ChargesProvider {
       withoutInvoice: params.withoutInvoice ?? false,
       withoutDocuments: params.withoutDocuments ?? false,
     };
-    return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
-      IGetChargesByFiltersResult[]
-    >;
+    return getChargesByFilters.run(fullParams, this.dbProvider).then(result => {
+      result.map(charge => {
+        this.cache.set(charge.id!, charge);
+        this.cache.set(this.getChargeByFinancialEntityIDKey(charge.owner_id!), charge);
+      });
+      return result as IGetChargesByFiltersResult[];
+    });
   }
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
+    this.clearCache();
     return deleteChargesByIds.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
+
+    // should be cleared on change in:
+    // business_trip_charges
   }
 }

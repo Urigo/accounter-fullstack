@@ -191,19 +191,21 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         for (const id of chargeIdsToMerge) {
           // update linked documents
-          await injector.get(DocumentsProvider).replaceDocumentsChargeId({
+          const mergeDocuments = injector.get(DocumentsProvider).replaceDocumentsChargeId({
             replaceChargeID: id,
             assertChargeID: baseChargeID,
           });
 
           // update linked transactions
-          await injector.get(TransactionsProvider).replaceTransactionsChargeId({
+          const mergeTransactions = injector.get(TransactionsProvider).replaceTransactionsChargeId({
             replaceChargeID: id,
             assertChargeID: baseChargeID,
           });
 
           // clear tags
-          await injector.get(TagsProvider).clearAllChargeTags({ chargeId: id });
+          const clearTags = injector.get(TagsProvider).clearAllChargeTags({ chargeId: id });
+
+          await Promise.all([mergeDocuments, mergeTransactions, clearTags]);
 
           // delete charge
           await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });

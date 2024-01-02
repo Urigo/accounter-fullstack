@@ -49,10 +49,6 @@ export class SalariesProvider {
     { cache: false },
   );
 
-  public getAllTags() {
-    return getAllSalaryRecords.run(undefined, this.dbProvider);
-  }
-
   private async batchGetSalaryRecordsByChargeIds(chargeIds: stringArray) {
     const salaries = await getSalaryRecordsByChargeIds.run({ chargeIds }, this.dbProvider);
     return chargeIds.map(id =>

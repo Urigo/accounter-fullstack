@@ -34,7 +34,9 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
   global: true,
 })
 export class FinancialAccountsProvider {
-  cache = getCacheInstance();
+  cache = getCacheInstance({
+    stdTTL: 60 * 60 * 24,
+  });
 
   constructor(private dbProvider: DBProvider) {}
 
