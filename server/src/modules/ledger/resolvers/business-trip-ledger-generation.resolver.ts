@@ -121,7 +121,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     // create a ledger record for fee transactions
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
       if (!transaction.is_fee) {
-        return;
+        throw new GraphQLError(
+          `Who did a non-fee transaction marked as fee? (Transaction ID="${transaction.id}")`,
+        );
       }
 
       const isSupplementalFee = isSupplementalFeeTransaction(transaction);

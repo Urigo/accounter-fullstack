@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
@@ -15,6 +14,7 @@ import {
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { CounterAccountProto, LedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../helpers/dividend-ledger.helper.js';
+import { getEntriesFromFeeTransaction } from '../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
   getLedgerBalanceInfo,
@@ -26,10 +26,11 @@ import {
 export const generateLedgerRecordsForDividend: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   object
-> = async (charge, _, { injector }) => {
+> = async (charge, _, context) => {
   const chargeId = charge.id;
+  const { injector } = context;
 
   try {
     // validate ledger records are balanced
@@ -45,7 +46,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const transactions = await injector
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
-    const { withholdingTaxTransactions, paymentsTransactions } =
+    const { withholdingTaxTransactions, paymentsTransactions, feeTransactions } =
       splitDividendTransactions(transactions);
 
     // create a ledger record for tax deduction origin
@@ -268,6 +269,21 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       }
     }
 
+    // create a ledger record for fee transactions
+    const entriesPromises: Array<Promise<void>> = [];
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    const feeTransactionsPromises = feeTransactions.map(async transaction => {
+      await getEntriesFromFeeTransaction(transaction, charge, context).then(ledgerEntries => {
+        feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+        ledgerEntries.map(ledgerEntry => {
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        });
+      });
+    });
+
+    entriesPromises.push(...feeTransactionsPromises);
+    await Promise.all(entriesPromises);
+
     // create ledger entry for summary dividend tax category
     dividendTaxCategory ||= await injector
       .get(TaxCategoriesProvider)
@@ -297,7 +313,11 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
     return {
-      records: [...withholdingTaxLedgerEntries, ...paymentsLedgerEntries],
+      records: [
+        ...withholdingTaxLedgerEntries,
+        ...paymentsLedgerEntries,
+        ...feeFinancialAccountLedgerEntries,
+      ],
       balance: ledgerBalanceInfo,
     };
   } catch (e) {

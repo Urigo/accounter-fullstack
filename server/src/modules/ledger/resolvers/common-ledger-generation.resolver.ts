@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -14,7 +13,6 @@ import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
   EXCHANGE_RATE_CATEGORY_NAME,
-  FEE_CATEGORY_NAME,
   INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
@@ -22,7 +20,7 @@ import {
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
-import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
+import { getEntriesFromFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
@@ -35,10 +33,11 @@ import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses
 export const generateLedgerRecordsForCommonCharge: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   object
-> = async (charge, _, { injector }) => {
+> = async (charge, _, context) => {
   const chargeId = charge.id;
+  const { injector } = context;
 
   try {
     // validate ledger records are balanced
@@ -348,97 +347,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // create a ledger record for fee transactions
       const feeTransactionsPromises = feeTransactions.map(async transaction => {
-        if (!transaction.is_fee) {
-          return;
-        }
-
-        const isSupplementalFee = isSupplementalFeeTransaction(transaction);
-        const { currency, valueDate, transactionBusinessId } =
-          validateTransactionBasicVariables(transaction);
-
-        let amount = Number(transaction.amount);
-        let foreignAmount: number | undefined = undefined;
-
-        if (currency !== DEFAULT_LOCAL_CURRENCY) {
-          // get exchange rate for currency
-          const exchangeRate = await injector
-            .get(ExchangeProvider)
-            .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
-
-          foreignAmount = amount;
-          // calculate amounts in ILS
-          amount = exchangeRate * amount;
-        }
-
-        const feeTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
-        if (!feeTaxCategory) {
-          throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
-        }
-
-        const isCreditorCounterparty = amount > 0;
-
-        let mainAccount: CounterAccountProto = transactionBusinessId;
-
-        const partialLedgerEntry: LedgerProto = {
-          id: transaction.id,
-          invoiceDate: transaction.event_date,
-          valueDate,
-          currency,
-          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyCreditAmount1: Math.abs(amount),
-          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-          localCurrencyDebitAmount1: Math.abs(amount),
-          description: transaction.source_description ?? undefined,
-          reference1: transaction.source_id,
-          isCreditorCounterparty: isSupplementalFee
-            ? isCreditorCounterparty
-            : !isCreditorCounterparty,
-          ownerId: charge.owner_id,
-          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-          chargeId,
-        };
-
-        if (isSupplementalFee) {
-          const account = await injector
-            .get(FinancialAccountsProvider)
-            .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-          if (!account) {
-            throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-          }
-          const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-          const businessTaxCategory = await injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByNamesLoader.load(taxCategoryName);
-          if (!businessTaxCategory) {
-            throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-          }
-
-          mainAccount = businessTaxCategory;
-        } else {
-          const mainBusiness = charge.business_id ?? undefined;
-
-          const ledgerEntry: LedgerProto = {
-            ...partialLedgerEntry,
-            creditAccountID1: isCreditorCounterparty ? mainAccount : mainBusiness,
-            debitAccountID1: isCreditorCounterparty ? mainBusiness : mainAccount,
-          };
-
-          feeFinancialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        }
-
-        const ledgerEntry: StrictLedgerProto = {
-          ...partialLedgerEntry,
-          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
-          debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
-        };
-
-        feeFinancialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        dates.add(ledgerEntry.valueDate.getTime());
-        currencies.add(ledgerEntry.currency);
+        await getEntriesFromFeeTransaction(transaction, charge, context).then(ledgerEntries => {
+          feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+          ledgerEntries.map(ledgerEntry => {
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            dates.add(ledgerEntry.valueDate.getTime());
+            currencies.add(ledgerEntry.currency);
+          });
+        });
       });
 
       entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
