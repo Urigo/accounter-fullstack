@@ -34,7 +34,6 @@ export const getVatRecords: ResolverFn<
       businessTrips: [] as Array<ResolversTypes['Charge']>,
     };
 
-    const notIncludedChargeIDs = new Set<string>();
     const docsChargesIDs = new Set<string>();
 
     // get all documents by date filters
@@ -58,15 +57,7 @@ export const getVatRecords: ResolverFn<
             const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(
               doc.type,
             );
-            if (!isRelevantDoc) {
-              notIncludedChargeIDs.add(doc.charge_id_new);
-            }
             return isRelevantDoc;
-          })
-          .map(doc => {
-            // For cases where charge has both invoice and receipt, remove from notIncludedChargeIDs list
-            if (doc.charge_id_new) notIncludedChargeIDs.delete(doc.charge_id_new);
-            return doc;
           }),
       );
 
@@ -104,7 +95,6 @@ export const getVatRecords: ResolverFn<
     docsCharges = docsCharges.filter(charge => {
       for (const businessId of charge.business_array ?? []) {
         if (VAT_REPORT_EXCLUDED_BUSINESS_NAMES.includes(businessId)) {
-          notIncludedChargeIDs.add(charge.id);
           return false;
         }
       }
@@ -153,8 +143,6 @@ export const getVatRecords: ResolverFn<
         if (filters?.chargesType !== 'INCOME') {
           incomeRecords.push({ charge, doc, business });
         }
-      } else {
-        notIncludedChargeIDs.add(charge.id);
       }
     });
 
@@ -162,18 +150,6 @@ export const getVatRecords: ResolverFn<
       // TODO: what if no exchange dates found?
       response.income.push(...adjustTaxRecords(incomeRecords, exchangeRates));
       response.expenses.push(...adjustTaxRecords(expenseRecords, exchangeRates));
-    }
-
-    charges.map(c => {
-      notIncludedChargeIDs.delete(c.id);
-    });
-    if (notIncludedChargeIDs.size > 0) {
-      const moreCharges = await injector.get(ChargesProvider).getChargesByFilters({
-        IDs: Array.from(notIncludedChargeIDs),
-        ownerIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
-        chargeType: filters?.chargesType,
-      });
-      charges.push(...moreCharges);
     }
 
     // validate charges for missing info
