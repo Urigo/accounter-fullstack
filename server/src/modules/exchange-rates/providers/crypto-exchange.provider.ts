@@ -6,6 +6,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
+import { getCacheInstance } from '@shared/helpers';
 import {
   IGetCryptoCurrenciesBySymbolQuery,
   IGetCryptoCurrenciesBySymbolResult,
@@ -13,6 +14,7 @@ import {
   IGetRateByCurrencyAndDateResult,
   IInsertRatesParams,
   IInsertRatesQuery,
+  IInsertRatesResult,
 } from '../types.js';
 
 const getRateByCurrencyAndDate = sql<IGetRateByCurrencyAndDateQuery>`
@@ -40,6 +42,7 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
 })
 export class CryptoExchangeProvider {
   fiatCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
+  cache = getCacheInstance();
 
   constructor(private dbProvider: DBProvider) {}
 
@@ -51,16 +54,18 @@ export class CryptoExchangeProvider {
     return insertRates.run({ rates }, this.dbProvider);
   }
 
-  public addCryptoRateLoader = new DataLoader(
-    (
-      keys: readonly {
-        date: Date;
-        currency: string;
-        against?: Currency;
-        value: number;
-        sampleDate: Date;
-      }[],
-    ) =>
+  public addCryptoRateLoader = new DataLoader<
+    {
+      date: Date;
+      currency: string;
+      against?: Currency | undefined;
+      value: number;
+      sampleDate: Date;
+    },
+    IInsertRatesResult,
+    string
+  >(
+    keys =>
       this.addRates(
         keys.map(({ date, currency, against, value, sampleDate }) => ({
           date,
@@ -71,9 +76,8 @@ export class CryptoExchangeProvider {
         })),
       ),
     {
-      cache: false,
-      cacheKeyFn: ({ date, currency, against }) =>
-        `${format(date, 'dd-MM-yyyy')}-${currency}-${against ?? 'USD'}`,
+      cacheKeyFn: ({ date, currency, against }): string =>
+        `${date.getTime()}-${currency}-${against ?? DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY}`,
     },
   );
 
@@ -89,10 +93,13 @@ export class CryptoExchangeProvider {
     return symbols.map(symbol => currencies.find(currency => currency.symbol === symbol));
   }
 
-  public getCryptoCurrenciesBySymbolLoader = new DataLoader(
-    (symbols: readonly string[]) => this.getCryptoCurrenciesBySymbol(symbols),
-    { cache: false },
-  );
+  public getCryptoCurrenciesBySymbolLoader = new DataLoader<
+    string,
+    IGetCryptoCurrenciesBySymbolResult | undefined,
+    string
+  >((symbols: readonly string[]) => this.getCryptoCurrenciesBySymbol(symbols), {
+    cacheMap: this.cache,
+  });
 
   public async getCryptoExchangeRatesFromAPI(currencySymbol: string, date: Date) {
     // Fetch CoinMarketCap id from DB
@@ -194,8 +201,8 @@ export class CryptoExchangeProvider {
     },
     {
       cacheKeyFn: ({ cryptoCurrency, date, against = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY }) =>
-        `${cryptoCurrency}-${format(date, 'dd-MM-yyyy')}-${against}`,
-      cache: false,
+        `${cryptoCurrency}-${date.getTime()}-${against}`,
+      cacheMap: this.cache,
     },
   );
 }

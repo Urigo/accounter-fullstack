@@ -35,6 +35,7 @@
     "graphql": "16.8.1",
     "graphql-modules": "2.3.0",
     "graphql-yoga": "5.0.0",
+    "node-cache": "^5.1.2",
     "pg": "8.11.3",
     "reflect-metadata": "0.1.13"
   },

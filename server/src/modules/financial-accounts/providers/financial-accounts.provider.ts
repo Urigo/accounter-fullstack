@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialAccountsQuery,
   IGetFinancialAccountsByAccountIDsQuery,
@@ -33,6 +34,8 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
   global: true,
 })
 export class FinancialAccountsProvider {
+  cache = getCacheInstance();
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialAccountsByFinancialEntityIds(ownerIds: readonly string[]) {
@@ -47,7 +50,7 @@ export class FinancialAccountsProvider {
 
   public getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByFinancialEntityIds(keys),
-    { cache: false },
+    { cacheMap: this.cache },
   );
 
   private async batchFinancialAccountsByAccountNumbers(accountNumbers: readonly string[]) {
@@ -64,9 +67,7 @@ export class FinancialAccountsProvider {
 
   public getFinancialAccountByAccountNumberLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByAccountNumbers(keys),
-    {
-      cache: false,
-    },
+    { cacheMap: this.cache },
   );
 
   private async batchFinancialAccountsByAccountIDs(accountIDs: readonly string[]) {
@@ -81,9 +82,7 @@ export class FinancialAccountsProvider {
 
   public getFinancialAccountByAccountIDLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByAccountIDs(keys),
-    {
-      cache: false,
-    },
+    { cacheMap: this.cache },
   );
 
   public getAllFinancialAccounts() {
