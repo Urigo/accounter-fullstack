@@ -188,6 +188,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     }
 
     accountingLedgerMaterials.map(({ amount, taxCategory, counterparty }) => {
+      if (amount === 0) {
+        return;
+      }
+
       const isCreditorCounterparty = amount > 0;
 
       const ledgerProto: LedgerProto = {

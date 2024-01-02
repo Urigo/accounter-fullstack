@@ -133,28 +133,30 @@ const generateCharge = sql<IGenerateChargeQuery>`
 
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
-    c.*,
-    ABS(c.event_amount) as abs_event_amount
-  FROM accounter_schema.extended_charges c
+    ec.*,
+    ABS(ec.event_amount) as abs_event_amount
+  FROM accounter_schema.charges c
+  LEFT JOIN accounter_schema.extended_charges ec
+    ON c.id = ec.id
   WHERE 
   ($isIDs = 0 OR c.id IN $$IDs)
   AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
-  AND ($isBusinessIds = 0 OR c.business_array && $businessIds)
-  AND ($fromDate ::TEXT IS NULL OR COALESCE(c.documents_min_date, c.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-  AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(c.documents_max_date, c.transactions_max_event_date, c.transactions_max_debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
-  AND ($toDate ::TEXT IS NULL OR COALESCE(c.documents_max_date, c.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-  AND ($toAnyDate ::TEXT IS NULL OR LEAST(c.documents_min_date, c.transactions_min_event_date, c.transactions_min_debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
-  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND c.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND c.transactions_event_amount <= 0))
-  AND ($withoutInvoice = FALSE OR COALESCE(c.invoices_count, 0) = 0)
-  AND ($withoutDocuments = FALSE OR COALESCE(c.documents_count, 0) = 0)
-  AND ($isTags = 0 OR c.tags && $tags)
+  AND ($isBusinessIds = 0 OR ec.business_array && $businessIds)
+  AND ($fromDate ::TEXT IS NULL OR COALESCE(ec.documents_min_date, ec.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+  AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(ec.documents_max_date, ec.transactions_max_event_date, ec.transactions_max_debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+  AND ($toDate ::TEXT IS NULL OR COALESCE(ec.documents_max_date, ec.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+  AND ($toAnyDate ::TEXT IS NULL OR LEAST(ec.documents_min_date, ec.transactions_min_event_date, ec.transactions_min_debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND ec.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND ec.transactions_event_amount <= 0))
+  AND ($withoutInvoice = FALSE OR COALESCE(ec.invoices_count, 0) = 0)
+  AND ($withoutDocuments = FALSE OR COALESCE(ec.documents_count, 0) = 0)
+  AND ($isTags = 0 OR ec.tags && $tags)
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(c.documents_min_date, c.transactions_min_event_date)  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN c.event_amount  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN c.event_amount  END DESC,
-  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(c.event_amount as DECIMAL))  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(c.event_amount as DECIMAL))  END DESC;
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(ec.documents_min_date, ec.transactions_min_event_date)  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(ec.documents_min_date, ec.transactions_min_event_date)  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN ec.event_amount  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN ec.event_amount  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL))  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL))  END DESC;
   `;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
