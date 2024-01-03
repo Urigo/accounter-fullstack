@@ -283,6 +283,11 @@ export class ChargesProvider {
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
+    const cachedResult = this.cache.get(JSON.stringify(params));
+    if (cachedResult) {
+      return Promise.resolve(cachedResult as IGetChargesByFiltersResult[]);
+    }
+
     const isOwnerIds = !!params?.ownerIds?.filter(Boolean).length;
     const isBusinessIds = !!params?.businessIds?.filter(Boolean).length;
     const isIDs = !!params?.IDs?.length;
@@ -311,6 +316,7 @@ export class ChargesProvider {
       withoutDocuments: params.withoutDocuments ?? false,
     };
     return getChargesByFilters.run(fullParams, this.dbProvider).then(result => {
+      this.cache.set(JSON.stringify(params), result);
       result.map(charge => {
         this.cache.set(charge.id!, charge);
         this.cache.set(this.getChargeByFinancialEntityIDKey(charge.owner_id!), charge);
