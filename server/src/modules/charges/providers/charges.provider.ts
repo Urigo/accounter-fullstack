@@ -71,7 +71,7 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     WHERE owner_id IN $$ownerIds
     AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY t.transactions_min_event_date DESC;`;
+    ORDER BY c.transactions_min_event_date DESC;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
@@ -318,8 +318,7 @@ export class ChargesProvider {
     return getChargesByFilters.run(fullParams, this.dbProvider).then(result => {
       this.cache.set(JSON.stringify(params), result);
       result.map(charge => {
-        this.cache.set(charge.id!, charge);
-        this.cache.set(this.getChargeByFinancialEntityIDKey(charge.owner_id!), charge);
+        this.getChargeByIdLoader.prime(charge.id!, charge as ChargeRequiredWrapper<IGetChargesByIdsResult>);
       });
       return result as IGetChargesByFiltersResult[];
     });
