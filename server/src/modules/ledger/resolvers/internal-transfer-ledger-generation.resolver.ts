@@ -43,9 +43,32 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     let destinationEntry: LedgerProto | undefined = undefined;
 
     // Get all transactions
-    const transactions = await injector
+    const transactionsPromise = await injector
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
+
+    const feeTaxCategoryPromise = await injector
+      .get(TaxCategoriesProvider)
+      .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+
+    const exchangeCategoryPromise = await injector
+      .get(TaxCategoriesProvider)
+      .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
+
+    const [transactions, feeTaxCategory, exchangeCategory] = await Promise.all([
+      transactionsPromise,
+      feeTaxCategoryPromise,
+      exchangeCategoryPromise,
+    ]);
+
+    if (!feeTaxCategory) {
+      throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+    }
+
+    if (!exchangeCategory) {
+      throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+    }
+
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
@@ -59,7 +82,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     }
 
     // create a ledger record for main transactions
-    for (const transaction of mainTransactions) {
+    const mainFinancialAccountLedgerEntriesPromises = mainTransactions.map(async transaction => {
       const { currency, valueDate } = validateTransactionBasicVariables(transaction);
 
       let amount = Number(transaction.amount);
@@ -126,16 +149,12 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       dates.add(valueDate.getTime());
       currencies.add(currency);
-    }
-
-    if (!originEntry || !destinationEntry) {
-      throw new GraphQLError(`Internal transfer Charge must include two main transactions`);
-    }
+    });
 
     // create a ledger record for fee transactions
-    for (const transaction of feeTransactions) {
+    const feeFinancialAccountLedgerEntriesPromises = feeTransactions.map(async transaction => {
       if (!transaction.is_fee) {
-        continue;
+        return;
       }
 
       const isSupplementalFee = isSupplementalFeeTransaction(transaction);
@@ -154,13 +173,6 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         foreignAmount = amount;
         // calculate amounts in ILS
         amount = exchangeRate * amount;
-      }
-
-      const feeTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
-      if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
       }
 
       const isCreditorCounterparty = amount > 0;
@@ -236,6 +248,14 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         dates.add(valueDate.getTime());
         currencies.add(currency);
       }
+    });
+
+    await Promise.all([
+      ...mainFinancialAccountLedgerEntriesPromises,
+      ...feeFinancialAccountLedgerEntriesPromises,
+    ]);
+    if (!originEntry || !destinationEntry) {
+      throw new GraphQLError(`Internal transfer Charge must include two main transactions`);
     }
 
     const { balanceSum } = getLedgerBalanceInfo(ledgerBalance);
@@ -246,19 +266,12 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       const hasMultipleDates = dates.size > 1;
       const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       if (hasMultipleDates && hasForeignCurrency) {
-        const exchangeCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
-        if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
-        }
-
         const amount = Math.abs(balanceSum);
 
         const isCreditorCounterparty = balanceSum > 0;
 
         const ledgerEntry: LedgerProto = {
-          id: destinationEntry.id, // NOTE: this field is dummy
+          id: (destinationEntry as LedgerProto).id, // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? undefined : exchangeCategory,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
@@ -267,10 +280,10 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
-          invoiceDate: originEntry.invoiceDate,
-          valueDate: destinationEntry.valueDate,
-          currency: destinationEntry.currency, // NOTE: this field is dummy
-          ownerId: destinationEntry.ownerId,
+          invoiceDate: (originEntry as LedgerProto).invoiceDate,
+          valueDate: (destinationEntry as LedgerProto).valueDate,
+          currency: (destinationEntry as LedgerProto).currency, // NOTE: this field is dummy
+          ownerId: (destinationEntry as LedgerProto).ownerId,
           chargeId,
         };
 

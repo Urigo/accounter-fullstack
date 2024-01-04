@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { IGetOldLedgerByChargeIdsQuery } from '../__generated__/temp.types';
 
 const getOldLedgerByChargeIds = sql<IGetOldLedgerByChargeIdsQuery>`
@@ -22,6 +23,8 @@ WHERE t.charge_id IN $$chargeIds;`;
   global: true,
 })
 export class TempProvider {
+  cache = getCacheInstance();
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchOldLedgerByChargeIds(ids: readonly string[]) {
@@ -36,6 +39,6 @@ export class TempProvider {
 
   public getOldLedgerByChargeIdsLoader = new DataLoader(
     (keys: readonly string[]) => this.batchOldLedgerByChargeIds(keys),
-    { cache: false },
+    { cacheMap: this.cache },
   );
 }

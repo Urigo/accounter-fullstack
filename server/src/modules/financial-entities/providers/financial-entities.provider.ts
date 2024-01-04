@@ -1,11 +1,12 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialEntitiesQuery,
-  IGetFinancialEntitiesByChargeIdsParams,
-  IGetFinancialEntitiesByChargeIdsQuery,
+  IGetAllFinancialEntitiesResult,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
   IUpdateBusinessParams,
@@ -25,13 +26,6 @@ const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
 const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     SELECT *
     FROM accounter_schema.businesses;`;
-
-const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
-    SELECT c.id as charge_id, bu.*
-    FROM accounter_schema.charges c
-    LEFT JOIN accounter_schema.businesses bu
-    ON  c.owner_id = bu.id
-    WHERE c.id IN $$chargeIds;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
   UPDATE accounter_schema.businesses
@@ -183,7 +177,14 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   global: true,
 })
 export class FinancialEntitiesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
+  constructor(
+    private dbProvider: DBProvider,
+    private chargesProvider: ChargesProvider,
+  ) {}
 
   private async batchFinancialEntitiesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
@@ -198,9 +199,7 @@ export class FinancialEntitiesProvider {
 
   public getFinancialEntityByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
-    {
-      cache: false,
-    },
+    { cacheMap: this.cache },
   );
 
   private async batchFinancialEntitiesByNames(names: readonly string[]) {
@@ -215,37 +214,28 @@ export class FinancialEntitiesProvider {
 
   public getFinancialEntityByNameLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByNames(keys),
-    {
-      cache: false,
-    },
+    { cacheMap: this.cache },
   );
 
   public getAllFinancialEntities() {
-    return getAllFinancialEntities.run(undefined, this.dbProvider);
-  }
+    const cachedResult = this.cache.get<IGetAllFinancialEntitiesResult[]>('allFinancialEntities');
+    if (cachedResult) {
+      return Promise.resolve(cachedResult);
+    }
 
-  public getFinancialEntitiesByChargeIds(params: IGetFinancialEntitiesByChargeIdsParams) {
-    return getFinancialEntitiesByChargeIds.run(params, this.dbProvider);
+    return getAllFinancialEntities.run(undefined, this.dbProvider).then(result => {
+      this.cache.set('allFinancialEntities', result);
+      return result;
+    });
   }
-
-  private async batchFinancialEntitiesByChargeIds(chargeIds: readonly string[]) {
-    const financialEntities = await getFinancialEntitiesByChargeIds.run(
-      {
-        chargeIds,
-      },
-      this.dbProvider,
-    );
-    return chargeIds.map(
-      chargeId => financialEntities.find(fe => fe.charge_id === chargeId) ?? null,
-    );
-  }
-
-  public getFinancialEntityByChargeIdsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialEntitiesByChargeIds(keys),
-    { cache: false },
-  );
 
   public updateBusiness(params: IUpdateBusinessParams) {
+    this.clearCache();
     return updateBusiness.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
+    this.chargesProvider.clearCache();
   }
 }
