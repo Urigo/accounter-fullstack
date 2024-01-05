@@ -4,11 +4,13 @@ import { ActionIcon, Table } from '@mantine/core';
 import { VatReportIncomeFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers';
+import { AccountantApproval } from './cells/accountant-approval.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VatReportIncomeFields on VatReportResult {
     income {
+        ...VatReportAccountantApprovalFields
         business {
           id
           name
@@ -73,6 +75,7 @@ export const IncomeTable = ({ data }: Props): ReactElement => {
               <th>Amount</th>
               <th>Amount &#8362;</th>
               <th>Cumulative Amount &#8362;</th>
+              <th>Accountant Approval</th>
             </tr>
           </thead>
           <tbody>
@@ -100,6 +103,7 @@ export const IncomeTable = ({ data }: Props): ReactElement => {
                   <td>{item.amount.formatted}</td>
                   <td>{item.taxReducedLocalAmount?.formatted}</td>
                   <td>{'₪ ' + formatStringifyAmount(cumulativeAmount, 0)}</td>
+                  <AccountantApproval data={item} />
                 </tr>
               );
             })}
