@@ -111,7 +111,7 @@ export function generateEntriesFromSalaryRecords(
     // record validations
     if (!salaryRecord.base_salary) {
       throw new GraphQLError(
-        `Base salary record for ${salaryRecord.month}, employee ${salaryRecord.employee}  is missing amount`,
+        `Base salary record for ${salaryRecord.month}, employee ID=${salaryRecord.employee_id}  is missing amount`,
       );
     }
 
@@ -165,7 +165,7 @@ export function generateEntriesFromSalaryRecords(
 
     // pension handling
     const totalPension = getTotalPension(salaryRecord);
-    const pensionAccount = salaryRecord.pension_fund;
+    const pensionAccount = salaryRecord.pension_fund_id;
     if (totalPension > 0) {
       if (!pensionAccount) {
         throw new GraphQLError(`Missing pension account for ${chargeId}`);
@@ -180,7 +180,7 @@ export function generateEntriesFromSalaryRecords(
 
     // training fund handling
     const totalTrainingFund = getTotalTrainingFund(salaryRecord);
-    const trainingFundAccount = salaryRecord.training_fun;
+    const trainingFundAccount = salaryRecord.training_fund_id;
     if (totalTrainingFund > 0) {
       if (!trainingFundAccount) {
         throw new GraphQLError(`Missing training fund account for ${chargeId}`);
