@@ -54,7 +54,7 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
     AND t.amount >= -30
     AND t.is_fee IS NULL
     AND t.source_description LIKE '%העברת מט%'
-  RETURNING *;`;
+  RETURNING t.id;`;
 
 @Injectable({
   scope: Scope.Singleton,

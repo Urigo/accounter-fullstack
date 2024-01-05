@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
@@ -146,12 +147,17 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
     },
     flagForeignFeeTransactions: async (_, __, { injector }) => {
       try {
-        const res = await injector
+        const updatedTransactionsId = await injector
           .get(CornJobsProvider)
           .flagForeignFeeTransactions({ ownerId: DEFAULT_FINANCIAL_ENTITY_ID });
+        const res = await injector
+          .get(TransactionsProvider)
+          .getTransactionByIdLoader.loadMany(updatedTransactionsId.map(({ id }) => id));
         return {
           success: true,
-          transactions: res,
+          transactions: res.filter(
+            transaction => transaction,
+          ) as IGetTransactionsByChargeIdsResult[],
         };
       } catch (e) {
         return {
