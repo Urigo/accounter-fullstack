@@ -9,6 +9,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react-hook-form'],
+    exclude: ['js-big-decimal']
   },
   build: {
     commonjsOptions: {
