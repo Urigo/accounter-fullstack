@@ -2,6 +2,7 @@ import { createApplication } from 'graphql-modules';
 import postgres from 'pg';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
+import { cornJobsModule } from '@modules/corn-jobs/index.js';
 import { exchangeRatesModule } from '@modules/exchange-rates/index.js';
 import { salariesModule } from '@modules/salaries/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
@@ -28,6 +29,7 @@ export async function createGraphQLApp() {
       accountantApprovalModule,
       businessTripsModule,
       chargesModule,
+      cornJobsModule,
       documentsModule,
       dividendsModule,
       exchangeRatesModule,

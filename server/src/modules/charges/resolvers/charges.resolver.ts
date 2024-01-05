@@ -1,13 +1,12 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharge } from '../helpers/delete-charge.helper.js';
+import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
 import {
@@ -189,25 +188,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             });
         }
 
-        for (const id of chargeIdsToMerge) {
-          // update linked documents
-          await injector.get(DocumentsProvider).replaceDocumentsChargeId({
-            replaceChargeID: id,
-            assertChargeID: baseChargeID,
-          });
-
-          // update linked transactions
-          await injector.get(TransactionsProvider).replaceTransactionsChargeId({
-            replaceChargeID: id,
-            assertChargeID: baseChargeID,
-          });
-
-          // clear tags
-          await injector.get(TagsProvider).clearAllChargeTags({ chargeId: id });
-
-          // delete charge
-          await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: [id] });
-        }
+        await mergeChargesExecutor(chargeIdsToMerge, baseChargeID, injector);
 
         return { charge };
       } catch (e) {
