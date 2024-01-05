@@ -25,6 +25,7 @@ export default gql`
 
   " Vat report record "
   type VatReportRecord {
+    chargeAccountantReviewed: Boolean
     chargeId: ID!
     documentId: ID
     business: Counterparty

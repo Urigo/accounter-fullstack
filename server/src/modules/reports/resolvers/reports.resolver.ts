@@ -37,6 +37,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,
+    chargeAccountantReviewed: raw => raw.chargeAccountantReviewed,
     chargeId: raw => raw.chargeId,
     amount: raw => formatFinancialAmount(raw.documentAmount, raw.currencyCode),
     business: raw => raw.businessId,

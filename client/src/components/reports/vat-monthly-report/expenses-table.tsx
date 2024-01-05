@@ -9,6 +9,7 @@ import { formatStringifyAmount } from '../../../helpers';
 /* GraphQL */ `
   fragment VatReportExpensesFields on VatReportResult {
     expenses {
+        ...VatReportAccountantApprovalFields
         business {
           id
           name
@@ -18,6 +19,8 @@ import { formatStringifyAmount } from '../../../helpers';
         documentSerial
         documentDate
         chargeDate
+        chargeId
+        chargeAccountantReviewed
         amount {
           formatted
         }
@@ -83,6 +86,7 @@ export const ExpensesTable = ({ data }: Props): ReactElement => {
               <th>Cumulative VAT</th>
               <th>Amount without VAT &#8362;</th>
               <th>Cumulative Amount without VAT &#8362;</th>
+              <th>Accountant Approval</th>
             </tr>
           </thead>
           <tbody>
@@ -124,6 +128,7 @@ export const ExpensesTable = ({ data }: Props): ReactElement => {
                   <td className="whitespace-nowrap">
                     &#8362; {formatStringifyAmount(cumulativeAmount, 0)}
                   </td>
+                  <AccountantApproval data={item} />
                 </tr>
               );
             })}

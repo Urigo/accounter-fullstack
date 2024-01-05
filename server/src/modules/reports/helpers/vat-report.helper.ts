@@ -19,6 +19,7 @@ export type VatReportRecordSources = {
 export type RawVatReportRecord = {
   amountBeforeVAT?: number;
   businessId: string | null;
+  chargeAccountantReviewed: boolean;
   chargeDate: Date;
   chargeId: string;
   currencyCode: string;
@@ -66,6 +67,7 @@ export function adjustTaxRecords(
 
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
+      chargeAccountantReviewed: charge.accountant_reviewed,
       chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
       currencyCode: doc.currency_code,
