@@ -7,12 +7,14 @@ export default gql`
     flagForeignFeeTransactions: FlagForeignFeeTransactionsResult!
   }
 
+  " result type for mergeChargesByTransactionReference "
   type MergeChargesByTransactionReferenceResult {
     success: Boolean!
     charges: [Charge!]
     errors: [String!]
   }
 
+  " result type for flagForeignFeeTransactions "
   type FlagForeignFeeTransactionsResult {
     success: Boolean!
     transactions: [Transaction!]
