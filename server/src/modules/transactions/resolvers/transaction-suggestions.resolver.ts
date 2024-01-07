@@ -17,11 +17,23 @@ import type { TransactionsModule } from '../types.js';
 
 type SuggestionData = {
   phrases: Array<string>;
+  priority?: number;
 };
 
 type Suggestion = Omit<Awaited<ResolversTypes['TransactionSuggestions']>, 'business'> & {
   business: string;
 };
+
+type DecoratedSuggestion = Suggestion & {
+  priority: number;
+};
+
+function sortPhrasesByPriority(
+  a: [string, DecoratedSuggestion],
+  b: [string, DecoratedSuggestion],
+): number {
+  return b[1].priority - a[1].priority;
+}
 
 const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
@@ -50,7 +62,7 @@ const missingInfoSuggestions: Resolver<
     .get(FinancialEntitiesProvider)
     .getAllFinancialEntities()
     .then(businesses => businesses.filter(business => business.suggestion_data));
-  const suggestions: Record<string, Suggestion> = {};
+  const suggestions: Record<string, DecoratedSuggestion> = {};
   for (const business of businesses) {
     if (!business.suggestion_data) continue;
     const suggestionData = business.suggestion_data as SuggestionData;
@@ -58,11 +70,12 @@ const missingInfoSuggestions: Resolver<
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         business: business.id,
+        priority: suggestionData.priority ?? 0,
       };
     }
   }
 
-  for (const [phrase, suggestion] of Object.entries(suggestions)) {
+  for (const [phrase, suggestion] of Object.entries(suggestions).sort(sortPhrasesByPriority)) {
     if (Array.isArray(phrase) && new RegExp(phrase.join('|')).test(description)) {
       return suggestion;
     }
