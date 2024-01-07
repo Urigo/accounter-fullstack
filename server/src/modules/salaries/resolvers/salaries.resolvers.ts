@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -10,6 +11,26 @@ import { insertSalaryRecords } from './insert-salary.resolver.js';
 import { updateSalaryRecord } from './update-salary.resolver.js';
 
 export const salariesResolvers: SalariesModule.Resolvers = {
+  Query: {
+    salaryRecordsByCharge: async (_, { chargeId }, { injector }) => {
+      const salaryRecords = await injector
+        .get(SalariesProvider)
+        .getSalaryRecordsByChargeIdLoader.load(chargeId);
+      return salaryRecords;
+    },
+    salaryRecordsByDates: async (_, { fromDate, toDate }, { injector }) => {
+      const fromDateMonth = fromDate.slice(0, 7);
+      const toDateMonth = toDate.slice(0, 7);
+      try {
+        const salaryRecords = await injector
+          .get(SalariesProvider)
+          .getSalaryRecordsByDates({ fromDate: fromDateMonth, toDate: toDateMonth });
+        return salaryRecords.sort((a, b) => a.month.localeCompare(b.month));
+      } catch (e) {
+        throw new GraphQLError(`Failed to get salary records by dates: ${(e as Error).message}`);
+      }
+    },
+  },
   Mutation: {
     insertSalaryRecords,
     updateSalaryRecord,
@@ -172,5 +193,14 @@ export const salariesResolvers: SalariesModule.Resolvers = {
     incomeTaxAmount: DbSalary => formatFinancialAmount(DbSalary.tax_amount, DEFAULT_LOCAL_CURRENCY),
     healthInsuranceAmount: DbSalary =>
       formatFinancialAmount(DbSalary.health_payment_amount, DEFAULT_LOCAL_CURRENCY),
+    charge: (DbSalary, _, { injector }) => {
+      if (!DbSalary.charge_id) {
+        return null;
+      }
+      return injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(DbSalary.charge_id)
+        .then(res => res ?? null);
+    },
   },
 };

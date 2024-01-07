@@ -2,6 +2,11 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    salaryRecordsByCharge(chargeId: UUID!): [Salary!]!
+    salaryRecordsByDates(fromDate: TimelessDate!, toDate: TimelessDate!): [Salary!]!
+  }
+
   extend type Mutation {
     insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
     updateSalaryRecord(salaryRecord: SalaryRecordInput!): UpdateSalaryRecordResult!
@@ -85,5 +90,6 @@ export default gql`
     socialSecurityEmployerAmount: FinancialAmount
     incomeTaxAmount: FinancialAmount
     healthInsuranceAmount: FinancialAmount
+    charge: SalaryCharge
   }
 `;

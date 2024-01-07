@@ -5,6 +5,8 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllSalaryRecordsQuery,
   IGetSalaryRecordsByChargeIdsQuery,
+  IGetSalaryRecordsByDatesParams,
+  IGetSalaryRecordsByDatesQuery,
   IGetSalaryRecordsByMonthParams,
   IGetSalaryRecordsByMonthQuery,
   IInsertSalaryRecordsParams,
@@ -22,6 +24,12 @@ const getSalaryRecordsByMonth = sql<IGetSalaryRecordsByMonthQuery>`
     SELECT *
     FROM accounter_schema.salaries
     WHERE month = $month;`;
+
+const getSalaryRecordsByDates = sql<IGetSalaryRecordsByDatesQuery>`
+    SELECT *
+    FROM accounter_schema.salaries
+    WHERE month >= $fromDate
+      AND month <= $toDate;`;
 
 const getSalaryRecordsByChargeIds = sql<IGetSalaryRecordsByChargeIdsQuery>`
   SELECT *
@@ -247,20 +255,31 @@ export class SalariesProvider {
 
   public getSalaryRecordsByMonth(params: IGetSalaryRecordsByMonthParams) {
     if (!params.month) {
-      return [];
+      return Promise.resolve([]);
     }
     return getSalaryRecordsByMonth.run(params, this.dbProvider);
   }
 
-  private async batchSalaryRecordsByMonth(months: readonly string[]) {
-    const salaries = await getAllSalaryRecords.run(undefined, this.dbProvider);
+  private async batchSalaryRecordsByMonths(months: readonly string[]) {
+    if (months.length === 1) {
+      return [await this.getSalaryRecordsByMonth({ month: months[0] })];
+    }
+    const sortedMonths = [...months].sort();
+    const salaries = await getSalaryRecordsByDates.run(
+      { fromDate: sortedMonths[0], toDate: sortedMonths[sortedMonths.length - 1] },
+      this.dbProvider,
+    );
     return months.map(month => salaries.filter(record => record.month === month));
   }
 
   public getSalaryRecordsByMonthLoader = new DataLoader(
-    (months: readonly string[]) => this.batchSalaryRecordsByMonth(months),
+    (months: readonly string[]) => this.batchSalaryRecordsByMonths(months),
     { cache: false },
   );
+
+  public getSalaryRecordsByDates(params: IGetSalaryRecordsByDatesParams) {
+    return getSalaryRecordsByDates.run(params, this.dbProvider);
+  }
 
   public getAllTags() {
     return getAllSalaryRecords.run(undefined, this.dbProvider);
