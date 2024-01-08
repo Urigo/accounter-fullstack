@@ -149,6 +149,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND ec.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND ec.transactions_event_amount <= 0))
   AND ($withoutInvoice = FALSE OR COALESCE(ec.invoices_count, 0) = 0)
   AND ($withoutDocuments = FALSE OR COALESCE(ec.documents_count, 0) = 0)
+  AND ($accountantApproval::BOOLEAN IS NULL OR ec.accountant_reviewed = $accountantApproval)
   AND ($isTags = 0 OR ec.tags && $tags)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(ec.documents_min_date, ec.transactions_min_event_date)  END ASC,

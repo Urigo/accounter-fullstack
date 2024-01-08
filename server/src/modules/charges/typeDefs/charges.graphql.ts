@@ -176,6 +176,7 @@ export default gql`
     byTags: [String!]
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
+    accountantApproval: Boolean
   }
 
   " filter charges by type "
