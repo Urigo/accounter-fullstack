@@ -252,7 +252,7 @@ const missingInfoSuggestions: Resolver<
   }
   if (description.includes('ETANA')) {
     return {
-      business: '73519067-c8fe-4073-aec6-608ff596f8a8', //name: 'The Graph Foundation',
+      business: '4ea86b9b-1c8f-46de-b25e-532f8e34001c', //name: 'Etana',
     };
   }
   if (description.includes('deel')) {
