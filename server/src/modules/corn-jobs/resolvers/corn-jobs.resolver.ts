@@ -8,7 +8,7 @@ import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
 import type { CornJobsModule } from '../types.js';
 
-// const ACCEPTABLE_DATE_DIFF_MILLISECONDS = 864_000_000; // 10 days
+const WIDE_DATE_DIFF_MILLISECONDS = 2_592_000_000; // 30 days
 const ACCEPTABLE_DATE_DIFF_MILLISECONDS = 86_400_000; // 1 days
 
 export const cornJobsResolvers: CornJobsModule.Resolvers = {
@@ -60,6 +60,9 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
             // filter candidates
             const fromDate = transaction.event_date.getTime() - ACCEPTABLE_DATE_DIFF_MILLISECONDS;
             const toDate = transaction.event_date.getTime() + ACCEPTABLE_DATE_DIFF_MILLISECONDS;
+            const widelyFromDate = transaction.event_date.getTime() - WIDE_DATE_DIFF_MILLISECONDS;
+            const widelyToDate = transaction.event_date.getTime() + WIDE_DATE_DIFF_MILLISECONDS;
+
             const matches = candidates.filter(({ transaction: internatTransaction }) => {
               if (!candidatesIDs.has(internatTransaction.id)) {
                 return false;
@@ -68,7 +71,23 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
               const isWithinTimeRange =
                 internatTransaction.event_date.getTime() >= fromDate &&
                 internatTransaction.event_date.getTime() <= toDate;
-              return isWithinTimeRange;
+
+              // check if details match
+              const isWidelyInTimeRange =
+                internatTransaction.event_date.getTime() >= widelyFromDate &&
+                internatTransaction.event_date.getTime() <= widelyToDate;
+              const areDetailsSufficient =
+                isWidelyInTimeRange &&
+                internatTransaction.source_details &&
+                internatTransaction.source_details.length >= 5 &&
+                transaction.source_details &&
+                transaction.source_details.length >= 5;
+              const isMatchingDetails =
+                areDetailsSufficient &&
+                (internatTransaction.source_details?.includes(transaction.source_details!) ||
+                  internatTransaction.source_details?.includes(transaction.source_details!));
+
+              return isWithinTimeRange || isMatchingDetails;
             });
 
             if (matches.length === 0) {

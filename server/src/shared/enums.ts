@@ -38,12 +38,12 @@ export enum DocumentType {
   Unprocessed = 'UNPROCESSED',
 }
 
-export enum SalaryChargeTypeEnum {
-  salary = 'SALARY',
-  funds = 'FUNDS',
-  pension = 'PENSION',
-  trainingFund = 'TRAINING_FUND',
-  socialSecurity = 'SOCIAL_SECURITY',
-  incomeTax = 'INCOME_TAX',
-  unknown = 'UNKNOWN',
+export enum ChargeTypeEnum {
+  Conversion = 'ConversionCharge',
+  Salary = 'SalaryCharge',
+  BusinessTrip = 'BusinessTripCharge',
+  InternalTransfer = 'InternalTransferCharge',
+  Dividend = 'DividendCharge',
+  MonthlyVat = 'MonthlyVatCharge',
+  Common = 'CommonCharge',
 }

@@ -3,7 +3,15 @@ import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Indicator, MultiSelect, Pagination, Select, Switch } from '@mantine/core';
+import {
+  ActionIcon,
+  Indicator,
+  MultiSelect,
+  Pagination,
+  Select,
+  SimpleGrid,
+  Switch,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -182,165 +190,200 @@ function ChargesFiltersForm({
     <>
       {feFetching ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
-        {/* <SimpleGrid cols={4}> */}
-        <Controller
-          name="byOwners"
-          control={control}
-          defaultValue={filter.byOwners}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={financialEntities}
-              value={field.value ?? []}
-              disabled={feFetching}
-              label="Owners"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="byBusinesses"
-          control={control}
-          defaultValue={filter.byBusinesses}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={financialEntities}
-              value={field.value ?? []}
-              disabled={feFetching}
-              label="Main Businesses"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="byTags"
-          control={control}
-          defaultValue={filter.byTags}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={tags}
-              value={field.value ?? []}
-              disabled={tagsFetching}
-              label="Tags"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="fromAnyDate"
-          control={control}
-          defaultValue={filter.fromDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value || ''}
-              error={fieldState.error?.message}
-              label="From Date"
-            />
-          )}
-        />
-        <Controller
-          name="toAnyDate"
-          control={control}
-          defaultValue={filter.toDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value || ''}
-              error={fieldState.error?.message}
-              label="To Date"
-            />
-          )}
-        />
-        <Controller
-          name="chargesType"
-          control={control}
-          defaultValue={filter.chargesType}
-          render={({ field, fieldState }): ReactElement => (
-            <Select
-              {...field}
-              data={chargesTypeFilterOptions}
-              value={field.value ?? ChargeFilterType.All}
-              disabled={feFetching}
-              label="Charge Type"
-              placeholder="Filter income/expense"
-              maxDropdownHeight={160}
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="sortBy.field"
-          control={control}
-          defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
-          render={({ field, fieldState }): ReactElement => (
-            <Select
-              {...field}
-              data={fieldsToSort}
-              label="Field to sort by"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Switch
-          defaultChecked={filter.sortBy?.asc ?? false}
-          checked={asc ?? false}
-          disabled={!enableAsc}
-          onChange={(event): void => setAsc(event.currentTarget.checked)}
-          color="gray"
-          onLabel={<p>ASC</p>}
-          offLabel={<p>DESC</p>}
-        />
-
-        <div className="flex flex-col gap-2 mt-4">
-          <span>Missing Information:</span>
-
-          <Switch
-            defaultChecked={filter.withoutInvoice ?? false}
-            onChange={(event): void => setValue('withoutInvoice', event.currentTarget.checked)}
-            label="Without Invoices"
+        <SimpleGrid cols={2}>
+          <Controller
+            name="byOwners"
+            control={control}
+            defaultValue={filter.byOwners}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                data={financialEntities}
+                value={field.value ?? []}
+                disabled={feFetching}
+                label="Owners"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="byBusinesses"
+            control={control}
+            defaultValue={filter.byBusinesses}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                data={financialEntities}
+                value={field.value ?? []}
+                disabled={feFetching}
+                label="Main Businesses"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="byTags"
+            control={control}
+            defaultValue={filter.byTags}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                data={tags}
+                value={field.value ?? []}
+                disabled={tagsFetching}
+                label="Tags"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="fromAnyDate"
+            control={control}
+            defaultValue={filter.fromDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be im format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <TextInput
+                {...field}
+                value={field.value || ''}
+                error={fieldState.error?.message}
+                label="From Date"
+              />
+            )}
+          />
+          <Controller
+            name="toAnyDate"
+            control={control}
+            defaultValue={filter.toDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be im format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <TextInput
+                {...field}
+                value={field.value || ''}
+                error={fieldState.error?.message}
+                label="To Date"
+              />
+            )}
+          />
+          <Controller
+            name="chargesType"
+            control={control}
+            defaultValue={filter.chargesType}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                data={chargesTypeFilterOptions}
+                value={field.value ?? ChargeFilterType.All}
+                disabled={feFetching}
+                label="Charge Type"
+                placeholder="Filter income/expense"
+                maxDropdownHeight={160}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="sortBy.field"
+            control={control}
+            defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                data={fieldsToSort}
+                label="Field to sort by"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                rightSectionProps={{ style: { width: '3.5rem' } }}
+                rightSection={
+                  <Switch
+                    defaultChecked={filter.sortBy?.asc ?? false}
+                    checked={asc ?? false}
+                    disabled={!enableAsc}
+                    onChange={(event): void => setAsc(event.currentTarget.checked)}
+                    color="gray"
+                    onLabel={<p>ASC</p>}
+                    offLabel={<p>DESC</p>}
+                  />
+                }
+              />
+            )}
+          />
+          <Controller
+            name="accountantApproval"
+            control={control}
+            defaultValue={filter.accountantApproval}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                value={
+                  [true, 'TRUE'].includes(field.value!)
+                    ? 'TRUE'
+                    : [false, 'FALSE'].includes(field.value!)
+                      ? 'FALSE'
+                      : 'NULL'
+                }
+                onChange={(event): void =>
+                  setValue(
+                    'accountantApproval',
+                    event === 'TRUE' ? true : event === 'FALSE' ? false : undefined,
+                  )
+                }
+                data={[
+                  { label: 'Approved', value: 'TRUE' },
+                  { label: 'Not Approved', value: 'FALSE' },
+                  { label: 'All', value: 'NULL' },
+                ]}
+                disabled={feFetching}
+                label="Accountant Reviewed"
+                placeholder="All"
+                maxDropdownHeight={160}
+                error={fieldState.error?.message}
+              />
+            )}
           />
 
-          <Switch
-            defaultChecked={filter.withoutDocuments ?? false}
-            onChange={(event): void => setValue('withoutDocuments', event.currentTarget.checked)}
-            label="Without Documents"
-          />
+          <div className="flex flex-col gap-2 mt-4">
+            <span>Missing Information:</span>
 
-          <Switch
-            defaultChecked={filter.unbalanced ?? false}
-            onChange={(event): void => setValue('unbalanced', event.currentTarget.checked)}
-            label="Unbalanced businesses"
-          />
-        </div>
+            <Switch
+              defaultChecked={filter.withoutInvoice ?? false}
+              onChange={(event): void => setValue('withoutInvoice', event.currentTarget.checked)}
+              label="Without Invoices"
+            />
 
-        {/* </SimpleGrid> */}
+            <Switch
+              defaultChecked={filter.withoutDocuments ?? false}
+              onChange={(event): void => setValue('withoutDocuments', event.currentTarget.checked)}
+              label="Without Documents"
+            />
+
+            <Switch
+              defaultChecked={filter.unbalanced ?? false}
+              onChange={(event): void => setValue('unbalanced', event.currentTarget.checked)}
+              label="Unbalanced businesses"
+            />
+          </div>
+        </SimpleGrid>
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
@@ -431,6 +474,7 @@ export function ChargesFilters({
             closeModal={(): void => setOpened(false)}
           />
         }
+        modalSize="xl"
       />
       {totalPages > 1 && (
         <Pagination

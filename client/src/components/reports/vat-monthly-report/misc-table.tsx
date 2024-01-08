@@ -23,6 +23,8 @@ type Props = {
   setMatchDocuments: React.Dispatch<
     React.SetStateAction<{ id: string; ownerId: string } | undefined>
   >;
+  toggleMergeCharge: (chargeId: string) => void;
+  mergeSelectedCharges: string[];
 };
 
 export const MiscTable = ({
@@ -31,6 +33,8 @@ export const MiscTable = ({
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
+  toggleMergeCharge,
+  mergeSelectedCharges,
 }: Props): ReactElement => {
   const chargesData = getFragmentData(VatReportMiscTableFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
@@ -51,6 +55,8 @@ export const MiscTable = ({
           setUploadDocument={setUploadDocument}
           data={chargesData.differentMonthDoc}
           isAllOpened={false}
+          toggleMergeCharge={toggleMergeCharge}
+          mergeSelectedCharges={mergeSelectedCharges}
         />
       )}
     </>

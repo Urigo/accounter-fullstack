@@ -4,6 +4,7 @@ import { ActionIcon, Table } from '@mantine/core';
 import { VatReportExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers';
+import { ToggleMergeSelected } from '../../common/index.js';
 import { AccountantApproval } from './cells/accountant-approval.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -51,9 +52,15 @@ import { AccountantApproval } from './cells/accountant-approval.js';
 
 interface Props {
   data?: FragmentType<typeof VatReportExpensesFieldsFragmentDoc>;
+  toggleMergeCharge: (chargeId: string) => void;
+  mergeSelectedCharges: string[];
 }
 
-export const ExpensesTable = ({ data }: Props): ReactElement => {
+export const ExpensesTable = ({
+  data,
+  toggleMergeCharge,
+  mergeSelectedCharges,
+}: Props): ReactElement => {
   const { expenses } = getFragmentData(VatReportExpensesFieldsFragmentDoc, data) ?? {
     expenses: [],
   };
@@ -88,6 +95,7 @@ export const ExpensesTable = ({ data }: Props): ReactElement => {
               <th>Amount without VAT &#8362;</th>
               <th>Cumulative Amount without VAT &#8362;</th>
               <th>Accountant Approval</th>
+              <th>Edit</th>
             </tr>
           </thead>
           <tbody>
@@ -130,6 +138,12 @@ export const ExpensesTable = ({ data }: Props): ReactElement => {
                     &#8362; {formatStringifyAmount(cumulativeAmount, 0)}
                   </td>
                   <AccountantApproval data={item} />
+                  <td>
+                    <ToggleMergeSelected
+                      toggleMergeSelected={(): void => toggleMergeCharge(item.chargeId)}
+                      mergeSelected={mergeSelectedCharges.includes(item.chargeId)}
+                    />
+                  </td>
                 </tr>
               );
             })}

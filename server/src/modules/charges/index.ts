@@ -5,7 +5,7 @@ import temp from './typeDefs/temp.graphql.js';
 import { createModule } from 'graphql-modules';
 import { ChargesProvider } from './providers/charges.provider.js';
 import { TempProvider } from './providers/temp.provider.js';
-import { chargeSuggestionsResolvers } from './resolvers/charge-suggestions.resolver.js';
+import { chargeSuggestionsResolvers } from './resolvers/charge-suggestions/charge-suggestions.resolver.js';
 import { chargesResolvers } from './resolvers/charges.resolver.js';
 import { tempResolvers } from './resolvers/temp.resolver.js';
 

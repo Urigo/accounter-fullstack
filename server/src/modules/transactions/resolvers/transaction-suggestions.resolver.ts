@@ -2,8 +2,10 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import {
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
+  ISRACARD_BUSINESS_ID,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
+  SWIFT_BUSINESS_ID,
 } from '@shared/constants';
 import {
   Maybe,
@@ -42,6 +44,41 @@ const missingInfoSuggestions: Resolver<
 > = async (DbTransaction, _, { injector }) => {
   if (DbTransaction.business_id) {
     return null;
+  }
+
+  if (DbTransaction.is_fee) {
+    if (DbTransaction.source_description?.includes('Swift')) {
+      return {
+        business: SWIFT_BUSINESS_ID,
+      };
+    }
+    switch (DbTransaction.source_origin) {
+      case 'ETANA': {
+        return {
+          business: ETANA_BUSINESS_ID,
+        };
+      }
+      case 'ETHERSCAN': {
+        return {
+          business: ETHERSCAN_BUSINESS_ID,
+        };
+      }
+      case 'KRAKEN': {
+        return {
+          business: KRAKEN_BUSINESS_ID,
+        };
+      }
+      case 'POALIM': {
+        return {
+          business: POALIM_BUSINESS_ID,
+        };
+      }
+      case 'ISRACARD': {
+        return {
+          business: ISRACARD_BUSINESS_ID,
+        };
+      }
+    }
   }
 
   if (DbTransaction.business_id) {
@@ -252,7 +289,7 @@ const missingInfoSuggestions: Resolver<
   }
   if (description.includes('ETANA')) {
     return {
-      business: '73519067-c8fe-4073-aec6-608ff596f8a8', //name: 'The Graph Foundation',
+      business: '4ea86b9b-1c8f-46de-b25e-532f8e34001c', //name: 'Etana',
     };
   }
   if (description.includes('deel')) {

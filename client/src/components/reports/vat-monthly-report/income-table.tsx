@@ -4,6 +4,7 @@ import { ActionIcon, Table } from '@mantine/core';
 import { VatReportIncomeFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers';
+import { ToggleMergeSelected } from '../../common/index.js';
 import { AccountantApproval } from './cells/accountant-approval.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -11,6 +12,7 @@ import { AccountantApproval } from './cells/accountant-approval.js';
   fragment VatReportIncomeFields on VatReportResult {
     income {
         ...VatReportAccountantApprovalFields
+        chargeId
         business {
           id
           name
@@ -48,9 +50,15 @@ import { AccountantApproval } from './cells/accountant-approval.js';
 
 interface Props {
   data?: FragmentType<typeof VatReportIncomeFieldsFragmentDoc>;
+  toggleMergeCharge: (chargeId: string) => void;
+  mergeSelectedCharges: string[];
 }
 
-export const IncomeTable = ({ data }: Props): ReactElement => {
+export const IncomeTable = ({
+  data,
+  toggleMergeCharge,
+  mergeSelectedCharges,
+}: Props): ReactElement => {
   const { income } = getFragmentData(VatReportIncomeFieldsFragmentDoc, data) ?? { income: [] };
   const [isOpened, setIsOpened] = useState(true);
   let incomeCumulativeAmount = 0;
@@ -76,6 +84,7 @@ export const IncomeTable = ({ data }: Props): ReactElement => {
               <th>Amount &#8362;</th>
               <th>Cumulative Amount &#8362;</th>
               <th>Accountant Approval</th>
+              <th>Edit</th>
             </tr>
           </thead>
           <tbody>
@@ -104,6 +113,12 @@ export const IncomeTable = ({ data }: Props): ReactElement => {
                   <td>{item.taxReducedLocalAmount?.formatted}</td>
                   <td>{'₪ ' + formatStringifyAmount(cumulativeAmount, 0)}</td>
                   <AccountantApproval data={item} />
+                  <td>
+                    <ToggleMergeSelected
+                      toggleMergeSelected={(): void => toggleMergeCharge(item.chargeId)}
+                      mergeSelected={mergeSelectedCharges.includes(item.chargeId)}
+                    />
+                  </td>
                 </tr>
               );
             })}

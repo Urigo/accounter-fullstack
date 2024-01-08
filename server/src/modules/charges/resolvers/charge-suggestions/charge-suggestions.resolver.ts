@@ -7,6 +7,7 @@ import {
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
 } from '@shared/constants';
+import { ChargeTypeEnum } from '@shared/enums';
 import type {
   ChargeResolvers,
   Maybe,
@@ -15,7 +16,9 @@ import type {
   ResolversTypes,
 } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
-import type { ChargesModule } from '../types.js';
+import { getChargeType } from '../../helpers/charge-type.js';
+import type { ChargesModule } from '../../types.js';
+import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';
 
 type SuggestionData = {
   description?: string;
@@ -25,16 +28,24 @@ type SuggestionData = {
   phrases: Array<string>;
 };
 
-type Suggestion = Awaited<ResolversTypes['ChargeSuggestions']>;
+export type Suggestion = Awaited<ResolversTypes['ChargeSuggestions']>;
 
 const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context
-> = async (DbCharge, _, { injector }) => {
+> = async (DbCharge, _, context, __) => {
   // if all required fields are filled, no need for suggestions
   if (!!DbCharge.tags?.length && !!DbCharge.user_description?.trim()) {
     return null;
+  }
+
+  const { injector } = context;
+
+  const chargeType = getChargeType(DbCharge);
+
+  if (chargeType === ChargeTypeEnum.Conversion) {
+    return missingConversionInfoSuggestions(DbCharge, _, context, __);
   }
 
   // if charge has a businesses, use it's suggestion data

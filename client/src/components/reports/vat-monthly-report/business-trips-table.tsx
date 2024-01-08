@@ -23,6 +23,8 @@ interface Props {
   setMatchDocuments: React.Dispatch<
     React.SetStateAction<{ id: string; ownerId: string } | undefined>
   >;
+  toggleMergeCharge: (chargeId: string) => void;
+  mergeSelectedCharges: string[];
 }
 
 export const BusinessTripsTable = ({
@@ -31,6 +33,8 @@ export const BusinessTripsTable = ({
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
+  toggleMergeCharge,
+  mergeSelectedCharges,
 }: Props): ReactElement => {
   const chargesData = getFragmentData(VatReportBusinessTripsFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
@@ -51,6 +55,8 @@ export const BusinessTripsTable = ({
           setUploadDocument={setUploadDocument}
           data={chargesData.businessTrips}
           isAllOpened={false}
+          toggleMergeCharge={toggleMergeCharge}
+          mergeSelectedCharges={mergeSelectedCharges}
         />
       )}
     </>

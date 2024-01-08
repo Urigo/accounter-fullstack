@@ -72,6 +72,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           withoutInvoice: filters?.withoutInvoice,
           withoutDocuments: filters?.withoutDocuments,
           tags: filters?.byTags,
+          accountantApproval: filters?.accountantApproval,
         })
         .catch(e => {
           throw new Error(e.message);
