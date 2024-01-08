@@ -39,16 +39,7 @@ export const Tags = ({ data }: Props): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags);
 
-  const shouldHaveTags = useMemo((): boolean => {
-    switch (__typename) {
-      case 'InternalTransferCharge':
-        return false;
-      default:
-        return true;
-    }
-  }, [__typename]);
-
-  const isError = shouldHaveTags && validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
+  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
   const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
   if (tags.length === 0 && hasAlternative) {

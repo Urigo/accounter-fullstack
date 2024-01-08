@@ -1,8 +1,10 @@
 import { Injector } from 'graphql-modules';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
+import { getChargeType } from './charge-type.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
@@ -10,14 +12,20 @@ export const validateCharge = async (
 ): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  // check for consistent counterparty business
-  const business = charge.business_id
-    ? await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(charge.business_id)
-    : undefined;
+  const chargeType = getChargeType(charge);
 
-  const businessIsFine = !!business || !!charge.is_salary;
+  // check for consistent counterparty business
+  const businessNotRequired = [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary].includes(
+    chargeType,
+  );
+  const business =
+    charge.business_id && !businessNotRequired
+      ? await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(charge.business_id)
+      : undefined;
+
+  const businessIsFine = businessNotRequired || !!business;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
@@ -27,10 +35,17 @@ export const validateCharge = async (
   const receiptsCount = Number(charge.receipts_count) || 0;
   const canSettleWithReceipt = !!(charge.can_settle_with_receipt && receiptsCount > 0);
   const dbDocumentsAreValid = !charge.invalid_documents;
+  const documentsNotRequired =
+    business?.no_invoices_required === true ||
+    [
+      ChargeTypeEnum.Salary,
+      ChargeTypeEnum.InternalTransfer,
+      ChargeTypeEnum.Dividend,
+      ChargeTypeEnum.Conversion,
+      ChargeTypeEnum.MonthlyVat,
+    ].includes(chargeType);
   const documentsAreFine =
-    business?.no_invoices_required ||
-    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt)) ||
-    !!charge.is_salary;
+    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt)) || documentsNotRequired;
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
@@ -58,16 +73,18 @@ export const validateCharge = async (
 
   // validate vat
   const vatIsFine =
-    business?.no_invoices_required ||
+    documentsNotRequired ||
     (charge.documents_vat_amount != null &&
-      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0)) ||
-    !!charge.is_salary;
+      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
 
   // validate tax category
-  const taxCategoryIsFine = !!charge.tax_category_id;
+  const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
+    chargeType,
+  );
+  const taxCategoryIsFine = !shouldHaveTaxCategory || !!charge.tax_category_id;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
   }
