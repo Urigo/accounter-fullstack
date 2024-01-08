@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
 import { FiltersContext } from '../../../filters-context';
@@ -14,6 +14,7 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
+  MergeChargesButton,
   UploadDocumentModal,
 } from '../../common';
 import { BusinessTripsTable } from './business-trips-table';
@@ -51,6 +52,7 @@ export const VatMonthlyReport = (): ReactElement => {
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },
   );
+  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
 
   // modals state
   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
@@ -67,22 +69,50 @@ export const VatMonthlyReport = (): ReactElement => {
       filters: filter,
     },
   });
+
+  const toggleMergeCharge = useCallback(
+    (chargeId: string) => {
+      if (mergeSelectedCharges.includes(chargeId)) {
+        setMergeSelectedCharges(mergeSelectedCharges.filter(id => id !== chargeId));
+      } else {
+        setMergeSelectedCharges([...mergeSelectedCharges, chargeId]);
+      }
+    },
+    [mergeSelectedCharges],
+  );
+
+  function onResetMerge(): void {
+    setMergeSelectedCharges([]);
+  }
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <PCNGenerator filter={filter} isLoading={fetching} />
         <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
+        <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
       </div>,
     );
-  }, [data, filter, fetching, setFiltersContext]);
-
+  }, [data, filter, fetching, setFiltersContext, mergeSelectedCharges]);
   return fetching ? (
     <AccounterLoader />
   ) : (
     <div className="flex flex-col gap-4">
-      {filter.chargesType !== ChargeFilterType.Expense && <IncomeTable data={data?.vatReport} />}
+      {filter.chargesType !== ChargeFilterType.Expense && (
+        <IncomeTable
+          data={data?.vatReport}
+          toggleMergeCharge={toggleMergeCharge}
+          mergeSelectedCharges={mergeSelectedCharges}
+        />
+      )}
 
-      {filter.chargesType !== ChargeFilterType.Income && <ExpensesTable data={data?.vatReport} />}
+      {filter.chargesType !== ChargeFilterType.Income && (
+        <ExpensesTable
+          data={data?.vatReport}
+          toggleMergeCharge={toggleMergeCharge}
+          mergeSelectedCharges={mergeSelectedCharges}
+        />
+      )}
 
       <MissingInfoTable
         data={data?.vatReport}
@@ -90,6 +120,8 @@ export const VatMonthlyReport = (): ReactElement => {
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
+        toggleMergeCharge={toggleMergeCharge}
+        mergeSelectedCharges={mergeSelectedCharges}
       />
 
       <BusinessTripsTable
@@ -98,6 +130,8 @@ export const VatMonthlyReport = (): ReactElement => {
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
+        toggleMergeCharge={toggleMergeCharge}
+        mergeSelectedCharges={mergeSelectedCharges}
       />
 
       <MiscTable
@@ -106,6 +140,8 @@ export const VatMonthlyReport = (): ReactElement => {
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
+        toggleMergeCharge={toggleMergeCharge}
+        mergeSelectedCharges={mergeSelectedCharges}
       />
 
       {/* modification modals */}
