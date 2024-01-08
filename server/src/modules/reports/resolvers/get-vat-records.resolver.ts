@@ -186,7 +186,7 @@ export const getVatRecords: ResolverFn<
     }
 
     response.income = response.income.sort(
-      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
+      (a, b) => ((b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0)) ?? ((b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0)),
     );
     response.expenses = response.expenses.sort(
       (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
