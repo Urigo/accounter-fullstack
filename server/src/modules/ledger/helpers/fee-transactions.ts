@@ -11,6 +11,7 @@ import {
   FEE_CATEGORY_NAME,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
+  SWIFT_BUSINESS_ID,
 } from '@shared/constants';
 import type { CounterAccountProto, LedgerProto } from '@shared/types';
 import {
@@ -56,9 +57,7 @@ export function isSupplementalFeeTransaction(
     return true;
   }
 
-  const fundamentalFeeBusinesses: string[] = [
-    'a62a631b-54b2-4bc1-bd61-6672c3c5d45a', // swift
-  ];
+  const fundamentalFeeBusinesses: string[] = [SWIFT_BUSINESS_ID];
   if (fundamentalFeeBusinesses.includes(transaction.business_id)) {
     return false;
   }
