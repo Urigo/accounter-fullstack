@@ -70,6 +70,13 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
               onClick={(): void => navigate('/tags')}
             />
           </li>
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="Salaries"
+              onClick={(): void => navigate('/salaries')}
+            />
+          </li>
           {extraLinks?.map(link => (
             <li key={link.title}>
               <a

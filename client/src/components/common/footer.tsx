@@ -5,6 +5,10 @@ type FooterProps = {
 };
 
 export const Footer = ({ children }: FooterProps): ReactElement => {
+  if (!children) {
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <></>;
+  }
   return (
     <footer className="text-gray-600 body-font sticky bottom-0 bg-gray-200 justify-center flex">
       <div className="px-5 py-8 mx-auto flex items-center sm:flex-row flex-col">{children}</div>

@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types';
 
@@ -20,6 +21,10 @@ export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalary
       healthPaymentAmount: salaryRecord.healthPaymentAmount ?? null,
       hourlyRate: salaryRecord.hourlyRate ?? null,
       hours: salaryRecord.hours ?? null,
+      month:
+        salaryRecord.month && salaryRecord.month.length !== 7
+          ? format(new Date(salaryRecord.month), 'yyyy-MM')
+          : salaryRecord.month,
       pensionEmployeeAmount: salaryRecord.pensionEmployeeAmount ?? null,
       pensionEmployeePercentage: salaryRecord.pensionEmployeePercentage ?? null,
       pensionEmployerAmount: salaryRecord.pensionEmployerAmount ?? null,

@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { filterSalaryRecordsByCharge } from '../helpers/filter-salaries-by-charge.js';
 import { getSalaryMonth } from '../helpers/get-month.helper.js';
@@ -10,7 +11,8 @@ import type { SalariesModule } from '../types.js';
 import { insertSalaryRecords } from './insert-salary.resolver.js';
 import { updateSalaryRecord } from './update-salary.resolver.js';
 
-export const salariesResolvers: SalariesModule.Resolvers = {
+export const salariesResolvers: SalariesModule.Resolvers &
+  Pick<Resolvers, 'UpdateSalaryRecordResult' | 'InsertSalaryRecordsResult'> = {
   Query: {
     salaryRecordsByCharge: async (_, { chargeId }, { injector }) => {
       const salaryRecords = await injector
@@ -18,14 +20,16 @@ export const salariesResolvers: SalariesModule.Resolvers = {
         .getSalaryRecordsByChargeIdLoader.load(chargeId);
       return salaryRecords;
     },
-    salaryRecordsByDates: async (_, { fromDate, toDate }, { injector }) => {
+    salaryRecordsByDates: async (_, { fromDate, toDate, employeeIDs }, { injector }) => {
       const fromDateMonth = fromDate.slice(0, 7);
       const toDateMonth = toDate.slice(0, 7);
       try {
         const salaryRecords = await injector
           .get(SalariesProvider)
           .getSalaryRecordsByDates({ fromDate: fromDateMonth, toDate: toDateMonth });
-        return salaryRecords.sort((a, b) => a.month.localeCompare(b.month));
+        return salaryRecords
+          .filter(record => (employeeIDs ? employeeIDs.includes(record.employee_id) : true))
+          .sort((a, b) => a.month.localeCompare(b.month));
       } catch (e) {
         throw new GraphQLError(`Failed to get salary records by dates: ${(e as Error).message}`);
       }
@@ -110,6 +114,18 @@ export const salariesResolvers: SalariesModule.Resolvers = {
       }
     },
   },
+  UpdateSalaryRecordResult: {
+    __resolveType: obj => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UpdateSalaryRecordSuccessfulResult';
+    },
+  },
+  InsertSalaryRecordsResult: {
+    __resolveType: obj => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'InsertSalaryRecordsSuccessfulResult';
+    },
+  },
   SalaryCharge: {
     salaryRecords: (DbCharge, _, { injector }) => {
       return injector.get(SalariesProvider).getSalaryRecordsByChargeIdLoader.load(DbCharge.id);
@@ -162,6 +178,11 @@ export const salariesResolvers: SalariesModule.Resolvers = {
         .get(FinancialEntitiesProvider)
         .getFinancialEntityByIdLoader.load(DbSalary.employee_id)
         .then(res => res ?? null),
+    employer: (DbSalary, _, { injector }) =>
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(DbSalary.employer)
+        .then(res => res ?? null),
     pensionFund: (DbSalary, _, { injector }) =>
       DbSalary.pension_fund_id
         ? injector
@@ -171,10 +192,13 @@ export const salariesResolvers: SalariesModule.Resolvers = {
         : null,
     pensionEmployeeAmount: DbSalary =>
       formatFinancialAmount(DbSalary.pension_employee_amount, DEFAULT_LOCAL_CURRENCY),
+    pensionEmployeePercentage: DbSalary => DbSalary.pension_employee_percentage,
     pensionEmployerAmount: DbSalary =>
       formatFinancialAmount(DbSalary.pension_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    pensionEmployerPercentage: DbSalary => DbSalary.pension_employer_percentage,
     compensationsAmount: DbSalary =>
       formatFinancialAmount(DbSalary.compensations_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    compensationsPercentage: DbSalary => DbSalary.compensations_employer_percentage,
     trainingFund: (DbSalary, _, { injector }) =>
       DbSalary.training_fund_id
         ? injector
@@ -184,8 +208,10 @@ export const salariesResolvers: SalariesModule.Resolvers = {
         : null,
     trainingFundEmployeeAmount: DbSalary =>
       formatFinancialAmount(DbSalary.training_fund_employee_amount, DEFAULT_LOCAL_CURRENCY),
+    trainingFundEmployeePercentage: DbSalary => DbSalary.training_fund_employee_percentage,
     trainingFundEmployerAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.training_fund_employee_amount, DEFAULT_LOCAL_CURRENCY),
+      formatFinancialAmount(DbSalary.training_fund_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    trainingFundEmployerPercentage: DbSalary => DbSalary.training_fund_employer_percentage,
     socialSecurityEmployeeAmount: DbSalary =>
       formatFinancialAmount(DbSalary.social_security_amount_employee, DEFAULT_LOCAL_CURRENCY),
     socialSecurityEmployerAmount: DbSalary =>
@@ -193,6 +219,23 @@ export const salariesResolvers: SalariesModule.Resolvers = {
     incomeTaxAmount: DbSalary => formatFinancialAmount(DbSalary.tax_amount, DEFAULT_LOCAL_CURRENCY),
     healthInsuranceAmount: DbSalary =>
       formatFinancialAmount(DbSalary.health_payment_amount, DEFAULT_LOCAL_CURRENCY),
+    globalAdditionalHoursAmount: DbSalary =>
+      formatFinancialAmount(DbSalary.global_additional_hours, DEFAULT_LOCAL_CURRENCY),
+    bonus: DbSalary => formatFinancialAmount(DbSalary.bonus, DEFAULT_LOCAL_CURRENCY),
+    gift: DbSalary => formatFinancialAmount(DbSalary.gift, DEFAULT_LOCAL_CURRENCY),
+    recovery: DbSalary => formatFinancialAmount(DbSalary.recovery, DEFAULT_LOCAL_CURRENCY),
+    vacationTakeout: DbSalary =>
+      formatFinancialAmount(DbSalary.vacation_takeout, DEFAULT_LOCAL_CURRENCY),
+    notionalExpense: DbSalary => formatFinancialAmount(DbSalary.zkufot, DEFAULT_LOCAL_CURRENCY),
+    vacationDays: DbSalary => ({
+      added: DbSalary.added_vacation_days ? Number(DbSalary.added_vacation_days) : null,
+      // taken: DbSalary.vacation_takeout ? Number(DbSalary.taken_vacation_days) : null,
+      balance: DbSalary.vacation_days_balance ? Number(DbSalary.vacation_days_balance) : null,
+    }),
+    workDays: DbSalary => (DbSalary.work_days ? Number(DbSalary.work_days) : null),
+    sicknessDays: DbSalary => ({
+      balance: DbSalary.sickness_days_balance ? Number(DbSalary.sickness_days_balance) : null,
+    }),
     charge: (DbSalary, _, { injector }) => {
       if (!DbSalary.charge_id) {
         return null;

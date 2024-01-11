@@ -107,6 +107,7 @@ function VatMonthlyReportFilterForm({
         <MonthPicker
           placeholder="Pick month"
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
+          defaultDate={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           onChange={onSelectDate}
         />
         <div className="flex justify-center mt-5 gap-3">

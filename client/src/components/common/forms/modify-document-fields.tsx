@@ -21,7 +21,7 @@ import {
   isDocumentReceipt,
 } from '../../../helpers/documents';
 
-export interface Props {
+export interface ModifyDocumentFieldsProps {
   document?: EditDocumentQuery['documentById'];
   control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
   watch: UseFormWatch<UpdateDocumentFieldsInput | InsertDocumentInput>;
@@ -33,7 +33,7 @@ export const ModifyDocumentFields = ({
   control,
   watch,
   defaultCurrency,
-}: Props): ReactElement => {
+}: ModifyDocumentFieldsProps): ReactElement => {
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
@@ -200,7 +200,6 @@ export const ModifyDocumentFields = ({
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...vatField}
                     error={vatFieldState.error?.message || currencyCodeFieldState.error?.message}
-                    isDirty={vatFieldState.isDirty || currencyCodeFieldState.isDirty}
                     label="VAT"
                     currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
                   />
@@ -227,7 +226,6 @@ export const ModifyDocumentFields = ({
                     // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...amountField}
                     error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
-                    isDirty={amountFieldState.isDirty || currencyCodeFieldState.isDirty}
                     label="Amount"
                     currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
                   />

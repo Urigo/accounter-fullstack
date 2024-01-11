@@ -1,122 +1,84 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
-import { ActionIcon, Tooltip } from '@mantine/core';
-import { FiltersContext } from '../../filters-context';
-import {
-  AllChargesDocument,
-  ChargeFilter,
-  ChargeSortByField,
-  GetSalaryRecordsDocument,
-} from '../../gql/graphql.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
+import { FiltersContext } from '../../filters-context.js';
+import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import {
   AccounterLoader,
-  EditChargeModal,
-  InsertDocumentModal,
-  MatchDocumentModal,
-  MergeChargesButton,
-  UploadDocumentModal,
+  EditSalaryRecordModal,
+  InsertMiniButton,
+  InsertSalaryRecordModal,
 } from '../common';
-import { SalariesScreen } from './salaries-screen';
-
-// import { SalariesFilters } from './salaries-filters';
+import { getDefaultFilterDates, SalariesFilter, SalariesFilters } from './salaries-filters.js';
+import { SalariesTable } from './salaries-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query GetSalaryRecords($fromDate: TimelessDate!, $toDate: TimelessDate!) {
-    salaryRecordsByDates(fromDate: $fromDate, toDate: $toDate) {
+  query SalaryScreenRecords($fromDate: TimelessDate!, $toDate: TimelessDate!, $employeeIDs: [UUID!]) {
+    salaryRecordsByDates(fromDate: $fromDate, toDate: $toDate, employeeIDs: $employeeIDs) {
         month
         employee {
             id
-            name
         }
-        directAmount {
-            formatted
-        }
+        ...SalariesTableFields
     }
   }
 `;
 
 export const Salaries = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  //   const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
-  //   const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
-  const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  //   const { get } = useUrlQuery();
-  //   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
-  //   const [filter, setFilter] = useState<ChargeFilter>(
-  //     get('chargesFilters')
-  //       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
-  //       : {
-  //           byOwners: [DEFAULT_FINANCIAL_ENTITY_ID],
-  //           sortBy: {
-  //             field: ChargeSortByField.Date,
-  //             asc: false,
-  //           },
-  //         },
-  //   );
+  const [editSalaryRecord, setEditSalaryRecord] = useState<
+    { month: string; employeeId: string } | undefined
+  >(undefined);
+  const [insertSalaryRecord, setInsertSalaryRecord] = useState<{ month?: string } | undefined>(
+    undefined,
+  );
+  const { get } = useUrlQuery();
+  const [filter, setFilter] = useState<SalariesFilter>(
+    get('salariesFilters')
+      ? (JSON.parse(decodeURIComponent(get('salariesFilters') as string)) as SalariesFilter)
+      : {
+          ...getDefaultFilterDates(),
+        },
+  );
 
   const [{ data, fetching }] = useQuery({
-    query: GetSalaryRecordsDocument,
+    query: SalaryScreenRecordsDocument,
     variables: {
-      fromDate: '2022-01-01',
-      toDate: '2022-12-31',
+      ...filter,
     },
   });
 
-  //   useEffect(() => {
-  //     setFiltersContext(
-  //       <div className="flex flex-row gap-x-5">
-  //         <SalariesFilters
-  //           filter={filter}
-  //           setFilter={setFilter}
-  //         />
-  //         <Tooltip label="Expand all accounts">
-  //           <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
-  //             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-  //           </ActionIcon>
-  //         </Tooltip>
-  //         <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
-  //       </div>,
-  //     );
-  //   }, [
-  //     data,
-  //     fetching,
-  //     filter,
-  //     activePage,
-  //     isAllOpened,
-  //     setFiltersContext,
-  //     setActivePage,
-  //     setFilter,
-  //     setIsAllOpened,
-  //     mergeSelectedCharges,
-  //   ]);
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <SalariesFilters filter={filter} setFilter={setFilter} />
+        <InsertMiniButton variant="default" onClick={() => setInsertSalaryRecord({})} />
+      </div>,
+    );
+  }, [data, fetching, filter, setFiltersContext, setFilter]);
 
   return (
     <>
       {fetching ? (
         <AccounterLoader />
       ) : (
-        <SalariesScreen
-          setEditChargeId={setEditChargeId}
-          setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={mergeSelectedCharges}
-          data={data?.allCharges?.nodes}
-          isAllOpened={isAllOpened}
+        <SalariesTable
+          setEditSalaryRecord={setEditSalaryRecord}
+          setInsertSalaryRecord={setInsertSalaryRecord}
+          data={data?.salaryRecordsByDates}
         />
       )}
-      {/* <EditSalaryRecordModal chargeId={editChargeId} onDone={(): void => setEditChargeId(undefined)} />
+      <EditSalaryRecordModal
+        recordVariables={editSalaryRecord}
+        onDone={(): void => setEditSalaryRecord(undefined)}
+      />
       {insertSalaryRecord && (
         <InsertSalaryRecordModal
-          insertSalaryRecord={insertSalaryRecord}
+          insertSalaryRecordParams={insertSalaryRecord}
           setInsertSalaryRecord={setInsertSalaryRecord}
         />
-      )} */}
+      )}
     </>
   );
 };

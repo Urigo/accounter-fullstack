@@ -1,6 +1,6 @@
 import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
+import { NumberInput, Select } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
-import { NumberInput } from './number-input';
 
 type CurrencyCodeProps = DetailedHTMLProps<
   SelectHTMLAttributes<HTMLSelectElement>,
@@ -34,9 +34,9 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
   },
 );
 
-type Props = React.ComponentProps<typeof NumberInput> & {
+type Props = ComponentProps<typeof NumberInput> & {
   error?: string;
-  currencyCodeProps: ComponentProps<typeof CurrencyCodeInput>;
+  currencyCodeProps: Omit<ComponentProps<typeof Select>, 'data'>;
   precision?: number;
 };
 
@@ -46,16 +46,19 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   ...props
 }) {
   return (
-    <div>
-      <div className="w-full flex flex-row ">
-        <NumberInput
-          className="w-full"
-          {...props}
-          precision={props.precision ?? 2}
-          error={error || currencyError}
-        />
-        <CurrencyCodeInput {...currencyCodeProps} />
-      </div>
+    <div className="w-full flex flex-row ">
+      <NumberInput
+        className="w-full"
+        {...props}
+        hideControls
+        precision={props.precision ?? 2}
+        error={error || currencyError}
+      />
+      <Select
+        className="w-1/2"
+        {...currencyCodeProps}
+        data={Object.keys(Currency).map(key => Currency[key as keyof typeof Currency])}
+      />
     </div>
   );
 });
