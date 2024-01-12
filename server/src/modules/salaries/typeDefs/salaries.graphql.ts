@@ -2,13 +2,22 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    salaryRecordsByCharge(chargeId: UUID!): [Salary!]!
+    salaryRecordsByDates(
+      fromDate: TimelessDate!
+      toDate: TimelessDate!
+      employeeIDs: [UUID!]
+    ): [Salary!]!
+  }
+
   extend type Mutation {
     insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
-    updateSalaryRecord(salaryRecord: SalaryRecordInput!): UpdateSalaryRecordResult!
+    updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult!
     insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
   }
 
-  " input variables for update/insert salary records "
+  " input variables for insert salary records "
   input SalaryRecordInput {
     addedVacationDays: Float
     baseSalary: Float
@@ -19,6 +28,44 @@ export default gql`
     directPaymentAmount: Float!
     employeeId: UUID!
     employer: UUID!
+    gift: Float
+    globalAdditionalHours: Float
+    healthPaymentAmount: Float
+    hourlyRate: Float
+    hours: Float
+    month: String!
+    pensionEmployeeAmount: Float
+    pensionEmployeePercentage: Float
+    pensionEmployerAmount: Float
+    pensionEmployerPercentage: Float
+    pensionFundId: UUID
+    recovery: Float
+    sicknessDaysBalance: Float
+    socialSecurityAmountEmployee: Float
+    socialSecurityAmountEmployer: Float
+    taxAmount: Float
+    trainingFundEmployeeAmount: Float
+    trainingFundEmployeePercentage: Float
+    trainingFundEmployerAmount: Float
+    trainingFundEmployerPercentage: Float
+    trainingFundId: UUID
+    vacationDaysBalance: Float
+    vacationTakeout: Float
+    workDays: Float
+    zkufot: Int
+  }
+
+  " input variables for update salary records "
+  input SalaryRecordEditInput {
+    addedVacationDays: Float
+    baseSalary: Float
+    bonus: Float
+    chargeId: UUID
+    compensationsEmployerAmount: Float
+    compensationsEmployerPercentage: Float
+    directPaymentAmount: Float
+    employeeId: UUID!
+    employer: UUID
     gift: Float
     globalAdditionalHours: Float
     healthPaymentAmount: Float
@@ -74,16 +121,44 @@ export default gql`
     directAmount: FinancialAmount!
     baseAmount: FinancialAmount
     employee: LtdFinancialEntity
+    employer: LtdFinancialEntity
     pensionFund: LtdFinancialEntity
     pensionEmployeeAmount: FinancialAmount
+    pensionEmployeePercentage: Float
     pensionEmployerAmount: FinancialAmount
+    pensionEmployerPercentage: Float
     compensationsAmount: FinancialAmount
+    compensationsPercentage: Float
     trainingFund: LtdFinancialEntity
     trainingFundEmployeeAmount: FinancialAmount
+    trainingFundEmployeePercentage: Float
     trainingFundEmployerAmount: FinancialAmount
+    trainingFundEmployerPercentage: Float
     socialSecurityEmployeeAmount: FinancialAmount
     socialSecurityEmployerAmount: FinancialAmount
     incomeTaxAmount: FinancialAmount
     healthInsuranceAmount: FinancialAmount
+    charge: SalaryCharge
+    globalAdditionalHoursAmount: FinancialAmount
+    bonus: FinancialAmount
+    gift: FinancialAmount
+    recovery: FinancialAmount
+    notionalExpense: FinancialAmount
+    vacationDays: VacationDays
+    vacationTakeout: FinancialAmount
+    workDays: Float
+    sicknessDays: SicknessDays
+  }
+
+  " defines vacation days for salary record "
+  type VacationDays {
+    added: Float
+    taken: Float
+    balance: Float
+  }
+
+  " defines sickness days for salary record "
+  type SicknessDays {
+    balance: Float
   }
 `;

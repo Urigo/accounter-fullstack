@@ -40,6 +40,10 @@ const links: Link[] = [
     label: 'Tags',
     to: '/tags',
   },
+  {
+    label: 'Salaries',
+    to: '/salaries',
+  },
 ];
 
 export const NavBar = (): ReactElement => {

@@ -46,7 +46,7 @@ const updateBusinessTripTravelAndSubsistenceTransaction = sql<IUpdateBusinessTri
   UPDATE accounter_schema.business_trips_transactions_tns
   SET
   expense_type = COALESCE(
-    $expanseType,
+    $expenseType,
     expense_type
   )
   WHERE
@@ -56,7 +56,7 @@ const updateBusinessTripTravelAndSubsistenceTransaction = sql<IUpdateBusinessTri
 
 const insertBusinessTripTravelAndSubsistenceTransaction = sql<IInsertBusinessTripTravelAndSubsistenceTransactionQuery>`
   INSERT INTO accounter_schema.business_trips_transactions_tns (id, expense_type)
-  VALUES($id, $expanseType)
+  VALUES($id, $expenseType)
   RETURNING *;`;
 
 @Injectable({

@@ -6,7 +6,7 @@ import { TextInput } from '..';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 
-export interface Props {
+interface Props {
   control: Control<InsertBusinessTripInput, object>;
 }
 

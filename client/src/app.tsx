@@ -9,6 +9,7 @@ import { NavBar } from './components/common/menu';
 import { DocumentsReport } from './components/documents';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
+import { Salaries } from './components/salaries';
 import { TagsManager } from './components/tags';
 import { FiltersContext } from './filters-context';
 
@@ -26,6 +27,7 @@ export function App(): ReactElement {
         <Route path="/documents" element={<DocumentsReport />} />
         <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
         <Route path="/reports/vat-monthly" element={<VatMonthlyReport />} />
+        <Route path="/salaries" element={<Salaries />} />
         <Route path="/tags" element={<TagsManager />} />
         <Route
           path="*"

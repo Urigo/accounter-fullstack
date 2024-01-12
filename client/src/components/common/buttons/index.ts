@@ -7,6 +7,7 @@ export * from './delete-document-button.js';
 export * from './edit-mini-button.js';
 export * from './fetch-income-documents-button.js';
 export * from './info-mini-button.js';
+export * from './insert-mini-button.js';
 export * from './toggle-merge-selected.js';
 export * from './unlink-document-button.js';
 export * from './unlink-transaction-button.js';
