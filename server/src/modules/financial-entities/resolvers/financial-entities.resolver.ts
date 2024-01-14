@@ -1,5 +1,5 @@
 // import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
@@ -17,9 +17,7 @@ import {
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
     financialEntity: async (_, { id }, { injector }) => {
-      const dbFe = await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(id);
+      const dbFe = await injector.get(BusinessesProvider).getFinancialEntityByIdLoader.load(id);
       if (!dbFe) {
         throw new Error(`Financial entity ID="${id}" not found`);
       }
@@ -27,9 +25,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
       return dbFe;
     },
     allFinancialEntities: async (_, { page, limit }, { injector }) => {
-      const financialEntities = await injector
-        .get(FinancialEntitiesProvider)
-        .getAllFinancialEntities();
+      const financialEntities = await injector.get(BusinessesProvider).getAllFinancialEntities();
 
       page ??= 1;
       let pageFinancialEntities = financialEntities.sort((a, b) =>
@@ -77,7 +73,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
           fields.sortCode
         ) {
           await injector
-            .get(FinancialEntitiesProvider)
+            .get(BusinessesProvider)
             .updateBusiness(adjustedFields)
             .catch((e: Error) => {
               console.error(e);
@@ -105,7 +101,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers = {
         }
 
         const updatedBusiness = await injector
-          .get(FinancialEntitiesProvider)
+          .get(BusinessesProvider)
           .getFinancialEntityByIdLoader.load(businessId);
         if (!updatedBusiness) {
           throw new Error(`Updated business not found`);

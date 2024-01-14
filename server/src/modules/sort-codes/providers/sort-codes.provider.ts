@@ -5,7 +5,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllSortCodesQuery,
-  IGetSortCodesByBusinessIdsQuery,
+  IGetSortCodesByFinancialEntitiesIdsQuery,
   IGetSortCodesByIdsQuery,
 } from '../types.js';
 
@@ -18,13 +18,13 @@ const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   FROM accounter_schema.hash_sort_codes sc
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
 
-const getSortCodesByBusinessIds = sql<IGetSortCodesByBusinessIdsQuery>`
-  SELECT b.id as business_id, sc.*
-  FROM accounter_schema.businesses b
+const getSortCodesByFinancialEntitiesIds = sql<IGetSortCodesByFinancialEntitiesIdsQuery>`
+  SELECT fe.id as financial_entity_id, sc.*
+  FROM accounter_schema.financial_entities fe
   LEFT JOIN accounter_schema.hash_sort_codes sc
-    ON b.sort_code = sc.key
+    ON fe.sort_code = sc.key
   WHERE sc.key IS NOT null
-    AND ($isBusinessIDs = 0 OR b.id IN $$businessIDs);`;
+    AND ($isFinancialEntitiesIDs = 0 OR fe.id IN $$financialEntitiesIDs);`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -55,23 +55,25 @@ export class SortCodesProvider {
     },
   );
 
-  private async batchSortCodesByBusinessIds(businessIDs: readonly string[]) {
+  private async batchSortCodesByFinancialEntitiesIds(financialEntitiesIDs: readonly string[]) {
     try {
-      const sortCodes = await getSortCodesByBusinessIds.run(
+      const sortCodes = await getSortCodesByFinancialEntitiesIds.run(
         {
-          isBusinessIDs: businessIDs.length > 0 ? 1 : 0,
-          businessIDs,
+          isFinancialEntitiesIDs: financialEntitiesIDs.length > 0 ? 1 : 0,
+          financialEntitiesIDs,
         },
         this.dbProvider,
       );
-      return businessIDs.map(id => sortCodes.find(sortCode => sortCode.business_id === id));
+      return financialEntitiesIDs.map(id =>
+        sortCodes.find(sortCode => sortCode.financial_entity_id === id),
+      );
     } catch (e) {
       throw new GraphQLError('Error fetching sort codes');
     }
   }
 
-  public getSortCodesByBusinessIdsLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchSortCodesByBusinessIds(ids),
+  public getSortCodesByFinancialEntitiesIdsLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchSortCodesByFinancialEntitiesIds(ids),
     {
       cache: false,
     },

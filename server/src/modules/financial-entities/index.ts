@@ -4,7 +4,7 @@ import counterparties from './typeDefs/counterparties.graphql.js';
 import financialEntities from './typeDefs/financial-entities.graphql.js';
 import taxCategories from './typeDefs/tax-categories.graphql.js';
 import { createModule } from 'graphql-modules';
-import { FinancialEntitiesProvider } from './providers/financial-entities.provider.js';
+import { BusinessesProvider } from './providers/businesses.provider.js';
 import { TaxCategoriesProvider } from './providers/tax-categories.provider.js';
 import { businessTransactionsResolvers } from './resolvers/business-transactions.resolver.js';
 import { financialEntitiesResolvers } from './resolvers/financial-entities.resolver.js';
@@ -23,10 +23,7 @@ export const financialEntitiesModule = createModule({
     taxCategories,
   ],
   resolvers: [financialEntitiesResolvers, businessTransactionsResolvers, taxCategoriesResolvers],
-  providers: () => [
-    FinancialEntitiesProvider,
-    TaxCategoriesProvider,
-  ],
+  providers: () => [BusinessesProvider, TaxCategoriesProvider],
 });
 
 export * as FinancialEntitiesTypes from './types.js';

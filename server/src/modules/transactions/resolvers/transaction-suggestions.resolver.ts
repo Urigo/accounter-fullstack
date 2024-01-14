@@ -1,4 +1,4 @@
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
@@ -83,7 +83,7 @@ const missingInfoSuggestions: Resolver<
 
   if (DbTransaction.business_id) {
     const business = await injector
-      .get(FinancialEntitiesProvider)
+      .get(BusinessesProvider)
       .getFinancialEntityByIdLoader.load(DbTransaction.business_id);
 
     if (business?.suggestion_data) {
@@ -96,7 +96,7 @@ const missingInfoSuggestions: Resolver<
   const description = DbTransaction.source_description?.trim() ?? '';
 
   const businesses = await injector
-    .get(FinancialEntitiesProvider)
+    .get(BusinessesProvider)
     .getAllFinancialEntities()
     .then(businesses => businesses.filter(business => business.suggestion_data));
   const suggestions: Record<string, DecoratedSuggestion> = {};

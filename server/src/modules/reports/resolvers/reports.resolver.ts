@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { Currency } from '@shared/enums';
 import { formatFinancialAmount, formatFinancialIntAmount } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
@@ -13,7 +13,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     vatReport: getVatRecords,
     pcnFile: async (_, { fromDate, toDate, financialEntityId }, context, __) => {
       const financialEntity = await context.injector
-        .get(FinancialEntitiesProvider)
+        .get(BusinessesProvider)
         .getFinancialEntityByIdLoader.load(financialEntityId);
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
@@ -62,7 +62,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     vatNumber: (raw, _, { injector }) =>
       raw.businessId
         ? injector
-            .get(FinancialEntitiesProvider)
+            .get(BusinessesProvider)
             .getFinancialEntityByIdLoader.load(raw.businessId)
             .then(entity => entity?.vat_number ?? null)
         : null,

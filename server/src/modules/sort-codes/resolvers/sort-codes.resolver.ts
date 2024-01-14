@@ -23,7 +23,7 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
       parent
         ? injector
             .get(SortCodesProvider)
-            .getSortCodesByBusinessIdsLoader.load(parent)
+            .getSortCodesByFinancialEntitiesIdsLoader.load(parent)
             .then(sortCode => sortCode ?? null)
         : null,
   },

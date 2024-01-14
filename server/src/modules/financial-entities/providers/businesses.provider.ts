@@ -13,24 +13,160 @@ import type {
 } from '../types.js';
 
 const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
-    SELECT *
-    FROM accounter_schema.businesses
-    WHERE id IN $$ids;`;
+    SELECT fe.*,
+      b.address,
+      b.address_hebrew,
+      b.advance_tax_rate,
+      b.bank_account_account_number,
+      b.bank_account_bank_number,
+      b.bank_account_branch_number,
+      b."bank_account_IBAN",
+      b.bank_account_swift,
+      b.can_settle_with_receipt,
+      b.contract,
+      b.country,
+      b.email,
+      b.hebrew_name,
+      b.nikuim,
+      b.no_invoices_required,
+      b.password,
+      b.phone_number,
+      b.pinkas_social_security_2021,
+      b.pinkas_social_security_2022,
+      b.registration_date,
+      b.suggestion_data,
+      b.tax_nikuim_pinkas_number,
+      b.tax_pinkas_number_2020,
+      b.tax_siduri_number_2021,
+      b.tax_siduri_number_2022,
+      b.username_vat_website,
+      b.vat_number,
+      b.vat_report_cadence,
+      b.website,
+      b.website_login_screenshot,
+      b.wizcloud_company_id,
+      b.wizcloud_token
+    FROM accounter_schema.businesses b
+    LEFT JOIN accounter_schema.financial_entities fe
+      ON b.id = fe.id
+    WHERE b.id IN $$ids;`;
 
 const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
-    SELECT *
-    FROM accounter_schema.businesses
-    WHERE name IN $$names;`;
+    SELECT fe.*,
+      b.address,
+      b.address_hebrew,
+      b.advance_tax_rate,
+      b.bank_account_account_number,
+      b.bank_account_bank_number,
+      b.bank_account_branch_number,
+      b."bank_account_IBAN",
+      b.bank_account_swift,
+      b.can_settle_with_receipt,
+      b.contract,
+      b.country,
+      b.email,
+      b.hebrew_name,
+      b.nikuim,
+      b.no_invoices_required,
+      b.password,
+      b.phone_number,
+      b.pinkas_social_security_2021,
+      b.pinkas_social_security_2022,
+      b.registration_date,
+      b.suggestion_data,
+      b.tax_nikuim_pinkas_number,
+      b.tax_pinkas_number_2020,
+      b.tax_siduri_number_2021,
+      b.tax_siduri_number_2022,
+      b.username_vat_website,
+      b.vat_number,
+      b.vat_report_cadence,
+      b.website,
+      b.website_login_screenshot,
+      b.wizcloud_company_id,
+      b.wizcloud_token
+    FROM accounter_schema.businesses b
+    LEFT JOIN accounter_schema.financial_entities fe
+      ON b.id = fe.id
+    WHERE fe.name IN $$names;`;
 
 const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
-    SELECT *
-    FROM accounter_schema.businesses;`;
+    SELECT fe.*,
+      b.address,
+      b.address_hebrew,
+      b.advance_tax_rate,
+      b.bank_account_account_number,
+      b.bank_account_bank_number,
+      b.bank_account_branch_number,
+      b."bank_account_IBAN",
+      b.bank_account_swift,
+      b.can_settle_with_receipt,
+      b.contract,
+      b.country,
+      b.email,
+      b.hebrew_name,
+      b.nikuim,
+      b.no_invoices_required,
+      b.password,
+      b.phone_number,
+      b.pinkas_social_security_2021,
+      b.pinkas_social_security_2022,
+      b.registration_date,
+      b.suggestion_data,
+      b.tax_nikuim_pinkas_number,
+      b.tax_pinkas_number_2020,
+      b.tax_siduri_number_2021,
+      b.tax_siduri_number_2022,
+      b.username_vat_website,
+      b.vat_number,
+      b.vat_report_cadence,
+      b.website,
+      b.website_login_screenshot,
+      b.wizcloud_company_id,
+      b.wizcloud_token
+    FROM accounter_schema.businesses b
+    LEFT JOIN accounter_schema.financial_entities fe
+      ON b.id = fe.id;`;
 
 const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
-    SELECT c.id as charge_id, bu.*
+    SELECT c.id as charge_id, fe.*,
+      b.address,
+      b.address_hebrew,
+      b.advance_tax_rate,
+      b.bank_account_account_number,
+      b.bank_account_bank_number,
+      b.bank_account_branch_number,
+      b."bank_account_IBAN",
+      b.bank_account_swift,
+      b.can_settle_with_receipt,
+      b.contract,
+      b.country,
+      b.email,
+      b.hebrew_name,
+      b.nikuim,
+      b.no_invoices_required,
+      b.password,
+      b.phone_number,
+      b.pinkas_social_security_2021,
+      b.pinkas_social_security_2022,
+      b.registration_date,
+      b.suggestion_data,
+      b.tax_nikuim_pinkas_number,
+      b.tax_pinkas_number_2020,
+      b.tax_siduri_number_2021,
+      b.tax_siduri_number_2022,
+      b.username_vat_website,
+      b.vat_number,
+      b.vat_report_cadence,
+      b.website,
+      b.website_login_screenshot,
+      b.wizcloud_company_id,
+      b.wizcloud_token
     FROM accounter_schema.charges c
-    LEFT JOIN accounter_schema.businesses bu
-    ON  c.owner_id = bu.id
+    LEFT JOIN accounter_schema.businesses b
+    LEFT JOIN accounter_schema.financial_entities fe
+      ON b.id = fe.id
+    ON  c.owner_id = b.id
     WHERE c.id IN $$chargeIds;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
@@ -182,7 +318,7 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   scope: Scope.Singleton,
   global: true,
 })
-export class FinancialEntitiesProvider {
+export class BusinessesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialEntitiesByIds(ids: readonly string[]) {

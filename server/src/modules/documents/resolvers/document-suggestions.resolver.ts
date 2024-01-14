@@ -1,4 +1,4 @@
-// import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+// import { BusinessesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 // import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 // import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';

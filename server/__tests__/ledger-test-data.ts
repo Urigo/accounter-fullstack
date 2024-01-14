@@ -7,7 +7,7 @@ import { DocumentsProvider } from 'server/src/modules/documents/providers/docume
 import { ExchangeProvider } from 'server/src/modules/exchange-rates/providers/exchange.provider';
 import { financialAccountsModule } from 'server/src/modules/financial-accounts';
 import { financialEntitiesModule } from 'server/src/modules/financial-entities';
-import { FinancialEntitiesProvider } from 'server/src/modules/financial-entities/providers/financial-entities.provider';
+import { BusinessesProvider } from 'server/src/modules/financial-entities/providers/financial-entities.provider';
 import { TaxCategoriesProvider } from 'server/src/modules/financial-entities/providers/tax-categories.provider';
 import { ledgerModule } from 'server/src/modules/ledger';
 import { tagsModule } from 'server/src/modules/tags';
@@ -155,7 +155,7 @@ export function getDummyApp() {
         },
       },
       {
-        provide: FinancialEntitiesProvider,
+        provide: BusinessesProvider,
         useValue: {
           getFinancialEntityByIdLoader: {
             load: async (id: string) => {

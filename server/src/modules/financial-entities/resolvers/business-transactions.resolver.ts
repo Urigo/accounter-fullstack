@@ -15,8 +15,7 @@ import {
   handleBusinessLedgerRecord,
   handleBusinessTransaction,
 } from '../helpers/business-transactions.helper.js';
-import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
-import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule, IGetFinancialEntitiesByIdsResult } from '../types.js';
 
@@ -32,7 +31,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
       const [businesses, taxCategories] = await Promise.all([
         injector
-          .get(FinancialEntitiesProvider)
+          .get(BusinessesProvider)
           .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
@@ -158,7 +157,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
       const [businesses, taxCategories] = await Promise.all([
         injector
-          .get(FinancialEntitiesProvider)
+          .get(BusinessesProvider)
           .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
@@ -307,17 +306,6 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    businessNamesFromLedgerRecords: async (_, __, { injector }) => {
-      try {
-        return injector
-          .get(BusinessesTransactionsProvider)
-          .getLedgerRecordsDistinctBusinesses()
-          .then(res => res.filter(r => !!r.business_id).map(r => r.business_id));
-      } catch (e) {
-        console.error(e);
-        return [];
-      }
-    },
   },
   BusinessTransactionsSumFromLedgerRecordsResult: {
     __resolveType: (obj, _context, _info) => {
@@ -329,7 +317,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     __isTypeOf: parent => typeof parent === 'string',
     name: (parent, _, { injector }) =>
       injector
-        .get(FinancialEntitiesProvider)
+        .get(BusinessesProvider)
         .getFinancialEntityByIdLoader.load(
           typeof parent === 'string'
             ? parent

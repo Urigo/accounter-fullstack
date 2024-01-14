@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   ETANA_BUSINESS_ID,
@@ -51,7 +51,7 @@ const missingInfoSuggestions: Resolver<
   // if charge has a businesses, use it's suggestion data
   if (DbCharge.business_id) {
     const business = await injector
-      .get(FinancialEntitiesProvider)
+      .get(BusinessesProvider)
       .getFinancialEntityByIdLoader.load(DbCharge.business_id);
     if (business?.suggestion_data) {
       const suggestionData = business.suggestion_data as SuggestionData;
@@ -89,7 +89,7 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  const allBusinesses = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
+  const allBusinesses = await injector.get(BusinessesProvider).getAllFinancialEntities();
   const suggestions: Record<string, Suggestion> = {};
   for (const business of allBusinesses) {
     if (!business.suggestion_data) continue;

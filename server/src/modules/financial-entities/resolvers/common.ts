@@ -1,5 +1,5 @@
 import type { ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 
@@ -105,7 +105,7 @@ export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   // },
   owner: (DbCharge, _, { injector }) =>
     injector
-      .get(FinancialEntitiesProvider)
+      .get(BusinessesProvider)
       .getFinancialEntityByChargeIdsLoader.load(DbCharge.id)
       .then(res => {
         if (!res) {
