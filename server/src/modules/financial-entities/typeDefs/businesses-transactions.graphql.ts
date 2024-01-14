@@ -9,7 +9,6 @@ export default gql`
     businessTransactionsFromLedgerRecords(
       filters: BusinessTransactionsFilter
     ): BusinessTransactionsFromLedgerRecordsResult!
-    businessNamesFromLedgerRecords: [Counterparty!]!
   }
 
   " input variables for businessTransactions "
