@@ -43,7 +43,12 @@ export const InsertSalaryRecordModal = ({
       opened={!!insertSalaryRecordParams}
       onClose={(): void => setInsertSalaryRecord(undefined)}
     >
-      <ModifySalaryRecord isNewInsert onDone={doUpdate} isModifying={fetching} />
+      <ModifySalaryRecord
+        isNewInsert
+        onDone={doUpdate}
+        isModifying={fetching}
+        month={insertSalaryRecordParams.month}
+      />
     </PopUpDrawer>
   );
 };
