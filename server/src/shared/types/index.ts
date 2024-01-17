@@ -3,7 +3,6 @@ import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/typ
 import type { Currency } from '@shared/gql-types';
 
 export type BeneficiaryCounterpartyProto = { counterpartyID: string; percentage: number };
-export type CounterpartyProto = string | null;
 
 type CurrencySum = {
   credit: number;

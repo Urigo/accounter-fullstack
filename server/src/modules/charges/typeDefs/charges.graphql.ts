@@ -3,23 +3,23 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    chargesByIDs(chargeIDs: [ID!]!): [Charge!]!
+    chargesByIDs(chargeIDs: [UUID!]!): [Charge!]!
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }
 
   extend type Mutation {
-    updateCharge(chargeId: ID!, fields: UpdateChargeInput!): UpdateChargeResult!
+    updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult!
     mergeCharges(
-      baseChargeID: ID!
-      chargeIdsToMerge: [ID!]!
+      baseChargeID: UUID!
+      chargeIdsToMerge: [UUID!]!
       fields: UpdateChargeInput
     ): MergeChargeResult!
-    deleteCharge(chargeId: ID!): Boolean!
+    deleteCharge(chargeId: UUID!): Boolean!
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
   interface Charge {
-    id: ID!
+    id: UUID!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "
@@ -46,7 +46,7 @@ export default gql`
 
   " common charge "
   type CommonCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -62,7 +62,7 @@ export default gql`
 
   " charge with conversion transactions "
   type ConversionCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -78,7 +78,7 @@ export default gql`
 
   " charge with conversion transactions "
   type SalaryCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -94,7 +94,7 @@ export default gql`
 
   " charge of internal transfer "
   type InternalTransferCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -110,7 +110,7 @@ export default gql`
 
   " charge of dividends "
   type DividendCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -126,7 +126,7 @@ export default gql`
 
   " charge of dividends "
   type BusinessTripCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -142,7 +142,7 @@ export default gql`
 
   " charge of monthly VAT payment "
   type MonthlyVatCharge implements Charge {
-    id: ID!
+    id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -167,11 +167,11 @@ export default gql`
     " Include only charges with any doc/transaction date occurred before this date "
     toAnyDate: TimelessDate
     " Include only charges related to specific owners financial entities "
-    byOwners: [ID!]
+    byOwners: [UUID!]
     " Include only charges related to specific financial accounts "
-    byFinancialAccounts: [ID!]
+    byFinancialAccounts: [UUID!]
     " Include only charges including specific business "
-    byBusinesses: [ID!]
+    byBusinesses: [UUID!]
     " Include only charges with those tags "
     byTags: [String!]
     sortBy: ChargeSortBy
@@ -222,8 +222,8 @@ export default gql`
     isConversion: Boolean
     " user custom description "
     userDescription: String
-    defaultTaxCategoryID: ID
-    businessTripID: ID
+    defaultTaxCategoryID: UUID
+    businessTripID: UUID
   }
 
   " result type for updateCharge "
@@ -315,7 +315,7 @@ export default gql`
     charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }
 
-  extend interface FinancialEntity {
+  extend interface Business {
     charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }
 `;

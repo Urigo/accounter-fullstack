@@ -8,7 +8,7 @@ export default gql`
 
   " Represent something external that we scrape, like bank or card "
   interface FinancialAccount {
-    id: ID!
+    id: UUID!
     " the name of the account"
     name: String!
     " the general type of the account"
@@ -17,7 +17,7 @@ export default gql`
 
   " represent a single bank account"
   type BankFinancialAccount implements FinancialAccount {
-    id: ID!
+    id: UUID!
     name: String!
     type: String!
     " the external identifier of the bank account "
@@ -36,7 +36,7 @@ export default gql`
 
   " represent a single credit card "
   type CardFinancialAccount implements FinancialAccount {
-    id: ID!
+    id: UUID!
     name: String!
     type: String!
     " the external identifier of the card "
@@ -46,7 +46,7 @@ export default gql`
 
   " represent a single credit card "
   type CryptoWalletFinancialAccount implements FinancialAccount {
-    id: ID!
+    id: UUID!
     name: String!
     type: String!
     " the external identifier of the wallet "
@@ -82,7 +82,7 @@ export default gql`
     accounts: [FinancialAccount!]!
   }
 
-  extend interface FinancialEntity {
+  extend interface Business {
     accounts: [FinancialAccount!]!
   }
 `;

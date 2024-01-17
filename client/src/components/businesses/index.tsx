@@ -3,7 +3,7 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Table, Tooltip } from '@mantine/core';
 import { FiltersContext } from '../../filters-context.js';
-import { AllBusinessesDocument, AllBusinessesQuery } from '../../gql/graphql.js';
+import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { AccounterLoader } from '../common';
 import { AllBusinessesRow } from './all-businesses-row.js';
@@ -11,8 +11,8 @@ import { BusinessesFilters } from './businesses-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllBusinesses($page: Int, $limit: Int) {
-    allFinancialEntities(page: $page, limit: $limit) {
+  query AllBusinessesForScreen($page: Int, $limit: Int) {
+    allBusinesses(page: $page, limit: $limit) {
       nodes {
         __typename
         id
@@ -36,7 +36,7 @@ export const Businesses = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }] = useQuery({
-    query: AllBusinessesDocument,
+    query: AllBusinessesForScreenDocument,
     variables: {
       page: activePage,
       limit: 100,
@@ -50,7 +50,7 @@ export const Businesses = (): ReactElement => {
         <BusinessesFilters
           activePage={activePage}
           setPage={setActivePage}
-          totalPages={data?.allFinancialEntities?.pageInfo.totalPages}
+          totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
         <Tooltip label="Expand all businesses">
           <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
@@ -62,7 +62,7 @@ export const Businesses = (): ReactElement => {
   }, [data, activePage, isAllOpened, setFiltersContext, setActivePage, setIsAllOpened]);
 
   const businesses =
-    data?.allFinancialEntities?.nodes
+    data?.allBusinesses?.nodes
       .filter(business => business.__typename === 'LtdFinancialEntity')
       .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1)) ?? [];
 
@@ -85,7 +85,7 @@ export const Businesses = (): ReactElement => {
                 key={business.id}
                 data={
                   business as Extract<
-                    NonNullable<AllBusinessesQuery['allFinancialEntities']>['nodes'][number],
+                    NonNullable<AllBusinessesForScreenQuery['allBusinesses']>['nodes'][number],
                     { __typename: 'LtdFinancialEntity' }
                   >
                 }

@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -49,7 +50,20 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
       DbTransaction.amount && DbTransaction.currency
         ? formatFinancialAmount(DbTransaction.amount, DbTransaction.currency)
         : null,
-    employee: DbTransaction => DbTransaction.employee_business_id,
+    employee: (DbTransaction, _, { injector }) =>
+      DbTransaction.employee_business_id
+        ? injector
+            .get(BusinessesProvider)
+            .getBusinessByIdLoader.load(DbTransaction.employee_business_id)
+            .then(res => {
+              if (!res) {
+                throw new GraphQLError(
+                  `Employee with id ${DbTransaction.employee_business_id} not found`,
+                );
+              }
+              return res;
+            })
+        : null,
     transaction: async (DbTransaction, _, { injector }) =>
       DbTransaction.transaction_id
         ? injector

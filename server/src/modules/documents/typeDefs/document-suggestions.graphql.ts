@@ -30,9 +30,9 @@ export default gql`
   " represent document suggestions for missing info "
   type DocumentSuggestions {
     " The owner of the document "
-    owner: Counterparty
+    owner: FinancialEntity
     " The counter-side of the document (opposite to it's owner) "
-    counterparty: Counterparty
+    counterparty: FinancialEntity
     " The document amount "
     amount: FinancialAmount
     " The document direction (income or expense) "

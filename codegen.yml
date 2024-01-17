@@ -31,6 +31,7 @@ generates:
       mappers:
         BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
         BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
+        Business: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'
         BusinessTrip: '@modules/business-trips/types.js#IGetAllBusinessTripsResult'
@@ -46,14 +47,15 @@ generates:
         DocumentSuggestions: '@shared/types#DocumentSuggestionsProto'
         ExchangeRates: 'TimelessDateString'
         FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult'
+        FinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
         InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         LedgerRecord: '@shared/types#LedgerProto'
-        LtdFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
-        NamedCounterparty: '@shared/types#CounterpartyProto'
-        PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        NamedCounterparty: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
+        PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
         Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult'
@@ -68,6 +70,7 @@ generates:
         BusinessTripFlightTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsTransactionsResult'
         BusinessTripTravelAndSubsistenceTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult'
         BusinessTripOtherTransaction: '@modules/business-trips/types.js#IGetAllBusinessTripsOtherTransactionsResult'
+        LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto'
     plugins:
       - add:
           content: "import { TimelessDateString } from '@shared/types'"

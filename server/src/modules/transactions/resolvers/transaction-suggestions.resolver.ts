@@ -84,7 +84,7 @@ const missingInfoSuggestions: Resolver<
   if (DbTransaction.business_id) {
     const business = await injector
       .get(BusinessesProvider)
-      .getFinancialEntityByIdLoader.load(DbTransaction.business_id);
+      .getBusinessByIdLoader.load(DbTransaction.business_id);
 
     if (business?.suggestion_data) {
       return {
@@ -97,7 +97,7 @@ const missingInfoSuggestions: Resolver<
 
   const businesses = await injector
     .get(BusinessesProvider)
-    .getAllFinancialEntities()
+    .getAllBusinesses()
     .then(businesses => businesses.filter(business => business.suggestion_data));
   const suggestions: Record<string, DecoratedSuggestion> = {};
   for (const business of businesses) {

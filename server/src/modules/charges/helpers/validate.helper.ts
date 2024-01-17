@@ -20,7 +20,7 @@ export const validateCharge = async (
   );
   const business =
     charge.business_id && !businessNotRequired
-      ? await injector.get(BusinessesProvider).getFinancialEntityByIdLoader.load(charge.business_id)
+      ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
       : undefined;
 
   const businessIsFine = businessNotRequired || !!business;

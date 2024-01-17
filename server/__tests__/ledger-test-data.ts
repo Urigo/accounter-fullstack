@@ -7,7 +7,7 @@ import { DocumentsProvider } from 'server/src/modules/documents/providers/docume
 import { ExchangeProvider } from 'server/src/modules/exchange-rates/providers/exchange.provider';
 import { financialAccountsModule } from 'server/src/modules/financial-accounts';
 import { financialEntitiesModule } from 'server/src/modules/financial-entities';
-import { BusinessesProvider } from 'server/src/modules/financial-entities/providers/financial-entities.provider';
+import { BusinessesProvider } from 'server/src/modules/financial-entities/providers/businesses.provider';
 import { TaxCategoriesProvider } from 'server/src/modules/financial-entities/providers/tax-categories.provider';
 import { ledgerModule } from 'server/src/modules/ledger';
 import { tagsModule } from 'server/src/modules/tags';
@@ -19,7 +19,7 @@ import { FinancialAccountsProvider } from '../src/modules/financial-accounts/pro
 import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types';
 import type {
   IGetAllTaxCategoriesResult,
-  IGetFinancialEntitiesByIdsResult,
+  IGetBusinessesByIdsResult,
   IGetTaxCategoryByBusinessAndOwnerIDsResult,
 } from '../src/modules/financial-entities/types';
 import type { IGetTransactionsByIdsResult } from '../src/modules/transactions/types';
@@ -60,8 +60,8 @@ export function getDummyApp() {
     ],
     typeDefs: gql`
       type Query {
-        chargesById(IDs: [ID!]!): [Charge!]!
-        charge(id: ID!): Charge!
+        chargesById(IDs: [UUID!]!): [Charge!]!
+        charge(id: UUID!): Charge!
       }
       " represent a counterparty with a name "
       type NamedCounterparty implements Counterparty {
@@ -157,7 +157,7 @@ export function getDummyApp() {
       {
         provide: BusinessesProvider,
         useValue: {
-          getFinancialEntityByIdLoader: {
+          getBusinessByIdLoader: {
             load: async (id: string) => {
               const business = businesses[id];
               return business;
@@ -187,7 +187,7 @@ export function getDummyApp() {
   });
 }
 
-const businesses: Record<string, IGetFinancialEntitiesByIdsResult> = {
+const businesses: Record<string, IGetBusinessesByIdsResult> = {
   '2000': {
     name: 'Owner',
     id: '2000',
@@ -1350,7 +1350,7 @@ const exchangeRates: Array<IGetExchangeRatesByDateResult> = [
 ];
 
 export const fetchChargeQuery = gql`
-  query Test($id: ID!) {
+  query Test($id: UUID!) {
     charge(id: $id) {
       ledgerRecords {
         ... on LedgerRecords {
@@ -1406,7 +1406,7 @@ export const fetchChargeQuery = gql`
 `;
 
 export const fetchChargesQuery = gql`
-  query Test2($IDs: [ID!]!) {
+  query Test2($IDs: [UUID!]!) {
     chargesById(IDs: $IDs) {
       ledgerRecords {
         ... on LedgerRecords {

@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
 import {
-  AllBusinessesQuery,
+  AllBusinessesForScreenQuery,
   AllBusinessesRowFieldsFragment,
   AllBusinessesRowFieldsFragmentDoc,
 } from '../../gql/graphql.js';
@@ -22,7 +22,7 @@ import { Name } from './cells/name.js';
 
 interface Props {
   data: Extract<
-    NonNullable<AllBusinessesQuery['allFinancialEntities']>['nodes'][number],
+    NonNullable<AllBusinessesForScreenQuery['allBusinesses']>['nodes'][number],
     { __typename: 'LtdFinancialEntity' }
   >;
   isAllOpened: boolean;

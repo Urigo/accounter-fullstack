@@ -23,8 +23,8 @@ import { SimpleGrid, TextInput } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query FetchBusiness($id: ID!) {
-    financialEntity(id: $id) {
+  query FetchBusiness($id: UUID!) {
+    business(id: $id) {
       __typename
       id
       ... on LtdFinancialEntity {
@@ -57,7 +57,7 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   const [sortCodes, setSortCodes] = useState<Array<{ value: string; label: string }>>([]);
   const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
   const [business, setBusiness] = useState<
-    Extract<FetchBusinessQuery['financialEntity'], { __typename: 'LtdFinancialEntity' }> | undefined
+    Extract<FetchBusinessQuery['business'], { __typename: 'LtdFinancialEntity' }> | undefined
   >(undefined);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessLoading } = useUpdateBusiness();
@@ -71,8 +71,8 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   });
 
   useEffect(() => {
-    if (data && data.financialEntity.__typename === 'LtdFinancialEntity') {
-      setBusiness(data.financialEntity);
+    if (data && data.business.__typename === 'LtdFinancialEntity') {
+      setBusiness(data.business);
     }
   }, [data]);
 
@@ -133,8 +133,8 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
 
   // on every business fetch, update the business in the parent component
   useEffect(() => {
-    if (data?.financialEntity?.__typename === 'LtdFinancialEntity') {
-      updateBusiness(data?.financialEntity);
+    if (data?.business?.__typename === 'LtdFinancialEntity') {
+      updateBusiness(data?.business);
     }
   }, [data, updateBusiness]);
 

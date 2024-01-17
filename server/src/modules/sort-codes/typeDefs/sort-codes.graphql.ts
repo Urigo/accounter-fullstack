@@ -20,7 +20,11 @@ export default gql`
     sortCode: SortCode
   }
 
-  extend interface Counterparty {
+  extend interface FinancialEntity {
+    sortCode: SortCode
+  }
+
+  extend interface Business {
     sortCode: SortCode
   }
 

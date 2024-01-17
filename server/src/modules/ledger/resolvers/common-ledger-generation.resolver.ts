@@ -446,7 +446,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       if (!accountingLedgerEntries.length && charge.business_id) {
         const business = await injector
           .get(BusinessesProvider)
-          .getFinancialEntityByIdLoader.load(charge.business_id);
+          .getBusinessByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
           return {
             records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],

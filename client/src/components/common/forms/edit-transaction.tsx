@@ -22,7 +22,7 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query EditTransaction($transactionIDs: [ID!]!) {
+  query EditTransaction($transactionIDs: [UUID!]!) {
     transactionsByIDs(transactionIDs: $transactionIDs) {
       id
       account {

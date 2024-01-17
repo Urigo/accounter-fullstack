@@ -3,16 +3,16 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetAllFinancialEntitiesQuery,
-  IGetFinancialEntitiesByChargeIdsParams,
-  IGetFinancialEntitiesByChargeIdsQuery,
-  IGetFinancialEntitiesByIdsQuery,
-  IGetFinancialEntitiesByNamesQuery,
+  IGetAllBusinessesQuery,
+  IGetBusinessesByChargeIdsParams,
+  IGetBusinessesByChargeIdsQuery,
+  IGetBusinessesByIdsQuery,
+  IGetBusinessesByNamesQuery,
   IUpdateBusinessParams,
   IUpdateBusinessQuery,
 } from '../types.js';
 
-const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
+const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
     SELECT fe.*,
       b.address,
       b.address_hebrew,
@@ -51,7 +51,7 @@ const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
       ON b.id = fe.id
     WHERE b.id IN $$ids;`;
 
-const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
+const getBusinessesByNames = sql<IGetBusinessesByNamesQuery>`
     SELECT fe.*,
       b.address,
       b.address_hebrew,
@@ -90,7 +90,7 @@ const getFinancialEntitiesByNames = sql<IGetFinancialEntitiesByNamesQuery>`
       ON b.id = fe.id
     WHERE fe.name IN $$names;`;
 
-const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
+const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     SELECT fe.*,
       b.address,
       b.address_hebrew,
@@ -128,7 +128,7 @@ const getAllFinancialEntities = sql<IGetAllFinancialEntitiesQuery>`
     LEFT JOIN accounter_schema.financial_entities fe
       ON b.id = fe.id;`;
 
-const getFinancialEntitiesByChargeIds = sql<IGetFinancialEntitiesByChargeIdsQuery>`
+const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
     SELECT c.id as charge_id, fe.*,
       b.address,
       b.address_hebrew,
@@ -321,63 +321,61 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 export class BusinessesProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  private async batchFinancialEntitiesByIds(ids: readonly string[]) {
+  private async batchBusinessesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
-    const financialEntities = await getFinancialEntitiesByIds.run(
+    const businesses = await getBusinessesByIds.run(
       {
         ids: uniqueIds,
       },
       this.dbProvider,
     );
-    return ids.map(id => financialEntities.find(fe => fe.id === id));
+    return ids.map(id => businesses.find(fe => fe.id === id));
   }
 
-  public getFinancialEntityByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
+  public getBusinessByIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchBusinessesByIds(keys),
     {
       cache: false,
     },
   );
 
-  private async batchFinancialEntitiesByNames(names: readonly string[]) {
-    const financialEntities = await getFinancialEntitiesByNames.run(
+  private async batchBusinessesByNames(names: readonly string[]) {
+    const businesses = await getBusinessesByNames.run(
       {
         names,
       },
       this.dbProvider,
     );
-    return names.map(name => financialEntities.find(fe => fe.name === name));
+    return names.map(name => businesses.find(fe => fe.name === name));
   }
 
-  public getFinancialEntityByNameLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialEntitiesByNames(keys),
+  public getBusinessByNameLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchBusinessesByNames(keys),
     {
       cache: false,
     },
   );
 
-  public getAllFinancialEntities() {
-    return getAllFinancialEntities.run(undefined, this.dbProvider);
+  public getAllBusinesses() {
+    return getAllBusinesses.run(undefined, this.dbProvider);
   }
 
-  public getFinancialEntitiesByChargeIds(params: IGetFinancialEntitiesByChargeIdsParams) {
-    return getFinancialEntitiesByChargeIds.run(params, this.dbProvider);
+  public getBusinessesByChargeIds(params: IGetBusinessesByChargeIdsParams) {
+    return getBusinessesByChargeIds.run(params, this.dbProvider);
   }
 
-  private async batchFinancialEntitiesByChargeIds(chargeIds: readonly string[]) {
-    const financialEntities = await getFinancialEntitiesByChargeIds.run(
+  private async batchBusinessesByChargeIds(chargeIds: readonly string[]) {
+    const businesses = await getBusinessesByChargeIds.run(
       {
         chargeIds,
       },
       this.dbProvider,
     );
-    return chargeIds.map(
-      chargeId => financialEntities.find(fe => fe.charge_id === chargeId) ?? null,
-    );
+    return chargeIds.map(chargeId => businesses.find(fe => fe.charge_id === chargeId) ?? null);
   }
 
-  public getFinancialEntityByChargeIdsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialEntitiesByChargeIds(keys),
+  public getBusinessByChargeIdsLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchBusinessesByChargeIds(keys),
     { cache: false },
   );
 

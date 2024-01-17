@@ -15,7 +15,7 @@ import { TransactionsTable } from './transactions/transactions-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query FetchCharge($chargeIDs: [ID!]!) {
+  query FetchCharge($chargeIDs: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
       __typename
       id

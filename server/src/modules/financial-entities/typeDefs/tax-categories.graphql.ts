@@ -4,7 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     taxCategories: [TaxCategory!]!
-    taxCategoryByBusinessId(businessId: ID!, ownerId: ID!): TaxCategory # TODO: get owner from server context
+    taxCategoryByBusinessId(businessId: UUID!, ownerId: UUID!): TaxCategory # TODO: get owner from server context
   }
 
   extend interface Charge {
@@ -44,7 +44,7 @@ export default gql`
   }
 
   " Tax category entity used for ledger records "
-  type TaxCategory implements Counterparty {
+  type TaxCategory implements FinancialEntity {
     id: UUID!
     name: String!
   }

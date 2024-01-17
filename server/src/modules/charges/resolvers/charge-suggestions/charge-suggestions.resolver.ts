@@ -52,7 +52,7 @@ const missingInfoSuggestions: Resolver<
   if (DbCharge.business_id) {
     const business = await injector
       .get(BusinessesProvider)
-      .getFinancialEntityByIdLoader.load(DbCharge.business_id);
+      .getBusinessByIdLoader.load(DbCharge.business_id);
     if (business?.suggestion_data) {
       const suggestionData = business.suggestion_data as SuggestionData;
 
@@ -89,7 +89,7 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  const allBusinesses = await injector.get(BusinessesProvider).getAllFinancialEntities();
+  const allBusinesses = await injector.get(BusinessesProvider).getAllBusinesses();
   const suggestions: Record<string, Suggestion> = {};
   for (const business of allBusinesses) {
     if (!business.suggestion_data) continue;

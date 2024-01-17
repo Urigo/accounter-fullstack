@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '@shared/enums';
 import { formatFinancialAmount, formatFinancialIntAmount } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
@@ -14,7 +15,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     pcnFile: async (_, { fromDate, toDate, financialEntityId }, context, __) => {
       const financialEntity = await context.injector
         .get(BusinessesProvider)
-        .getFinancialEntityByIdLoader.load(financialEntityId);
+        .getBusinessByIdLoader.load(financialEntityId);
       if (!financialEntity?.vat_number) {
         throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
       }
@@ -40,7 +41,13 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     chargeAccountantReviewed: raw => raw.chargeAccountantReviewed,
     chargeId: raw => raw.chargeId,
     amount: raw => formatFinancialAmount(raw.documentAmount, raw.currencyCode),
-    business: raw => raw.businessId,
+    business: (raw, _, { injector }) =>
+      raw.businessId
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(raw.businessId)
+            .then(res => res ?? null)
+        : null,
     chargeDate: raw => format(raw.chargeDate, 'yyyy-MM-dd') as TimelessDateString,
     documentDate: raw =>
       raw.documentDate ? (format(raw.documentDate, 'yyyy-MM-dd') as TimelessDateString) : null,
@@ -63,7 +70,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
       raw.businessId
         ? injector
             .get(BusinessesProvider)
-            .getFinancialEntityByIdLoader.load(raw.businessId)
+            .getBusinessByIdLoader.load(raw.businessId)
             .then(entity => entity?.vat_number ?? null)
         : null,
   },

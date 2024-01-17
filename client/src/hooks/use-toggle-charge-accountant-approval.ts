@@ -7,7 +7,7 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation ToggleChargeAccountantApproval($chargeId: ID!, $approved: Boolean!) {
+  mutation ToggleChargeAccountantApproval($chargeId: UUID!, $approved: Boolean!) {
     toggleChargeAccountantApproval(chargeId: $chargeId, approved: $approved)
   }
 `;

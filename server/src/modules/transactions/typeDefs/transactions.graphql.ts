@@ -3,11 +3,14 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    transactionsByIDs(transactionIDs: [ID!]!): [Transaction!]!
+    transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]!
   }
 
   extend type Mutation {
-    updateTransaction(transactionId: ID!, fields: UpdateTransactionInput!): UpdateTransactionResult!
+    updateTransaction(
+      transactionId: UUID!
+      fields: UpdateTransactionInput!
+    ): UpdateTransactionResult!
   }
 
   extend interface Charge {
@@ -45,7 +48,7 @@ export default gql`
 
   " Represent a general transaction object "
   interface Transaction {
-    id: ID!
+    id: UUID!
     " Source DB ID "
     referenceId: String!
     " external key / identifier in the bank or card (אסמכתא) "
@@ -78,7 +81,7 @@ export default gql`
 
   " temp type until DB  supports transactions differenciation"
   type CommonTransaction implements Transaction {
-    id: ID!
+    id: UUID!
     referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
@@ -94,7 +97,7 @@ export default gql`
 
   " העברה "
   type WireTransaction implements Transaction {
-    id: ID!
+    id: UUID!
     referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
@@ -110,7 +113,7 @@ export default gql`
 
   " עמלה "
   type FeeTransaction implements Transaction {
-    id: ID!
+    id: UUID!
     referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
@@ -126,7 +129,7 @@ export default gql`
 
   " המרה "
   type ConversionTransaction implements Transaction {
-    id: ID!
+    id: UUID!
     referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
@@ -162,7 +165,7 @@ export default gql`
     accountId: UUID
     balance: FinancialAmountInput
     counterpartyId: UUID
-    chargeId: ID
+    chargeId: UUID
     isFee: Boolean
   }
 

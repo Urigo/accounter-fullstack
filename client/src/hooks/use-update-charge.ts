@@ -8,7 +8,7 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateCharge($chargeId: ID!, $fields: UpdateChargeInput!) {
+  mutation UpdateCharge($chargeId: UUID!, $fields: UpdateChargeInput!) {
     updateCharge(chargeId: $chargeId, fields: $fields) {
       __typename
       ... on UpdateChargeSuccessfulResult {

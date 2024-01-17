@@ -59,7 +59,7 @@ export const getVatRecords: ResolverFn<
       );
 
     // get all businesses
-    const businessesPromise = injector.get(BusinessesProvider).getAllFinancialEntities();
+    const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
 
     const chargesPromise = injector.get(ChargesProvider).getChargesByFilters({
       fromDate: filters?.fromDate,

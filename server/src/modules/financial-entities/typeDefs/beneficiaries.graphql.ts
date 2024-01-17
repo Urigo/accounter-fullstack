@@ -37,7 +37,7 @@ export default gql`
 
   " input variables for beneficiary"
   input BeneficiaryInput {
-    counterparty: CounterpartyInput!
+    financialEntityId: UUID!
     percentage: Percentage!
   }
 

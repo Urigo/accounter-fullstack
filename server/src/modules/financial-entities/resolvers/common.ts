@@ -1,5 +1,8 @@
-import type { ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { GraphQLError } from 'graphql';
+import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { CounterAccountProto } from '@shared/types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 
@@ -23,93 +26,20 @@ export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
 };
 
 export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
-  counterparty: async DbCharge => {
-    return DbCharge.business_id;
-  },
-  beneficiaries: () => [],
-  // async (DbCharge, _, { injector }) => {
-  //   // TODO: update to better implementation after DB is updated
-  //   try {
-  //     if (DbCharge.financial_accounts_to_balance) {
-  //       return JSON.parse(DbCharge.financial_accounts_to_balance);
-  //     }
-  //   } catch {
-  //     null;
-  //   }
-  //   switch (DbCharge.financial_accounts_to_balance) {
-  //     case 'no':
-  //       return [
-  //         {
-  //           counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-  //           percentage: 0.5,
-  //         },
-  //         {
-  //           counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-  //           percentage: 0.5,
-  //         },
-  //       ];
-  //     case 'uri':
-  //       return [
-  //         {
-  //           counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-  //           percentage: 1,
-  //         },
-  //       ];
-  //     case 'dotan':
-  //       return [
-  //         {
-  //           counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-  //           percentage: 1,
-  //         },
-  //       ];
-  //     default:
-  //       {
-  //         // case Guild account
-  //         const guildAccounts = await injector
-  //           .get(FinancialAccountsProvider)
-  //           .getFinancialAccountsByFinancialEntityIdLoader.load(
-  //             '6a20aa69-57ff-446e-8d6a-1e96d095e988',
-  //           );
-  //         const guildAccountsNumbers = guildAccounts.map(a => a.account_number);
-  //         if (guildAccountsNumbers.includes(DbCharge.account_number)) {
-  //           return [
-  //             {
-  //               counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-  //               percentage: 0.5,
-  //             },
-  //             {
-  //               counterpartyID: 'ca9d301f-f6db-40a8-a02e-7cf4b63fa2df',
-  //               percentage: 0.5,
-  //             },
-  //           ];
-  //         }
-
-  //         // case UriLTD account
-  //         const uriAccounts = await injector
-  //           .get(FinancialAccountsProvider)
-  //           .getFinancialAccountsByFinancialEntityIdLoader.load(
-  //             'a1f66c23-cea3-48a8-9a4b-0b4a0422851a',
-  //           );
-  //         const uriAccountsNumbers = uriAccounts.map(a => a.account_number);
-  //         if (uriAccountsNumbers.includes(DbCharge.account_number)) {
-  //           return [
-  //             {
-  //               counterpartyID: '7843b805-3bb7-4d1c-9219-ff783100334b',
-  //               percentage: 1,
-  //             },
-  //           ];
-  //         }
-  //       }
-  //       return [];
-  //   }
-  // },
+  counterparty: async (DbCharge, _, { injector }) =>
+    DbCharge.business_id
+      ? injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(DbCharge.business_id)
+          .then(res => res ?? null)
+      : null,
   owner: (DbCharge, _, { injector }) =>
     injector
       .get(BusinessesProvider)
-      .getFinancialEntityByChargeIdsLoader.load(DbCharge.id)
+      .getBusinessByIdLoader.load(DbCharge.owner_id)
       .then(res => {
         if (!res) {
-          throw new Error(`Unable to find financial entity for charge ${DbCharge.id}`);
+          throw new Error(`Unable to find financial entity for charge ${DbCharge.owner_id}`);
         }
         return res;
       }),
@@ -120,29 +50,47 @@ export const commonTransactionFields:
   | FinancialEntitiesModule.FeeTransactionResolvers
   | FinancialEntitiesModule.WireTransactionResolvers
   | FinancialEntitiesModule.CommonTransactionResolvers = {
-  counterparty: DbTransaction => DbTransaction.business_id,
+  counterparty: (documentRoot, _, { injector }) =>
+    documentRoot.business_id
+      ? injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(documentRoot.business_id)
+          .then(res => res ?? null)
+      : null,
 };
 
 export const commonDocumentsFields: FinancialEntitiesModule.DocumentResolvers = {
-  creditor: documentRoot => documentRoot.creditor_id,
-  debtor: documentRoot => documentRoot.debtor_id,
+  creditor: (documentRoot, _, { injector }) =>
+    documentRoot.creditor_id
+      ? injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(documentRoot.creditor_id)
+          .then(res => res ?? null)
+      : null,
+  debtor: (documentRoot, _, { injector }) =>
+    documentRoot.debtor_id
+      ? injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(documentRoot.debtor_id)
+          .then(res => res ?? null)
+      : null,
 };
 
 export const ledgerCounterparty = (
   account: 'CreditAccount1' | 'CreditAccount2' | 'DebitAccount1' | 'DebitAccount2',
 ): ResolverFn<
-  ResolversTypes['Counterparty'],
+  Maybe<ResolversTypes['FinancialEntity']>,
   ResolversParentTypes['LedgerRecord'],
   GraphQLModules.Context,
   object
 > => {
   const resolverFn: ResolverFn<
-    ResolversTypes['Counterparty'],
+    Maybe<ResolversTypes['FinancialEntity']>,
     ResolversParentTypes['LedgerRecord'],
     GraphQLModules.Context,
     object
-  > = DbLedgerRecord => {
-    let counterpartyProto = undefined;
+  > = (DbLedgerRecord, _, { injector }) => {
+    let counterpartyProto: CounterAccountProto | undefined = undefined;
     switch (account) {
       case 'CreditAccount1':
         counterpartyProto = DbLedgerRecord.creditAccountID1;
@@ -160,7 +108,17 @@ export const ledgerCounterparty = (
         throw new Error(`Invalid account type: ${account}`);
     }
 
-    return counterpartyProto ?? null;
+    return typeof counterpartyProto === 'string'
+      ? injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(counterpartyProto)
+          .then(res => {
+            if (!res) {
+              throw new GraphQLError(`Financial entity ID="${counterpartyProto}" not found`);
+            }
+            return res;
+          })
+      : counterpartyProto ?? null;
   };
   return resolverFn;
 };
