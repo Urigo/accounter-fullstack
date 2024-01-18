@@ -145,20 +145,12 @@ export const AccountDetails = ({ data, cred, first }: Props): ReactElement => {
     <td>
       {creditAccount && (
         <>
-          {creditAccount.__typename === 'NamedCounterparty' ? (
-            <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
-              <NavLink
-                label={creditAccount?.name}
-                className="[&>*>.mantine-NavLink-label]:font-semibold"
-              />
-            </a>
-          ) : (
+          <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
             <NavLink
               label={creditAccount?.name}
               className="[&>*>.mantine-NavLink-label]:font-semibold"
-              disabled
             />
-          )}
+          </a>
           {isForeign && <p>{foreignAmount.formatted}</p>}
           {localAmount != null && <p>{localAmount.formatted}</p>}
         </>

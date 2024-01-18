@@ -311,27 +311,6 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       return 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult';
     },
   },
-  NamedCounterparty: {
-    __isTypeOf: parent => typeof parent === 'string',
-    name: (parent, _, { injector }) =>
-      injector
-        .get(BusinessesProvider)
-        .getBusinessByIdLoader.load(
-          typeof parent === 'string'
-            ? parent
-            : (parent as unknown as { counterpartyID: string })!.counterpartyID,
-        )
-        .then(fe => {
-          if (!fe) {
-            throw new GraphQLError(`Financial entity not found for id ${parent}`);
-          }
-          return fe.name;
-        }),
-    id: parent =>
-      typeof parent === 'string'
-        ? parent
-        : (parent as unknown as { counterpartyID: string })!.counterpartyID,
-  },
   BusinessTransactionSum: {
     business: (rawSum, _, { injector }) =>
       typeof rawSum.business === 'string'

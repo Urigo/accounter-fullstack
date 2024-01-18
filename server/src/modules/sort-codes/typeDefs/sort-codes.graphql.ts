@@ -28,10 +28,6 @@ export default gql`
     sortCode: SortCode
   }
 
-  extend type NamedCounterparty {
-    sortCode: SortCode
-  }
-
   extend type TaxCategory {
     sortCode: SortCode
   }

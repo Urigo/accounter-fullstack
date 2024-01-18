@@ -56,7 +56,6 @@ module.exports = {
                 'LedgerRecords',
                 'MergeChargeSuccessfulResult',
                 'MergeChargesByTransactionReferenceResult',
-                'NamedCounterparty',
                 'PageInfo',
                 'PaginatedCharges',
                 'PaginatedBusinesses',
