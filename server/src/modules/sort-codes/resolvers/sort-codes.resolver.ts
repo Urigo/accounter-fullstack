@@ -18,15 +18,6 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     id: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
   },
-  NamedCounterparty: {
-    sortCode: (parent, _, { injector }) =>
-      parent.sort_code
-        ? injector
-            .get(SortCodesProvider)
-            .getSortCodesByIdLoader.load(parent.sort_code)
-            .then(sortCode => sortCode ?? null)
-        : null,
-  },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
   },

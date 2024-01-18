@@ -2,7 +2,7 @@ import { Resolvers } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IGetFinancialEntitiesByIdsResult } from '../types.js';
+import type { FinancialEntitiesModule } from '../types.js';
 import { commonDocumentsFields, commonTransactionFields, ledgerCounterparty } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
@@ -49,23 +49,12 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
       if (!parent) {
         return null;
       }
-      let financialEntity: IGetFinancialEntitiesByIdsResult | undefined = undefined;
-      if (typeof parent === 'string') {
-        financialEntity = await injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(parent);
-        if (!financialEntity) {
-          throw new Error(`Financial entity ID="${parent}" not found`);
-        }
-        parent = financialEntity;
-      }
-      financialEntity ??= parent as IGetFinancialEntitiesByIdsResult;
-      switch (financialEntity.type) {
+      switch (parent.type) {
         case 'business': {
-          if (!('country' in financialEntity)) {
+          if (!('country' in parent)) {
             const business = await injector
               .get(BusinessesProvider)
-              .getBusinessByIdLoader.load(financialEntity.id);
+              .getBusinessByIdLoader.load(parent.id);
             if (business) {
               Object.assign(parent, business);
             }
@@ -73,17 +62,17 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
           return 'LtdFinancialEntity';
         }
         case 'tax_category':
-          if (!('hashavshevet_name' in financialEntity)) {
+          if (!('hashavshevet_name' in parent)) {
             const texCategory = await injector
               .get(TaxCategoriesProvider)
-              .taxCategoryByIDsLoader.load(financialEntity.id);
+              .taxCategoryByIDsLoader.load(parent.id);
             if (texCategory) {
               Object.assign(parent, texCategory);
             }
           }
           return 'TaxCategory';
       }
-      return 'NamedCounterparty';
+      throw new Error(`Unknown financial entity type: ${parent}`);
     },
   },
   WireTransaction: {

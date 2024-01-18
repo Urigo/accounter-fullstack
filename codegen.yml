@@ -53,7 +53,6 @@ generates:
         LedgerRecord: '@shared/types#LedgerProto'
         LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
-        NamedCounterparty: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult'
         PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         Proforma: '@modules/documents/types.js#IGetAllDocumentsResult'
         Receipt: '@modules/documents/types.js#IGetAllDocumentsResult'

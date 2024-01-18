@@ -1,6 +1,5 @@
 import businessesTransactions from './typeDefs/businesses-transactions.graphql.js';
 import businesses from './typeDefs/businesses.graphql.js';
-import counterparties from './typeDefs/counterparties.graphql.js';
 import financialEntities from './typeDefs/financial-entities.graphql.js';
 import taxCategories from './typeDefs/tax-categories.graphql.js';
 import { createModule } from 'graphql-modules';
@@ -17,7 +16,7 @@ const __dirname = new URL('.', import.meta.url).pathname;
 export const financialEntitiesModule = createModule({
   id: 'financialEntities',
   dirname: __dirname,
-  typeDefs: [businesses, businessesTransactions, counterparties, financialEntities, taxCategories],
+  typeDefs: [businesses, businessesTransactions, financialEntities, taxCategories],
   resolvers: [
     financialEntitiesResolvers,
     businessTransactionsResolvers,
