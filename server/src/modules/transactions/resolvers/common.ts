@@ -21,8 +21,8 @@ export const commonTransactionFields:
   amount: DbTransaction => formatFinancialAmount(DbTransaction.amount, DbTransaction.currency),
   sourceDescription: DbTransaction => DbTransaction.source_description ?? '',
   balance: DbTransaction => formatFinancialAmount(DbTransaction.current_balance),
-  createdOn: DbTransaction => DbTransaction.created_on,
-  updatedOn: DbTransaction => DbTransaction.updated_on,
+  createdAt: DbTransaction => DbTransaction.created_at,
+  updatedAt: DbTransaction => DbTransaction.updated_at,
   isFee: DbTransaction => DbTransaction.is_fee,
 };
 
