@@ -3,6 +3,8 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetTaxCategoryByNamesResult } from '@modules/financial-entities/types.js';
+import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
+import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
@@ -25,7 +27,6 @@ import {
   ValidateTransaction,
   validateTransactionRequiredVariables,
 } from '../helpers/utils.helper.js';
-import { SalariesLedgerProvider } from '../providers/salaries-ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForCommonCharge } from './common-ledger-generation.resolver.js';
 
@@ -200,14 +201,14 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         switch (transaction.business_id) {
           case BATCHED_EMPLOYEE_BUSINESS_ID: {
             const employees = await injector
-              .get(SalariesLedgerProvider)
-              .getChargeByFinancialEntityIdLoader.load(charge.owner_id);
+              .get(EmployeesProvider)
+              .getEmployeesByEmployerLoader.load(charge.owner_id);
             unbatchedBusinesses.push(...employees.map(({ business_id }) => business_id));
             break;
           }
           case BATCHED_PENSION_BUSINESS_ID: {
-            const employees = await injector.get(SalariesLedgerProvider).getAllFunds();
-            unbatchedBusinesses.push(...employees.map(({ id }) => id));
+            const funds = await injector.get(FundsProvider).getAllFunds();
+            unbatchedBusinesses.push(...funds.map(({ id }) => id));
             break;
           }
           default: {
