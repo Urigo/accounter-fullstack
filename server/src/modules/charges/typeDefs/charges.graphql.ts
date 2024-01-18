@@ -245,9 +245,9 @@ export default gql`
   " represent charge's metadata"
   type ChargeMetadata {
     " when the initial charge was created from the first event we found "
-    createdOn: Date!
+    createdAt: Date!
     " when the charge was last updated "
-    updatedOn: Date!
+    updatedAt: Date!
     invoicesCount: Int!
     receiptsCount: Int!
     documentsCount: Int!

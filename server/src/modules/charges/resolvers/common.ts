@@ -34,8 +34,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
   validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
   metadata: DbCharge => ({
-    createdOn: DbCharge.created_on,
-    updatedOn: DbCharge.updated_on,
+    createdAt: DbCharge.created_at,
+    updatedAt: DbCharge.updated_at,
     invoicesCount: Number(DbCharge.invoices_count) ?? 0,
     receiptsCount: Number(DbCharge.receipts_count) ?? 0,
     documentsCount: Number(DbCharge.documents_count) ?? 0,

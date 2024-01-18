@@ -66,9 +66,9 @@ export default gql`
     " effective bank / card balance, after the transaction "
     balance: FinancialAmount!
     " when the initial transaction was created from the first event we found "
-    createdOn: Date!
+    createdAt: Date!
     " when the transaction was last updated "
-    updatedOn: Date!
+    updatedAt: Date!
     " is this transaction a fee? "
     isFee: Boolean
   }
@@ -90,8 +90,8 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    createdOn: Date!
-    updatedOn: Date!
+    createdAt: Date!
+    updatedAt: Date!
     isFee: Boolean
   }
 
@@ -106,8 +106,8 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    createdOn: Date!
-    updatedOn: Date!
+    createdAt: Date!
+    updatedAt: Date!
     isFee: Boolean
   }
 
@@ -122,8 +122,8 @@ export default gql`
     amount: FinancialAmount!
     sourceDescription: String!
     balance: FinancialAmount!
-    createdOn: Date!
-    updatedOn: Date!
+    createdAt: Date!
+    updatedAt: Date!
     isFee: Boolean
   }
 
@@ -143,8 +143,8 @@ export default gql`
     bankRate: Rate!
     " בנק ישראל "
     officialRateToLocal: Rate
-    createdOn: Date!
-    updatedOn: Date!
+    createdAt: Date!
+    updatedAt: Date!
     isFee: Boolean
   }
 
