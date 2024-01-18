@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -149,10 +149,8 @@ export const salariesResolvers: SalariesModule.Resolvers &
         .get(SalariesProvider)
         .getSalaryRecordsByChargeIdLoader.load(DbCharge.id);
       return injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.loadMany(
-          salaryRecords.map(salaryRecord => salaryRecord.employee_id),
-        )
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.loadMany(salaryRecords.map(salaryRecord => salaryRecord.employee_id))
         .then(
           res =>
             res.map(employee => {
@@ -175,19 +173,19 @@ export const salariesResolvers: SalariesModule.Resolvers &
         : null,
     employee: (DbSalary, _, { injector }) =>
       injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(DbSalary.employee_id)
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.load(DbSalary.employee_id)
         .then(res => res ?? null),
     employer: (DbSalary, _, { injector }) =>
       injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(DbSalary.employer)
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.load(DbSalary.employer)
         .then(res => res ?? null),
     pensionFund: (DbSalary, _, { injector }) =>
       DbSalary.pension_fund_id
         ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(DbSalary.pension_fund_id)
+            .get(BusinessesProvider)
+            .getBusinessByIdLoader.load(DbSalary.pension_fund_id)
             .then(res => res ?? null)
         : null,
     pensionEmployeeAmount: DbSalary =>
@@ -202,8 +200,8 @@ export const salariesResolvers: SalariesModule.Resolvers &
     trainingFund: (DbSalary, _, { injector }) =>
       DbSalary.training_fund_id
         ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(DbSalary.training_fund_id)
+            .get(BusinessesProvider)
+            .getBusinessByIdLoader.load(DbSalary.training_fund_id)
             .then(res => res ?? null)
         : null,
     trainingFundEmployeeAmount: DbSalary =>

@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { ConfirmationModal } from '..';
+import { EMPTY_UUID } from '../../../helpers';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 
 interface Props {
@@ -15,7 +16,7 @@ export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
   function onUnlink(): void {
     updateDocument({
       documentId,
-      fields: { chargeId: 'NULL' },
+      fields: { chargeId: EMPTY_UUID },
     });
     setOpened(false);
   }

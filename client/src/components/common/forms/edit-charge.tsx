@@ -3,13 +3,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  InsertBusinessTripModal,
-  // BeneficiariesInput,
-  SimpleGrid,
-  TagsInput,
-  TextInput,
-} from '..';
+import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
   AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
@@ -17,7 +11,7 @@ import {
   EditChargeQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { EMPTY_UUID, MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 
 type Props = {
@@ -151,7 +145,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
             label: entity.name,
           }))
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
-        { value: 'NULL', label: 'None' },
+        { value: EMPTY_UUID, label: 'None' },
       ]);
     }
   }, [businessTripsData, setBusinessTrips]);
@@ -253,7 +247,6 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
               <Switch {...field} checked={value === true} label="Is Conversion" />
             )}
           />
-          {/* <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} /> */}
         </SimpleGrid>
       </div>
       <div className="mt-10 mb-5 flex justify-center gap-5">

@@ -52,7 +52,6 @@ export function relevantDataPicker<T>(
             'localCurrencyAmount',
             'originalAmount',
             'withholdingTax',
-            'beneficiaries',
             'vat',
             'tags',
             'amount',

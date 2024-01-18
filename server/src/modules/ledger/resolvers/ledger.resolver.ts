@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency, Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import type { LedgerModule } from '../types.js';
@@ -44,6 +46,21 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     valueDate: DbLedgerRecord => DbLedgerRecord.valueDate,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference1: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
+  },
+  LedgerBalanceUnbalancedEntity: {
+    entity: (parent, _, { injector }) =>
+      typeof parent.entity === 'string'
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(parent.entity)
+            .then(res => {
+              if (!res) {
+                throw new GraphQLError(`Financial entity with id ${parent.entity} not found`);
+              }
+              return res;
+            })
+        : parent.entity,
+    balance: parent => parent.balance,
   },
   CommonCharge: {
     ledgerRecords: generateLedgerRecordsForCommonCharge,

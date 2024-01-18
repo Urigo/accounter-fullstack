@@ -1,5 +1,5 @@
 import { Injector } from 'graphql-modules';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
@@ -20,9 +20,7 @@ export const validateCharge = async (
   );
   const business =
     charge.business_id && !businessNotRequired
-      ? await injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(charge.business_id)
+      ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
       : undefined;
 
   const businessIsFine = businessNotRequired || !!business;

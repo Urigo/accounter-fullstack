@@ -5,13 +5,13 @@ export default gql`
   extend type Query {
     documents: [Document!]!
     documentsByFilters(filters: DocumentsFilters!): [Document!]!
-    documentById(documentId: ID!): Document
+    documentById(documentId: UUID!): Document
   }
 
   " input variables for documents filtering "
   input DocumentsFilters {
-    businessIDs: [ID!]
-    ownerIDs: [ID!]
+    businessIDs: [UUID!]
+    ownerIDs: [UUID!]
     fromDate: TimelessDate
     toDate: TimelessDate
     " Include only documents without matching transactions "
@@ -20,11 +20,11 @@ export default gql`
 
   extend type Mutation {
     insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
-    updateDocument(documentId: ID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
-    deleteDocument(documentId: ID!): Boolean!
+    updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
+    deleteDocument(documentId: UUID!): Boolean!
     fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
-    uploadDocument(file: FileScalar!, chargeId: ID): UploadDocumentResult!
-    fetchIncomeDocuments(ownerId: ID!): [Document!]!
+    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult!
+    fetchIncomeDocuments(ownerId: UUID!): [Document!]!
   }
 
   " All possible document types "
@@ -44,7 +44,7 @@ export default gql`
 
   " represent a generic document with identifier and a URL "
   interface Document implements Linkable {
-    id: ID!
+    id: UUID!
     " previewable image "
     image: URL
     " link to original file gmail, pdf "
@@ -57,7 +57,7 @@ export default gql`
 
   " document that haven't yet been processed"
   type Unprocessed implements Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     documentType: DocumentType
@@ -66,7 +66,7 @@ export default gql`
 
   " represent a financial document "
   interface FinancialDocument implements Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     vat: FinancialAmount
@@ -80,7 +80,7 @@ export default gql`
 
   " invoice document "
   type Invoice implements FinancialDocument & Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     vat: FinancialAmount
@@ -94,7 +94,7 @@ export default gql`
 
   " proforma document "
   type Proforma implements FinancialDocument & Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     vat: FinancialAmount
@@ -108,7 +108,7 @@ export default gql`
 
   " receipt document "
   type Receipt implements FinancialDocument & Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     documentType: DocumentType
@@ -121,7 +121,7 @@ export default gql`
 
   " Invoice receipt document - חשבונית מס קבלה "
   type InvoiceReceipt implements FinancialDocument & Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     vat: FinancialAmount
@@ -135,7 +135,7 @@ export default gql`
 
   " Credit invoice document - חשבונית זיכוי "
   type CreditInvoice implements FinancialDocument & Document & Linkable {
-    id: ID!
+    id: UUID!
     image: URL
     file: URL
     vat: FinancialAmount
@@ -156,7 +156,7 @@ export default gql`
     documentType: DocumentType
     image: URL
     file: URL
-    chargeId: ID
+    chargeId: UUID
     creditorId: UUID
     debtorId: UUID
   }
@@ -178,7 +178,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmountInput
-    chargeId: ID
+    chargeId: UUID
     creditorId: UUID
     debtorId: UUID
   }
@@ -248,7 +248,7 @@ export default gql`
     documents: [Document]
   }
 
-  extend interface FinancialEntity {
+  extend interface Business {
     documents: [Document]
   }
 `;

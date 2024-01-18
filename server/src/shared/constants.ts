@@ -7,6 +7,8 @@ export const TIMELESS_DATE_REGEX =
 export const UUID_REGEX =
   /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
 
+export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
+
 export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
   '7d250948-8506-4e60-a61b-7d3a3d8390d9', // פלאפון
   'd4e1400d-3abd-4059-a4bb-a25ad1ec87f8', // מידע

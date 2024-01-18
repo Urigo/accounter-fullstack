@@ -20,10 +20,10 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
   },
   NamedCounterparty: {
     sortCode: (parent, _, { injector }) =>
-      parent
+      parent.sort_code
         ? injector
             .get(SortCodesProvider)
-            .getSortCodesByBusinessIdsLoader.load(parent)
+            .getSortCodesByIdLoader.load(parent.sort_code)
             .then(sortCode => sortCode ?? null)
         : null,
   },

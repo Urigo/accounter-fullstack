@@ -6,14 +6,14 @@ import {
   getRateForCurrency,
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
-import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
+import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 
 export type VatReportRecordSources = {
   charge: IGetChargesByFiltersResult;
   doc: IGetDocumentsByFiltersResult;
-  business: IGetFinancialEntitiesByIdsResult;
+  business: IGetBusinessesByIdsResult;
 };
 
 export type RawVatReportRecord = {

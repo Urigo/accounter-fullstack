@@ -1,7 +1,8 @@
-// import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 // import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 // import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
   CreditInvoiceResolvers,
   InvoiceReceiptResolvers,
@@ -82,8 +83,20 @@ export const documentSuggestionsResolvers: DocumentsModule.Resolvers = {
       missingInfoSuggestions as InvoiceReceiptResolvers['missingInfoSuggestions'],
   },
   DocumentSuggestions: {
-    counterparty: suggestion => suggestion.counterpartyId ?? null,
-    owner: suggestion => suggestion.ownerId ?? null,
+    counterparty: (suggestion, _, { injector }) =>
+      suggestion.counterpartyId
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(suggestion.counterpartyId)
+            .then(res => res ?? null)
+        : null,
+    owner: (suggestion, _, { injector }) =>
+      suggestion.ownerId
+        ? injector
+            .get(BusinessesProvider)
+            .getBusinessByIdLoader.load(suggestion.ownerId)
+            .then(res => res ?? null)
+        : null,
     amount: suggestion =>
       suggestion.amount
         ? formatFinancialAmount(suggestion.amount.amount, suggestion.amount.currency)

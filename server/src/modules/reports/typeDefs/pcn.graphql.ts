@@ -6,7 +6,7 @@ export default gql`
     pcnFile(
       fromDate: TimelessDate!
       toDate: TimelessDate!
-      financialEntityId: ID!
+      financialEntityId: UUID!
       options: PCNOptionsInput
     ): PCNFileResult!
   }

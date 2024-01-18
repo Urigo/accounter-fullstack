@@ -1,4 +1,4 @@
-import type { Currency } from '@shared/gql-types';
+import type { Currency, FinancialAmount } from '@shared/gql-types';
 import type { CounterAccountProto } from './index.js';
 
 export interface EntryForFinancialAccount {
@@ -58,4 +58,9 @@ export interface LedgerProto {
 export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'creditAccountID1'> & {
   debitAccountID1: CounterAccountProto;
   creditAccountID1: CounterAccountProto;
+};
+
+export type LedgerBalanceUnbalancedEntityProto = {
+  entity: CounterAccountProto;
+  balance: FinancialAmount;
 };

@@ -8,7 +8,7 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateDocument($documentId: ID!, $fields: UpdateDocumentFieldsInput!) {
+  mutation UpdateDocument($documentId: UUID!, $fields: UpdateDocumentFieldsInput!) {
     updateDocument(documentId: $documentId, fields: $fields) {
       __typename
       ... on CommonError {

@@ -53,15 +53,15 @@ export default gql`
   }
 
   " unbalanced entity over ledger records "
-  type LedgerBalanceUnbalancedEntities {
-    entity: Counterparty!
+  type LedgerBalanceUnbalancedEntity {
+    entity: FinancialEntity!
     balance: FinancialAmount!
   }
 
   " info about ledger total balance "
   type LedgerBalanceInfo {
     isBalanced: Boolean!
-    unbalancedEntities: [LedgerBalanceUnbalancedEntities!]!
+    unbalancedEntities: [LedgerBalanceUnbalancedEntity!]!
   }
 
   " array of ledger records linked to the charge "

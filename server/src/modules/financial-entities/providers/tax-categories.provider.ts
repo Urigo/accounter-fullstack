@@ -18,31 +18,43 @@ import type {
 } from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
-SELECT tc.*, tcm.business_id, tcm.owner_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, tc.hashavshevet_name, tcm.business_id, tcm.owner_id
 FROM accounter_schema.tax_categories tc
-LEFT JOIN accounter_schema.business_tax_category_match tcm ON tcm.tax_category_id = tc.id
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id
+LEFT JOIN accounter_schema.business_tax_category_match tcm
+  ON tcm.tax_category_id = tc.id
 WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
 
 const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
-SELECT tc.*, c.business_id, c.owner_id, c.id as charge_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, tc.hashavshevet_name, c.business_id, c.owner_id, c.id as charge_id
 FROM accounter_schema.extended_charges c
-LEFT JOIN accounter_schema.tax_categories tc ON c.tax_category_id = tc.id
+LEFT JOIN accounter_schema.tax_categories tc
+  ON c.tax_category_id = tc.id
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id
 WHERE tc.id IS NOT NULL AND c.id IN $$chargeIds;`;
 
 const getTaxCategoryByIDs = sql<IGetTaxCategoryByIDsQuery>`
-SELECT *
-FROM accounter_schema.tax_categories
-WHERE id IN $$Ids;`;
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.owner_id, tc.hashavshevet_name
+FROM accounter_schema.tax_categories tc
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id
+WHERE tc.id IN $$Ids;`;
 
 const getTaxCategoryByNames = sql<IGetTaxCategoryByNamesQuery>`
-SELECT *
-FROM accounter_schema.tax_categories
-WHERE name IN $$names;`;
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.owner_id, tc.hashavshevet_name
+FROM accounter_schema.tax_categories tc
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id
+WHERE fe.name IN $$names;`;
 
 const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
-SELECT *
-FROM accounter_schema.tax_categories;`;
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.owner_id, tc.hashavshevet_name
+FROM accounter_schema.tax_categories tc
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id;`;
 
 const updateTaxCategory = sql<IUpdateTaxCategoryQuery>`
 UPDATE accounter_schema.tax_categories

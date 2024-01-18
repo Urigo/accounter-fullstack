@@ -10,7 +10,7 @@ import { ModifyDocumentFields } from './modify-document-fields';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query EditDocument($documentId: ID!) {
+  query EditDocument($documentId: UUID!) {
     documentById(documentId: $documentId) {
       id
       image

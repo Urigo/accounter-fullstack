@@ -17,19 +17,19 @@ const getAllBusinessTripsAttendees = sql<IGetAllBusinessTripsAttendeesQuery>`
   FROM accounter_schema.business_trips_attendees`;
 
 const getBusinessTripsAttendeesByChargeIds = sql<IGetBusinessTripsAttendeesByChargeIdsQuery>`
-  SELECT btc.charge_id, b.*
-  FROM accounter_schema.businesses b
+  SELECT btc.charge_id, fe.*
+  FROM accounter_schema.financial_entities fe
   LEFT JOIN accounter_schema.business_trips_attendees bta
-    ON bta.attendee_business_id = b.id
+    ON bta.attendee_business_id = fe.id
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON bta.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendeesByBusinessTripIdsQuery>`
-  SELECT bta.business_trip_id, b.*
-  FROM accounter_schema.businesses b
+  SELECT bta.business_trip_id, fe.*
+  FROM accounter_schema.financial_entities fe
   LEFT JOIN accounter_schema.business_trips_attendees bta
-    ON bta.attendee_business_id = b.id
+    ON bta.attendee_business_id = fe.id
   WHERE ($isBusinessTripIds = 0 OR bta.business_trip_id IN $$businessTripIds);`;
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`

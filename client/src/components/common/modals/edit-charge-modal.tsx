@@ -8,7 +8,7 @@ import { writeToClipboard } from '../../../helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query EditCharge($chargeIDs: [ID!]!) {
+  query EditCharge($chargeIDs: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
       id
       counterparty {

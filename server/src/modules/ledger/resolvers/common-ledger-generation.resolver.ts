@@ -4,7 +4,7 @@ import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.hel
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -445,8 +445,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       // check if business doesn't require documents
       if (!accountingLedgerEntries.length && charge.business_id) {
         const business = await injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(charge.business_id);
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
           return {
             records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],

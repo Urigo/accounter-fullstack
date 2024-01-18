@@ -6,7 +6,7 @@ import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UploadDocument($file: FileScalar!, $chargeId: ID) {
+  mutation UploadDocument($file: FileScalar!, $chargeId: UUID) {
     uploadDocument(file: $file, chargeId: $chargeId) {
       __typename
       ... on UploadDocumentSuccessfulResult {

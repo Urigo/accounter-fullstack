@@ -4,7 +4,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { VAT_REPORT_EXCLUDED_BUSINESS_NAMES } from '@shared/constants';
 import {
   DocumentType,
@@ -59,7 +59,7 @@ export const getVatRecords: ResolverFn<
       );
 
     // get all businesses
-    const businessesPromise = injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
+    const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
 
     const chargesPromise = injector.get(ChargesProvider).getChargesByFilters({
       fromDate: filters?.fromDate,

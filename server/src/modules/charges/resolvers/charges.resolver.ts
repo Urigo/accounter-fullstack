@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags as tagNames } from '@modules/tags/types.js';
+import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
@@ -141,7 +142,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             .get(BusinessTripsProvider)
             .updateChargeBusinessTrip(
               chargeId,
-              fields.businessTripID === 'NULL' ? null : fields.businessTripID,
+              fields.businessTripID === EMPTY_UUID ? null : fields.businessTripID,
             )
             .catch(() => {
               throw new GraphQLError(`Error updating business trip for charge ID="${chargeId}"`);

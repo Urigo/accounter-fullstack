@@ -40,7 +40,6 @@ module.exports = {
             exceptions: {
               types: [
                 'AccountantApproval',
-                'BeneficiaryCounterparty',
                 'ChargeMetadata',
                 'ChargeSuggestions',
                 'CommonError',
@@ -53,13 +52,14 @@ module.exports = {
                 'FlagForeignFeeTransactionsResult',
                 'GeneratedLedgerRecords',
                 'LedgerBalanceInfo',
-                'LedgerBalanceUnbalancedEntities',
+                'LedgerBalanceUnbalancedEntity',
                 'LedgerRecords',
                 'MergeChargeSuccessfulResult',
                 'MergeChargesByTransactionReferenceResult',
                 'NamedCounterparty',
                 'PageInfo',
                 'PaginatedCharges',
+                'PaginatedBusinesses',
                 'PaginatedFinancialEntities',
                 'PCNFileResult',
                 'PCNRawData',

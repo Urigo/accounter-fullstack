@@ -11,7 +11,7 @@ export default gql`
     fromDate: TimelessDate!
     toDate: TimelessDate!
     chargesType: ChargeFilterType
-    financialEntityId: ID!
+    financialEntityId: UUID!
   }
 
   " vat report result "
@@ -26,9 +26,9 @@ export default gql`
   " Vat report record "
   type VatReportRecord {
     chargeAccountantReviewed: Boolean
-    chargeId: ID!
-    documentId: ID
-    business: Counterparty
+    chargeId: UUID!
+    documentId: UUID
+    business: FinancialEntity
     vatNumber: String
     image: String
     documentSerial: String

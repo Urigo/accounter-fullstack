@@ -5,11 +5,7 @@ import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import {
-  CurrencyInput, // BeneficiariesInput,
-  SimpleGrid,
-  TextInput,
-} from '..';
+import { CurrencyInput, SimpleGrid, TextInput } from '..';
 import {
   AllFinancialAccountsDocument,
   AllFinancialEntitiesDocument,
@@ -22,7 +18,7 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query EditTransaction($transactionIDs: [ID!]!) {
+  query EditTransaction($transactionIDs: [UUID!]!) {
     transactionsByIDs(transactionIDs: $transactionIDs) {
       id
       account {

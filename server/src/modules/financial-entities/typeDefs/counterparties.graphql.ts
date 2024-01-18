@@ -2,60 +2,43 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " The other side of a transaction "
-  interface Counterparty {
-    name: String!
-    id: UUID!
-  }
-
-  " input variables for updateCharge.Counterparty"
-  input CounterpartyInput {
-    id: UUID!
-  }
-
-  " defines a link between a counterparty and their part in the charge "
-  type BeneficiaryCounterparty {
-    counterparty: Counterparty!
-    percentage: Percentage!
-  }
-
-  " represent a counterparty with a name "
-  type NamedCounterparty implements Counterparty {
+  " represent other side of a transaction "
+  type NamedCounterparty implements FinancialEntity {
     name: String!
     id: UUID!
   }
 
   extend interface Charge {
     " calculated counterparty details for the charge "
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type CommonCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type ConversionCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type SalaryCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type InternalTransferCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type DividendCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type BusinessTripCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type MonthlyVatCharge {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend input UpdateChargeInput {
@@ -65,68 +48,68 @@ export default gql`
 
   extend interface Transaction {
     " calculated counterparty details for the charge "
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
   extend type CommonTransaction {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type WireTransaction {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type FeeTransaction {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend type ConversionTransaction {
-    counterparty: Counterparty
+    counterparty: FinancialEntity
   }
 
   extend interface Document {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend interface FinancialDocument {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type Unprocessed {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type Invoice {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type Proforma {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type Receipt {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type InvoiceReceipt {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type CreditInvoice {
-    creditor: Counterparty
-    debtor: Counterparty
+    creditor: FinancialEntity
+    debtor: FinancialEntity
   }
 
   extend type LedgerRecord {
-    debitAccount1: Counterparty
-    debitAccount2: Counterparty
-    creditAccount1: Counterparty
-    creditAccount2: Counterparty
+    debitAccount1: FinancialEntity
+    debitAccount2: FinancialEntity
+    creditAccount1: FinancialEntity
+    creditAccount2: FinancialEntity
   }
 `;

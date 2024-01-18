@@ -4,11 +4,11 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allBusinessTrips: [BusinessTrip!]!
-    businessTrip(id: ID!): BusinessTrip
+    businessTrip(id: UUID!): BusinessTrip
   }
 
   extend type Mutation {
-    updateChargeBusinessTrip(chargeId: ID!, businessTripId: ID): Charge
+    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge
     insertBusinessTrip(fields: InsertBusinessTripInput!): BusinessTrip!
     updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip!
   }
@@ -64,12 +64,12 @@ export default gql`
 
   extend input ChargeFilter {
     " filter by business trip (should be later in business trip module?) "
-    businessTrip: ID
+    businessTrip: UUID
   }
 
   " represent a business trip "
   type BusinessTrip {
-    id: ID!
+    id: UUID!
     name: String!
     dates: DateRange
     transactions: [BusinessTripTransaction!]!
@@ -77,12 +77,12 @@ export default gql`
 
   " business trip transaction prototype "
   interface BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     " שולם על ידי העובד "
     payedByEmployee: Boolean
@@ -90,24 +90,24 @@ export default gql`
 
   " represent a business trip uncategorized transaction "
   type BusinessTripUncategorizedTransaction implements BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     payedByEmployee: Boolean
   }
 
   " represent a business trip accommodation transaction "
   type BusinessTripAccommodationTransaction implements BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     payedByEmployee: Boolean
 
@@ -117,12 +117,12 @@ export default gql`
 
   " represent a business trip flight transaction "
   type BusinessTripFlightTransaction implements BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     payedByEmployee: Boolean
 
@@ -133,12 +133,12 @@ export default gql`
 
   " represent a business trip travel and subsistence transaction "
   type BusinessTripTravelAndSubsistenceTransaction implements BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     payedByEmployee: Boolean
 
@@ -148,12 +148,12 @@ export default gql`
 
   " represent a business trip other transaction "
   type BusinessTripOtherTransaction implements BusinessTripTransaction {
-    id: ID!
+    id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
     valueDate: TimelessDate
     amount: FinancialAmount
-    employee: Counterparty
+    employee: FinancialEntity
     transaction: Transaction
     payedByEmployee: Boolean
 

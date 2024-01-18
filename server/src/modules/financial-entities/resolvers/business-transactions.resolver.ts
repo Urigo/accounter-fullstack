@@ -15,10 +15,10 @@ import {
   handleBusinessLedgerRecord,
   handleBusinessTransaction,
 } from '../helpers/business-transactions.helper.js';
-import { BusinessesTransactionsProvider } from '../providers/businesses-transactions.provider.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IGetFinancialEntitiesByIdsResult } from '../types.js';
+import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';
 
 export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -31,15 +31,13 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
 
       const [businesses, taxCategories] = await Promise.all([
-        injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
+        injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(financialEntitiesIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
 
       const businessIDs = businesses
         ?.filter(business => business && 'id' in business)
-        .map(business => (business as IGetFinancialEntitiesByIdsResult).id);
+        .map(business => (business as IGetBusinessesByIdsResult).id);
       const taxCategoriesIDs = taxCategories
         .map(taxCategory => taxCategory.id)
         .filter(id => financialEntitiesIDs?.includes(id));
@@ -157,15 +155,14 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
 
       const [businesses, taxCategories] = await Promise.all([
-        injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.loadMany(financialEntitiesIDs ?? []),
+        injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(financialEntitiesIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
 
+      // TODO: can be replaced with FinancialEntitiesProvider and type check?
       const businessIDs = businesses
         ?.filter(business => business && 'id' in business)
-        .map(business => (business as IGetFinancialEntitiesByIdsResult).id);
+        .map(business => (business as IGetBusinessesByIdsResult).id);
       const taxCategoriesIDs = taxCategories
         .map(taxCategory => taxCategory.id)
         .filter(id => financialEntitiesIDs?.includes(id));
@@ -307,17 +304,6 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    businessNamesFromLedgerRecords: async (_, __, { injector }) => {
-      try {
-        return injector
-          .get(BusinessesTransactionsProvider)
-          .getLedgerRecordsDistinctBusinesses()
-          .then(res => res.filter(r => !!r.business_id).map(r => r.business_id));
-      } catch (e) {
-        console.error(e);
-        return [];
-      }
-    },
   },
   BusinessTransactionsSumFromLedgerRecordsResult: {
     __resolveType: (obj, _context, _info) => {
@@ -329,8 +315,8 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     __isTypeOf: parent => typeof parent === 'string',
     name: (parent, _, { injector }) =>
       injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.load(
           typeof parent === 'string'
             ? parent
             : (parent as unknown as { counterpartyID: string })!.counterpartyID,
@@ -347,7 +333,18 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         : (parent as unknown as { counterpartyID: string })!.counterpartyID,
   },
   BusinessTransactionSum: {
-    business: rawSum => rawSum.business,
+    business: (rawSum, _, { injector }) =>
+      typeof rawSum.business === 'string'
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(rawSum.business)
+            .then(res => {
+              if (!res) {
+                throw new GraphQLError(`Business with id ${rawSum.business} not found`);
+              }
+              return res;
+            })
+        : rawSum.business,
     credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
     debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
     total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
@@ -391,7 +388,18 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           : Number(parent.amount) * (parent.isCredit ? 1 : -1),
         Currency.Ils,
       ),
-    business: parent => parent.businessID!,
+    business: (parent, _, { injector }) =>
+      typeof parent.businessID === 'string'
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(parent.businessID)
+            .then(res => {
+              if (!res) {
+                throw new GraphQLError(`Financial entity with id ${parent.businessID} not found`);
+              }
+              return res;
+            })
+        : parent.businessID,
     eurAmount: parent =>
       parent.currency === Currency.Eur
         ? formatFinancialAmount(
@@ -419,7 +427,20 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     reference1: parent => parent.reference1 ?? null,
     reference2: _ => null,
     details: parent => parent.details ?? null,
-    counterAccount: parent => parent.counterAccount ?? null,
+    counterAccount: (parent, _, { injector }) =>
+      typeof parent.counterAccount === 'string'
+        ? injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(parent.counterAccount)
+            .then(res => {
+              if (!res) {
+                throw new GraphQLError(
+                  `Financial entity with id ${parent.counterAccount} not found`,
+                );
+              }
+              return res;
+            })
+        : parent.counterAccount ?? null,
   },
   TaxCategory: {
     __isTypeOf: parent => 'hashavshevet_name' in parent,
