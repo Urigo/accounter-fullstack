@@ -1,4 +1,3 @@
-// import moment from 'moment';
 import { format } from 'date-fns';
 
 export const parseMonth = (month?: string): string | undefined => {
