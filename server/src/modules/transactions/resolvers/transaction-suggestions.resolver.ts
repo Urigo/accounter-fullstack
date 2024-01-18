@@ -1,4 +1,6 @@
+import { GraphQLResolveInfo } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
@@ -7,13 +9,7 @@ import {
   POALIM_BUSINESS_ID,
   SWIFT_BUSINESS_ID,
 } from '@shared/constants';
-import {
-  Maybe,
-  Resolver,
-  ResolversParentTypes,
-  ResolversTypes,
-  TransactionResolvers,
-} from '@shared/gql-types';
+import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
 import type { TransactionsModule } from '../types.js';
 
@@ -37,11 +33,12 @@ function sortPhrasesByPriority(
   return b[1].priority - a[1].priority;
 }
 
-const missingInfoSuggestions: Resolver<
-  Maybe<Suggestion>,
-  ResolversParentTypes['CommonTransaction'],
-  GraphQLModules.Context
-> = async (DbTransaction, _, { injector }) => {
+const missingInfoSuggestions = async (
+  DbTransaction: ResolversParentTypes['CommonTransaction'],
+  _: object,
+  { injector }: GraphQLModules.Context,
+  __: GraphQLResolveInfo,
+): Promise<Maybe<Suggestion>> => {
   if (DbTransaction.business_id) {
     return null;
   }
@@ -389,6 +386,29 @@ const missingInfoSuggestions: Resolver<
   return null;
 };
 
+function missingInfoSuggestionsWrapper(
+  ...args: Parameters<
+    ResolverFn<
+      Maybe<ResolversTypes['TransactionSuggestions']>,
+      ResolversParentTypes['ConversionTransaction'],
+      GraphQLModules.Context,
+      object
+    >
+  >
+) {
+  return missingInfoSuggestions(...args).then(res => {
+    if (res && 'business' in res) {
+      return {
+        ...res,
+        business: args[2].injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(res.business),
+      } as ResolversTypes['TransactionSuggestions'];
+    }
+    return res;
+  });
+}
+
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   // WireTransaction: {
   //   missingInfoSuggestions: missingInfoSuggestions as WireTransactionResolvers['missingInfoSuggestions'],
@@ -397,11 +417,9 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   //   missingInfoSuggestions: missingInfoSuggestions as FeeTransactionResolvers['missingInfoSuggestions'],
   // },
   ConversionTransaction: {
-    missingInfoSuggestions:
-      missingInfoSuggestions as TransactionResolvers['missingInfoSuggestions'],
+    missingInfoSuggestions: missingInfoSuggestionsWrapper,
   },
   CommonTransaction: {
-    missingInfoSuggestions:
-      missingInfoSuggestions as TransactionResolvers['missingInfoSuggestions'],
+    missingInfoSuggestions: missingInfoSuggestionsWrapper,
   },
 };
