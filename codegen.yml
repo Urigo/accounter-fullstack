@@ -30,7 +30,6 @@ generates:
         TransactionDirection: '@shared/enums#TransactionDirection'
       mappers:
         BankFinancialAccount: '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult'
-        BeneficiaryCounterparty: '@shared/types#BeneficiaryCounterpartyProto'
         Business: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         BusinessTransaction: '@shared/types#BusinessTransactionProto'
         BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum'

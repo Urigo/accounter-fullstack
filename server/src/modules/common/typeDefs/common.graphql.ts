@@ -20,8 +20,6 @@ export default gql`
   scalar TimelessDate
   " IBAN "
   scalar IBAN
-  " Percentage"
-  scalar Percentage
   " Rate "
   scalar Rate
   " URL "

@@ -26,6 +26,5 @@ export default gql`
   " represent transaction suggestions for missing info "
   type TransactionSuggestions {
     business: FinancialEntity!
-    beneficiaries: [BeneficiaryCounterparty!]
   }
 `;

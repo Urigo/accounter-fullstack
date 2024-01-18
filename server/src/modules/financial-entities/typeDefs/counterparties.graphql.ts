@@ -2,12 +2,6 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " defines a link between a counterparty and their part in the charge "
-  type BeneficiaryCounterparty {
-    counterparty: FinancialEntity!
-    percentage: Percentage!
-  }
-
   " represent other side of a transaction "
   type NamedCounterparty implements FinancialEntity {
     name: String!

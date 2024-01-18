@@ -2,8 +2,6 @@ import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
 import type { Currency } from '@shared/gql-types';
 
-export type BeneficiaryCounterpartyProto = { counterpartyID: string; percentage: number };
-
 type CurrencySum = {
   credit: number;
   debit: number;

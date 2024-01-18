@@ -3,13 +3,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  InsertBusinessTripModal,
-  // BeneficiariesInput,
-  SimpleGrid,
-  TagsInput,
-  TextInput,
-} from '..';
+import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
   AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
@@ -253,7 +247,6 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
               <Switch {...field} checked={value === true} label="Is Conversion" />
             )}
           />
-          {/* <BeneficiariesInput label="Beneficiaries" formManager={useFormManager} /> */}
         </SimpleGrid>
       </div>
       <div className="mt-10 mb-5 flex justify-center gap-5">

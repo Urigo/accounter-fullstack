@@ -5,11 +5,7 @@ import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import {
-  CurrencyInput, // BeneficiariesInput,
-  SimpleGrid,
-  TextInput,
-} from '..';
+import { CurrencyInput, SimpleGrid, TextInput } from '..';
 import {
   AllFinancialAccountsDocument,
   AllFinancialEntitiesDocument,

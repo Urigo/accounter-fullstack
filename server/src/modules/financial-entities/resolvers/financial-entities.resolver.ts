@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { Resolvers } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
@@ -86,21 +85,6 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
       }
       return 'NamedCounterparty';
     },
-  },
-  BeneficiaryCounterparty: {
-    // TODO: improve counterparty handle
-    __isTypeOf: () => true,
-    counterparty: (parent, _, { injector }) =>
-      injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(parent.counterpartyID)
-        .then(res => {
-          if (!res) {
-            throw new GraphQLError(`Financial entity ID="${parent.counterpartyID}" not found`);
-          }
-          return res;
-        }),
-    percentage: parent => parent.percentage,
   },
   WireTransaction: {
     ...commonTransactionFields,

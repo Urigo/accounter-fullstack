@@ -40,7 +40,6 @@ module.exports = {
             exceptions: {
               types: [
                 'AccountantApproval',
-                'BeneficiaryCounterparty',
                 'ChargeMetadata',
                 'ChargeSuggestions',
                 'CommonError',
