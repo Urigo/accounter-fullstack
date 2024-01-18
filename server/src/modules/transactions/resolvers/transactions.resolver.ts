@@ -5,6 +5,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
@@ -55,13 +56,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
         let chargeId = fields.chargeId;
-        if (chargeId && chargeId !== 'NULL') {
+        if (chargeId && chargeId !== EMPTY_UUID) {
           // case new charge ID
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
           }
-        } else if (chargeId === 'NULL') {
+        } else if (chargeId === EMPTY_UUID) {
           // case unlinked from charge
           const transaction = await injector
             .get(TransactionsProvider)

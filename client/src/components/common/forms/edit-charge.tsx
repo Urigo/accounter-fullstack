@@ -17,7 +17,7 @@ import {
   EditChargeQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { EMPTY_UUID, MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 
 type Props = {
@@ -151,7 +151,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
             label: entity.name,
           }))
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
-        { value: 'NULL', label: 'None' },
+        { value: EMPTY_UUID, label: 'None' },
       ]);
     }
   }, [businessTripsData, setBusinessTrips]);

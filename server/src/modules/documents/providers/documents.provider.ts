@@ -56,7 +56,7 @@ const updateDocument = sql<IUpdateDocumentQuery>`
   UPDATE accounter_schema.documents
   SET
   charge_id_new = CASE
-    WHEN $chargeId='NULL' THEN NULL
+    WHEN $chargeId='00000000-0000-0000-0000-000000000000' THEN NULL
     ELSE COALESCE(
       $chargeId::UUID,
       charge_id_new,

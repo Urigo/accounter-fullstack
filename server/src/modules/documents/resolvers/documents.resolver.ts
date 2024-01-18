@@ -6,6 +6,7 @@ import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
@@ -54,7 +55,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
-        if (fields.chargeId && fields.chargeId !== 'NULL') {
+        if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
           // case new charge ID
           charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
@@ -63,7 +64,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
 
         let chargeId = fields.chargeId;
-        if (fields.chargeId === 'NULL') {
+        if (fields.chargeId === EMPTY_UUID) {
           // case unlinked from charge
           const document = await injector
             .get(DocumentsProvider)

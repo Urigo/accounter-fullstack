@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { ConfirmationModal } from '..';
+import { EMPTY_UUID } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
 interface Props {
@@ -15,7 +16,7 @@ export function UnlinkTransactionButton({ transactionId }: Props): ReactElement 
   function onUnlink(): void {
     updateTransaction({
       transactionId,
-      fields: { chargeId: 'NULL' },
+      fields: { chargeId: EMPTY_UUID },
     });
     setOpened(false);
   }
