@@ -2,8 +2,15 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import type { IGetLedgerRecordsByChargesIdsQuery, IGetLedgerRecordsByFinancialEntityIdsQuery, IInsertLedgerRecordsParams, IInsertLedgerRecordsQuery, IUpdateLedgerRecordQuery } from '../types.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
+import type {
+  IGetLedgerRecordsByChargesIdsQuery,
+  IGetLedgerRecordsByFinancialEntityIdsQuery,
+  IInsertLedgerRecordsParams,
+  IInsertLedgerRecordsQuery,
+  IUpdateLedgerRecordParams,
+  IUpdateLedgerRecordQuery,
+} from '../types.js';
 
 const getLedgerRecordsByChargesIds = sql<IGetLedgerRecordsByChargesIdsQuery>`
     SELECT *
@@ -17,7 +24,6 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
       OR debit_entity2 IN $$financialEntityIds
       OR credit_entity1 IN $$financialEntityIds
       OR credit_entity1 IN $$financialEntityIds;`;
-
 
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
@@ -172,7 +178,16 @@ export class LedgerProvider {
       },
       this.dbProvider,
     );
-    return ids.map(id => ledgerRecords.filter(record => [record.debit_entity1, record.debit_entity2, record.credit_entity1, record.credit_entity2].includes(id)));
+    return ids.map(id =>
+      ledgerRecords.filter(record =>
+        [
+          record.debit_entity1,
+          record.debit_entity2,
+          record.credit_entity1,
+          record.credit_entity2,
+        ].includes(id),
+      ),
+    );
   }
 
   public getLedgerRecordsByFinancialEntityIdLoader = new DataLoader(
@@ -180,8 +195,12 @@ export class LedgerProvider {
     { cache: false },
   );
 
+  public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
+    return updateLedgerRecord.run(params, this.dbProvider);
+  }
+
   public async insertLedgerRecords(params: IInsertLedgerRecordsParams) {
-    params.ledgerRecords.map(validateLedgerRecordParams)
+    params.ledgerRecords.map(validateLedgerRecordParams);
     return insertLedgerRecords.run(params, this.dbProvider);
   }
 }
