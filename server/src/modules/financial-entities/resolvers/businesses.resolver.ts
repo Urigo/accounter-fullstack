@@ -1,5 +1,7 @@
 import { Resolvers } from '@shared/gql-types';
+import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
@@ -45,6 +47,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers & Pick<Resol
     },
     Mutation: {
       updateBusiness: async (_, { businessId, ownerId, fields }, { injector }) => {
+        if (hasFinancialEntitiesCoreProperties(fields)) {
+          await injector.get(FinancialEntitiesProvider).updateFinancialEntity(fields);
+        }
         const adjustedFields: IUpdateBusinessParams = {
           address: fields.address,
           email: fields.email,
