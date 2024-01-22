@@ -2,9 +2,14 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    " validate if generated ledger has any differences from stored ledger "
+    validateLedgerByChargeId(chargeId: UUID!): Boolean!
+  }
+
   " represent atomic movement of funds "
   type LedgerRecord {
-    id: ID!
+    id: UUID!
     debitAmount1: FinancialAmount
     debitAmount2: FinancialAmount
     creditAmount1: FinancialAmount
@@ -21,35 +26,43 @@ export default gql`
 
   extend interface Charge {
     " ledger records linked to the charge "
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type CommonCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type ConversionCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type SalaryCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type InternalTransferCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type DividendCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type BusinessTripCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type MonthlyVatCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledgerRecords: LedgerRecords!
+    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   " unbalanced entity over ledger records "

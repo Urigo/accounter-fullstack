@@ -8,30 +8,25 @@ import { AccountDetails, GeneralDate } from './cells';
   fragment TableLedgerRecordsFields on Charge {
     ledgerRecords {
       __typename
-      ... on LedgerRecords {
-        records {
-          id
-          ...LedgerRecordsDateFields
-          ...LedgerRecordsCreditAccountFields
-          ...LedgerRecordsDebitAccountFields
-          ...LedgerRecordsAccountDetailsFields
-          ...LedgerRecordsGeneralDateFields
-          creditAmount1 {
-            formatted
-          }
-          localCurrencyCreditAmount1 {
-            formatted
-          }
-          debitAccount1 {
-            id
-            name
-          }
-          description
-          reference1
+      records {
+        id
+        ...LedgerRecordsDateFields
+        ...LedgerRecordsCreditAccountFields
+        ...LedgerRecordsDebitAccountFields
+        ...LedgerRecordsAccountDetailsFields
+        ...LedgerRecordsGeneralDateFields
+        creditAmount1 {
+          formatted
         }
-      }
-      ... on CommonError {
-        message
+        localCurrencyCreditAmount1 {
+          formatted
+        }
+        debitAccount1 {
+          id
+          name
+        }
+        description
+        reference1
       }
     }
     # TODO(Gil): Next part is temporary, until we have a new ledger perfected
@@ -68,10 +63,6 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,
   );
-
-  if (!data || data.__typename === 'CommonError') {
-    return <div>{data?.message}</div>;
-  }
 
   return (
     <table className="w-full h-full">

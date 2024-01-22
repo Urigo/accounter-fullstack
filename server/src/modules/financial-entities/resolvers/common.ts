@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import { CounterAccountProto } from '@shared/types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -90,35 +89,35 @@ export const ledgerCounterparty = (
     GraphQLModules.Context,
     object
   > = (DbLedgerRecord, _, { injector }) => {
-    let counterpartyProto: CounterAccountProto | undefined = undefined;
+    let financialEntityId: string | null = null;
     switch (account) {
       case 'CreditAccount1':
-        counterpartyProto = DbLedgerRecord.creditAccountID1;
+        financialEntityId = DbLedgerRecord.credit_entity1;
         break;
       case 'CreditAccount2':
-        counterpartyProto = DbLedgerRecord.creditAccountID2;
+        financialEntityId = DbLedgerRecord.credit_entity2;
         break;
       case 'DebitAccount1':
-        counterpartyProto = DbLedgerRecord.debitAccountID1;
+        financialEntityId = DbLedgerRecord.debit_entity1;
         break;
       case 'DebitAccount2':
-        counterpartyProto = DbLedgerRecord.debitAccountID2;
+        financialEntityId = DbLedgerRecord.debit_entity2;
         break;
       default:
         throw new Error(`Invalid account type: ${account}`);
     }
 
-    return typeof counterpartyProto === 'string'
+    return financialEntityId
       ? injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(counterpartyProto)
+          .getFinancialEntityByIdLoader.load(financialEntityId)
           .then(res => {
             if (!res) {
-              throw new GraphQLError(`Financial entity ID="${counterpartyProto}" not found`);
+              throw new GraphQLError(`Financial entity ID="${financialEntityId}" not found`);
             }
             return res;
           })
-      : counterpartyProto ?? null;
+      : null;
   };
   return resolverFn;
 };

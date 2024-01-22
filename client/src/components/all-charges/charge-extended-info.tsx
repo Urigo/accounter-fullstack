@@ -23,13 +23,11 @@ import { TransactionsTable } from './transactions/transactions-table';
         id
       }
       ledgerRecords {
-        ... on LedgerRecords {
-          records {
-            id
-          }
-          balance {
-            isBalanced
-          }
+        records {
+          id
+        }
+        balance {
+          isBalanced
         }
       }
       metadata {
@@ -69,9 +67,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
   const charge = data?.chargesByIDs?.[0];
 
   const hasLedgerRecords = !!(
-    charge?.ledgerRecords &&
-    'records' in charge.ledgerRecords &&
-    charge.ledgerRecords.records.length > 0
+    charge?.ledgerRecords?.records && charge.ledgerRecords.records.length > 0
   );
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;

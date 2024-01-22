@@ -1,4 +1,9 @@
+import { Injector } from 'graphql-modules';
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
+import { LedgerProvider } from '../providers/ledger.provider.js';
 import type { IGetLedgerRecordsByChargesIdsResult, IInsertLedgerRecordsParams } from '../types.js';
 
 type LedgerRecordInput = IInsertLedgerRecordsParams['ledgerRecords'][number];
@@ -66,6 +71,12 @@ export function ledgerRecordsGenerationPartialMatchComparison(
   };
 }
 
+function getTimelessDate(date: Date | string): Date {
+  const timelessDate = new Date(date);
+  timelessDate.setHours(0, 0, 0, 0);
+  return timelessDate;
+}
+
 function isExactMatch(
   storageRecord: IGetLedgerRecordsByChargesIdsResult,
   newRecord: LedgerRecordInput,
@@ -86,10 +97,10 @@ function isExactMatch(
     storageRecord.debit_local_amount2 === (newRecord.debitLocalAmount2?.toString() ?? null) &&
     storageRecord.description === (newRecord.description ?? null) &&
     storageRecord.invoice_date?.getTime() ===
-      (newRecord.invoiceDate ? new Date(newRecord.invoiceDate).getTime() : undefined) &&
+      (newRecord.invoiceDate ? getTimelessDate(newRecord.invoiceDate).getTime() : undefined) &&
     storageRecord.reference1 === (newRecord.reference1 ?? null) &&
     storageRecord.value_date?.getTime() ===
-      (newRecord.valueDate ? new Date(newRecord.valueDate).getTime() : undefined)
+      (newRecord.valueDate ? getTimelessDate(newRecord.valueDate).getTime() : undefined)
   );
 }
 
@@ -195,4 +206,54 @@ function getMatchScore(
         : -1),
   ];
   return scoreParts.reduce((a, b) => a + b, 0);
+}
+
+export function convertLedgerRecordToProto(
+  record: IGetLedgerRecordsByChargesIdsResult,
+): LedgerProto {
+  return {
+    id: record.id,
+    creditAccountID1: record.credit_entity1 ?? undefined,
+    creditAccountID2: record.credit_entity2 ?? undefined,
+    debitAccountID1: record.debit_entity1 ?? undefined,
+    debitAccountID2: record.debit_entity2 ?? undefined,
+    creditAmount1: record.credit_foreign_amount1
+      ? Number(record.credit_foreign_amount1)
+      : undefined,
+    creditAmount2: record.credit_foreign_amount2
+      ? Number(record.credit_foreign_amount2)
+      : undefined,
+    debitAmount1: record.debit_foreign_amount1 ? Number(record.debit_foreign_amount1) : undefined,
+    debitAmount2: record.debit_foreign_amount2 ? Number(record.debit_foreign_amount2) : undefined,
+    localCurrencyCreditAmount1: Number(record.credit_local_amount1),
+    localCurrencyCreditAmount2: record.credit_local_amount2
+      ? Number(record.credit_local_amount2)
+      : undefined,
+    localCurrencyDebitAmount1: Number(record.debit_local_amount1),
+    localCurrencyDebitAmount2: record.debit_local_amount2
+      ? Number(record.debit_local_amount2)
+      : undefined,
+    description: record.description ?? undefined,
+    invoiceDate: record.invoice_date,
+    reference1: record.reference1 ?? undefined,
+    valueDate: record.value_date,
+    currency: formatCurrency(record.currency),
+    isCreditorCounterparty: false, // redundant value
+    ownerId: record.owner_id ?? DEFAULT_FINANCIAL_ENTITY_ID,
+    currencyRate: undefined,
+    chargeId: record.charge_id,
+  };
+}
+
+export async function storeInitialGeneratedRecords(
+  charge: IGetChargesByIdsResult,
+  records: LedgerProto[],
+  injector: Injector,
+) {
+  if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
+    const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(
+      convertToStorageInputRecord,
+    );
+    await injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
+  }
 }

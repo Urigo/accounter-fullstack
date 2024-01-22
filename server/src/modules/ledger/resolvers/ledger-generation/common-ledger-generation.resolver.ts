@@ -20,22 +20,20 @@ import {
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
-import { getEntriesFromFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
 import {
-  convertToStorageInputRecord,
-  ledgerRecordsGenerationFullMatchComparison,
-  ledgerRecordsGenerationPartialMatchComparison,
-} from '../helpers/ledgrer-storage.helper.js';
+  getEntriesFromFeeTransaction,
+  splitFeeTransactions,
+} from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
+  ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
-} from '../helpers/utils.helper.js';
-import { BalanceCancellationProvider } from '../providers/balance-cancellation.provider.js';
-import { LedgerProvider } from '../providers/ledger.provider.js';
-import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
-import { IInsertLedgerRecordsParams } from '../types.js';
+} from '../../helpers/utils.helper.js';
+import { BalanceCancellationProvider } from '../../providers/balance-cancellation.provider.js';
+import { UnbalancedBusinessesProvider } from '../../providers/unbalanced-businesses.provider.js';
 
 export const generateLedgerRecordsForCommonCharge: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -455,8 +453,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           .get(BusinessesProvider)
           .getBusinessByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
+          const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
+          await storeInitialGeneratedRecords(charge, records, injector);
           return {
-            records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
+            records: ledgerProtoToRecordsConverter(records),
+            charge,
             balance: { balanceSum, isBalanced, unbalancedEntities },
           };
         }
@@ -517,33 +518,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
-    if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
-      const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(
-        convertToStorageInputRecord,
-      );
-      await injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
-    } else {
-      const storageLedgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(chargeId);
-      const fullMatching = ledgerRecordsGenerationFullMatchComparison(
-        storageLedgerRecords,
-        records,
-      );
-
-      if (!(await fullMatching).isFullyMatched) {
-        const matching = ledgerRecordsGenerationPartialMatchComparison(
-          (await fullMatching).unmatchedStorageRecords,
-          (await fullMatching).unmatchedNewRecords,
-        );
-        // TODO: continue from here
-        console.log(matching);
-      }
-    }
+    await storeInitialGeneratedRecords(charge, records, injector);
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
     return {
-      records,
+      records: ledgerProtoToRecordsConverter(records),
+      charge,
       balance: ledgerBalanceInfo,
     };
   } catch (e) {

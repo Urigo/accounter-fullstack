@@ -4,6 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
+import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
@@ -13,15 +14,16 @@ import {
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { CounterAccountProto, LedgerProto } from '@shared/types';
-import { splitDividendTransactions } from '../helpers/dividend-ledger.helper.js';
-import { getEntriesFromFeeTransaction } from '../helpers/fee-transactions.js';
+import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
+import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
+  ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
-} from '../helpers/utils.helper.js';
+} from '../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForDividend: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -312,12 +314,16 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
+    const records = [
+      ...withholdingTaxLedgerEntries,
+      ...paymentsLedgerEntries,
+      ...feeFinancialAccountLedgerEntries,
+    ];
+    await storeInitialGeneratedRecords(charge, records, injector);
+
     return {
-      records: [
-        ...withholdingTaxLedgerEntries,
-        ...paymentsLedgerEntries,
-        ...feeFinancialAccountLedgerEntries,
-      ],
+      records: ledgerProtoToRecordsConverter(records),
+      charge,
       balance: ledgerBalanceInfo,
     };
   } catch (e) {

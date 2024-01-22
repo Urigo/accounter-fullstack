@@ -1,6 +1,11 @@
 import { ReactElement, useMemo } from 'react';
+import { useQuery } from 'urql';
 import { Indicator } from '@mantine/core';
-import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
+import {
+  AllChargesMoreInfoFieldsFragmentDoc,
+  MissingChargeInfo,
+  ValidateChargeLedgerDocument,
+} from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { entitiesWithoutInvoice } from '../../../helpers';
 import { DragFile, ListCapsule } from '../../common';
@@ -16,13 +21,11 @@ import { DragFile, ListCapsule } from '../../common';
     }
     ledgerRecords {
       __typename
-      ... on LedgerRecords {
-        records {
-          id
-        }
-        balance {
-          isBalanced
-        }
+      records {
+        id
+      }
+      balance {
+        isBalanced
       }
     }
     counterparty {
@@ -31,6 +34,13 @@ import { DragFile, ListCapsule } from '../../common';
     validationData {
       missingInfo
     }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query ValidateChargeLedger($chargeId: UUID!) {
+    validateLedgerByChargeId(chargeId: $chargeId)
   }
 `;
 
@@ -43,6 +53,13 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
     AllChargesMoreInfoFieldsFragmentDoc,
     data,
   );
+
+  const [{ data: ledgerValidationData, fetching }] = useQuery({
+    query: ValidateChargeLedgerDocument,
+    variables: {
+      chargeId: id,
+    },
+  });
 
   const shouldHaveDocuments = useMemo((): boolean => {
     switch (__typename) {
@@ -58,8 +75,9 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
   }, [__typename]);
 
   const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
+  const isLedgerValidated = ledgerValidationData && !ledgerValidationData.validateLedgerByChargeId;
   // TODO(Gil): implement isLedgerError by server validation
-  const isLedgerError = !ledgerRecords || ledgerRecords.__typename === 'CommonError';
+  const isLedgerError = !ledgerRecords || ledgerRecords.records.length === 0 || isLedgerValidated;
   const isLedgerUnbalanced =
     !isLedgerError && ledgerRecords.balance && !ledgerRecords.balance.isBalanced;
   const isDocumentsError =
@@ -95,6 +113,7 @@ export const MoreInfo = ({ data }: Props): ReactElement => {
                   key="ledger"
                   inline
                   size={12}
+                  processing={fetching}
                   disabled={!isLedgerError && !isLedgerUnbalanced}
                   color="red"
                   zIndex="auto"
