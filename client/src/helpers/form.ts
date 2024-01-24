@@ -1,6 +1,5 @@
-export type MakeBoolean<T> = T extends Record<string, unknown>
-  ? { [K in keyof T]: MakeBoolean<T[K]> }
-  : boolean | undefined;
+export type MakeBoolean<T> =
+  T extends Record<string, unknown> ? { [K in keyof T]: MakeBoolean<T[K]> } : boolean | undefined;
 
 /* checks if an object has 'true' value for all keys */
 function isTheTruthOutThere(value: unknown): boolean {

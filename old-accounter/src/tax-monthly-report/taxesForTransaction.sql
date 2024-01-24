@@ -22,8 +22,7 @@ FROM
 WHERE
   original_id = $$2c384a0f-57b0-454a-a052-1e30cac638d2$$;
 
-CREATE TABLE
-  accounter_schema.ledger AS
+CREATE TABLE accounter_schema.ledger AS
 SELECT
   *
 FROM

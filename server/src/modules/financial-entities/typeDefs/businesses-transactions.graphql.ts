@@ -21,7 +21,7 @@ export default gql`
 
   " result type for businessTransactionsSumFromLedgerRecords "
   union BusinessTransactionsSumFromLedgerRecordsResult =
-      BusinessTransactionsSumFromLedgerRecordsSuccessfulResult
+    | BusinessTransactionsSumFromLedgerRecordsSuccessfulResult
     | CommonError
 
   " result type for businessTransactionsSumFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
@@ -49,7 +49,7 @@ export default gql`
 
   " result type for businessTransactionsFromLedgerRecords "
   union BusinessTransactionsFromLedgerRecordsResult =
-      BusinessTransactionsFromLedgerRecordsSuccessfulResult
+    | BusinessTransactionsFromLedgerRecordsSuccessfulResult
     | CommonError
 
   " result type for businessTransactionsFromLedgerRecords" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
