@@ -26,42 +26,42 @@ export default gql`
 
   extend interface Charge {
     " ledger records linked to the charge "
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type CommonCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type ConversionCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type SalaryCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type InternalTransferCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type DividendCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type BusinessTripCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type MonthlyVatCharge {
-    ledgerRecords: LedgerRecords!
+    ledger: Ledger!
     generatedLedgerRecords: GeneratedLedgerRecords
   }
 
@@ -78,11 +78,12 @@ export default gql`
   }
 
   " array of ledger records linked to the charge "
-  type LedgerRecords {
+  type Ledger {
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
+    validate: Boolean!
   }
 
   " result type for ledger records "
-  union GeneratedLedgerRecords = LedgerRecords | CommonError
+  union GeneratedLedgerRecords = Ledger | CommonError
 `;

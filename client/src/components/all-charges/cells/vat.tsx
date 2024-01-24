@@ -13,23 +13,21 @@ import { businessesWithoutTaxCategory, entitiesWithoutInvoice } from '../../../h
   fragment AllChargesVatFields on Charge {
     __typename
     id
-    vat {
-      raw
-      formatted
-    }
-    totalAmount {
-      raw
-      currency
-    }
-    counterparty {
-      id
-    }
-    owner {
-      __typename
-      id
-    }
-    validationData {
-      missingInfo
+    ... on Charge @defer {
+      vat {
+        raw
+        formatted
+      }
+      totalAmount {
+        raw
+        currency
+      }
+      counterparty {
+        id
+      }
+      validationData {
+        missingInfo
+      }
     }
   }
 `;
@@ -39,7 +37,7 @@ type Props = {
 };
 
 export const Vat = ({ data }: Props): ReactElement => {
-  const { vat, totalAmount, counterparty, owner, validationData, __typename } = getFragmentData(
+  const { vat, totalAmount, counterparty, validationData, __typename } = getFragmentData(
     AllChargesVatFieldsFragmentDoc,
     data,
   );
@@ -62,11 +60,9 @@ export const Vat = ({ data }: Props): ReactElement => {
   }
 
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Vat);
-  const isBusiness = owner?.__typename === 'LtdFinancialEntity';
 
   const vatIssueFlag =
     (!vat &&
-      isBusiness &&
       !entitiesWithoutInvoice.includes(counterparty?.id ?? '') &&
       !businessesWithoutTaxCategory.includes(counterparty?.id ?? '') &&
       totalAmount?.currency === Currency.Ils) ||

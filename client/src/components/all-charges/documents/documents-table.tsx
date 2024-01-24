@@ -8,9 +8,11 @@ import { DocumentsTableRow } from './documents-table-row';
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
-    additionalDocuments {
-      id
-      ...TableDocumentsRowFields
+    ... on Charge @defer {
+      additionalDocuments {
+        id
+        ...TableDocumentsRowFields
+      }
     }
   }
 `;

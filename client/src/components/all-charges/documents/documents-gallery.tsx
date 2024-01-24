@@ -9,23 +9,25 @@ import { EditDocumentModal } from '../../common';
 /* GraphQL */ `
   fragment DocumentsGalleryFields on Charge {
     id
-    additionalDocuments {
-      id
-      image
-      ... on Invoice {
-        documentType
-      }
-      ... on Proforma {
-        documentType
-      }
-      ... on Receipt {
-        documentType
-      }
-      ... on InvoiceReceipt {
-        documentType
-      }
-      ... on CreditInvoice {
-        documentType
+    ... on Charge @defer {
+      additionalDocuments {
+        id
+        image
+        ... on Invoice {
+          documentType
+        }
+        ... on Proforma {
+          documentType
+        }
+        ... on Receipt {
+          documentType
+        }
+        ... on InvoiceReceipt {
+          documentType
+        }
+        ... on CreditInvoice {
+          documentType
+        }
       }
     }
   }
@@ -41,7 +43,7 @@ export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
 
   return (
     <div className="container mx-auto text-gray-600 body-font">
-      {additionalDocuments.length > 0 ? (
+      {additionalDocuments?.length > 0 ? (
         <>
           <div className="flex flex-wrap">
             <Carousel

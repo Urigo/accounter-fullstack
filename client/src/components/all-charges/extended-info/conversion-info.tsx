@@ -8,15 +8,17 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
 /* GraphQL */ `
   fragment ConversionChargeInfo on ConversionCharge {
     id
-    eventRate {
-      from
-      to
-      rate
-    }
-    officialRate {
-      from
-      to
-      rate
+    ... on ConversionCharge @defer {
+      eventRate {
+        from
+        to
+        rate
+      }
+      officialRate {
+        from
+        to
+        rate
+      }
     }
   }
 `;

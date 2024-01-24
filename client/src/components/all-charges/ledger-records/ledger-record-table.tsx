@@ -6,27 +6,30 @@ import { AccountDetails, GeneralDate } from './cells';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
-    ledgerRecords {
-      __typename
-      records {
-        id
-        ...LedgerRecordsDateFields
-        ...LedgerRecordsCreditAccountFields
-        ...LedgerRecordsDebitAccountFields
-        ...LedgerRecordsAccountDetailsFields
-        ...LedgerRecordsGeneralDateFields
-        creditAmount1 {
-          formatted
-        }
-        localCurrencyCreditAmount1 {
-          formatted
-        }
-        debitAccount1 {
+    id
+    ... on Charge @defer {
+      ledger {
+        __typename
+        records {
           id
-          name
+          ...LedgerRecordsDateFields
+          ...LedgerRecordsCreditAccountFields
+          ...LedgerRecordsDebitAccountFields
+          ...LedgerRecordsAccountDetailsFields
+          ...LedgerRecordsGeneralDateFields
+          creditAmount1 {
+            formatted
+          }
+          localCurrencyCreditAmount1 {
+            formatted
+          }
+          debitAccount1 {
+            id
+            name
+          }
+          description
+          reference1
         }
-        description
-        reference1
       }
     }
     # TODO(Gil): Next part is temporary, until we have a new ledger perfected
@@ -59,7 +62,7 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
-  const { ledgerRecords: data, oldLedger } = getFragmentData(
+  const { ledger: data, oldLedger } = getFragmentData(
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,
   );
@@ -79,18 +82,18 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
         </tr>
       </thead>
       <tbody>
-        {data.records.map(record => (
-          <tr key={record.id}>
-            <GeneralDate data={record} type={1} />
-            <GeneralDate data={record} type={2} />
-            <AccountDetails data={record} cred={false} first />
-            <AccountDetails data={record} cred first />
-            <AccountDetails data={record} cred={false} first={false} />
-            <AccountDetails data={record} cred first={false} />
-            <td>{record.description}</td>
-            <td>{record.reference1}</td>
-          </tr>
-        ))}
+        {data?.records?.map(record => (
+              <tr key={record.id}>
+                <GeneralDate data={record} type={1} />
+                <GeneralDate data={record} type={2} />
+                <AccountDetails data={record} cred={false} first />
+                <AccountDetails data={record} cred first />
+                <AccountDetails data={record} cred={false} first={false} />
+                <AccountDetails data={record} cred first={false} />
+                <td>{record.description}</td>
+                <td>{record.reference1}</td>
+              </tr>
+            ))}
         {/* TODO(Gil): Next part is temporary, until we have a new ledger perfected */}
         <tr>
           <td colSpan={8} />

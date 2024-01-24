@@ -19,15 +19,14 @@ import { TransactionsTable } from './transactions/transactions-table';
     chargesByIDs(chargeIDs: $chargeIDs) {
       __typename
       id
-      owner {
-        id
-      }
-      ledgerRecords {
-        records {
-          id
-        }
-        balance {
-          isBalanced
+      ... on Charge @defer {
+        ledger {
+          records {
+            id
+          }
+          balance {
+            isBalanced
+          }
         }
       }
       metadata {
@@ -66,9 +65,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
 
   const charge = data?.chargesByIDs?.[0];
 
-  const hasLedgerRecords = !!(
-    charge?.ledgerRecords?.records && charge.ledgerRecords.records.length > 0
-  );
+  const hasLedgerRecords = !!(charge?.ledger?.records && charge.ledger.records.length > 0);
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');

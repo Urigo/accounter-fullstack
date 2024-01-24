@@ -51,9 +51,9 @@ module.exports = {
                 'FinancialIntAmount',
                 'FlagForeignFeeTransactionsResult',
                 'GeneratedLedgerRecords',
+                'Ledger',
                 'LedgerBalanceInfo',
                 'LedgerBalanceUnbalancedEntity',
-                'LedgerRecords',
                 'MergeChargeSuccessfulResult',
                 'MergeChargesByTransactionReferenceResult',
                 'PageInfo',
@@ -83,6 +83,7 @@ module.exports = {
       rules: {
         '@graphql-eslint/unique-operation-name': 'error',
         '@graphql-eslint/unique-fragment-name': 'error',
+        '@graphql-eslint/known-directives': ['warn', { ignoreClientDirectives: ['@defer'] }],
       },
     },
     {

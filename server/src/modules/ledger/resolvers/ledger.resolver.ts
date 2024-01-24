@@ -18,6 +18,7 @@ import {
 import { getLedgerBalanceInfo, updateLedgerBalanceByEntry } from '../helpers/utils.helper.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import type { IGetLedgerRecordsByChargesIdsResult, LedgerModule } from '../types.js';
+import { commonChargeLedgerResolver } from './common.resolver.js';
 import { generateLedgerRecordsForBusinessTrip } from './ledger-generation/business-trip-ledger-generation.resolver.js';
 import { generateLedgerRecordsForCommonCharge } from './ledger-generation/common-ledger-generation.resolver.js';
 import { generateLedgerRecordsForConversion } from './ledger-generation/conversion-ledger-generation.resolver.js';
@@ -101,7 +102,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference1: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
   },
-  LedgerRecords: {
+  Ledger: {
     records: parent => parent.records,
     balance: async (parent, _, { injector }) => {
       if (parent.balance) {
@@ -150,6 +151,41 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
       return getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses, financialEntities);
     },
+    // generationDiffs
+    validate: async ({ charge }, _, context, info) => {
+      const { injector } = context;
+
+      try {
+        const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
+        if (!generated || 'message' in generated) {
+          return false;
+        }
+
+        const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
+
+        const storageLedgerRecords = await injector
+          .get(LedgerProvider)
+          .getLedgerRecordsByChargesIdLoader.load(charge.id);
+
+        const fullMatching = ledgerRecordsGenerationFullMatchComparison(
+          storageLedgerRecords,
+          records.map(convertLedgerRecordToProto),
+        );
+
+        if (!fullMatching.isFullyMatched) {
+          const matching = ledgerRecordsGenerationPartialMatchComparison(
+            fullMatching.unmatchedStorageRecords,
+            fullMatching.unmatchedNewRecords,
+          );
+          // TODO: continue from here
+          console.log('matching newly generated ledger:', matching);
+        }
+
+        return fullMatching.isFullyMatched;
+      } catch (err) {
+        return false;
+      }
+    },
   },
   LedgerBalanceUnbalancedEntity: {
     entity: (parent, _, { injector }) =>
@@ -167,100 +203,37 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     balance: parent => parent.balance,
   },
   CommonCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForCommonCharge,
   },
   ConversionCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForConversion,
   },
   SalaryCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForSalary,
   },
   InternalTransferCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForInternalTransfer,
   },
   DividendCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForDividend,
   },
   BusinessTripCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForBusinessTrip,
   },
   MonthlyVatCharge: {
-    ledgerRecords: async (DbCharge, _, { injector }) => {
-      const ledgerRecords = await injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
-
-      return {
-        records: ledgerRecords,
-        charge: DbCharge,
-      };
-    },
+    ...commonChargeLedgerResolver,
     generatedLedgerRecords: generateLedgerRecordsForMonthlyVat,
   },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'LedgerRecords';
+      return 'Ledger';
     },
   },
 };

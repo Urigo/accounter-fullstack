@@ -51,7 +51,7 @@ generates:
         Invoice: '@modules/documents/types.js#IGetAllDocumentsResult'
         InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult'
         LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargesIdsResult'
-        LedgerRecords: '@shared/types#LedgerRecordsProto'
+        Ledger: '@shared/types#LedgerRecordsProto'
         LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'
         MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult'
         PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult'

@@ -8,12 +8,14 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
   fragment AllChargesTaxCategoryFields on Charge {
     __typename
     id
-    taxCategory {
-        id
-        name
-    }
-    validationData {
-      missingInfo
+    ... on Charge @defer {
+      taxCategory {
+          id
+          name
+      }
+      validationData {
+        missingInfo
+      }
     }
   }
 `;
