@@ -105,7 +105,6 @@ function VatMonthlyReportFilterForm({
           )}
         />
         <MonthPicker
-          placeholder="Pick month"
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           defaultDate={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           onChange={onSelectDate}

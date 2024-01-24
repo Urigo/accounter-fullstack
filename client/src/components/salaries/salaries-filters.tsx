@@ -111,7 +111,6 @@ function SalariesFiltersForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <MonthPicker
           type="range"
-          placeholder="Pick month"
           numberOfColumns={2}
           defaultValue={[
             new Date(filter?.fromDate ?? defaultDates.fromDate),

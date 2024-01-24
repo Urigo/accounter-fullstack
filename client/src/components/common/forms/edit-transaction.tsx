@@ -309,7 +309,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                   <DatePickerInput
                     {...field}
                     label="Event Date"
-                    placeholder="Pick date and time"
                     value={field.value ? new Date(field.value) : undefined}
                     valueFormat="DD/MM/YY"
                     error={fieldState.error?.message}
@@ -333,7 +332,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                   <DatePickerInput
                     {...field}
                     label="Effective Date"
-                    placeholder="Pick date"
                     value={field.value ? new Date(field.value) : undefined}
                     valueFormat="DD/MM/YY"
                     error={fieldState.error?.message}

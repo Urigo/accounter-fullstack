@@ -218,7 +218,6 @@ export const ModifySalaryRecord = ({
         <SimpleGrid cols={4}>
           <div className="flex-column h-max justify-start block">
             <MonthPicker
-              placeholder="Pick month"
               defaultDate={defaultMonth ? new Date(defaultMonth) : undefined}
               defaultValue={defaultMonth ? new Date(defaultMonth) : undefined}
               onChange={onSelectMonth}
