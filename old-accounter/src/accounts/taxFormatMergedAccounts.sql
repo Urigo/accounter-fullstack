@@ -5,8 +5,7 @@ FROM
 
 DROP VIEW formatted_merged_tables CASCADE;
 
-CREATE OR REPLACE VIEW
-  formatted_merged_tables AS
+CREATE OR REPLACE VIEW formatted_merged_tables AS
 WITH
   all_exchange_dates AS (
     SELECT

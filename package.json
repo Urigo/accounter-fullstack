@@ -56,18 +56,18 @@
     "@graphql-codegen/typescript": "4.0.1",
     "@graphql-codegen/typescript-resolvers": "4.0.1",
     "@graphql-eslint/eslint-plugin": "3.20.1",
-    "@graphql-inspector/cli": "4.0.2",
-    "@theguild/eslint-config": "0.11.1",
-    "@theguild/prettier-config": "2.0.2",
-    "@types/node": "20.10.0",
+    "@graphql-inspector/cli": "4.0.3",
+    "@theguild/eslint-config": "0.11.3",
+    "@theguild/prettier-config": "2.0.5",
+    "@types/node": "20.11.6",
     "bob-the-bundler": "7.0.1",
     "concurrently": "8.2.2",
-    "eslint": "8.54.0",
-    "prettier": "3.1.0",
-    "prettier-plugin-sql": "0.16.0",
-    "typescript": "5.3.2",
-    "vite-tsconfig-paths": "4.2.1",
-    "vitest": "0.34.6"
+    "eslint": "8.56.0",
+    "prettier": "3.2.4",
+    "prettier-plugin-sql": "0.18.0",
+    "typescript": "5.3.3",
+    "vite-tsconfig-paths": "4.3.1",
+    "vitest": "1.2.1"
   },
   "resolutions": {
     "graphql": "16.8.1"

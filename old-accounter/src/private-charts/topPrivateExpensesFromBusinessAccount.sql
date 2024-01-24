@@ -3,8 +3,7 @@ SELECT
 FROM
   top_private_expenses_with_business_account;
 
-CREATE OR REPLACE VIEW
-  top_private_expenses_with_business_account AS
+CREATE OR REPLACE VIEW top_private_expenses_with_business_account AS
 SELECT
   ABS(
     SUM(event_amount_in_usd_with_vat_if_exists)::NUMERIC(9, 2)
