@@ -2,8 +2,8 @@ import { ReactElement } from 'react';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { EMPTY_UUID } from '../../../helpers/consts.js';
-import { LedgerRecordRow } from './ledger-record-row.js';
 import { RegenerateLedgerRecordsButton } from '../../common/index.js';
+import { LedgerRecordRow } from './ledger-record-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -57,10 +57,11 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
-  const { ledger: data, oldLedger, id } = getFragmentData(
-    TableLedgerRecordsFieldsFragmentDoc,
-    ledgerRecordsProps,
-  );
+  const {
+    ledger: data,
+    oldLedger,
+    id,
+  } = getFragmentData(TableLedgerRecordsFieldsFragmentDoc, ledgerRecordsProps);
 
   return (
     <table className="w-full h-full">
@@ -74,7 +75,7 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
           <th>Credit Account2</th>
           <th>Details</th>
           <th>Ref1</th>
-          <th><RegenerateLedgerRecordsButton chargeId={id} /></th>
+          <th />
         </tr>
       </thead>
       <tbody>

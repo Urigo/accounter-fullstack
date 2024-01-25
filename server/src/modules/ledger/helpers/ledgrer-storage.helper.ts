@@ -1,10 +1,15 @@
+import { startOfDay } from 'date-fns';
 import { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
-import type { IGetLedgerRecordsByChargesIdsResult, IInsertLedgerRecordsParams } from '../types.js';
+import type {
+  IGetLedgerRecordsByChargesIdsResult,
+  IInsertLedgerRecordsParams,
+  IUpdateLedgerRecordParams,
+} from '../types.js';
 
 type LedgerRecordInput = IInsertLedgerRecordsParams['ledgerRecords'][number];
 
@@ -118,7 +123,8 @@ function isExactMatch(
     }
 
     if (dateKeys.includes(key)) {
-      return (storageRecord[key] as Date)?.getTime() === (newRecord[key] as Date)?.getTime();
+      const newDate = newRecord[key] ? startOfDay(new Date(storageRecord[key] as Date)) : undefined;
+      return (storageRecord[key] as Date)?.getTime() === newDate?.getTime();
     }
 
     return storageRecord[key] === newRecord[key];
@@ -128,6 +134,7 @@ function isExactMatch(
 export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordInput {
   return {
     chargeId: record.chargeId,
+    ownerId: record.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID,
     creditEntity1: record.creditAccountID1
       ? typeof record.creditAccountID1 === 'string'
         ? record.creditAccountID1
@@ -218,6 +225,43 @@ export function convertLedgerRecordToProto(
     ownerId: record.owner_id ?? DEFAULT_FINANCIAL_ENTITY_ID,
     currencyRate: undefined,
     chargeId: record.charge_id,
+  };
+}
+
+export function convertLedgerRecordToInput(
+  record: IGetLedgerRecordsByChargesIdsResult,
+): LedgerRecordInput | IUpdateLedgerRecordParams {
+  return {
+    chargeId: record.charge_id ?? undefined,
+    ownerId: record.owner_id ?? DEFAULT_FINANCIAL_ENTITY_ID,
+    creditEntity1: record.credit_entity1 ?? undefined,
+    creditEntity2: record.credit_entity2 ?? undefined,
+    debitEntity1: record.debit_entity1 ?? undefined,
+    debitEntity2: record.debit_entity2 ?? undefined,
+    creditForeignAmount1: record.credit_foreign_amount1
+      ? Number(record.credit_foreign_amount1)
+      : undefined,
+    creditForeignAmount2: record.credit_foreign_amount2
+      ? Number(record.credit_foreign_amount2)
+      : undefined,
+    debitForeignAmount1: record.debit_foreign_amount1
+      ? Number(record.debit_foreign_amount1)
+      : undefined,
+    debitForeignAmount2: record.debit_foreign_amount2
+      ? Number(record.debit_foreign_amount2)
+      : undefined,
+    creditLocalAmount1: Number(record.credit_local_amount1),
+    creditLocalAmount2: record.credit_local_amount2
+      ? Number(record.credit_local_amount2)
+      : undefined,
+    debitLocalAmount1: Number(record.debit_local_amount1),
+    debitLocalAmount2: record.debit_local_amount2 ? Number(record.debit_local_amount2) : undefined,
+    description: record.description ?? undefined,
+    invoiceDate: record.invoice_date,
+    reference1: record.reference1 ?? undefined,
+    valueDate: record.value_date,
+    currency: formatCurrency(record.currency),
+    ledgerId: record.id,
   };
 }
 

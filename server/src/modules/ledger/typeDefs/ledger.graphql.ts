@@ -2,9 +2,8 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Query {
-    " validate if generated ledger has any differences from stored ledger "
-    validateLedgerByChargeId(chargeId: UUID!): Boolean!
+  extend type Mutation {
+    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords!
   }
 
   " represent atomic movement of funds "
@@ -27,42 +26,34 @@ export default gql`
   extend interface Charge {
     " ledger records linked to the charge "
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type CommonCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type ConversionCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type SalaryCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type InternalTransferCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type DividendCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type BusinessTripCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   extend type MonthlyVatCharge {
     ledger: Ledger!
-    generatedLedgerRecords: GeneratedLedgerRecords
   }
 
   " unbalanced entity over ledger records "

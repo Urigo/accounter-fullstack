@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { CounterAccountProto } from '@shared/types';
@@ -11,25 +11,23 @@ import {
   ledgerUnbalancedBusinessesByCharge,
 } from '../helpers/ledger-by-charge-type.helper.js';
 import {
+  convertLedgerRecordToInput,
   convertLedgerRecordToProto,
   ledgerRecordsGenerationFullMatchComparison,
   ledgerRecordsGenerationPartialMatchComparison,
 } from '../helpers/ledgrer-storage.helper.js';
 import { getLedgerBalanceInfo, updateLedgerBalanceByEntry } from '../helpers/utils.helper.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
-import type { IGetLedgerRecordsByChargesIdsResult, LedgerModule } from '../types.js';
+import type {
+  IGetLedgerRecordsByChargesIdsResult,
+  IInsertLedgerRecordsParams,
+  LedgerModule,
+} from '../types.js';
 import { commonChargeLedgerResolver } from './common.resolver.js';
-import { generateLedgerRecordsForBusinessTrip } from './ledger-generation/business-trip-ledger-generation.resolver.js';
-import { generateLedgerRecordsForCommonCharge } from './ledger-generation/common-ledger-generation.resolver.js';
-import { generateLedgerRecordsForConversion } from './ledger-generation/conversion-ledger-generation.resolver.js';
-import { generateLedgerRecordsForDividend } from './ledger-generation/dividend-ledger-generation.resolver.js';
-import { generateLedgerRecordsForInternalTransfer } from './ledger-generation/internal-transfer-ledger-generation.resolver.js';
-import { generateLedgerRecordsForMonthlyVat } from './ledger-generation/monthly-vat-ledger-generation.resolver.js';
-import { generateLedgerRecordsForSalary } from './ledger-generation/salary-ledger-generation.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
-  Query: {
-    validateLedgerByChargeId: async (_, { chargeId }, context, info) => {
+  Mutation: {
+    regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
       const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
       if (!charge) {
@@ -38,7 +36,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       try {
         const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
         if (!generated || 'message' in generated) {
-          return false;
+          const message = generated?.message ?? 'generation error';
+          throw new Error(message);
         }
 
         const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
@@ -52,18 +51,57 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           records,
         );
 
-        if (!fullMatching.isFullyMatched) {
-          const matching = ledgerRecordsGenerationPartialMatchComparison(
-            fullMatching.unmatchedStorageRecords,
-            fullMatching.unmatchedNewRecords,
-          );
-          // TODO: continue from here
-          console.log('matching newly generated ledger:', matching);
+        if (fullMatching.isFullyMatched) {
+          return {
+            records: storageLedgerRecords,
+            charge,
+          };
         }
 
-        return fullMatching.isFullyMatched;
-      } catch (err) {
-        return false;
+        const matching = ledgerRecordsGenerationPartialMatchComparison(
+          fullMatching.unmatchedStorageRecords,
+          fullMatching.unmatchedNewRecords,
+        );
+
+        const [newRecords, recordsToUpdate] = matching.reduce(
+          (acc, record) => {
+            if (record.id === EMPTY_UUID) {
+              acc[0].push(record);
+            } else {
+              acc[1].push(record);
+            }
+            return acc;
+          },
+          [[], []] as [
+            IGetLedgerRecordsByChargesIdsResult[],
+            IGetLedgerRecordsByChargesIdsResult[],
+          ],
+        );
+
+        const updatePromises = recordsToUpdate.map(record =>
+          injector.get(LedgerProvider).updateLedgerRecord(convertLedgerRecordToInput(record)),
+        );
+        const insertPromise =
+          newRecords.length > 0
+            ? injector
+                .get(LedgerProvider)
+                .insertLedgerRecords({
+                  ledgerRecords: newRecords.map(
+                    convertLedgerRecordToInput,
+                  ) as IInsertLedgerRecordsParams['ledgerRecords'],
+                })
+            : Promise.resolve();
+        await Promise.all([...updatePromises, insertPromise]);
+
+        return {
+          records: matching,
+          charge,
+        };
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
+        };
       }
     },
   },
@@ -219,31 +257,24 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   CommonCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForCommonCharge,
   },
   ConversionCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForConversion,
   },
   SalaryCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForSalary,
   },
   InternalTransferCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForInternalTransfer,
   },
   DividendCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForDividend,
   },
   BusinessTripCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForBusinessTrip,
   },
   MonthlyVatCharge: {
     ...commonChargeLedgerResolver,
-    generatedLedgerRecords: generateLedgerRecordsForMonthlyVat,
   },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {

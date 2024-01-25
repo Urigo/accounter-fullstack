@@ -32,6 +32,10 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     $chargeId,
     charge_id
   ),
+  owner_id = COALESCE(
+    $ownerId,
+    owner_id
+  ),
   credit_entity1 = COALESCE(
     $creditEntity1,
     credit_entity1
@@ -101,7 +105,7 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     value_date
   )
   WHERE
-    id = $chargeId
+    id = $ledgerId
   RETURNING *;
 `;
 
@@ -123,6 +127,7 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     debit_local_amount2,
     description,
     invoice_date,
+    owner_id,
     reference1,
     value_date
   )
@@ -143,6 +148,7 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     debitLocalAmount2,
     description,
     invoiceDate,
+    ownerId,
     reference1,
     valueDate
   )

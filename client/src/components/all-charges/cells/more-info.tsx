@@ -126,6 +126,9 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
         ... on Ledger @defer {
           validate {
             isValid
+            differences {
+              id
+            }
           }
         }
       }
@@ -139,11 +142,11 @@ type LedgerInfoProps = {
 
 const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
   const { ledger } = getFragmentData(AllChargesMoreLedgerInfoFieldsFragmentDoc, data);
-  const isValidationComplete = ledger?.validate !== undefined;
+  const isValidationComplete = ledger?.validate?.differences !== undefined;
   // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !ledger || ledger.records.length === 0;
   const isLedgerUnbalanced = !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced;
-  const isLedgerValidated = isValidationComplete && ledger.validate.isValid;
+  const isLedgerValidated = ledger?.validate?.isValid;
 
   const ledgerRecordsCount = isLedgerError ? 0 : ledger?.records.length;
   return (
@@ -156,7 +159,7 @@ const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
         !isLedgerError && !isLedgerUnbalanced && isLedgerValidated
         //  && isValidationComplete
       }
-      color="red"
+      color={ledger?.validate?.differences?.length ? 'orange' : 'red'}
       zIndex="auto"
     >
       <div className="whitespace-nowrap">
