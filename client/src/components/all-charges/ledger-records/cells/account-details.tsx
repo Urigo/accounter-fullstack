@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-negated-condition */
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import {

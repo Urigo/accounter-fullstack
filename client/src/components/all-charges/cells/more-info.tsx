@@ -143,7 +143,6 @@ type LedgerInfoProps = {
 const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
   const { ledger } = getFragmentData(AllChargesMoreLedgerInfoFieldsFragmentDoc, data);
   const isValidationComplete = ledger?.validate?.differences !== undefined;
-  // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !ledger || ledger.records.length === 0;
   const isLedgerUnbalanced = !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced;
   const isLedgerValidated = ledger?.validate?.isValid;
@@ -155,10 +154,7 @@ const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
       inline
       size={12}
       processing={!isValidationComplete}
-      disabled={
-        !isLedgerError && !isLedgerUnbalanced && isLedgerValidated
-        //  && isValidationComplete
-      }
+      disabled={!isLedgerError && !isLedgerUnbalanced && isLedgerValidated}
       color={ledger?.validate?.differences?.length ? 'orange' : 'red'}
       zIndex="auto"
     >
