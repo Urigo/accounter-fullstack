@@ -44,7 +44,7 @@ export const DocumentsTable = ({ documentsProps }: Props): ReactElement => {
           </tr>
         </thead>
         <tbody>
-          {documents.map(document => (
+          {documents?.map(document => (
             <DocumentsTableRow
               key={document.id}
               documentData={document}
