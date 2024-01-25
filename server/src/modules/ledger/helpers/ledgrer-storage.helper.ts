@@ -1,6 +1,6 @@
 import { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { DEFAULT_FINANCIAL_ENTITY_ID, EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
@@ -8,17 +8,37 @@ import type { IGetLedgerRecordsByChargesIdsResult, IInsertLedgerRecordsParams } 
 
 type LedgerRecordInput = IInsertLedgerRecordsParams['ledgerRecords'][number];
 
+const comparisonKeys: Array<keyof IGetLedgerRecordsByChargesIdsResult> = [
+  'credit_entity1',
+  'credit_entity2',
+  'credit_foreign_amount1',
+  'credit_foreign_amount2',
+  'credit_local_amount1',
+  'credit_local_amount2',
+  'currency',
+  'debit_entity1',
+  'debit_entity2',
+  'debit_foreign_amount1',
+  'debit_foreign_amount2',
+  'debit_local_amount1',
+  'debit_local_amount2',
+  'description',
+  'invoice_date',
+  'reference1',
+  'value_date',
+];
+
+const dateKeys: Array<keyof IGetLedgerRecordsByChargesIdsResult> = ['value_date', 'invoice_date'];
+
 export function ledgerRecordsGenerationFullMatchComparison(
   storageRecords: IGetLedgerRecordsByChargesIdsResult[],
-  newRecords: readonly LedgerProto[],
+  newRecords: readonly IGetLedgerRecordsByChargesIdsResult[],
 ) {
-  const adjustedNewRecords = newRecords.map(convertToStorageInputRecord);
-
   // compare existing records with new records
   const unmatchedStorageRecords = [...storageRecords];
-  const unmatchedNewRecords: LedgerRecordInput[] = [];
+  const unmatchedNewRecords: IGetLedgerRecordsByChargesIdsResult[] = [];
   const fullMatches = new Map<number, string | undefined>();
-  adjustedNewRecords.map((newRecord, index) => {
+  newRecords.map((newRecord, index) => {
     const matchIndex = unmatchedStorageRecords.findIndex(storageRecord => {
       return isExactMatch(storageRecord, newRecord);
     });
@@ -41,13 +61,13 @@ export function ledgerRecordsGenerationFullMatchComparison(
 
 export function ledgerRecordsGenerationPartialMatchComparison(
   storageRecords: IGetLedgerRecordsByChargesIdsResult[],
-  newRecords: LedgerRecordInput[],
+  newRecords: IGetLedgerRecordsByChargesIdsResult[],
 ) {
-  const matches = new Map<string, LedgerRecordInput>();
+  const matches = new Map<string, IGetLedgerRecordsByChargesIdsResult>();
   const unmatchedNewRecords = [...newRecords];
   storageRecords.map(storageRecord => {
     let maxScore = 0;
-    let bestMatch: LedgerRecordInput | undefined = undefined;
+    let bestMatch: IGetLedgerRecordsByChargesIdsResult | undefined = undefined;
     unmatchedNewRecords.map(newRecord => {
       const score = getMatchScore(storageRecord, newRecord);
       if (score < 0) {
@@ -65,43 +85,44 @@ export function ledgerRecordsGenerationPartialMatchComparison(
     }
   });
 
-  return {
-    matches,
-    unmatchedNewRecords,
-  };
-}
+  const diffs = Array.from(matches.entries()).map(([storageId, newRecord]) => {
+    const storageRecord = storageRecords.find(record => record.id === storageId);
+    if (!storageRecord) {
+      throw new Error('Storage record not found');
+    }
 
-function getTimelessDate(date: Date | string): Date {
-  const timelessDate = new Date(date);
-  timelessDate.setHours(0, 0, 0, 0);
-  return timelessDate;
+    const recordDiffs: IGetLedgerRecordsByChargesIdsResult = {
+      ...newRecord,
+      id: storageRecord.id,
+    };
+
+    return recordDiffs;
+  });
+
+  return [
+    ...diffs,
+    ...unmatchedNewRecords.map(record => ({
+      ...record,
+      id: EMPTY_UUID,
+    })),
+  ];
 }
 
 function isExactMatch(
   storageRecord: IGetLedgerRecordsByChargesIdsResult,
-  newRecord: LedgerRecordInput,
+  newRecord: IGetLedgerRecordsByChargesIdsResult,
 ): boolean {
-  return (
-    storageRecord.credit_entity1 === (newRecord.creditEntity1 ?? null) &&
-    storageRecord.credit_entity2 === (newRecord.creditEntity2 ?? null) &&
-    storageRecord.credit_foreign_amount1 === (newRecord.creditForeignAmount1?.toString() ?? null) &&
-    storageRecord.credit_foreign_amount2 === (newRecord.creditForeignAmount2?.toString() ?? null) &&
-    storageRecord.credit_local_amount1 === (newRecord.creditLocalAmount1?.toString() ?? null) &&
-    storageRecord.credit_local_amount2 === (newRecord.creditLocalAmount2?.toString() ?? null) &&
-    storageRecord.currency === (newRecord.currency ?? null) &&
-    storageRecord.debit_entity1 === (newRecord.debitEntity1 ?? null) &&
-    storageRecord.debit_entity2 === (newRecord.debitEntity2 ?? null) &&
-    storageRecord.debit_foreign_amount1 === (newRecord.debitForeignAmount1?.toString() ?? null) &&
-    storageRecord.debit_foreign_amount2 === (newRecord.debitForeignAmount2?.toString() ?? null) &&
-    storageRecord.debit_local_amount1 === (newRecord.debitLocalAmount1?.toString() ?? null) &&
-    storageRecord.debit_local_amount2 === (newRecord.debitLocalAmount2?.toString() ?? null) &&
-    storageRecord.description === (newRecord.description ?? null) &&
-    storageRecord.invoice_date?.getTime() ===
-      (newRecord.invoiceDate ? getTimelessDate(newRecord.invoiceDate).getTime() : undefined) &&
-    storageRecord.reference1 === (newRecord.reference1 ?? null) &&
-    storageRecord.value_date?.getTime() ===
-      (newRecord.valueDate ? getTimelessDate(newRecord.valueDate).getTime() : undefined)
-  );
+  return comparisonKeys.reduce((isMatch, key) => {
+    if (!isMatch) {
+      return false;
+    }
+
+    if (dateKeys.includes(key)) {
+      return (storageRecord[key] as Date)?.getTime() === (newRecord[key] as Date)?.getTime();
+    }
+
+    return storageRecord[key] === newRecord[key];
+  }, true as boolean);
 }
 
 export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordInput {
@@ -145,67 +166,22 @@ export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordIn
 
 function getMatchScore(
   storageRecord: IGetLedgerRecordsByChargesIdsResult,
-  newRecord: LedgerRecordInput,
+  newRecord: IGetLedgerRecordsByChargesIdsResult,
 ): number {
-  const scoreParts = [
-    (storageRecord.credit_entity1 ? 1 : 0.5) *
-      (storageRecord.credit_entity1 === (newRecord.creditEntity1 ?? null) ? 1 : -1),
-    (storageRecord.credit_entity2 ? 1 : 0.5) *
-      (storageRecord.credit_entity2 === (newRecord.creditEntity2 ?? null) ? 1 : -1),
-    (storageRecord.credit_foreign_amount1 ? 1 : 0.5) *
-      (storageRecord.credit_foreign_amount1 === (newRecord.creditForeignAmount1?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.credit_foreign_amount2 ? 1 : 0.5) *
-      (storageRecord.credit_foreign_amount2 === (newRecord.creditForeignAmount2?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.credit_local_amount1 ? 1 : 0.5) *
-      (storageRecord.credit_local_amount1 === (newRecord.creditLocalAmount1?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.credit_local_amount2 ? 1 : 0.5) *
-      (storageRecord.credit_local_amount2 === (newRecord.creditLocalAmount2?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.currency ? 1 : 0.5) *
-      (storageRecord.currency === (newRecord.currency ?? null) ? 1 : -1),
-    (storageRecord.debit_entity1 ? 1 : 0.5) *
-      (storageRecord.debit_entity1 === (newRecord.debitEntity1 ?? null) ? 1 : -1),
-    (storageRecord.debit_entity2 ? 1 : 0.5) *
-      (storageRecord.debit_entity2 === (newRecord.debitEntity2 ?? null) ? 1 : -1),
-    (storageRecord.debit_foreign_amount1 ? 1 : 0.5) *
-      (storageRecord.debit_foreign_amount1 === (newRecord.debitForeignAmount1?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.debit_foreign_amount2 ? 1 : 0.5) *
-      (storageRecord.debit_foreign_amount2 === (newRecord.debitForeignAmount2?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.debit_local_amount1 ? 1 : 0.5) *
-      (storageRecord.debit_local_amount1 === (newRecord.debitLocalAmount1?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.debit_local_amount2 ? 1 : 0.5) *
-      (storageRecord.debit_local_amount2 === (newRecord.debitLocalAmount2?.toString() ?? null)
-        ? 1
-        : -1),
-    (storageRecord.description ? 1 : 0.5) *
-      (storageRecord.description === (newRecord.description ?? null) ? 1 : -1),
-    (storageRecord.invoice_date ? 1 : 0.5) *
-      (storageRecord.invoice_date?.getTime() ===
-      (newRecord.invoiceDate ? new Date(newRecord.invoiceDate).getTime() : undefined)
-        ? 1
-        : -1),
-    (storageRecord.reference1 ? 1 : 0.5) *
-      (storageRecord.reference1 === (newRecord.reference1 ?? null) ? 1 : -1),
-    (storageRecord.value_date ? 1 : 0.5) *
-      (storageRecord.value_date?.getTime() ===
-      (newRecord.valueDate ? new Date(newRecord.valueDate).getTime() : undefined)
-        ? 1
-        : -1),
-  ];
-  return scoreParts.reduce((a, b) => a + b, 0);
+  return comparisonKeys.reduce((cumulativeScore, key) => {
+    const factor = storageRecord[key] ? 1 : 0.5;
+
+    let scoreDirection: number;
+    if (dateKeys.includes(key)) {
+      scoreDirection =
+        (storageRecord[key] as Date)?.getTime() === (newRecord[key] as Date)?.getTime() ? 1 : -1;
+    } else {
+      scoreDirection = storageRecord[key] === newRecord[key] ? 1 : -1;
+    }
+
+    const addedScore = factor * scoreDirection;
+    return cumulativeScore + addedScore;
+  }, 0);
 }
 
 export function convertLedgerRecordToProto(

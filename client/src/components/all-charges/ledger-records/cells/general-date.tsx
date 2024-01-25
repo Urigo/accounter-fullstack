@@ -3,8 +3,6 @@ import { format } from 'date-fns';
 import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 
-/* TEMPORARY: this component is used for temporary reasons */
-
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment LedgerRecordsGeneralDateFields on LedgerRecord {
@@ -16,10 +14,11 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 
 type Props = {
   data: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc>;
+  diff?: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc> | null;
   type: 1 | 2;
 };
 
-export const GeneralDate = ({ data, type }: Props): ReactElement => {
+export const GeneralDate = ({ data, diff, type }: Props): ReactElement => {
   const { invoiceDate, valueDate } = getFragmentData(
     LedgerRecordsGeneralDateFieldsFragmentDoc,
     data,
@@ -27,7 +26,20 @@ export const GeneralDate = ({ data, type }: Props): ReactElement => {
 
   const showDate = type === 1 ? invoiceDate : valueDate;
 
-  const formattedDate = invoiceDate ? format(new Date(showDate), 'dd/MM/yy') : 'Missing Data';
+  const formattedDate = showDate ? format(new Date(showDate), 'dd/MM/yy') : undefined;
 
-  return <td>{formattedDate}</td>;
+  // calculate diff date
+  const { invoiceDate: diffInvoiceDate, valueDate: diffValueDate } =
+    getFragmentData(LedgerRecordsGeneralDateFieldsFragmentDoc, diff) ?? {};
+  const diffShowDate = type === 1 ? diffInvoiceDate : diffValueDate;
+  const diffFormattedDate = diffShowDate ? format(new Date(diffShowDate), 'dd/MM/yy') : undefined;
+
+  return (
+    <td>
+      {formattedDate ?? 'Missing Data'}
+      {diffShowDate && showDate !== diffShowDate && (
+        <div className="flex flex-col border-2 border-red-500 rounded-md">{diffFormattedDate}</div>
+      )}
+    </td>
+  );
 };

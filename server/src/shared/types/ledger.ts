@@ -78,3 +78,5 @@ export type LedgerBalanceInfoType = {
   unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }>;
   balanceSum: number;
 };
+
+export type LedgerRecordDiffsProto = Partial<IGetLedgerRecordsByChargesIdsResult>;

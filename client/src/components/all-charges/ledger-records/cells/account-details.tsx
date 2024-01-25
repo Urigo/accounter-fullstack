@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-negated-condition */
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import {
@@ -6,8 +7,6 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query';
-
-/* TEMPORARY: this component is used for temporary reasons */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -66,11 +65,12 @@ import { useUrlQuery } from '../../../../hooks/use-url-query';
 
 type Props = {
   data: FragmentType<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc>;
+  diff?: FragmentType<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc> | null;
   cred: boolean;
   first: boolean;
 };
 
-export const AccountDetails = ({ data, cred, first }: Props): ReactElement => {
+export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const {
     creditAccount1,
@@ -141,20 +141,79 @@ export const AccountDetails = ({ data, cred, first }: Props): ReactElement => {
     [encodedFilters],
   );
 
+  const {
+    creditAccount1: diffCreditAccount1,
+    creditAccount2: diffCreditAccount2,
+    debitAccount1: diffDebitAccount1,
+    debitAccount2: diffDebitAccount2,
+    creditAmount1: diffCreditAmount1,
+    creditAmount2: diffCreditAmount2,
+    debitAmount1: diffDebitAmount1,
+    debitAmount2: diffDebitAmount2,
+    localCurrencyCreditAmount1: diffLocalCurrencyCreditAmount1,
+    localCurrencyCreditAmount2: diffLocalCurrencyCreditAmount2,
+    localCurrencyDebitAmount1: diffLocalCurrencyDebitAmount1,
+    localCurrencyDebitAmount2: diffLocalCurrencyDebitAmount2,
+  } = getFragmentData(LedgerRecordsAccountDetailsFieldsFragmentDoc, diff) ?? {};
+
+  const diffCreditAccount = cred
+    ? first
+      ? diffCreditAccount1
+      : diffCreditAccount2
+    : first
+      ? diffDebitAccount1
+      : diffDebitAccount2;
+
+  const diffLocalAmount = cred
+    ? first
+      ? diffLocalCurrencyCreditAmount1
+      : diffLocalCurrencyCreditAmount2
+    : first
+      ? diffLocalCurrencyDebitAmount1
+      : diffLocalCurrencyDebitAmount2;
+
+  const diffForeignAmount = cred
+    ? first
+      ? diffCreditAmount1
+      : diffCreditAmount2
+    : first
+      ? diffDebitAmount1
+      : diffDebitAmount2;
+
+  const diffIsForeign = foreignAmount != null && foreignAmount.currency !== 'ILS';
+  const hasDiffs =
+    diffCreditAccount?.id !== creditAccount?.id ||
+    diffLocalAmount?.formatted !== localAmount?.formatted ||
+    diffForeignAmount?.formatted !== foreignAmount?.formatted;
+
   return (
     <td>
-      {creditAccount && (
-        <>
-          <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
-            <NavLink
-              label={creditAccount?.name}
-              className="[&>*>.mantine-NavLink-label]:font-semibold"
-            />
-          </a>
-          {isForeign && <p>{foreignAmount.formatted}</p>}
-          {localAmount != null && <p>{localAmount.formatted}</p>}
-        </>
-      )}
+      <div className="flex flex-col">
+        {creditAccount && (
+          <>
+            <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
+              <NavLink
+                label={creditAccount?.name}
+                className="[&>*>.mantine-NavLink-label]:font-semibold"
+              />
+            </a>
+            {isForeign && <p>{foreignAmount.formatted}</p>}
+            {localAmount != null && <p>{localAmount.formatted}</p>}
+          </>
+        )}
+        {hasDiffs && diffCreditAccount?.name && (
+          <div className="border-2 border-red-500 rounded-md">
+            <a href={getHref(diffCreditAccount?.id)} target="_blank" rel="noreferrer">
+              <NavLink
+                label={diffCreditAccount?.name}
+                className="[&>*>.mantine-NavLink-label]:font-semibold"
+              />
+            </a>
+            {diffIsForeign && <p>{diffForeignAmount?.formatted}</p>}
+            {diffLocalAmount != null && <p>{diffLocalAmount?.formatted}</p>}
+          </div>
+        )}
+      </div>
     </td>
   );
 };

@@ -63,6 +63,10 @@ export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactE
     }
   }, [newData]);
 
+  useEffect(() => {
+    setDocument(getFragmentData(TableDocumentsRowFieldsFragmentDoc, documentData));
+  }, [documentData]);
+
   return (
     <tr key={document.id}>
       <DateCell data={document} />

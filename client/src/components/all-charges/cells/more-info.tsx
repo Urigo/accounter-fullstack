@@ -124,7 +124,9 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
           isBalanced
         }
         ... on Ledger @defer {
-          validate
+          validate {
+            isValid
+          }
         }
       }
     }
@@ -141,7 +143,7 @@ const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
   // TODO(Gil): implement isLedgerError by server validation
   const isLedgerError = !ledger || ledger.records.length === 0;
   const isLedgerUnbalanced = !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced;
-  const isLedgerValidated = isValidationComplete && ledger.validate;
+  const isLedgerValidated = isValidationComplete && ledger.validate.isValid;
 
   const ledgerRecordsCount = isLedgerError ? 0 : ledger?.records.length;
   return (
@@ -154,7 +156,7 @@ const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
         !isLedgerError && !isLedgerUnbalanced && isLedgerValidated
         //  && isValidationComplete
       }
-      color={ledger?.validate === false ? 'blue' : 'red'}
+      color="red"
       zIndex="auto"
     >
       <div className="whitespace-nowrap">

@@ -54,6 +54,7 @@ module.exports = {
                 'Ledger',
                 'LedgerBalanceInfo',
                 'LedgerBalanceUnbalancedEntity',
+                'LedgerValidation',
                 'MergeChargeSuccessfulResult',
                 'MergeChargesByTransactionReferenceResult',
                 'PageInfo',

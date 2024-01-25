@@ -1,7 +1,9 @@
 import { ReactElement } from 'react';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AccountDetails, GeneralDate } from './cells';
+import { EMPTY_UUID } from '../../../helpers/consts.js';
+import { LedgerRecordRow } from './ledger-record-row.js';
+import { RegenerateLedgerRecordsButton } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -12,23 +14,16 @@ import { AccountDetails, GeneralDate } from './cells';
         __typename
         records {
           id
-          ...LedgerRecordsDateFields
-          ...LedgerRecordsCreditAccountFields
-          ...LedgerRecordsDebitAccountFields
-          ...LedgerRecordsAccountDetailsFields
-          ...LedgerRecordsGeneralDateFields
-          creditAmount1 {
-            formatted
+          ...TableLedgerRecordsRowFields
+        }
+        ... on Ledger @defer {
+          validate {
+            matches
+            differences {
+              id
+              ...TableLedgerRecordsRowFields
+            }
           }
-          localCurrencyCreditAmount1 {
-            formatted
-          }
-          debitAccount1 {
-            id
-            name
-          }
-          description
-          reference1
         }
       }
     }
@@ -62,7 +57,7 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
-  const { ledger: data, oldLedger } = getFragmentData(
+  const { ledger: data, oldLedger, id } = getFragmentData(
     TableLedgerRecordsFieldsFragmentDoc,
     ledgerRecordsProps,
   );
@@ -79,21 +74,25 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
           <th>Credit Account2</th>
           <th>Details</th>
           <th>Ref1</th>
+          <th><RegenerateLedgerRecordsButton chargeId={id} /></th>
         </tr>
       </thead>
       <tbody>
         {data?.records?.map(record => (
-              <tr key={record.id}>
-                <GeneralDate data={record} type={1} />
-                <GeneralDate data={record} type={2} />
-                <AccountDetails data={record} cred={false} first />
-                <AccountDetails data={record} cred first />
-                <AccountDetails data={record} cred={false} first={false} />
-                <AccountDetails data={record} cred first={false} />
-                <td>{record.description}</td>
-                <td>{record.reference1}</td>
-              </tr>
-            ))}
+          <LedgerRecordRow
+            key={record.id}
+            ledgerRecordProps={record}
+            matchingStatus={
+              data.validate?.matches?.some(id => id === record.id) ? undefined : 'Diff'
+            }
+            diffs={data.validate?.differences?.find(diffRecord => diffRecord.id === record.id)}
+          />
+        ))}
+        {data?.validate?.differences
+          ?.filter(record => record.id === EMPTY_UUID)
+          .map(record => (
+            <LedgerRecordRow key={record.id} ledgerRecordProps={record} matchingStatus="New" />
+          ))}
         {/* TODO(Gil): Next part is temporary, until we have a new ledger perfected */}
         <tr>
           <td colSpan={8} />

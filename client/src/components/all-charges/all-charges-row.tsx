@@ -103,9 +103,9 @@ export const AllChargesRow = ({
       setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, updatedCharge));
     }
   }, [newData]);
-  
+
   useEffect(() => {
-      setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, data));
+    setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, data));
   }, [data]);
 
   useEffect(() => {

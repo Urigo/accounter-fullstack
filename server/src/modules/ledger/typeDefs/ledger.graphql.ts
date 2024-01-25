@@ -81,7 +81,14 @@ export default gql`
   type Ledger {
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
-    validate: Boolean!
+    validate: LedgerValidation!
+  }
+
+  " ledger validation info"
+  type LedgerValidation {
+    isValid: Boolean!
+    matches: [UUID!]!
+    differences: [LedgerRecord!]!
   }
 
   " result type for ledger records "

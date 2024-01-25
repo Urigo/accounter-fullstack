@@ -49,7 +49,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         const fullMatching = ledgerRecordsGenerationFullMatchComparison(
           storageLedgerRecords,
-          records.map(convertLedgerRecordToProto),
+          records,
         );
 
         if (!fullMatching.isFullyMatched) {
@@ -151,14 +151,17 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
       return getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses, financialEntities);
     },
-    // generationDiffs
     validate: async ({ charge }, _, context, info) => {
       const { injector } = context;
 
       try {
         const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
         if (!generated || 'message' in generated) {
-          return false;
+          return {
+            isValid: false,
+            differences: [],
+            matches: [],
+          };
         }
 
         const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
@@ -169,21 +172,33 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         const fullMatching = ledgerRecordsGenerationFullMatchComparison(
           storageLedgerRecords,
-          records.map(convertLedgerRecordToProto),
+          records,
         );
 
-        if (!fullMatching.isFullyMatched) {
-          const matching = ledgerRecordsGenerationPartialMatchComparison(
-            fullMatching.unmatchedStorageRecords,
-            fullMatching.unmatchedNewRecords,
-          );
-          // TODO: continue from here
-          console.log('matching newly generated ledger:', matching);
+        if (fullMatching.isFullyMatched) {
+          return {
+            isValid: true,
+            differences: [],
+            matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+          };
         }
 
-        return fullMatching.isFullyMatched;
+        const differences = ledgerRecordsGenerationPartialMatchComparison(
+          fullMatching.unmatchedStorageRecords,
+          fullMatching.unmatchedNewRecords,
+        );
+
+        return {
+          isValid: fullMatching.isFullyMatched,
+          differences,
+          matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+        };
       } catch (err) {
-        return false;
+        return {
+          isValid: false,
+          differences: [],
+          matches: [],
+        };
       }
     },
   },
