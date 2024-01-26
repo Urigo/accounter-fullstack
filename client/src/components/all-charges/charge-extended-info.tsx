@@ -5,7 +5,7 @@ import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } f
 import { useDisclosure } from '@mantine/hooks';
 import { FetchChargeDocument } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
-import { ConfirmationModal } from '../common/index.js';
+import { ConfirmationModal, RegenerateLedgerRecordsButton } from '../common/index.js';
 import { DocumentsGallery } from './documents/documents-gallery';
 import { DocumentsTable } from './documents/documents-table';
 import { ConversionInfo } from './extended-info/conversion-info.js';
@@ -19,11 +19,8 @@ import { TransactionsTable } from './transactions/transactions-table';
     chargesByIDs(chargeIDs: $chargeIDs) {
       __typename
       id
-      owner {
-        id
-      }
-      ledgerRecords {
-        ... on LedgerRecords {
+      ... on Charge @defer {
+        ledger {
           records {
             id
           }
@@ -68,11 +65,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
 
   const charge = data?.chargesByIDs?.[0];
 
-  const hasLedgerRecords = !!(
-    charge?.ledgerRecords &&
-    'records' in charge.ledgerRecords &&
-    charge.ledgerRecords.records.length > 0
-  );
+  const hasLedgerRecords = !!(charge?.ledger?.records && charge.ledger.records.length > 0);
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
@@ -131,18 +124,16 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             </Accordion.Item>
 
             <Accordion.Item value="documents">
-              <Accordion.Control disabled={!hasDocs}>
-                <div className="flex flex-row justify-between w-full">
-                  <p>Documents</p>
-                  {hasDocs && (
-                    <Tooltip label="Documents Gallery">
-                      <ActionIcon onClick={toggle}>
-                        <Photo size={20} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </div>
-              </Accordion.Control>
+              <div className="flex flex-row items-center pl-2 justify-between w-full">
+                {hasDocs && (
+                  <Tooltip label="Documents Gallery">
+                    <ActionIcon onClick={toggle} variant="outline">
+                      <Photo size={20} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                <Accordion.Control disabled={!hasDocs}>Documents</Accordion.Control>
+              </div>
               <Accordion.Panel>
                 <DocumentsTable documentsProps={charge} />
               </Accordion.Panel>
@@ -158,7 +149,10 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             )}
 
             <Accordion.Item value="ledger">
-              <Accordion.Control disabled={!hasLedgerRecords}>Ledger Records</Accordion.Control>
+              <div className="flex flex-row items-center pl-2 justify-between w-full">
+                <RegenerateLedgerRecordsButton chargeId={charge.id} variant="outline" />
+                <Accordion.Control disabled={!hasLedgerRecords}>Ledger Records</Accordion.Control>
+              </div>
               <Accordion.Panel>
                 <LedgerRecordTable ledgerRecordsProps={charge} />
               </Accordion.Panel>

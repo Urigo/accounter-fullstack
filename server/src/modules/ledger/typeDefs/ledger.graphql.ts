@@ -2,9 +2,13 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Mutation {
+    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords!
+  }
+
   " represent atomic movement of funds "
   type LedgerRecord {
-    id: ID!
+    id: UUID!
     debitAmount1: FinancialAmount
     debitAmount2: FinancialAmount
     creditAmount1: FinancialAmount
@@ -21,35 +25,35 @@ export default gql`
 
   extend interface Charge {
     " ledger records linked to the charge "
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type CommonCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type ConversionCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type SalaryCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type InternalTransferCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type DividendCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type BusinessTripCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   extend type MonthlyVatCharge {
-    ledgerRecords: GeneratedLedgerRecords
+    ledger: Ledger!
   }
 
   " unbalanced entity over ledger records "
@@ -65,11 +69,19 @@ export default gql`
   }
 
   " array of ledger records linked to the charge "
-  type LedgerRecords {
+  type Ledger {
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
+    validate: LedgerValidation!
+  }
+
+  " ledger validation info"
+  type LedgerValidation {
+    isValid: Boolean!
+    matches: [UUID!]!
+    differences: [LedgerRecord!]!
   }
 
   " result type for ledger records "
-  union GeneratedLedgerRecords = LedgerRecords | CommonError
+  union GeneratedLedgerRecords = Ledger | CommonError
 `;

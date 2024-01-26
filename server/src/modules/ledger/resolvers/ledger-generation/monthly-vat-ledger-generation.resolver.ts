@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -15,13 +16,14 @@ import {
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { getMonthFromDescription } from '@shared/helpers';
 import type { CounterAccountProto, LedgerProto, TimelessDateString } from '@shared/types';
-import { getVatDataFromVatReportRecords } from '../helpers/monthly-vat-ledger-generation.helper.js';
+import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
   getLedgerBalanceInfo,
+  ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
-} from '../helpers/utils.helper.js';
+} from '../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -214,8 +216,13 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     });
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
+
+    const records = [...financialAccountLedgerEntries, ...accountingLedgerEntries];
+    await storeInitialGeneratedRecords(charge, records, injector);
+
     return {
-      records: [...financialAccountLedgerEntries, ...accountingLedgerEntries],
+      records: ledgerProtoToRecordsConverter(records),
+      charge,
       balance: ledgerBalanceInfo,
     };
   } catch (e) {

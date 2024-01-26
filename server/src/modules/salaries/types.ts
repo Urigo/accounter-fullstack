@@ -8,4 +8,7 @@ export {
   IGetAllTrainingFundsParams,
   IGetAllTrainingFundsResult,
   IGetAllTrainingFundsQuery,
+  IGetAllFundsParams,
+  IGetAllFundsResult,
+  IGetAllFundsQuery,
 } from './__generated__/funds.types.js';

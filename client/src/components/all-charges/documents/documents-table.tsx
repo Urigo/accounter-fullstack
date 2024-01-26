@@ -8,9 +8,11 @@ import { DocumentsTableRow } from './documents-table-row';
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
-    additionalDocuments {
-      id
-      ...TableDocumentsRowFields
+    ... on Charge @defer {
+      additionalDocuments {
+        id
+        ...TableDocumentsRowFields
+      }
     }
   }
 `;
@@ -42,7 +44,7 @@ export const DocumentsTable = ({ documentsProps }: Props): ReactElement => {
           </tr>
         </thead>
         <tbody>
-          {documents.map(document => (
+          {documents?.map(document => (
             <DocumentsTableRow
               key={document.id}
               documentData={document}

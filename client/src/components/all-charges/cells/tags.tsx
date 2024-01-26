@@ -10,15 +10,17 @@ import { ConfirmMiniButton, ListCapsule } from '../../common';
   fragment AllChargesTagsFields on Charge {
     __typename
     id
-    tags {
-      name
-    }
-    validationData {
-      missingInfo
-    }
-    missingInfoSuggestions {
+    ... on Charge @defer {
       tags {
         name
+      }
+      validationData {
+        missingInfo
+      }
+      missingInfoSuggestions {
+        tags {
+          name
+        }
       }
     }
   }
@@ -37,13 +39,13 @@ export const Tags = ({ data }: Props): ReactElement => {
     __typename,
   } = getFragmentData(AllChargesTagsFieldsFragmentDoc, data);
   const { updateCharge, fetching } = useUpdateCharge();
-  const [tags, setTags] = useState<{ name: string }[]>(originalTags);
+  const [tags, setTags] = useState<{ name: string }[]>(originalTags ?? []);
 
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
   const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
-  if (tags.length === 0 && hasAlternative) {
-    setTags(missingInfoSuggestions.tags);
+  if (tags?.length === 0 && hasAlternative) {
+    setTags(missingInfoSuggestions?.tags);
   }
 
   const updateTag = useCallback(

@@ -15,15 +15,18 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TableTransactionsFields on Charge {
-    transactions {
-      id
-      ...TransactionsTableEventDateFields
-      ...TransactionsTableDebitDateFields
-      ...TransactionsTableAmountFields
-      ...TransactionsTableAccountFields
-      ...TransactionsTableDescriptionFields
-      ...TransactionsTableSourceIDFields
-      ...TransactionsTableEntityFields
+    id
+    ... on Charge @defer {
+      transactions {
+        id
+        ...TransactionsTableEventDateFields
+        ...TransactionsTableDebitDateFields
+        ...TransactionsTableAmountFields
+        ...TransactionsTableAccountFields
+        ...TransactionsTableDescriptionFields
+        ...TransactionsTableSourceIDFields
+        ...TransactionsTableEntityFields
+      }
     }
   }
 `;
@@ -52,7 +55,7 @@ export const TransactionsTable = ({ transactionsProps }: Props): ReactElement =>
           </tr>
         </thead>
         <tbody>
-          {transactions.map(transaction => (
+          {transactions?.map(transaction => (
             <tr key={transaction.id}>
               <EventDate data={transaction} />
               <DebitDate data={transaction} />

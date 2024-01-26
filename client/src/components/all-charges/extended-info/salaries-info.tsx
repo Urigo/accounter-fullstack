@@ -6,50 +6,52 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
 /* GraphQL */ `
   fragment TableSalariesFields on SalaryCharge {
     id
-    salaryRecords {
-      directAmount {
-        formatted
-      }
-      baseAmount {
-        formatted
-      }
-			employee {
-        name
-      }
-      pensionFund {
-        id
-        name
-      }
-      pensionEmployeeAmount {
-        formatted
-      }
-      pensionEmployerAmount {
-        formatted
-      }
-      compensationsAmount {
-        formatted
-      }
-      trainingFund {
-        id
-        name
-      }
-      trainingFundEmployeeAmount {
-        formatted
-      }
-      trainingFundEmployerAmount {
-        formatted
-      }
-      socialSecurityEmployeeAmount {
-        formatted
-      }
-      socialSecurityEmployerAmount {
-        formatted
-      }
-      incomeTaxAmount {
-        formatted
-      }
-      healthInsuranceAmount {
-        formatted
+    ... on SalaryCharge @defer {
+      salaryRecords {
+        directAmount {
+          formatted
+        }
+        baseAmount {
+          formatted
+        }
+        employee {
+          name
+        }
+        pensionFund {
+          id
+          name
+        }
+        pensionEmployeeAmount {
+          formatted
+        }
+        pensionEmployerAmount {
+          formatted
+        }
+        compensationsAmount {
+          formatted
+        }
+        trainingFund {
+          id
+          name
+        }
+        trainingFundEmployeeAmount {
+          formatted
+        }
+        trainingFundEmployerAmount {
+          formatted
+        }
+        socialSecurityEmployeeAmount {
+          formatted
+        }
+        socialSecurityEmployerAmount {
+          formatted
+        }
+        incomeTaxAmount {
+          formatted
+        }
+        healthInsuranceAmount {
+          formatted
+        }
       }
     }
   }
@@ -75,7 +77,7 @@ export const SalariesTable = ({ salaryRecordsProps }: Props): ReactElement => {
         </tr>
       </thead>
       <tbody>
-        {salaryRecords.map(record => (
+        {salaryRecords?.map(record => (
           <tr key={`${record.employee?.name}-${record.baseAmount}`}>
             <td>
               <div>{record.employee?.name ?? 'Missing'}</div>

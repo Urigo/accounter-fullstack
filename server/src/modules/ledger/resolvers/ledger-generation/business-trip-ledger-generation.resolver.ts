@@ -5,6 +5,7 @@ import { BusinessTripTransactionsProvider } from '@modules/business-trips/provid
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, FEE_CATEGORY_NAME } from '@shared/constants';
 import {
@@ -15,15 +16,19 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
-import { isSupplementalFeeTransaction, splitFeeTransactions } from '../helpers/fee-transactions.js';
+import {
+  isSupplementalFeeTransaction,
+  splitFeeTransactions,
+} from '../../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
   getLedgerBalanceInfo,
   getTaxCategoryNameByAccountCurrency,
+  ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
   validateTransactionRequiredVariables,
-} from '../helpers/utils.helper.js';
+} from '../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
@@ -317,8 +322,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
 
+    const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
+    await storeInitialGeneratedRecords(charge, records, injector);
+
     return {
-      records: [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries],
+      records: ledgerProtoToRecordsConverter(records),
+      charge,
       balance: ledgerBalanceInfo,
     };
   } catch (e) {

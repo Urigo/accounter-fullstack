@@ -1,11 +1,18 @@
 import { GraphQLError } from 'graphql';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
+import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type {
+  CounterAccountProto,
+  LedgerBalanceInfoType,
+  LedgerProto,
+  StrictLedgerProto,
+} from '@shared/types';
+import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
   if (!first || !second) {
@@ -187,11 +194,8 @@ export function updateLedgerBalanceByEntry(
 export function getLedgerBalanceInfo(
   ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
-): {
-  isBalanced: boolean;
-  unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }>;
-  balanceSum: number;
-} {
+  financialEntities?: Array<IGetFinancialEntitiesByIdsResult>,
+): LedgerBalanceInfoType {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }> = [];
@@ -199,7 +203,14 @@ export function getLedgerBalanceInfo(
     if (Math.abs(amount) < 0.005) {
       continue;
     }
-    if (typeof entity === 'string' && !allowedUnbalancedBusinesses.has(entity)) {
+    const isBusinessEntity =
+      typeof entity === 'string' &&
+      (financialEntities
+        ? financialEntities.some(
+            financialEntity => financialEntity.id === entity && financialEntity.type === 'business',
+          )
+        : true);
+    if (isBusinessEntity && !allowedUnbalancedBusinesses.has(entity)) {
       isBalanced = false;
     }
     unbalancedEntities.push({
@@ -217,4 +228,44 @@ export function getLedgerBalanceInfo(
     unbalancedEntities,
     balanceSum: ledgerBalanceSum,
   };
+}
+
+function getCounterAccountProtoId(counterAccountProto?: CounterAccountProto): string | null {
+  if (!counterAccountProto) {
+    return null;
+  }
+
+  return typeof counterAccountProto === 'string' ? counterAccountProto : counterAccountProto.id;
+}
+
+export function ledgerProtoToRecordsConverter(
+  records: LedgerProto[],
+): IGetLedgerRecordsByChargesIdsResult[] {
+  return records.map(record => {
+    const adjustedRecord: IGetLedgerRecordsByChargesIdsResult = {
+      charge_id: record.chargeId,
+      created_at: new Date(),
+      credit_entity1: getCounterAccountProtoId(record.creditAccountID1),
+      credit_entity2: getCounterAccountProtoId(record.creditAccountID2),
+      credit_foreign_amount1: record.creditAmount1?.toString() ?? null,
+      credit_foreign_amount2: record.creditAmount2?.toString() ?? null,
+      credit_local_amount1: record.localCurrencyCreditAmount1?.toString(),
+      credit_local_amount2: record.localCurrencyCreditAmount2?.toString() ?? null,
+      currency: record.currency,
+      debit_entity1: getCounterAccountProtoId(record.debitAccountID1),
+      debit_entity2: getCounterAccountProtoId(record.debitAccountID2),
+      debit_foreign_amount1: record.debitAmount1?.toString() ?? null,
+      debit_foreign_amount2: record.debitAmount2?.toString() ?? null,
+      debit_local_amount1: record.localCurrencyDebitAmount1?.toString(),
+      debit_local_amount2: record.localCurrencyDebitAmount2?.toString() ?? null,
+      description: record.description ?? null,
+      id: EMPTY_UUID,
+      invoice_date: record.invoiceDate,
+      owner_id: record.ownerId ?? null,
+      reference1: record.reference1 ?? null,
+      updated_at: new Date(),
+      value_date: record.valueDate,
+    };
+    return adjustedRecord;
+  });
 }

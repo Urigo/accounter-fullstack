@@ -29,9 +29,11 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id
-    metadata {
-      transactionsCount
-      documentsCount
+    ... on Charge @defer {
+      metadata {
+        transactionsCount
+        documentsCount
+      }
     }
     ...AllChargesAccountantApprovalFields
     ...AllChargesAmountFields
@@ -101,6 +103,10 @@ export const AllChargesRow = ({
       setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, updatedCharge));
     }
   }, [newData]);
+
+  useEffect(() => {
+    setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, data));
+  }, [data]);
 
   useEffect(() => {
     setOpened(isAllOpened);

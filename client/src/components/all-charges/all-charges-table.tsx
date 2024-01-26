@@ -8,8 +8,10 @@ import { AllChargesRow } from './all-charges-row';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
-    owner {
-      id
+    ... on Charge @defer {
+      owner {
+        id
+      }
     }
     ...AllChargesRowFields
   }
@@ -67,7 +69,7 @@ export const AllChargesTable = ({
         </tr>
       </thead>
       <tbody>
-        {charges.map(charge => (
+        {charges?.map(charge => (
           <AllChargesRow
             key={charge.id}
             data={charge}

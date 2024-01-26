@@ -24,6 +24,7 @@
     "@accounter-toolkit/pcn874-generator": "0.3.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
+    "@graphql-yoga/plugin-defer-stream": "3.1.1",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "cloudinary": "1.41.3",

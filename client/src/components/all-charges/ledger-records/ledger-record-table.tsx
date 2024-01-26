@@ -1,37 +1,30 @@
 import { ReactElement } from 'react';
 import { TableLedgerRecordsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AccountDetails, GeneralDate } from './cells';
+import { EMPTY_UUID } from '../../../helpers/consts.js';
+import { RegenerateLedgerRecordsButton } from '../../common/index.js';
+import { LedgerRecordRow } from './ledger-record-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
-    ledgerRecords {
-      __typename
-      ... on LedgerRecords {
+    id
+    ... on Charge @defer {
+      ledger {
+        __typename
         records {
           id
-          ...LedgerRecordsDateFields
-          ...LedgerRecordsCreditAccountFields
-          ...LedgerRecordsDebitAccountFields
-          ...LedgerRecordsAccountDetailsFields
-          ...LedgerRecordsGeneralDateFields
-          creditAmount1 {
-            formatted
-          }
-          localCurrencyCreditAmount1 {
-            formatted
-          }
-          debitAccount1 {
-            id
-            name
-          }
-          description
-          reference1
+          ...TableLedgerRecordsRowFields
         }
-      }
-      ... on CommonError {
-        message
+        ... on Ledger @defer {
+          validate {
+            matches
+            differences {
+              id
+              ...TableLedgerRecordsRowFields
+            }
+          }
+        }
       }
     }
     # TODO(Gil): Next part is temporary, until we have a new ledger perfected
@@ -64,14 +57,11 @@ type Props = {
 };
 
 export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
-  const { ledgerRecords: data, oldLedger } = getFragmentData(
-    TableLedgerRecordsFieldsFragmentDoc,
-    ledgerRecordsProps,
-  );
-
-  if (!data || data.__typename === 'CommonError') {
-    return <div>{data?.message}</div>;
-  }
+  const {
+    ledger: data,
+    oldLedger,
+    id,
+  } = getFragmentData(TableLedgerRecordsFieldsFragmentDoc, ledgerRecordsProps);
 
   return (
     <table className="w-full h-full">
@@ -85,21 +75,25 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
           <th>Credit Account2</th>
           <th>Details</th>
           <th>Ref1</th>
+          <th />
         </tr>
       </thead>
       <tbody>
-        {data.records.map(record => (
-          <tr key={record.id}>
-            <GeneralDate data={record} type={1} />
-            <GeneralDate data={record} type={2} />
-            <AccountDetails data={record} cred={false} first />
-            <AccountDetails data={record} cred first />
-            <AccountDetails data={record} cred={false} first={false} />
-            <AccountDetails data={record} cred first={false} />
-            <td>{record.description}</td>
-            <td>{record.reference1}</td>
-          </tr>
+        {data?.records?.map(record => (
+          <LedgerRecordRow
+            key={record.id}
+            ledgerRecordProps={record}
+            matchingStatus={
+              data.validate?.matches?.some(id => id === record.id) ? undefined : 'Diff'
+            }
+            diffs={data.validate?.differences?.find(diffRecord => diffRecord.id === record.id)}
+          />
         ))}
+        {data?.validate?.differences
+          ?.filter(record => record.id === EMPTY_UUID)
+          .map(record => (
+            <LedgerRecordRow key={record.id} ledgerRecordProps={record} matchingStatus="New" />
+          ))}
         {/* TODO(Gil): Next part is temporary, until we have a new ledger perfected */}
         <tr>
           <td colSpan={8} />
