@@ -11,17 +11,17 @@ import type {
 
 const getAllSortCodes = sql<IGetAllSortCodesQuery>`
   SELECT *
-  FROM accounter_schema.hash_sort_codes`;
+  FROM accounter_schema.sort_codes`;
 
 const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   SELECT sc.*
-  FROM accounter_schema.hash_sort_codes sc
+  FROM accounter_schema.sort_codes sc
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
 
 const getSortCodesByFinancialEntitiesIds = sql<IGetSortCodesByFinancialEntitiesIdsQuery>`
   SELECT fe.id as financial_entity_id, sc.*
   FROM accounter_schema.financial_entities fe
-  LEFT JOIN accounter_schema.hash_sort_codes sc
+  LEFT JOIN accounter_schema.sort_codes sc
     ON fe.sort_code = sc.key
   WHERE sc.key IS NOT null
     AND ($isFinancialEntitiesIDs = 0 OR fe.id IN $$financialEntitiesIDs);`;
