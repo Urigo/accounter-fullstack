@@ -30,7 +30,7 @@ export async function createAndConnectStore(options: { connectionString: string;
 
       // Upsert the function
       await pg.none(`
-      CREATE OR REPLACE FUNCTION ${tableName}_insert_fn() RETURNS TRIGGER
+      CREATE OR REPLACE FUNCTION ${options.schema}.${tableName}_insert_fn() RETURNS TRIGGER
       LANGUAGE plpgsql
       AS $$
         DECLARE
@@ -131,7 +131,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           ON ${options.schema}.${tableName}
           FOR EACH ROW
         EXECUTE
-          PROCEDURE ${tableName}_insert_fn ();
+          PROCEDURE ${options.schema}.${tableName}_insert_fn ();
       `);
     },
     async ensureTable() {
