@@ -3,41 +3,34 @@
   "type": "module",
   "license": "MIT",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "client",
-      "server",
-      "old-accounter",
-      "etherscan-scrapper",
-      "kraken-scrapper",
-      "etana-scrapper"
-    ]
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "engines": {
     "node": "21.3.0"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
-    "client:build": "yarn --cwd client build",
-    "client:dev": "yarn --cwd client dev",
+    "build": "concurrently \"yarn packages/client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
+    "client:build": "yarn --cwd packages/client build",
+    "client:dev": "yarn --cwd packages/client dev",
     "codegen": "graphql-codegen --config codegen.yml",
     "deploy": "git push heroku master",
     "dev": "yarn --cwd old-accounter dev",
-    "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd server sqlgen\"",
+    "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd packages/server sqlgen\"",
     "get": "yarn --cwd old-accounter get",
-    "graphql:coverage": "yarn graphql-inspector coverage './client/src/**/*.{ts,tsx}' './schema.graphql'",
-    "graphql:validate": "yarn graphql-inspector validate './client/src/**/*.{ts,tsx}' './schema.graphql'",
+    "graphql:coverage": "yarn graphql-inspector coverage './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
+    "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --ignore-path .gitignore .",
     "month": "yarn --cwd old-accounter month",
     "old-accounter:build": "yarn --cwd old-accounter build",
     "old-accounterdev": "yarn --cwd old-accounter dev",
     "postinstall": "patch-package",
-    "precodegen": "rimraf schema.graphql server/**/__generated__/types.ts client/src/gql/",
+    "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
     "scrape": "yarn --cwd old-accounter scrape",
-    "server:build": "yarn --cwd server build",
-    "server:dev": "yarn --cwd server dev",
+    "server:build": "yarn --cwd packages/server build",
+    "server:dev": "yarn --cwd packages/server dev",
     "start": "yarn --cwd old-accounter start",
     "test": "vitest"
   },
