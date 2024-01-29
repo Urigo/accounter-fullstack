@@ -30,8 +30,8 @@
     "strict": true,
     "jsx": "preserve",
     "paths": {
-      "@client": ["client/src/index.ts"],
-      "@server": ["server/src/index.ts"]
+      "@client": ["packages/client/src/index.ts"],
+      "@server": ["packages/server/src/index.ts"]
     }
   },
   "exclude": ["**/node_modules", "**/dist"]
