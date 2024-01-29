@@ -29,7 +29,10 @@ export type MigrationExecutor = {
 
 const seedMigrationsIfNotExists = async (args: { connection: DatabaseTransactionConnection }) => {
   await args.connection.query(sql`
-    CREATE TABLE IF NOT EXISTS "migration" (
+    CREATE SCHEMA IF NOT EXISTS accounter_schema;
+  `);
+  await args.connection.query(sql`
+    CREATE TABLE IF NOT EXISTS accounter_schema.migration (
       "name" text NOT NULL,
       "hash" text NOT NULL,
       "date" timestamptz NOT NULL DEFAULT now(),
@@ -42,7 +45,7 @@ async function runMigration(connection: CommonQueryMethods, migration: Migration
   const exists = await connection.maybeOneFirst(sql`
     SELECT true
     FROM
-      "migration"
+      accounter_schema.migration
     WHERE
       "name" = ${migration.name}
   `);
@@ -70,7 +73,7 @@ async function runMigration(connection: CommonQueryMethods, migration: Migration
 
   // TODO: hash verification (but tbh nobody cares about that)
   await connection.query(sql`
-    INSERT INTO "migration" ("name", "hash")
+    INSERT INTO accounter_schema.migration ("name", "hash")
     VALUES (${migration.name}, ${migration.name});
   `);
   const finishTime = Date.now();

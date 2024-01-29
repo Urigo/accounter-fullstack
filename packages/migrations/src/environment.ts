@@ -1,7 +1,6 @@
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
 
- 
 if (!process.env.RELEASE) {
   dotenv({
     debug: true,
@@ -41,9 +40,8 @@ const PostgresModel = zod.object({
 });
 
 const configs = {
-   
   base: EnvironmentModel.safeParse(process.env),
-   
+
   postgres: PostgresModel.safeParse(process.env),
 };
 
