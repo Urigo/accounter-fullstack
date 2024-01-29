@@ -5,3 +5,4 @@ dist/
 **/gql/
 .idea/
 schema.graphql
+docker/.*

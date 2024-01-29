@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "@accounter/client",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",

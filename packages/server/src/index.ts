@@ -8,7 +8,7 @@ import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { createGraphQLApp } from './modules-app.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 
-config({ path: '../.env' });
+config({ path: '../../.env' });
 
 async function main() {
   const application = await createGraphQLApp();
