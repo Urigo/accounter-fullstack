@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { tags as tagNames } from '@modules/tags/types.js';
+import { tags_enum } from '@modules/tags/types.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -124,7 +124,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             await injector.get(TagsProvider).clearChargeTags({ chargeId, tagNames: tagsToRemove });
           }
           // add new tags
-          for (const tag of newTags as tagNames[]) {
+          for (const tag of newTags as tags_enum[]) {
             if (!pastTags.includes(tag)) {
               await injector
                 .get(TagsProvider)

@@ -3,19 +3,23 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2024-01-29T13-15-23.initial.sql',
   run: ({ sql }) => sql`
-    -- create types
-    create type public.currency as enum ('ILS', 'USD', 'EUR', 'GBP', 'USDC', 'GRT', 'ETH');
-
-    create type public.document_type as enum ('INVOICE', 'RECEIPT', 'INVOICE_RECEIPT', 'PROFORMA', 'UNPROCESSED', 'CREDIT_INVOICE');
-
-    create type public.tags as enum ('Amazon Web Services EMEA SARL', 'beauty', 'business', 'clothes', 'Clothes', 'communications', 'computer', 'computers', 'conversion', 'creditcard', 'dotan', 'else', 'family', 'financial', 'financil', 'food', 'friends', 'fun', 'health', 'house', 'income', 'investments', 'learn', 'learning', 'love', 'lover', 'mistake', 'music', 'sports', 'stupid', 'stupidity', 'transportation', 'salary', 'Business Trip');
-
-    create type public.business_trip_transaction_type as enum ('FLIGHT', 'ACCOMMODATION', 'TRAVEL_AND_SUBSISTENCE', 'OTHER');
-
-
     -- create accounter schema 
 
-    CREATE SCHEMA accounter_schema;
+    CREATE SCHEMA IF NOT EXISTS accounter_schema;
+
+
+    -- create types
+
+    create type accounter_schema.currency as enum ('ILS', 'USD', 'EUR', 'GBP', 'USDC', 'GRT', 'ETH');
+
+    create type accounter_schema.document_type as enum ('INVOICE', 'RECEIPT', 'INVOICE_RECEIPT', 'PROFORMA', 'UNPROCESSED', 'CREDIT_INVOICE');
+
+    create type accounter_schema.tags_enum as enum ('Amazon Web Services EMEA SARL', 'beauty', 'business', 'clothes', 'Clothes', 'communications', 'computer', 'computers', 'conversion', 'creditcard', 'dotan', 'else', 'family', 'financial', 'financil', 'food', 'friends', 'fun', 'health', 'house', 'income', 'investments', 'learn', 'learning', 'love', 'lover', 'mistake', 'music', 'sports', 'stupid', 'stupidity', 'transportation', 'salary', 'Business Trip');
+
+    create type accounter_schema.business_trip_transaction_type as enum ('FLIGHT', 'ACCOMMODATION', 'TRAVEL_AND_SUBSISTENCE', 'OTHER');
+
+
+    -- create tables
 
     create table accounter_schema.exchange_rates
     (
@@ -776,7 +780,7 @@ export default {
             constraint crypto_exchange_rates_crypto_currencies_symbol_fk
                 references accounter_schema.crypto_currencies,
         value       numeric                          not null,
-        against     currency default 'USD'::currency not null,
+        against     accounter_schema.currency default 'USD'::accounter_schema.currency not null,
         sample_date timestamp                        not null,
         constraint crypto_exchange_rates_pk_2
             primary key (date, coin_symbol, against),
@@ -933,13 +937,13 @@ export default {
                 primary key,
         image_url     text,
         file_url      text,
-        type          document_type            default 'UNPROCESSED'::document_type not null,
+        type          accounter_schema.document_type            default 'UNPROCESSED'::accounter_schema.document_type not null,
         created_at    timestamp with time zone default now()                        not null,
         modified_at   timestamp with time zone default now()                        not null,
         serial_number text,
         date          date,
         total_amount  double precision,
-        currency_code currency,
+        currency_code accounter_schema.currency,
         vat_amount    double precision,
         debtor        text,
         creditor      text,
@@ -986,7 +990,7 @@ export default {
             constraint transactions_transactions_raw_list_id_fk
                 references accounter_schema.transactions_raw_list,
         source_description text,
-        currency           currency                            not null,
+        currency           accounter_schema.currency           not null,
         event_date         date                                not null,
         debit_date         date,
         amount             numeric                             not null,
@@ -1021,7 +1025,7 @@ export default {
         charge_id uuid not null
             constraint tags_charges_id_fk
                 references accounter_schema.charges,
-        tag_name  tags not null,
+        tag_name  accounter_schema.tags_enum not null,
         constraint tags_pk
             primary key (charge_id, tag_name)
     );
@@ -1093,10 +1097,10 @@ export default {
         business_trip_id     uuid                              not null
             constraint business_trips_transactions_business_trips_id_fk
                 references accounter_schema.business_trips (id),
-        category             business_trip_transaction_type,
+        category             accounter_schema.business_trip_transaction_type,
         date                 date,
         amount               numeric,
-        currency             currency,
+        currency             accounter_schema.currency,
         employee_business_id uuid
             constraint business_trips_transactions_businesses_id_fk
                 references accounter_schema.businesses,
@@ -1218,7 +1222,7 @@ export default {
                 references accounter_schema.financial_entities,
         credit_foreign_amount2 numeric,
         credit_local_amount2   numeric,
-        currency               currency                            not null,
+        currency               accounter_schema.currency           not null,
         invoice_date           date                                not null,
         value_date             date                                not null,
         description            text,
@@ -1240,7 +1244,7 @@ export default {
                               t.business_id,
                               t.currency,
                               CASE
-                                  WHEN ot.origin = 'ISRACARD'::text AND t.currency = 'ILS'::currency AND
+                                  WHEN ot.origin = 'ISRACARD'::text AND t.currency = 'ILS'::accounter_schema.currency AND
                                       t.debit_date IS NULL THEN dd.event_date
                                   ELSE t.debit_date
                                   END             AS debit_date,
@@ -1379,7 +1383,7 @@ export default {
           c.owner_id,
           c.is_conversion,
           c.is_property,
-          'salary'::tags = ANY (tags_table.tags_array)                                               AS is_salary,
+          'salary'::accounter_schema.tags_enum = ANY (tags_table.tags_array)                                               AS is_salary,
           c.accountant_reviewed,
           c.user_description,
           c.created_at,
@@ -1393,7 +1397,7 @@ export default {
           t.event_amount                                                                             AS transactions_event_amount,
           CASE
               WHEN array_length(t.currency_array, 1) = 1 THEN t.currency_array[1]
-              ELSE NULL::currency
+              ELSE NULL::accounter_schema.currency
               END                                                                                    AS transactions_currency,
           t.transactions_count,
           t.invalid_transactions,
@@ -1403,7 +1407,7 @@ export default {
           COALESCE(d.invoice_vat_amount, d.receipt_vat_amount)                                       AS documents_vat_amount,
           CASE
               WHEN array_length(d.currency_array, 1) = 1 THEN d.currency_array[1]
-              ELSE NULL::currency
+              ELSE NULL::accounter_schema.currency
               END                                                                                    AS documents_currency,
           d.invoices_count,
           d.receipts_count,
@@ -1432,54 +1436,54 @@ export default {
                         GROUP BY extended_transactions.charge_id) t ON t.charge_id = c.id
             LEFT JOIN (SELECT documents.charge_id_new,
                               min(documents.date) FILTER (WHERE documents.type = ANY
-                                                                (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type, 'RECEIPT'::document_type])) AS min_event_date,
+                                                                (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type])) AS min_event_date,
                               max(documents.date) FILTER (WHERE documents.type = ANY
-                                                                (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type, 'RECEIPT'::document_type])) AS max_event_date,
+                                                                (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type])) AS max_event_date,
                               sum(documents.total_amount *
                                   CASE
                                       WHEN documents.creditor_id = charges.owner_id THEN 1
                                       ELSE '-1'::integer
                                       END::double precision) FILTER (WHERE businesses.can_settle_with_receipt = true AND
                                                                             (documents.type = ANY
-                                                                            (ARRAY ['RECEIPT'::document_type, 'INVOICE_RECEIPT'::document_type])))              AS receipt_event_amount,
+                                                                            (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])))              AS receipt_event_amount,
                               sum(documents.total_amount *
                                   CASE
                                       WHEN documents.creditor_id = charges.owner_id THEN 1
                                       ELSE '-1'::integer
                                       END::double precision) FILTER (WHERE documents.type = ANY
-                                                                            (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type]))                AS invoice_event_amount,
+                                                                            (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type]))                AS invoice_event_amount,
                               sum(documents.vat_amount *
                                   CASE
                                       WHEN documents.creditor_id = charges.owner_id THEN 1
                                       ELSE '-1'::integer
                                       END::double precision) FILTER (WHERE businesses.can_settle_with_receipt = true AND
                                                                             (documents.type = ANY
-                                                                            (ARRAY ['RECEIPT'::document_type, 'INVOICE_RECEIPT'::document_type])))              AS receipt_vat_amount,
+                                                                            (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])))              AS receipt_vat_amount,
                               sum(documents.vat_amount *
                                   CASE
                                       WHEN documents.creditor_id = charges.owner_id THEN 1
                                       ELSE '-1'::integer
                                       END::double precision) FILTER (WHERE documents.type = ANY
-                                                                            (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type]))                AS invoice_vat_amount,
+                                                                            (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type]))                AS invoice_vat_amount,
                               count(*) FILTER (WHERE documents.type = ANY
-                                                      (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type]))                                      AS invoices_count,
+                                                      (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type]))                                      AS invoices_count,
                               count(*) FILTER (WHERE documents.type = ANY
-                                                      (ARRAY ['RECEIPT'::document_type, 'INVOICE_RECEIPT'::document_type]))                                      AS receipts_count,
+                                                      (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type]))                                      AS receipts_count,
                               count(*)                                                                                                                          AS documents_count,
                               count(*) FILTER (WHERE (documents.type = ANY
-                                                      (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type, 'RECEIPT'::document_type])) AND
+                                                      (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type])) AND
                                                       (documents.debtor_id IS NULL OR documents.creditor_id IS NULL OR
                                                       documents.date IS NULL OR documents.serial_number IS NULL OR
                                                       documents.vat_amount IS NULL OR documents.total_amount IS NULL OR
                                                       documents.charge_id_new IS NULL OR
                                                       documents.currency_code IS NULL) OR
-                                                      documents.type = 'UNPROCESSED'::document_type) >
+                                                      documents.type = 'UNPROCESSED'::accounter_schema.document_type) >
                               0                                                                                                                                 AS invalid_documents,
                               array_agg(documents.currency_code) FILTER (WHERE
                                   businesses.can_settle_with_receipt = true AND (documents.type = ANY
-                                                                                  (ARRAY ['RECEIPT'::document_type, 'INVOICE_RECEIPT'::document_type])) OR
+                                                                                  (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])) OR
                                   (documents.type = ANY
-                                    (ARRAY ['INVOICE'::document_type, 'INVOICE_RECEIPT'::document_type])))                                                       AS currency_array
+                                    (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])))                                                       AS currency_array
                         FROM accounter_schema.documents
                                 LEFT JOIN accounter_schema.charges ON documents.charge_id_new = charges.id
                                 LEFT JOIN accounter_schema.businesses ON documents.creditor_id = charges.owner_id AND
@@ -1642,7 +1646,7 @@ export default {
                           WHEN NEW.currency_id = 'GBP' THEN 'GBP'
                           -- use ILS as default:
                           ELSE 'ILS' END
-                    ) as currency
+                    ) as accounter_schema.currency
                 ),
                 CASE
                     WHEN NEW.full_purchase_date IS NULL THEN to_date(NEW.full_purchase_date_outbound, 'DD/MM/YYYY')
@@ -2007,11 +2011,11 @@ export default {
         charge_id_var UUID = NULL;
         transaction_amount NUMERIC;
         fee_amount NUMERIC;
-        currency_code CURRENCY;
+        currency_code accounter_schema.currency;
     BEGIN
         transaction_amount := REPLACE(RIGHT(NEW.swift_currency_instructed_amount_33b, LENGTH(NEW.swift_currency_instructed_amount_33b) - 3), ',', '.')::NUMERIC;
         fee_amount := transaction_amount - REPLACE(RIGHT(NEW.swift_value_date_currency_amount_32a, LENGTH(NEW.swift_value_date_currency_amount_32a) - 9), ',', '.')::NUMERIC;
-        currency_code := LEFT(NEW.swift_currency_instructed_amount_33b, 3)::CURRENCY;
+        currency_code := LEFT(NEW.swift_currency_instructed_amount_33b, 3)::accounter_schema.currency;
 
         IF (fee_amount > 0) THEN
             -- Create merged raw transactions record:
