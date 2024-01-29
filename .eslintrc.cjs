@@ -1,7 +1,7 @@
 const { dirname } = require('node:path');
 
-const MODULES_PATH = 'server/src/modules/*/typeDefs/*.graphql.ts';
-const OPERATIONS_PATH = 'client/**/*.{,c,m}{j,t}s{,x}';
+const MODULES_PATH = 'packages/server/src/modules/*/typeDefs/*.graphql.ts';
+const OPERATIONS_PATH = 'packages/client/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
   extends: ['@theguild'],
@@ -105,7 +105,7 @@ module.exports = {
     },
   ],
   ignorePatterns: [
-    'old-accounter/**',
+    'packages/old-accounter/**',
     '**/__generated__/**',
     'schema.graphql',
     '**/__tests__/**',
