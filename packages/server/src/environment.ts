@@ -37,8 +37,27 @@ const PostgresModel = zod.object({
   POSTGRES_PASSWORD: zod.string(),
 });
 
+const CloudinaryModel = zod.union([
+  zod.object({
+    CLOUDINARY_NAME: zod.string(),
+    CLOUDINARY_API_KEY: NumberFromString,
+    CLOUDINARY_API_SECRET: zod.string(),
+  }),
+  zod.object({}),
+]);
+
+const GreenInvoiceModel = zod.union([
+  zod.object({
+    GREEN_INVOICE_ID: zod.string(),
+    GREEN_INVOICE_SECRET: zod.string(),
+  }),
+  zod.object({}),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
+  cloudinary: CloudinaryModel.safeParse(process.env),
+  greenInvoice: GreenInvoiceModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -72,5 +91,14 @@ export const env = {
     user: postgres.POSTGRES_USER,
     password: postgres.POSTGRES_PASSWORD,
     ssl: postgres.POSTGRES_SSL === '1',
+  },
+  cloudinary: {
+    name: process.env.CLOUDINARY_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+  },
+  greenInvoice: {
+    id: process.env.GREEN_INVOICE_ID,
+    secret: process.env.GREEN_INVOICE_SECRET,
   },
 } as const;

@@ -1,6 +1,9 @@
+import type { env } from 'environment.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
 import type { Currency } from '@shared/gql-types';
+
+export type Environment = typeof env;
 
 type CurrencySum = {
   credit: number;
