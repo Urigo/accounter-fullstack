@@ -1,0 +1,20 @@
+{
+  "transforms": [
+    {
+      "mode": "sql",
+      "include": "**/*.sql",
+      "emitTemplate": "src/__generated__/{{name}}.types.ts"
+    },
+    {
+      "mode": "ts",
+      "include": "**/providers/*.provider.ts",
+      "emitTemplate": "{{dir}}/../__generated__/{{name.replace('.provider','')}}.types.ts"
+    }
+  ],
+  "srcDir": "./src/",
+  "failOnError": true,
+  "camelCaseColumnNames": false,
+  "dbUrl": "url.com",
+  "db": {
+  }
+}

@@ -1,6 +1,11 @@
 name: CI
 env:
   NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
 on:
   pull_request:
     branches:
@@ -34,9 +39,20 @@ jobs:
 
       - name: Install Dependencies
         run: yarn
+      
+      - name: run containers
+        timeout-minutes: 10
+        run: |
+          source docker/.ci.env
+          docker compose \
+            -f docker/docker-compose.dev.yml \
+            up -d --wait
 
-      - name: Generate
-        run: yarn codegen # TODO: replace with 'yarn generate' after local DB is implemented
+      - name: Generate codegen
+        run: yarn codegen
+
+      - name: Generate pgTyped
+        run: yarn --cwd packages/server sqlgen --config ./docker/pgconfig.json
 
       - name: Build Packages
         run: yarn build
