@@ -15,6 +15,5 @@
   "failOnError": true,
   "camelCaseColumnNames": false,
   "dbUrl": "url.com",
-  "db": {
-  }
+  "db": {}
 }
