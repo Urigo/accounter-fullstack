@@ -47,7 +47,7 @@ jobs:
           docker compose \
             -f docker/docker-compose.dev.yml \
             up -d --wait
-      
+
       - name: run DB migrations
         run: yarn --cwd packages/migrations migrate up
 
