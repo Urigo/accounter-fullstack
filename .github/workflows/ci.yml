@@ -47,12 +47,15 @@ jobs:
           docker compose \
             -f docker/docker-compose.dev.yml \
             up -d --wait
+      
+      - name: run DB migrations
+        run: yarn --cwd packages/migrations migrate up
 
       - name: Generate codegen
         run: yarn codegen
 
       - name: Generate pgTyped
-        run: yarn --cwd packages/server pgtyped --config ./docker/pgconfig.json
+        run: yarn --cwd packages/migrations db:init
 
       - name: Build Packages
         run: yarn build
