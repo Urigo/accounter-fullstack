@@ -13,7 +13,7 @@
     "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
     "client:build": "yarn --cwd packages/client build",
     "client:dev": "yarn --cwd packages/client dev",
-    "codegen": "graphql-codegen --config codegen.yml",
+    "codegen": "graphql-codegen",
     "deploy": "git push heroku master",
     "dev": "yarn --cwd packages/old-accounter dev",
     "generate": "concurrently -c blue,green -n codegen,sqlgen \"yarn codegen\" \"yarn --cwd packages/server sqlgen\"",

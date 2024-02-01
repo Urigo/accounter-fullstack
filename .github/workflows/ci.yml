@@ -55,7 +55,7 @@ jobs:
         run: yarn codegen
 
       - name: Generate pgTyped
-        run: yarn --cwd packages/server pgtyped --config ./docker/pgconfig.json
+        run: yarn pgtyped -c docker/pgconfig.json
 
       - name: Build Packages
         run: yarn build

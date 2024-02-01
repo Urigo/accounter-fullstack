@@ -14,7 +14,6 @@
   "srcDir": "./src/",
   "failOnError": true,
   "camelCaseColumnNames": false,
-  "dbUrl": "url.com",
   "db": {
     "ssl": {
       "rejectUnauthorized": false
