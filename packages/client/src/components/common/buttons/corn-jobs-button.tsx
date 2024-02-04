@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { ArrowBigRightLines } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -10,12 +10,18 @@ export function CornJobsButton(): ReactElement {
 
   const { fetching, executeJobs } = useCornJobs();
 
+  const onExecute = useCallback(() => {
+    executeJobs().then(() => {
+      close();
+    });
+  }, [executeJobs, close]);
+
   return (
     <>
       <ConfirmationModal
         opened={opened}
         onClose={close}
-        onConfirm={executeJobs}
+        onConfirm={onExecute}
         title="Are you sure you want to manually execute corn jobs?"
       />
       <Tooltip label="Execute corn jobs">
