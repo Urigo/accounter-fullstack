@@ -8,6 +8,7 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
   fragment AllChargesDateFields on Charge {
     id
     minEventDate
+    minDebitDate
     minDocumentsDate
   }
 `;
@@ -18,11 +19,14 @@ type Props = {
 
 export const DateCell = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
-  const { minEventDate, minDocumentsDate } = charge;
+  const { minDebitDate, minEventDate, minDocumentsDate } = charge;
+  const hasDate = minDebitDate || minEventDate || minDocumentsDate;
 
   return (
     <td>
-      <div>{minEventDate && format(new Date(minDocumentsDate || minEventDate), 'dd/MM/yy')}</div>
+      <div>
+        {hasDate && format(new Date(minDocumentsDate || minDebitDate || minEventDate), 'dd/MM/yy')}
+      </div>
     </td>
   );
 };
