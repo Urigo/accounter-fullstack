@@ -28,8 +28,8 @@ export const Description = ({ data }: Props): ReactElement => {
   const isError = charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
   const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
   const { userDescription, id: chargeId } = charge;
-  const cellText =
-    userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing';
+  let cellText = userDescription?.trim();
+  cellText ||= charge.missingInfoSuggestions?.description ?? 'Missing';
 
   const { updateCharge, fetching } = useUpdateCharge();
 
