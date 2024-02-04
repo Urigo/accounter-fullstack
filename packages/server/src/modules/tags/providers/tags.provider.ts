@@ -37,18 +37,22 @@ export class TagsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public addTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags ADD VALUE $1::TEXT;', [params.tagName]);
-  }
-
-  public updateTagCategory(params: { prevTagName: string; newTagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags RENAME VALUE $1::TEXT TO $2::TEXT;', [
-      params.prevTagName,
-      params.newTagName,
+    return this.dbProvider.query('ALTER TYPE accounter_schema.tags_enum ADD VALUE $1::TEXT;', [
+      params.tagName,
     ]);
   }
 
+  public updateTagCategory(params: { prevTagName: string; newTagName: string }) {
+    return this.dbProvider.query(
+      'ALTER TYPE accounter_schema.tags_enum RENAME VALUE $1::TEXT TO $2::TEXT;',
+      [params.prevTagName, params.newTagName],
+    );
+  }
+
   public removeTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE tags DROP ATTRIBUTE $1::TEXT;', [params.tagName]);
+    return this.dbProvider.query('ALTER TYPE accounter_schema.tags_enum DROP ATTRIBUTE $1::TEXT;', [
+      params.tagName,
+    ]);
   }
 
   private async batchTagsByChargeID(params: readonly string[]) {
@@ -75,6 +79,8 @@ export class TagsProvider {
   }
 
   public getAllTags() {
-    return this.dbProvider.query<{ unnest: string }>('SELECT unnest(enum_range(NULL::tags));');
+    return this.dbProvider.query<{ unnest: string }>(
+      'SELECT unnest(enum_range(NULL::accounter_schema.tags_enum));',
+    );
   }
 }
