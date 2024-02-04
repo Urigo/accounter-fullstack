@@ -95,7 +95,7 @@ export async function createAndConnectStore(options: { connectionString: string;
                     THEN (new.fee_tx_id)
                   END)
               ),
-              NEW.currency::currency,
+              NEW.currency::${options.schema}.currency,
               NEW.time::text::date,
               NEW.time::text::date,
               new.amount,

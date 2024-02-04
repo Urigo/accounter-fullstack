@@ -67,7 +67,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             charge_id_var,
             merged_id,
             '',
-            NEW.currency::currency,
+            NEW.currency::${options.schema}.currency,
             NEW.value_date::text::date,
             NEW.value_date::text::date,
             (CASE
@@ -85,7 +85,7 @@ export async function createAndConnectStore(options: { connectionString: string;
               charge_id_var,
               merged_id,
               CONCAT_WS(' ', 'Fee:', NEW.id::text),
-              'ETH'::currency,
+              'ETH'::${options.schema}.currency,
               NEW.value_date::text::date,
               NEW.value_date::text::date,
               (NEW.gas_fee * -1),
