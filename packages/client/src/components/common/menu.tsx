@@ -1,6 +1,6 @@
 import { ReactElement, ReactNode } from 'react';
 import { Link, useMatch, useResolvedPath } from 'react-router-dom';
-import { FetchIncomeDocumentsButton, Icon } from './index.js';
+import { CornJobsButton, FetchIncomeDocumentsButton, Icon } from './index.js';
 
 type Link = {
   label: string;
@@ -61,6 +61,7 @@ export const NavBar = (): ReactElement => {
             </CustomLink>
           ))}
           <FetchIncomeDocumentsButton />
+          <CornJobsButton />
         </nav>
       </div>
     </header>
