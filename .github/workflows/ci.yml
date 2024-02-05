@@ -67,27 +67,6 @@ jobs:
           max_attempts: 3
           command: yarn test
 
-  # esm:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Setup env
-  #       uses: the-guild-org/shared-config/setup@main
-  #       with:
-  #         nodeVersion: 21.3.0
-  #         packageManager: yarn
-
-  #     - name: Generate
-  #       run: yarn generate
-
-  #     - name: Build Packages
-  #       run: yarn build
-
-  #     - name: Run Tests
-  #       run: yarn test
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
