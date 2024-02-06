@@ -1,27 +1,27 @@
 import { gql, testkit } from 'graphql-modules';
 import { chargesModule } from '../src/modules/charges';
 import { ChargesProvider } from '../src/modules/charges/providers/charges.provider';
+import type { IGetChargesByIdsResult } from '../src/modules/charges/types';
 import { commonModule } from '../src/modules/common';
 import { documentsModule } from '../src/modules/documents';
 import { DocumentsProvider } from '../src/modules/documents/providers/documents.provider';
+import type { IGetAllDocumentsResult } from '../src/modules/documents/types';
 import { ExchangeProvider } from '../src/modules/exchange-rates/providers/exchange.provider';
+import type { IGetExchangeRatesByDateResult } from '../src/modules/exchange-rates/types';
 import { financialAccountsModule } from '../src/modules/financial-accounts';
+import { FinancialAccountsProvider } from '../src/modules/financial-accounts/providers/financial-accounts.provider';
+import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types';
 import { financialEntitiesModule } from '../src/modules/financial-entities';
 import { BusinessesProvider } from '../src/modules/financial-entities/providers/businesses.provider';
 import { TaxCategoriesProvider } from '../src/modules/financial-entities/providers/tax-categories.provider';
-import { ledgerModule } from '../src/modules/ledger';
-import { tagsModule } from '../src/modules/tags';
-import { TransactionsProvider } from '../src/modules/transactions/providers/transactions.provider';
-import type { IGetChargesByIdsResult } from '../src/modules/charges/types';
-import type { IGetAllDocumentsResult } from '../src/modules/documents/types';
-import type { IGetExchangeRatesByDateResult } from '../src/modules/exchange-rates/types';
-import { FinancialAccountsProvider } from '../src/modules/financial-accounts/providers/financial-accounts.provider';
-import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types';
 import type {
   IGetAllTaxCategoriesResult,
   IGetBusinessesByIdsResult,
   IGetTaxCategoryByBusinessAndOwnerIDsResult,
 } from '../src/modules/financial-entities/types';
+import { ledgerModule } from '../src/modules/ledger';
+import { tagsModule } from '../src/modules/tags';
+import { TransactionsProvider } from '../src/modules/transactions/providers/transactions.provider';
 import type { IGetTransactionsByIdsResult } from '../src/modules/transactions/types';
 
 const ledgerCounterpartyHelper = (DbLedgerRecord: any, account: string) => {
@@ -419,7 +419,7 @@ const financialAccounts: Record<string, IGetAllFinancialAccountsResult> = {
     party_preferred_indication: null,
     private_business: 'business',
     service_authorization_desc: null,
-    type: 'bank'
+    type: 'bank',
   },
 };
 
