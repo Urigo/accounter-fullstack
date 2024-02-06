@@ -1,14 +1,11 @@
 import { ReactElement, ReactNode } from 'react';
-import { createClient, fetchExchange, Provider } from 'urql';
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthGuard } from './auth-guard';
+import { UrqlProvider } from './urql';
 
 const queryClient = new QueryClient();
-const client = createClient({
-  url: 'http://localhost:4000/graphql',
-  exchanges: [fetchExchange],
-});
 
 export function Providers({ children }: { children?: ReactNode }): ReactElement {
   return (
@@ -21,9 +18,11 @@ export function Providers({ children }: { children?: ReactNode }): ReactElement 
       }}
     >
       <Notifications />
-      <Provider value={client}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </Provider>
+      <AuthGuard>
+        <UrqlProvider>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </UrqlProvider>
+      </AuthGuard>
     </MantineProvider>
   );
 }

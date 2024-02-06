@@ -3133,6 +3133,13 @@
   dependencies:
     "@babel/types" "^7.20.7"
 
+"@types/basic-auth@1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@types/basic-auth/-/basic-auth-1.1.8.tgz#ea235203c89e233faae66b99e03665747576e9e9"
+  integrity sha512-dKcUeixGuZn8pBjcUrf1N7x5K6lWuKuwHHitM2IZ4vwZUDWEhhNtwCWiba8jTA9zn0GQQ+fTFkWpKx8pOU/enw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/chart.js@2.9.41":
   version "2.9.41"
   resolved "https://registry.yarnpkg.com/@types/chart.js/-/chart.js-2.9.41.tgz#4148cdc87d4f98fad44b2883271cd0fa57f05e0d"
@@ -3436,12 +3443,20 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
 
-"@urql/core@^4.2.0":
+"@urql/core@>=4.1.0", "@urql/core@^4.2.0":
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/@urql/core/-/core-4.2.3.tgz#f956e8a33c4bd055c0c5151491843dd46d737f0f"
   integrity sha512-DJ9q9+lcs5JL8DcU2J3NqsgeXYJva+1+Qt8HU94kzTPqVOIRRA7ouvy4ksUfPY+B5G2PQ+vLh+JJGyZCNXv0cg==
   dependencies:
     "@0no-co/graphql.web" "^1.0.1"
+    wonka "^6.3.2"
+
+"@urql/exchange-auth@2.1.6":
+  version "2.1.6"
+  resolved "https://registry.yarnpkg.com/@urql/exchange-auth/-/exchange-auth-2.1.6.tgz#8197dab76ac8109ad23c9cde57f834153055d024"
+  integrity sha512-snOlt7p5kYq0KnPDuXkKe2qW3/BucQZOElvTeo3svLQuk9JiNJVnm6ffQ6QGiGO+G3AtMrctnno1+X44fLtDuQ==
+  dependencies:
+    "@urql/core" ">=4.1.0"
     wonka "^6.3.2"
 
 "@vitejs/plugin-react@4.2.1":
@@ -4073,6 +4088,13 @@ base64-js@^1.3.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
   integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
+
+basic-auth@2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/basic-auth/-/basic-auth-2.0.1.tgz#b998279bf47ce38344b4f3cf916d4679bbf51e3a"
+  integrity sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==
+  dependencies:
+    safe-buffer "5.1.2"
 
 basic-ftp@^5.0.2:
   version "5.0.4"
@@ -10100,7 +10122,7 @@ safe-array-concat@^1.0.1:
     has-symbols "^1.0.3"
     isarray "^2.0.5"
 
-safe-buffer@~5.1.0, safe-buffer@~5.1.1:
+safe-buffer@5.1.2, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
   integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==

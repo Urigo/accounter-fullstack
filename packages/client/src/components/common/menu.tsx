@@ -1,6 +1,6 @@
 import { ReactElement, ReactNode } from 'react';
 import { Link, useMatch, useResolvedPath } from 'react-router-dom';
-import { CornJobsButton, FetchIncomeDocumentsButton, Icon } from './index.js';
+import { CornJobsButton, FetchIncomeDocumentsButton, Icon, LogoutButton } from './index.js';
 
 type Link = {
   label: string;
@@ -60,8 +60,11 @@ export const NavBar = (): ReactElement => {
               {link.label}
             </CustomLink>
           ))}
-          <FetchIncomeDocumentsButton />
-          <CornJobsButton />
+          <div className="flex flex-row gap-2">
+            <FetchIncomeDocumentsButton />
+            <CornJobsButton />
+            <LogoutButton />
+          </div>
         </nav>
       </div>
     </header>
