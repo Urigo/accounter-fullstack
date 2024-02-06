@@ -1,6 +1,11 @@
 name: CI
 env:
   NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
 on:
   pull_request:
     branches:
@@ -35,8 +40,22 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
-      - name: Generate
-        run: yarn codegen # TODO: replace with 'yarn generate' after local DB is implemented
+      - name: run containers
+        timeout-minutes: 10
+        run: |
+          source docker/.ci.env
+          docker compose \
+            -f docker/docker-compose.dev.yml \
+            up -d --wait
+
+      - name: run DB migrations
+        run: yarn --cwd packages/migrations db:init
+
+      - name: Generate codegen
+        run: yarn codegen
+
+      - name: Generate pgTyped
+        run: yarn pgtyped -c docker/pgconfig.json
 
       - name: Build Packages
         run: yarn build
@@ -47,27 +66,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: yarn test
-
-  # esm:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Setup env
-  #       uses: the-guild-org/shared-config/setup@main
-  #       with:
-  #         nodeVersion: 21.3.0
-  #         packageManager: yarn
-
-  #     - name: Generate
-  #       run: yarn generate
-
-  #     - name: Build Packages
-  #       run: yarn build
-
-  #     - name: Run Tests
-  #       run: yarn test
 
   lint:
     name: Lint

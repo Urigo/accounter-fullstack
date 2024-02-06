@@ -1,19 +1,20 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { config } from 'dotenv';
-import { Injectable, Scope } from 'graphql-modules';
-
-config({ path: '../.env' });
+import { Inject, Injectable, Scope } from 'graphql-modules';
+import { ENVIRONMENT } from '@shared/tokens';
+import { Environment } from '@shared/types';
 
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class CloudinaryProvider {
+  constructor(@Inject(ENVIRONMENT) private env: Environment) {}
+
   public initCloudinary() {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: this.env.cloudinary.name,
+      api_key: this.env.cloudinary.apiKey,
+      api_secret: this.env.cloudinary.apiSecret,
       secure: true,
     });
     console.debug('Cloudinary initialized');

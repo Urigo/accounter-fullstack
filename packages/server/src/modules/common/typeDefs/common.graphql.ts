@@ -12,6 +12,11 @@ export default gql`
     pong: Boolean
   }
 
+  # Directives
+
+  " Defer directive "
+  directive @defer on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
   # Scalars
 
   " Date "

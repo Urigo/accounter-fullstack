@@ -1,4 +1,4 @@
-# `@hive/migrations`
+# `@accounter/migrations`
 
 Service for creating, managing and running database migrations.
 
@@ -31,25 +31,6 @@ For postgres migrations, just create a new file (copy a previous migration).
 Then, adjust the content and migration name as desired. Make sure you import in
 [`src/run-pg-migrations.ts`](./src/run-pg-migrations.ts) and add it to the list of migrations to
 run.
-
-## ClickHouse Migrations
-
-We aim to avoid ClickHouse data migrations, as they are heavy and complicated to apply.
-
-If you need to apply ClickHouse database structure changes, please try to add and avoid changes to
-existing objects.
-
-Follow `src/clickhouse.ts` for more information and the detailed database structure.
-
-## Custom Migrations
-
-You are also able to use TypeScript to write and apply migrations.
-
-To create a custom migration, use the following command:
-
-```
-pnpm migration:create --name "do_something.mts" --allow-extension ".mts"
-```
 
 > If you need external dependencies at runtime, please make sure to add your dependencies under
 > `dependencies` in `package.json`.

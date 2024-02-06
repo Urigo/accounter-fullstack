@@ -11,12 +11,15 @@
       "emitTemplate": "{{dir}}/../__generated__/{{name.replace('.provider','')}}.types.ts"
     }
   ],
-  "srcDir": "./src/",
+  "srcDir": "./packages/server/src/",
   "failOnError": true,
   "camelCaseColumnNames": false,
   "db": {
-    "ssl": {
-      "rejectUnauthorized": false
-    }
+    "dbName": "accounter",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "ssl": false
   }
 }
