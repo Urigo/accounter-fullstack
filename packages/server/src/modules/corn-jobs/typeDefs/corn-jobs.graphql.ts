@@ -3,8 +3,8 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Mutation {
-    mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult!
-    flagForeignFeeTransactions: FlagForeignFeeTransactionsResult!
+    mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult! @auth(role: ADMIN)
+    flagForeignFeeTransactions: FlagForeignFeeTransactionsResult! @auth(role: ADMIN)
   }
 
   " result type for mergeChargesByTransactionReference "

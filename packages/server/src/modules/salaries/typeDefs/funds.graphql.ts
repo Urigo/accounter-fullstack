@@ -3,8 +3,8 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    allPensionFunds: [PensionFund!]!
-    allTrainingFunds: [TrainingFund!]!
+    allPensionFunds: [PensionFund!]! @auth(role: ACCOUNTANT)
+    allTrainingFunds: [TrainingFund!]! @auth(role: ACCOUNTANT)
   }
 
   " fund entity prototype "

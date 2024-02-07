@@ -3,13 +3,8 @@ import zod from 'zod';
 
 dotenv({
   path: '../../.env',
+  debug: process.env.RELEASE ? false : true,
 });
-
-if (!process.env.RELEASE) {
-  dotenv({
-    debug: true,
-  });
-}
 
 const isNumberString = (input: unknown) => zod.string().regex(/^\d+$/).safeParse(input).success;
 

@@ -3,14 +3,14 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    allBusinessTrips: [BusinessTrip!]!
-    businessTrip(id: UUID!): BusinessTrip
+    allBusinessTrips: [BusinessTrip!]! @auth(role: ACCOUNTANT)
+    businessTrip(id: UUID!): BusinessTrip @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
-    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge
-    insertBusinessTrip(fields: InsertBusinessTripInput!): BusinessTrip!
-    updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip!
+    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge @auth(role: ADMIN)
+    insertBusinessTrip(fields: InsertBusinessTripInput!): BusinessTrip! @auth(role: ADMIN)
+    updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip! @auth(role: ADMIN)
   }
 
   " the input for creating a business trip "

@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    vatReport(filters: VatReportFilter): VatReportResult!
+    vatReport(filters: VatReportFilter): VatReportResult! @auth(role: ACCOUNTANT)
   }
 
   " input variables for vatReportRecords "

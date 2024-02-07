@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Mutation {
-    toggleChargeAccountantApproval(chargeId: UUID!, approved: Boolean!): Boolean!
+    toggleChargeAccountantApproval(chargeId: UUID!, approved: Boolean!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " info regarding the accountant approval process "

@@ -3,8 +3,8 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    taxCategories: [TaxCategory!]!
-    taxCategoryByBusinessId(businessId: UUID!, ownerId: UUID!): TaxCategory # TODO: get owner from server context
+    taxCategories: [TaxCategory!]! @auth(role: ACCOUNTANT)
+    taxCategoryByBusinessId(businessId: UUID!, ownerId: UUID!): TaxCategory @auth(role: ACCOUNTANT) # TODO: get owner from server context
   }
 
   extend interface Charge {

@@ -13,7 +13,7 @@
     "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "cd ../.. && yarn codegen && cd server && yarn sqlgen",
-    "pgtyped": "pgtyped -c pgconfig.json",
+    "pgtyped": "DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c pgconfig.json",
     "presqlgen": "rimraf **/__generated__/*.types.ts",
     "prestart": "yarn build",
     "sqlgen": "dotenv -e ../../.env yarn pgtyped",
@@ -22,11 +22,14 @@
   "dependencies": {
     "@accounter-toolkit/green-invoice-graphql": "0.5.2",
     "@accounter-toolkit/pcn874-generator": "0.3.0",
+    "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
     "@graphql-yoga/plugin-defer-stream": "3.1.1",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
+    "basic-auth": "2.0.1",
+    "bcrypt": "5.1.1",
     "cloudinary": "1.41.3",
     "dataloader": "2.2.2",
     "date-fns": "3.3.1",
@@ -39,6 +42,8 @@
     "reflect-metadata": "0.2.1"
   },
   "devDependencies": {
+    "@types/basic-auth": "1.1.8",
+    "@types/bcrypt": "5.0.2",
     "@types/pg": "8.10.9",
     "nodemon": "3.0.3",
     "pino-pretty": "10.3.1",
