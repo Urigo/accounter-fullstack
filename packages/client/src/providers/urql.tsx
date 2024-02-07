@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { AnyVariables, createClient, fetchExchange, mapExchange, Operation, Provider } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
 import { userService } from '../services/user-service';
@@ -12,8 +12,8 @@ function initializeAuthState(): {
 }
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  const navigate = useNavigate();
   const { isLoggedIn } = userService;
+  const navigate = useNavigate();
   const loggedIn = isLoggedIn();
 
   const client = useMemo(() => {
@@ -25,16 +25,13 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
       url: 'http://localhost:4000/graphql',
       exchanges: [
         mapExchange({
-          onError(error, _operation) {
+          onResult(result) {
             const isAuthError =
-              error.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
-              error.response.status === 401;
+            result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
+            result?.error?.response.status === 401;
             if (isAuthError) {
-              userService.logout();
+              navigate('/login', {state: { message: 'You are not authorized to access this page'}})
             }
-          },
-          onOperation(operation: Operation) {
-            return operation;
           },
         }),
         authExchange(async utils => {
@@ -63,7 +60,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
         fetchExchange,
       ],
     });
-  }, [loggedIn]);
+  }, [loggedIn, navigate]);
 
   useEffect(() => {
     if (!client) {
@@ -72,5 +69,5 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
     return;
   }, [client, navigate]);
 
-  return <Provider value={client ?? {}}>{children}</Provider>;
+  return client ? <Provider value={client}>{children}</Provider> : <Navigate to="/login" state={{prevPath: window.location.pathname}} />;
 }

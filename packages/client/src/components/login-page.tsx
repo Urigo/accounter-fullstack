@@ -1,16 +1,23 @@
 import { ChangeEvent, FormEvent, ReactElement, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { type Location, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Card, Loader, PasswordInput, TextInput } from '@mantine/core';
 import { userService } from '../services/user-service';
+
+type StateProps = {
+  message?: string;
+};
 
 export const LoginPage = (): ReactElement => {
   useEffect(() => {
     userService.logout();
   }, []);
 
+  const location: Location<StateProps> = useLocation();
+  const {message = ''} = location.state ?? {};
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(message);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -41,7 +48,7 @@ export const LoginPage = (): ReactElement => {
     setLoading(true);
     userService.login(username, password).then(
       _user => {
-        return navigate('/');
+        navigate('/');
       },
       error => {
         setError(error);
