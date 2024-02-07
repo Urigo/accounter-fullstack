@@ -1,4 +1,5 @@
 import type { env } from 'environment.js';
+import { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
 import type { Currency } from '@shared/gql-types';
@@ -66,6 +67,15 @@ export type BusinessTransactionProto = {
 };
 
 export type CounterAccountProto = string | IGetAllTaxCategoriesResult;
+
+export type AccounterContext = YogaInitialContext & {
+  env: Environment;
+  session?: {
+    role?: Role;
+  };
+};
+
+export type Role = 'admin' | 'accountant';
 
 export * from './ledger.js';
 export * from './utils.js';

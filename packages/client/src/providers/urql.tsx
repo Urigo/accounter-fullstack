@@ -27,10 +27,12 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
         mapExchange({
           onResult(result) {
             const isAuthError =
-            result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
-            result?.error?.response.status === 401;
+              result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
+              result?.error?.response.status === 401;
             if (isAuthError) {
-              navigate('/login', {state: { message: 'You are not authorized to access this page'}})
+              navigate('/login', {
+                state: { message: 'You are not authorized to access this page' },
+              });
             }
           },
         }),
@@ -69,5 +71,9 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
     return;
   }, [client, navigate]);
 
-  return client ? <Provider value={client}>{children}</Provider> : <Navigate to="/login" state={{prevPath: window.location.pathname}} />;
+  return client ? (
+    <Provider value={client}>{children}</Provider>
+  ) : (
+    <Navigate to="/login" state={{ prevPath: window.location.pathname }} />
+  );
 }

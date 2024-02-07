@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, ReactElement, useEffect, useState } from 'react';
-import { type Location, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, type Location } from 'react-router-dom';
 import { Button, Card, Loader, PasswordInput, TextInput } from '@mantine/core';
 import { userService } from '../services/user-service';
 
@@ -13,7 +13,7 @@ export const LoginPage = (): ReactElement => {
   }, []);
 
   const location: Location<StateProps> = useLocation();
-  const {message = ''} = location.state ?? {};
+  const { message = '' } = location.state ?? {};
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
