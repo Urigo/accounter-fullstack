@@ -891,6 +891,23 @@
     "@graphql-tools/utils" "^10.0.0"
     tslib "^2.5.0"
 
+"@envelop/extended-validation@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@envelop/extended-validation/-/extended-validation-4.0.0.tgz#5c445a86d37a3143bc9e87dfe34563a2c6e3f8eb"
+  integrity sha512-pvJ/OL+C+lpNiiCXezHT+vP3PTq37MQicoOB1l5MdgOOZZWRAp0NDOgvEKcXUY7AWNpvNHgSE0QFSRfGwsfwFQ==
+  dependencies:
+    "@graphql-tools/utils" "^10.0.0"
+    tslib "^2.5.0"
+
+"@envelop/generic-auth@7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@envelop/generic-auth/-/generic-auth-7.0.0.tgz#3f76a94f34339b6fe955612936255d18bcabc548"
+  integrity sha512-FxGzoSjIXJlv+aiVyhQ8oHoz41ol4gJe8KAzNX7FP3qrhldbrqcC5Q+J/VtNlo5jXYX0YuLHH6ehF80tQDZJ4Q==
+  dependencies:
+    "@envelop/extended-validation" "^4.0.0"
+    "@graphql-tools/utils" "^10.0.6"
+    tslib "^2.5.0"
+
 "@envelop/graphql-modules@6.0.0":
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/@envelop/graphql-modules/-/graphql-modules-6.0.0.tgz#15a551d8b146cc2a99ca47131bc16397a6946d6b"
@@ -2290,6 +2307,16 @@
   integrity sha512-ZTioQqg9z9eCG3j+KDy54k1gp6wRIsLqkx5yi163KVvXVkfjsrdErCyZjrEug21QnKE9piP4tyxMpMMOT1RuRw==
   dependencies:
     "@graphql-typed-document-node/core" "^3.1.1"
+    dset "^3.1.2"
+    tslib "^2.4.0"
+
+"@graphql-tools/utils@^10.0.6":
+  version "10.0.13"
+  resolved "https://registry.yarnpkg.com/@graphql-tools/utils/-/utils-10.0.13.tgz#d0ab7a4dd02a8405f5ef62dd140b7579ba69f8cb"
+  integrity sha512-fMILwGr5Dm2zefNItjQ6C2rauigklv69LIwppccICuGTnGaOp3DspLt/6Lxj72cbg5d9z60Sr+Egco3CJKLsNg==
+  dependencies:
+    "@graphql-typed-document-node/core" "^3.1.1"
+    cross-inspect "1.0.0"
     dset "^3.1.2"
     tslib "^2.4.0"
 
@@ -4871,6 +4898,13 @@ cross-fetch@^3.1.5:
   integrity sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg==
   dependencies:
     node-fetch "^2.6.12"
+
+cross-inspect@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/cross-inspect/-/cross-inspect-1.0.0.tgz#5fda1af759a148594d2d58394a9e21364f6849af"
+  integrity sha512-4PFfn4b5ZN6FMNGSZlyb7wUhuN8wvj8t/VQHZdM4JsDcruGJ8L2kf9zao98QIrBPFCpdk27qst/AGTl7pL3ypQ==
+  dependencies:
+    tslib "^2.4.0"
 
 cross-spawn@^7.0.0, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
   version "7.0.3"

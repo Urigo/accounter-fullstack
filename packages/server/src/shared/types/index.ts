@@ -2,7 +2,7 @@ import type { env } from 'environment.js';
 import { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
-import type { Currency } from '@shared/gql-types';
+import type { Currency, Role } from '@shared/gql-types';
 
 export type Environment = typeof env;
 
@@ -74,8 +74,6 @@ export type AccounterContext = YogaInitialContext & {
     role?: Role;
   };
 };
-
-export type Role = 'admin' | 'accountant';
 
 export * from './ledger.js';
 export * from './utils.js';

@@ -22,6 +22,7 @@
   "dependencies": {
     "@accounter-toolkit/green-invoice-graphql": "0.5.2",
     "@accounter-toolkit/pcn874-generator": "0.3.0",
+    "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
     "@graphql-yoga/plugin-defer-stream": "3.1.1",

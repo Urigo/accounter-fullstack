@@ -17,6 +17,13 @@ export default gql`
   " Defer directive "
   directive @defer on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+  enum Role {
+    ADMIN
+    ACCOUNTANT
+  }
+
+  directive @auth(role: Role!) on FIELD_DEFINITION
+
   # Scalars
 
   " Date "

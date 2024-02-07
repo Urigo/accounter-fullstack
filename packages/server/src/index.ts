@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import 'reflect-metadata';
-import { useBasicAuth } from 'plugins/auth-plugin.js';
+import { authPlugins } from 'plugins/auth/index.js';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
@@ -18,7 +18,7 @@ async function main() {
   application.injector.get(GreenInvoiceProvider).init();
 
   const yoga = createYoga({
-    plugins: [useBasicAuth(), useGraphQLModules(application), useDeferStream()],
+    plugins: [...authPlugins, useGraphQLModules(application), useDeferStream()],
     context: (yogaContext): AccounterContext => {
       return {
         ...yogaContext,
