@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    allFinancialAccounts: [FinancialAccount!]!
+    allFinancialAccounts: [FinancialAccount!]! @auth(role: ACCOUNTANT)
   }
 
   " Represent something external that we scrape, like bank or card "

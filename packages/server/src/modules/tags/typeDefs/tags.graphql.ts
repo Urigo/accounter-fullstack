@@ -3,13 +3,13 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    allTags: [Tag!]!
+    allTags: [Tag!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
-    addTag(name: String!): Boolean!
-    deleteTag(name: String!): Boolean!
-    renameTag(prevName: String!, newName: String!): Boolean!
+    addTag(name: String!): Boolean! @auth(role: ADMIN)
+    deleteTag(name: String!): Boolean! @auth(role: ADMIN)
+    renameTag(prevName: String!, newName: String!): Boolean! @auth(role: ADMIN)
   }
 
   extend interface Charge {

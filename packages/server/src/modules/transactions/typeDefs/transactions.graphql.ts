@@ -3,14 +3,14 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]!
+    transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
     updateTransaction(
       transactionId: UUID!
       fields: UpdateTransactionInput!
-    ): UpdateTransactionResult!
+    ): UpdateTransactionResult! @auth(role: ADMIN)
   }
 
   extend interface Charge {

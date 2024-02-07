@@ -5,10 +5,10 @@ export default gql`
   extend type Query {
     businessTransactionsSumFromLedgerRecords(
       filters: BusinessTransactionsFilter
-    ): BusinessTransactionsSumFromLedgerRecordsResult!
+    ): BusinessTransactionsSumFromLedgerRecordsResult! @auth(role: ACCOUNTANT)
     businessTransactionsFromLedgerRecords(
       filters: BusinessTransactionsFilter
-    ): BusinessTransactionsFromLedgerRecordsResult!
+    ): BusinessTransactionsFromLedgerRecordsResult! @auth(role: ACCOUNTANT)
   }
 
   " input variables for businessTransactions "

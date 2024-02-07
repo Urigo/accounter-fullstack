@@ -3,9 +3,9 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    documents: [Document!]!
-    documentsByFilters(filters: DocumentsFilters!): [Document!]!
-    documentById(documentId: UUID!): Document
+    documents: [Document!]! @auth(role: ACCOUNTANT)
+    documentsByFilters(filters: DocumentsFilters!): [Document!]! @auth(role: ACCOUNTANT)
+    documentById(documentId: UUID!): Document @auth(role: ACCOUNTANT)
   }
 
   " input variables for documents filtering "
@@ -19,12 +19,12 @@ export default gql`
   }
 
   extend type Mutation {
-    insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
-    updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
-    deleteDocument(documentId: UUID!): Boolean!
-    fetchEmailDocument(url: URL!): FetchEmailDocumentResult!
-    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult!
-    fetchIncomeDocuments(ownerId: UUID!): [Document!]!
+    insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ADMIN)
+    updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult! @auth(role: ADMIN)
+    deleteDocument(documentId: UUID!): Boolean! @auth(role: ADMIN)
+    fetchEmailDocument(url: URL!): FetchEmailDocumentResult! @auth(role: ADMIN)
+    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ADMIN)
+    fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
   }
 
   " All possible document types "

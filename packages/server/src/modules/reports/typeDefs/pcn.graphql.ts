@@ -8,7 +8,7 @@ export default gql`
       toDate: TimelessDate!
       financialEntityId: UUID!
       options: PCNOptionsInput
-    ): PCNFileResult!
+    ): PCNFileResult! @auth(role: ACCOUNTANT)
   }
 
   " config options for generatePCN "

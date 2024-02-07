@@ -3,18 +3,18 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    salaryRecordsByCharge(chargeId: UUID!): [Salary!]!
+    salaryRecordsByCharge(chargeId: UUID!): [Salary!]! @auth(role: ACCOUNTANT)
     salaryRecordsByDates(
       fromDate: TimelessDate!
       toDate: TimelessDate!
       employeeIDs: [UUID!]
-    ): [Salary!]!
+    ): [Salary!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
-    insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
-    updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult!
-    insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
+    insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult! @auth(role: ADMIN)
+    updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult! @auth(role: ADMIN)
+    insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult! @auth(role: ADMIN)
   }
 
   " input variables for insert salary records "

@@ -3,18 +3,19 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    chargesByIDs(chargeIDs: [UUID!]!): [Charge!]!
+    chargesByIDs(chargeIDs: [UUID!]!): [Charge!]! @auth(role: ACCOUNTANT)
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
+      @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
-    updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult!
+    updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult! @auth(role: ADMIN)
     mergeCharges(
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
       fields: UpdateChargeInput
-    ): MergeChargeResult!
-    deleteCharge(chargeId: UUID!): Boolean!
+    ): MergeChargeResult! @auth(role: ADMIN)
+    deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
