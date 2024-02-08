@@ -10,30 +10,37 @@ import type { Environment } from '@shared/types';
 export class GreenInvoiceProvider {
   constructor(@Inject(ENVIRONMENT) private env: Environment) {}
 
-  private greenInvoiceSdk: Sdk | undefined;
+  private async init() {
+    const id = this.env.greenInvoice.id;
+    const secret = this.env.greenInvoice.secret;
 
-  public async init() {
+    if (!id || !secret) {
+      throw new Error('Environment variables not found');
+    }
+
+    const greenInvoice = await init(id, secret);
+
+    return greenInvoice;
+  }
+
+  public async getSDK(): Promise<Sdk> {
     try {
-      const id = this.env.greenInvoice.id;
-      const secret = this.env.greenInvoice.secret;
+      const sdk = (await this.init()).sdk;
 
-      if (id && secret) {
-        if (!this.greenInvoiceSdk) {
-          this.greenInvoiceSdk = (await init(id, secret)).sdk;
-          console.log('Green Invoice SDK initialized');
-        }
-      } else {
-        throw new Error('Environment variables not found');
-      }
-    } catch (err) {
-      console.error(`Green Invoice initiation error:\n${err}`);
+      return sdk;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Green Invoice error: ${(e as Error).message}`);
     }
   }
 
-  public getSDK() {
-    if (!this.greenInvoiceSdk) {
-      throw new Error('Green Invoice SDK not initialized');
-    }
-    return this.greenInvoiceSdk;
+  public async addExpenseDraftByFile(...params: Parameters<Sdk['addExpenseDraftByFile_mutation']>) {
+    const sdk = await this.getSDK();
+    return sdk.addExpenseDraftByFile_mutation(...params);
+  }
+
+  public async searchDocuments(...params: Parameters<Sdk['searchDocuments_query']>) {
+    const sdk = await this.getSDK();
+    return sdk.searchDocuments_query(...params);
   }
 }

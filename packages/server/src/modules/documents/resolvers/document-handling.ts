@@ -33,12 +33,9 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       .get(CloudinaryProvider)
       .uploadInvoiceToCloudinary(base64string);
 
-    const data = await injector
-      .get(GreenInvoiceProvider)
-      .getSDK()
-      .addExpenseDraftByFile_mutation({
-        input: { file: base64string },
-      });
+    const data = await injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
+      input: { file: base64string },
+    });
 
     if (!data.addExpenseDraftByFile) {
       throw new Error('No data returned from Green Invoice');

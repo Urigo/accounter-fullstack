@@ -8,16 +8,13 @@ import { Environment } from '@shared/types';
   global: true,
 })
 export class CloudinaryProvider {
-  constructor(@Inject(ENVIRONMENT) private env: Environment) {}
-
-  public initCloudinary() {
+  constructor(@Inject(ENVIRONMENT) private env: Environment) {
     cloudinary.config({
       cloud_name: this.env.cloudinary.name,
       api_key: this.env.cloudinary.apiKey,
       api_secret: this.env.cloudinary.apiSecret,
       secure: true,
     });
-    console.debug('Cloudinary initialized');
   }
 
   public async uploadInvoiceToCloudinary(
