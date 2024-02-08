@@ -12,9 +12,12 @@ export default gql`
   }
 
   extend type Mutation {
-    insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult! @auth(role: ADMIN)
-    updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult! @auth(role: ADMIN)
-    insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult! @auth(role: ADMIN)
+    insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
+      @auth(role: ADMIN)
+    updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult!
+      @auth(role: ADMIN)
+    insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
+      @auth(role: ADMIN)
   }
 
   " input variables for insert salary records "

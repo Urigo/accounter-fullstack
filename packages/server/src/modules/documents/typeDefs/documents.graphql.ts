@@ -20,7 +20,8 @@ export default gql`
 
   extend type Mutation {
     insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ADMIN)
-    updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult! @auth(role: ADMIN)
+    updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
+      @auth(role: ADMIN)
     deleteDocument(documentId: UUID!): Boolean! @auth(role: ADMIN)
     fetchEmailDocument(url: URL!): FetchEmailDocumentResult! @auth(role: ADMIN)
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ADMIN)

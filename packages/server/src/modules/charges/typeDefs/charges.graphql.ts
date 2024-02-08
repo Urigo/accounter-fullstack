@@ -9,7 +9,8 @@ export default gql`
   }
 
   extend type Mutation {
-    updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult! @auth(role: ADMIN)
+    updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult!
+      @auth(role: ADMIN)
     mergeCharges(
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
