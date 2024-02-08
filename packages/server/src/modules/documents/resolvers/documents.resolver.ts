@@ -206,12 +206,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
     fetchIncomeDocuments: async (_, { ownerId }, { injector }) => {
-      const data = await injector
-        .get(GreenInvoiceProvider)
-        .getSDK()
-        .searchDocuments_query({
-          input: { pageSize: 100, sort: 'creationDate' },
-        });
+      const data = await injector.get(GreenInvoiceProvider).searchDocuments({
+        input: { pageSize: 100, sort: 'creationDate' },
+      });
       if (!data.searchDocuments?.items) {
         throw new GraphQLError('Failed to fetch documents');
       }
