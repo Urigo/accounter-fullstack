@@ -1,22 +1,19 @@
-import type {
-  ResolversTypes,
-  ResolversUnionTypes,
-  ResolverTypeWrapper,
-} from '@accounter-toolkit/green-invoice-graphql';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
+import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
 import { Currency } from '@shared/enums';
+import { CommonError, ResolverTypeWrapper } from '@shared/gql-types';
 import type {
   BusinessTransactionProto,
   CounterAccountProto,
-  LedgerProto,
+  LedgerRecordsProto,
   RawBusinessTransactionsSum,
 } from '@shared/types';
 
 export async function getLedgerRecordsFromSets(
-  ledgerRecordSets: Array<ResolversUnionTypes<ResolversTypes>['GeneratedLedgerRecords']>,
+  ledgerRecordSets: Array<CommonError | LedgerRecordsProto | null>,
   charges: IGetChargesByIdsResult[],
-): Promise<Array<LedgerProto>> {
-  const ledgerRecordsPromises: ResolverTypeWrapper<LedgerProto>[] = [];
+): Promise<Array<IGetLedgerRecordsByChargesIdsResult>> {
+  const ledgerRecordsPromises: ResolverTypeWrapper<IGetLedgerRecordsByChargesIdsResult>[] = [];
   ledgerRecordSets.map((ledgerRecordSet, i) => {
     if (!ledgerRecordSet) {
       console.log(`No ledger records could be generated for charge ${charges[i]?.id}`);
@@ -29,7 +26,11 @@ export async function getLedgerRecordsFromSets(
       );
     } else {
       ledgerRecordsPromises.push(
-        ...(ledgerRecordSet as { records: readonly ResolverTypeWrapper<LedgerProto>[] }).records,
+        ...(
+          ledgerRecordSet as {
+            records: readonly ResolverTypeWrapper<IGetLedgerRecordsByChargesIdsResult>[];
+          }
+        ).records,
       );
     }
   });
@@ -42,10 +43,13 @@ export function handleBusinessLedgerRecord(
   business: CounterAccountProto,
   currency: Currency,
   isCredit: boolean,
-  amount = 0,
-  foreignAmount = 0,
+  stringifiedAmount: string | null,
+  stringifiedForeignAmount: string | null,
 ) {
   const businessID = typeof business === 'string' ? business : business.id;
+  const amount = stringifiedAmount ? parseFloat(stringifiedAmount) : 0;
+  const foreignAmount = stringifiedForeignAmount ? parseFloat(stringifiedForeignAmount) : 0;
+
   rawRes[businessID] ??= {
     ils: {
       credit: 0,
@@ -109,25 +113,28 @@ export function handleBusinessLedgerRecord(
 }
 
 export function handleBusinessTransaction(
-  record: LedgerProto,
+  record: IGetLedgerRecordsByChargesIdsResult,
   businessID: CounterAccountProto,
-  counterparty: CounterAccountProto | undefined = undefined,
+  counterparty: CounterAccountProto | null = null,
   isCredit: boolean,
-  amount = 0,
-  foreignAmount = 0,
+  stringifiedAmount: string | null,
+  stringifiedForeignAmount: string | null,
 ): BusinessTransactionProto {
+  const amount = stringifiedAmount ? parseFloat(stringifiedAmount) : 0;
+  const foreignAmount = stringifiedForeignAmount ? parseFloat(stringifiedForeignAmount) : 0;
+
   const rawTransaction: BusinessTransactionProto = {
     amount,
     businessID,
-    counterAccount: counterparty,
-    currency: record.currency,
-    details: record.description,
+    counterAccount: counterparty ?? undefined,
+    currency: record.currency as Currency,
+    details: record.description ?? undefined,
     isCredit,
-    ownerID: record.ownerId,
+    ownerID: record.owner_id!,
     foreignAmount,
-    date: record.invoiceDate,
-    reference1: record.reference1,
-    chargeId: record.chargeId,
+    date: record.invoice_date,
+    reference1: record.reference1 ?? undefined,
+    chargeId: record.charge_id,
   };
   return rawTransaction;
 }

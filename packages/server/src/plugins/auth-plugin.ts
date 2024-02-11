@@ -9,16 +9,23 @@ import {
 } from '@envelop/generic-auth';
 import type { Role } from '@shared/gql-types';
 import { AccounterContext } from '@shared/types';
+import { env } from '../environment.js';
 
 type UserType = {
   username: string;
   role?: Role;
 };
 
-const authorizedUsers: Record<string, string> = {
-  accountant: '$2b$10$7fUXZSIW3dQ2sSfI9vMatOADIEsJY9b5oX8Bs1jTfK/NZ24OgOfua',
-  admin: '$2b$10$A7Cg5qTaMDfui4xrHbZS/.26J8ic848wG20MRL1ZlLcxYZ/FzymcG',
-};
+function getAuthorizedUsers(): Record<string, string> {
+  try {
+    return JSON.parse(env.authorization.users ?? '{}');
+  } catch (e) {
+    console.error('Failed to read authorized users from env file.');
+    return {};
+  }
+}
+
+const authorizedUsers = getAuthorizedUsers();
 
 function getUserFromRequest(request: Request) {
   const authorization = request.headers?.get('authorization') ?? undefined;
@@ -111,10 +118,9 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldAuthDirectiveNode }
   }
 };
 
-export const authPlugins = [
+export const authPlugin = () =>
   useGenericAuth({
     resolveUserFn,
     validateUser,
     mode: 'protect-granular',
-  }),
-] as const;
+  });

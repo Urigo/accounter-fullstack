@@ -58,82 +58,82 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const ledger of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && format(ledger.invoiceDate, 'yyyy-MM-dd') < fromDate) {
+          if (!!fromDate && format(ledger.invoice_date, 'yyyy-MM-dd') < fromDate) {
             continue;
           }
-          if (!!toDate && format(ledger.invoiceDate, 'yyyy-MM-dd') > toDate) {
+          if (!!toDate && format(ledger.invoice_date, 'yyyy-MM-dd') > toDate) {
             continue;
           }
 
           if (
-            ledger.creditAccountID1 &&
+            ledger.credit_entity1 &&
             (!financialEntitiesIDs?.length ||
-              (typeof ledger.creditAccountID1 === 'string' &&
-                businessIDs.includes(ledger.creditAccountID1)) ||
-              (typeof ledger.creditAccountID1 === 'object' &&
-                taxCategoriesIDs.includes(ledger.creditAccountID1.id)))
+              (typeof ledger.credit_entity1 === 'string' &&
+                businessIDs.includes(ledger.credit_entity1)) ||
+              (typeof ledger.credit_entity1 === 'object' &&
+                taxCategoriesIDs.includes(ledger.credit_entity1)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
-              ledger.creditAccountID1,
-              ledger.currency,
+              ledger.credit_entity1,
+              ledger.currency as Currency,
               true,
-              ledger.localCurrencyCreditAmount1,
-              ledger.creditAmount1,
+              ledger.credit_local_amount1,
+              ledger.credit_foreign_amount1,
             );
           }
 
           if (
-            ledger.creditAccountID2 &&
+            ledger.credit_entity2 &&
             (!financialEntitiesIDs?.length ||
-              (typeof ledger.creditAccountID2 === 'string' &&
-                businessIDs.includes(ledger.creditAccountID2)) ||
-              (typeof ledger.creditAccountID2 === 'object' &&
-                taxCategoriesIDs.includes(ledger.creditAccountID2.id)))
+              (typeof ledger.credit_entity2 === 'string' &&
+                businessIDs.includes(ledger.credit_entity2)) ||
+              (typeof ledger.credit_entity2 === 'object' &&
+                taxCategoriesIDs.includes(ledger.credit_entity2)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
-              ledger.creditAccountID2,
-              ledger.currency,
+              ledger.credit_entity2,
+              ledger.currency as Currency,
               true,
-              ledger.localCurrencyCreditAmount2,
-              ledger.creditAmount2,
+              ledger.credit_local_amount2,
+              ledger.credit_foreign_amount2,
             );
           }
 
           if (
-            ledger.debitAccountID1 &&
+            ledger.debit_entity1 &&
             (!financialEntitiesIDs?.length ||
-              (typeof ledger.debitAccountID1 === 'string' &&
-                businessIDs.includes(ledger.debitAccountID1)) ||
-              (typeof ledger.debitAccountID1 === 'object' &&
-                taxCategoriesIDs.includes(ledger.debitAccountID1.id)))
+              (typeof ledger.debit_entity1 === 'string' &&
+                businessIDs.includes(ledger.debit_entity1)) ||
+              (typeof ledger.debit_entity1 === 'object' &&
+                taxCategoriesIDs.includes(ledger.debit_entity1)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
-              ledger.debitAccountID1,
-              ledger.currency,
+              ledger.debit_entity1,
+              ledger.currency as Currency,
               false,
-              ledger.localCurrencyDebitAmount1,
-              ledger.debitAmount1,
+              ledger.debit_local_amount1,
+              ledger.debit_foreign_amount1,
             );
           }
 
           if (
-            ledger.debitAccountID2 &&
+            ledger.debit_entity2 &&
             (!financialEntitiesIDs?.length ||
-              (typeof ledger.debitAccountID2 === 'string' &&
-                businessIDs.includes(ledger.debitAccountID2)) ||
-              (typeof ledger.debitAccountID2 === 'object' &&
-                taxCategoriesIDs.includes(ledger.debitAccountID2.id)))
+              (typeof ledger.debit_entity2 === 'string' &&
+                businessIDs.includes(ledger.debit_entity2)) ||
+              (typeof ledger.debit_entity2 === 'object' &&
+                taxCategoriesIDs.includes(ledger.debit_entity2)))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
-              ledger.debitAccountID2,
-              ledger.currency,
+              ledger.debit_entity2,
+              ledger.currency as Currency,
               false,
-              ledger.localCurrencyDebitAmount2,
-              ledger.debitAmount2,
+              ledger.debit_local_amount2,
+              ledger.debit_foreign_amount2,
             );
           }
         }
@@ -183,85 +183,85 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const record of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && format(record.invoiceDate, 'yyyy-MM-dd') < fromDate) {
+          if (!!fromDate && format(record.invoice_date, 'yyyy-MM-dd') < fromDate) {
             continue;
           }
-          if (!!toDate && format(record.invoiceDate, 'yyyy-MM-dd') > toDate) {
+          if (!!toDate && format(record.invoice_date, 'yyyy-MM-dd') > toDate) {
             continue;
           }
 
           if (
-            record.creditAccountID1 &&
+            record.credit_entity1 &&
             (!financialEntitiesIDs?.length ||
-              (typeof record.creditAccountID1 === 'string' &&
-                businessIDs.includes(record.creditAccountID1)) ||
-              (typeof record.creditAccountID1 === 'object' &&
-                taxCategoriesIDs.includes(record.creditAccountID1.id)))
+              (typeof record.credit_entity1 === 'string' &&
+                businessIDs.includes(record.credit_entity1)) ||
+              (typeof record.credit_entity1 === 'object' &&
+                taxCategoriesIDs.includes(record.credit_entity1)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
-              record.creditAccountID1,
-              record.debitAccountID1,
+              record.credit_entity1,
+              record.debit_entity1,
               true,
-              record.localCurrencyCreditAmount1,
-              record.creditAmount1,
+              record.credit_local_amount1,
+              record.credit_foreign_amount1,
             );
             rawTransactions.push(transaction);
           }
 
           if (
-            record.creditAccountID2 &&
+            record.credit_entity2 &&
             (!financialEntitiesIDs?.length ||
-              (typeof record.creditAccountID2 === 'string' &&
-                businessIDs.includes(record.creditAccountID2)) ||
-              (typeof record.creditAccountID2 === 'object' &&
-                taxCategoriesIDs.includes(record.creditAccountID2.id)))
+              (typeof record.credit_entity2 === 'string' &&
+                businessIDs.includes(record.credit_entity2)) ||
+              (typeof record.credit_entity2 === 'object' &&
+                taxCategoriesIDs.includes(record.credit_entity2)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
-              record.creditAccountID2,
-              record.debitAccountID2 ?? record.debitAccountID1,
+              record.credit_entity2,
+              record.debit_entity2 ?? record.debit_entity2,
               true,
-              record.localCurrencyCreditAmount2,
-              record.creditAmount2,
+              record.credit_local_amount2,
+              record.credit_foreign_amount2,
             );
             rawTransactions.push(transaction);
           }
 
           if (
-            record.debitAccountID1 &&
+            record.debit_entity2 &&
             (!financialEntitiesIDs?.length ||
-              (typeof record.debitAccountID1 === 'string' &&
-                businessIDs.includes(record.debitAccountID1)) ||
-              (typeof record.debitAccountID1 === 'object' &&
-                taxCategoriesIDs.includes(record.debitAccountID1.id)))
+              (typeof record.debit_entity2 === 'string' &&
+                businessIDs.includes(record.debit_entity2)) ||
+              (typeof record.debit_entity2 === 'object' &&
+                taxCategoriesIDs.includes(record.debit_entity2)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
-              record.debitAccountID1,
-              record.creditAccountID1,
+              record.debit_entity2,
+              record.credit_entity1,
               false,
-              record.localCurrencyDebitAmount1,
-              record.debitAmount1,
+              record.debit_local_amount1,
+              record.debit_foreign_amount1,
             );
             rawTransactions.push(transaction);
           }
 
           if (
-            record.debitAccountID2 &&
+            record.debit_entity2 &&
             (!financialEntitiesIDs?.length ||
-              (typeof record.debitAccountID2 === 'string' &&
-                businessIDs.includes(record.debitAccountID2)) ||
-              (typeof record.debitAccountID2 === 'object' &&
-                taxCategoriesIDs.includes(record.debitAccountID2.id)))
+              (typeof record.debit_entity2 === 'string' &&
+                businessIDs.includes(record.debit_entity2)) ||
+              (typeof record.debit_entity2 === 'object' &&
+                taxCategoriesIDs.includes(record.debit_entity2)))
           ) {
             const transaction = handleBusinessTransaction(
               record,
-              record.debitAccountID2,
-              record.creditAccountID2 ?? record.creditAccountID1,
+              record.debit_entity2,
+              record.credit_entity2 ?? record.credit_entity1,
               false,
-              record.localCurrencyDebitAmount2,
-              record.debitAmount2,
+              record.debit_local_amount2,
+              record.debit_foreign_amount2,
             );
             rawTransactions.push(transaction);
           }
