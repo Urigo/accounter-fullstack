@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import 'reflect-metadata';
-import { authPlugins } from 'plugins/auth/index.js';
+import { authPlugin } from 'plugins/auth-plugin.js';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { AccounterContext } from '@shared/types';
@@ -12,7 +12,7 @@ async function main() {
   const application = await createGraphQLApp(env);
 
   const yoga = createYoga({
-    plugins: [...authPlugins, useGraphQLModules(application), useDeferStream()],
+    plugins: [authPlugin(), useGraphQLModules(application), useDeferStream()],
     context: (yogaContext): AccounterContext => {
       return {
         ...yogaContext,
