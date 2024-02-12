@@ -1,5 +1,3 @@
-import auth from 'basic-auth';
-import bcrypt from 'bcrypt';
 import { EnumValueNode } from 'graphql';
 import {
   ResolveUserFn,
@@ -9,45 +7,18 @@ import {
 } from '@envelop/generic-auth';
 import type { Role } from '@shared/gql-types';
 import { AccounterContext } from '@shared/types';
-import { env } from '../environment.js';
 
 type UserType = {
   username: string;
   role?: Role;
 };
 
-function getAuthorizedUsers(): Record<string, string> {
-  try {
-    return JSON.parse(env.authorization.users ?? '{}');
-  } catch (e) {
-    console.error('Failed to read authorized users from env file.');
-    return {};
-  }
+function getUserFromRequest(context: { req: Request & { user?: string | undefined } }) {
+  return context?.req?.user;
 }
 
-const authorizedUsers = getAuthorizedUsers();
-
-function getUserFromRequest(request: Request) {
-  const authorization = request.headers?.get('authorization') ?? undefined;
-  return auth({ headers: { authorization } });
-}
-
-function validateRequestUser(user: ReturnType<typeof auth>) {
-  if (!user) {
-    return false;
-  }
-  const { name, pass } = user;
-  const storedPass = authorizedUsers[name] ?? '';
-  return bcrypt.compareSync(pass, storedPass);
-}
-
-function getRole(user: ReturnType<typeof auth>): Role | undefined {
-  const validate = validateRequestUser(user);
-  if (!validate) {
-    return undefined;
-  }
-
-  switch (user!.name) {
+function getRole(username: string | undefined): Role | undefined {
+  switch (username) {
     case 'accountant':
       return 'ACCOUNTANT';
     case 'admin':
@@ -58,23 +29,16 @@ function getRole(user: ReturnType<typeof auth>): Role | undefined {
 }
 
 const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
-  /* log hashed password to console */
-  // if (user) {
-  //   bcrypt.hash(user.pass, 10, (_err, hash) => {
-  //     console.log(`${user.name}: "${hash}"`)
-  //   });
-  // }
-
   try {
-    const user = getUserFromRequest(context.request);
-    const role = getRole(user);
+    const username = getUserFromRequest(context as unknown as { req: Request });
+    const role = getRole(username);
 
-    if (!user || !role) {
+    if (!username || !role) {
       throw new Error('User not valid');
     }
 
     return {
-      username: user.name,
+      username,
       role,
     };
   } catch (e) {
@@ -116,6 +80,8 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldAuthDirectiveNode }
   if (!user.role || !acceptableRoles.includes(user.role)) {
     return new UnauthenticatedError(`No permissions!`);
   }
+
+  return;
 };
 
 export const authPlugin = () =>

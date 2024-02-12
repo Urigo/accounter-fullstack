@@ -10,7 +10,6 @@ const config: CodegenConfig = {
   ],
   config: {
     scalars: {
-      TimelessDate: 'TimelessDateString',
       IBAN: 'string',
       URL: 'URL | string',
       FileScalar: 'File | Blob',
@@ -35,6 +34,9 @@ const config: CodegenConfig = {
         immutableTypes: true,
         contextType: 'GraphQLModules.Context',
         optionalResolveType: true,
+        scalars: {
+          TimelessDate: '@shared/types#TimelessDateString',
+        },
         enumValues: {
           ChargeSortByField: '@shared/enums#ChargeSortByField',
           Currency: '@shared/enums#Currency',
@@ -94,15 +96,7 @@ const config: CodegenConfig = {
           LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto',
         },
       },
-      plugins: [
-        'typescript',
-        'typescript-resolvers',
-        {
-          add: {
-            content: "import { TimelessDateString } from '@shared/types'",
-          },
-        },
-      ],
+      plugins: ['typescript', 'typescript-resolvers'],
     },
     'packages/client/src/gql/': {
       preset: 'client',
@@ -111,13 +105,11 @@ const config: CodegenConfig = {
           unmaskFunctionName: 'getFragmentData',
         },
       },
-      plugins: [
-        {
-          add: {
-            content: "import { TimelessDateString } from '../helpers'",
-          },
+      config: {
+        scalars: {
+          TimelessDate: '../helpers#TimelessDateString',
         },
-      ],
+      },
     },
   },
 };

@@ -1,8 +1,8 @@
-import type { env } from 'environment.js';
-import { YogaInitialContext } from 'graphql-yoga';
+import type { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
 import type { Currency, Role } from '@shared/gql-types';
+import type { env } from '../../environment.js';
 
 export type Environment = typeof env;
 
@@ -19,22 +19,6 @@ export type RawBusinessTransactionsSum = {
   usd: CurrencySum;
   business: CounterAccountProto;
 };
-
-type addZero<T> = T | 0;
-type oneToFour = 1 | 2 | 3 | 4;
-type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;
-type d = addZero<oneToNine>;
-type YYYY = `20${addZero<oneToFour>}${d}`;
-type MM = `0${oneToNine}` | `1${0 | 1 | 2}`;
-type DD = `${0}${oneToNine}` | `${1 | 2}${d}` | `3${0 | 1}`;
-
-export type TimelessDateString = `${YYYY}-${MM}-${DD}`;
-
-export type OptionalToNullable<O> = {
-  [K in keyof O]: undefined extends O[K] ? O[K] | null : O[K];
-};
-export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
-  OptionalToNullable<Partial<Pick<T, Keys>>>;
 
 export type VatExtendedCharge = IGetChargesByIdsResult & {
   vatAfterDeduction: number;
@@ -75,5 +59,15 @@ export type AccounterContext = YogaInitialContext & {
   };
 };
 
-export * from './ledger.js';
-export * from './utils.js';
+type addZero<T> = T | 0;
+type oneToFour = 1 | 2 | 3 | 4;
+type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;
+type d = addZero<oneToNine>;
+type YYYY = `20${addZero<oneToFour>}${d}`;
+type MM = `0${oneToNine}` | `1${0 | 1 | 2}`;
+type DD = `${0}${oneToNine}` | `${1 | 2}${d}` | `3${0 | 1}`;
+
+export declare type TimelessDateString = `${YYYY}-${MM}-${DD}`;
+
+export type * from './ledger.js';
+export type * from './utils.js';

@@ -1,5 +1,5 @@
 import { Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from 'modules/app-providers/db.provider.js';
+import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IFlagForeignFeeTransactionsParams,

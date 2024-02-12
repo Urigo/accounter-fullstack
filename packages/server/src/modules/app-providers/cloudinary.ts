@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { ENVIRONMENT } from '@shared/tokens';
-import { Environment } from '@shared/types';
+import type { Environment } from '@shared/types';
 
 @Injectable({
   scope: Scope.Singleton,

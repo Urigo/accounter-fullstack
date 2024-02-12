@@ -1,9 +1,8 @@
 import { format } from 'date-fns';
-import { pcnGenerator } from '@accounter-toolkit/pcn874-generator';
+import { EntryType, pcnGenerator } from '@accounter-toolkit/pcn874-generator';
 import {
-  EntryType,
-  Header,
-  Transaction,
+  type Header,
+  type Transaction,
 } from '@accounter-toolkit/pcn874-generator/typings/types.js';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
 import type { RawVatReportRecord } from './vat-report.helper';

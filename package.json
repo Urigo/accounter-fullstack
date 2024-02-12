@@ -39,10 +39,10 @@
     "graphql": "16.8.1",
     "graphql-scalars": "1.22.4",
     "patch-package": "8.0.0",
-    "postinstall-postinstall": "2.1.0"
+    "postinstall-postinstall": "2.1.0",
+    "wrangler": "3.28.1"
   },
   "devDependencies": {
-    "@graphql-codegen/add": "5.0.0",
     "@graphql-codegen/cli": "5.0.0",
     "@graphql-codegen/client-preset": "4.1.0",
     "@graphql-codegen/graphql-modules-preset": "4.0.1",

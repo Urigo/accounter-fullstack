@@ -11,6 +11,7 @@ const isNumberString = (input: unknown) => zod.string().regex(/^\d+$/).safeParse
 const numberFromNumberOrNumberString = (input: unknown): number | undefined => {
   if (typeof input === 'number') return input;
   if (isNumberString(input)) return Number(input);
+  return undefined;
 };
 
 const NumberFromString = zod.preprocess(numberFromNumberOrNumberString, zod.number().min(1));

@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "types": ["vitest/globals"],
 
-    "target": "ES2020",
+    "target": "ES2021",
     "module": "esnext",
     "moduleResolution": "node",
     "lib": ["esnext", "dom"],
@@ -21,6 +21,7 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
 
     "allowJs": true,
 
@@ -34,5 +35,5 @@
       "@server": ["packages/server/src/index.ts"]
     }
   },
-  "exclude": ["**/node_modules", "**/dist"]
+  "exclude": ["**/node_modules", "**/dist", "**/__generated__"]
 }
