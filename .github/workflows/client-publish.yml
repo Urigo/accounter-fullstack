@@ -1,3 +1,5 @@
+name: Client Publish
+
 on:
   pull_request:
     paths:
@@ -43,14 +45,18 @@ jobs:
 
       - name: Build Client
         working-directory: packages/client
-        run: yarn build
+        run:
+          yarn build  --mode ${{ (github.ref == 'refs/heads/cloudflare-integration' && 'staging') || (github.ref ==
+          'refs/heads/prod' && 'production') || 'development' }}
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref == 'refs/heads/prod' && 'accounter-prod') || '' }}
+          projectName:
+            ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref ==
+            'refs/heads/prod' && 'accounter-prod') || '' }}
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           workingDirectory: packages/client
