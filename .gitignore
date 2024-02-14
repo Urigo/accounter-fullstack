@@ -7,4 +7,3 @@ dist/
 schema.graphql
 docker/.*
 **/.htpasswd
-.wrangler

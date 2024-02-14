@@ -20,6 +20,7 @@
     // "alwaysStrict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
@@ -29,11 +30,7 @@
     "emitDecoratorMetadata": true,
 
     "strict": true,
-    "jsx": "preserve",
-    "paths": {
-      "@client": ["packages/client/src/index.ts"],
-      "@server": ["packages/server/src/index.ts"]
-    }
+    "jsx": "preserve"
   },
   "exclude": ["**/node_modules", "**/dist", "**/__generated__"]
 }

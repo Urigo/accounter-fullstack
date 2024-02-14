@@ -21,7 +21,7 @@
     "graphql:coverage": "yarn graphql-inspector coverage './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --ignore-path .gitignore .",
-    "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn --cwd packages/migrations db:init",
+    "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn --cwd packages/migrations db:init && yarn generate",
     "month": "yarn --cwd packages/old-accounter month",
     "old-accounter:build": "yarn --cwd packages/old-accounter build",
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
@@ -39,8 +39,7 @@
     "graphql": "16.8.1",
     "graphql-scalars": "1.22.4",
     "patch-package": "8.0.0",
-    "postinstall-postinstall": "2.1.0",
-    "wrangler": "3.28.1"
+    "postinstall-postinstall": "2.1.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "5.0.0",

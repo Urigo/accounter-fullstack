@@ -41,11 +41,9 @@
     "htpasswd": "2.4.6",
     "http-auth": "4.2.0",
     "pg": "8.11.3",
-    "reflect-metadata": "0.2.1",
-    "wrangler": "3.27.0"
+    "reflect-metadata": "0.2.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240208.0",
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "5.0.2",
     "@types/http-auth": "4.1.4",

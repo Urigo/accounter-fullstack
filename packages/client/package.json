@@ -25,6 +25,7 @@
     "@urql/exchange-auth": "2.1.6",
     "chart.js": "4.4.1",
     "clsx": "2.1.0",
+    "date-fns": "3.3.1",
     "dayjs": "1.11.10",
     "decimal.js": "10.4.3",
     "deep-equal": "2.2.3",
@@ -35,8 +36,7 @@
     "react-router-dom": "6.21.3",
     "tabler-icons-react": "1.56.0",
     "tailwind-merge": "2.2.1",
-    "urql": "4.0.6",
-    "wrangler": "3.27.0"
+    "urql": "4.0.6"
   },
   "devDependencies": {
     "@types/chart.js": "2.9.41",
