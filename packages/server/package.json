@@ -12,10 +12,10 @@
     "build": "tsc && tsc-alias",
     "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
-    "generate": "cd ../.. && yarn codegen && cd server && yarn sqlgen",
+    "generate": "yarn --cwd ../.. codegen && yarn sqlgen",
     "pgtyped": "DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c pgconfig.json",
     "presqlgen": "rimraf **/__generated__/*.types.ts",
-    "prestart": "yarn build",
+    "prestart": "yarn generate && yarn build",
     "sqlgen": "dotenv -e ../../.env yarn pgtyped",
     "start": "node dist/index.js"
   },
