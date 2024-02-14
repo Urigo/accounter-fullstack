@@ -1,25 +1,14 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "module": "esnext",
-    "target": "esnext",
-    "strict": true,
-    "sourceMap": true,
-    "outDir": "dist",
     "jsx": "react-jsx",
-    "moduleResolution": "node", // Needed for npm modules that use commonjs
-    "allowSyntheticDefaultImports": true, // So we can import default value from node_modules https://stackoverflow.com/a/54302557/1426570
+    "noUnusedParameters": true,
 
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "useDefineForClassFields": true,
-    "allowJs": false,
-    "skipLibCheck": true,
     "esModuleInterop": false,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["client/vite.config.ts", "src/**/*", "client/**/*", "server/**/*"],
-  "references": [{ "path": "tsconfig.node.json" }]
+  "include": ["src", "vite.config.ts"]
 }

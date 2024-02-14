@@ -41,7 +41,7 @@ function validateRequestUser(user: ReturnType<typeof auth>) {
   return bcrypt.compareSync(pass, storedPass);
 }
 
-function getRole(user: ReturnType<typeof auth>): Role | undefined {
+function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
   const validate = validateRequestUser(user);
   if (!validate) {
     return undefined;
@@ -67,7 +67,7 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
 
   try {
     const user = getUserFromRequest(context.request);
-    const role = getRole(user);
+    const role = getUserRole(user);
 
     if (!user || !role) {
       throw new Error('User not valid');
@@ -98,7 +98,6 @@ const getAcceptableRoles = (role?: string) => {
 const validateUser: ValidateUserFn<UserType> = ({ user, fieldAuthDirectiveNode }) => {
   // Now you can use the fieldAuthDirectiveNode parameter to implement custom logic for user validation, with access
   // to the resolver auth directive arguments.
-
   if (!user) {
     return new UnauthenticatedError(`Unauthenticated!`);
   }
@@ -110,12 +109,12 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldAuthDirectiveNode }
   }
 
   const role = valueNode.value;
-
   const acceptableRoles = getAcceptableRoles(role);
 
   if (!user.role || !acceptableRoles.includes(user.role)) {
     return new UnauthenticatedError(`No permissions!`);
   }
+  return;
 };
 
 export const authPlugin = () =>

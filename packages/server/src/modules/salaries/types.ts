@@ -1,7 +1,7 @@
 export * from './__generated__/types.js';
 export * from './__generated__/salaries.types.js';
 export * from './__generated__/employees.types.js';
-export {
+export type {
   IGetAllPensionFundsParams,
   IGetAllPensionFundsResult,
   IGetAllPensionFundsQuery,

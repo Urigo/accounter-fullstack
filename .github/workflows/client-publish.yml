@@ -1,0 +1,63 @@
+name: Client Publish
+
+on:
+  push:
+    paths:
+      - 'packages/client/**'
+    branches:
+      - main
+      - prod
+
+jobs:
+  client-publish:
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    permissions:
+      contents: read
+      deployments: write
+    name: Publish Client to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 21.3.0
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache Yarn
+        uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{steps.yarn-cache-dir-path.outputs.dir}}
+          key: ${{runner.os}}-19-yarn-${{hashFiles('yarn.lock')}}
+          restore-keys: |
+            ${{runner.os}}-19-yarn-
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Generate codegen
+        run: yarn codegen
+
+      - name: Build Client
+        working-directory: packages/client
+        run:
+          yarn build  --mode ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref ==
+          'refs/heads/prod' && 'production') || 'development' }}
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName:
+            ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref ==
+            'refs/heads/prod' && 'accounter-prod') || '' }}
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          workingDirectory: packages/client

@@ -6,6 +6,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
+import { fetch as rawFetch } from '@whatwg-node/fetch';
 import {
   IGetCryptoCurrenciesBySymbolQuery,
   IGetCryptoCurrenciesBySymbolResult,
@@ -114,7 +115,7 @@ export class CryptoExchangeProvider {
       `https://api.coinmarketcap.com/data-api/v3/cryptocurrency/detail/chart?id=${coinmarketcapId}&range=${from}~${to}`,
     );
 
-    const res = await fetch(url);
+    const res = await rawFetch(url);
 
     const rateData = await res?.json();
     const ratesObject = rateData?.data?.points;

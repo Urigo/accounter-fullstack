@@ -1,27 +1,10 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["esnext", "dom"],
-    "module": "esnext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-
-    "target": "esnext",
     "baseUrl": "./src",
 
-    "importHelpers": true,
-    "allowJs": true,
-
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-
-    "resolveJsonModule": true,
     "paths": {
       "@modules/*": ["./modules/*"],
       "@shared/types": ["./shared/types/index.js"],
@@ -29,9 +12,10 @@
       "@shared/enums": ["./shared/enums.js"],
       "@shared/tokens": ["./shared/tokens.js"],
       "@shared/constants": ["./shared/constants.js"],
-      "@shared/helpers": ["./shared/helpers/index.js"]
+      "@shared/helpers": ["./shared/helpers/index.js"],
+      "*": ["./shared/types/*.d.ts"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["**/node_modules"]
+  "exclude": ["**/__generated__/types.ts"],
+  "include": ["src"]
 }

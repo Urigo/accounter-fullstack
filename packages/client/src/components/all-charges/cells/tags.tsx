@@ -36,7 +36,6 @@ export const Tags = ({ data }: Props): ReactElement => {
     id: chargeId,
     validationData,
     missingInfoSuggestions,
-    __typename,
   } = getFragmentData(AllChargesTagsFieldsFragmentDoc, data);
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags ?? []);

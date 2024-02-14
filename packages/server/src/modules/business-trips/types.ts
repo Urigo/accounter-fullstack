@@ -1,7 +1,7 @@
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
 export * from './__generated__/business-trips-attendees.types.js';
-export {
+export type {
   business_trip_transaction_type,
   currency,
   IGetAllBusinessTripsTransactionsParams,
@@ -23,7 +23,7 @@ export {
   IInsertBusinessTripTransactionResult,
   IInsertBusinessTripTransactionQuery,
 } from './__generated__/business-trips-transactions.types.js';
-export {
+export type {
   IGetAllBusinessTripsFlightsTransactionsParams,
   IGetAllBusinessTripsFlightsTransactionsResult,
   IGetAllBusinessTripsFlightsTransactionsQuery,
@@ -43,7 +43,7 @@ export {
   IInsertBusinessTripFlightTransactionResult,
   IInsertBusinessTripFlightTransactionQuery,
 } from './__generated__/business-trips-transactions-flights.types.js';
-export {
+export type {
   IGetAllBusinessTripsAccommodationsTransactionsParams,
   IGetAllBusinessTripsAccommodationsTransactionsResult,
   IGetAllBusinessTripsAccommodationsTransactionsQuery,
@@ -63,7 +63,7 @@ export {
   IInsertBusinessTripAccommodationTransactionResult,
   IInsertBusinessTripAccommodationTransactionQuery,
 } from './__generated__/business-trips-transactions-accommodations.types.js';
-export {
+export type {
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsParams,
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult,
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsQuery,
@@ -83,7 +83,7 @@ export {
   IInsertBusinessTripTravelAndSubsistenceTransactionResult,
   IInsertBusinessTripTravelAndSubsistenceTransactionQuery,
 } from './__generated__/business-trips-transactions-travel-and-subsistence.types.js';
-export {
+export type {
   IGetAllBusinessTripsOtherTransactionsParams,
   IGetAllBusinessTripsOtherTransactionsResult,
   IGetAllBusinessTripsOtherTransactionsQuery,

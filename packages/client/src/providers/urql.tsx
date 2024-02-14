@@ -21,8 +21,24 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
       return null;
     }
 
+    let url: string;
+    switch (import.meta.env.MODE) {
+      case 'production': {
+        url = 'https://accounter.onrender.com/graphql';
+        break;
+      }
+      case 'staging': {
+        url = 'https://accounter-staging.onrender.com/graphql';
+        break;
+      }
+      default: {
+        url = 'http://localhost:4000/graphql';
+        break;
+      }
+    }
+
     return createClient({
-      url: 'http://localhost:4000/graphql',
+      url,
       exchanges: [
         mapExchange({
           onResult(result) {

@@ -1,10 +1,10 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from 'modules/charges/providers/charges.provider.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';

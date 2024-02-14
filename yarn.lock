@@ -28,10 +28,10 @@
     graphql "16.8.1"
     path "0.12.7"
 
-"@accounter-toolkit/pcn874-generator@0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.3.0.tgz#a115e334d22c9fe0d313532c94f7b5462fc5b5c1"
-  integrity sha512-EJa4gml16WcmcWm2fGZzkHUe1rrB3E2sho1lThUYjFKSgBvhc/r3pC7lTWBTakqdrwRIOvxUxNV1lnjwQunkBQ==
+"@accounter-toolkit/pcn874-generator@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@accounter-toolkit/pcn874-generator/-/pcn874-generator-0.4.1.tgz#a6b29bf9078b68edc08cdf2df725ac22597712fc"
+  integrity sha512-FsYVj7QfF5pT/8sC6J1NMsWigOAGtHM0ud65JPYSlzKypzGUJlVoLcJVSVLpqJiHu7wRjTxzMcteBd60f52OGQ==
 
 "@alloc/quick-lru@^5.2.0":
   version "5.2.0"
@@ -1243,7 +1243,7 @@
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.1.tgz#16308cea045f0fc777b6ff20a9f25474dd8293d2"
   integrity sha512-9TANp6GPoMtYzQdt54kfAyMmz1+osLlXdg2ENroU7zzrtflTLrrC/lgrIfaSe+Wu0b89GKccT7vxXA0MoAIO+Q==
 
-"@graphql-codegen/add@5.0.0", "@graphql-codegen/add@^5.0.0":
+"@graphql-codegen/add@^5.0.0":
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/@graphql-codegen/add/-/add-5.0.0.tgz#578ebaf4fa87c1e934c381cd679bcedcf79feaba"
   integrity sha512-ynWDOsK2yxtFHwcJTB9shoSkUd7YXd6ZE57f0nk7W5cu/nAgxZZpEsnTPEpZB/Mjf14YRGe2uJHQ7AfElHjqUQ==
@@ -3582,14 +3582,6 @@
   version "0.9.14"
   resolved "https://registry.yarnpkg.com/@whatwg-node/fetch/-/fetch-0.9.14.tgz#262039fd8aea52a9c8aac2ec20f316382eae1a3c"
   integrity sha512-wurZC82zzZwXRDSW0OS9l141DynaJQh7Yt0FD1xZ8niX7/Et/7RoiLiltbVU1fSF1RR9z6ndEaTUQBAmddTm1w==
-  dependencies:
-    "@whatwg-node/node-fetch" "^0.5.0"
-    urlpattern-polyfill "^9.0.0"
-
-"@whatwg-node/fetch@0.9.15":
-  version "0.9.15"
-  resolved "https://registry.yarnpkg.com/@whatwg-node/fetch/-/fetch-0.9.15.tgz#77d300894c9a51400b19e95c74bfbd219a05f40b"
-  integrity sha512-2wIUcolUthZt0nsPRj+pT7K9h/EO3t/j09IBuq0FtITCsASc2fRCmRw2JHS6hk9fzUQrz2+YYrA1ZDpV7+vLsQ==
   dependencies:
     "@whatwg-node/node-fetch" "^0.5.0"
     urlpattern-polyfill "^9.0.0"
