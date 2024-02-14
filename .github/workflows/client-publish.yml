@@ -11,6 +11,7 @@ on:
 jobs:
   client-publish:
     runs-on: ubuntu-latest
+    environment: accounter-fullstack
     permissions:
       contents: read
       deployments: write
@@ -46,7 +47,7 @@ jobs:
       - name: Build Client
         working-directory: packages/client
         run:
-          yarn build  --mode ${{ (github.ref == 'refs/heads/cloudflare-integration' && 'staging') || (github.ref ==
+          yarn build  --mode ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref ==
           'refs/heads/prod' && 'production') || 'development' }}
 
       - name: Publish to Cloudflare Pages
