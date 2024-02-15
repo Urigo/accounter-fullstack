@@ -15,7 +15,7 @@
     "generate": "yarn --cwd ../.. codegen && yarn sqlgen",
     "pgtyped": "DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c pgconfig.json",
     "presqlgen": "rimraf **/__generated__/*.types.ts",
-    "prestart": "yarn generate && yarn build",
+    "prestart": "yarn build",
     "sqlgen": "dotenv -e ../../.env yarn pgtyped",
     "start": "node dist/index.js"
   },
