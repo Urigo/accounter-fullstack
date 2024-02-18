@@ -17,10 +17,12 @@ import { LedgerRecordRow } from './ledger-record-row.js';
         }
         ... on Ledger @defer {
           validate {
-            matches
-            differences {
-              id
-              ...TableLedgerRecordsRowFields
+            ... on LedgerValidation @defer {
+              matches
+              differences {
+                id
+                ...TableLedgerRecordsRowFields
+              }
             }
           }
         }

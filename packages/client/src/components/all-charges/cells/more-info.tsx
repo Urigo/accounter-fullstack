@@ -125,9 +125,11 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
         }
         ... on Ledger @defer {
           validate {
-            isValid
-            differences {
-              id
+            ... on LedgerValidation @defer {
+              isValid
+              differences {
+                id
+              }
             }
           }
         }
