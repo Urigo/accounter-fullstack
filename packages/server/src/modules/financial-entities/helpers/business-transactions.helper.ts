@@ -1,42 +1,10 @@
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
 import { Currency } from '@shared/enums';
-import { CommonError, ResolverTypeWrapper } from '@shared/gql-types';
 import type {
   BusinessTransactionProto,
   CounterAccountProto,
-  LedgerRecordsProto,
   RawBusinessTransactionsSum,
 } from '@shared/types';
-
-export async function getLedgerRecordsFromSets(
-  ledgerRecordSets: Array<CommonError | LedgerRecordsProto | null>,
-  charges: IGetChargesByIdsResult[],
-): Promise<Array<IGetLedgerRecordsByChargesIdsResult>> {
-  const ledgerRecordsPromises: ResolverTypeWrapper<IGetLedgerRecordsByChargesIdsResult>[] = [];
-  ledgerRecordSets.map((ledgerRecordSet, i) => {
-    if (!ledgerRecordSet) {
-      console.log(`No ledger records could be generated for charge ${charges[i]?.id}`);
-    } else if (
-      ('__typename' in ledgerRecordSet || 'message' in ledgerRecordSet) &&
-      ledgerRecordSet.__typename === 'CommonError'
-    ) {
-      console.log(
-        `Error generating ledger records for charge ${charges[i]?.id}: ${ledgerRecordSet.message}`,
-      );
-    } else {
-      ledgerRecordsPromises.push(
-        ...(
-          ledgerRecordSet as {
-            records: readonly ResolverTypeWrapper<IGetLedgerRecordsByChargesIdsResult>[];
-          }
-        ).records,
-      );
-    }
-  });
-
-  return await Promise.all(ledgerRecordsPromises);
-}
 
 export function handleBusinessLedgerRecord(
   rawRes: Record<string, RawBusinessTransactionsSum>,

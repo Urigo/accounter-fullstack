@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -11,14 +11,16 @@ import type {
   TimelessDateString,
 } from '@shared/types';
 import {
-  getLedgerRecordsFromSets,
   handleBusinessLedgerRecord,
   handleBusinessTransaction,
 } from '../helpers/business-transactions.helper.js';
-import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';
+import type {
+  FinancialEntitiesModule,
+  IGetBusinessesByIdsResult,
+  IGetFinancialEntitiesByIdsResult,
+} from '../types.js';
 
 export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -26,21 +28,25 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
   > = {
   Query: {
-    businessTransactionsSumFromLedgerRecords: async (_, { filters }, context, info) => {
+    businessTransactionsSumFromLedgerRecords: async (_, { filters }, context, _info) => {
       const injector = context.injector;
-      const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
+      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
 
-      const [businesses, taxCategories] = await Promise.all([
-        injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(financialEntitiesIDs ?? []),
+      const [financialEntities, taxCategories] = await Promise.all([
+        injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
 
-      const businessIDs = businesses
-        ?.filter(business => business && 'id' in business)
-        .map(business => (business as IGetBusinessesByIdsResult).id);
+      const isFilteredByFinancialEntities = !!businessIDs?.length;
+
+      const financialEntitiesIDs = financialEntities
+        ?.filter(fe => fe && 'id' in fe)
+        .map(fe => (fe as IGetFinancialEntitiesByIdsResult).id);
       const taxCategoriesIDs = taxCategories
         .map(taxCategory => taxCategory.id)
-        .filter(id => financialEntitiesIDs?.includes(id));
+        .filter(id => filters?.businessIDs?.includes(id));
 
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
@@ -49,10 +55,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           toAnyDate: toDate,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, context, info)),
+          charges.map(charge =>
+            injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
+          ),
         );
 
-        const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);
+        const ledgerRecords = ledgerRecordSets.flat();
 
         const rawRes: Record<string, RawBusinessTransactionsSum> = {};
 
@@ -67,9 +75,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.credit_entity1 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof ledger.credit_entity1 === 'string' &&
-                businessIDs.includes(ledger.credit_entity1)) ||
+                financialEntitiesIDs.includes(ledger.credit_entity1)) ||
               (typeof ledger.credit_entity1 === 'object' &&
                 taxCategoriesIDs.includes(ledger.credit_entity1)))
           ) {
@@ -85,9 +93,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.credit_entity2 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof ledger.credit_entity2 === 'string' &&
-                businessIDs.includes(ledger.credit_entity2)) ||
+                financialEntitiesIDs.includes(ledger.credit_entity2)) ||
               (typeof ledger.credit_entity2 === 'object' &&
                 taxCategoriesIDs.includes(ledger.credit_entity2)))
           ) {
@@ -103,9 +111,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.debit_entity1 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof ledger.debit_entity1 === 'string' &&
-                businessIDs.includes(ledger.debit_entity1)) ||
+                financialEntitiesIDs.includes(ledger.debit_entity1)) ||
               (typeof ledger.debit_entity1 === 'object' &&
                 taxCategoriesIDs.includes(ledger.debit_entity1)))
           ) {
@@ -121,9 +129,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.debit_entity2 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof ledger.debit_entity2 === 'string' &&
-                businessIDs.includes(ledger.debit_entity2)) ||
+                financialEntitiesIDs.includes(ledger.debit_entity2)) ||
               (typeof ledger.debit_entity2 === 'object' &&
                 taxCategoriesIDs.includes(ledger.debit_entity2)))
           ) {
@@ -150,22 +158,26 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    businessTransactionsFromLedgerRecords: async (_, { filters }, context, info) => {
+    businessTransactionsFromLedgerRecords: async (_, { filters }, context, _info) => {
       const injector = context.injector;
-      const { ownerIds, businessIDs: financialEntitiesIDs, fromDate, toDate } = filters || {};
+      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
 
-      const [businesses, taxCategories] = await Promise.all([
-        injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(financialEntitiesIDs ?? []),
+      const isFilteredByFinancialEntities = !!filters?.businessIDs?.length;
+
+      const [financialEmtities, taxCategories] = await Promise.all([
+        injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
 
       // TODO: can be replaced with FinancialEntitiesProvider and type check?
-      const businessIDs = businesses
+      const financialEntitiesIDs = financialEmtities
         ?.filter(business => business && 'id' in business)
         .map(business => (business as IGetBusinessesByIdsResult).id);
       const taxCategoriesIDs = taxCategories
         .map(taxCategory => taxCategory.id)
-        .filter(id => financialEntitiesIDs?.includes(id));
+        .filter(id => businessIDs?.includes(id));
 
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
@@ -174,10 +186,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           toAnyDate: toDate,
         });
         const ledgerRecordSets = await Promise.all(
-          charges.map(charge => ledgerGenerationByCharge(charge)(charge, {}, context, info)),
+          charges.map(charge =>
+            injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
+          ),
         );
 
-        const ledgerRecords = await getLedgerRecordsFromSets(ledgerRecordSets, charges);
+        const ledgerRecords = ledgerRecordSets.flat();
 
         const rawTransactions: BusinessTransactionProto[] = [];
 
@@ -192,9 +206,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.credit_entity1 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof record.credit_entity1 === 'string' &&
-                businessIDs.includes(record.credit_entity1)) ||
+                financialEntitiesIDs.includes(record.credit_entity1)) ||
               (typeof record.credit_entity1 === 'object' &&
                 taxCategoriesIDs.includes(record.credit_entity1)))
           ) {
@@ -211,9 +225,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.credit_entity2 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof record.credit_entity2 === 'string' &&
-                businessIDs.includes(record.credit_entity2)) ||
+                financialEntitiesIDs.includes(record.credit_entity2)) ||
               (typeof record.credit_entity2 === 'object' &&
                 taxCategoriesIDs.includes(record.credit_entity2)))
           ) {
@@ -230,9 +244,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.debit_entity2 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof record.debit_entity2 === 'string' &&
-                businessIDs.includes(record.debit_entity2)) ||
+                financialEntitiesIDs.includes(record.debit_entity2)) ||
               (typeof record.debit_entity2 === 'object' &&
                 taxCategoriesIDs.includes(record.debit_entity2)))
           ) {
@@ -249,9 +263,9 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.debit_entity2 &&
-            (!financialEntitiesIDs?.length ||
+            (!isFilteredByFinancialEntities ||
               (typeof record.debit_entity2 === 'string' &&
-                businessIDs.includes(record.debit_entity2)) ||
+                financialEntitiesIDs.includes(record.debit_entity2)) ||
               (typeof record.debit_entity2 === 'object' &&
                 taxCategoriesIDs.includes(record.debit_entity2)))
           ) {
