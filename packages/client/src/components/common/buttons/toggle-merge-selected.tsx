@@ -1,6 +1,6 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps } from '@mantine/core';
+import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
 
 export function ToggleMergeSelected(props: {
   toggleMergeSelected: () => void;
@@ -18,13 +18,15 @@ export function ToggleMergeSelected(props: {
   }, [mergeSelected]);
 
   return (
-    <ActionIcon
-      onClick={(): void => toggleMergeSelected()}
-      variant={variant}
-      color={color}
-      className={mergeSelected ? 'bg-blue-500' : undefined}
-    >
-      <ArrowsJoin2 size={20} color={color} />
-    </ActionIcon>
+    <Tooltip label="Select for merge">
+      <ActionIcon
+        onClick={(): void => toggleMergeSelected()}
+        variant={variant}
+        color={color}
+        className={mergeSelected ? 'bg-blue-500' : undefined}
+      >
+        <ArrowsJoin2 size={20} color={color} />
+      </ActionIcon>
+    </Tooltip>
   );
 }
