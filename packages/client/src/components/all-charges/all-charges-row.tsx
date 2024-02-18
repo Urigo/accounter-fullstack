@@ -1,7 +1,6 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Paper } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import {
   AllChargesRowFieldsFragment,
   AllChargesRowFieldsFragmentDoc,
@@ -9,7 +8,7 @@ import {
   ChargeForRowDocument,
 } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
-import { EditMiniButton, ToggleMergeSelected } from '../common/index.js';
+import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
 import {
   AccountantApproval,
   Amount,
@@ -148,27 +147,22 @@ export const AllChargesRow = ({
               setUploadDocument={setUploadDocument}
             />
             {hasExtendedInfo && (
-              <ActionIcon
-                variant="default"
-                onClick={(): void => {
-                  setOpened(i => {
-                    if (i) {
-                      updateCharge();
-                    }
-                    return !i;
-                  });
+              <ToggleExpansionButton
+                toggleExpansion={setOpened}
+                isExpanded={opened}
+                onClickAction={state => {
+                  if (state) {
+                    updateCharge();
+                  }
                 }}
-                size={30}
-              >
-                {opened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-              </ActionIcon>
+              />
             )}
           </div>
         </td>
       </tr>
       {hasExtendedInfo && opened && (
         <tr>
-          <td colSpan={12}>
+          <td colSpan={13}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo chargeID={charge.id} />
             </Paper>

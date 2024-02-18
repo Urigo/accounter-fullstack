@@ -18,8 +18,8 @@ import {
   UploadDocumentModal,
 } from '../../common';
 import { BusinessTripsTable } from './business-trips-table';
-import { ExpensesTable } from './expenses-table';
-import { IncomeTable } from './income-table';
+import { ExpensesTable } from './expenses-section/expenses-table';
+import { IncomeTable } from './income-section/income-table';
 import { MiscTable } from './misc-table';
 import { MissingInfoTable } from './missing-info-table';
 import { PCNGenerator } from './pcn-generator';
