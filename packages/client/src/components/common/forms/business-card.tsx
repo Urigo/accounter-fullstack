@@ -1,4 +1,5 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
+import { UserContext } from 'packages/client/src/providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -12,12 +13,7 @@ import {
   FetchBusinessQuery,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  MakeBoolean,
-  relevantDataPicker,
-  writeToClipboard,
-} from '../../../helpers/index.js';
+import { MakeBoolean, relevantDataPicker, writeToClipboard } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
 import { SimpleGrid, TextInput } from '../index.js';
 
@@ -59,6 +55,8 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   const [business, setBusiness] = useState<
     Extract<FetchBusinessQuery['business'], { __typename: 'LtdFinancialEntity' }> | undefined
   >(undefined);
+
+  const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessLoading } = useUpdateBusiness();
 
@@ -160,7 +158,7 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
 
       updateDbBusiness({
         businessId: business.id,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: userContext?.ownerId,
         fields: dataToUpdate,
       }).then(() => refetchBusiness());
     }

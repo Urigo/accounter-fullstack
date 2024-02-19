@@ -1,12 +1,13 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
+import { UserContext } from 'packages/client/src/providers/user-provider.js';
 import { useQuery } from 'urql';
 import {
   ChargeFilterType,
   VatMonthlyReportDocument,
   VatReportFilter,
 } from '../../../gql/graphql.js';
-import { dedupeFragments, DEFAULT_FINANCIAL_ENTITY_ID, TimelessDateString } from '../../../helpers';
+import { dedupeFragments, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
 import {
@@ -41,13 +42,14 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 export const VatMonthlyReport = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
+  const { userContext } = useContext(UserContext);
   const [filter, setFilter] = useState<VatReportFilter>(
     get('vatMonthlyReportFilters')
       ? (JSON.parse(
           decodeURIComponent(get('vatMonthlyReportFilters') as string),
         ) as VatReportFilter)
       : {
-          financialEntityId: DEFAULT_FINANCIAL_ENTITY_ID,
+          financialEntityId: userContext?.ownerId,
           fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },

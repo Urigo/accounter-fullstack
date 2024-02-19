@@ -1,6 +1,7 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
+import { UserContext } from 'packages/client/src/providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -12,11 +13,7 @@ import {
   ChargeFilterType,
   VatReportFilter,
 } from '../../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  isObjectEmpty,
-  TimelessDateString,
-} from '../../../helpers/index.js';
+import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { chargesTypeFilterOptions } from '../../all-charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
@@ -152,9 +149,11 @@ export function VatMonthlyReportFilter({
   const [opened, setOpened] = useState(false);
   const { get, set } = useUrlQuery();
 
+  const { userContext } = useContext(UserContext);
+
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
-      financialEntityId: DEFAULT_FINANCIAL_ENTITY_ID,
+      financialEntityId: userContext?.ownerId,
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
       toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
     };

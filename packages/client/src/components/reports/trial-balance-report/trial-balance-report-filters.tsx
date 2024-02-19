@@ -1,16 +1,13 @@
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import equal from 'deep-equal';
+import { UserContext } from 'packages/client/src/providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, BusinessTransactionsFilter } from '../../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  isObjectEmpty,
-  TIMELESS_DATE_REGEX,
-} from '../../../helpers/index.js';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal, TextInput } from '../../common/index.js';
 
@@ -36,6 +33,8 @@ function TrialBalanceReportFilterForm({
   const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
+
+  const { userContext } = useContext(UserContext);
 
   useEffect(() => {
     if (feError) {
@@ -82,7 +81,7 @@ function TrialBalanceReportFilterForm({
             <MultiSelect
               {...field}
               data={businesses}
-              value={field.value ?? [DEFAULT_FINANCIAL_ENTITY_ID]}
+              value={field.value ?? [userContext?.ownerId]}
               disabled={feLoading}
               label="Owners"
               placeholder="Scroll to see all options"
