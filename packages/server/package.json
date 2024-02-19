@@ -13,7 +13,7 @@
     "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn --cwd ../.. codegen && yarn sqlgen",
-    "pgtyped": "DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c pgconfig.json",
+    "pgtyped": "DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c $(node scripts/generate-local-pgconfig.cjs)",
     "presqlgen": "rimraf **/__generated__/*.types.ts",
     "prestart": "yarn build",
     "sqlgen": "dotenv -e ../../.env yarn pgtyped",

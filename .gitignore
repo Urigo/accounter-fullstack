@@ -6,4 +6,3 @@ dist/
 .idea/
 schema.graphql
 docker/.*
-**/.htpasswd
