@@ -2,10 +2,10 @@ import { ReactElement, useCallback, useContext, useState } from 'react';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, TextInput } from '@mantine/core';
-import { FiltersContext } from '../../filters-context';
 import { AllTagsDocument } from '../../gql/graphql.js';
 import { useAddTag } from '../../hooks/use-add-tag';
 import { useDeleteTag } from '../../hooks/use-delete-tag';
+import { FiltersContext } from '../../providers/filters-context';
 import { AccounterLoader } from '../common';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

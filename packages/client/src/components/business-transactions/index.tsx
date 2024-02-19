@@ -1,12 +1,12 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
-import { FiltersContext } from '../../filters-context';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query';
+import { FiltersContext } from '../../providers/filters-context';
 import { AccounterLoader, AccounterTable } from '../common';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';

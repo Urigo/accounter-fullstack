@@ -1,7 +1,6 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
-import { FiltersContext } from '../../../filters-context';
 import {
   ChargeFilterType,
   VatMonthlyReportDocument,
@@ -9,6 +8,7 @@ import {
 } from '../../../gql/graphql.js';
 import { dedupeFragments, DEFAULT_FINANCIAL_ENTITY_ID, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
+import { FiltersContext } from '../../../providers/filters-context';
 import {
   AccounterLoader,
   EditChargeModal,

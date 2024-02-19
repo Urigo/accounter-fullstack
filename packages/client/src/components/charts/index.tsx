@@ -2,7 +2,6 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
 import { useQuery } from 'urql';
-import { FiltersContext } from '../../filters-context';
 import {
   ChargeFilter,
   Currency,
@@ -11,6 +10,7 @@ import {
 } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates';
 import { useUrlQuery } from '../../hooks/use-url-query';
+import { FiltersContext } from '../../providers/filters-context';
 import { AccounterLoader } from '../common';
 import { Card, CardContent, CardHeader, CardTitle } from './cards';
 import { BarChart } from './chart';
