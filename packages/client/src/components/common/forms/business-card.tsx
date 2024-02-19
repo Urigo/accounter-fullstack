@@ -342,40 +342,6 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
                     />
                   )}
                 />
-                {/* <Controller
-                name="defaultTaxCategoryID"
-                control={control}
-                defaultValue={charge.taxCategory?.id}
-                render={({ field, fieldState }): ReactElement => (
-                <Select
-                    {...field}
-                    data={taxCategories}
-                    value={field.value}
-                    disabled={fetchingTaxCategories}
-                    label="Tax Category Override"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                />
-                )}
-            />
-            <Controller
-                name="isProperty"
-                control={control}
-                defaultValue={charge.property}
-                render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Is Property" />
-                )}
-            />
-            <Controller
-                name="isConversion"
-                control={control}
-                defaultValue={charge.conversion}
-                render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Is Conversion" />
-                )}
-            /> */}
               </SimpleGrid>
             </div>
             <div className="mt-10 mb-5 flex justify-center gap-5">

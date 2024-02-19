@@ -50,7 +50,6 @@ export const TransactionsTable = ({ transactionsProps }: Props): ReactElement =>
             <th>Description</th>
             <th>Reference#</th>
             <th>Counterparty</th>
-            {/* <th>Activity Type</th> // TODO: implement */}
             <th>Edit</th>
           </tr>
         </thead>

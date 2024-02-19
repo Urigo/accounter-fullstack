@@ -368,7 +368,6 @@ export const ModifySalaryRecord = ({
                   currencyCodeProps={{
                     value: 'ILS',
                     label: 'Currency',
-                    // disabled: true,
                   }}
                 />
               )}

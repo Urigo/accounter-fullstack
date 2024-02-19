@@ -217,7 +217,6 @@ export const EditDocument = ({ documentId, onDone }: Props): ReactElement => {
               position="right"
               opened={openImage}
               onClose={(): void => setOpenImage(false)}
-              // padding={padding}
               size="30%"
             >
               <div className="m-2">

@@ -197,7 +197,6 @@ export const ModifyDocumentFields = ({
                   fieldState: currencyCodeFieldState,
                 }): ReactElement => (
                   <CurrencyInput
-                    // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...vatField}
                     error={vatFieldState.error?.message || currencyCodeFieldState.error?.message}
                     label="VAT"
@@ -223,7 +222,6 @@ export const ModifyDocumentFields = ({
                   fieldState: currencyCodeFieldState,
                 }): ReactElement => (
                   <CurrencyInput
-                    // className="w-full bg-gray-100 rounded border bg-opacity-50 border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     {...amountField}
                     error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
                     label="Amount"

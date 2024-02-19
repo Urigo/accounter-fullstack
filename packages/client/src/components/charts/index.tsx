@@ -260,7 +260,6 @@ export const ChartPage = (): ReactElement => {
         <AccounterLoader />
       </div>
     );
-  // if (error) return <div>Something went wrong!</div>;
 
   const totalIncome = overviewData
     .map(i => i.income)

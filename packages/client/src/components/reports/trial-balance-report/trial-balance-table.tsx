@@ -103,7 +103,6 @@ export const TrialBalanceTable = ({
           <th>Debit</th>
           <th>Credit</th>
           <th>Total</th>
-          {/* <th>More Info</th> */}
         </tr>
       </thead>
       <tbody>
