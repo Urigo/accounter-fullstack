@@ -1,5 +1,5 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
-import { UserContext } from 'packages/client/src/providers/user-provider.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';

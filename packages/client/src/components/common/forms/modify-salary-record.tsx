@@ -1,6 +1,6 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { UserContext } from 'packages/client/src/providers/user-provider';
+import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';

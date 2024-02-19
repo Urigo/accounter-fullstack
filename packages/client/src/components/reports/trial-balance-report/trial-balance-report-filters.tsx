@@ -1,6 +1,6 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import equal from 'deep-equal';
-import { UserContext } from 'packages/client/src/providers/user-provider.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';

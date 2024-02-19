@@ -1,6 +1,6 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
-import { UserContext } from 'packages/client/src/providers/user-provider.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { useQuery } from 'urql';
 import {
   ChargeFilterType,
