@@ -1,6 +1,5 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
@@ -15,6 +14,7 @@ import {
   SalaryRecordInput,
 } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TimelessDateString, UUID_REGEX } from '../../../helpers';
+import { UserContext } from '../../../providers/user-provider.js';
 
 type Props = {
   isNewInsert: boolean;

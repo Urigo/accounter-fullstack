@@ -1,7 +1,6 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
-import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -15,6 +14,7 @@ import {
 } from '../../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../all-charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
 

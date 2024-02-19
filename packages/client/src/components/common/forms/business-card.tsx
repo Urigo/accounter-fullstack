@@ -1,5 +1,4 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
-import { UserContext } from '../../../providers/user-provider.js';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -15,6 +14,7 @@ import {
 } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, writeToClipboard } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { SimpleGrid, TextInput } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

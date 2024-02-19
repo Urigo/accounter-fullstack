@@ -1,7 +1,7 @@
 export interface User {
   authdata?: string;
   username: string;
-};
+}
 
 function authToken(): string | null {
   try {

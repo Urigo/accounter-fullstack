@@ -1,6 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
-import { UserContext } from '../../../providers/user-provider.js';
 import { useQuery } from 'urql';
 import {
   ChargeFilterType,
@@ -10,6 +9,7 @@ import {
 import { dedupeFragments, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
+import { UserContext } from '../../../providers/user-provider.js';
 import {
   AccounterLoader,
   EditChargeModal,
