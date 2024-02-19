@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
+  IDeleteLedgerRecordsQuery,
   IGetLedgerRecordsByChargesIdsQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsParams,
@@ -155,6 +156,11 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
   RETURNING *;
 `;
 
+const deleteLedgerRecords = sql<IDeleteLedgerRecordsQuery>`
+  DELETE FROM accounter_schema.ledger_records
+  WHERE id IN $$ledgerRecordIds;
+`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -209,4 +215,19 @@ export class LedgerProvider {
     params.ledgerRecords.map(validateLedgerRecordParams);
     return insertLedgerRecords.run(params, this.dbProvider);
   }
+
+  private async deleteLedgerRecordsByIds(ids: readonly string[]) {
+    await deleteLedgerRecords.run(
+      {
+        ledgerRecordIds: ids,
+      },
+      this.dbProvider,
+    );
+    return ids.map(_id => void 0);
+  }
+
+  public deleteLedgerRecordsByIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.deleteLedgerRecordsByIds(keys),
+    { cache: false },
+  );
 }

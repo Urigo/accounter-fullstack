@@ -104,13 +104,16 @@ export function ledgerRecordsGenerationPartialMatchComparison(
     return recordDiffs;
   });
 
-  return [
-    ...diffs,
-    ...unmatchedNewRecords.map(record => ({
-      ...record,
-      id: EMPTY_UUID,
-    })),
-  ];
+  return {
+    toUpdate: [
+      ...diffs,
+      ...unmatchedNewRecords.map(record => ({
+        ...record,
+        id: EMPTY_UUID,
+      })),
+    ],
+    toRemove: storageRecords.filter(record => !diffs.find(diff => diff.id === record.id)),
+  };
 }
 
 function isExactMatch(
