@@ -6,7 +6,6 @@ import {
   MissingChargeInfo,
 } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { entitiesWithoutInvoice } from '../../../helpers/index.js';
 import { DragFile, ListCapsule } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -18,9 +17,6 @@ import { DragFile, ListCapsule } from '../../common/index.js';
         transactionsCount
         documentsCount
         isSalary
-      }
-      counterparty {
-          id
       }
       validationData {
         missingInfo
@@ -36,7 +32,7 @@ type Props = {
 
 export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   const data = getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, rawData);
-  const { metadata, counterparty, validationData, id, __typename } = data;
+  const { metadata, validationData, id, __typename } = data;
 
   const shouldHaveDocuments = useMemo((): boolean => {
     switch (__typename) {
@@ -97,9 +93,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
                 </Indicator>
               ),
               style:
-                metadata?.documentsCount ||
-                !shouldHaveDocuments ||
-                (counterparty && entitiesWithoutInvoice.includes(counterparty.id))
+                metadata?.documentsCount || !shouldHaveDocuments
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },
             },
