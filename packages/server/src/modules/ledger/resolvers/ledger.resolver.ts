@@ -58,12 +58,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           };
         }
 
-        const matching = ledgerRecordsGenerationPartialMatchComparison(
+        const { toUpdate, toRemove } = ledgerRecordsGenerationPartialMatchComparison(
           fullMatching.unmatchedStorageRecords,
           fullMatching.unmatchedNewRecords,
         );
 
-        const [newRecords, recordsToUpdate] = matching.reduce(
+        const [newRecords, recordsToUpdate] = toUpdate.reduce(
           (acc, record) => {
             if (record.id === EMPTY_UUID) {
               acc[0].push(record);
@@ -89,10 +89,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                 ) as IInsertLedgerRecordsParams['ledgerRecords'],
               })
             : Promise.resolve();
-        await Promise.all([...updatePromises, insertPromise]);
+        const removePromises = toRemove.map(record =>
+          injector.get(LedgerProvider).deleteLedgerRecordsByIdLoader.load(record.id),
+        );
+        await Promise.all([...updatePromises, insertPromise, removePromises]);
 
         return {
-          records: matching,
+          records: toUpdate,
           charge,
         };
       } catch (e) {
@@ -219,14 +222,14 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           };
         }
 
-        const differences = ledgerRecordsGenerationPartialMatchComparison(
+        const { toUpdate } = ledgerRecordsGenerationPartialMatchComparison(
           fullMatching.unmatchedStorageRecords,
           fullMatching.unmatchedNewRecords,
         );
 
         return {
           isValid: fullMatching.isFullyMatched,
-          differences,
+          differences: toUpdate,
           matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
         };
       } catch (err) {
