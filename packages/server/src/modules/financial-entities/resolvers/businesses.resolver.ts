@@ -135,9 +135,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
-    governmentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
+    governmentId: DbBusiness => DbBusiness.vat_number,
     name: DbBusiness => DbBusiness.name,
-    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
+    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,
