@@ -7,52 +7,40 @@ export default gql`
       @auth(role: ACCOUNTANT)
   }
 
-  " info regarding the accountant approval process "
-  type AccountantApproval {
-    approved: Boolean!
-    remark: String
-  }
-
-  " input variables for updateCharge.AccountantApproval"
-  input AccountantApprovalInput {
-    approved: Boolean!
-    remark: String
-  }
-
   extend interface Charge {
     " calculated based on ledger record and transaction approvals "
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type CommonCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type ConversionCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type SalaryCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type InternalTransferCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type DividendCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type BusinessTripCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend type MonthlyVatCharge {
-    accountantApproval: AccountantApproval!
+    accountantApproval: Boolean!
   }
 
   extend input UpdateChargeInput {
-    accountantApproval: AccountantApprovalInput
+    accountantApproval: Boolean
   }
 `;

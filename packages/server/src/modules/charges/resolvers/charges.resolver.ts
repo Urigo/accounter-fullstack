@@ -93,7 +93,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
   Mutation: {
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
-        accountantReviewed: fields.accountantApproval?.approved,
+        accountantReviewed: fields.accountantApproval,
         isConversion: fields.isConversion,
         isProperty: fields.isProperty,
         ownerId: fields.ownerId,
@@ -169,7 +169,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
-            accountantReviewed: fields?.accountantApproval?.approved,
+            accountantReviewed: fields?.accountantApproval,
             isConversion: fields?.isConversion,
             isProperty: fields?.isProperty,
             ownerId: fields?.ownerId,
