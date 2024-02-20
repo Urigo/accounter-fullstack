@@ -10,7 +10,6 @@ const config: CodegenConfig = {
   ],
   config: {
     scalars: {
-      IBAN: 'string',
       URL: 'URL | string',
       FileScalar: 'File | Blob',
     },
