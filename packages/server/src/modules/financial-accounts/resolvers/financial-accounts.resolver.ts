@@ -18,10 +18,6 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number!.toString(),
     branchNumber: DbAccount => DbAccount.branch_number!.toString(),
-    routingNumber: () => '', // TODO: implement
-    iban: () => '', // TODO: missing in DB
-    swift: () => '', // TODO: missing in DB
-    country: () => '', // TODO: missing in DB
     name: DbAccount => `${DbAccount.bank_number}-${DbAccount.account_number}`,
   },
   CardFinancialAccount: {
