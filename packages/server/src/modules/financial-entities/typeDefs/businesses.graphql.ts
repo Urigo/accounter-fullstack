@@ -12,8 +12,6 @@ export default gql`
   interface Business implements FinancialEntity {
     id: UUID!
     name: String!
-
-    linkedEntities: [Business!]!
   }
 
   " response for paginated Financial Entities "
@@ -33,8 +31,6 @@ export default gql`
     email: String
     website: String
     phoneNumber: String
-
-    linkedEntities: [Business!]!
   }
 
   " Financial entity, identifier by ID, represents an actual person "
@@ -42,8 +38,6 @@ export default gql`
     id: UUID!
     name: String!
     email: String!
-
-    linkedEntities: [Business!]!
   }
 
   extend type Mutation {
