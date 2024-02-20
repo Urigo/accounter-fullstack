@@ -158,12 +158,6 @@ export default gql`
 
   " input variables for updateTransaction "
   input UpdateTransactionInput {
-    eventDate: TimelessDate
-    effectiveDate: TimelessDate
-    amount: FinancialAmountInput
-    sourceDescription: String
-    accountId: UUID
-    balance: FinancialAmountInput
     counterpartyId: UUID
     chargeId: UUID
     isFee: Boolean

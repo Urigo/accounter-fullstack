@@ -2,10 +2,10 @@ import { ReactElement, useCallback, useContext, useEffect, useState } from 'reac
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { FiltersContext } from '../../filters-context';
 import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '../../helpers';
 import { useUrlQuery } from '../../hooks/use-url-query';
+import { FiltersContext } from '../../providers/filters-context';
+import { UserContext } from '../../providers/user-provider.js';
 import {
   AccounterLoader,
   EditChargeModal,
@@ -43,12 +43,13 @@ export const AllCharges = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
   const { get } = useUrlQuery();
+  const { userContext } = useContext(UserContext);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
   const [filter, setFilter] = useState<ChargeFilter>(
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [DEFAULT_FINANCIAL_ENTITY_ID],
+          byOwners: [userContext?.ownerId],
           sortBy: {
             field: ChargeSortByField.Date,
             asc: false,

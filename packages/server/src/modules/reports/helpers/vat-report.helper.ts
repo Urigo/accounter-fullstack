@@ -7,7 +7,7 @@ import {
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
-import { TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
+import { DEFAULT_VAT_PERCENTAGE, TAX_CATEGORIES_WITH_NOT_FULL_VAT } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 
 export type VatReportRecordSources = {
@@ -92,16 +92,16 @@ export function adjustTaxRecords(
     }
 
     if (partialRecord.businessId && partialRecord.vat) {
-      // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
-      const convertedVat = 17 / 117;
+      // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
+      const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
       const tiplessTotalAmount =
         doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);
       const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount!);
       if (vatDiff > 0.005) {
         throw new GraphQLError(
-          `VAT amount is not 17% (but ${
+          `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
             doc.vat_amount! / (tiplessTotalAmount - doc.vat_amount!)
-          }) for invoice ID=${doc.id}`,
+          } for invoice ID=${doc.id}`,
         );
       }
 

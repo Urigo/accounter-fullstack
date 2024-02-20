@@ -23,7 +23,6 @@ export default gql`
     updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
       @auth(role: ACCOUNTANT)
     deleteDocument(documentId: UUID!): Boolean! @auth(role: ADMIN)
-    fetchEmailDocument(url: URL!): FetchEmailDocumentResult! @auth(role: ADMIN)
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ADMIN)
     fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
   }
@@ -189,14 +188,6 @@ export default gql`
 
   " result type for insertDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type InsertDocumentSuccessfulResult {
-    document: Document
-  }
-
-  " result type for fetchEmailDocument "
-  union FetchEmailDocumentResult = FetchEmailDocumentSuccessfulResult | CommonError
-
-  " result type for fetchEmailDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
-  type FetchEmailDocumentSuccessfulResult {
     document: Document
   }
 

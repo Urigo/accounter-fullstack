@@ -33,7 +33,7 @@ function generateEntryRaw(
     localCurrencyCreditAmount1: amount,
     localCurrencyDebitAmount1: amount,
     description: `${month} salary: ${accountId}`,
-    isCreditorCounterparty: false, // TODO: check
+    isCreditorCounterparty: false,
     ownerId,
     chargeId,
   };

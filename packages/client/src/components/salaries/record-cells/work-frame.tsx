@@ -26,7 +26,7 @@ interface Props {
 }
 
 export const WorkFrameCell = ({ data }: Props): ReactElement => {
-  // TODO: (not in use)
+  // NOTE: (not in use)
   //     hourly_rate
   //     hours
 

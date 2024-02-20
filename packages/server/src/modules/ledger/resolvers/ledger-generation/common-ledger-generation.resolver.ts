@@ -12,7 +12,7 @@ import type { currency } from '@modules/transactions/types.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_CATEGORY_NAME,
+  EXCHANGE_RATE_TAX_CATEGORY_ID,
   INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
@@ -223,10 +223,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           }
         }
 
-        // const date3: null = null; // TODO: rethink
-        // const reference2: string | null = ''; // TODO: rethink
-        // const movementType: string | null = ''; // TODO: rethink
-
         const ledgerEntry: StrictLedgerProto = {
           id: document.id,
           invoiceDate: document.date,
@@ -270,7 +266,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           validateTransactionBasicVariables(transaction);
 
         let mainAccount: CounterAccountProto = transactionBusinessId;
-        //
+
         if (
           !shouldFetchDocuments &&
           transaction.source_reference &&
@@ -478,9 +474,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
+          .taxCategoryByIDsLoader.load(EXCHANGE_RATE_TAX_CATEGORY_ID);
         if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(`Tax category ID "${EXCHANGE_RATE_TAX_CATEGORY_ID}" not found`);
         }
 
         const { entity, balance } = unbalancedBusinesses[0];

@@ -48,7 +48,6 @@ export const Tags = ({ data }: Props): ReactElement => {
   }
 
   const updateTag = useCallback(
-    // NOTE: updating only first tag, due to DB current limitations
     (tags?: Array<{ name: string }>) => {
       updateCharge({
         chargeId,

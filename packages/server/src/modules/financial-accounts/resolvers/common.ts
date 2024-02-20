@@ -29,7 +29,6 @@ export const commonFinancialEntityFields:
   | FinancialAccountsModule.LtdFinancialEntityResolvers
   | FinancialAccountsModule.PersonalFinancialEntityResolvers = {
   accounts: async (DbBusiness, _, { injector }) => {
-    // TODO: add functionality for linkedEntities data
     const accounts = await injector
       .get(FinancialAccountsProvider)
       .getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);

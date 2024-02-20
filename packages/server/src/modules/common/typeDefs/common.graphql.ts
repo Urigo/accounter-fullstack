@@ -32,8 +32,6 @@ export default gql`
   scalar Date
   " Date with no time of day "
   scalar TimelessDate
-  " IBAN "
-  scalar IBAN
   " Rate "
   scalar Rate
   " URL "

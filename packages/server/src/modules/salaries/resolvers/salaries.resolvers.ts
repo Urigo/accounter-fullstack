@@ -227,7 +227,6 @@ export const salariesResolvers: SalariesModule.Resolvers &
     notionalExpense: DbSalary => formatFinancialAmount(DbSalary.zkufot, DEFAULT_LOCAL_CURRENCY),
     vacationDays: DbSalary => ({
       added: DbSalary.added_vacation_days ? Number(DbSalary.added_vacation_days) : null,
-      // taken: DbSalary.vacation_takeout ? Number(DbSalary.taken_vacation_days) : null,
       balance: DbSalary.vacation_days_balance ? Number(DbSalary.vacation_days_balance) : null,
     }),
     workDays: DbSalary => (DbSalary.work_days ? Number(DbSalary.work_days) : null),

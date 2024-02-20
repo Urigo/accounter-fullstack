@@ -83,7 +83,6 @@ export function ModalContent({ opened, close, setIsLoading }: ModalProps): React
           <Controller
             name="ownerId"
             control={control}
-            // defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}

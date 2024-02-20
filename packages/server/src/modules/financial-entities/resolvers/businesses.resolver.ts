@@ -134,11 +134,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   LtdFinancialEntity: {
-    // __isTypeOf: () => true,
     ...commonFinancialEntityFields,
-    governmentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
+    governmentId: DbBusiness => DbBusiness.vat_number,
     name: DbBusiness => DbBusiness.name,
-    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew ?? '', // TODO: lots missing. should it stay mandatory?
+    address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,
@@ -146,7 +145,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     phoneNumber: DbBusiness => DbBusiness.phone_number,
   },
   PersonalFinancialEntity: {
-    // __isTypeOf: () => false,
     ...commonFinancialEntityFields,
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''

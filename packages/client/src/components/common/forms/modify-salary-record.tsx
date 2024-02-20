@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
@@ -13,13 +13,8 @@ import {
   AllTrainingFundsDocument,
   SalaryRecordInput,
 } from '../../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  MakeBoolean,
-  relevantDataPicker,
-  TimelessDateString,
-  UUID_REGEX,
-} from '../../../helpers';
+import { MakeBoolean, relevantDataPicker, TimelessDateString, UUID_REGEX } from '../../../helpers';
+import { UserContext } from '../../../providers/user-provider.js';
 
 type Props = {
   isNewInsert: boolean;
@@ -49,6 +44,7 @@ export const ModifySalaryRecord = ({
     useQuery({
       query: AllPensionFundsDocument,
     });
+  const { userContext } = useContext(UserContext);
   const [{ data: trainingFundsData, fetching: fetchingTrainingFunds, error: trainingFundsError }] =
     useQuery({
       query: AllTrainingFundsDocument,
@@ -56,7 +52,7 @@ export const ModifySalaryRecord = ({
   const [{ data: employeesData, fetching: employeesFetching, error: employeesError }] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: DEFAULT_FINANCIAL_ENTITY_ID,
+      employerId: userContext?.ownerId,
     },
   });
 
@@ -168,9 +164,9 @@ export const ModifySalaryRecord = ({
 
   useEffect(() => {
     if (!defaultValues?.employer) {
-      setValue('employer', DEFAULT_FINANCIAL_ENTITY_ID, { shouldDirty: true, shouldTouch: true });
+      setValue('employer', userContext?.ownerId, { shouldDirty: true, shouldTouch: true });
     }
-  }, [setValue, defaultValues?.employer]);
+  }, [setValue, defaultValues?.employer, userContext?.ownerId]);
 
   const onSalaryRecordSubmit: SubmitHandler<SalaryRecordInput> = data => {
     console.log('data', data);
@@ -372,7 +368,6 @@ export const ModifySalaryRecord = ({
                   currencyCodeProps={{
                     value: 'ILS',
                     label: 'Currency',
-                    // disabled: true,
                   }}
                 />
               )}

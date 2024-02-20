@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -12,13 +12,9 @@ import {
   FetchBusinessQuery,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  MakeBoolean,
-  relevantDataPicker,
-  writeToClipboard,
-} from '../../../helpers/index.js';
+import { MakeBoolean, relevantDataPicker, writeToClipboard } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { SimpleGrid, TextInput } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -59,6 +55,8 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   const [business, setBusiness] = useState<
     Extract<FetchBusinessQuery['business'], { __typename: 'LtdFinancialEntity' }> | undefined
   >(undefined);
+
+  const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessLoading } = useUpdateBusiness();
 
@@ -160,7 +158,7 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
 
       updateDbBusiness({
         businessId: business.id,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: userContext?.ownerId,
         fields: dataToUpdate,
       }).then(() => refetchBusiness());
     }
@@ -344,40 +342,6 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
                     />
                   )}
                 />
-                {/* <Controller
-                name="defaultTaxCategoryID"
-                control={control}
-                defaultValue={charge.taxCategory?.id}
-                render={({ field, fieldState }): ReactElement => (
-                <Select
-                    {...field}
-                    data={taxCategories}
-                    value={field.value}
-                    disabled={fetchingTaxCategories}
-                    label="Tax Category Override"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                />
-                )}
-            />
-            <Controller
-                name="isProperty"
-                control={control}
-                defaultValue={charge.property}
-                render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Is Property" />
-                )}
-            />
-            <Controller
-                name="isConversion"
-                control={control}
-                defaultValue={charge.conversion}
-                render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Is Conversion" />
-                )}
-            /> */}
               </SimpleGrid>
             </div>
             <div className="mt-10 mb-5 flex justify-center gap-5">

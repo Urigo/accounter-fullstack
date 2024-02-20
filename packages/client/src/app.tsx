@@ -11,7 +11,7 @@ import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
 import { Salaries } from './components/salaries';
 import { TagsManager } from './components/tags';
-import { FiltersContext } from './filters-context';
+import { FiltersContext } from './providers/filters-context';
 
 export function App(): ReactElement {
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);

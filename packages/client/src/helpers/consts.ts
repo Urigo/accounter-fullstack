@@ -5,6 +5,4 @@ export const TIMELESS_DATE_REGEX =
 export const UUID_REGEX =
   /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
 
-export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
-
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';

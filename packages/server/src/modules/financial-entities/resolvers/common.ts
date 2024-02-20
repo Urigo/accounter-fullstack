@@ -9,7 +9,6 @@ export const commonFinancialEntityFields:
   | FinancialEntitiesModule.LtdFinancialEntityResolvers
   | FinancialEntitiesModule.PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
-  linkedEntities: () => [], // TODO: implement
 };
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {

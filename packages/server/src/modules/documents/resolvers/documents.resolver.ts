@@ -25,7 +25,6 @@ import {
   commonFinancialEntityFields,
 } from './common.js';
 import { uploadDocument } from './document-handling.js';
-import { fetchEmailDocument } from './email-handling.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers &
   Pick<
@@ -48,7 +47,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   },
   Mutation: {
     uploadDocument,
-    fetchEmailDocument,
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
 
@@ -327,24 +325,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return 'UploadDocumentSuccessfulResult';
     },
   },
-  // UpdateDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'UpdateDocumentSuccessfulResult';
-  //   },
-  // },
-  // InsertDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'InsertDocumentSuccessfulResult';
-  //   },
-  // },
-  // UploadDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'UploadDocumentSuccessfulResult';
-  //   },
-  // },
   Invoice: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,

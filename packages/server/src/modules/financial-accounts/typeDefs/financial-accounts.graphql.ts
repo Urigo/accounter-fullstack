@@ -24,14 +24,6 @@ export default gql`
     accountNumber: String!
     bankNumber: String!
     branchNumber: String!
-    " calculate based on bank+branch "
-    routingNumber: String!
-    " the external identifier of the bank account "
-    iban: IBAN!
-    " swift "
-    swift: String!
-    " country "
-    country: String!
   }
 
   " represent a single credit card "

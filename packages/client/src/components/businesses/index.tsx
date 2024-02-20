@@ -2,9 +2,9 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Table, Tooltip } from '@mantine/core';
-import { FiltersContext } from '../../filters-context.js';
 import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterLoader } from '../common/index.js';
 import { AllBusinessesRow } from './all-businesses-row.js';
 import { BusinessesFilters } from './businesses-filters.js';
@@ -66,41 +66,31 @@ export const Businesses = (): ReactElement => {
       .filter(business => business.__typename === 'LtdFinancialEntity')
       .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1)) ?? [];
 
-  return (
-    <>
-      {fetching ? (
-        <AccounterLoader />
-      ) : (
-        <Table striped highlightOnHover>
-          <thead className="sticky top-0 z-20">
-            <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
-              <th>Name</th>
-              <th>Hebrew Name</th>
-              <th>More Info</th>
-            </tr>
-          </thead>
-          <tbody>
-            {businesses.map(business => (
-              <AllBusinessesRow
-                key={business.id}
-                data={
-                  business as Extract<
-                    NonNullable<AllBusinessesForScreenQuery['allBusinesses']>['nodes'][number],
-                    { __typename: 'LtdFinancialEntity' }
-                  >
-                }
-                isAllOpened={isAllOpened}
-              />
-            ))}
-          </tbody>
-        </Table>
-      )}
-      {/* {insertDocument && (
-        <InsertDocumentModal
-          insertDocument={insertDocument}
-          setInsertDocument={setInsertDocument}
-        />
-      )} */}
-    </>
+  return fetching ? (
+    <AccounterLoader />
+  ) : (
+    <Table striped highlightOnHover>
+      <thead className="sticky top-0 z-20">
+        <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+          <th>Name</th>
+          <th>Hebrew Name</th>
+          <th>More Info</th>
+        </tr>
+      </thead>
+      <tbody>
+        {businesses.map(business => (
+          <AllBusinessesRow
+            key={business.id}
+            data={
+              business as Extract<
+                NonNullable<AllBusinessesForScreenQuery['allBusinesses']>['nodes'][number],
+                { __typename: 'LtdFinancialEntity' }
+              >
+            }
+            isAllOpened={isAllOpened}
+          />
+        ))}
+      </tbody>
+    </Table>
   );
 };

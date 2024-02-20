@@ -13,7 +13,7 @@ import {
   BATCHED_EMPLOYEE_BUSINESS_ID,
   BATCHED_PENSION_BUSINESS_ID,
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_CATEGORY_NAME,
+  EXCHANGE_RATE_TAX_CATEGORY_ID,
   SALARY_BATCHED_BUSINESSES,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -116,7 +116,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           localCurrencyCreditAmount1: amount,
           localCurrencyDebitAmount1: amount,
           description: `${month} salary: ${taxCategory.name}`,
-          isCreditorCounterparty: false, // TODO: check
+          isCreditorCounterparty: false,
           ownerId: charge.owner_id,
           chargeId,
         };
@@ -323,9 +323,9 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
+          .taxCategoryByIDsLoader.load(EXCHANGE_RATE_TAX_CATEGORY_ID);
         if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(`Tax category ID "${EXCHANGE_RATE_TAX_CATEGORY_ID}" not found`);
         }
 
         const amount = Math.abs(tempLedgerBalanceInfo.balanceSum);

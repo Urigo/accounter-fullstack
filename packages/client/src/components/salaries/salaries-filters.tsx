@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, startOfYear } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -8,12 +8,9 @@ import { ActionIcon, MultiSelect } from '@mantine/core';
 import { MonthPicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
-import {
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  isObjectEmpty,
-  TimelessDateString,
-} from '../../helpers/index.js';
+import { isObjectEmpty, TimelessDateString } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 
 export type SalariesFilter = {
@@ -48,11 +45,12 @@ function SalariesFiltersForm({
     defaultValues: { ...filter },
   });
   const [employees, setEmployees] = useState<Array<{ value: string; label: string }>>([]);
+  const { userContext } = useContext(UserContext);
   const [{ data: employeesData, fetching: employeesFetching, error: financialEntitiesError }] =
     useQuery({
       query: AllEmployeesByEmployerDocument,
       variables: {
-        employerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        employerId: userContext?.ownerId,
       },
     });
 

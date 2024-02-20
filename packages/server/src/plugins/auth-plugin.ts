@@ -58,13 +58,6 @@ function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
 }
 
 const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
-  /* log hashed password to console */
-  // if (user) {
-  //   bcrypt.hash(user.pass, 10, (_err, hash) => {
-  //     console.log(`${user.name}: "${hash}"`)
-  //   });
-  // }
-
   try {
     const user = getUserFromRequest(context.request);
     const role = getUserRole(user);

@@ -164,15 +164,14 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
       const isFilteredByFinancialEntities = !!filters?.businessIDs?.length;
 
-      const [financialEmtities, taxCategories] = await Promise.all([
+      const [financialEntities, taxCategories] = await Promise.all([
         injector
           .get(FinancialEntitiesProvider)
           .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []),
         injector.get(TaxCategoriesProvider).getAllTaxCategories(),
       ]);
 
-      // TODO: can be replaced with FinancialEntitiesProvider and type check?
-      const financialEntitiesIDs = financialEmtities
+      const financialEntitiesIDs = financialEntities
         ?.filter(business => business && 'id' in business)
         .map(business => (business as IGetBusinessesByIdsResult).id);
       const taxCategoriesIDs = taxCategories

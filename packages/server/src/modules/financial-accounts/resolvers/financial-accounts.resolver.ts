@@ -16,12 +16,8 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     __isTypeOf: DbAccount => DbAccount.type === 'bank',
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
-    bankNumber: DbAccount => DbAccount.bank_number?.toString() ?? '', // TODO: remove alternative ''
-    branchNumber: DbAccount => DbAccount.branch_number?.toString() ?? '', // TODO: remove alternative ''
-    routingNumber: () => '', // TODO: implement
-    iban: () => '', // TODO: missing in DB
-    swift: () => '', // TODO: missing in DB
-    country: () => '', // TODO: missing in DB
+    bankNumber: DbAccount => DbAccount.bank_number!.toString(),
+    branchNumber: DbAccount => DbAccount.branch_number!.toString(),
     name: DbAccount => `${DbAccount.bank_number}-${DbAccount.account_number}`,
   },
   CardFinancialAccount: {

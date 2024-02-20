@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { Currency, FinancialAmount, FinancialIntAmount } from '@shared/gql-types';
 
 export const addCommasToStringifiedInt = (rawAmount: string | number): string => {
@@ -75,17 +76,13 @@ export function getCurrencySymbol(currency: Currency) {
     case Currency.Ils:
       return '₪';
     case Currency.Grt:
-      // TODO: use symbol
       return 'GRT';
     case Currency.Usdc:
-      // TODO: use symbol
       return 'USDC';
     case Currency.Eth:
-      // TODO: use symbol
-      return 'ETH';
+      return 'Ξ';
     default:
-      console.warn(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
-      return '₪';
+      throw new GraphQLError(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
   }
 }
 
@@ -112,14 +109,12 @@ export const formatAmount = (rawAmount?: number | string | null): number => {
       return rawAmount;
     case 'string': {
       const amount = parseFloat(rawAmount);
-      if (!Number.isNaN(amount)) {
-        return amount;
+      if (Number.isNaN(amount)) {
+        throw new GraphQLError(`Unknown string amount: "${rawAmount}". Using 0 instead.`);
       }
-      console.warn(`Unknown string amount: "${rawAmount}". Using 0 instead.`);
-      return 0;
+      return amount;
     }
     default:
-      // console.warn(`Unknown amount: "${rawAmount}". Using 0 instead.`);
       return 0;
   }
 };

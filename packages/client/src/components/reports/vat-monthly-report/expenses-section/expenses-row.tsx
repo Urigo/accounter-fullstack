@@ -92,9 +92,7 @@ export const ExpensesRow = ({
         <td className="whitespace-nowrap">
           {expenseItem.roundedLocalVatAfterDeduction?.formatted}
         </td>
-        <td className="whitespace-nowrap">&#8362; {formatStringifyAmount(cumulativeVat, 0)}</td>
-        {/* <td className="whitespace-nowrap">{expenseItem.taxReducedLocalAmount?.formatted}</td> */}
-        #{' '}
+        <td className="whitespace-nowrap">&#8362; {formatStringifyAmount(cumulativeVat, 0)}</td>#{' '}
         <td className="whitespace-nowrap">
           &#8362; {formatStringifyAmount(cumulativeAmount, 0)}#{' '}
         </td>

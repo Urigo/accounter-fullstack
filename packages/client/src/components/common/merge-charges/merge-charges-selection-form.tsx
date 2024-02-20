@@ -397,6 +397,3 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     </>
   );
 }
-
-// state for selected base charge
-// execute merge mutation

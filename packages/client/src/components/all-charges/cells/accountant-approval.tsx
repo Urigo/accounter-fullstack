@@ -8,9 +8,7 @@ import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-cha
 /* GraphQL */ `
   fragment AllChargesAccountantApprovalFields on Charge {
     id
-    accountantApproval {
-      approved
-    }
+    accountantApproval
   }
 `;
 
@@ -20,7 +18,7 @@ interface Props {
 
 export function AccountantApproval({ data }: Props): ReactElement {
   const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
-  const [checked, setChecked] = useState(charge.accountantApproval.approved);
+  const [checked, setChecked] = useState(charge.accountantApproval);
   const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
 
   function onToggle(approved: boolean): void {

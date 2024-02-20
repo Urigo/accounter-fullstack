@@ -35,22 +35,6 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
     value: ChargeSortByField.AbsAmount,
     label: 'Abs Amount',
   },
-  //   {
-  //     value: 'account_number',
-  //     label: 'Account Number',
-  //   },
-  //   {
-  //     value: 'account_type',
-  //     label: 'Account Type',
-  //   },
-  //   {
-  //     value: 'currency_code',
-  //     label: 'Currency',
-  //   },
-  //   {
-  //     value: 'debit_date',
-  //     label: 'Debit Date',
-  //   },
   {
     value: ChargeSortByField.Amount,
     label: 'Amount',
@@ -59,34 +43,6 @@ const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
     value: ChargeSortByField.Date,
     label: 'Date',
   },
-  //   {
-  //     value: 'financial_entity_id',
-  //     label: 'Financial Entity ID',
-  //   },
-  //   {
-  //     value: 'personal_category',
-  //     label: 'Personal Category',
-  //   },
-  //   {
-  //     value: 'receipt_date',
-  //     label: 'Receipt Date',
-  //   },
-  //   {
-  //     value: 'tax_category',
-  //     label: 'Tax Category',
-  //   },
-  //   {
-  //     value: 'tax_invoice_amount',
-  //     label: 'Invoice Amount',
-  //   },
-  //   {
-  //     value: 'tax_invoice_date',
-  //     label: 'Invoice Date',
-  //   },
-  //   {
-  //     value: 'vat',
-  //     label: 'Vat',
-  //   },
 ];
 
 export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilterType }> = [
@@ -172,7 +128,7 @@ function ChargesFiltersForm({
     }
   }, [feData, setFinancialEntities]);
 
-  // On every new financial entities data fetch, reorder results by name
+  // On every new tags data fetch, reorder results by name
   useEffect(() => {
     if (tagsData?.allTags.length) {
       setTags(

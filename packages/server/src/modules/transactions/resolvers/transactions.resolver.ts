@@ -6,7 +6,6 @@ import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.hel
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
@@ -113,21 +112,6 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         }
 
         const adjustedFields: IUpdateTransactionParams = {
-          accountId: fields.accountId,
-          // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-          Amount:
-            fields.amount?.currency && fields.amount.currency !== Currency.Ils
-              ? null
-              : fields.amount?.raw?.toFixed(2),
-          currency: fields.amount?.currency,
-          // TODO: implement not-Ils logic. currently if vatCurrency is set and not to Ils, ignoring the update
-          currentBalance:
-            fields.balance?.currency && fields.balance.currency !== Currency.Ils
-              ? null
-              : fields.balance?.raw?.toFixed(2),
-          debitDate: fields.effectiveDate ? new Date(fields.effectiveDate) : null,
-          eventDate: fields.eventDate ? new Date(fields.eventDate) : null,
-          sourceDescription: fields.sourceDescription,
           transactionId,
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
@@ -171,12 +155,6 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   DividendCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
-  // WireTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  // FeeTransaction: {
-  //   ...commonTransactionFields,
-  // },
   ConversionTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.is_conversion ?? false,
     ...commonTransactionFields,

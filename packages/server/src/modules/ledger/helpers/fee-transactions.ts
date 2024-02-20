@@ -8,7 +8,8 @@ import {
   DEFAULT_LOCAL_CURRENCY,
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
-  FEE_CATEGORY_NAME,
+  FEE_TAX_CATEGORY_ID,
+  INTERNAL_WALLETS_IDS,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
   SWIFT_BUSINESS_ID,
@@ -24,7 +25,6 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
   const mainTransactions = [];
   for (const transaction of transactions) {
     if (transaction.is_fee) {
-      // TODO: ugly workaround to set swift as fee
       feeTransactions.push(transaction);
     } else {
       mainTransactions.push(transaction);
@@ -45,15 +45,7 @@ export function isSupplementalFeeTransaction(
     );
   }
 
-  // TODO: improve this raw implementation
-  const supplementalFeeBusinesses: string[] = [
-    // TODO: improve this logic
-    ETHERSCAN_BUSINESS_ID,
-    ETANA_BUSINESS_ID,
-    KRAKEN_BUSINESS_ID,
-    POALIM_BUSINESS_ID,
-  ];
-  if (supplementalFeeBusinesses.includes(transaction.business_id)) {
+  if (INTERNAL_WALLETS_IDS.includes(transaction.business_id)) {
     return true;
   }
 
@@ -100,9 +92,9 @@ export async function getEntriesFromFeeTransaction(
 
   const feeTaxCategory = await injector
     .get(TaxCategoriesProvider)
-    .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+    .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
   if (!feeTaxCategory) {
-    throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+    throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
   }
 
   const isCreditorCounterparty = amount > 0;

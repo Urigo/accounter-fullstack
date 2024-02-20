@@ -17,7 +17,6 @@ export function filterSalaryRecordsByCharge(
       return true;
     }
     const amountsDoMatch = true;
-    // charge.transactions_event_amount?.replace('-', '') === record.direct_payment_amount;
     const businessesDoMatch = charge.business_id === record.employee_id;
     return amountsDoMatch && businessesDoMatch;
   });

@@ -1,8 +1,8 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
-import { FiltersContext } from '../../filters-context.js';
 import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import {
   AccounterLoader,
   EditSalaryRecordModal,

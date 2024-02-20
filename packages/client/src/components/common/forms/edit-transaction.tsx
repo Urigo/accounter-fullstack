@@ -1,19 +1,15 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { CurrencyInput, SimpleGrid, TextInput } from '..';
+import { SimpleGrid } from '..';
 import {
-  AllFinancialAccountsDocument,
   AllFinancialEntitiesDocument,
-  Currency,
   EditTransactionDocument,
   UpdateTransactionInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -75,9 +71,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
-  const [financialAccounts, setFinancialAccounts] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
   const {
     control: transactionControl,
     handleSubmit: handleTransactionSubmit,
@@ -113,16 +106,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
     query: AllFinancialEntitiesDocument,
   });
 
-  const [
-    {
-      data: financialAccountsData,
-      fetching: fetchingFinancialAccounts,
-      error: financialAccountsError,
-    },
-  ] = useQuery({
-    query: AllFinancialAccountsDocument,
-  });
-
   useEffect(() => {
     if (financialEntitiesError) {
       showNotification({
@@ -132,16 +115,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
       });
     }
   }, [financialEntitiesError]);
-
-  useEffect(() => {
-    if (financialAccountsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial accounts! 🤥',
-        color: 'red',
-      });
-    }
-  }, [financialAccountsError]);
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
@@ -156,18 +129,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
       );
     }
   }, [financialEntitiesData, setFinancialEntities]);
-  useEffect(() => {
-    if (financialAccountsData?.allFinancialAccounts.length) {
-      setFinancialAccounts(
-        financialAccountsData?.allFinancialAccounts
-          .map(account => ({
-            value: account.id,
-            label: account.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [financialAccountsData, setFinancialAccounts]);
 
   return (
     <>
@@ -178,26 +139,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
         <form onSubmit={handleTransactionSubmit(onTransactionSubmit)}>
           <div className="flex-row px-10 h-max justify-start block">
             <SimpleGrid cols={3}>
-              <Controller
-                name="sourceDescription"
-                control={transactionControl}
-                defaultValue={transaction.sourceDescription}
-                rules={{
-                  required: 'Required',
-                  minLength: {
-                    value: 2,
-                    message: 'Must be at least 2 characters',
-                  },
-                }}
-                render={({ field: { value, ...field }, fieldState }): ReactElement => (
-                  <TextInput
-                    {...field}
-                    value={value ?? undefined}
-                    error={fieldState.error?.message}
-                    label="Source Description"
-                  />
-                )}
-              />
               <Controller
                 name="counterpartyId"
                 control={transactionControl}
@@ -217,127 +158,6 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
                     maxDropdownHeight={160}
                     searchable
                     error={fieldState.error?.message}
-                  />
-                )}
-              />
-              <Controller
-                name="accountId"
-                control={transactionControl}
-                defaultValue={transaction.account?.id}
-                rules={{
-                  required: 'Required',
-                  minLength: { value: 2, message: 'Minimum 2 characters' },
-                }}
-                render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    {...field}
-                    data={financialAccounts}
-                    value={field.value}
-                    disabled={fetchingFinancialAccounts}
-                    label="Account"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                  />
-                )}
-              />
-              <Controller
-                name="amount.raw"
-                control={transactionControl}
-                defaultValue={transaction.amount?.raw}
-                render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-                  <Controller
-                    name="amount.currency"
-                    control={transactionControl}
-                    defaultValue={transaction.amount?.currency ?? Currency.Ils}
-                    render={({
-                      field: currencyCodeField,
-                      fieldState: currencyCodeFieldState,
-                    }): ReactElement => (
-                      <CurrencyInput
-                        {...amountField}
-                        value={amountField.value ?? undefined}
-                        error={
-                          amountFieldState.error?.message || currencyCodeFieldState.error?.message
-                        }
-                        label="Amount"
-                        currencyCodeProps={{
-                          ...currencyCodeField,
-                          label: 'Currency',
-                        }}
-                      />
-                    )}
-                  />
-                )}
-              />
-              <Controller
-                name="balance.raw"
-                control={transactionControl}
-                defaultValue={transaction.balance?.raw}
-                render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-                  <Controller
-                    name="amount.currency"
-                    control={transactionControl}
-                    defaultValue={transaction.amount?.currency ?? Currency.Ils}
-                    render={({
-                      field: currencyCodeField,
-                      fieldState: currencyCodeFieldState,
-                    }): ReactElement => (
-                      <CurrencyInput
-                        {...amountField}
-                        value={amountField.value ?? undefined}
-                        error={
-                          amountFieldState.error?.message || currencyCodeFieldState.error?.message
-                        }
-                        label="Balance"
-                        currencyCodeProps={{
-                          ...currencyCodeField,
-                          label: 'Currency',
-                          disabled: true,
-                        }}
-                      />
-                    )}
-                  />
-                )}
-              />
-              <Controller
-                name="eventDate"
-                control={transactionControl}
-                defaultValue={transaction.eventDate}
-                render={({ field, fieldState }): ReactElement => (
-                  <DatePickerInput
-                    {...field}
-                    label="Event Date"
-                    value={field.value ? new Date(field.value) : undefined}
-                    valueFormat="DD/MM/YY"
-                    error={fieldState.error?.message}
-                    onChange={(date): void | null =>
-                      date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))
-                    }
-                  />
-                )}
-              />
-              <Controller
-                name="effectiveDate"
-                control={transactionControl}
-                defaultValue={transaction.effectiveDate}
-                rules={{
-                  pattern: {
-                    value: TIMELESS_DATE_REGEX,
-                    message: 'Date must be im format yyyy-mm-dd',
-                  },
-                }}
-                render={({ field, fieldState }): ReactElement => (
-                  <DatePickerInput
-                    {...field}
-                    label="Effective Date"
-                    value={field.value ? new Date(field.value) : undefined}
-                    valueFormat="DD/MM/YY"
-                    error={fieldState.error?.message}
-                    onChange={(date): void | null =>
-                      date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))
-                    }
                   />
                 )}
               />
