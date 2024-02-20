@@ -8,8 +8,8 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import type { currency } from '@modules/transactions/types.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_CATEGORY_NAME,
-  FEE_CATEGORY_NAME,
+  EXCHANGE_RATE_TAX_CATEGORY_ID,
+  FEE_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
@@ -163,9 +163,9 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
       const feeTaxCategory = await injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+        .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
       if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+        throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
       }
 
       const isCreditorCounterparty = amount > 0;
@@ -253,9 +253,9 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       if (hasMultipleDates && hasForeignCurrency) {
         const exchangeCategory = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(EXCHANGE_RATE_CATEGORY_NAME);
+          .taxCategoryByIDsLoader.load(EXCHANGE_RATE_TAX_CATEGORY_ID);
         if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category "${EXCHANGE_RATE_CATEGORY_NAME}" not found`);
+          throw new GraphQLError(`Tax category ID "${EXCHANGE_RATE_TAX_CATEGORY_ID}" not found`);
         }
 
         const amount = Math.abs(balanceSum);

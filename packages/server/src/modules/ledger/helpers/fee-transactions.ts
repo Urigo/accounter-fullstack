@@ -8,7 +8,7 @@ import {
   DEFAULT_LOCAL_CURRENCY,
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
-  FEE_CATEGORY_NAME,
+  FEE_TAX_CATEGORY_ID,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
   SWIFT_BUSINESS_ID,
@@ -99,9 +99,9 @@ export async function getEntriesFromFeeTransaction(
 
   const feeTaxCategory = await injector
     .get(TaxCategoriesProvider)
-    .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+    .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
   if (!feeTaxCategory) {
-    throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+    throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
   }
 
   const isCreditorCounterparty = amount > 0;

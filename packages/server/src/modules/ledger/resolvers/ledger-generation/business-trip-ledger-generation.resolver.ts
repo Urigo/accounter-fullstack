@@ -7,7 +7,7 @@ import { FinancialAccountsProvider } from '@modules/financial-accounts/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, FEE_CATEGORY_NAME } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, FEE_TAX_CATEGORY_ID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -151,9 +151,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       const feeTaxCategory = await injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(FEE_CATEGORY_NAME);
+        .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
       if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category "${FEE_CATEGORY_NAME}" not found`);
+        throw new GraphQLError(`Tax category "${FEE_TAX_CATEGORY_ID}" not found`);
       }
 
       const isCreditorCounterparty = amount > 0;
