@@ -9,6 +9,7 @@ import {
   ETANA_BUSINESS_ID,
   ETHERSCAN_BUSINESS_ID,
   FEE_TAX_CATEGORY_ID,
+  INTERNAL_WALLETS_IDS,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
   SWIFT_BUSINESS_ID,
@@ -44,15 +45,7 @@ export function isSupplementalFeeTransaction(
     );
   }
 
-  // TODO: improve this raw implementation
-  const supplementalFeeBusinesses: string[] = [
-    // TODO: improve this logic
-    ETHERSCAN_BUSINESS_ID,
-    ETANA_BUSINESS_ID,
-    KRAKEN_BUSINESS_ID,
-    POALIM_BUSINESS_ID,
-  ];
-  if (supplementalFeeBusinesses.includes(transaction.business_id)) {
+  if (INTERNAL_WALLETS_IDS.includes(transaction.business_id)) {
     return true;
   }
 
