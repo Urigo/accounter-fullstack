@@ -134,7 +134,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   LtdFinancialEntity: {
-    // __isTypeOf: () => true,
     ...commonFinancialEntityFields,
     governmentId: DbBusiness => DbBusiness.vat_number ?? '', // TODO: lots missing. should it stay mandatory?
     name: DbBusiness => DbBusiness.name,
@@ -146,7 +145,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     phoneNumber: DbBusiness => DbBusiness.phone_number,
   },
   PersonalFinancialEntity: {
-    // __isTypeOf: () => false,
     ...commonFinancialEntityFields,
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''

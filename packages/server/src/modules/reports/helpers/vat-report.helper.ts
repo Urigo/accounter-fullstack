@@ -92,7 +92,7 @@ export function adjustTaxRecords(
     }
 
     if (partialRecord.businessId && partialRecord.vat) {
-      // TODO: Add a check if there is vat and it's not equal for 17 percent, let us know
+      // TODO: figure out how to handle VAT != 17%
       const convertedVat = 17 / 117;
       const tiplessTotalAmount =
         doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);

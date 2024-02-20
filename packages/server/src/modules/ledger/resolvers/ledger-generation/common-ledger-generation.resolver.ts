@@ -223,10 +223,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           }
         }
 
-        // const date3: null = null; // TODO: rethink
-        // const reference2: string | null = ''; // TODO: rethink
-        // const movementType: string | null = ''; // TODO: rethink
-
         const ledgerEntry: StrictLedgerProto = {
           id: document.id,
           invoiceDate: document.date,
@@ -270,7 +266,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           validateTransactionBasicVariables(transaction);
 
         let mainAccount: CounterAccountProto = transactionBusinessId;
-        //
+
         if (
           !shouldFetchDocuments &&
           transaction.source_reference &&

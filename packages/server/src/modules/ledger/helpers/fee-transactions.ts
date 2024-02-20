@@ -24,7 +24,6 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
   const mainTransactions = [];
   for (const transaction of transactions) {
     if (transaction.is_fee) {
-      // TODO: ugly workaround to set swift as fee
       feeTransactions.push(transaction);
     } else {
       mainTransactions.push(transaction);

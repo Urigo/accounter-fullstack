@@ -1,5 +1,3 @@
-// import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-// import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -15,7 +13,6 @@ import {
 } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type { DocumentSuggestionsProto } from '@shared/types';
-// import { formatAmount, formatFinancialAmount } from '@shared/helpers';
 import type { DocumentsModule } from '../types.js';
 
 type Suggestion = Awaited<ResolversTypes['DocumentSuggestions']>;

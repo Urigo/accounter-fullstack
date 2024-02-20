@@ -327,24 +327,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return 'UploadDocumentSuccessfulResult';
     },
   },
-  // UpdateDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'UpdateDocumentSuccessfulResult';
-  //   },
-  // },
-  // InsertDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'InsertDocumentSuccessfulResult';
-  //   },
-  // },
-  // UploadDocumentResult: {
-  //   __resolveType: (obj, _context, _info) => {
-  //     if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-  //     return 'UploadDocumentSuccessfulResult';
-  //   },
-  // },
   Invoice: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,

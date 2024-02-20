@@ -410,12 +410,6 @@ function missingInfoSuggestionsWrapper(
 }
 
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
-  // WireTransaction: {
-  //   missingInfoSuggestions: missingInfoSuggestions as WireTransactionResolvers['missingInfoSuggestions'],
-  // },
-  // FeeTransaction: {
-  //   missingInfoSuggestions: missingInfoSuggestions as FeeTransactionResolvers['missingInfoSuggestions'],
-  // },
   ConversionTransaction: {
     missingInfoSuggestions: missingInfoSuggestionsWrapper,
   },

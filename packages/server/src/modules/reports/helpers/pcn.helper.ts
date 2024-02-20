@@ -34,26 +34,11 @@ const headerPropsFromTransactions = (
         salesRecordCount += 1;
         break;
       }
-      // case EntryType.SALE_ZERO_OR_EXEMPT: {
-      //   break;
-      // }
-      // case EntryType.SALE_UNIDENTIFIED_CUSTOMER: {
-      //   break;
-      // }
       case EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT: {
         salesRecordCount += 1;
         zeroValOrExemptSalesCount += t.invoiceSum;
         break;
       }
-      // case EntryType.SALE_SELF_INVOICE: {
-      //   break;
-      // }
-      // case EntryType.SALE_EXPORT: {
-      //   break;
-      // }
-      // case EntryType.SALE_PALESTINIAN_CUSTOMER: {
-      //   break;
-      // }
       case EntryType.INPUT_REGULAR: {
         if (t.isProperty) {
           equipmentInputsVat += t.totalVat;
@@ -72,18 +57,6 @@ const headerPropsFromTransactions = (
         inputsCount += 1;
         break;
       }
-      // case EntryType.INPUT_IMPORT: {
-      //   break;
-      // }
-      // case EntryType.INPUT_PALESTINIAN_SUPPLIER: {
-      //   break;
-      // }
-      // case EntryType.INPUT_SINGLE_DOC_BY_LAW: {
-      //   break;
-      // }
-      // case EntryType.INPUT_SELF_INVOICE: {
-      //   break;
-      // }
       default: {
         console.debug(`Transaction EntryType  ${t.entryType} is not implemented yet`);
       }

@@ -3,7 +3,6 @@ import { GraphQLError } from 'graphql';
 import type { currency, IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
 import { NoOptionalField } from '@shared/types';
-// import type { VatExtendedCharge } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
 type ValidatedTransaction = NoOptionalField<IGetTransactionsByIdsResult, 'debit_date'>;

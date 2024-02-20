@@ -116,7 +116,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           localCurrencyCreditAmount1: amount,
           localCurrencyDebitAmount1: amount,
           description: `${month} salary: ${taxCategory.name}`,
-          isCreditorCounterparty: false, // TODO: check
+          isCreditorCounterparty: false,
           ownerId: charge.owner_id,
           chargeId,
         };
