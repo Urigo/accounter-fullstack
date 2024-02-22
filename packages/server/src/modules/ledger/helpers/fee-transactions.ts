@@ -6,15 +6,11 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
   DEFAULT_LOCAL_CURRENCY,
-  ETANA_BUSINESS_ID,
-  ETHERSCAN_BUSINESS_ID,
   FEE_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
-  KRAKEN_BUSINESS_ID,
-  POALIM_BUSINESS_ID,
   SWIFT_BUSINESS_ID,
 } from '@shared/constants';
-import type { CounterAccountProto, LedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 import {
   getTaxCategoryNameByAccountCurrency,
   validateTransactionBasicVariables,
@@ -90,16 +86,9 @@ export async function getEntriesFromFeeTransaction(
     amount = exchangeRate * amount;
   }
 
-  const feeTaxCategory = await injector
-    .get(TaxCategoriesProvider)
-    .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
-  if (!feeTaxCategory) {
-    throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
-  }
-
   const isCreditorCounterparty = amount > 0;
 
-  let mainAccount: CounterAccountProto = transactionBusinessId;
+  let mainAccount = transactionBusinessId;
 
   const partialLedgerEntry: LedgerProto = {
     id: transaction.id,
@@ -133,7 +122,7 @@ export async function getEntriesFromFeeTransaction(
       throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
     }
 
-    mainAccount = businessTaxCategory;
+    mainAccount = businessTaxCategory.id;
   } else {
     const mainBusiness = charge.business_id ?? undefined;
 
@@ -148,8 +137,8 @@ export async function getEntriesFromFeeTransaction(
 
   const ledgerEntry: LedgerProto = {
     ...partialLedgerEntry,
-    creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
-    debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+    creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : mainAccount,
+    debitAccountID1: isCreditorCounterparty ? mainAccount : FEE_TAX_CATEGORY_ID,
   };
 
   ledgerEntries.push(ledgerEntry);

@@ -1,6 +1,5 @@
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types.js';
 import type { Currency, Role } from '@shared/gql-types';
 import type { env } from '../../environment.js';
 
@@ -17,7 +16,7 @@ export type RawBusinessTransactionsSum = {
   eur: CurrencySum;
   gbp: CurrencySum;
   usd: CurrencySum;
-  business: CounterAccountProto;
+  businessId: string;
 };
 
 export type VatExtendedCharge = IGetChargesByIdsResult & {
@@ -38,8 +37,8 @@ export interface DocumentSuggestionsProto {
 
 export type BusinessTransactionProto = {
   amount: number;
-  businessID: CounterAccountProto;
-  counterAccount?: CounterAccountProto;
+  businessId: string;
+  counterAccountId?: string;
   currency: Currency;
   details?: string;
   isCredit: boolean;
@@ -49,8 +48,6 @@ export type BusinessTransactionProto = {
   reference1?: string;
   chargeId: string;
 };
-
-export type CounterAccountProto = string | IGetAllTaxCategoriesResult;
 
 export type AccounterContext = YogaInitialContext & {
   env: Environment;

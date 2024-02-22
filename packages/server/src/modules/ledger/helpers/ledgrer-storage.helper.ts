@@ -130,6 +130,10 @@ function isExactMatch(
       return (storageRecord[key] as Date)?.getTime() === newDate?.getTime();
     }
 
+    if (typeof storageRecord[key] === 'string' && !Number.isNaN(Number(storageRecord[key]))) {
+      return Number(storageRecord[key]).toFixed(2) === Number(newRecord[key]).toFixed(2);
+    }
+
     return storageRecord[key] === newRecord[key];
   }, true as boolean);
 }
@@ -138,31 +142,15 @@ export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordIn
   return {
     chargeId: record.chargeId,
     ownerId: record.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID,
-    creditEntity1: record.creditAccountID1
-      ? typeof record.creditAccountID1 === 'string'
-        ? record.creditAccountID1
-        : record.creditAccountID1.id
-      : undefined,
-    creditEntity2: record.creditAccountID2
-      ? typeof record.creditAccountID2 === 'string'
-        ? record.creditAccountID2
-        : record.creditAccountID2.id
-      : undefined,
+    creditEntity1: record.creditAccountID1,
+    creditEntity2: record.creditAccountID2,
     creditForeignAmount1: record.creditAmount1,
     creditForeignAmount2: record.creditAmount2,
     creditLocalAmount1: record.localCurrencyCreditAmount1,
     creditLocalAmount2: record.localCurrencyCreditAmount2,
     currency: record.currency,
-    debitEntity1: record.debitAccountID1
-      ? typeof record.debitAccountID1 === 'string'
-        ? record.debitAccountID1
-        : record.debitAccountID1.id
-      : undefined,
-    debitEntity2: record.debitAccountID2
-      ? typeof record.debitAccountID2 === 'string'
-        ? record.debitAccountID2
-        : record.debitAccountID2.id
-      : undefined,
+    debitEntity1: record.debitAccountID1,
+    debitEntity2: record.debitAccountID2,
     debitForeignAmount1: record.debitAmount1,
     debitForeignAmount2: record.debitAmount2,
     debitLocalAmount1: record.localCurrencyDebitAmount1,

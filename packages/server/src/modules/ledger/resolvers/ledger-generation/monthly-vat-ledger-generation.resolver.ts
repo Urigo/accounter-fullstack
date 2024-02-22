@@ -15,7 +15,7 @@ import {
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { getMonthFromDescription } from '@shared/helpers';
-import type { CounterAccountProto, LedgerProto, TimelessDateString } from '@shared/types';
+import type { LedgerProto, TimelessDateString } from '@shared/types';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
@@ -102,14 +102,14 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     );
 
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
-    ledgerBalance.set(outputsVatTaxCategory.name, {
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+    ledgerBalance.set(outputsVatTaxCategory.id, {
       amount: incomeVat,
-      entity: outputsVatTaxCategory,
+      entityId: outputsVatTaxCategory.id,
     });
-    ledgerBalance.set(inputsVatTaxCategory.name, {
+    ledgerBalance.set(inputsVatTaxCategory.id, {
       amount: expensesVat * -1,
-      entity: inputsVatTaxCategory,
+      entityId: inputsVatTaxCategory.id,
     });
 
     const accountingLedgerEntries: LedgerProto[] = [];
@@ -157,19 +157,19 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const accountingLedgerMaterials: Array<{
       amount: number;
-      taxCategory: CounterAccountProto;
-      counterparty?: CounterAccountProto;
+      taxCategoryId: string;
+      counterpartyId?: string;
     }> = [];
     accountingLedgerMaterials.push(
       {
         amount: roundedIncomeVat,
-        taxCategory: outputsVatTaxCategory,
-        counterparty: VAT_BUSINESS_ID,
+        taxCategoryId: outputsVatTaxCategory.id,
+        counterpartyId: VAT_BUSINESS_ID,
       },
       {
         amount: roundedExpensesVat * -1,
-        taxCategory: inputsVatTaxCategory,
-        counterparty: VAT_BUSINESS_ID,
+        taxCategoryId: inputsVatTaxCategory.id,
+        counterpartyId: VAT_BUSINESS_ID,
       },
     );
 
@@ -177,7 +177,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     if (roundedIncomeVatDiff) {
       accountingLedgerMaterials.push({
         amount: roundedIncomeVatDiff * -1,
-        taxCategory: outputsVatTaxCategory,
+        taxCategoryId: outputsVatTaxCategory.id,
       });
     }
 
@@ -185,11 +185,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     if (roundedExpensesVatDiff) {
       accountingLedgerMaterials.push({
         amount: roundedExpensesVatDiff,
-        taxCategory: inputsVatTaxCategory,
+        taxCategoryId: inputsVatTaxCategory.id,
       });
     }
 
-    accountingLedgerMaterials.map(({ amount, taxCategory, counterparty }) => {
+    accountingLedgerMaterials.map(({ amount, taxCategoryId, counterpartyId }) => {
       if (amount === 0) {
         return;
       }
@@ -201,11 +201,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         invoiceDate: ledgerDate,
         valueDate: ledgerDate,
         currency: DEFAULT_LOCAL_CURRENCY,
-        creditAccountID1: isCreditorCounterparty ? counterparty : taxCategory,
+        creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
         localCurrencyCreditAmount1: Math.abs(amount),
-        debitAccountID1: isCreditorCounterparty ? taxCategory : counterparty,
+        debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
         localCurrencyDebitAmount1: Math.abs(amount),
-        description: counterparty ? `VAT command ${vatDate}` : 'Balance cancellation',
+        description: counterpartyId ? `VAT command ${vatDate}` : 'Balance cancellation',
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         chargeId,
@@ -215,7 +215,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
     });
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
 
     const records = [...financialAccountLedgerEntries, ...accountingLedgerEntries];
     await storeInitialGeneratedRecords(charge, records, injector);

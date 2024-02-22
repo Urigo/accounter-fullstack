@@ -5,7 +5,6 @@ import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/ty
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import { CounterAccountProto } from '@shared/types';
 import {
   ledgerGenerationByCharge,
   ledgerUnbalancedBusinessesByCharge,
@@ -181,14 +180,19 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         allowedUnbalancedBusinessesPromise,
       ]);
 
-      const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
+      const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
       const ledgerEntries = parent.records.map(convertLedgerRecordToProto);
 
       for (const ledgerEntry of ledgerEntries) {
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       }
 
-      return getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses, financialEntities);
+      return getLedgerBalanceInfo(
+        injector,
+        ledgerBalance,
+        allowedUnbalancedBusinesses,
+        financialEntities,
+      );
     },
     validate: async ({ charge }, _, context, info) => {
       const { injector } = context;
@@ -243,17 +247,15 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   LedgerBalanceUnbalancedEntity: {
     entity: (parent, _, { injector }) =>
-      typeof parent.entity === 'string'
-        ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(parent.entity)
-            .then(res => {
-              if (!res) {
-                throw new GraphQLError(`Financial entity with id ${parent.entity} not found`);
-              }
-              return res;
-            })
-        : parent.entity,
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(parent.entityId)
+        .then(res => {
+          if (!res) {
+            throw new GraphQLError(`Financial entity with id ${parent.entityId} not found`);
+          }
+          return res;
+        }),
     balance: parent => parent.balance,
   },
   CommonCharge: {

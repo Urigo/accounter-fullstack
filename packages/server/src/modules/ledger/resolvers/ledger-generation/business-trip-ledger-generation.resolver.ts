@@ -15,7 +15,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
   isSupplementalFeeTransaction,
   splitFeeTransactions,
@@ -41,16 +41,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   if (!charge.tax_category_id) {
     throw new GraphQLError(`Business trip charge ID="${charge.id}" is missing tax category`);
   }
-  const tripTaxCategory = await injector
-    .get(TaxCategoriesProvider)
-    .taxCategoryByIDsLoader.load(charge.tax_category_id);
-  if (!tripTaxCategory) {
-    throw new GraphQLError(`Charge ID="${charge.tax_category_id}" tax category is faulty`);
-  }
+  const tripTaxCategory = charge.tax_category_id;
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
@@ -113,9 +108,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         ...partialEntry,
         creditAccountID1: partialEntry.isCreditorCounterparty
           ? transaction.business_id
-          : taxCategory,
+          : taxCategory.id,
         debitAccountID1: partialEntry.isCreditorCounterparty
-          ? taxCategory
+          ? taxCategory.id
           : transaction.business_id,
       };
 
@@ -149,16 +144,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         amount = exchangeRate * amount;
       }
 
-      const feeTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
-      if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category "${FEE_TAX_CATEGORY_ID}" not found`);
-      }
-
       const isCreditorCounterparty = amount > 0;
 
-      let mainAccount: CounterAccountProto = transactionBusinessId;
+      let mainAccount = transactionBusinessId;
 
       const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
         id: transaction.id,
@@ -194,7 +182,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
         }
 
-        mainAccount = businessTaxCategory;
+        mainAccount = businessTaxCategory.id;
       } else {
         const mainBusiness = charge.business_id ?? undefined;
 
@@ -210,8 +198,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       const ledgerEntry: StrictLedgerProto = {
         ...partialLedgerEntry,
-        creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
-        debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
+        creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : mainAccount,
+        debitAccountID1: isCreditorCounterparty ? mainAccount : FEE_TAX_CATEGORY_ID,
       };
 
       feeFinancialAccountLedgerEntries.push(ledgerEntry);
@@ -320,7 +308,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     const allowedUnbalancedBusinesses = new Set(businessTripAttendees.map(attendee => attendee.id));
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(
+      injector,
+      ledgerBalance,
+      allowedUnbalancedBusinesses,
+    );
 
     const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
     await storeInitialGeneratedRecords(charge, records, injector);

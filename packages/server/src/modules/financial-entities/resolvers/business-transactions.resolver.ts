@@ -15,7 +15,6 @@ import {
   handleBusinessTransaction,
 } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
-import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessesByIdsResult,
@@ -32,21 +31,15 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       const injector = context.injector;
       const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
 
-      const [financialEntities, taxCategories] = await Promise.all([
-        injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []),
-        injector.get(TaxCategoriesProvider).getAllTaxCategories(),
-      ]);
+      const financialEntities = await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []);
 
       const isFilteredByFinancialEntities = !!businessIDs?.length;
 
       const financialEntitiesIDs = financialEntities
         ?.filter(fe => fe && 'id' in fe)
         .map(fe => (fe as IGetFinancialEntitiesByIdsResult).id);
-      const taxCategoriesIDs = taxCategories
-        .map(taxCategory => taxCategory.id)
-        .filter(id => filters?.businessIDs?.includes(id));
 
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
@@ -75,11 +68,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.credit_entity1 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof ledger.credit_entity1 === 'string' &&
-                financialEntitiesIDs.includes(ledger.credit_entity1)) ||
-              (typeof ledger.credit_entity1 === 'object' &&
-                taxCategoriesIDs.includes(ledger.credit_entity1)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.credit_entity1))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -93,11 +82,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.credit_entity2 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof ledger.credit_entity2 === 'string' &&
-                financialEntitiesIDs.includes(ledger.credit_entity2)) ||
-              (typeof ledger.credit_entity2 === 'object' &&
-                taxCategoriesIDs.includes(ledger.credit_entity2)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.credit_entity2))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -111,11 +96,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.debit_entity1 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof ledger.debit_entity1 === 'string' &&
-                financialEntitiesIDs.includes(ledger.debit_entity1)) ||
-              (typeof ledger.debit_entity1 === 'object' &&
-                taxCategoriesIDs.includes(ledger.debit_entity1)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.debit_entity1))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -129,11 +110,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             ledger.debit_entity2 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof ledger.debit_entity2 === 'string' &&
-                financialEntitiesIDs.includes(ledger.debit_entity2)) ||
-              (typeof ledger.debit_entity2 === 'object' &&
-                taxCategoriesIDs.includes(ledger.debit_entity2)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.debit_entity2))
           ) {
             handleBusinessLedgerRecord(
               rawRes,
@@ -164,19 +141,13 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
       const isFilteredByFinancialEntities = !!filters?.businessIDs?.length;
 
-      const [financialEntities, taxCategories] = await Promise.all([
-        injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []),
-        injector.get(TaxCategoriesProvider).getAllTaxCategories(),
-      ]);
+      const financialEntities = await injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []);
 
       const financialEntitiesIDs = financialEntities
         ?.filter(business => business && 'id' in business)
         .map(business => (business as IGetBusinessesByIdsResult).id);
-      const taxCategoriesIDs = taxCategories
-        .map(taxCategory => taxCategory.id)
-        .filter(id => businessIDs?.includes(id));
 
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
@@ -205,11 +176,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.credit_entity1 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof record.credit_entity1 === 'string' &&
-                financialEntitiesIDs.includes(record.credit_entity1)) ||
-              (typeof record.credit_entity1 === 'object' &&
-                taxCategoriesIDs.includes(record.credit_entity1)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.credit_entity1))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -224,11 +191,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.credit_entity2 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof record.credit_entity2 === 'string' &&
-                financialEntitiesIDs.includes(record.credit_entity2)) ||
-              (typeof record.credit_entity2 === 'object' &&
-                taxCategoriesIDs.includes(record.credit_entity2)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.credit_entity2))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -243,11 +206,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.debit_entity2 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof record.debit_entity2 === 'string' &&
-                financialEntitiesIDs.includes(record.debit_entity2)) ||
-              (typeof record.debit_entity2 === 'object' &&
-                taxCategoriesIDs.includes(record.debit_entity2)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.debit_entity2))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -262,11 +221,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
           if (
             record.debit_entity2 &&
-            (!isFilteredByFinancialEntities ||
-              (typeof record.debit_entity2 === 'string' &&
-                financialEntitiesIDs.includes(record.debit_entity2)) ||
-              (typeof record.debit_entity2 === 'object' &&
-                taxCategoriesIDs.includes(record.debit_entity2)))
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.debit_entity2))
           ) {
             const transaction = handleBusinessTransaction(
               record,
@@ -326,17 +281,15 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   },
   BusinessTransactionSum: {
     business: (rawSum, _, { injector }) =>
-      typeof rawSum.business === 'string'
-        ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(rawSum.business)
-            .then(res => {
-              if (!res) {
-                throw new GraphQLError(`Business with id ${rawSum.business} not found`);
-              }
-              return res;
-            })
-        : rawSum.business,
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(rawSum.businessId)
+        .then(res => {
+          if (!res) {
+            throw new GraphQLError(`Business with id ${rawSum.businessId} not found`);
+          }
+          return res;
+        }),
     credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
     debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
     total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
@@ -372,7 +325,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         : 'CommonError',
   },
   BusinessTransaction: {
-    __isTypeOf: parent => !!parent.businessID,
+    __isTypeOf: parent => !!parent.businessId,
     amount: parent =>
       formatFinancialAmount(
         Number.isNaN(parent.foreignAmount)
@@ -381,17 +334,15 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         Currency.Ils,
       ),
     business: (parent, _, { injector }) =>
-      typeof parent.businessID === 'string'
-        ? injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(parent.businessID)
-            .then(res => {
-              if (!res) {
-                throw new GraphQLError(`Financial entity with id ${parent.businessID} not found`);
-              }
-              return res;
-            })
-        : parent.businessID,
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(parent.businessId)
+        .then(res => {
+          if (!res) {
+            throw new GraphQLError(`Financial entity with id ${parent.businessId} not found`);
+          }
+          return res;
+        }),
     eurAmount: parent =>
       parent.currency === Currency.Eur
         ? formatFinancialAmount(
@@ -420,19 +371,19 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     reference2: _ => null,
     details: parent => parent.details ?? null,
     counterAccount: (parent, _, { injector }) =>
-      typeof parent.counterAccount === 'string'
+      parent.counterAccountId
         ? injector
             .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.load(parent.counterAccount)
+            .getFinancialEntityByIdLoader.load(parent.counterAccountId)
             .then(res => {
               if (!res) {
                 throw new GraphQLError(
-                  `Financial entity with id ${parent.counterAccount} not found`,
+                  `Financial entity with id ${parent.counterAccountId} not found`,
                 );
               }
               return res;
             })
-        : parent.counterAccount ?? null,
+        : null,
   },
   TaxCategory: {
     __isTypeOf: parent => 'hashavshevet_name' in parent,

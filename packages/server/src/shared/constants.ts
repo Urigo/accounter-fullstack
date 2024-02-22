@@ -15,7 +15,7 @@ export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 // TODO: replace all further with context variables //
 //////////////////////////////////////////////////////
 
-export const TAX_CATEGORIES_WITH_NOT_FULL_VAT = [
+export const DECREASED_VAT_BUSINESSES = [
   '7d250948-8506-4e60-a61b-7d3a3d8390d9', // פלאפון
   'd4e1400d-3abd-4059-a4bb-a25ad1ec87f8', // מידע
   'd913c34c-a741-4f5a-9d1d-60300184463f', // מחשבים
