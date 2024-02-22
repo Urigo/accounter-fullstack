@@ -11,7 +11,6 @@ import type { currency } from '@modules/transactions/types.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
   INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
@@ -467,11 +466,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
+        const exchangeRateTaxCategory = accountingLedgerEntries.find(entry =>
+          isCreditorCounterparty
+            ? entry.creditAccountID1 === entityId
+            : entry.debitAccountID1 === entityId,
+        )?.[isCreditorCounterparty ? 'debitAccountID1' : 'creditAccountID1'];
+
+        if (!exchangeRateTaxCategory) {
+          throw new GraphQLError(
+            `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
+          );
+        }
+
         const ledgerEntry: StrictLedgerProto = {
           id: transactionEntry.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? entityId : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : entityId,
+          debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
