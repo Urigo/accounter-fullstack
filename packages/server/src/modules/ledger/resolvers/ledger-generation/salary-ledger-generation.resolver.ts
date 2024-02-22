@@ -7,12 +7,10 @@ import { EmployeesProvider } from '@modules/salaries/providers/employees.provide
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { currency } from '@modules/transactions/types.js';
 import {
   BATCHED_EMPLOYEE_BUSINESS_ID,
   BATCHED_PENSION_BUSINESS_ID,
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
   SALARY_BATCHED_BUSINESSES,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -51,9 +49,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     // validate ledger records are balanced
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
-    const dates = new Set<number>();
-    const currencies = new Set<currency>();
-
     let entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
 
@@ -90,9 +85,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     const salaryEntriesPromises = entries.map(async ledgerEntry => {
       accountingLedgerEntries.push(ledgerEntry);
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-      dates.add(ledgerEntry.valueDate.getTime());
     });
-    currencies.add(DEFAULT_LOCAL_CURRENCY);
     entriesPromises.push(...salaryEntriesPromises);
 
     // generate monthly expenses ledger entries
@@ -122,7 +115,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
         accountingLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        dates.add(ledgerEntry.valueDate.getTime());
       });
     entriesPromises.push(...monthlyEntriesPromises);
 
@@ -193,8 +185,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
       financialAccountLedgerEntries.push(ledgerEntry);
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-      dates.add(partialEntry.valueDate.getTime());
-      currencies.add(transaction.currency);
     });
     entriesPromises.push(...transactionEntriesPromises);
 
@@ -294,8 +284,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           batchedLedgerEntries.push(ledgerEntry);
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         }
-        dates.add(partialEntry.valueDate.getTime());
-        currencies.add(transaction.currency);
       },
     );
     entriesPromises.push(...batchedTransactionEntriesPromises);
@@ -314,48 +302,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     await Promise.all(entriesPromises);
 
-    const tempLedgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
-
-    const miscLedgerEntries: LedgerProto[] = [];
-    if (Math.abs(tempLedgerBalanceInfo.balanceSum) > 1) {
-      const hasMultipleDates = dates.size > 1;
-      const hasForeignCurrency = currencies.size > (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
-      if (hasMultipleDates && hasForeignCurrency) {
-        const transactionEntry = financialAccountLedgerEntries[0];
-        const salaryEntry = accountingLedgerEntries[0];
-
-        const amount = Math.abs(tempLedgerBalanceInfo.balanceSum);
-
-        const isCreditorCounterparty = tempLedgerBalanceInfo.balanceSum < 0;
-
-        const ledgerEntry: LedgerProto = {
-          id: transactionEntry.id,
-          creditAccountID1: isCreditorCounterparty ? undefined : EXCHANGE_RATE_TAX_CATEGORY_ID,
-          creditAmount1: undefined,
-          localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : undefined,
-          debitAmount1: undefined,
-          localCurrencyDebitAmount1: amount,
-          description: 'Exchange ledger record',
-          isCreditorCounterparty,
-          invoiceDate: salaryEntry.invoiceDate,
-          valueDate: transactionEntry.valueDate,
-          currency: transactionEntry.currency, // NOTE: this field is dummy
-          ownerId: transactionEntry.ownerId,
-          chargeId,
-        };
-
-        miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-      } else {
-        throw new GraphQLError(
-          `Failed to balance: ${
-            hasMultipleDates ? 'Dates are different' : 'Dates are consistent'
-          } and ${hasForeignCurrency ? 'currencies are foreign' : 'currencies are local'}`,
-        );
-      }
-    }
-
     const allowedUnbalancedBusinesses = new Set(
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
@@ -370,7 +316,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       ...financialAccountLedgerEntries,
       ...batchedLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
-      ...miscLedgerEntries,
     ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
