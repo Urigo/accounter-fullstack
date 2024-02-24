@@ -13,7 +13,7 @@ import {
   DIVIDEND_WITHHOLDING_TAX_PERCENTAGE,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { CounterAccountProto, LedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
 import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
 import {
@@ -36,13 +36,12 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     // generate ledger from transactions
     const paymentsLedgerEntries: LedgerProto[] = [];
     const withholdingTaxLedgerEntries: LedgerProto[] = [];
-    let mainAccount: IGetAllTaxCategoriesResult | undefined = undefined;
-    let dividendTaxCategory: IGetAllTaxCategoriesResult | undefined = undefined;
+    let mainAccountId: string | undefined = undefined;
 
     // Get all transactions
     const transactions = await injector
@@ -76,8 +75,8 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       }
 
       // set main account for dividend
-      mainAccount ||= taxCategory;
-      if (mainAccount.id !== taxCategory.id) {
+      mainAccountId ||= taxCategory.id;
+      if (mainAccountId !== taxCategory.id) {
         throw new GraphQLError(`Tax category is not consistent`);
       }
 
@@ -86,9 +85,9 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         ...partialEntry,
         creditAccountID1: partialEntry.isCreditorCounterparty
           ? transaction.business_id
-          : taxCategory,
+          : taxCategory.id,
         debitAccountID1: partialEntry.isCreditorCounterparty
-          ? taxCategory
+          ? taxCategory.id
           : transaction.business_id,
       };
 
@@ -215,7 +214,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           ownerId: dividendRecord.owner_id,
           debitAccountID1: dividendRecord.business_id,
           localCurrencyDebitAmount1: dividendRecordAbsAmount,
-          creditAccountID1: mainAccount,
+          creditAccountID1: mainAccountId,
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
           creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
           localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
@@ -229,7 +228,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         const conversionEntry1: LedgerProto = {
           ...partialEntry,
           isCreditorCounterparty: false,
-          creditAccountID1: foreignAccountTaxCategory,
+          creditAccountID1: foreignAccountTaxCategory.id,
           debitAccountID1: transaction.business_id,
         };
 
@@ -246,7 +245,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           currency: DEFAULT_LOCAL_CURRENCY,
           creditAccountID1: dividendRecord.business_id,
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-          debitAccountID1: mainAccount,
+          debitAccountID1: mainAccountId,
           localCurrencyDebitAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
           chargeId,
         };
@@ -260,7 +259,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           description: 'נ20',
           debitAccountID1: transaction.business_id,
           localCurrencyDebitAmount1: dividendRecordAbsAmount,
-          creditAccountID1: mainAccount,
+          creditAccountID1: mainAccountId,
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
           creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
           localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
@@ -287,13 +286,6 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     await Promise.all(entriesPromises);
 
     // create ledger entry for summary dividend tax category
-    dividendTaxCategory ||= await injector
-      .get(TaxCategoriesProvider)
-      .taxCategoryByIDsLoader.load(DIVIDEND_TAX_CATEGORY_ID);
-    if (!dividendTaxCategory) {
-      throw new GraphQLError(`Dividend tax category couldn't be found`);
-    }
-
     for (const [date, sum] of totalDividendSumMap.entries()) {
       const ledgerEntry: LedgerProto = {
         id: chargeId,
@@ -303,7 +295,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         ownerId: charge.owner_id,
         currency: DEFAULT_LOCAL_CURRENCY,
         localCurrencyCreditAmount1: sum,
-        debitAccountID1: dividendTaxCategory,
+        debitAccountID1: DIVIDEND_TAX_CATEGORY_ID,
         localCurrencyDebitAmount1: sum,
         chargeId,
       };
@@ -312,7 +304,11 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     }
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(
+      injector,
+      ledgerBalance,
+      allowedUnbalancedBusinesses,
+    );
 
     const records = [
       ...withholdingTaxLedgerEntries,

@@ -6,20 +6,18 @@ import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exc
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
   INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,
@@ -46,7 +44,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
@@ -55,10 +53,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       Number(charge.invoices_count ?? '0') + Number(charge.receipts_count ?? 0) > 0;
     const shouldFetchTransactions = !!charge.transactions_count;
 
-    const documentsTaxCategoryPromise = shouldFetchDocuments
+    const documentsTaxCategoryIdPromise = shouldFetchDocuments
       ? charge.tax_category_id
-        ? injector.get(TaxCategoriesProvider).taxCategoryByIDsLoader.load(charge.tax_category_id)
-        : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(charge.id)
+        ? Promise.resolve(charge.tax_category_id)
+        : injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByChargeIDsLoader.load(charge.id)
+            .then(res => res?.id)
       : undefined;
 
     const documentsPromise = shouldFetchDocuments
@@ -78,13 +79,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       .getBalanceCancellationByChargesIdLoader.load(chargeId);
 
     const [
-      documentsTaxCategory,
+      documentsTaxCategoryId,
       documents,
       transactions,
       unbalancedBusinesses,
       balanceCancellations,
     ] = await Promise.all([
-      documentsTaxCategoryPromise,
+      documentsTaxCategoryIdPromise,
       documentsPromise,
       transactionsPromise,
       unbalancedBusinessesPromise,
@@ -98,7 +99,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // generate ledger from documents
     if (shouldFetchDocuments) {
-      if (!documentsTaxCategory) {
+      if (!documentsTaxCategoryId) {
         throw new GraphQLError(`Tax category not found for charge ID="${charge.id}"`);
       }
 
@@ -140,10 +141,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           totalAmount = Math.abs(totalAmount);
         }
 
-        const debitAccountID1 = isCreditorCounterparty ? documentsTaxCategory : counterpartyId;
-        const creditAccountID1 = isCreditorCounterparty ? counterpartyId : documentsTaxCategory;
-        let creditAccountID2: IGetAllTaxCategoriesResult | null = null;
-        let debitAccountID2: IGetAllTaxCategoriesResult | null = null;
+        const debitAccountID1 = isCreditorCounterparty ? documentsTaxCategoryId : counterpartyId;
+        const creditAccountID1 = isCreditorCounterparty ? counterpartyId : documentsTaxCategoryId;
+        let creditAccountID2: string | null = null;
+        let debitAccountID2: string | null = null;
 
         if (!document.currency_code) {
           throw new GraphQLError(`Document ID="${document.id}" is missing currency code`);
@@ -154,18 +155,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         let foreignAmountWithoutVat: number | null = null;
         let vatAmount = document.vat_amount == null ? null : Math.abs(document.vat_amount);
         let foreignVatAmount: number | null = null;
-        let vatTaxCategory: IGetAllTaxCategoriesResult | null = null;
+        let vatTaxCategory: string | null = null;
 
         if (vatAmount && vatAmount > 0) {
           amountWithoutVat = amountWithoutVat - vatAmount;
-          await injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByIDsLoader.load(
-              isCreditorCounterparty ? OUTPUT_VAT_TAX_CATEGORY_ID : INPUT_VAT_TAX_CATEGORY_ID,
-            )
-            .then(res => {
-              vatTaxCategory = res ?? null;
-            });
+          vatTaxCategory = isCreditorCounterparty
+            ? OUTPUT_VAT_TAX_CATEGORY_ID
+            : INPUT_VAT_TAX_CATEGORY_ID;
         }
 
         // handle non-local currencies
@@ -265,7 +261,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const { currency, valueDate, transactionBusinessId } =
           validateTransactionBasicVariables(transaction);
 
-        let mainAccount: CounterAccountProto = transactionBusinessId;
+        let mainAccountId: string = transactionBusinessId;
 
         if (
           !shouldFetchDocuments &&
@@ -288,7 +284,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
           }
 
-          mainAccount = taxCategory;
+          mainAccountId = taxCategory.id;
         }
 
         let amount = Number(transaction.amount);
@@ -326,10 +322,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? mainAccount : taxCategory,
+          creditAccountID1: isCreditorCounterparty ? mainAccountId : taxCategory.id,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? taxCategory : mainAccount,
+          debitAccountID1: isCreditorCounterparty ? taxCategory.id : mainAccountId,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
@@ -375,7 +371,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         continue;
       }
 
-      const { amount, entity } = entityBalance;
+      const { amount, entityId } = entityBalance;
 
       const financialAccountEntry = financialAccountLedgerEntries.find(entry =>
         [
@@ -400,10 +396,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         foreignAmount = financialAccountEntry.currencyRate * amount;
       }
 
-      const taxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByIDsLoader.load(BALANCE_CANCELLATION_TAX_CATEGORY_ID);
-
       const isCreditorCounterparty = amount > 0;
 
       const ledgerEntry: LedgerProto = {
@@ -411,10 +403,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         invoiceDate: financialAccountEntry.invoiceDate,
         valueDate: financialAccountEntry.valueDate,
         currency: financialAccountEntry.currency,
-        creditAccountID1: isCreditorCounterparty ? taxCategory : entity,
+        creditAccountID1: isCreditorCounterparty ? BALANCE_CANCELLATION_TAX_CATEGORY_ID : entityId,
         creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyCreditAmount1: Math.abs(amount),
-        debitAccountID1: isCreditorCounterparty ? entity : taxCategory,
+        debitAccountID1: isCreditorCounterparty ? entityId : BALANCE_CANCELLATION_TAX_CATEGORY_ID,
         debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyDebitAmount1: Math.abs(amount),
         description: balanceCancellation.description ?? undefined,
@@ -434,10 +426,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
 
     // Add ledger completion entries
-    const { balanceSum, isBalanced, unbalancedEntities } = getLedgerBalanceInfo(
-      ledgerBalance,
-      allowedUnbalancedBusinesses,
-    );
+    const { balanceSum, isBalanced, unbalancedEntities, financialEntities } =
+      await getLedgerBalanceInfo(injector, ledgerBalance, allowedUnbalancedBusinesses);
     if (Math.abs(balanceSum) > 0.005) {
       throw new GraphQLError(
         `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are unbalanced`,
@@ -465,29 +455,34 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
       const mightRequireExchangeRateRecord =
         (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
-      const unbalancedBusinesses = unbalancedEntities.filter(
-        ({ entity }) => typeof entity === 'string',
+      const unbalancedBusinesses = unbalancedEntities.filter(({ entityId }) =>
+        financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
       );
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
         const documentEntry = accountingLedgerEntries[0];
 
-        const exchangeCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByIDsLoader.load(EXCHANGE_RATE_TAX_CATEGORY_ID);
-        if (!exchangeCategory) {
-          throw new GraphQLError(`Tax category ID "${EXCHANGE_RATE_TAX_CATEGORY_ID}" not found`);
-        }
-
-        const { entity, balance } = unbalancedBusinesses[0];
+        const { entityId, balance } = unbalancedBusinesses[0];
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
+        const exchangeRateTaxCategory = accountingLedgerEntries.find(entry =>
+          isCreditorCounterparty
+            ? entry.creditAccountID1 === entityId
+            : entry.debitAccountID1 === entityId,
+        )?.[isCreditorCounterparty ? 'debitAccountID1' : 'creditAccountID1'];
+
+        if (!exchangeRateTaxCategory) {
+          throw new GraphQLError(
+            `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
+          );
+        }
+
         const ledgerEntry: StrictLedgerProto = {
           id: transactionEntry.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? entity : exchangeCategory,
+          creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? exchangeCategory : entity,
+          debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
@@ -516,7 +511,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance, allowedUnbalancedBusinesses);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(
+      injector,
+      ledgerBalance,
+      allowedUnbalancedBusinesses,
+    );
     return {
       records: ledgerProtoToRecordsConverter(records),
       charge,

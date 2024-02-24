@@ -1,17 +1,14 @@
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import type {
-  CounterAccountProto,
-  LedgerBalanceInfoType,
-  LedgerProto,
-  StrictLedgerProto,
-} from '@shared/types';
+import type { LedgerBalanceInfoType, LedgerProto, StrictLedgerProto } from '@shared/types';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
@@ -145,76 +142,87 @@ export function generatePartialLedgerEntry(
 
 export function updateLedgerBalanceByEntry(
   entry: LedgerProto,
-  ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
+  ledgerBalance: Map<string, { amount: number; entityId: string }>,
 ): void {
   if (entry.creditAccountID1) {
-    const name =
-      typeof entry.creditAccountID1 === 'string'
-        ? entry.creditAccountID1
-        : entry.creditAccountID1.name;
+    const name = entry.creditAccountID1;
     ledgerBalance.set(name, {
       amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount1 ?? 0),
-      entity: entry.creditAccountID1,
+      entityId: entry.creditAccountID1,
     });
   }
   if (entry.debitAccountID1) {
-    const name =
-      typeof entry.debitAccountID1 === 'string'
-        ? entry.debitAccountID1
-        : entry.debitAccountID1.name;
+    const name = entry.debitAccountID1;
     ledgerBalance.set(name, {
       amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount1 ?? 0),
-      entity: entry.debitAccountID1,
+      entityId: entry.debitAccountID1,
     });
   }
   if (entry.creditAccountID2) {
-    const name =
-      typeof entry.creditAccountID2 === 'string'
-        ? entry.creditAccountID2
-        : entry.creditAccountID2.name;
+    const name = entry.creditAccountID2;
     ledgerBalance.set(name, {
       amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount2 ?? 0),
-      entity: entry.creditAccountID2,
+      entityId: entry.creditAccountID2,
     });
   }
   if (entry.debitAccountID2) {
-    const name =
-      typeof entry.debitAccountID2 === 'string'
-        ? entry.debitAccountID2
-        : entry.debitAccountID2.name;
+    const name = entry.debitAccountID2;
     ledgerBalance.set(name, {
       amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount2 ?? 0),
-      entity: entry.debitAccountID2,
+      entityId: entry.debitAccountID2,
     });
   }
 
   return;
 }
 
-export function getLedgerBalanceInfo(
-  ledgerBalance: Map<string, { amount: number; entity: CounterAccountProto }>,
+export async function getLedgerBalanceInfo(
+  injector: Injector,
+  ledgerBalance: Map<string, { amount: number; entityId: string }>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
   financialEntities?: Array<IGetFinancialEntitiesByIdsResult>,
-): LedgerBalanceInfoType {
+): Promise<
+  LedgerBalanceInfoType & {
+    financialEntities: Array<IGetFinancialEntitiesByIdsResult>;
+  }
+> {
   let ledgerBalanceSum = 0;
   let isBalanced = true;
-  const unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }> = [];
-  for (const { amount, entity } of ledgerBalance.values()) {
+  const unbalancedEntities: Array<{ entityId: string; balance: FinancialAmount }> = [];
+
+  if (!financialEntities) {
+    const financialEntityIDs = new Set<string>(
+      Array.from(ledgerBalance.values()).map(v => v.entityId),
+    );
+    financialEntities = (await injector
+      .get(FinancialEntitiesProvider)
+      .getFinancialEntityByIdLoader.loadMany(Array.from(financialEntityIDs))
+      .then(res =>
+        res.filter(fe => !!fe && 'id' in fe),
+      )) as Array<IGetFinancialEntitiesByIdsResult>;
+  }
+
+  for (const { amount, entityId } of ledgerBalance.values()) {
     if (Math.abs(amount) < 0.005) {
       continue;
     }
+    const isBusiness = financialEntities?.some(
+      financialEntity => financialEntity.id === entityId && financialEntity.type === 'business',
+    );
+
     const isBusinessEntity =
-      typeof entity === 'string' &&
+      isBusiness &&
       (financialEntities
         ? financialEntities.some(
-            financialEntity => financialEntity.id === entity && financialEntity.type === 'business',
+            financialEntity =>
+              financialEntity.id === entityId && financialEntity.type === 'business',
           )
         : true);
-    if (isBusinessEntity && !allowedUnbalancedBusinesses.has(entity)) {
+    if (isBusinessEntity && !allowedUnbalancedBusinesses.has(entityId)) {
       isBalanced = false;
     }
     unbalancedEntities.push({
-      entity,
+      entityId,
       balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
     });
     ledgerBalanceSum += amount;
@@ -227,15 +235,8 @@ export function getLedgerBalanceInfo(
     isBalanced,
     unbalancedEntities,
     balanceSum: ledgerBalanceSum,
+    financialEntities,
   };
-}
-
-function getCounterAccountProtoId(counterAccountProto?: CounterAccountProto): string | null {
-  if (!counterAccountProto) {
-    return null;
-  }
-
-  return typeof counterAccountProto === 'string' ? counterAccountProto : counterAccountProto.id;
 }
 
 export function ledgerProtoToRecordsConverter(
@@ -245,15 +246,15 @@ export function ledgerProtoToRecordsConverter(
     const adjustedRecord: IGetLedgerRecordsByChargesIdsResult = {
       charge_id: record.chargeId,
       created_at: new Date(),
-      credit_entity1: getCounterAccountProtoId(record.creditAccountID1),
-      credit_entity2: getCounterAccountProtoId(record.creditAccountID2),
+      credit_entity1: record.creditAccountID1 ?? null,
+      credit_entity2: record.creditAccountID2 ?? null,
       credit_foreign_amount1: record.creditAmount1?.toString() ?? null,
       credit_foreign_amount2: record.creditAmount2?.toString() ?? null,
       credit_local_amount1: record.localCurrencyCreditAmount1?.toString(),
       credit_local_amount2: record.localCurrencyCreditAmount2?.toString() ?? null,
       currency: record.currency,
-      debit_entity1: getCounterAccountProtoId(record.debitAccountID1),
-      debit_entity2: getCounterAccountProtoId(record.debitAccountID2),
+      debit_entity1: record.debitAccountID1 ?? null,
+      debit_entity2: record.debitAccountID2 ?? null,
       debit_foreign_amount1: record.debitAmount1?.toString() ?? null,
       debit_foreign_amount2: record.debitAmount2?.toString() ?? null,
       debit_local_amount1: record.localCurrencyDebitAmount1?.toString(),

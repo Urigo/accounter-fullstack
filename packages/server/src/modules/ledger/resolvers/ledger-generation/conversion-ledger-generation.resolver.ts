@@ -13,7 +13,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { CounterAccountProto, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
 import {
   isSupplementalFeeTransaction,
@@ -38,7 +38,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entity: CounterAccountProto }>();
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     // generate ledger from transactions
     const mainFinancialAccountLedgerEntries: LedgerProto[] = [];
@@ -103,10 +103,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         currency,
         ...(isCreditorCounterparty
           ? {
-              debitAccountID1: taxCategory,
+              debitAccountID1: taxCategory.id,
             }
           : {
-              creditAccountID1: taxCategory,
+              creditAccountID1: taxCategory.id,
             }),
         creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyCreditAmount1: Math.abs(amount),
@@ -158,13 +158,6 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         amount = exchangeRate * amount;
       }
 
-      const feeTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
-      if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
-      }
-
       const isCreditorCounterparty = amount > 0;
 
       if (isSupplementalFee) {
@@ -187,10 +180,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : businessTaxCategory,
+          creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : businessTaxCategory.id,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? businessTaxCategory : feeTaxCategory,
+          debitAccountID1: isCreditorCounterparty ? businessTaxCategory.id : FEE_TAX_CATEGORY_ID,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
@@ -213,10 +206,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? feeTaxCategory : transactionBusinessId,
+          creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : transactionBusinessId,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? transactionBusinessId : feeTaxCategory,
+          debitAccountID1: isCreditorCounterparty ? transactionBusinessId : FEE_TAX_CATEGORY_ID,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
@@ -247,23 +240,16 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     const conversionFee = conversionFeeCalculator(baseEntry, quoteEntry, directRate, toLocalRate);
 
     if (conversionFee.localAmount !== 0) {
-      const feeTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByIDsLoader.load(FEE_TAX_CATEGORY_ID);
-      if (!feeTaxCategory) {
-        throw new GraphQLError(`Tax category ID "${FEE_TAX_CATEGORY_ID}" not found`);
-      }
-
       const isDebitConversion = conversionFee.localAmount >= 0;
 
       const ledgerEntry: LedgerProto = {
         id: quoteEntry.id + '|fee', // NOTE: this field is dummy
-        creditAccountID1: isDebitConversion ? feeTaxCategory : undefined,
+        creditAccountID1: isDebitConversion ? FEE_TAX_CATEGORY_ID : undefined,
         creditAmount1: conversionFee.foreignAmount
           ? Math.abs(conversionFee.foreignAmount)
           : undefined,
         localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
-        debitAccountID1: isDebitConversion ? undefined : feeTaxCategory,
+        debitAccountID1: isDebitConversion ? undefined : FEE_TAX_CATEGORY_ID,
         debitAmount1: conversionFee.foreignAmount
           ? Math.abs(conversionFee.foreignAmount)
           : undefined,
@@ -282,7 +268,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     }
 
-    const ledgerBalanceInfo = getLedgerBalanceInfo(ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,

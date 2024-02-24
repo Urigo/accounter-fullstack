@@ -13,10 +13,10 @@ import {
   ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
   ZKUFOT_INCOME_TAX_CATEGORY_ID,
 } from '@shared/constants';
-import type { CounterAccountProto, LedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 
 function generateEntryRaw(
-  accountId: CounterAccountProto,
+  accountId: string,
   amount: number,
   month: string,
   transactionDate: Date,

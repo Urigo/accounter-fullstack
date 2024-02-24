@@ -1,24 +1,19 @@
 import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
 import { Currency } from '@shared/enums';
-import type {
-  BusinessTransactionProto,
-  CounterAccountProto,
-  RawBusinessTransactionsSum,
-} from '@shared/types';
+import type { BusinessTransactionProto, RawBusinessTransactionsSum } from '@shared/types';
 
 export function handleBusinessLedgerRecord(
   rawRes: Record<string, RawBusinessTransactionsSum>,
-  business: CounterAccountProto,
+  businessId: string,
   currency: Currency,
   isCredit: boolean,
   stringifiedAmount: string | null,
   stringifiedForeignAmount: string | null,
 ) {
-  const businessID = typeof business === 'string' ? business : business.id;
   const amount = stringifiedAmount ? parseFloat(stringifiedAmount) : 0;
   const foreignAmount = stringifiedForeignAmount ? parseFloat(stringifiedForeignAmount) : 0;
 
-  rawRes[businessID] ??= {
+  rawRes[businessId] ??= {
     ils: {
       credit: 0,
       debit: 0,
@@ -39,10 +34,10 @@ export function handleBusinessLedgerRecord(
       debit: 0,
       total: 0,
     },
-    business,
+    businessId,
   };
 
-  const record = rawRes[businessID];
+  const record = rawRes[businessId];
   let currencyField: 'eur' | 'usd' | 'gbp' | 'ils' | undefined = undefined;
   switch (currency) {
     case Currency.Ils: {
@@ -82,8 +77,8 @@ export function handleBusinessLedgerRecord(
 
 export function handleBusinessTransaction(
   record: IGetLedgerRecordsByChargesIdsResult,
-  businessID: CounterAccountProto,
-  counterparty: CounterAccountProto | null = null,
+  businessId: string,
+  counterpartyId: string | null = null,
   isCredit: boolean,
   stringifiedAmount: string | null,
   stringifiedForeignAmount: string | null,
@@ -93,8 +88,8 @@ export function handleBusinessTransaction(
 
   const rawTransaction: BusinessTransactionProto = {
     amount,
-    businessID,
-    counterAccount: counterparty ?? undefined,
+    businessId,
+    counterAccountId: counterpartyId ?? undefined,
     currency: record.currency as Currency,
     details: record.description ?? undefined,
     isCredit,

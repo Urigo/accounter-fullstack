@@ -1,7 +1,6 @@
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types.js';
 import type { Currency, FinancialAmount } from '@shared/gql-types';
-import type { CounterAccountProto } from './index.js';
 
 export interface EntryForFinancialAccount {
   creditAccount: string | null;
@@ -34,10 +33,10 @@ export interface EntryForAccounting {
 
 export interface LedgerProto {
   id: string;
-  creditAccountID1?: CounterAccountProto;
-  creditAccountID2?: CounterAccountProto;
-  debitAccountID1?: CounterAccountProto;
-  debitAccountID2?: CounterAccountProto;
+  creditAccountID1?: string;
+  creditAccountID2?: string;
+  debitAccountID1?: string;
+  debitAccountID2?: string;
   creditAmount1?: number;
   creditAmount2?: number;
   debitAmount1?: number;
@@ -64,18 +63,18 @@ export interface LedgerRecordsProto {
 }
 
 export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'creditAccountID1'> & {
-  debitAccountID1: CounterAccountProto;
-  creditAccountID1: CounterAccountProto;
+  debitAccountID1: string;
+  creditAccountID1: string;
 };
 
 export type LedgerBalanceUnbalancedEntityProto = {
-  entity: CounterAccountProto;
+  entityId: string;
   balance: FinancialAmount;
 };
 
 export type LedgerBalanceInfoType = {
   isBalanced: boolean;
-  unbalancedEntities: Array<{ entity: CounterAccountProto; balance: FinancialAmount }>;
+  unbalancedEntities: Array<{ entityId: string; balance: FinancialAmount }>;
   balanceSum: number;
 };
 
