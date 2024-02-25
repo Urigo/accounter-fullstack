@@ -45,7 +45,7 @@ export default gql`
       businessId: UUID!
       ownerId: UUID!
       fields: UpdateBusinessInput!
-    ): UpdateBusinessResponse! @auth(role: ADMIN)
+    ): UpdateBusinessResponse! @auth(role: ACCOUNTANT)
   }
 
   " result type for updateBusiness "
