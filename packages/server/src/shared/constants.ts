@@ -8,18 +8,13 @@ export const UUID_REGEX =
   /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
 
 export const DEFAULT_VAT_PERCENTAGE = 0.17;
+export const DECREASED_VAT_RATIO = 2 / 3;
 
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 
 //////////////////////////////////////////////////////
 // TODO: replace all further with context variables //
 //////////////////////////////////////////////////////
-
-export const DECREASED_VAT_BUSINESSES = [
-  '7d250948-8506-4e60-a61b-7d3a3d8390d9', // פלאפון
-  'd4e1400d-3abd-4059-a4bb-a25ad1ec87f8', // מידע
-  'd913c34c-a741-4f5a-9d1d-60300184463f', // מחשבים
-];
 
 // Tax category related
 export const INPUT_VAT_TAX_CATEGORY_ID = 'b022d08b-62d8-48f7-9203-7c175646dbac';

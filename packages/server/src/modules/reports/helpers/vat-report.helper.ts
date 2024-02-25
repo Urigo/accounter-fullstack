@@ -7,7 +7,7 @@ import {
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
-import { DECREASED_VAT_BUSINESSES, DEFAULT_VAT_PERCENTAGE } from '@shared/constants';
+import { DECREASED_VAT_RATIO, DEFAULT_VAT_PERCENTAGE } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 
 export type VatReportRecordSources = {
@@ -105,10 +105,11 @@ export function adjustTaxRecords(
         );
       }
 
-      // decorate record with additional fields
+      // TODO: implement based on tax category / sort code
+      const isDecreasedVat = false;
 
-      const isDecreasedVat = DECREASED_VAT_BUSINESSES.includes(partialRecord.businessId);
-      const vatAfterDeduction = isDecreasedVat ? (partialRecord.vat / 3) * 2 : partialRecord.vat;
+      // decorate record with additional fields
+      const vatAfterDeduction = partialRecord.vat * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
       partialRecord.vatAfterDeduction = vatAfterDeduction;
