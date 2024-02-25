@@ -33,7 +33,7 @@ export function UserProvider({ children }: { children?: ReactNode }): ReactNode 
 
     setUserContext(userInfo);
     return;
-  }, [user]);
+  }, [JSON.stringify(user)]);
 
   return (
     <UserContext.Provider value={{ userContext, setUserContext }}>{children}</UserContext.Provider>
