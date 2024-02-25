@@ -49,7 +49,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     isSalary: DbCharge.is_salary ?? false,
   }),
   yearOfRelevance: DbCharge =>
-    DbCharge.year_of_relevance ? format(DbCharge.year_of_relevance, 'YYYY') : null,
+    DbCharge.year_of_relevance ? format(DbCharge.year_of_relevance, 'yyyy-MM-dd') : null,
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {

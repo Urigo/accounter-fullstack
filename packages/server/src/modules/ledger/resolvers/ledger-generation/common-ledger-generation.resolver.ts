@@ -6,6 +6,7 @@ import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exc
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import {
@@ -466,7 +467,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
-        const exchangeRateTaxCategory = accountingLedgerEntries.find(entry =>
+        const exchangeRateTaxCategory = [
+          ...financialAccountLedgerEntries,
+          ...accountingLedgerEntries,
+        ].find(entry =>
           isCreditorCounterparty
             ? entry.creditAccountID1 === entityId
             : entry.debitAccountID1 === entityId,
@@ -503,8 +507,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
     }
 
+    const crossYearLedgerEntries = handleCrossYearLedgerEntries(
+      charge,
+      accountingLedgerEntries,
+      financialAccountLedgerEntries,
+    );
+
     const records = [
-      ...accountingLedgerEntries,
+      ...(crossYearLedgerEntries ?? accountingLedgerEntries),
       ...financialAccountLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
