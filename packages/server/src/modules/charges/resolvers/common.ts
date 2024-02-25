@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { ChargeResolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -47,6 +48,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     isConversion: DbCharge.is_conversion ?? false,
     isSalary: DbCharge.is_salary ?? false,
   }),
+  yearOfRelevance: DbCharge =>
+    DbCharge.year_of_relevance ? format(DbCharge.year_of_relevance, 'YYYY') : null,
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {

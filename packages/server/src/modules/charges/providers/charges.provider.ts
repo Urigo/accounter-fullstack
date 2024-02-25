@@ -110,6 +110,10 @@ const updateCharge = sql<IUpdateChargeQuery>`
   tax_category_id = COALESCE(
     $taxCategoryId,
     tax_category_id
+  ),
+  year_of_relevance = COALESCE(
+    $yearOfRelevance,
+    year_of_relevance
   )
   WHERE
     id = $chargeId
