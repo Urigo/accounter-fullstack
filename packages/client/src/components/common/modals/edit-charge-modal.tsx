@@ -33,6 +33,7 @@ import { writeToClipboard } from '../../../helpers';
         id
         name
       }
+      yearOfRelevance
     }
   }
 `;

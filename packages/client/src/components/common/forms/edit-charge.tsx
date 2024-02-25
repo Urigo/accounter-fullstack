@@ -1,7 +1,9 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
+import { YearPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
@@ -11,7 +13,7 @@ import {
   EditChargeQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { EMPTY_UUID, MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { EMPTY_UUID, MakeBoolean, relevantDataPicker, TimelessDateString } from '../../../helpers';
 import { useUpdateCharge } from '../../../hooks/use-update-charge';
 
 type Props = {
@@ -19,8 +21,12 @@ type Props = {
   onDone: () => void;
 };
 
-export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
+export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElement => {
+  const { yearOfRelevance: originalYearOfRelevance, ...charge } = originalCharge;
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
+  const [yearOfRelevance, setYearOfRelevance] = useState<Date | null>(
+    originalYearOfRelevance ? new Date(originalYearOfRelevance) : null,
+  );
   const [
     {
       data: financialEntitiesData,
@@ -45,6 +51,7 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
     control: chargeControl,
     handleSubmit: handleChargeSubmit,
     formState: { dirtyFields: dirtyChargeFields },
+    setValue,
   } = useFormManager;
 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = data => {
@@ -150,6 +157,14 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
     }
   }, [businessTripsData, setBusinessTrips]);
 
+  function onSelectYear(date: Date): void {
+    setYearOfRelevance(date);
+    setValue('yearOfRelevance', format(date, 'yyyy-MM-dd') as TimelessDateString, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  }
+
   return (
     <form onSubmit={handleChargeSubmit(onChargeSubmit)}>
       <div className="flex-row px-10 h-max justify-start block">
@@ -246,6 +261,12 @@ export const EditCharge = ({ charge, onDone }: Props): ReactElement => {
             render={({ field: { value, ...field } }): ReactElement => (
               <Switch {...field} checked={value === true} label="Is Conversion" />
             )}
+          />
+          <YearPickerInput
+            label="Year of relevance"
+            // placeholder="Pick date"
+            value={yearOfRelevance}
+            onChange={onSelectYear}
           />
         </SimpleGrid>
       </div>
