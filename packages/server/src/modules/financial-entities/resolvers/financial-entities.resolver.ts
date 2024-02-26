@@ -1,8 +1,9 @@
 import { Resolvers } from '@shared/gql-types';
+import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule } from '../types.js';
+import type { FinancialEntitiesModule, IUpdateTaxCategoryParams } from '../types.js';
 import { commonDocumentsFields, commonTransactionFields, ledgerCounterparty } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
@@ -42,6 +43,43 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
           pageSize: limit,
         },
       };
+    },
+  },
+  Mutation: {
+    updateTaxCategory: async (_, { taxCategoryId, fields }, { injector }) => {
+      if (hasFinancialEntitiesCoreProperties(fields)) {
+        await injector
+          .get(FinancialEntitiesProvider)
+          .updateFinancialEntity({ ...fields, financialEntityId: taxCategoryId });
+      }
+      const adjustedFields: IUpdateTaxCategoryParams = {
+        hashavshevetName: fields.hashavshevetName,
+        taxCategoryId,
+      };
+      try {
+        if (fields.hashavshevetName) {
+          await injector
+            .get(TaxCategoriesProvider)
+            .updateTaxCategory(adjustedFields)
+            .catch((e: Error) => {
+              console.error(e);
+              throw new Error(`Update core tax category fields error`);
+            });
+        }
+
+        const updatedTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByIDsLoader.load(taxCategoryId);
+        if (!updatedTaxCategory) {
+          throw new Error(`Updated tax category not found`);
+        }
+        return updatedTaxCategory;
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Failed to update tax category ID="${taxCategoryId}": ${(e as Error).message}`,
+        };
+      }
     },
   },
   FinancialEntity: {

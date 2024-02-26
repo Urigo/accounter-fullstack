@@ -59,17 +59,9 @@ LEFT JOIN accounter_schema.financial_entities fe
 const updateTaxCategory = sql<IUpdateTaxCategoryQuery>`
 UPDATE accounter_schema.tax_categories
 SET
-name = COALESCE(
-  $name,
-  name
-),
 hashavshevet_name = COALESCE(
   $hashavshevetName,
   hashavshevet_name
-),
-sort_code = COALESCE(
-  $sortCode,
-  sort_code
 )
 WHERE id = $taxCategoryId
 RETURNING *;

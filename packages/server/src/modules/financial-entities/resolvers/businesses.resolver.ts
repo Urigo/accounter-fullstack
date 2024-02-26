@@ -50,29 +50,25 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       if (hasFinancialEntitiesCoreProperties(fields)) {
         await injector
           .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({ ...fields, businessId });
+          .updateFinancialEntity({ ...fields, financialEntityId: businessId });
       }
       const adjustedFields: IUpdateBusinessParams = {
         address: fields.address,
         email: fields.email,
         vatNumber: fields.governmentId,
         hebrewName: fields.hebrewName,
-        name: fields.name,
         phoneNumber: fields.phoneNumber,
-        sortCode: fields.sortCode,
         website: fields.website,
         businessId,
       };
       try {
         if (
-          fields.name ||
           fields.hebrewName ||
           fields.address ||
           fields.email ||
           fields.governmentId ||
           fields.phoneNumber ||
-          fields.website ||
-          fields.sortCode
+          fields.website
         ) {
           await injector
             .get(BusinessesProvider)

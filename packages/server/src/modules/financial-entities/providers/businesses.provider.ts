@@ -172,11 +172,6 @@ const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
 const updateBusiness = sql<IUpdateBusinessQuery>`
   UPDATE accounter_schema.businesses
   SET
-  name = COALESCE(
-    $name,
-    name,
-    NULL
-  ),
   vat_number = COALESCE(
     $vatNumber,
     vat_number
@@ -304,10 +299,6 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   can_settle_with_receipt = COALESCE(
     $canSettleWithReceipt,
     can_settle_with_receipt
-  ),
-  sort_code = COALESCE(
-    $sortCode,
-    sort_code
   )
   WHERE
     id = $businessId

@@ -54,12 +54,13 @@ export default gql`
   " input for updateBusiness "
   input UpdateBusinessInput {
     name: String
+    sortCode: Int
+
     hebrewName: String
     address: String
     email: String
     website: String
     phoneNumber: String
-    sortCode: Int
     governmentId: String
     taxCategory: UUID
   }
