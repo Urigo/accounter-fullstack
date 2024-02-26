@@ -13,15 +13,15 @@ import foreignSwiftTransactionSchema from '../schemas/foreignSwiftTransaction.js
 import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' assert { type: 'json' };
 import depositsSchema from '../schemas/hapoalimDepositsSchema.json' assert { type: 'json' };
 import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSchema.json' assert { type: 'json' };
-import type { AccountDataSchema } from '../generatedTypes/accountDataSchema.js';
-import type { ILSCheckingTransactionsDataSchema } from '../generatedTypes/ILSCheckingTransactionsDataSchema.js';
-import type { HapoalimDepositsSchema } from '../generatedTypes/hapoalimDepositsSchema.js';
-import type { HapoalimForeignDepositsSchema } from '../generatedTypes/hapoalimForeignDepositsSchema.js';
+import type { AccountDataSchema } from '../__generated__/accountDataSchema.js';
+import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
+import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
+import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
 import { validateSchema } from '../utils/validateSchema.js';
-import { ForeignTransactionsBusinessSchema } from '../generatedTypes/foreignTransactionsBusinessSchema.js';
-import { ForeignSwiftTransactions } from '../generatedTypes/foreignSwiftTransactions.js';
-import { ForeignSwiftTransaction } from '../generatedTypes/foreignSwiftTransaction.js';
-import { ForeignTransactionsPersonalSchema } from '../generatedTypes/foreignTransactionsPersonalSchema';
+import type { ForeignTransactionsBusinessSchema } from '../__generated__/foreignTransactionsBusinessSchema.js';
+import type { ForeignSwiftTransactions } from '../__generated__/foreignSwiftTransactions.js';
+import type { ForeignSwiftTransaction } from '../__generated__/foreignSwiftTransaction.js';
+import type { ForeignTransactionsPersonalSchema } from '../__generated__/foreignTransactionsPersonalSchema.js';
 
 type ForeignTransactionsSchema<T extends boolean> = T extends true
   ? ForeignTransactionsBusinessSchema

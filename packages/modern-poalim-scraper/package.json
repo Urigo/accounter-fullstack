@@ -10,9 +10,9 @@
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
     "prebuild": "yarn json2ts",
     "build": "tsc",
-    "postbuild": "cp -r src/generatedTypes dist/generatedTypes",
+    "postbuild": "cp -r src/__generated__ dist/__generated__",
     "format": "prettier \"**/*.ts\" --write",
-    "json2ts": "json2ts -i src/schemas -o src/generatedTypes"
+    "json2ts": "json2ts -i src/schemas -o src/__generated__"
   },
   "dependencies": {
     "ajv": "8.12.0",
