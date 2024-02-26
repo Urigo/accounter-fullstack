@@ -4,8 +4,8 @@
     "baseUrl": ".",
     "types": ["vitest/globals"],
 
-    "target": "ES2021",
-    "module": "esnext",
+    "target": "ES2022",
+    "module": "ESNext",
     "moduleResolution": "node",
     "lib": ["esnext", "dom"],
     "allowSyntheticDefaultImports": true,
@@ -17,12 +17,14 @@
 
     "noImplicitAny": true,
     "noImplicitThis": true,
-    // "alwaysStrict": true,
+    "alwaysStrict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
 
     "allowJs": true,
 
