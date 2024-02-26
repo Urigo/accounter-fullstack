@@ -1,0 +1,225 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "messageDescription": {
+                  "type": "string"
+                },
+                "messageCode": {
+                  "type": "number"
+                },
+                "severity": {
+                  "type": "string"
+                },
+                "messagePurposeCategoryCode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "messageDescription",
+                "messageCode",
+                "severity",
+                "messagePurposeCategoryCode"
+              ]
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          }
+        },
+        "required": [
+          "messages",
+          "links"
+        ]
+      },
+      "trailersCounter": {
+        "type": "number"
+      },
+      "minInputDate": {
+        "type": "number"
+      },
+      "formattedMinInputDate": {
+        "type": "string"
+      },
+      "swiftsList": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "startDate": {
+              "type": "number"
+            },
+            "formattedStartDate": {
+              "type": "string"
+            },
+            "swiftStatusCode": {
+              "type": "string"
+            },
+            "swiftStatusDesc": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "currencyCodeCatenatedKey": {
+              "type": "string"
+            },
+            "currencyLongDescription": {
+              "type": "string"
+            },
+            "chargePartyName": {
+              "type": "string"
+            },
+            "referenceNumber": {
+              "type": "string"
+            },
+            "transferCatenatedId": {
+              "type": "string"
+            },
+            "dataOriginCode": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "startDate",
+            "formattedStartDate",
+            "swiftStatusCode",
+            "swiftStatusDesc",
+            "amount",
+            "currencyCodeCatenatedKey",
+            "currencyLongDescription",
+            "chargePartyName",
+            "referenceNumber",
+            "transferCatenatedId",
+            "dataOriginCode"
+          ]
+        }
+      },
+      "fyiMessages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "messageCode": {
+              "type": "number"
+            },
+            "messageTypeCode": {
+              "type": "string"
+            },
+            "screenCommentText": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "messageCode",
+            "messageTypeCode",
+            "screenCommentText"
+          ]
+        }
+      },
+      "currencyCodeCatenatedKey": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "systemCode": {
+                  "type": "number"
+                },
+                "bankNumber": {
+                  "type": "number"
+                },
+                "currencyCode": {
+                  "type": "number"
+                },
+                "currencyShortedDescription": {
+                  "type": "string"
+                },
+                "currencySwiftCode": {
+                  "type": "string"
+                },
+                "currencyLongDescription": {
+                  "type": "string"
+                },
+                "compKey": {
+                  "type": "string"
+                },
+                "currencyUnitsQuantity": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "systemCode",
+                "bankNumber",
+                "currencyCode",
+                "currencyShortedDescription",
+                "currencySwiftCode",
+                "currencyLongDescription",
+                "compKey",
+                "currencyUnitsQuantity"
+              ]
+            }
+          }
+        },
+        "required": [
+          "code",
+          "values"
+        ]
+      },
+      "swiftStatusCode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "swiftStatusCode": {
+                  "type": "string"
+                },
+                "swiftStatusDesc": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "swiftStatusCode",
+                "swiftStatusDesc"
+              ]
+            }
+          }
+        },
+        "required": [
+          "code",
+          "values"
+        ]
+      }
+    },
+    "required": [
+      "metadata",
+      "trailersCounter",
+      "minInputDate",
+      "formattedMinInputDate",
+      "swiftsList",
+      "fyiMessages",
+      "currencyCodeCatenatedKey",
+      "swiftStatusCode"
+    ]
+  }

@@ -1,0 +1,433 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "comments",
+    "message",
+    "numItemsPerPage",
+    "pdfUrl",
+    "retrievalTransactionData",
+    "transactions"
+  ],
+  "properties": {
+    "comments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "message": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "links",
+        "messages"
+      ],
+      "properties": {
+        "links": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "messageCode",
+              "messageDescription",
+              "messagePurposeCategoryCode",
+              "severity"
+            ],
+            "properties": {
+              "messageCode": {
+                "type": "number",
+                "enum": [
+                  11040,
+                  1260003
+                ]
+              },
+              "messageDescription": {
+                "type": "string"
+              },
+              "messagePurposeCategoryCode": {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "I"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "numItemsPerPage": {
+      "type": "number"
+    },
+    "pdfUrl": {
+      "type": "string"
+    },
+    "retrievalTransactionData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountNumber",
+        "balanceAmountDisplayIndication",
+        "bankNumber",
+        "branchNumber",
+        "eventCounter",
+        "formattedRetrievalEndDate",
+        "formattedRetrievalMaxDate",
+        "formattedRetrievalMinDate",
+        "formattedRetrievalStartDate",
+        "joinPfm",
+        "retrievalEndDate",
+        "retrievalMaxDate",
+        "retrievalMinDate",
+        "retrievalStartDate"
+      ],
+      "properties": {
+        "accountNumber": {
+          "type": "number"
+        },
+        "balanceAmountDisplayIndication": {
+          "type": "string",
+          "enum": [
+            "Y"
+          ]
+        },
+        "bankNumber": {
+          "type": "number",
+          "enum": [
+            12
+          ]
+        },
+        "branchNumber": {
+          "type": "number"
+        },
+        "eventCounter": {
+          "type": "number"
+        },
+        "formattedRetrievalEndDate": {
+          "type": "string"
+        },
+        "formattedRetrievalMaxDate": {
+          "type": "string"
+        },
+        "formattedRetrievalMinDate": {
+          "type": "string"
+        },
+        "formattedRetrievalStartDate": {
+          "type": "string"
+        },
+        "joinPfm": {
+          "type": "boolean",
+          "enum": [
+            false,
+            true
+          ]
+        },
+        "retrievalEndDate": {
+          "type": "number"
+        },
+        "retrievalMaxDate": {
+          "type": "number"
+        },
+        "retrievalMinDate": {
+          "type": "number"
+        },
+        "retrievalStartDate": {
+          "type": "number"
+        }
+      }
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "activityDescription",
+          "activityDescriptionIncludeValueDate",
+          "activityTypeCode",
+          "beneficiaryDetailsData",
+          "comment",
+          "commentExistenceSwitch",
+          "contraAccountNumber",
+          "contraAccountTypeCode",
+          "contraBankNumber",
+          "contraBranchNumber",
+          "currentBalance",
+          "dataGroupCode",
+          "details",
+          "differentDateIndication",
+          "englishActionDesc",
+          "eventActivityTypeCode",
+          "eventAmount",
+          "eventDate",
+          "eventId",
+          "executingBranchNumber",
+          "expandedEventDate",
+          "fieldDescDisplaySwitch",
+          "formattedEventDate",
+          "formattedOriginalEventCreateDate",
+          "formattedValueDate",
+          "internalLinkCode",
+          "marketingOfferContext",
+          "offerActivityContext",
+          "originalEventCreateDate",
+          "pfmDetails",
+          "recordNumber",
+          "referenceCatenatedNumber",
+          "referenceNumber",
+          "rejectedDataEventPertainingIndication",
+          "serialNumber",
+          "tableNumber",
+          "textCode",
+          "transactionType",
+          "valueDate",
+          "displayRTGSIncomingTrsDetails"
+        ],
+        "properties": {
+          "activityDescription": {
+            "type": "string"
+          },
+          "activityDescriptionIncludeValueDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "activityTypeCode": {
+            "type": "number"
+          },
+          "beneficiaryDetailsData": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [],
+            "properties": {
+              "messageDetail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "messageHeadline": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "partyHeadline": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "partyName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "recordNumber": {
+                "type": "number"
+              },
+              "tableNumber": {
+                "type": "number"
+              },
+              "beneficiaryDetails": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commentExistenceSwitch": {
+            "type": "number",
+            "enum": [
+              0
+            ]
+          },
+          "contraAccountNumber": {
+            "type": "number"
+          },
+          "contraAccountTypeCode": {
+            "type": "number"
+          },
+          "contraBankNumber": {
+            "type": "number"
+          },
+          "contraBranchNumber": {
+            "type": "number"
+          },
+          "currentBalance": {
+            "type": "number"
+          },
+          "dataGroupCode": {
+            "type": "number"
+          },
+          "details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "differentDateIndication": {
+            "type": "string"
+          },
+          "englishActionDesc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "eventActivityTypeCode": {
+            "type": "number",
+            "description": "Income (1) or expense (2)",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "eventAmount": {
+            "type": "number"
+          },
+          "eventDate": {
+            "type": "number"
+          },
+          "eventId": {
+            "type": "integer",
+            "enum": [
+              0,
+              184,
+              5593427100450,
+              5593427501110,
+              5593436200350,
+              8552511030540,
+              8552553828500,
+              8552585427350
+            ]
+          },
+          "executingBranchNumber": {
+            "type": "number"
+          },
+          "expandedEventDate": {
+            "type": "string"
+          },
+          "fieldDescDisplaySwitch": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "formattedEventDate": {
+            "type": "string"
+          },
+          "formattedOriginalEventCreateDate": {
+            "type": "null"
+          },
+          "formattedValueDate": {
+            "type": "string"
+          },
+          "internalLinkCode": {
+            "type": "integer"
+          },
+          "marketingOfferContext": {
+            "type": "number",
+            "enum": [
+              0
+            ]
+          },
+          "offerActivityContext": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "originalEventCreateDate": {
+            "type": "number"
+          },
+          "pfmDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordNumber": {
+            "type": "number"
+          },
+          "referenceCatenatedNumber": {
+            "type": "number"
+          },
+          "referenceNumber": {
+            "type": "number"
+          },
+          "rejectedDataEventPertainingIndication": {
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "number"
+          },
+          "tableNumber": {
+            "type": "number"
+          },
+          "textCode": {
+            "type": "number"
+          },
+          "transactionType": {
+            "type": "string",
+            "description": "Fixed (REGULAR) or still in process/temporary (TODAY)",
+            "enum": [
+              "REGULAR",
+              "TODAY"
+            ]
+          },
+          "valueDate": {
+            "type": "number"
+          },
+          "displayCreditAccountDetails": {
+            "type": "number",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "displayRTGSIncomingTrsDetails": {
+            "type": "number",
+            "enum": [
+              0,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}
