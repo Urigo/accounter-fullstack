@@ -44,7 +44,7 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
     type
   )
   WHERE
-    id = $businessId
+    id = $financialEntityId
   RETURNING *;
 `;
 

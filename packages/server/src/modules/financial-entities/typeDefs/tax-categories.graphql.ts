@@ -48,4 +48,23 @@ export default gql`
     id: UUID!
     name: String!
   }
+
+  extend type Mutation {
+    updateTaxCategory(
+      taxCategoryId: UUID!
+      ownerId: UUID!
+      fields: UpdateTaxCategoryInput!
+    ): UpdateTaxCategoryResponse! @auth(role: ACCOUNTANT)
+  }
+
+  " result type for updateBusiness "
+  union UpdateTaxCategoryResponse = TaxCategory | CommonError
+
+  " input for updateTaxCategory "
+  input UpdateTaxCategoryInput {
+    name: String
+    sortCode: Int
+
+    hashavshevetName: String
+  }
 `;
