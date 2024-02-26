@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Mutation {
-    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords! @auth(role: ADMIN)
+    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords! @auth(role: ACCOUNTANT)
   }
 
   " represent atomic movement of funds "
