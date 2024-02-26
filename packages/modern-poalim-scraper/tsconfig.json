@@ -7,9 +7,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedParameters": true,
-    "checkJs": true,
+    "checkJs": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

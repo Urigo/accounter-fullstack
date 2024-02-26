@@ -2,28 +2,19 @@
   "$schema": "http://json-schema.org/draft-07/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "Header",
-    "CardsTransactionsListBean"
-  ],
+  "required": ["Header", "CardsTransactionsListBean"],
   "properties": {
     "Header": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "Status",
-        "Message"
-      ],
+      "required": ["Status", "Message"],
       "properties": {
         "ErrorPage": {
           "type": "string"
         },
         "Status": {
           "type": "string",
-          "enum": [
-            "1",
-            "-2"
-          ]
+          "enum": ["1", "-2"]
         },
         "Message": {
           "type": "null"
@@ -86,14 +77,7 @@
         },
         "cardIdx": {
           "type": "string",
-          "enum": [
-            "0,1,2,3,4,5",
-            "0,1,2,3,4",
-            "0,1,2,3",
-            "0,1,2",
-            "0,1",
-            "0"
-          ]
+          "enum": ["0,1,2,3,4,5", "0,1,2,3,4", "0,1,2,3", "0,1,2", "0,1", "0"]
         },
         "cardNumberList": {
           "type": "array",
@@ -129,50 +113,31 @@
         },
         "isButton": {
           "type": "string",
-          "enum": [
-            "false"
-          ]
+          "enum": ["false"]
         },
         "isCaptcha": {
           "type": "string",
-          "enum": [
-            "false"
-          ]
+          "enum": ["false"]
         },
         "isCashBack": {
           "type": "string",
-          "enum": [
-            "false"
-          ]
+          "enum": ["false"]
         },
         "isError": {
           "type": "string",
-          "enum": [
-            "false"
-          ]
+          "enum": ["false"]
         },
         "isShowDealsInboundForCharge": {
           "type": "string",
-          "enum": [
-            "yes",
-            "NO"
-          ]
+          "enum": ["yes", "NO"]
         },
         "isShowDealsInboundForInfo": {
           "type": "string",
-          "enum": [
-            "NO"
-          ]
+          "enum": ["NO"]
         },
         "isThereData": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "enum": [
-            "1",
-            null
-          ]
+          "type": ["string", "null"],
+          "enum": ["1", null]
         },
         "isTooManyRecords": {
           "type": "null"
@@ -186,42 +151,18 @@
         },
         "month": {
           "type": "string",
-          "enum": [
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12"
-          ]
+          "enum": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
         },
         "payDay": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "enum": [
-            "10",
-            "02",
-            "15",
-            null
-          ]
+          "type": ["string", "null"],
+          "enum": ["10", "02", "15", null]
         },
         "paymentPercent": {
           "type": "null"
         },
         "paymentSum": {
           "type": "string",
-          "enum": [
-            "000",
-            "280"
-          ]
+          "enum": ["000", "280"]
         },
         "returnCode": {
           "type": "null"
@@ -231,24 +172,14 @@
         },
         "selectedCardIndex": {
           "type": "string",
-          "enum": [
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5"
-          ]
+          "enum": ["0", "1", "2", "3", "4", "5"]
         },
         "selectedCardInfo": {
           "type": "string"
         },
         "selectedDateIndex": {
           "type": "string",
-          "enum": [
-            "23",
-            "24"
-          ]
+          "enum": ["23", "24"]
         },
         "siteName": {
           "type": "null"
@@ -264,9 +195,7 @@
         },
         "tablePageNum": {
           "type": "string",
-          "enum": [
-            "0"
-          ]
+          "enum": ["0"]
         },
         "totalChargeDollar": {
           "type": "null"
@@ -275,10 +204,7 @@
           "type": "null"
         },
         "totalChargeNis": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "totalDebit": {
           "type": "null"
@@ -361,21 +287,15 @@
               },
               "isButton": {
                 "type": "string",
-                "enum": [
-                  "false"
-                ]
+                "enum": ["false"]
               },
               "isCaptcha": {
                 "type": "string",
-                "enum": [
-                  "false"
-                ]
+                "enum": ["false"]
               },
               "isError": {
                 "type": "string",
-                "enum": [
-                  "false"
-                ]
+                "enum": ["false"]
               },
               "message": {
                 "type": "null"
@@ -394,21 +314,13 @@
               },
               "tablePageNum": {
                 "type": "string",
-                "enum": [
-                  "0"
-                ]
+                "enum": ["0"]
               },
               "totalDollar": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "totalEuro": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "totalNis": {
                 "type": "string"
@@ -432,34 +344,24 @@
     "Index": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "@AllCards",
-        "CurrentCardTransactions"
-      ],
+      "required": ["@AllCards", "CurrentCardTransactions"],
       "properties": {
         "@AllCards": {
           "type": "string",
-          "enum": [
-            "AllCards"
-          ]
+          "enum": ["AllCards"]
         },
         "CurrentCardTransactions": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "@cardTransactions"
-            ],
+            "required": ["@cardTransactions"],
             "properties": {
               "@cardTransactions": {
                 "type": "string"
               },
               "txnAbroad": {
-                "type": [
-                  "array",
-                  "null"
-                ],
+                "type": ["array", "null"],
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
@@ -516,40 +418,20 @@
                     },
                     "cardIndex": {
                       "type": "string",
-                      "enum": [
-                        "0",
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                        "5"
-                      ]
+                      "enum": ["0", "1", "2", "3", "4", "5"]
                     },
                     "city": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "clientIpAddress": {
                       "type": "null"
                     },
                     "currencyId": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "NIS",
-                        "USD",
-                        "EUR"
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["NIS", "USD", "EUR"]
                     },
                     "currentPaymentCurrency": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "enum": [
                         "NIS",
                         "USD",
@@ -586,10 +468,7 @@
                       "type": "null"
                     },
                     "dealSumOutbound": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "dealSumType": {
                       "type": "null"
@@ -598,20 +477,14 @@
                       "type": "null"
                     },
                     "fullPaymentDate": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
                     },
                     "fullPurchaseDate": {
                       "type": "null"
                     },
                     "fullPurchaseDateOutbound": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
                     },
                     "fullSupplierNameHeb": {
@@ -625,37 +498,23 @@
                     },
                     "isButton": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isCaptcha": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isError": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isHoraatKeva": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isShowDealsOutbound": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "_",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["_", null]
                     },
                     "isShowLinkForSupplierDetails": {
                       "type": "null"
@@ -667,10 +526,7 @@
                       "type": "null"
                     },
                     "paymentDate": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}$"
                     },
                     "paymentSum": {
@@ -686,10 +542,7 @@
                       "type": "null"
                     },
                     "purchaseDateOutbound": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}$"
                     },
                     "returnCode": {
@@ -721,15 +574,10 @@
                     },
                     "tablePageNum": {
                       "type": "string",
-                      "enum": [
-                        "0"
-                      ]
+                      "enum": ["0"]
                     },
                     "voucherNumber": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{7}$"
                     },
                     "voucherNumberRatz": {
@@ -755,10 +603,7 @@
                 "type": "null"
               },
               "txnIsrael": {
-                "type": [
-                  "array",
-                  "null"
-                ],
+                "type": ["array", "null"],
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
@@ -814,14 +659,7 @@
                     },
                     "cardIndex": {
                       "type": "string",
-                      "enum": [
-                        "0",
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                        "5"
-                      ]
+                      "enum": ["0", "1", "2", "3", "4", "5"]
                     },
                     "city": {
                       "type": "null"
@@ -830,46 +668,25 @@
                       "type": "null"
                     },
                     "currencyId": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "ש\"ח",
-                        "דולר",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["ש\"ח", "דולר", null]
                     },
                     "currentPaymentCurrency": {
                       "type": "null"
                     },
                     "dealsInbound": {
                       "type": "string",
-                      "enum": [
-                        "yes",
-                        "NO"
-                      ]
+                      "enum": ["yes", "NO"]
                     },
                     "dealSum": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "dealSumOutbound": {
                       "type": "null"
                     },
                     "dealSumType": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "1",
-                        "T",
-                        "P",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["1", "T", "P", null]
                     },
                     "displayProperties": {
                       "type": "null"
@@ -878,105 +695,66 @@
                       "type": "null"
                     },
                     "fullPurchaseDate": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}/([0-9]{4}|[0-9]{2})$"
                     },
                     "fullPurchaseDateOutbound": {
                       "type": "null"
                     },
                     "fullSupplierNameHeb": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "fullSupplierNameOutbound": {
                       "type": "null"
                     },
                     "horaatKeva": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "K",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["K", null]
                     },
                     "isButton": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isCaptcha": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isError": {
                       "type": "string",
-                      "enum": [
-                        "false"
-                      ]
+                      "enum": ["false"]
                     },
                     "isHoraatKeva": {
                       "type": "string",
-                      "enum": [
-                        "false",
-                        "true"
-                      ]
+                      "enum": ["false", "true"]
                     },
                     "isShowDealsOutbound": {
                       "type": "null"
                     },
                     "isShowLinkForSupplierDetails": {
                       "type": "string",
-                      "enum": [
-                        "yes",
-                        "NO"
-                      ]
+                      "enum": ["yes", "NO"]
                     },
                     "message": {
                       "type": "null"
                     },
                     "moreInfo": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "paymentDate": {
                       "type": "null"
                     },
                     "paymentSum": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "paymentSumOutbound": {
                       "type": "null"
                     },
                     "paymentSumSign": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "-",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["-", null]
                     },
                     "purchaseDate": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{2}/[0-9]{2}$"
                     },
                     "purchaseDateOutbound": {
@@ -992,18 +770,8 @@
                       "type": "null"
                     },
                     "solek": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "I",
-                        "L",
-                        "V",
-                        "_",
-                        "K",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["I", "L", "V", "_", "K", null]
                     },
                     "specificDate": {
                       "type": "null"
@@ -1013,40 +781,32 @@
                     },
                     "supplierId": {
                       "anyOf": [
-                        { "type" : "null" },
+                        { "type": "null" },
                         {
                           "type": "string",
-                          "oneOf": [{
+                          "oneOf": [
+                            {
                               "pattern": "^[0-9]{7}$"
-                            },{
-                              "enum": [
-                                "0"
-                              ]
+                            },
+                            {
+                              "enum": ["0"]
                             }
                           ]
                         }
                       ]
                     },
                     "supplierName": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "supplierNameOutbound": {
                       "type": "null"
                     },
                     "tablePageNum": {
                       "type": "string",
-                      "enum": [
-                        "0"
-                      ]
+                      "enum": ["0"]
                     },
                     "voucherNumber": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "pattern": "^[0-9]{7}$"
                     },
                     "voucherNumberRatz": {
@@ -1063,15 +823,8 @@
                       "type": "null"
                     },
                     "kodMatbeaMekori": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "ש\"ח",
-                        "דולר",
-                        null
-                      ]
+                      "type": ["string", "null"],
+                      "enum": ["ש\"ח", "דולר", null]
                     }
                   }
                 }
@@ -1110,19 +863,8 @@
             "type": "null"
           },
           "currentId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["0", "1", "2", "3", "4", "5", null]
           },
           "displayProperties": {
             "type": "null"
@@ -1136,21 +878,15 @@
           },
           "isButton": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "isCaptcha": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "isError": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "message": {
             "type": "null"
@@ -1169,35 +905,18 @@
           },
           "tablePageNum": {
             "type": "string",
-            "enum": [
-              "0"
-            ]
+            "enum": ["0"]
           },
           "totalDollar": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "0",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["0", null]
           },
           "totalEuro": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "0",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["0", null]
           },
           "totalNis": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "bcKey": {
             "type": "null"
@@ -1209,10 +928,7 @@
       }
     },
     "transaction": {
-      "type": [
-        "array",
-        "null"
-      ],
+      "type": ["array", "null"],
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -1268,220 +984,110 @@
           },
           "cardIndex": {
             "type": "string",
-            "enum": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ]
+            "enum": ["0", "1", "2", "3", "4", "5"]
           },
           "city": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "clientIpAddress": {
             "type": "null"
           },
           "currencyId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "ש\"ח",
-              "NIS",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["ש\"ח", "NIS", null]
           },
           "currentPaymentCurrency": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "NIS",
-              "USD",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["NIS", "USD", null]
           },
           "dealsInbound": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "yes",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["yes", null]
           },
           "dealSum": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "dealSumOutbound": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "dealSumType": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "1",
-              "T",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["1", "T", null]
           },
           "displayProperties": {
             "type": "null"
           },
           "fullPaymentDate": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
           },
           "fullPurchaseDate": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
           },
           "fullPurchaseDateOutbound": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
           },
           "fullSupplierNameHeb": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "fullSupplierNameOutbound": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "horaatKeva": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "K",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["K", null]
           },
           "isButton": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "isCaptcha": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "isError": {
             "type": "string",
-            "enum": [
-              "false"
-            ]
+            "enum": ["false"]
           },
           "isHoraatKeva": {
             "type": "string",
-            "enum": [
-              "false",
-              "true"
-            ]
+            "enum": ["false", "true"]
           },
           "isShowDealsOutbound": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "_",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["_", null]
           },
           "isShowLinkForSupplierDetails": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "yes",
-              "NO",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["yes", "NO", null]
           },
           "message": {
             "type": "null"
           },
           "moreInfo": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "paymentDate": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[0-9]{2}/[0-9]{2}$"
           },
           "paymentSum": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "paymentSumOutbound": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "paymentSumSign": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "-",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["-", null]
           },
           "purchaseDate": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "purchaseDateOutbound": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[0-9]{2}/[0-9]{2}$"
           },
           "returnCode": {
@@ -1494,18 +1100,8 @@
             "type": "null"
           },
           "solek": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "I",
-              "L",
-              "V",
-              "_",
-              "K",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["I", "L", "V", "_", "K", null]
           },
           "specificDate": {
             "type": "null"
@@ -1514,51 +1110,31 @@
             "type": "null"
           },
           "supplierId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "maxLength": 7
           },
           "supplierName": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "supplierNameOutbound": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tablePageNum": {
             "type": "string",
-            "enum": [
-              "0"
-            ]
+            "enum": ["0"]
           },
           "voucherNumber": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "minLength": 7,
             "maxLength": 7
           },
           "voucherNumberRatz": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "minLength": 9,
             "maxLength": 9
           },
           "voucherNumberRatzOutbound": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "minLength": 9,
             "maxLength": 9
           }

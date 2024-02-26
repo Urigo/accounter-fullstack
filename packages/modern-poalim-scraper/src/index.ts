@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer';
 import {
   hapoalim,
-  isracard,
   hapoalimCredentials,
   hapoalimOptions,
+  isracard,
   isracardCredentials,
   isracardOptions,
 } from './scrapers/scrapers-index.js';
@@ -15,18 +15,12 @@ export async function init() {
   const browser = await puppeteer.launch({ headless: true });
 
   return {
-    hapoalim: async (
-      credentials: hapoalimCredentials,
-      options?: hapoalimOptions,
-    ) => {
+    hapoalim: async (credentials: hapoalimCredentials, options?: hapoalimOptions) => {
       //return hapoalim.init
       const page = await newPage(browser);
       return hapoalim(page, credentials, options);
     },
-    isracard: async (
-      credentials: isracardCredentials,
-      options?: isracardOptions,
-    ) => {
+    isracard: async (credentials: isracardCredentials, options?: isracardOptions) => {
       //return isracard.init
       const page = await newPage(browser);
       return isracard(page, credentials, options);

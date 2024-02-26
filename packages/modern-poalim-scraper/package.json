@@ -1,18 +1,19 @@
 {
   "name": "modern-poalim-scraper",
   "version": "0.9.11",
+  "type": "module",
   "description": "",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "scripts": {
-    "start": "node dist/index.js",
-    "dev": "tsc && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
-    "prebuild": "yarn json2ts",
     "build": "tsc",
-    "postbuild": "cp -r src/__generated__ dist/__generated__",
+    "dev": "tsc && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
     "format": "prettier \"**/*.ts\" --write",
-    "json2ts": "json2ts -i src/schemas -o src/__generated__"
+    "json2ts": "json2ts -i src/schemas -o src/__generated__",
+    "postbuild": "cp -r src/__generated__ dist/__generated__",
+    "prebuild": "yarn json2ts",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "ajv": "8.12.0",
@@ -32,7 +33,6 @@
     "nodemon": "3.0.3",
     "typescript": "5.3.3"
   },
-  "license": "MIT",
   "lint-staged": {
     "*.--write": "prettier --write"
   }

@@ -2,11 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "metadata",
-    "list",
-    "depositsWrapperData"
-  ],
+  "required": ["metadata", "list", "depositsWrapperData"],
   "definitions": {
     "deposits": {
       "type": "array",
@@ -99,9 +95,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "lastIndexRate": {
                           "type": "object",
@@ -111,9 +105,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "basicIndexValue": {
                           "type": "object",
@@ -123,9 +115,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "basicCurrencyRate": {
                           "type": "object",
@@ -135,9 +125,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "standingOrderAmount": {
                           "type": "object",
@@ -147,9 +135,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "linkagePercent": {
                           "type": "object",
@@ -159,9 +145,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "ratePercentFactor": {
                           "type": "object",
@@ -171,9 +155,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         },
                         "fixedInterestRate": {
                           "type": "object",
@@ -183,9 +165,7 @@
                             }
                           },
                           "additionalProperties": true,
-                          "required": [
-                            "hidden"
-                          ]
+                          "required": ["hidden"]
                         }
                       },
                       "additionalProperties": true,
@@ -206,16 +186,11 @@
                     }
                   },
                   "additionalProperties": true,
-                  "required": [
-                    "attributes",
-                    "links"
-                  ]
+                  "required": ["attributes", "links"]
                 },
                 "shortProductName": {
                   "type": "string",
-                  "enum": [
-                    "פריים"
-                  ]
+                  "enum": ["פריים"]
                 },
                 "principalAmount": {
                   "type": "number"
@@ -234,9 +209,7 @@
                 },
                 "hebrewPurposeDescription": {
                   "type": "string",
-                  "enum": [
-                    "לא רלוונטי"
-                  ]
+                  "enum": ["לא רלוונטי"]
                 },
                 "objectiveAmount": {
                   "type": "number"
@@ -258,25 +231,18 @@
                 },
                 "renewalDescription": {
                   "type": "string",
-                  "enum": [
-                    "פיקדון מתחדש",
-                    "יפרע לעו\"ש"
-                  ]
+                  "enum": ["פיקדון מתחדש", "יפרע לעו\"ש"]
                 },
                 "requestedRenewalNumber": {
                   "type": "integer"
                 },
                 "interestBaseDescription": {
                   "type": "string",
-                  "enum": [
-                    "פריים"
-                  ]
+                  "enum": ["פריים"]
                 },
                 "interestTypeDescription": {
                   "type": "string",
-                  "enum": [
-                    "משתנה"
-                  ]
+                  "enum": ["משתנה"]
                 },
                 "spreadPercent": {
                   "type": "number"
@@ -289,21 +255,15 @@
                 },
                 "interestCalculatingMethodDescription": {
                   "type": "string",
-                  "enum": [
-                    "קו ישר"
-                  ]
+                  "enum": ["קו ישר"]
                 },
                 "interestCreditingMethodDescription": {
                   "type": "string",
-                  "enum": [
-                    "לקרן הפיקדון"
-                  ]
+                  "enum": ["לקרן הפיקדון"]
                 },
                 "interestPaymentDescription": {
                   "type": "string",
-                  "enum": [
-                    "תחנה"
-                  ]
+                  "enum": ["תחנה"]
                 },
                 "nominalInterest": {
                   "type": "number"
@@ -355,10 +315,7 @@
                 },
                 "lienDescription": {
                   "type": "string",
-                  "enum": [
-                    "משועבד",
-                    "מבטיח אשראי"
-                  ]
+                  "enum": ["משועבד", "מבטיח אשראי"]
                 },
                 "withdrawalEnablingIndication": {
                   "type": "integer"
@@ -374,9 +331,7 @@
                 },
                 "timeUnitDescription": {
                   "type": "string",
-                  "enum": [
-                    "ימים"
-                  ]
+                  "enum": ["ימים"]
                 },
                 "formattedRevaluedTotalAmount": {
                   "type": "null"
@@ -386,26 +341,18 @@
                 },
                 "renewalDateExplanation": {
                   "type": "string",
-                  "enum": [
-                    "תחנה קרובה",
-                    "ייפרע לעו\"ש בתאריך"
-                  ]
+                  "enum": ["תחנה קרובה", "ייפרע לעו\"ש בתאריך"]
                 },
                 "expectedRepaymentSwitch": {
                   "type": "integer",
-                  "enum": [
-                    0,
-                    1
-                  ]
+                  "enum": [0, 1]
                 }
               }
             }
           },
           "source": {
             "type": "string",
-            "enum": [
-              "israeliCurrencyDeposit"
-            ]
+            "enum": ["israeliCurrencyDeposit"]
           },
           "validityDate": {
             "type": "integer"
@@ -436,25 +383,11 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "messageCode",
-                "messageDescription",
-                "messageTypeCode"
-              ],
+              "required": ["messageCode", "messageDescription", "messageTypeCode"],
               "properties": {
                 "messageCode": {
                   "type": "integer",
-                  "enum": [
-                    803,
-                    804,
-                    805,
-                    821,
-                    822,
-                    823,
-                    824,
-                    825,
-                    826
-                  ]
+                  "enum": [803, 804, 805, 821, 822, 823, 824, 825, 826]
                 },
                 "messageDescription": {
                   "type": "string",
@@ -472,9 +405,7 @@
                 },
                 "messageTypeCode": {
                   "type": "string",
-                  "enum": [
-                    "I"
-                  ]
+                  "enum": ["I"]
                 }
               }
             }
@@ -505,11 +436,7 @@
                 }
               },
               "additionalProperties": true,
-              "required": [
-                "messageDescription",
-                "messageCode",
-                "severity"
-              ]
+              "required": ["messageDescription", "messageCode", "severity"]
             }
           ]
         },
@@ -519,10 +446,7 @@
         }
       },
       "additionalProperties": true,
-      "required": [
-        "messages",
-        "links"
-      ]
+      "required": ["messages", "links"]
     },
     "list": {
       "$ref": "#/definitions/deposits"

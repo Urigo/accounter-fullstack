@@ -8,15 +8,11 @@
     "properties": {
       "bankNumber": {
         "type": "integer",
-        "enum": [
-          12
-        ]
+        "enum": [12]
       },
       "extendedBankNumber": {
         "type": "integer",
-        "enum": [
-          912
-        ]
+        "enum": [912]
       },
       "branchNumber": {
         "type": "integer",
@@ -30,53 +26,40 @@
       },
       "partyPreferredIndication": {
         "type": "integer",
-        "enum": [
-          0
-        ]
+        "enum": [0]
       },
       "partyAccountInvolvementCode": {
         "type": "integer",
-        "enum": [
-          1,
-          201
-        ]
+        "enum": [1, 201]
       },
       "accountDealDate": {
         "type": "integer",
-        "enum": [
-          0
-        ]
+        "enum": [0]
       },
       "accountUpdateDate": {
-        "anyOf": [{
-          "type": "integer",
-          "minimum": 10000000,
-          "maximum": 99999999
-        }, {
-          "type": "integer",
-          "enum": [0]
-        }]
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 10000000,
+            "maximum": 99999999
+          },
+          {
+            "type": "integer",
+            "enum": [0]
+          }
+        ]
       },
       "metegDoarNet": {
         "type": "integer",
-        "enum": [
-          0,
-          1
-        ]
+        "enum": [0, 1]
       },
       "kodHarshaatPeilut": {
         "type": "integer",
-        "enum": [
-          1,
-          3
-        ]
+        "enum": [1, 3]
       },
       "accountClosingReasonCode": {
         "type": "integer",
-        "enum": [
-          0,
-          1
-        ]
+        "enum": [0, 1]
       },
       "productLabel": {
         "description": "Branch number with account number and two spaces in between",
@@ -84,30 +67,19 @@
       },
       "accountAgreementOpeningDate": {
         "type": "integer",
-        "enum": [
-          0
-        ]
+        "enum": [0]
       },
       "serviceAuthorizationDesc": {
         "type": "string",
-        "enum": [
-          "לא חתום",
-          "פעולות ומידע"
-        ]
+        "enum": ["לא חתום", "פעולות ומידע"]
       },
       "branchTypeCode": {
         "type": "integer",
-        "enum": [
-          0,
-          2
-        ]
+        "enum": [0, 2]
       },
       "mymailEntitlementSwitch": {
         "type": "integer",
-        "enum": [
-          0,
-          1
-        ]
+        "enum": [0, 1]
       }
     },
     "required": [

@@ -27,6 +27,7 @@
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
     "poalim-scraper:build": "yarn --cwd packages/modern-poalim-scraper build",
     "postinstall": "patch-package",
+    "pre-commit": "lint-staged",
     "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
@@ -34,8 +35,7 @@
     "server:build": "yarn --cwd packages/server build",
     "server:dev": "yarn --cwd packages/server dev",
     "start": "yarn --cwd packages/old-accounter start",
-    "test": "vitest",
-    "pre-commit": "lint-staged"
+    "test": "vitest"
   },
   "dependencies": {
     "graphql": "16.8.1",

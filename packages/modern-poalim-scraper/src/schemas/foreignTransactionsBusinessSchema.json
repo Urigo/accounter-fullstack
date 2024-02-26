@@ -65,10 +65,7 @@
           },
           "bankNumber": {
             "type": "number",
-            "enum": [
-              12,
-              0
-            ]
+            "enum": [12, 0]
           },
           "branchNumber": {
             "type": "number"
@@ -96,30 +93,22 @@
           },
           "currentAccountLimitsAmount": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "currentBalance": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "currentBalanceExchangeRateWayDescription": {
             "type": "null"
           },
           "currentBalanceExchangeRateWayCode": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "detailedAccountTypeCode": {
             "type": "number",
-            "enum": [
-              142
-            ]
+            "enum": [142]
           },
           "detailedAccountTypeShortedDescription": {
             "type": "string"
@@ -128,56 +117,36 @@
             "type": "null"
           },
           "formattedRetrievalMaxDate": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "formattedRetrievalMinDate": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "lastBalance": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "lastBalanceExchangeRateWayCode": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "lastEventDate": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "messages": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": ["array", "null"],
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "messageDescription",
-                "messageCode"
-              ],
+              "required": ["messageDescription", "messageCode"],
               "properties": {
                 "messageDescription": {
                   "type": "string"
                 },
                 "messageCode": {
                   "type": "number",
-                  "enum": [
-                    3
-                  ]
+                  "enum": [3]
                 }
               }
             }
@@ -187,30 +156,22 @@
           },
           "outputArrayRecordSum3": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "outputArrayRecordSum4": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "pendingBalance": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "rateExerciseDescription": {
             "type": "null"
           },
           "rateRealizationCode": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           },
           "retrievalMaxDate": {
             "type": "number"
@@ -273,10 +234,7 @@
               ],
               "properties": {
                 "accountName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "activityDescription": {
                   "type": "string"
@@ -289,15 +247,10 @@
                 },
                 "commentExistenceSwitch": {
                   "type": "number",
-                  "enum": [
-                    0
-                  ]
+                  "enum": [0]
                 },
                 "contraAccountFieldNameLable": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "contraAccountNumber": {
                   "type": "number"
@@ -310,14 +263,7 @@
                 },
                 "contraCurrencyCode": {
                   "type": "integer",
-                  "enum": [
-                    0,
-                    1,
-                    19,
-                    27,
-                    78,
-                    100
-                  ]
+                  "enum": [0, 1, 19, 27, 78, 100]
                 },
                 "currencyLongDescription": {
                   "type": "string"
@@ -333,16 +279,11 @@
                 },
                 "dataGroupCode": {
                   "type": "integer",
-                  "enum": [
-                    0
-                  ]
+                  "enum": [0]
                 },
                 "displayCreditAccountDetails": {
                   "type": "integer",
-                  "enum": [
-                    0,
-                    1
-                  ]
+                  "enum": [0, 1]
                 },
                 "eventActivityTypeCode": {
                   "type": "number"
@@ -351,10 +292,7 @@
                   "type": "number"
                 },
                 "eventDetails": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "eventNumber": {
                   "type": "number"
@@ -374,10 +312,7 @@
                 "metadata": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "attributes",
-                    "links"
-                  ],
+                  "required": ["attributes", "links"],
                   "properties": {
                     "attributes": {
                       "type": "object",
@@ -391,15 +326,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -410,15 +341,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -428,15 +355,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -446,15 +369,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -464,15 +383,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -482,15 +397,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -500,15 +411,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -518,15 +425,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         },
@@ -536,15 +439,11 @@
                           "properties": {
                             "disabled": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             },
                             "hidden": {
                               "type": "string",
-                              "enum": [
-                                "true"
-                              ]
+                              "enum": ["true"]
                             }
                           }
                         }
@@ -560,9 +459,7 @@
                 },
                 "originalEventKey": {
                   "type": "integer",
-                  "enum": [
-                    0
-                  ]
+                  "enum": [0]
                 },
                 "originalSystemId": {
                   "type": "number"
@@ -589,10 +486,7 @@
                   "type": "string"
                 },
                 "urlAddress": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "validityDate": {
                   "type": "number"
@@ -605,9 +499,7 @@
           },
           "withdrawalBalance": {
             "type": "number",
-            "enum": [
-              0
-            ]
+            "enum": [0]
           }
         }
       }
@@ -615,9 +507,7 @@
     "balancesAndTransactionsCurrencyCombo": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "currencyCode"
-      ],
+      "required": ["currencyCode"],
       "properties": {
         "currencyCode": {
           "type": "null"
@@ -635,9 +525,7 @@
     },
     "displayedRevaluationCurrencyCode": {
       "type": "number",
-      "enum": [
-        0
-      ]
+      "enum": [0]
     },
     "foreignCurrencyBalancesData": {
       "type": "null"
@@ -651,10 +539,7 @@
     "metadata": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "links",
-        "messages"
-      ],
+      "required": ["links", "messages"],
       "properties": {
         "links": {
           "type": "object",
@@ -667,29 +552,18 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "messageCode",
-              "messageDescription",
-              "severity"
-            ],
+            "required": ["messageCode", "messageDescription", "severity"],
             "properties": {
               "messageCode": {
                 "type": "number",
-                "enum": [
-                  11040,
-                  330,
-                  11039,
-                  11038
-                ]
+                "enum": [11040, 330, 11039, 11038]
               },
               "messageDescription": {
                 "type": "string"
               },
               "severity": {
                 "type": "string",
-                "enum": [
-                  "I"
-                ]
+                "enum": ["I"]
               }
             }
           }
@@ -698,9 +572,7 @@
     },
     "outputArrayRecordSum2": {
       "type": "number",
-      "enum": [
-        0
-      ]
+      "enum": [0]
     },
     "pdfUrl": {
       "type": "null"
@@ -710,9 +582,7 @@
     },
     "validityDate": {
       "type": "number",
-      "enum": [
-        0
-      ]
+      "enum": [0]
     }
   }
 }

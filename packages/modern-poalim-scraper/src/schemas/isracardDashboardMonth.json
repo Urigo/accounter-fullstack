@@ -2,197 +2,191 @@
   "$schema": "http://json-schema.org/draft-07/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-		"Header",
-		"DashboardMonthBean"
-  ],
+  "required": ["Header", "DashboardMonthBean"],
   "properties": {
-		"Header": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": [
-				"Status",
-				"Message"
-			],
-			"properties": {
-				"Status": {
-					"type": "string"
-				},
-				"Message": {
-					"type": "string"
-				}
-			}
-		},
-		"DashboardMonthBean": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": [
-				"cardsCharges",
-				"cardType",
-				"displayProperties",
-				"extraCards",
-				"isButton",
-				"isCaptcha",
-				"isError",
-				"message",
-				"returnCode",
-				"returnMessage",
-				"statementDate",
-				"totalDebitShekel",
-				"totalDebitDollar",
-				"totalDebitEuro",
-				"tablePageNum"
-			],
-			"properties": {
-				"totalDebitShekel": {
-					"type": "string"
-				},
-				"totalDebitDollar": {
-					"type": "string"
-				},
-				"totalDebitEuro": {
-						"type": "string"
-				},
-				"cardType": {
-					"type": "string"
-				},
-				"statementDate": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"additionalProperties": false,
-						"required": [
-							"billingDateCode",
-							"billingDate",
-							"totalShekel",
-							"totalDollar",
-							"totalEuro",
-							"cardType",
-							"billingDateMore",
-							"statementDateCard"
-						],
-						"properties": {
-							"billingDateCode": {
-								"type": "string"
-							},
-							"billingDate": {
-								"type": "string"
-							},
-							"totalShekel": {
-								"type": "string"
-							},
-							"totalDollar": {
-								"type": "string"
-							},
-							"totalEuro": {
-								"type": "string"
-							},
-							"cardType": {
-								"type": "string"
-							},
-							"billingDateMore": {
-								"type": "string"
-							},
-							"statementDateCard": {
-								"type": "null"
-							}
-						}
-					}
-				},
-				"cardsCharges": {
-						"type": "array",
-						"items": {
-							"type": "object",
-							"additionalProperties": false,
-							"required": [
-								"period",
-								"billingDate",
-								"workingDate",
-								"cardNumber",
-								"cardIndex",
-								"moreNumberDays",
-								"cardType",
-								"billingDateMore",
-								"billingSumSekel",
-								"billingSumDollar",
-								"billingSumEuro",
-								"cardStatus",
-								"idType"
-							],
-							"properties": {
-								"period": {
-										"type": "string"
-								},
-								"billingDate": {
-										"type": "string"
-								},
-								"workingDate": {
-										"type": "string"
-								},
-								"cardNumber": {
-										"type": "string"
-								},
-								"cardIndex": {
-										"type": "string"
-								},
-								"moreNumberDays": {
-										"type": "string"
-								},
-								"cardType": {
-										"type": "string"
-								},
-								"billingDateMore": {
-										"type": "string"
-								},
-								"billingSumSekel": {
-										"type": "string"
-								},
-								"billingSumDollar": {
-										"type": "string"
-								},
-								"billingSumEuro": {
-										"type": "string"
-								},
-								"cardStatus": {
-										"type": "string"
-								},
-								"idType": {
-										"type": "string"
-								}
-							}
-					}
-				},
-				"extraCards": {
-					"type": "string"
-				},
-				"returnCode": {
-					"type": "string"
-				},
-				"message": {
-					"type": "string"
-				},
-				"returnMessage": {
-					"type": "string"
-				},
-				"displayProperties": {
-						"type": "string"
-				},
-				"tablePageNum": {
-					"type": "string"
-				},
-				"isError": {
-					"type": "string"
-				},
-				"isCaptcha": {
-					"type": "string"
-				},
-				"isButton": {
-					"type": "string"
-				},
-				"clientIpAddress": {
-					"type": "string"
-				}
-			}
-		}
+    "Header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Status", "Message"],
+      "properties": {
+        "Status": {
+          "type": "string"
+        },
+        "Message": {
+          "type": "string"
+        }
+      }
+    },
+    "DashboardMonthBean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cardsCharges",
+        "cardType",
+        "displayProperties",
+        "extraCards",
+        "isButton",
+        "isCaptcha",
+        "isError",
+        "message",
+        "returnCode",
+        "returnMessage",
+        "statementDate",
+        "totalDebitShekel",
+        "totalDebitDollar",
+        "totalDebitEuro",
+        "tablePageNum"
+      ],
+      "properties": {
+        "totalDebitShekel": {
+          "type": "string"
+        },
+        "totalDebitDollar": {
+          "type": "string"
+        },
+        "totalDebitEuro": {
+          "type": "string"
+        },
+        "cardType": {
+          "type": "string"
+        },
+        "statementDate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "billingDateCode",
+              "billingDate",
+              "totalShekel",
+              "totalDollar",
+              "totalEuro",
+              "cardType",
+              "billingDateMore",
+              "statementDateCard"
+            ],
+            "properties": {
+              "billingDateCode": {
+                "type": "string"
+              },
+              "billingDate": {
+                "type": "string"
+              },
+              "totalShekel": {
+                "type": "string"
+              },
+              "totalDollar": {
+                "type": "string"
+              },
+              "totalEuro": {
+                "type": "string"
+              },
+              "cardType": {
+                "type": "string"
+              },
+              "billingDateMore": {
+                "type": "string"
+              },
+              "statementDateCard": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "cardsCharges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "period",
+              "billingDate",
+              "workingDate",
+              "cardNumber",
+              "cardIndex",
+              "moreNumberDays",
+              "cardType",
+              "billingDateMore",
+              "billingSumSekel",
+              "billingSumDollar",
+              "billingSumEuro",
+              "cardStatus",
+              "idType"
+            ],
+            "properties": {
+              "period": {
+                "type": "string"
+              },
+              "billingDate": {
+                "type": "string"
+              },
+              "workingDate": {
+                "type": "string"
+              },
+              "cardNumber": {
+                "type": "string"
+              },
+              "cardIndex": {
+                "type": "string"
+              },
+              "moreNumberDays": {
+                "type": "string"
+              },
+              "cardType": {
+                "type": "string"
+              },
+              "billingDateMore": {
+                "type": "string"
+              },
+              "billingSumSekel": {
+                "type": "string"
+              },
+              "billingSumDollar": {
+                "type": "string"
+              },
+              "billingSumEuro": {
+                "type": "string"
+              },
+              "cardStatus": {
+                "type": "string"
+              },
+              "idType": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "extraCards": {
+          "type": "string"
+        },
+        "returnCode": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "returnMessage": {
+          "type": "string"
+        },
+        "displayProperties": {
+          "type": "string"
+        },
+        "tablePageNum": {
+          "type": "string"
+        },
+        "isError": {
+          "type": "string"
+        },
+        "isCaptcha": {
+          "type": "string"
+        },
+        "isButton": {
+          "type": "string"
+        },
+        "clientIpAddress": {
+          "type": "string"
+        }
+      }
+    }
   }
 }
