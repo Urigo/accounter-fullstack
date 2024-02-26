@@ -44,6 +44,8 @@ export default gql`
     minDocumentsDate: Date
     " metadata about the charge "
     metadata: ChargeMetadata
+    " the tax year in which the action took place "
+    yearOfRelevance: String
   }
 
   " common charge "
@@ -60,6 +62,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge with conversion transactions "
@@ -76,6 +79,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge with conversion transactions "
@@ -92,6 +96,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge of internal transfer "
@@ -108,6 +113,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge of dividends "
@@ -124,6 +130,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge of dividends "
@@ -140,6 +147,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " charge of monthly VAT payment "
@@ -156,6 +164,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
+    yearOfRelevance: String
   }
 
   " input variables for charge filtering "
@@ -226,6 +235,7 @@ export default gql`
     userDescription: String
     defaultTaxCategoryID: UUID
     businessTripID: UUID
+    yearOfRelevance: TimelessDate
   }
 
   " result type for updateCharge "
