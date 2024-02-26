@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "swiftBankDetails": {
+      "type": "object",
+      "properties": {
+        "swiftIsnSerialNumber": {
+          "type": "string"
+        },
+        "swiftBankCode": {
+          "type": "string"
+        },
+        "orderCustomerName": {
+          "type": "string"
+        },
+        "beneficiaryEnglishStreetName1": {
+          "type": "string"
+        },
+        "beneficiaryEnglishCityName1": {
+          "type": "string"
+        },
+        "beneficiaryEnglishCountryName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "swiftIsnSerialNumber",
+        "swiftBankCode",
+        "orderCustomerName",
+        "beneficiaryEnglishStreetName1",
+        "beneficiaryEnglishCityName1",
+        "beneficiaryEnglishCountryName"
+      ]
+    },
+    "swiftTransferDetailsList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "swiftTransferAttributeCode": {
+            "type": ["string", "null"]
+          },
+          "swiftTransferAttributeDesc": {
+            "type": ["string", "null"]
+          },
+          "swiftTransferAttributeValue": {
+            "type": "string"
+          }
+        },
+        "required": ["swiftTransferAttributeValue"]
+      }
+    }
+  },
+  "required": ["swiftBankDetails", "swiftTransferDetailsList"]
+}

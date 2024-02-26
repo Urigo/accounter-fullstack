@@ -10,7 +10,7 @@
     "node": "21.3.0"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\"",
+    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn poalim-scraper:build\"",
     "client:build": "yarn --cwd packages/client build",
     "client:dev": "yarn --cwd packages/client dev",
     "codegen": "graphql-codegen",
@@ -25,7 +25,9 @@
     "month": "yarn --cwd packages/old-accounter month",
     "old-accounter:build": "yarn --cwd packages/old-accounter build",
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
+    "poalim-scraper:build": "yarn --cwd packages/modern-poalim-scraper build",
     "postinstall": "patch-package",
+    "pre-commit": "lint-staged",
     "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
     "prettier:check": "prettier --cache --ignore-path .gitignore --check .",
     "prettier:fix": "prettier --cache --ignore-path .gitignore --write --list-different --ignore-unknown \"**/*\"",
@@ -56,6 +58,8 @@
     "bob-the-bundler": "7.0.1",
     "concurrently": "8.2.2",
     "eslint": "8.56.0",
+    "husky": "9.0.11",
+    "lint-staged": "15.2.2",
     "prettier": "3.2.4",
     "prettier-plugin-sql": "0.18.0",
     "typescript": "5.3.3",
