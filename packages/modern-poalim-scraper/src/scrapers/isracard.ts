@@ -4,7 +4,7 @@ import type { IsracardDashboardMonth } from '../__generated__/isracardDashboardM
 import type { IsracardCardsTransactionsList } from '../__generated__/isracardCardsTransactionsList.js';
 import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json' assert { type: 'json' };
 import isracardCardsTransactionsList from '../schemas/isracardCardsTransactionsList.json' assert { type: 'json' };
-import { validateSchema } from '../utils/validateSchema.js';
+import { validateSchema } from '../utils/validate-schema.js';
 
 const SERVICE_URL =
   'https://digital.isracard.co.il/services/ProxyRequestHandler.ashx';
@@ -36,14 +36,14 @@ async function getMonthDashboard(
 
   if (options && options.validateSchema) {
     const data = await getDashboardFunction;
-    let validation = await validateSchema(isracardDashboardMonth, data);
+    const validation = await validateSchema(isracardDashboardMonth, data);
     return {
       data,
       ...validation,
     };
-  } else {
-    return { data: await getDashboardFunction };
   }
+  
+  return { data: await getDashboardFunction };
 }
 
 async function getMonthTransactions(
@@ -59,14 +59,14 @@ async function getMonthTransactions(
 
   if (options && options.validateSchema) {
     const data = await getTransactionsFunction;
-    let validation = await validateSchema(isracardCardsTransactionsList, data);
+    const validation = await validateSchema(isracardCardsTransactionsList, data);
     return {
       data,
       ...validation,
     };
-  } else {
-    return { data: await getTransactionsFunction };
   }
+  
+  return { data: await getTransactionsFunction };
 }
 
 const getMonthsList = (options: isracardOptions): Date[] => {

@@ -17,7 +17,7 @@ import type { AccountDataSchema } from '../__generated__/accountDataSchema.js';
 import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
 import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
 import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
-import { validateSchema } from '../utils/validateSchema.js';
+import { validateSchema } from '../utils/validate-schema.js';
 import type { ForeignTransactionsBusinessSchema } from '../__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignSwiftTransactions } from '../__generated__/foreignSwiftTransactions.js';
 import type { ForeignSwiftTransaction } from '../__generated__/foreignSwiftTransaction.js';
@@ -29,8 +29,11 @@ type ForeignTransactionsSchema<T extends boolean> = T extends true
     ? ForeignTransactionsPersonalSchema
     : never;
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace window {
-  const bnhpApp: any;
+  const bnhpApp: {
+    restContext?: string[] | string;
+  };
 }
 
 async function businessLogin(credentials: hapoalimCredentials, page: Page) {
@@ -114,24 +117,28 @@ export async function hapoalim(
   credentials: hapoalimCredentials,
   options?: hapoalimOptions,
 ) {
-  options?.isBusiness
-    ? await businessLogin(credentials, page)
-    : await personalLogin(credentials, page);
+  if (options?.isBusiness) {
+    await businessLogin(credentials, page)
+  } else {
+    await personalLogin(credentials, page);
+  }
 
   const result = await page.evaluate(() => {
-    if (window && window.bnhpApp && window.bnhpApp.restContext) {
+    if (window?.bnhpApp?.restContext) {
       return window.bnhpApp.restContext;
-    } else {
-      return 'nothing';
     }
+
+    return 'nothing';
   });
 
   // Example replace password url:
   // https://biz2.bankhapoalim.co.il/ABOUTTOEXPIRE/START?flow=ABOUTTOEXPIRE&state=START&expiredDate=11122020
-  if (result == 'nothing' && page.url().search('ABOUTTOEXPIRE') != -1) {
+  if (result === 'nothing') {
+    if (page.url().search('ABOUTTOEXPIRE') === -1) {
+      return 'Unknown Error';
+    }
+    
     await replacePassword(credentials, page);
-  } else if (result == 'nothing') {
-    return 'Unknown Error';
   }
   const apiSiteUrl = `https://${
     options?.isBusiness ? 'biz2' : 'login'
@@ -168,9 +175,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getAccountsFunction };
       }
+      
+      return { data: await getAccountsFunction };
     },
     getILSTransactions: async (account: {
       bankNumber: number;
@@ -189,8 +196,8 @@ export async function hapoalim(
         const data = await getIlsTransactionsFunction;
 
         if (options?.getTransactionsDetails && data != null) {
-          for (let transaction of data?.transactions) {
-            if (!!transaction.pfmDetails) {
+          for (const transaction of data?.transactions ?? []) {
+            if (transaction.pfmDetails) {
               /* let a = */ await fetchPoalimXSRFWithinPage(
                 page,
                 ILSCheckingTransactionsUrl,
@@ -198,7 +205,7 @@ export async function hapoalim(
               );
               // TODO: create schema and make this attribute string / object for inputing data
             }
-            if (!!transaction.details) {
+            if (transaction.details) {
               /*let b = */ await fetchPoalimXSRFWithinPage(
                 page,
                 ILSCheckingTransactionsUrl,
@@ -220,9 +227,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getIlsTransactionsFunction };
       }
+
+      return { data: await getIlsTransactionsFunction };
     },
     getForeignTransactions: async <T extends boolean>(
       account: {
@@ -268,9 +275,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getForeignTransactionsFunction };
       }
+
+      return { data: await getForeignTransactionsFunction };
     },
     getForeignSwiftTransactions: async (account: {
       bankNumber: number;
@@ -305,9 +312,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getForeignSwiftTransactionsFunction };
       }
+      
+      return { data: await getForeignSwiftTransactionsFunction };
     },
     getForeignSwiftTransaction: async (
       account: {
@@ -345,9 +352,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getForeignSwiftTransactionFunction };
       }
+      
+      return { data: await getForeignSwiftTransactionFunction };
     },
     getDeposits: async (account: {
       bankNumber: number;
@@ -367,9 +374,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getDepositsFunction };
       }
+      
+      return { data: await getDepositsFunction };
     },
     getForeignDeposits: async (account: {
       bankNumber: number;
@@ -390,9 +397,9 @@ export async function hapoalim(
           data,
           ...validation,
         };
-      } else {
-        return { data: await getDepositsFunction };
       }
+      
+      return { data: await getDepositsFunction };
     },
   };
 }

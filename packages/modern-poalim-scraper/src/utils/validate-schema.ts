@@ -1,8 +1,8 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 
-export async function validateSchema(jsonSchema: any, data: any) {
-  let ajv = new Ajv({ verbose: true, allowMatchingProperties: true });
+export async function validateSchema(jsonSchema: Record<string, unknown>, data: unknown) {
+  const ajv = new Ajv({ verbose: true, allowMatchingProperties: true });
   addFormats(ajv);
   let valid;
   try {

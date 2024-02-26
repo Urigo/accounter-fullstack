@@ -1,12 +1,11 @@
 import type { Page } from 'puppeteer';
 import { v4 as uuidv4 } from 'uuid';
-import type { IncomingHttpHeaders } from 'http';
 
 export async function fetchPostWithinPage<TResult>(
   page: Page,
   url: string,
-  data: Record<string, any>,
-  extraHeaders: Record<string, any> = {},
+  data: Record<string, unknown>,
+  extraHeaders: Record<string, string> = {},
 ): Promise<TResult | null> {
   return page.evaluate(
     (url, data, extraHeaders) => {
@@ -72,12 +71,12 @@ export async function fetchPoalimXSRFWithinPage<TResult>(
 ): Promise<TResult | null> {
   const cookies = await page.cookies();
   const XSRFCookie = cookies.find((cookie) => cookie.name === 'XSRF-TOKEN');
-  const headers: IncomingHttpHeaders = {};
+  const headers: Record<string, string> = {};
   if (XSRFCookie != null) {
     headers['X-XSRF-TOKEN'] = XSRFCookie.value;
   }
   headers['pageUuid'] = pageUuid;
   headers['uuid'] = uuidv4();
   headers['Content-Type'] = 'application/json;charset=UTF-8';
-  return fetchPostWithinPage(page, url, [], headers);
+  return fetchPostWithinPage(page, url, {}, headers);
 }
