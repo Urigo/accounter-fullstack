@@ -1,8 +1,8 @@
 import type { Page } from 'puppeteer';
 import type { IsracardCardsTransactionsList } from '../__generated__/isracardCardsTransactionsList.js';
 import type { IsracardDashboardMonth } from '../__generated__/isracardDashboardMonth.js';
-import isracardCardsTransactionsList from '../schemas/isracardCardsTransactionsList.json';
-import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json';
+import isracardCardsTransactionsList from '../schemas/isracardCardsTransactionsList.json' with { type: "json" };
+import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json' with { type: "json" };
 import { fetchGetWithinPage, fetchPostWithinPage } from '../utils/fetch.js';
 import { validateSchema } from '../utils/validate-schema.js';
 

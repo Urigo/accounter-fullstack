@@ -3,8 +3,8 @@ import { stringify } from 'querystring';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import lodash from 'lodash';
-import { init } from 'modern-poalim-scraper';
 import pg from 'pg';
+import { init } from '@accounter/modern-poalim-scraper';
 import { getCurrencyRates } from './data/currency.js';
 import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 

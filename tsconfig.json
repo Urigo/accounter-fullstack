@@ -32,7 +32,11 @@
     "emitDecoratorMetadata": true,
 
     "strict": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+
+    "paths": {
+      "@accounter/cli": ["packages/modern-poalim-scraper/src/index"]
+    }
   },
   "exclude": ["**/node_modules", "**/dist"]
 }
