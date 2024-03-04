@@ -804,6 +804,15 @@
   dependencies:
     "@changesets/types" "^6.0.0"
 
+"@changesets/changelog-github@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@changesets/changelog-github/-/changelog-github-0.5.0.tgz#ae96e5029209f7386527b3821d9c988b1ab16662"
+  integrity sha512-zoeq2LJJVcPJcIotHRJEEA2qCqX0AQIeFE+L21L8sRLPVqDhSXY8ZWAt2sohtBpFZkBwu+LUwMSKRr2lMy3LJA==
+  dependencies:
+    "@changesets/get-github-info" "^0.6.0"
+    "@changesets/types" "^6.0.0"
+    dotenv "^8.1.0"
+
 "@changesets/cli@^2.27.1":
   version "2.27.1"
   resolved "https://registry.yarnpkg.com/@changesets/cli/-/cli-2.27.1.tgz#abce480fd30b9abbe2cfcf07d5d668c364ce2804"
@@ -872,6 +881,14 @@
     chalk "^2.1.0"
     fs-extra "^7.0.1"
     semver "^7.5.3"
+
+"@changesets/get-github-info@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@changesets/get-github-info/-/get-github-info-0.6.0.tgz#faba66a20a3a5a0cbabea28efd43c9ede7429f11"
+  integrity sha512-v/TSnFVXI8vzX9/w3DU2Ol+UlTZcu3m0kXTjTT4KlAdwSvwutcByYwyYn9hwerPWfPkT2JfpoX0KgvCEi8Q/SA==
+  dependencies:
+    dataloader "^1.4.0"
+    node-fetch "^2.5.0"
 
 "@changesets/get-release-plan@^4.0.0":
   version "4.0.0"
@@ -5399,6 +5416,11 @@ dataloader@2.2.2, dataloader@^2.2.2:
   resolved "https://registry.yarnpkg.com/dataloader/-/dataloader-2.2.2.tgz#216dc509b5abe39d43a9b9d97e6e5e473dfbe3e0"
   integrity sha512-8YnDaaf7N3k/q5HnTJVuzSyLETjoZjVmHc4AeKAzOvKHEFQKcn64OKBfzHYtE9zGjctNM7V9I0MfnUVLpi7M5g==
 
+dataloader@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/dataloader/-/dataloader-1.4.0.tgz#bca11d867f5d3f1b9ed9f737bd15970c65dff5c8"
+  integrity sha512-68s5jYdlvasItOJnCuI2Q9s4q98g0pCyL3HrcKJu8KNugUl8ahgmZYg38ysLTgQjjXX3H8CJLkAvWrclWfcalw==
+
 date-fns@3.3.1:
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.3.1.tgz#7581daca0892d139736697717a168afbb908cfed"
@@ -5713,6 +5735,11 @@ dotenv@^16.3.0:
   version "16.4.1"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.4.1.tgz#1d9931f1d3e5d2959350d1250efab299561f7f11"
   integrity sha512-CjA3y+Dr3FyFDOAMnxZEGtnW9KBR2M0JvvUtXNW+dYJL5ROWxP9DUHCwgFqpMk0OXCc0ljhaNTr2w/kutYIcHQ==
+
+dotenv@^8.1.0:
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.6.0.tgz#061af664d19f7f4d8fc6e4ff9b584ce237adcb8b"
+  integrity sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==
 
 dset@3.1.2, dset@^3.1.1, dset@^3.1.2:
   version "3.1.2"
@@ -9419,7 +9446,7 @@ node-fetch@*, node-fetch@3.3.2:
     fetch-blob "^3.1.4"
     formdata-polyfill "^4.0.10"
 
-node-fetch@^2.6.1, node-fetch@^2.6.12, node-fetch@^2.6.7:
+node-fetch@^2.5.0, node-fetch@^2.6.1, node-fetch@^2.6.12, node-fetch@^2.6.7:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
   integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==

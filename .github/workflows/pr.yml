@@ -15,7 +15,7 @@ jobs:
     with:
       npmTag: alpha
       buildScript: build
-      nodeVersion: 21
+      nodeVersion: 21.3.0
     secrets:
       githubToken: ${{ secrets.GITHUB_TOKEN }}
       npmToken: ${{ secrets.NPM_TOKEN }}
