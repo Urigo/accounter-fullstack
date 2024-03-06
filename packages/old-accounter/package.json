@@ -1,5 +1,5 @@
 {
-  "name": "old-accounter",
+  "name": "@accounter-helper/old-accounter",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
