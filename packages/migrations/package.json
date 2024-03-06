@@ -1,5 +1,5 @@
 {
-  "name": "@accounter/migrations",
+  "name": "@accounter-helper/migrations",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
