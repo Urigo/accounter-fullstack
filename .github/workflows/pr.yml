@@ -1,21 +1,113 @@
 name: pr
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
 on:
-  pull_request:
-    branches:
-      - main
+  pull_request: {}
 
 jobs:
-  dependencies:
-    uses: the-guild-org/shared-config/.github/workflows/changesets-dependencies.yaml@main
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
 
-  release:
-    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@main
-    with:
-      npmTag: alpha
-      buildScript: build
-      nodeVersion: 21.3.0
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
-      npmToken: ${{ secrets.NPM_TOKEN }}
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: Build Packages
+        shell: bash
+        run: yarn build
+
+      - name: Run Tests
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: yarn test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+        with:
+          localDB: 'false'
+          codegen: 'false'
+          pgTyped: 'false'
+
+      - name: Lint ESLint
+        run: yarn lint
+
+      - name: Lint Prettier
+        run: yarn prettier:check
+
+  validate:
+    name: Validate GraphQL schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: Validate GraphQL schema
+        run: yarn graphql:validate
+
+  dependencies:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: Create/Update Changesets
+        uses: the-guild-org/changesets-dependencies-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # with:
+        #   preCommit: ${{ inputs.preCommit }}
+
+  snapshot:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: alpha release
+        id: changesets
+        uses: the-guild-org/changesets-snapshot-action@main
+        with:
+          tag: alpha
+          prepareScript: yarn run build
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -12,7 +12,7 @@
 
     "noImplicitReturns": false,
     "allowUnreachableCode": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": false
   },
   "include": ["src/**/*"]
 }

@@ -1,5 +1,5 @@
 ---
-"@accounter/modern-poalim-scraper": patch
+'@accounter/modern-poalim-scraper': patch
 ---
 
 Merge modern-poalim-scraper to the monorepo

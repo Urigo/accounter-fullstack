@@ -3,9 +3,11 @@
   "type": "module",
   "license": "MIT",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
   "engines": {
     "node": "21.3.0"
   },
