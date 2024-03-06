@@ -35,7 +35,7 @@
     "jsx": "preserve",
 
     "paths": {
-      "@accounter/cli": ["packages/modern-poalim-scraper/src/index"]
+      "@accounter/modern-poalim-scraper": ["packages/modern-poalim-scraper/src/index"]
     }
   },
   "exclude": ["**/node_modules", "**/dist"]
