@@ -8,14 +8,14 @@ import type { ForeignTransactionsPersonalSchema } from '../__generated__/foreign
 import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
 import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
 import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
-import accountDataSchemaFile from '../schemas/accountDataSchema.json' with { type: "json" };
-import foreignSwiftTransactionSchema from '../schemas/foreignSwiftTransaction.json' with { type: "json" };
-import foreignSwiftTransactionsSchema from '../schemas/foreignSwiftTransactions.json' with { type: "json" };
-import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' with { type: "json" };
-import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' with { type: "json" };
-import depositsSchema from '../schemas/hapoalimDepositsSchema.json' with { type: "json" };
-import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSchema.json' with { type: "json" };
-import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: "json" };
+import accountDataSchemaFile from '../schemas/accountDataSchema.json' assert { type: 'json' };
+import foreignSwiftTransactionSchema from '../schemas/foreignSwiftTransaction.json' assert { type: 'json' };
+import foreignSwiftTransactionsSchema from '../schemas/foreignSwiftTransactions.json' assert { type: 'json' };
+import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' assert { type: 'json' };
+import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' assert { type: 'json' };
+import depositsSchema from '../schemas/hapoalimDepositsSchema.json' assert { type: 'json' };
+import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSchema.json' assert { type: 'json' };
+import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' assert { type: 'json' };
 import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
 import { validateSchema } from '../utils/validate-schema.js';
 
