@@ -53,7 +53,7 @@
     "@graphql-codegen/typescript-resolvers": "4.0.1",
     "@graphql-eslint/eslint-plugin": "3.20.1",
     "@graphql-inspector/cli": "4.0.3",
-    "@theguild/eslint-config": "0.11.3",
+    "@theguild/eslint-config": "0.11.4",
     "@theguild/prettier-config": "2.0.5",
     "@types/node": "20.11.6",
     "bob-the-bundler": "7.0.1",
