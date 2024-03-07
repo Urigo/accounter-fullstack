@@ -20,7 +20,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@accounter-toolkit/green-invoice-graphql": "0.5.2",
+    "@accounter-toolkit/green-invoice-graphql": "0.6.0",
     "@accounter-toolkit/pcn874-generator": "0.4.1",
     "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
@@ -28,13 +28,13 @@
     "@graphql-yoga/plugin-defer-stream": "3.1.1",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
-    "@whatwg-node/fetch": "0.9.14",
+    "@whatwg-node/fetch": "0.9.17",
     "basic-auth": "2.0.1",
     "bcrypt": "5.1.1",
-    "cloudinary": "1.41.3",
+    "cloudinary": "2.0.3",
     "dataloader": "2.2.2",
     "date-fns": "3.3.1",
-    "dotenv": "16.4.0",
+    "dotenv": "16.4.5",
     "dotenv-cli": "7.3.0",
     "graphql": "16.8.1",
     "graphql-modules": "2.3.0",
@@ -45,8 +45,8 @@
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "5.0.2",
-    "@types/pg": "8.10.9",
-    "nodemon": "3.0.3",
+    "@types/pg": "8.11.2",
+    "nodemon": "3.1.0",
     "pino-pretty": "10.3.1",
     "tsc-alias": "1.8.8"
   },
