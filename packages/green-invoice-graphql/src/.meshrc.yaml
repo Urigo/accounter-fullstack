@@ -1,0 +1,81 @@
+sources:
+  - name: GreenInvoice
+    handler:
+      jsonSchema:
+        endpoint: 'https://api.greeninvoice.co.il/api/v1'
+        operationHeaders:
+          Authorization: Bearer {context.authToken}
+          Content-Type: application/json
+        operations:
+          - type: Mutation
+            field: addExpense
+            path: /expenses
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseResponse
+
+          - type: Query
+            field: getExpense
+            path: /expenses/{args.id}
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getExpenseResponse
+
+          - type: Mutation
+            field: updateExpense
+            path: /expenses/{args.id}
+            method: PUT
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseResponse
+
+          - type: Query
+            field: searchExpenses
+            path: /expenses/search
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesResponse
+
+          - type: Query
+            field: searchDocuments
+            path: /documents/search
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsResponse
+
+          - type: Mutation
+            field: addExpenseDraftByFile
+            path: /expenses/file
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileRequest
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
+              201:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
+              400:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+              404:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+
+          - type: Query
+            field: searchExpenseDrafts
+            path: /expenses/drafts/search
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsRequest
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsResponse
+              201:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsResponse
+              404:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+
+serve:
+  browser: false
+
+sdk:
+  generateOperations:
+    selectionSetDepth: 5

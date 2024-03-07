@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "getExpensesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "result"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "default": "Success"
+        },
+        "expenses": {
+          "type": "array",
+          "description": "An array of JSON of the search",
+          "additionalItems": false,
+          "items": {
+            "$ref": "#/definitions/Expense"
+          }
+        },
+        "next_page": {
+          "type": "string",
+          "description": "The next available page"
+        },
+        "result": {
+          "type": "integer",
+          "default": 200
+        },
+        "total_entries": {
+          "type": "integer",
+          "description": "The total size of the query"
+        },
+        "total_pages": {
+          "type": "string",
+          "description": "The total pages of the query"
+        }
+      }
+    },
+    "getExpensesRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "api_user": {
+          "type": "string"
+        },
+        "query_options": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "updated_from": {
+              "type": "string"
+            },
+            "updated_to": {
+              "type": "string"
+            },
+            "created_from": {
+              "type": "string"
+            },
+            "created_to": {
+              "type": "string"
+            },
+            "document_date_from": {
+              "type": "string"
+            },
+            "document_date_to": {
+              "type": "string"
+            },
+            "document_id": {
+              "type": "string"
+            },
+            "system_id": {
+              "type": "integer",
+              "description": "default: -100000000"
+            },
+            "order": {
+              "type": "string",
+              "enum": ["document_date"]
+            },
+            "page": {
+              "type": "integer",
+              "description": "default: 1"
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "default: 50"
+            }
+          }
+        }
+      }
+    },
+    "Expense": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Expense",
+      "required": [
+        "created_at",
+        "file_name",
+        "file_url",
+        "provider",
+        "provider_business_num",
+        "recognized_vat_payment",
+        "status_classification",
+        "system_id",
+        "total_for_payment",
+        "total_for_vat",
+        "updated_at",
+        "vat_payment"
+      ],
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "currency_symbol": {
+          "type": "string",
+          "enum": ["EUR", "USD", "ILS"]
+        },
+        "document_date": {
+          "type": ["string", "null"]
+        },
+        "document_id": {
+          "type": ["string", "null"]
+        },
+        "document_type": {
+          "type": ["string", "null"]
+        },
+        "file_name": {
+          "type": "string"
+        },
+        "file_url": {
+          "type": "string"
+        },
+        "foreign_total_for_payment": {
+          "type": "number",
+          "format": "float"
+        },
+        "original_file_name": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "provider_business_num": {
+          "type": "string"
+        },
+        "recognized_vat_payment": {
+          "type": "number",
+          "format": "float"
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "status_classification": {
+          "type": "string"
+        },
+        "system_id": {
+          "type": "integer"
+        },
+        "total_for_payment": {
+          "type": "number",
+          "format": "float"
+        },
+        "total_for_vat": {
+          "type": "number",
+          "format": "float"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "vat_payment": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,488 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "VAT data object",
+    "required": [
+      "reportMonth",
+      "reportType",
+      "corectness",
+      "totalVat",
+      "generationDate",
+      "route",
+      "isFixed"
+    ],
+    "properties": {
+      "reportMonth": {
+        "type": "string",
+        "description": "תקופת הדיווח"
+      },
+      "reportType": {
+        "type": "string",
+        "description": "סוג הדוח",
+        "enum": ["דוח להחזר", "דוח לתשלום"]
+      },
+      "corectness": {
+        "type": "string",
+        "description": "תקינות",
+        "enum": ["נתקבל"]
+      },
+      "totalVat": {
+        "type": "integer",
+        "description": "סכום מדווח"
+      },
+      "generationDate": {
+        "type": "string",
+        "description": "תאריך הגשה"
+      },
+      "route": {
+        "type": "string",
+        "description": "מסלול",
+        "enum": ["שידור", "שידור - מייצג"]
+      },
+      "isFixed": {
+        "type": "boolean",
+        "description": "האם תוקן"
+      },
+      "additionalDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "פרטים נוספים",
+        "required": [
+          "licensedDealerId",
+          "osekName",
+          "regionalCommissioner",
+          "reportingPeriod",
+          "reportingOrigin",
+          "reportingDate",
+          "reportingStatus",
+          "taxableSalesAmount",
+          "taxableSalesVat",
+          "zeroOrExemptSalesCount",
+          "equipmentInputsVat",
+          "otherInputsVat",
+          "refundAmount",
+          "fileInvoiceRecord"
+        ],
+        "properties": {
+          "licensedDealerId": {
+            "type": "string",
+            "description": "מספר עוסק"
+          },
+          "osekName": {
+            "type": "string",
+            "description": "שם עוסק"
+          },
+          "regionalCommissioner": {
+            "type": "string",
+            "description": "ממונה אזורי"
+          },
+          "reportingPeriod": {
+            "type": "string",
+            "description": "תקופת הדווח"
+          },
+          "reportingOrigin": {
+            "type": "string",
+            "description": "מקור הדווח"
+          },
+          "reportingDate": {
+            "type": "string",
+            "description": "תאריך הדווח"
+          },
+          "reportingStatus": {
+            "type": "string",
+            "description": "מצב הדווח"
+          },
+          "taxableSalesAmount": {
+            "type": "integer",
+            "description": "עסקאות חייבות"
+          },
+          "taxableSalesVat": {
+            "type": "integer",
+            "description": "מעמ עסקאות חייבות"
+          },
+          "zeroOrExemptSalesCount": {
+            "type": "integer",
+            "description": "עסקאות פטורות / אפס"
+          },
+          "equipmentInputsVat": {
+            "type": "integer",
+            "description": "תשומות ציוד"
+          },
+          "otherInputsVat": {
+            "type": "integer",
+            "description": "תשומות אחרות"
+          },
+          "refundAmount": {
+            "type": "integer",
+            "description": "סכום להחזר"
+          },
+          "fileInvoiceRecord": {
+            "type": "string",
+            "description": "רשומת חשבונית מהקובץ"
+          }
+        }
+      },
+      "reportExpansion": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "פירוט הדוח",
+        "required": [
+          "reportingPeriod",
+          "reportingOrigin",
+          "reportingDate",
+          "taxableSalesAmount",
+          "taxableSalesVat",
+          "zeroOrExemptSalesCount",
+          "equipmentInputsVat",
+          "otherInputsVat",
+          "refundAmount"
+        ],
+        "properties": {
+          "reportingPeriod": {
+            "type": "string",
+            "description": "תקופת הדווח"
+          },
+          "reportingOrigin": {
+            "type": "string",
+            "description": "מקור הדווח"
+          },
+          "reportingDate": {
+            "type": "string",
+            "description": "תאריך הדווח"
+          },
+          "taxableSalesAmount": {
+            "type": "integer",
+            "description": "עסקאות חייבות"
+          },
+          "taxableSalesVat": {
+            "type": "integer",
+            "description": "מעמ עסקאות חייבות"
+          },
+          "zeroOrExemptSalesCount": {
+            "type": "integer",
+            "description": "עסקאות פטורות / אפס"
+          },
+          "equipmentInputsVat": {
+            "type": "integer",
+            "description": "תשומות ציוד"
+          },
+          "otherInputsVat": {
+            "type": "integer",
+            "description": "תשומות אחרות"
+          },
+          "refundAmount": {
+            "type": "integer",
+            "description": "סכום להחזר"
+          },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "תשומות",
+            "required": [
+              "regularInput",
+              "pettyCash",
+              "selfInvoiceInput",
+              "importList",
+              "rashapSupplier",
+              "otherDocument",
+              "total"
+            ],
+            "properties": {
+              "regularInput": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "תשומה רגילה" }
+                ]
+              },
+              "pettyCash": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "קופה קטנה" }
+                ]
+              },
+              "selfInvoiceInput": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "חשבונית עצמית (תשומה)" }
+                ]
+              },
+              "importList": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "רשימון יבוא" }
+                ]
+              },
+              "rashapSupplier": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "ספק רשפ" }
+                ]
+              },
+              "otherDocument": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "מסמך אחר" }
+                ]
+              },
+              "total": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "סהכ" }
+                ]
+              }
+            }
+          },
+          "sales": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "עסקאות",
+            "required": [
+              "regularSaleRecognized",
+              "zeroSaleRecognized",
+              "regularSaleUnrecognized",
+              "zeroSaleUnrecognized",
+              "selfInvoiceSale",
+              "listExport",
+              "servicesExport",
+              "rashapClient",
+              "total"
+            ],
+            "properties": {
+              "regularSaleRecognized": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "עסקה רגילה - מזוהה" }
+                ]
+              },
+              "zeroSaleRecognized": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "עסקה אפס - מזוהה" }
+                ]
+              },
+              "regularSaleUnrecognized": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "עסקה רגילה - לא מזוהה" }
+                ]
+              },
+              "zeroSaleUnrecognized": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "עסקה אפס - לא מזוהה" }
+                ]
+              },
+              "selfInvoiceSale": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "חשבונית עצמית (עסקה)" }
+                ]
+              },
+              "listExport": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "רשימון יצוא" }
+                ]
+              },
+              "servicesExport": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "יצוא שירותים" }
+                ]
+              },
+              "rashapClient": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "לקוח רשפ" }
+                ]
+              },
+              "total": {
+                "allOf": [
+                  { "$ref": "#/definitions/ReportRecordCategories" },
+                  { "description": "סהכ" }
+                ]
+              }
+            }
+          },
+          "fixedInvoices": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "חשבוניות שתוקנו",
+            "required": [
+              "saleType",
+              "referenceNum",
+              "invoiceDate",
+              "invoiceAmount",
+              "vatAmount",
+              "expenderOrRecoever",
+              "fixDetails"
+            ],
+            "properties": {
+              "saleType": {
+                "type": "string",
+                "description": "סוג"
+              },
+              "referenceNum": {
+                "type": "string",
+                "description": "מס' אסמכתא"
+              },
+              "invoiceDate": {
+                "type": "string",
+                "description": "תאריך החשבונית"
+              },
+              "invoiceAmount": {
+                "type": "integer",
+                "description": "סכום החשבונית"
+              },
+              "vatAmount": {
+                "type": "integer",
+                "description": "סכום המע'מ"
+              },
+              "expenderOrRecoever": {
+                "type": "string",
+                "description": "מוציא/מקבל"
+              },
+              "fixDetails": {
+                "type": "string",
+                "description": "פרטי תיקון"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ReportRecordCategories": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["received", "incorrect", "total"],
+      "properties": {
+        "received": {
+          "allOf": [
+            { "$ref": "#/definitions/ReportRecordColumns" },
+            { "description": "נתקבל (100%)" }
+          ]
+        },
+        "incorrect": {
+          "allOf": [{ "$ref": "#/definitions/ReportRecordColumns" }, { "description": "שגוי" }]
+        },
+        "total": {
+          "allOf": [{ "$ref": "#/definitions/ReportRecordColumns" }, { "description": "סיכום" }]
+        }
+      }
+    },
+    "ReportRecordColumns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordsCount", "vatAmount", "beforeVatAmount"],
+      "properties": {
+        "recordsCount": {
+          "type": "integer",
+          "description": "מס' תנועות"
+        },
+        "vatAmount": {
+          "type": "integer",
+          "description": "סכום מעמ"
+        },
+        "beforeVatAmount": {
+          "type": "integer",
+          "description": "סכום לפני מעמ"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recordType",
+              "referenceNum",
+              "invoiceDate",
+              "vatAmount",
+              "amount",
+              "supplierOrList",
+              "errorDescription"
+            ],
+            "properties": {
+              "recordType": {
+                "type": "string",
+                "description": "סוג רשומה"
+              },
+              "referenceNum": {
+                "type": "string",
+                "description": "מספר אסמכתא"
+              },
+              "invoiceDate": {
+                "type": "string",
+                "description": "תאריך החשבונית"
+              },
+              "vatAmount": {
+                "type": "integer",
+                "description": "סכום המעמ"
+              },
+              "amount": {
+                "type": "integer",
+                "description": "סכום"
+              },
+              "supplierOrList": {
+                "type": "string",
+                "description": "ספק / רשימון"
+              },
+              "errorDescription": {
+                "type": "string",
+                "description": "תאור שגיאה"
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "פרטים נוספים",
+                "required": [
+                  "recordType",
+                  "invoiceNum",
+                  "referenceGroup",
+                  "invoiceDate",
+                  "vatAmount",
+                  "amount",
+                  "supplierOrList"
+                ],
+                "properties": {
+                  "recordType": {
+                    "type": "string",
+                    "description": "סוג רשומה"
+                  },
+                  "invoiceNum": {
+                    "type": "string",
+                    "description": "מספר חשבונית"
+                  },
+                  "referenceGroup": {
+                    "type": "string",
+                    "description": "קבוצת אסמכתא"
+                  },
+                  "invoiceDate": {
+                    "type": "string",
+                    "description": "תאריך החשבונית"
+                  },
+                  "vatAmount": {
+                    "type": "integer",
+                    "description": "סכום המעמ"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "description": "סכום"
+                  },
+                  "supplierOrList": {
+                    "type": "string",
+                    "description": "ספק / רשימון"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

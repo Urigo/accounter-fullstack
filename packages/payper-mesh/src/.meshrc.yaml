@@ -1,0 +1,33 @@
+sources:
+  - name: Payper
+    handler:
+      jsonSchema:
+        endpoint: 'https://payper.co.il/app/api'
+        operationHeaders:
+          API_KEY: '{context.authToken}'
+          Content-Type: application/json
+          Accept: application/json
+        operations:
+          - type: Query
+            field: getExpensesRaw
+            path: /pull_expenses
+            method: POST
+            requestSchema: ./json-schemas/payperSchema.json#/definitions/getExpensesRequest
+            responseSchema: ./json-schemas/payperSchema.json#/definitions/getExpensesResponse
+
+          # getCustomerGeneralLedger
+          # getListOfInventory
+          # getQuantityForItem
+
+serve:
+  browser: false
+
+sdk:
+  generateOperations:
+    selectionSetDepth: 2
+
+additionalTypeDefs:
+  - ./additional-type-defs.graphql
+
+additionalResolvers:
+  - ./resolvers/get-expenses-resolver.js

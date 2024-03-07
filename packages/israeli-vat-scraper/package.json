@@ -1,0 +1,75 @@
+{
+  "name": "@accounter/israeli-vat-scraper",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scraper app for fetching Israeli VAT data",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
+    "repository": "packages/israeli-vat-scraper"
+  },
+  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/israeli-vat-scraper#readme",
+  "bugs": {
+    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+  },
+  "author": "gilgardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.0.0 || >= 20"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "israel",
+    "vat",
+    "accountancy",
+    "accountant",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prebuild": "exit 0",
+    "prepublish": "yarn build",
+    "prestart": "yarn build",
+    "start": "node --experimental-json-modules dist/index.js",
+    "test": "node dist/dev-tests/e2e.js"
+  },
+  "dependencies": {
+    "ajv": "8.12.0",
+    "puppeteer": "21.6.1"
+  },
+  "devDependencies": {
+    "@types/puppeteer": "7.0.4",
+    "dotenv": "16.4.4",
+    "nodemon": "3.0.3",
+    "pino-pretty": "10.3.1"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

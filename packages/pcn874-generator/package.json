@@ -1,0 +1,65 @@
+{
+  "name": "@accounter/pcn874-generator",
+  "version": "0.4.1",
+  "type": "module",
+  "description": "Fully typed application that generates PCN874 text file",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
+    "repository": "packages/pcn874-generator"
+  },
+  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/pcn874-generator#readme",
+  "bugs": {
+    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.0.0 || >= 20"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "pcn",
+    "pcn874",
+    "accountancy",
+    "accountant",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --experimental-json-modules --loader ts-node/esm src/index.ts",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
+    "prebuild": "yarn lint",
+    "prepublish": "yarn build",
+    "start": "node ./dist"
+  },
+  "devDependencies": {
+    "ts-node": "10.9.2"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

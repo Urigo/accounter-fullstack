@@ -1,0 +1,1615 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "addExpenseRequest": {
+      "$ref": "#/definitions/Expense"
+    },
+    "addExpenseResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/Expense"
+        },
+        {
+          "$ref": "#/definitions/ErrorResponse"
+        }
+      ]
+    },
+    "addExpenseDraftByFileRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The file, in Base64, allowed types: GIF, PNG, JPG, SVG, PDF"
+        }
+      }
+    },
+    "addExpenseDraftByFileResponse": {
+      "$ref": "#/definitions/GetExpenseDraft"
+    },
+    "generalErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "errorCode:": {
+          "type": "integer"
+        },
+        "errorMessage": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "getExpenseRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The expense ID"
+        }
+      }
+    },
+    "getExpenseResponse": {
+      "$ref": "#/definitions/GetExpense"
+    },
+    "updateExpenseRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The expense ID"
+        },
+        "paymentType": {
+          "description": "Payment method",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": ["string", "number"],
+              "enum": ["1", "2", "3", "4", "5", "10", "11", 1, 2, 3, 4, 5, 10, 11]
+            }
+          ]
+        },
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "type": "number",
+          "description": "Currency rate relative to ILS"
+        },
+        "vat": {
+          "type": "number",
+          "description": "The amount of the vat"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the expense"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the expense"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the expense"
+        },
+        "reportingDate": {
+          "type": "string",
+          "description": "Reporting date of the expense"
+        },
+        "documentType": {
+          "type": "number",
+          "description": "Document type",
+          "enum": [20, 305, 320, 330, 400, 405]
+        },
+        "number": {
+          "type": "string",
+          "description": "Number of the expense"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for the expense"
+        },
+        "remarks": {
+          "type": "string",
+          "string": "Remarks for the expense"
+        },
+        "supplier": {
+          "$ref": "#/definitions/Supplier"
+        },
+        "accountingClassification": {
+          "$ref": "#/definitions/AccountingClassification"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the expense active or not"
+        }
+      }
+    },
+    "updateExpenseResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/GetExpense"
+        },
+        {
+          "$ref": "#/definitions/ErrorResponse"
+        }
+      ]
+    },
+    "searchExpenseDraftsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "fromDate": {
+          "type": "string",
+          "description": "Expense drafts that were created after the specified date in the format YYYY-MM-DD",
+          "format": "YYYY-MM-DD"
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Expense drafts that were created until the specified date in the format YYYY-MM-DD",
+          "format": "YYYY-MM-DD"
+        },
+        "description": {
+          "type": "string",
+          "description": "Expense draft description"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Supplier's ID"
+        },
+        "supplierName": {
+          "type": "string",
+          "description": "Supplier's name"
+        },
+        "page": {
+          "type": "number",
+          "description": "Page requested"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "Results per page"
+        }
+      }
+    },
+    "searchExpenseDraftsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "pageSize"],
+      "properties": {
+        "total": {
+          "type": "number",
+          "description": "The total length of the items that were retrieved"
+        },
+        "page": {
+          "type": "number",
+          "description": "The page that was requested to retrieve"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "The page size that was requested"
+        },
+        "pages": {
+          "type": "number",
+          "description": "The amount of pages that exist"
+        },
+        "items": {
+          "type": "array",
+          "additionalItems": false,
+          "description": "The expense drafts that were found",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Partial Expense",
+            "properties": {
+              "currency": {
+                "$ref": "#/definitions/Currency"
+              },
+              "currencyRate": {
+                "type": "number",
+                "description": "Currency rate relative to ILS"
+              },
+              "vat": {
+                "type": "number",
+                "description": "The amount of the vat"
+              },
+              "amount": {
+                "type": "number",
+                "description": "The total amount of the expense"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description for the expense"
+              },
+              "supplier": {
+                "$ref": "#/definitions/Supplier"
+              },
+              "fileHash": {
+                "type": "string",
+                "description": "File hash"
+              },
+              "fileKey": {
+                "type": "string",
+                "description": "Key of the file location"
+              }
+            }
+          }
+        }
+      }
+    },
+    "searchExpensesRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fromDate": {
+          "type": "string",
+          "description": "Expense that were created after the specified date in the format YYYY-MM-DD"
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Expense that were created until the specified date in the format YYYY-MM-DD"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the expense, in the format YYYY-MM-DD"
+        },
+        "description": {
+          "type": "string",
+          "description": "Expense description"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Supplier's ID"
+        },
+        "supplierName": {
+          "type": "string",
+          "description": "Supplier's name"
+        },
+        "number": {
+          "type": "string",
+          "description": "Expense serial number"
+        },
+        "paid": {
+          "type": "boolean",
+          "description": "Filter expenses that are only paid or unpaid, if not added to the request, will return both"
+        },
+        "reported": {
+          "type": "boolean",
+          "description": "Filter expenses that are only reported or unreported, if not added to the request, will return both"
+        },
+        "sort": {
+          "type": "string",
+          "description": "The field to sort the results by"
+        },
+        "minAmount": {
+          "type": "number",
+          "description": "Min amount of the expense"
+        },
+        "maxAmount": {
+          "type": "number",
+          "description": "Max amount of the expense"
+        },
+        "page": {
+          "type": "number",
+          "description": "Page requested"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "Results per page"
+        }
+      },
+      "required": ["minAmount", "maxAmount", "page", "pageSize"]
+    },
+    "searchExpensesResponse": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "number",
+          "description": "The total length of the items that were retrieved"
+        },
+        "page": {
+          "type": "number",
+          "description": "The page that was requested to retrieve"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "The page size that was requested"
+        },
+        "pages": {
+          "type": "number",
+          "description": "The amount of pages that exist"
+        },
+        "items": {
+          "$ref": "#/definitions/GetExpense"
+        }
+      }
+    },
+    "searchDocumentsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "type": "number",
+          "description": "Page requested"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "Results per page"
+        },
+        "number": {
+          "type": "number",
+          "description": "Document number"
+        },
+        "type": {
+          "type": "array",
+          "description": "Document type",
+          "items": {
+            "type": "number",
+            "enum": [10, 100, 200, 210, 300, 305, 320, 330, 400, 405, 500, 600, 610]
+          }
+        },
+        "status": {
+          "type": "array",
+          "description": "Document status",
+          "items": {
+            "type": "number",
+            "enum": [0, 1, 2, 3, 4]
+          }
+        },
+        "paymentTypes": {
+          "type": "array",
+          "description": "Payment types used in this document",
+          "items": {
+            "type": "number",
+            "enum": [-1, 0, 1, 2, 3, 4, 5, 10, 11]
+          }
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Documents that were created after the specified date in the format YYYY-MM-DD",
+          "format": "YYYY-MM-DD"
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Documents that were created until the specified date in the format YYYY-MM-DD",
+          "format": "YYYY-MM-DD"
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Client ID"
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Client name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Document description"
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Whether document was downloaded by client"
+        },
+        "sort": {
+          "enum": ["documentDate", "creationDate"]
+        }
+      },
+      "required": []
+    },
+    "searchDocumentsResponse": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "number",
+          "description": "The total length of the items that were retrieved"
+        },
+        "page": {
+          "type": "number",
+          "description": "The page that was requested to retrieve"
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "The page size that was requested"
+        },
+        "pages": {
+          "type": "number",
+          "description": "The amount of pages that exist"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        }
+      },
+      "required": ["total", "page", "pageSize", "pages", "items"]
+    },
+    "AccountingClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Account classification of the expense",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The classification ID, see 'Get Accounting Classifications' endpoint"
+        },
+        "key": {
+          "type": "string",
+          "description": "The classification key"
+        },
+        "code": {
+          "type": "string",
+          "description": "The classification code"
+        },
+        "title": {
+          "type": "string",
+          "description": "The classification title"
+        },
+        "irsCode": {
+          "type": "number",
+          "description": "The classification IRS code",
+          "enum": [
+            1306, 1307, 1310, 1320, 1330, 1340, 1390, 3011, 3012, 3015, 3055, 3060, 3066, 3067,
+            3068, 3070, 3075, 3080, 3085, 3090, 3100, 3120, 3511, 3512, 3515, 3520, 3535, 3540,
+            3545, 3550, 3555, 3560, 3566, 3567, 3568, 3570, 3575, 3580, 3590, 3595, 3600, 3620,
+            3625, 3640, 3650, 3660, 3665, 3680, 5010, 5090, 8040, 8050, 8060, 8080, 8090
+          ]
+        },
+        "income": {
+          "type": "number",
+          "description": "The classification income"
+        },
+        "type": {
+          "type": "number",
+          "description": "The classification type"
+        },
+        "vat": {
+          "type": "number",
+          "description": "The classification VAT"
+        }
+      }
+    },
+    "Business": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accountantDocsEmailSettings": {
+          "type": "number"
+        },
+        "accountantEmails": {
+          "type": "array"
+        },
+        "accountantReportEmailSettings": {
+          "type": "number"
+        },
+        "accountingType": {
+          "type": "number"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "advanceNationalInsuranceRate": {
+          "type": "number"
+        },
+        "advanceTaxRate": {
+          "type": "number"
+        },
+        "bankDisplay": {
+          "type": "boolean"
+        },
+        "bankDisplayEn": {
+          "type": "boolean"
+        },
+        "deductionRate": {
+          "type": "number"
+        },
+        "documentsEmailSettings": {
+          "type": "number"
+        },
+        "emailSubjectType": {
+          "type": "number"
+        },
+        "exemption": {
+          "type": "boolean",
+          "description": "Is the business exemption free or not",
+          "examples": [false]
+        },
+        "incomeReportEmailSettings": {
+          "type": "number"
+        },
+        "incomeReportFormatType": {
+          "type": "number"
+        },
+        "reportSendingDay": {
+          "type": "number"
+        },
+        "senderEmailSettings": {
+          "type": "number"
+        },
+        "type": {
+          "type": "number",
+          "description": "The business type ID",
+          "enum": [1, 2, 3, 4, 5, 6]
+        }
+      },
+      "required": [
+        "accountantDocsEmailSettings",
+        "accountantEmails",
+        "accountantReportEmailSettings",
+        "accountingType",
+        "active",
+        "advanceNationalInsuranceRate",
+        "advanceTaxRate",
+        "bankDisplay",
+        "bankDisplayEn",
+        "deductionRate",
+        "documentsEmailSettings",
+        "emailSubjectType",
+        "exemption",
+        "incomeReportEmailSettings",
+        "incomeReportFormatType",
+        "reportSendingDay",
+        "senderEmailSettings",
+        "type"
+      ]
+    },
+    "Client": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "country": {
+          "$ref": "#/definitions/Country"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string",
+          "description": "The client ID",
+          "examples": ["8b338c95-095e-46d4-b2c6-331747508759"]
+        },
+        "name": {
+          "type": "string",
+          "description": "The client name",
+          "examples": ["לקוח אפ3"]
+        },
+        "phone": {
+          "type": "string"
+        },
+        "taxId": {
+          "type": "string",
+          "description": "The client tax ID",
+          "examples": ["0123456789"]
+        },
+        "self": {
+          "type": "boolean",
+          "description": "Whether the client is self",
+          "examples": [false]
+        }
+      },
+      "required": ["country", "emails", "id", "name", "phone", "self"]
+    },
+    "Country": {
+      "type": "string",
+      "description": "2-letter ISO supplier country code, default is IL",
+      "enum": [
+        "UG",
+        "UZ",
+        "AT",
+        "AU",
+        "UA",
+        "UY",
+        "AZ",
+        "CX",
+        "AE",
+        "IT",
+        "BS",
+        "GS",
+        "UM",
+        "VI",
+        "VG",
+        "HM",
+        "TC",
+        "MP",
+        "MH",
+        "SB",
+        "FO",
+        "FK",
+        "FJ",
+        "KM",
+        "CK",
+        "CC",
+        "KY",
+        "ID",
+        "IS",
+        "IE",
+        "IR",
+        "SV",
+        "AL",
+        "DZ",
+        "AX",
+        "AO",
+        "AI",
+        "AD",
+        "AQ",
+        "AG",
+        "EE",
+        "AF",
+        "EC",
+        "AR",
+        "US",
+        "AW",
+        "ER",
+        "AM",
+        "ET",
+        "BT",
+        "BV",
+        "BW",
+        "BG",
+        "BO",
+        "BA",
+        "BI",
+        "BF",
+        "BH",
+        "BY",
+        "BE",
+        "BZ",
+        "BD",
+        "BJ",
+        "BB",
+        "BN",
+        "BR",
+        "GB",
+        "BM",
+        "DJ",
+        "JM",
+        "JE",
+        "GA",
+        "GE",
+        "GH",
+        "GT",
+        "GU",
+        "GP",
+        "GY",
+        "GI",
+        "GN",
+        "GW",
+        "GQ",
+        "GF",
+        "GM",
+        "GL",
+        "DE",
+        "GD",
+        "GG",
+        "DM",
+        "DK",
+        "ZA",
+        "SS",
+        "KR",
+        "IM",
+        "NF",
+        "HT",
+        "MV",
+        "BQ",
+        "IN",
+        "NL",
+        "HK",
+        "HU",
+        "HN",
+        "IO",
+        "TF",
+        "PH",
+        "DO",
+        "CD",
+        "CF",
+        "PS",
+        "WF",
+        "VN",
+        "VU",
+        "VE",
+        "VA",
+        "ZW",
+        "ZM",
+        "CI",
+        "TJ",
+        "TV",
+        "TG",
+        "TO",
+        "TN",
+        "TK",
+        "TR",
+        "TM",
+        "TW",
+        "TZ",
+        "TT",
+        "GR",
+        "JP",
+        "JO",
+        "IL",
+        "KW",
+        "CV",
+        "LA",
+        "LB",
+        "LY",
+        "LU",
+        "LV",
+        "LR",
+        "LT",
+        "LI",
+        "LS",
+        "MR",
+        "MU",
+        "ML",
+        "MG",
+        "MZ",
+        "MD",
+        "MN",
+        "ME",
+        "MS",
+        "MC",
+        "TL",
+        "MM",
+        "YT",
+        "FM",
+        "MW",
+        "MY",
+        "MT",
+        "EG",
+        "MO",
+        "MK",
+        "MX",
+        "MA",
+        "MQ",
+        "NR",
+        "NO",
+        "NG",
+        "NZ",
+        "NU",
+        "NE",
+        "NI",
+        "NA",
+        "NP",
+        "ST",
+        "SJ",
+        "EH",
+        "SD",
+        "SZ",
+        "SO",
+        "SY",
+        "SR",
+        "SL",
+        "SC",
+        "CN",
+        "SG",
+        "SI",
+        "SK",
+        "WS",
+        "AS",
+        "BL",
+        "MF",
+        "SM",
+        "PM",
+        "SN",
+        "SH",
+        "VC",
+        "LC",
+        "SX",
+        "KN",
+        "SA",
+        "ES",
+        "RS",
+        "LK",
+        "OM",
+        "IQ",
+        "PW",
+        "PL",
+        "PF",
+        "PR",
+        "PT",
+        "PN",
+        "FI",
+        "PA",
+        "PG",
+        "PK",
+        "PY",
+        "PE",
+        "TD",
+        "CL",
+        "CZ",
+        "KP",
+        "FR",
+        "CU",
+        "CO",
+        "CG",
+        "XK",
+        "CR",
+        "CW",
+        "KZ",
+        "QA",
+        "KG",
+        "KI",
+        "NC",
+        "KH",
+        "CM",
+        "CA",
+        "KE",
+        "CY",
+        "HR",
+        "RE",
+        "RW",
+        "RO",
+        "RU",
+        "SE",
+        "CH",
+        "TH",
+        "YE"
+      ]
+    },
+    "Currency": {
+      "type": "string",
+      "description": "3-letter ISO item currency code",
+      "enum": [
+        "ILS",
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "CHF",
+        "CNY",
+        "AUD",
+        "CAD",
+        "RUB",
+        "BRL",
+        "HKD",
+        "SGD",
+        "THB",
+        "MXN",
+        "TRY",
+        "NZD",
+        "SEK",
+        "NOK",
+        "DKK",
+        "KRW",
+        "INR",
+        "IDR",
+        "PLN",
+        "RON",
+        "ZAR",
+        "HRK"
+      ]
+    },
+    "Document": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Document",
+      "properties": {
+        "amount": {
+          "description": "Total amount, in requested currency (including the VAT, Discount & Rounding)",
+          "type": "number",
+          "examples": [354]
+        },
+        "amountDueVat": {
+          "description": "Amount due VAT - Amount before VAT, and before rounding & discount (if requested)",
+          "type": "number",
+          "examples": [100]
+        },
+        "amountExcludedVat": {
+          "description": "Amount excluded VAT - Amount that is excluded of VAT",
+          "type": "number",
+          "examples": [18]
+        },
+        "amountExemptVat": {
+          "description": "Amount exempt VAT - 0 unless there's one or more items that are excluded of VAT such as mixed documents (that have both VAT excluded & included items)",
+          "type": "number",
+          "examples": [18]
+        },
+        "amountLocal": {
+          "description": "Amount in local currency",
+          "type": "number",
+          "examples": [300]
+        },
+        "amountOpened": {
+          "description": "Amount that is still left to be paid, exists only in payment request documents",
+          "type": "number",
+          "examples": [300]
+        },
+        "business": {
+          "$ref": "#/definitions/Business"
+        },
+        "calculatedAmountLocal": {
+          "type": "number"
+        },
+        "calculatedAmountOpenedLocal": {
+          "type": "number"
+        },
+        "calculatedIncomeAmountExcludeLocal": {
+          "type": "number"
+        },
+        "calculatedIncomeAmountLocal": {
+          "type": "number"
+        },
+        "calculatedPaymentAmountLocal": {
+          "type": "number"
+        },
+        "cancellable": {
+          "type": "boolean"
+        },
+        "cancelType": {
+          "type": "number"
+        },
+        "client": {
+          "$ref": "#/definitions/Client"
+        },
+        "creationDate": {
+          "description": "Creation date timestamp",
+          "type": "string"
+        },
+        "currency": { "$ref": "#/definitions/Currency" },
+        "currencyRate": {
+          "type": "number",
+          "examples": [1]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tags": {
+              "type": "array"
+            }
+          }
+        },
+        "description": {
+          "description": "The type of the document",
+          "type": "string"
+        },
+        "documentDate": {
+          "description": "Document reference date",
+          "type": "string"
+        },
+        "downloaded": {
+          "type": "boolean"
+        },
+        "id": {
+          "description": "Document ID",
+          "type": "string"
+        },
+        "income": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Income"
+          }
+        },
+        "lang": {
+          "description": "Document language",
+          "type": "string",
+          "enum": ["en", "he"]
+        },
+        "number": {
+          "description": "Document tax number",
+          "type": "string"
+        },
+        "payment": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Payment"
+          }
+        },
+        "ref": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "reverseCharge": {
+          "type": "boolean"
+        },
+        "rounding": {
+          "type": "boolean"
+        },
+        "signed": {
+          "type": "boolean"
+        },
+        "skinId": {
+          "type": "number"
+        },
+        "status": {
+          "description": "Document status",
+          "type": "number"
+        },
+        "templateId": {
+          "type": "number"
+        },
+        "type": {
+          "description": "Document type",
+          "type": "number",
+          "enum": [10, 100, 200, 210, 300, 305, 320, 330, 400, 405, 500, 600, 610]
+        },
+        "url": {
+          "$ref": "#/definitions/Url"
+        },
+        "vat": {
+          "description": "VAT amount",
+          "type": "number",
+          "examples": [54]
+        },
+        "vatRate": {
+          "type": "number"
+        },
+        "vatType": {
+          "description": "VAT type",
+          "type": "number",
+          "examples": [0]
+        }
+      },
+      "required": [
+        "amount",
+        "amountDueVat",
+        "amountExemptVat",
+        "amountLocal",
+        "amountOpened",
+        "business",
+        "calculatedAmountLocal",
+        "calculatedAmountOpenedLocal",
+        "calculatedIncomeAmountExcludeLocal",
+        "calculatedIncomeAmountLocal",
+        "calculatedPaymentAmountLocal",
+        "cancellable",
+        "client",
+        "creationDate",
+        "currency",
+        "currencyRate",
+        "data",
+        "description",
+        "documentDate",
+        "downloaded",
+        "id",
+        "income",
+        "lang",
+        "number",
+        "payment",
+        "ref",
+        "remarks",
+        "reverseCharge",
+        "rounding",
+        "signed",
+        "skinId",
+        "status",
+        "templateId",
+        "type",
+        "url",
+        "vat",
+        "vatRate",
+        "vatType"
+      ]
+    },
+    "Expense": {
+      "allOf": [
+        { "$ref": "#/definitions/ExpensePartial" },
+        {
+          "required": [
+            "currency",
+            "vat",
+            "amount",
+            "date",
+            "reportingDate",
+            "documentType",
+            "number",
+            "supplier",
+            "accountingClassification"
+          ]
+        }
+      ]
+    },
+    "ExpensePartial": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Expense",
+      "properties": {
+        "paymentType": {
+          "description": "Payment method",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": ["string", "number"],
+              "enum": ["1", "2", "3", "4", "5", "10", "11", 1, 2, 3, 4, 5, 10, 11]
+            }
+          ]
+        },
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "type": "number",
+          "description": "Currency rate relative to ILS"
+        },
+        "vat": {
+          "type": "number",
+          "description": "The amount of the vat"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the expense"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the expense"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the expense"
+        },
+        "reportingDate": {
+          "type": "string",
+          "description": "Reporting date of the expense"
+        },
+        "documentType": {
+          "type": "number",
+          "description": "Document type",
+          "enum": [20, 305, 320, 330, 400, 405]
+        },
+        "number": {
+          "type": ["string", "null"],
+          "description": "Number of the expense"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for the expense"
+        },
+        "remarks": {
+          "type": "string",
+          "string": "Remarks for the expense"
+        },
+        "supplier": {
+          "$ref": "#/definitions/Supplier"
+        },
+        "accountingClassification": {
+          "$ref": "#/definitions/AccountingClassification"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the expense active or not"
+        },
+        "addRecipient": {
+          "type": "boolean",
+          "description": "Should we save the supplier or not (by setting this to true you are required to add a supplier)"
+        },
+        "addAccountingClassification": {
+          "type": "boolean",
+          "description": "Should we save the accounting classification (by setting this to true you are required to add an accounting classification that contains title & irsCode)"
+        }
+      }
+    },
+    "GetExpense": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Expense",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The expense ID"
+        },
+        "businessType": {
+          "type": "number",
+          "description": "The business type ID",
+          "enum": [1, 2, 3, 4, 5, 6]
+        },
+        "documentType": {
+          "type": "number",
+          "description": "The type of the expense",
+          "enum": [20, 305, 320, 330, 400, 405]
+        },
+        "status": {
+          "type": "number",
+          "description": "The status of the expense",
+          "enum": [10, 20, 30, 100]
+        },
+        "paymentType": {
+          "type": "number",
+          "description": "Payment method",
+          "enum": [-1, 0, 1, 2, 3, 4, 5, 10, 11]
+        },
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "type": "number",
+          "description": "Currency rate relative to ILS"
+        },
+        "amountExcludeVat": {
+          "type": "number",
+          "description": "The amount excluding the vat"
+        },
+        "vat": {
+          "type": "number",
+          "description": "The amount of the vat"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the expense"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the expense"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the expense"
+        },
+        "number": {
+          "type": "string",
+          "description": "Number of the expense"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the expense currently active or not"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for the expense"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Remarks for the expense"
+        },
+        "supplier": {
+          "$ref": "#/definitions/Supplier"
+        },
+        "thumbnail": {
+          "type": "string",
+          "description": "URL of expense thumbnail"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to download the expense thumbnail"
+        },
+        "cancellable": {
+          "type": "boolean",
+          "description": "Is the supplier currently active or not"
+        },
+        "reportingDate": {
+          "type": "string",
+          "description": "Reporting date of the expense"
+        },
+        "accountingClassification": {
+          "$ref": "#/definitions/AccountingClassification"
+        },
+        "amountLocal": {
+          "type": "number",
+          "description": "The local amount of the expense"
+        },
+        "amountAccounting": {
+          "type": "number",
+          "description": "The amount of accounting"
+        },
+        "vatAccounting": {
+          "type": "number",
+          "description": "The vat amount of accounting"
+        },
+        "creationDate": {
+          "type": "integer",
+          "description": "The creation date of the expense, in UNIX timestamp format"
+        },
+        "lastUpdateDate": {
+          "type": "integer",
+          "description": "The last update date of the expense, in UNIX timestamp format"
+        }
+      }
+    },
+    "GetExpenseDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "result"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The expense draft ID"
+        },
+        "status": {
+          "type": "number",
+          "description": "The status of the expense draft",
+          "enum": [10, 50]
+        },
+        "creationDate": {
+          "type": "integer",
+          "description": "The creation date of the expense draft, in UNIX timestamp format"
+        },
+        "lastUpdateDate": {
+          "type": "integer",
+          "description": "The last update date of the expense draft, in UNIX timestamp format"
+        },
+        "expense": {
+          "$ref": "#/definitions/ExpensePartial"
+        },
+        "thumbnail": {
+          "type": "string",
+          "description": "URL of expense thumbnail"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to download the expense thumbnail"
+        }
+      }
+    },
+    "Income": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Amount",
+          "examples": [354]
+        },
+        "amountTotal": {
+          "type": "number",
+          "description": "Total amount",
+          "examples": [354]
+        },
+        "catalogNum": {
+          "type": "string",
+          "description": "Catalog number",
+          "examples": ["MXDFSDD"]
+        },
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "type": "number",
+          "description": "Currency rate relative to ILS",
+          "examples": [1]
+        },
+        "description": {
+          "type": "string",
+          "description": "Item description",
+          "examples": ["Item description"]
+        },
+        "itemId": {
+          "type": "string",
+          "description": "The ID of the item to attach as income",
+          "examples": ["8b338c95-095e-46d4-b2c6-331747508759"]
+        },
+        "price": {
+          "type": "number",
+          "description": "Item price",
+          "examples": [300]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity",
+          "examples": [1]
+        },
+        "vat": {
+          "type": "number",
+          "description": "VAT amount",
+          "examples": [54]
+        },
+        "vatRate": {
+          "type": "number",
+          "description": "VAT rate"
+        },
+        "vatType": {
+          "type": "number",
+          "description": "VAT type",
+          "examples": [0, 1, 2]
+        }
+      },
+      "required": ["description", "quantity", "price", "currency", "vatType"]
+    },
+    "Payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "cancellable": {
+          "type": "boolean",
+          "description": "Is this document a cancellable document",
+          "examples": [false]
+        },
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "examples": ["העברה בנקאית"]
+        },
+        "price": {
+          "type": "number",
+          "description": "Sum paid",
+          "examples": [300]
+        },
+        "ref": {
+          "type": "array",
+          "description": "The referred documents types",
+          "items": {
+            "type": "number",
+            "enum": [10, 100, 200, 210, 300, 305, 320, 330, 400, 405, 500, 600, 610]
+          }
+        },
+        "type": {
+          "type": "number",
+          "description": "Payment method",
+          "enum": [-1, 0, 1, 2, 3, 4, 5, 10, 11]
+        },
+        "subType": {
+          "type": "number",
+          "description": "Other payment sub type",
+          "enum": [1, 2, 3, 4]
+        }
+      },
+      "required": ["type", "price"]
+    },
+    "Supplier": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Supplier of the expense",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The supplier ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "The supplier name"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the supplier active or not"
+        },
+        "taxId": {
+          "type": "string",
+          "description": "The supplier tax ID"
+        },
+        "paymentTerms": {
+          "type": "number",
+          "description": "The supplier payment term, default is 0",
+          "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+        },
+        "bankName": {
+          "type": "string",
+          "description": "The supplier bank name"
+        },
+        "bankBranch": {
+          "type": "string",
+          "description": "The supplier bank branch number"
+        },
+        "bankAccount": {
+          "type": "string",
+          "description": "The supplier bank account number"
+        },
+        "country": {
+          "$ref": "#/definitions/Country"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The supplier phone number"
+        },
+        "mobile": {
+          "type": "string",
+          "description": "The supplier mobile number"
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The supplier contact person name"
+        },
+        "emails": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "string"
+          }
+        },
+        "creationDate": {
+          "type": "integer",
+          "description": "The creation date of the supplier, in UNIX timestamp format"
+        },
+        "lastUpdateDate": {
+          "type": "integer",
+          "description": "The last update date of the supplier, in UNIX timestamp format"
+        },
+        "department": {
+          "type": "string",
+          "description": "The supplier department"
+        },
+        "accountingKey": {
+          "type": "string",
+          "description": "The supplier accounting key"
+        },
+        "address": {
+          "type": "string",
+          "description": "The supplier address"
+        },
+        "city": {
+          "type": "string",
+          "description": "The supplier city"
+        },
+        "zip": {
+          "type": "string",
+          "description": "The supplier zip code"
+        },
+        "fax": {
+          "type": "string",
+          "description": "The supplier fax number"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "The Supplier remarks for self use"
+        },
+        "incomeAmount": {
+          "type": "number",
+          "description": "The amount of incomes from the customer"
+        },
+        "paymentAmount": {
+          "type": "number"
+        },
+        "balanceAmount": {
+          "type": "number",
+          "description": "The balance amount of the supplier"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Error",
+      "properties": {
+        "errorCode": {
+          "type": "number"
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      }
+    },
+    "Url": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "he": {
+          "type": "string",
+          "description": "Copy in Hebrew"
+        },
+        "en": {
+          "type": "string",
+          "description": "Copy in English"
+        },
+        "origin": {
+          "type": "string",
+          "description": "Origin"
+        }
+      },
+      "required": ["he", "origin"]
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rows"],
+  "properties": {
+    "rows": {
+      "type": "array",
+      "additionalItems": false,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["AccountKey", "CreditDebit", "DatF", "SuF"],
+        "properties": {
+          "AccountKey": {
+            "type": "string",
+            "description": "Account identifier (max 15 characters)"
+          },
+          "CreditDebit": {
+            "type": "string",
+            "enum": ["0", "1"],
+            "description": "Debit=1, Credit=0"
+          },
+          "DatF": {
+            "type": "string",
+            "description": "Date"
+          },
+          "Details": {
+            "type": "string",
+            "description": "Remarks (max 50 characters)"
+          },
+          "Reference": {
+            "type": "integer",
+            "description": "Reference"
+          },
+          "SuF": {
+            "type": "number",
+            "description": "NIS amount"
+          }
+        }
+      }
+    }
+  }
+}

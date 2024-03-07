@@ -1,0 +1,1193 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "getSessionResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data", "session"],
+      "properties": {
+        "data": {
+          "type": "array"
+        },
+        "session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "branch": {
+              "type": "integer"
+            },
+            "cid": {
+              "type": "string"
+            },
+            "company_id": {
+              "type": "integer"
+            },
+            "company_name": {
+              "type": "string"
+            },
+            "use_name": {
+              "type": "string"
+            },
+            "user": {
+              "type": "string"
+            },
+            "user_id": {
+              "type": "integer"
+            },
+            "wizcomp_no": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+
+    "getCompaniesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repdata"],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["Comp_Vatnum", "Company_File_Name", "Company_Name"],
+                "properties": {
+                  "Comp_Vatnum": {
+                    "type": "string"
+                  },
+                  "Company_File_Name": {
+                    "type": "string"
+                  },
+                  "Company_Name": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+
+    "getRecordsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/RecordType"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+
+    "getTransactionsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/Transaction"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+    "importTransactionsToBatchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Response for Posting Transactions to a Batch",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Final Status"
+        },
+        "batch_issue": {
+          "type": "string",
+          "description": "Batch Issue Status"
+        },
+        "batch_check": {
+          "$ref": "#/definitions/BatchCheckResponse"
+        },
+        "newbatch": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Batch identifier (on cases new batch was created)"
+        },
+        "batchno": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Batch identifier (on cases added to existing batch)"
+        },
+        "errors": {
+          "oneOf": [
+            {
+              "type": "array",
+              "additionalItems": false,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "headerID": {
+                    "type": "string",
+                    "description": "Transaction identifier. AKA transactionId"
+                  },
+                  "err": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Error code"
+                  },
+                  "recId": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Record identifier. AKA recordId"
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "Field name where error occurred"
+                  },
+                  "TxtMsg": {
+                    "type": "string",
+                    "description": "Error message"
+                  }
+                }
+              }
+            },
+            {
+              "type": ["string"]
+            }
+          ],
+          "description": "errors list"
+        }
+      }
+    },
+
+    "createBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["newbatch"],
+      "properties": {
+        "newbatch": {
+          "type": "integer"
+        }
+      }
+    },
+    "checkBatchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "batch_check": {
+          "$ref": "#/definitions/BatchCheckResponse"
+        }
+      }
+    },
+    "getBatchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/Batch"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+    "issueBatchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "batch_check": {
+          "$ref": "#/definitions/BatchCheckResponse"
+        },
+        "batch_issue": {
+          "type": "string",
+          "description": "Batch issue status"
+        }
+      }
+    },
+
+    "getBankPageRecordsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/BankPageRecord"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+    "importBankPageResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "errors"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["errors", "OK"]
+        },
+        "errors": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["index"],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Index"
+              },
+              "field": {
+                "type": "string",
+                "description": "Field name where error occurred"
+              },
+              "err": {
+                "type": "string",
+                "description": "Error description"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "getAccountsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/Account"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+    "importAccountsRawRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["insertnew", "rows"],
+      "properties": {
+        "insertnew": {
+          "type": "boolean",
+          "description": "Allow inserting new records. If false only update is allowed"
+        },
+        "rows": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "$ref": "#/definitions/AccountImport"
+          }
+        },
+        "myindex": {
+          "type": "string",
+          "enum": ["acc"]
+        }
+      }
+    },
+    "importAccountsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "errors"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["errors", "OK"]
+        },
+        "errors": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["index"],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Index"
+              },
+              "field": {
+                "type": "string",
+                "description": "Field name where error occurred"
+              },
+              "err": {
+                "type": "string",
+                "description": "Error description"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "getSortCodesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "repdata": {
+              "type": ["array", "null"],
+              "additionalItems": false,
+              "items": {
+                "$ref": "#/definitions/SortCode"
+              }
+            },
+            "errors": {
+              "type": "string",
+              "enum": ["errors", "OK"]
+            }
+          }
+        },
+        "statusCode": {
+          "type": "integer"
+        }
+      }
+    },
+
+    "Transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "authorizedDealerNumber": {
+          "type": "string",
+          "description": "VAT registration number (max [20 or 9?] characters)"
+        },
+        "batchId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Batch Identifier"
+        },
+        "branch": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Branch"
+        },
+        "branchName": {
+          "type": "string",
+          "description": "Branch Name"
+        },
+        "chequeId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Cheque Identifier"
+        },
+        "costingCode": {
+          "type": "string",
+          "description": "Code of cost center (existing code)"
+        },
+        "costingCodeName": {
+          "type": "string",
+          "description": "Cost-center code name"
+        },
+        "costingCodeFilter": {
+          "type": "string",
+          "description": "Cost-center code filter"
+        },
+        "creditorId": {
+          "type": "string",
+          "description": "Main credit account identifier (max 15 charactes)"
+        },
+        "currencyCode": {
+          "type": "string",
+          "description": "Currency"
+        },
+        "date3": {
+          "type": "string",
+          "description": "Additional date"
+        },
+        "debtorId": {
+          "type": "string",
+          "description": "Main debit account identifier (max 15 charactes)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description (max 250 characters)"
+        },
+        "details1": {
+          "type": "string",
+          "description": "Remarks (max 50 characters)"
+        },
+        "details2": {
+          "type": "string",
+          "description": "Additional remarks (max 50 characters)"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date"
+        },
+        "exchangeRateDifferences": {
+          "type": "string",
+          "description": "exchange rate differences"
+        },
+        "foreignCurrencySum": {
+          "type": "number",
+          "format": "float",
+          "description": "Total amount in foreign currency"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Transaction Identifier"
+        },
+        "inventoryId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Inventory Identifier"
+        },
+        "linkedFile": {
+          "type": "string",
+          "description": "Linked file"
+        },
+        "quantity": {
+          "type": "number",
+          "format": "float",
+          "description": "Quantity"
+        },
+        "reference1": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Reference"
+        },
+        "reference2": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Reference-2"
+        },
+        "reference3": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Referenc-3"
+        },
+        "registerNumber": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Register number"
+        },
+        "shekelSum": {
+          "type": "number",
+          "format": "float",
+          "description": "Total NIS amount"
+        },
+        "stornoCancelledTransactionId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Identifier of transaction cancelled by Strogno"
+        },
+        "type": {
+          "type": "string",
+          "description": "Transaction type code"
+        },
+        "userName": {
+          "type": "string",
+          "description": "User name"
+        },
+        "valueDate": {
+          "type": "string",
+          "description": "Date"
+        }
+      }
+    },
+    "Batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Batch",
+      "required": [],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "creditAmount": {
+          "type": "number"
+        },
+        "debitAmount": {
+          "type": "number"
+        },
+        "details": {
+          "type": "string",
+          "description": "Remarks"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Batch identifier"
+        },
+        "initDate": {
+          "type": "string",
+          "description": "Initiate date"
+        },
+        "initTime": {
+          "type": "string",
+          "description": "Initiate time"
+        },
+        "issueDate": {
+          "type": "string",
+          "description": "Issue date"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type"
+        }
+      }
+    },
+    "RecordType": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Record",
+      "required": [],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "Main account details identifier"
+        },
+        "batchId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Batch identifier"
+        },
+        "counterAccountId": {
+          "type": "string",
+          "description": "Counter account identifier"
+        },
+        "counterAccountName": {
+          "type": "string",
+          "description": "Counter account name"
+        },
+        "cumulativeBalance": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance"
+        },
+        "cumulativeBalanceByFilter": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance by filter"
+        },
+        "cumulativeBalanceBySortKey": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance by sorting code"
+        },
+        "cumulativeBalanceOfOpenSumInRecord": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance of total open amount of record"
+        },
+        "cumulativeBalanceWithoutOpeningBalance": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance without opening balance"
+        },
+        "debitOrCredit": {
+          "type": "string",
+          "description": "Credit / Debit"
+        },
+        "debitOrCreditNumber": {
+          "type": ["string", "integer"],
+          "enum": ["-1", "1", -1, 1],
+          "description": "Credit (-1) / Debit (1)"
+        },
+        "estimatedSum": {
+          "type": "number",
+          "format": "float",
+          "description": "Estimated total amount"
+        },
+        "foreignCurrencyCredit": {
+          "type": ["number", "null"],
+          "format": "float",
+          "description": "Credit amount in foreign currency"
+        },
+        "foreignCurrencyCumulativeBalance": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance in foreign currency"
+        },
+        "foreignCurrencyCumulativeBalanceWithoutOpeningBalance": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance in foreign currency without opening balance"
+        },
+        "foreignCurrencyDebit": {
+          "type": ["number", "null"],
+          "format": "float",
+          "description": "Dedit amount in foreign currency"
+        },
+        "foreignCurrencySum": {
+          "type": "number",
+          "format": "float",
+          "description": "Total amount in foreign currency"
+        },
+        "foreignCurrencySumClosedInRecord": {
+          "type": "number",
+          "format": "float",
+          "description": "Total amount in foreign currency closed in record"
+        },
+        "foreignCurrencySumOpenInRecord": {
+          "type": "number",
+          "format": "float",
+          "description": "Total amount in foreign currency open  in record"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Record identifier"
+        },
+        "matchNumberCardAnalysis": {
+          "type": ["integer", "null"],
+          "format": "int32",
+          "description": "Match number - card analysis"
+        },
+        "shekelCredit": {
+          "type": ["number", "null"],
+          "format": "float",
+          "description": "Credit amount in NIS"
+        },
+        "shekelDebit": {
+          "type": ["number", "null"],
+          "format": "float",
+          "description": "Dedit amount in NIS"
+        },
+        "shekelSum": {
+          "type": "number",
+          "format": "float",
+          "description": "Total NIS amount"
+        },
+        "shekelSumClosedInRecord": {
+          "type": "number",
+          "format": "float",
+          "description": "Total NIS amount closed in record"
+        },
+        "shekelSumOpenInRecord": {
+          "type": "number",
+          "format": "float",
+          "description": "Total NIS amount open  in record"
+        },
+        "transactionId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Transaction identifier"
+        }
+      }
+    },
+    "BatchCheckResponse": {
+      "oneOf": [
+        { "type": "string", "description": "Batch check status" },
+        {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "headerID": {
+                "type": "string",
+                "description": "Transaction identifier. AKA transactionId"
+              },
+              "err": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Error code"
+              },
+              "recId": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Record identifier. AKA recordId"
+              },
+              "field": {
+                "type": "string",
+                "description": "Field name where error occurred"
+              },
+              "TxtMsg": {
+                "type": "string",
+                "description": "Error message"
+              }
+            }
+          },
+          "description": "Batch check errors list"
+        }
+      ]
+    },
+    "BankPageRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A Single Bank Page Record",
+      "required": [],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "Account identifier"
+        },
+        "accountName": {
+          "type": "string",
+          "description": "Account name (max 50 characters)"
+        },
+        "adjustedRecord": {
+          "type": "string",
+          "description": "Adjusted record"
+        },
+        "bankPageId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Bank page identifier"
+        },
+        "cumulativeBalance": {
+          "type": "number",
+          "format": "float",
+          "description": "Cumulative balance"
+        },
+        "cumulativeBalanceCalculated": {
+          "type": "number",
+          "format": "float",
+          "description": "Calculated cumulative balance"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date"
+        },
+        "debitOrCredit": {
+          "type": "string",
+          "description": "Credit / Debit"
+        },
+        "details": {
+          "type": ["string", "null"],
+          "description": "Remarks (max 50 characters)"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Bank page record identifier"
+        },
+        "matchNumber": {
+          "type": ["integer", "null"],
+          "format": "int32",
+          "description": "Match number"
+        },
+        "reference": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Reference"
+        },
+        "sum": {
+          "type": "number",
+          "format": "float",
+          "description": "Total ammount"
+        }
+      }
+    },
+    "Account": {
+      "description": "A Single Account",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "accountingCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Accounting Code"
+        },
+        "address": {
+          "type": "string",
+          "description": "Address (max 50 characters)"
+        },
+        "balanceCode": {
+          "type": "string",
+          "description": "Code for the balance and profit and loss report"
+        },
+        "cellphone": {
+          "type": "string",
+          "description": "Cellphone"
+        },
+        "city": {
+          "type": "string",
+          "description": "City (max 20 characters)"
+        },
+        "costingCode": {
+          "type": "string",
+          "description": "Code of cost center (existing code)"
+        },
+        "country": {
+          "type": "string",
+          "description": "Country (max 20 characters)"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email"
+        },
+        "fax": {
+          "type": "string",
+          "description": "Fax (max 30 characters)"
+        },
+        "filter": {
+          "type": "string",
+          "description": "Filtering (5 characters)"
+        },
+        "id": {
+          "type": "string",
+          "description": "Account identifier (max 15 characters)"
+        },
+        "idOrCompanyNum": {
+          "type": "string",
+          "description": "Account identifier (max 15 characters)"
+        },
+        "initDate": {
+          "type": "string",
+          "description": "Opening date of the account"
+        },
+        "mainAccount": {
+          "type": "string",
+          "description": "Code of the main account"
+        },
+        "mainAccountCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Main account code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Account name (max 50 characters)"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone (max 30 characters)"
+        },
+        "postalCode": {
+          "type": "string",
+          "description": "Postal code"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Remarks (max 50 characters)"
+        },
+        "sortCodeId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Sorting code ID"
+        },
+        "sortCodeName": {
+          "type": "string",
+          "description": "Sorting code name"
+        },
+        "website": {
+          "type": "string",
+          "description": "website address"
+        }
+      }
+    },
+    "AccountImport": {
+      "description": "A Single Account for Import",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["AccountKey"],
+      "properties": {
+        "AccountKey": {
+          "type": "string",
+          "description": "[id] Account identifier (max 15 characters)"
+        },
+        "Address": {
+          "type": "string",
+          "description": "[address] Address (max 50 characters)"
+        },
+        "Agent": {
+          "type": "integer",
+          "format": "int32",
+          "description": "[agent] Salesperson"
+        },
+        "AssignKey": {
+          "type": "string",
+          "description": "[centralAccount], Central account key (existing account) (max 15 characters)"
+        },
+        "AverageSupplyPeriod": {
+          "type": "number",
+          "format": "float",
+          "description": "Average supply time"
+        },
+        "AvgLatePay": {
+          "type": "number",
+          "format": "integer",
+          "description": "Average delay of payments"
+        },
+        "BalanceCode": {
+          "type": "string",
+          "description": "[balanceCode] Code for the balance and profit and loss report"
+        },
+        "BankAccount": {
+          "type": "string",
+          "description": "[bankAccountId] Bank account # (max 20 characters)"
+        },
+        "BankCode": {
+          "type": "string",
+          "description": "[bankId] Bank code (max 3 characters)"
+        },
+        "BranchCode": {
+          "type": "string",
+          "description": "[bankBranchId] Bank branch code (max 5 characters)"
+        },
+        "City": {
+          "type": "string",
+          "description": "[city] City (max 20 characters)"
+        },
+        "CostCode": {
+          "type": "string",
+          "description": "[costingCode] Code of cost center (existing code)"
+        },
+        "Country": {
+          "type": "string",
+          "description": "[country] Country (max 20 characters)"
+        },
+        "CreditTermsCode": {
+          "type": "number",
+          "format": "integer",
+          "description": "Split payment code"
+        },
+        "CustomerNote": {
+          "type": "string",
+          "description": "Message for the customer (max 250 characters)"
+        },
+        "DeductFile": {
+          "type": "string",
+          "description": "[incomeFileNumber] Income file number (max 20 characters)"
+        },
+        "DeductionPrc": {
+          "type": "number",
+          "format": "float",
+          "description": "[withholdingPercent] % withholding tax"
+        },
+        "DeductionValid": {
+          "type": "string",
+          "description": "[withholdingValidity] Validity date of the % withholding tax"
+        },
+        "Details": {
+          "type": "string",
+          "description": "[details] Remarks (max 50 characters)"
+        },
+        "DifferAcc": {
+          "type": "string",
+          "description": "Account key for small differences (existing account) (max 15 characters)"
+        },
+        "DiscountCode": {
+          "type": "number",
+          "format": "integer",
+          "description": "Discount code"
+        },
+        "DocCurr": {
+          "type": "string",
+          "description": "Default value for foreign currency (max 5 characters)"
+        },
+        "Email": {
+          "type": "string",
+          "description": "[email] Email"
+        },
+        "Fax": {
+          "type": "string",
+          "description": "[fax] Fax (max 30 characters)"
+        },
+        "Filter": {
+          "type": "string",
+          "description": "[filter] Filtering (5 characters)"
+        },
+        "FixedOrderCost": {
+          "type": "number",
+          "format": "float",
+          "description": "Fix cost of order"
+        },
+        "FullName": {
+          "type": "string",
+          "description": "[name] Account name (max 50 characters)"
+        },
+        "MainAccount": {
+          "type": "string",
+          "description": "[mainAccount] Code of the main account"
+        },
+        "Masav": {
+          "type": "string",
+          "enum": ["0", "1"],
+          "description": "Transfer to MASAV. 0/1"
+        },
+        "MatchCurr": {
+          "type": "string",
+          "description": "Currency for reconciliation (when the price is in foreign currency) (max 5 characters)"
+        },
+        "MaxCredit": {
+          "type": "number",
+          "format": "float",
+          "description": "[maxCredit] Credit limit"
+        },
+        "MaxCreditCurrency": {
+          "type": "string",
+          "description": "[maxCreditCurrency] Credit currency (max 5 characters)"
+        },
+        "MaxObligo": {
+          "type": "number",
+          "format": "float",
+          "description": "[maxObligo] Credit risk limit"
+        },
+        "MaxObligoCurrency": {
+          "type": "string",
+          "description": "[maxObligoCurrency] Credit risk currency (max 5 characters)"
+        },
+        "Phone": {
+          "type": "string",
+          "description": "[phone] Phone (max 30 characters)"
+        },
+        "SortGroup": {
+          "type": "integer",
+          "format": "int32",
+          "description": "[sortGroup] Sorting code"
+        },
+        "TaxFileNum": {
+          "type": "string",
+          "description": "[authorizedDealerNumber] VAT registration number (max [20 or 9?] characters)"
+        },
+        "TFtalDiscount": {
+          "type": "number",
+          "format": "float",
+          "description": "[generalDiscountPercent] % customer discount"
+        },
+        "VatExampt": {
+          "type": "string",
+          "description": "[vatExempt] VAT exempt, 1/0"
+        },
+        "WebSite": {
+          "type": "string",
+          "description": "Web site (max 250 characters)"
+        },
+        "WorF": {
+          "type": "string",
+          "description": "[occupation] Occupation (max 15 characters)"
+        },
+        "Zip": {
+          "type": "string",
+          "description": "[zipcode] Zip code (max 10 characters)"
+        }
+      }
+    },
+    "SortCode": {
+      "description": "A Single Sort Code",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Sorting code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Sorting code name"
+        }
+      }
+    }
+  }
+}
