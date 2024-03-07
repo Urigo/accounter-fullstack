@@ -1,4 +1,31 @@
 {
-  "extends": ["config:base", "docker:enableMajor"],
-  "supportPolicy": ["current"]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>the-guild-org/shared-config:renovate"],
+  "automerge": false,
+  "patch": {
+    "automerge": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
+  "prConcurrentLimit": 10,
+  "packageRules": [
+    {
+      "excludePackagePatterns": ["@changesets/*", "typescript", "^@theguild/"],
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "all patch dependencies",
+      "groupSlug": "all-patch"
+    },
+    {
+      "groupName": "Yoga/Envelop",
+      "matchPackagePrefixes": ["@envelop/", "graphql-yoga", "@graphql-yoga/"]
+    },
+    {
+      "groupName": "urql",
+      "matchPackagePrefixes": ["@urql/", "urql"],
+      "recreateClosed": false
+    }
+  ]
 }

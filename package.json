@@ -28,7 +28,6 @@
     "old-accounter:build": "yarn --cwd packages/old-accounter build",
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
     "poalim-scraper:build": "yarn --cwd packages/modern-poalim-scraper build",
-    "postinstall": "patch-package",
     "pre-commit": "lint-staged",
     "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
     "prettier:check": "prettier --cache --check  .",
@@ -41,9 +40,7 @@
   },
   "dependencies": {
     "graphql": "16.8.1",
-    "graphql-scalars": "1.22.4",
-    "patch-package": "8.0.0",
-    "postinstall-postinstall": "2.1.0"
+    "graphql-scalars": "1.22.4"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
