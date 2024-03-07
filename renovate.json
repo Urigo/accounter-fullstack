@@ -12,11 +12,7 @@
   "prConcurrentLimit": 10,
   "packageRules": [
     {
-      "excludePackagePatterns": [
-        "@changesets/*",
-        "typescript",
-        "^@theguild/"
-      ],
+      "excludePackagePatterns": ["@changesets/*", "typescript", "^@theguild/"],
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
