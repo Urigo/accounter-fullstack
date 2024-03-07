@@ -1,5 +1,4 @@
 import prettierConfig from '@theguild/prettier-config';
-
 /**
  * @type {import('prettier').Config}
  */

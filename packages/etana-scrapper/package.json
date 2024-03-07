@@ -11,16 +11,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.9.14",
-    "csv-parse": "5.5.2",
-    "diary": "0.4.4",
-    "dotenv": "16.4.0",
+    "@whatwg-node/fetch": "0.9.17",
+    "csv-parse": "5.5.5",
+    "diary": "0.4.5",
+    "dotenv": "16.4.5",
     "pg-promise": "11.5.4"
   },
   "devDependencies": {
-    "@types/node": "20.11.6",
-    "tsup": "8.0.1",
-    "typescript": "5.3.3"
+    "@types/node": "20.11.25",
+    "tsup": "8.0.2",
+    "typescript": "5.4.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
