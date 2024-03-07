@@ -24,7 +24,7 @@
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --ignore-path .gitignore .",
     "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn --cwd packages/migrations db:init && yarn generate",
-    "mesh:artifacts-rename": "yarn ts-node ./helpers/mesh-artifacts-rename.mjs",
+    "mesh:artifacts-rename": "yarn node ./scripts/mesh-artifacts-rename.mjs",
     "month": "yarn --cwd packages/old-accounter month",
     "old-accounter:build": "yarn --cwd packages/old-accounter build",
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
