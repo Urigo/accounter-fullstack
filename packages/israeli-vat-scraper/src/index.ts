@@ -28,7 +28,7 @@ export const vatScraper = async (
     const reports = await homePageHandler(config);
 
     if (config.validate) {
-      const requireFile = createRequire(import.meta.url); // construct the require method
+      const requireFile = createRequire(__dirname); // construct the require method
       const schema = requireFile('./src/vatSchema.json'); // use the require method
       const validation = await validateSchema(schema, reports);
       config.logger.log(validation);

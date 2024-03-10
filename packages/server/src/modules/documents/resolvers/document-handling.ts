@@ -1,4 +1,4 @@
-import { GetExpenseDraft } from '@accounter-toolkit/green-invoice-graphql';
+import { GetExpenseDraft } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { Currency } from '@shared/enums';

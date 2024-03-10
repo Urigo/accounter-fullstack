@@ -46,14 +46,14 @@
     "mesh"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "ts-node ./index.ts",
-    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--loader ts-node/esm\" mesh build --dir ./src",
+    "build": "bob build",
+    "dev": "node --loader ts-node/esm ./src/index.ts",
+    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--loader ts-node/esm\" mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
     "prebuild": "yarn mesh:generate",
     "prepublish": "yarn build",
     "pretest": "exit 0",
     "start": "node ./dist",
-    "test": "ts-node ./dist/esm/dev-tests/e2e.js"
+    "test": "node --loader ts-node/esm ./src/dev-tests/e2e.ts"
   },
   "dependencies": {
     "@graphql-mesh/config": "0.98.6",
@@ -70,7 +70,8 @@
   "devDependencies": {
     "@graphql-mesh/cli": "0.88.7",
     "dotenv": "16.4.4",
-    "ts-node": "10.9.2"
+    "ts-node": "10.9.2",
+    "tsup": "8.0.2"
   },
   "publishConfig": {
     "directory": "dist",
@@ -79,7 +80,7 @@
   "bob": {
     "build": {
       "copy": [
-        "src/json-schemas",
+        "json-schemas",
         "src/mesh-artifacts/**/*.graphql"
       ]
     }

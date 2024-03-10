@@ -35,7 +35,12 @@
     "jsx": "preserve",
 
     "paths": {
-      "@accounter/modern-poalim-scraper": ["packages/modern-poalim-scraper/src/index"]
+      "@accounter/modern-poalim-scraper": ["packages/modern-poalim-scraper/src/index"],
+      "@accounter/green-invoice-graphql": ["packages/green-invoice-graphql/src/"],
+      "@accounter/hashavshevet-mesh": ["packages/hashavshevet-mesh/src/"],
+      "@accounter/israeli-vat-scraper": ["packages/israeli-vat-scraper/src/"],
+      "@accounter/payper-mesh": ["packages/payper-mesh/src/"],
+      "@accounter/pcn874-generator": ["packages/pcn874-generator/src/"]
     }
   },
   "exclude": ["**/node_modules", "**/dist"]

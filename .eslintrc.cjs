@@ -111,5 +111,6 @@ module.exports = {
     '**/__tests__/**',
     '.eslintrc.cjs',
     '.*rc.*js',
+    '.bob/',
   ],
 };

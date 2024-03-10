@@ -9,6 +9,7 @@
     "tsconfig.json"
   ],
   "scripts": {
+    "build": "exit 0",
     "db:create": "node tools/create-db.mjs",
     "db:init": "yarn db:create && yarn migration:run",
     "db:migrator": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",

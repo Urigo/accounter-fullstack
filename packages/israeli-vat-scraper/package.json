@@ -45,7 +45,7 @@
     "accounter"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "bob build",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

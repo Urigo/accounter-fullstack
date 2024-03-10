@@ -12,7 +12,7 @@
     "node": "21.3.0"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn poalim-scraper:build\"",
+    "build": "yarn workspaces run build",
     "client:build": "yarn --cwd packages/client build",
     "client:dev": "yarn --cwd packages/client dev",
     "codegen": "graphql-codegen",
@@ -30,7 +30,7 @@
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
     "poalim-scraper:build": "yarn --cwd packages/modern-poalim-scraper build",
     "pre-commit": "lint-staged",
-    "prebuild": "rimraf dist/ .bob/ && yarn lint --quiet && yarn prettier && yarn workspaces run prebuild && yarn mesh:artifacts-rename",
+    "prebuild": "rimraf packages/*/dist/ **/.bob/ && yarn lint --quiet && yarn prettier:fix",
     "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
     "prettier:check": "prettier --cache --check  .",
     "prettier:fix": "prettier --cache --write --list-different --ignore-unknown .",
@@ -59,7 +59,7 @@
     "@theguild/eslint-config": "0.11.4",
     "@theguild/prettier-config": "2.0.5",
     "@types/node": "20.11.25",
-    "bob-the-bundler": "7.0.1",
+    "bob-the-bundler": "^7.0.1",
     "concurrently": "8.2.2",
     "eslint": "8.57.0",
     "glob": "10.3.10",
@@ -72,9 +72,10 @@
     "vitest": "1.3.1"
   },
   "resolutions": {
-    "graphql": "16.8.1",
-    "@changesets/**/prettier": "2.8.8"
+    "@changesets/**/prettier": "2.8.8",
+    "graphql": "16.8.1"
   },
+  "bob": false,
   "lint-staged": {
     "*.--write": "prettier --write"
   }

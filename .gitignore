@@ -6,3 +6,6 @@ dist/
 .idea/
 schema.graphql
 docker/.*
+**/.mesh
+**/mesh-artifacts
+.bob/

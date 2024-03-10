@@ -45,7 +45,7 @@
     "accounter"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "bob build",
     "dev": "node --experimental-json-modules --loader ts-node/esm src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prebuild": "yarn lint",
