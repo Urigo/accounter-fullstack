@@ -7,7 +7,7 @@ dist/
 **/gql/
 .idea/
 schema.graphql
-**/docker/
+docker/
 
 /.husky/
 yarn.lock
