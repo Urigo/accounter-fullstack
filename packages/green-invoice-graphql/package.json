@@ -1,0 +1,92 @@
+{
+  "name": "@accounter/green-invoice-graphql",
+  "version": "0.6.0",
+  "type": "module",
+  "description": "Graphql proxy for Green Invoice API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
+    "repository": "packages/green-invoice-graphql"
+  },
+  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/green-invoice-graphql#readme",
+  "bugs": {
+    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.0.0 || >= 20"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "green invoice",
+    "greeninvoice",
+    "accountancy",
+    "accountant",
+    "accounter",
+    "graphql",
+    "mesh"
+  ],
+  "scripts": {
+    "build": "bob build",
+    "dev": "ts-node ./src/index.ts",
+    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--loader ts-node/esm\" mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
+    "prebuild": "yarn mesh:generate",
+    "prepublish": "yarn build",
+    "start": "node ./dist",
+    "test": "ts-node ./dist/esm/dev-tests/e2e.js"
+  },
+  "dependencies": {
+    "@graphql-mesh/config": "0.99.0",
+    "@graphql-mesh/cross-helpers": "0.4.1",
+    "@graphql-mesh/http": "0.98.0",
+    "@graphql-mesh/json-schema": "0.99.0",
+    "@graphql-mesh/runtime": "0.98.0",
+    "@graphql-mesh/store": "0.97.0",
+    "@graphql-mesh/types": "0.97.0",
+    "@graphql-mesh/utils": "0.97.0",
+    "graphql": "16.8.1",
+    "path": "0.12.7"
+  },
+  "devDependencies": {
+    "@graphql-mesh/cli": "0.89.0",
+    "@types/mime-types": "^2.1.1",
+    "dotenv": "16.4.5",
+    "mime-types": "2.1.35",
+    "ts-node": "10.9.2"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "bob": {
+    "build": {
+      "copy": [
+        "json-schemas",
+        "src/mesh-artifacts/**/*.graphql"
+      ]
+    }
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

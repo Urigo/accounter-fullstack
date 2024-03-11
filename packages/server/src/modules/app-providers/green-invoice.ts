@@ -1,5 +1,5 @@
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import { init, Sdk } from '@accounter-toolkit/green-invoice-graphql';
+import { init, Sdk } from '@accounter/green-invoice-graphql';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 

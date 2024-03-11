@@ -1,7 +1,7 @@
 import type {
   mutation_addExpense_oneOf_0_allOf_0_documentType,
   query_searchDocuments_items_items_payment_items_ref_items,
-} from '@accounter-toolkit/green-invoice-graphql';
+} from '@accounter/green-invoice-graphql';
 import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(

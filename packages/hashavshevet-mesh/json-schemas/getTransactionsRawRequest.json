@@ -1,0 +1,455 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": ["object", "null"],
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["p_name", "id", "type", "name", "defVal", "opName", "opOrigin"],
+        "oneof": [
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P0__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["0"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["creditorId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P1__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["500"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["creditorId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P2__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["1"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["debtorId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P3__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["501"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["debtorId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P4__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["2"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["float"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["shekelSum"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P5__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["502"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["float"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["shekelSum1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P8__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["3"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["date"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["valueDate"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P9__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["503"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["date"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["valueDate1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P10__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["4"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["date"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["dueDate"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P11__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["504"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["date"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["dueDate1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P12__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["5"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["id"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P13__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["505"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["id1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P14__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["6"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["batchId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P15__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["506"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["batchId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "datafile": {
+      "type": "string"
+    }
+  }
+}

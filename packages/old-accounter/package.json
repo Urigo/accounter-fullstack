@@ -4,9 +4,6 @@
   "type": "module",
   "license": "MIT",
   "private": true,
-  "engines": {
-    "node": "21.3.0"
-  },
   "scripts": {
     "build": "tsc",
     "deploy": "git push heroku master",

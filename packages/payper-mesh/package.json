@@ -1,0 +1,88 @@
+{
+  "name": "@accounter/payper-mesh",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Graphql proxy for Payper API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
+    "repository": "packages/payper-mesh"
+  },
+  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/payper-mesh#readme",
+  "bugs": {
+    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.0.0 || >= 20"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "payper",
+    "graphql",
+    "mesh",
+    "accountancy",
+    "accountant"
+  ],
+  "scripts": {
+    "build": "bob build",
+    "dev": "ts-node ./index.ts",
+    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--loader ts-node/esm\" mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
+    "prebuild": "yarn mesh:generate",
+    "prepublish": "yarn build",
+    "start": "node ./dist",
+    "test": "DEBUG=1 ts-node ./dist/esm/dev-tests/e2e.js"
+  },
+  "dependencies": {
+    "@graphql-mesh/config": "0.99.0",
+    "@graphql-mesh/cross-helpers": "0.4.1",
+    "@graphql-mesh/http": "0.98.0",
+    "@graphql-mesh/json-schema": "0.99.0",
+    "@graphql-mesh/runtime": "0.98.0",
+    "@graphql-mesh/store": "0.97.0",
+    "@graphql-mesh/transform-rename": "0.97.0",
+    "@graphql-mesh/types": "0.97.0",
+    "@graphql-mesh/utils": "0.97.0",
+    "graphql": "16.8.1",
+    "path": "0.12.7"
+  },
+  "devDependencies": {
+    "@graphql-mesh/cli": "0.89.0",
+    "dotenv": "16.4.5",
+    "ts-node": "10.9.2"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "bob": {
+    "build": {
+      "copy": [
+        "src/json-schemas"
+      ]
+    }
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

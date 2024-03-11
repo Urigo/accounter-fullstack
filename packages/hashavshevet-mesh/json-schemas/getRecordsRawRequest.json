@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": ["object", "null"],
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["p_name", "id", "type", "name", "defVal", "opName", "opOrigin"],
+        "oneof": [
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P0__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["0"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["id"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P1__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["500"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["id1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P2__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["1"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["transactionId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P3__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["501"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["transactionId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P4__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["2"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["accountId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P5__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["502"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["accountId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P6__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["3"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["counterAccountId"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P7__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["503"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["txt"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["counterAccountId1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P8__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["4"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["debitOrCreditNumber"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["from"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "p_name": {
+                "type": "string",
+                "enum": ["__MUSTACH_P9__"]
+              },
+              "id": {
+                "type": "string",
+                "enum": ["504"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["long"]
+              },
+              "name": {
+                "type": "string",
+                "enum": ["debitOrCreditNumber1"]
+              },
+              "defVal": {
+                "type": "string"
+              },
+              "opName": {
+                "type": "string",
+                "enum": ["מ..עד"]
+              },
+              "opOrigin": {
+                "type": "string",
+                "enum": ["to"]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "datafile": {
+      "type": "string"
+    }
+  }
+}

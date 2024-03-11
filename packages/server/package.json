@@ -4,9 +4,6 @@
   "type": "module",
   "description": "",
   "license": "MIT",
-  "engines": {
-    "node": "21.3.0"
-  },
   "main": "./src/index.mts",
   "scripts": {
     "build": "tsc && tsc-alias",
@@ -20,8 +17,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@accounter-toolkit/green-invoice-graphql": "0.6.0",
-    "@accounter-toolkit/pcn874-generator": "0.4.1",
+    "@accounter/green-invoice-graphql": "0.6.0",
+    "@accounter/pcn874-generator": "0.4.1",
     "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
@@ -35,7 +32,7 @@
     "dataloader": "2.2.2",
     "date-fns": "3.3.1",
     "dotenv": "16.4.5",
-    "dotenv-cli": "7.3.0",
+    "dotenv-cli": "7.4.1",
     "graphql": "16.8.1",
     "graphql-modules": "2.3.0",
     "graphql-yoga": "5.1.1",

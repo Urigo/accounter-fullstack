@@ -9,10 +9,10 @@
     ]
   },
   "engines": {
-    "node": "21.3.0"
+    "node": "21.7.1"
   },
   "scripts": {
-    "build": "concurrently \"yarn client:build\" \"yarn server:build\" \"yarn old-accounter:build\" \"yarn poalim-scraper:build\"",
+    "build": "yarn workspaces run build",
     "client:build": "yarn --cwd packages/client build",
     "client:dev": "yarn --cwd packages/client dev",
     "codegen": "graphql-codegen",
@@ -24,14 +24,17 @@
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --ignore-path .gitignore .",
     "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn --cwd packages/migrations db:init && yarn generate",
+    "mesh:artifacts-rename": "yarn node ./scripts/mesh-artifacts-rename.mjs",
     "month": "yarn --cwd packages/old-accounter month",
     "old-accounter:build": "yarn --cwd packages/old-accounter build",
     "old-accounterdev": "yarn --cwd packages/old-accounter dev",
     "poalim-scraper:build": "yarn --cwd packages/modern-poalim-scraper build",
     "pre-commit": "lint-staged",
+    "prebuild": "rimraf packages/*/dist/ **/.bob/",
     "precodegen": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
-    "prettier:check": "prettier --cache --check  .",
-    "prettier:fix": "prettier --cache --write --list-different --ignore-unknown .",
+    "prettier:check": "prettier --cache --check .",
+    "prettier:fix": "prettier --cache --write --list-different .",
+    "release": "yarn build && changeset publish",
     "scrape": "yarn --cwd old-accounter scrape",
     "server:build": "yarn --cwd packages/server build",
     "server:dev": "yarn --cwd packages/server dev",
@@ -43,8 +46,8 @@
     "graphql-scalars": "1.22.5"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.0",
-    "@changesets/cli": "^2.27.1",
+    "@changesets/changelog-github": "0.5.0",
+    "@changesets/cli": "2.27.1",
     "@graphql-codegen/cli": "5.0.2",
     "@graphql-codegen/client-preset": "4.2.4",
     "@graphql-codegen/graphql-modules-preset": "4.0.6",
@@ -56,9 +59,10 @@
     "@theguild/eslint-config": "0.11.4",
     "@theguild/prettier-config": "2.0.5",
     "@types/node": "20.11.25",
-    "bob-the-bundler": "7.0.1",
+    "bob-the-bundler": "^7.0.1",
     "concurrently": "8.2.2",
     "eslint": "8.57.0",
+    "glob": "10.3.10",
     "husky": "9.0.11",
     "lint-staged": "15.2.2",
     "prettier": "3.2.5",
@@ -69,5 +73,9 @@
   },
   "resolutions": {
     "graphql": "16.8.1"
+  },
+  "bob": false,
+  "lint-staged": {
+    "*.--write": "prettier --write"
   }
 }

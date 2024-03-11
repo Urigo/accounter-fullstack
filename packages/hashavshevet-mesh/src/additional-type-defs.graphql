@@ -1,0 +1,109 @@
+extend type Query {
+  getSortCodes: [SortCode!]!
+  getAccounts(input: getAccountsInput): [Account!]!
+  getRecords(input: getRecordsInput): [RecordType!]!
+  getTransactions(input: getTransactionsInput): [Transaction!]!
+  getBatch(input: getBatchInput): Batch
+  getBankPageRecords(input: getBankPageRecordsInput): [BankPageRecord!]!
+}
+
+extend type Mutation {
+  importAccounts(input: importAccountsInput): importAccountsResponse
+}
+
+extend type Transaction {
+  batch: Batch
+  records: [RecordType]
+  creditor: Account
+  debtor: Account
+}
+
+extend type Batch {
+  transactions: [Transaction]
+}
+
+extend type RecordType {
+  transaction: Transaction
+  batch: Batch
+  account: Account
+  counterAccount: Account
+}
+
+extend type BankPageRecord {
+  account: Account
+}
+
+extend type importTransactionsToBatchResponse {
+  batch: Batch
+}
+
+extend type SortCode {
+  accounts: [Account]
+}
+
+extend type Account {
+  sortCode: SortCode
+}
+
+input getAccountsInput {
+  idMin: String
+  idMax: String
+  sortCodeMin: Int
+  sortCodeMax: Int
+  nameMin: String
+  nameMax: String
+}
+
+input getRecordsInput {
+  idMin: Int
+  idMax: Int
+  transactionIdMin: Float
+  transactionIdMax: Float
+  accountIdMin: String
+  accountIdMax: String
+  ounterAccountIdMin: String
+  ounterAccountIdMax: String
+  debitOrCreditNumberMin: Float
+  debitOrCreditNumberMax: Float
+}
+
+input getTransactionsInput {
+  batchIdMin: Int
+  batchIdMax: Int
+  creditorIdMin: String
+  creditorIdMax: String
+  debtorIdMin: String
+  debtorIdMax: String
+  dueDateMin: String
+  dueDateMax: String
+  idMin: Int
+  idMax: Int
+  shekelSumMin: Float
+  shekelSumMax: Float
+  valueDateMin: String
+  valueDateMax: String
+}
+
+input getBatchInput {
+  idMin: Int
+  idMax: Int
+  statusMin: String
+  statusMax: String
+  initDateMin: String
+  initDateMax: String
+}
+
+input getBankPageRecordsInput {
+  idMin: Int
+  idMax: Int
+  bankPageIdMin: Int
+  bankPageIdMax: Int
+  dateMin: String
+  dateMax: String
+}
+
+input importAccountsInput {
+  "Allow inserting new records. If false only update is allowed"
+  insertnew: Boolean!
+  rows: [AccountImport_Input]!
+}
