@@ -17,8 +17,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@accounter/green-invoice-graphql": "0.6.0",
-    "@accounter/pcn874-generator": "0.4.1",
+    "@accounter/green-invoice-graphql": "^0.6.0",
+    "@accounter/pcn874-generator": "^0.4.1",
     "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
