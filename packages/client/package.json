@@ -18,7 +18,7 @@
     "@mantine/dropzone": "6.0.21",
     "@mantine/hooks": "6.0.21",
     "@mantine/notifications": "6.0.21",
-    "@tanstack/react-query": "5.25.0",
+    "@tanstack/react-query": "5.26.3",
     "@urql/exchange-auth": "2.1.6",
     "chart.js": "4.4.2",
     "clsx": "2.1.0",
