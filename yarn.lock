@@ -89,7 +89,7 @@
     json5 "^2.2.2"
     semver "^6.3.1"
 
-"@babel/core@^7.14.0", "@babel/core@^7.21.8", "@babel/core@^7.22.9", "@babel/core@^7.23.5":
+"@babel/core@^7.14.0", "@babel/core@^7.21.8", "@babel/core@^7.23.5":
   version "7.24.0"
   resolved "https://registry.yarnpkg.com/@babel/core/-/core-7.24.0.tgz#56cbda6b185ae9d9bed369816a8f4423c5f2ff1b"
   integrity sha512-fQfkg0Gjkza3nf0c7/w6Xf34BW4YvzNfACRLmmb7XRLa6XHdR+K9AlJlxneFfWYf6uhOzuzZVTjF/8KfndZANw==
@@ -2067,7 +2067,7 @@
     "@graphql-tools/utils" "^9.2.1"
     tslib "^2.4.0"
 
-"@graphql-tools/graphql-tag-pluck@8.0.1":
+"@graphql-tools/graphql-tag-pluck@8.0.1", "@graphql-tools/graphql-tag-pluck@^8.0.0":
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.0.1.tgz#480d804a0fd7576f5ee06460528f1ee2b426f50e"
   integrity sha512-4sfBJSoXxVB4rRCCp2GTFhAYsUJgAPSKxSV+E3Voc600mK52JO+KsHCCTnPgCeyJFMNR9l94J6+tqxVKmlqKvw==
@@ -2077,19 +2077,6 @@
     "@babel/traverse" "^7.16.8"
     "@babel/types" "^7.16.8"
     "@graphql-tools/utils" "^10.0.0"
-    tslib "^2.4.0"
-
-"@graphql-tools/graphql-tag-pluck@^8.0.0":
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.3.0.tgz#11bb8c627253137b39b34fb765cd6ebe506388b9"
-  integrity sha512-gNqukC+s7iHC7vQZmx1SEJQmLnOguBq+aqE2zV2+o1hxkExvKqyFli1SY/9gmukFIKpKutCIj+8yLOM+jARutw==
-  dependencies:
-    "@babel/core" "^7.22.9"
-    "@babel/parser" "^7.16.8"
-    "@babel/plugin-syntax-import-assertions" "^7.20.0"
-    "@babel/traverse" "^7.16.8"
-    "@babel/types" "^7.16.8"
-    "@graphql-tools/utils" "^10.0.13"
     tslib "^2.4.0"
 
 "@graphql-tools/import@6.7.18":
@@ -5110,10 +5097,10 @@ dataloader@^1.4.0:
   resolved "https://registry.yarnpkg.com/dataloader/-/dataloader-1.4.0.tgz#bca11d867f5d3f1b9ed9f737bd15970c65dff5c8"
   integrity sha512-68s5jYdlvasItOJnCuI2Q9s4q98g0pCyL3HrcKJu8KNugUl8ahgmZYg38ysLTgQjjXX3H8CJLkAvWrclWfcalw==
 
-date-fns@3.3.1:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.3.1.tgz#7581daca0892d139736697717a168afbb908cfed"
-  integrity sha512-y8e109LYGgoQDveiEBD3DYXKba1jWf5BA8YU1FL5Tvm0BTdEfy54WLCwnuYWZNnzzvALy/QQ4Hov+Q9RVRv+Zw==
+date-fns@3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.4.0.tgz#19ac3c19a39af64acb21c23587cb08504dcdc3de"
+  integrity sha512-Akz4R8J9MXBsOgF1QeWeCsbv6pntT5KCPjU0Q9prBxVmWJYPLhwAIsNg3b0QAdr0ttiozYLD3L/af7Ra0jqYXw==
 
 date-fns@^2.30.0:
   version "2.30.0"
