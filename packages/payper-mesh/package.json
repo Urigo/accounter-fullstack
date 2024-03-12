@@ -46,12 +46,12 @@
   ],
   "scripts": {
     "build": "bob build",
-    "dev": "ts-node ./index.ts",
+    "dev": "node --import ../../scripts/register-esm.js ./index.ts",
     "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
     "prebuild": "yarn mesh:generate",
     "prepublish": "yarn build",
     "start": "node ./dist",
-    "test": "DEBUG=1 ts-node ./dist/esm/dev-tests/e2e.js"
+    "test": "DEBUG=1 node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
     "@graphql-mesh/config": "0.99.0",
@@ -68,8 +68,7 @@
   },
   "devDependencies": {
     "@graphql-mesh/cli": "0.89.0",
-    "dotenv": "16.4.5",
-    "ts-node": "10.9.2"
+    "dotenv": "16.4.5"
   },
   "publishConfig": {
     "directory": "dist",
