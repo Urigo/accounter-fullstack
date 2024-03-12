@@ -46,7 +46,7 @@
   ],
   "scripts": {
     "build": "bob build",
-    "dev": "node --experimental-json-modules --loader ts-node/esm src/index.ts",
+    "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prebuild": "yarn lint",
     "prepublish": "yarn build",

@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "./src/index.mts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsup src/index.ts --format cjs",
     "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn --cwd ../.. codegen && yarn sqlgen",
@@ -45,7 +45,8 @@
     "@types/pg": "8.11.2",
     "nodemon": "3.1.0",
     "pino-pretty": "10.3.1",
-    "tsc-alias": "1.8.8"
+    "tsc-alias": "1.8.8",
+    "tsup": "8.0.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

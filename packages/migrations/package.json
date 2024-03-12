@@ -12,7 +12,7 @@
     "build": "exit 0",
     "db:create": "node tools/create-db.mjs",
     "db:init": "yarn db:create && yarn migration:run",
-    "db:migrator": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "db:migrator": "node --experimental-specifier-resolution=node --import ../../scripts/register-esm.js src/index.ts",
     "migration:run": "yarn db:migrator up"
   },
   "devDependencies": {
