@@ -12,4 +12,6 @@ const config = {
   language: 'postgresql',
   keywordCase: 'upper',
 };
+
+// eslint-disable-next-line import/no-default-export
 export default config;
