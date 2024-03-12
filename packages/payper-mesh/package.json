@@ -47,7 +47,7 @@
   "scripts": {
     "build": "bob build",
     "dev": "node --import ../../scripts/register-esm.js ./index.ts",
-    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
+    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--import ../../scripts/register-esm.js\" mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
     "prebuild": "yarn mesh:generate",
     "prepublish": "yarn build",
     "start": "node ./dist",
