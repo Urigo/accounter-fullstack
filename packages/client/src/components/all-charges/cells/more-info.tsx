@@ -41,6 +41,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
       case 'DividendCharge':
       case 'InternalTransferCharge':
       case 'SalaryCharge':
+      case 'MonthlyVatCharge':
         return false;
       default:
         return true;

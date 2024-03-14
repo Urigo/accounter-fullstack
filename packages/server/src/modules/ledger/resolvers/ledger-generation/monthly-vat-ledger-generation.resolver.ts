@@ -19,6 +19,7 @@ import type { LedgerProto, TimelessDateString } from '@shared/types';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
+  getFinancialAccountId,
   getLedgerBalanceInfo,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
@@ -72,25 +73,15 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       .get(TaxCategoriesProvider)
       .taxCategoryByIDsLoader.load(OUTPUT_VAT_TAX_CATEGORY_ID);
 
-    const balanceCancellationTaxCategoryPromise = injector
-      .get(TaxCategoriesProvider)
-      .taxCategoryByIDsLoader.load(BALANCE_CANCELLATION_TAX_CATEGORY_ID);
+    const [{ income, expenses }, transactions, inputsVatTaxCategory, outputsVatTaxCategory] =
+      await Promise.all([
+        vatRecordsPromise,
+        transactionsPromise,
+        inputsVatTaxCategoryPromise,
+        outputsVatTaxCategoryPromise,
+      ]);
 
-    const [
-      { income, expenses },
-      transactions,
-      inputsVatTaxCategory,
-      outputsVatTaxCategory,
-      balanceCancellationTaxCategory,
-    ] = await Promise.all([
-      vatRecordsPromise,
-      transactionsPromise,
-      inputsVatTaxCategoryPromise,
-      outputsVatTaxCategoryPromise,
-      balanceCancellationTaxCategoryPromise,
-    ]);
-
-    if (!inputsVatTaxCategory || !outputsVatTaxCategory || !balanceCancellationTaxCategory) {
+    if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
       throw new GraphQLError(`Missing some of the VAT tax categories`);
     }
 
@@ -138,13 +129,22 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
 
       const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
+
+      const financialAccountId = await getFinancialAccountId(
+        injector,
+        transaction,
+        DEFAULT_LOCAL_CURRENCY,
+      );
+
       const ledgerEntry: LedgerProto = {
         ...partialEntry,
         ...(partialEntry.isCreditorCounterparty
           ? {
               creditAccountID1: VAT_BUSINESS_ID,
+              debitAccountID1: financialAccountId,
             }
           : {
+              creditAccountID1: financialAccountId,
               debitAccountID1: VAT_BUSINESS_ID,
             }),
       };
@@ -178,6 +178,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       accountingLedgerMaterials.push({
         amount: roundedIncomeVatDiff * -1,
         taxCategoryId: outputsVatTaxCategory.id,
+        counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
       });
     }
 
@@ -186,6 +187,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       accountingLedgerMaterials.push({
         amount: roundedExpensesVatDiff,
         taxCategoryId: inputsVatTaxCategory.id,
+        counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
       });
     }
 
@@ -205,7 +207,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         localCurrencyCreditAmount1: Math.abs(amount),
         debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
         localCurrencyDebitAmount1: Math.abs(amount),
-        description: counterpartyId ? `VAT command ${vatDate}` : 'Balance cancellation',
+        description:
+          counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
+            ? 'Balance cancellation'
+            : `VAT command ${vatDate}`,
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         chargeId,

@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
@@ -269,4 +271,27 @@ export function ledgerProtoToRecordsConverter(
     };
     return adjustedRecord;
   });
+}
+
+export async function getFinancialAccountId(
+  injector: Injector,
+  transaction: ValidateTransaction,
+  currency: Currency,
+): Promise<string> {
+  const account = await injector
+    .get(FinancialAccountsProvider)
+    .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+  if (!account) {
+    throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+  }
+  const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+  const taxCategory = await injector
+    .get(TaxCategoriesProvider)
+    .taxCategoryByNamesLoader.load(taxCategoryName);
+
+  if (!taxCategory) {
+    throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+  }
+
+  return taxCategory.id;
 }
