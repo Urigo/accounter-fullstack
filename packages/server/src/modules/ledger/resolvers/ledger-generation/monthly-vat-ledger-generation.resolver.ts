@@ -19,7 +19,7 @@ import type { LedgerProto, TimelessDateString } from '@shared/types';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
-  getFinancialAccountId,
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
@@ -130,7 +130,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
       const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
 
-      const financialAccountId = await getFinancialAccountId(
+      const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
         injector,
         transaction,
         DEFAULT_LOCAL_CURRENCY,
@@ -141,10 +141,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         ...(partialEntry.isCreditorCounterparty
           ? {
               creditAccountID1: VAT_BUSINESS_ID,
-              debitAccountID1: financialAccountId,
+              debitAccountID1: financialAccountTaxCategoryId,
             }
           : {
-              creditAccountID1: financialAccountId,
+              creditAccountID1: financialAccountTaxCategoryId,
               debitAccountID1: VAT_BUSINESS_ID,
             }),
       };

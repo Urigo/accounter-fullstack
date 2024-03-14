@@ -1,8 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, FEE_TAX_CATEGORY_ID } from '@shared/constants';
@@ -20,8 +18,8 @@ import {
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
 import {
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  getTaxCategoryNameByAccountCurrency,
   isTransactionsOppositeSign,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
@@ -80,19 +78,11 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         amount = exchangeRate * amount;
       }
 
-      const account = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-      if (!account) {
-        throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-      }
-      const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-      const taxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(taxCategoryName);
-      if (!taxCategory) {
-        throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-      }
+      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+        injector,
+        transaction,
+        currency,
+      );
 
       const isCreditorCounterparty = amount > 0;
 
@@ -103,10 +93,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         currency,
         ...(isCreditorCounterparty
           ? {
-              debitAccountID1: taxCategory.id,
+              debitAccountID1: accountTaxCategoryId,
             }
           : {
-              creditAccountID1: taxCategory.id,
+              creditAccountID1: accountTaxCategoryId,
             }),
         creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyCreditAmount1: Math.abs(amount),
@@ -161,29 +151,25 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       const isCreditorCounterparty = amount > 0;
 
       if (isSupplementalFee) {
-        const account = await injector
-          .get(FinancialAccountsProvider)
-          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-        if (!account) {
-          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-        }
-        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-        const businessTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(taxCategoryName);
-        if (!businessTaxCategory) {
-          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-        }
+        const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+          injector,
+          transaction,
+          currency,
+        );
 
         feeFinancialAccountLedgerEntries.push({
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : businessTaxCategory.id,
+          creditAccountID1: isCreditorCounterparty
+            ? FEE_TAX_CATEGORY_ID
+            : financialAccountTaxCategoryId,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? businessTaxCategory.id : FEE_TAX_CATEGORY_ID,
+          debitAccountID1: isCreditorCounterparty
+            ? financialAccountTaxCategoryId
+            : FEE_TAX_CATEGORY_ID,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,

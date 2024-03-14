@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
@@ -25,8 +24,8 @@ import {
 import { generateEntriesFromSalaryRecords } from '../../helpers/salary-charge-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  getTaxCategoryNameByAccountCurrency,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   ValidateTransaction,
@@ -159,25 +158,16 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
       const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
 
-      const account = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-      if (!account) {
-        throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-      }
-      const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, transaction.currency);
-      const taxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(taxCategoryName);
-      if (!taxCategory) {
-        throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-      }
+      const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+        injector,
+        transaction,
+      );
 
       if (transaction.business_id && SALARY_BATCHED_BUSINESSES.includes(transaction.business_id)) {
         batchedTransactionEntriesMaterials.push({
           transaction,
           partialEntry,
-          taxCategoryId: taxCategory.id,
+          taxCategoryId: financialAccountTaxCategoryId,
         });
         return;
       }
@@ -187,10 +177,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         ...(partialEntry.isCreditorCounterparty
           ? {
               creditAccountID1: transaction.business_id,
-              debitAccountID1: taxCategory.id,
+              debitAccountID1: financialAccountTaxCategoryId,
             }
           : {
-              creditAccountID1: taxCategory.id,
+              creditAccountID1: financialAccountTaxCategoryId,
               debitAccountID1: transaction.business_id,
             }),
       };

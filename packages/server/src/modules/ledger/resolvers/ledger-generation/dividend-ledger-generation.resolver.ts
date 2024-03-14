@@ -1,9 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import type { IGetAllTaxCategoriesResult } from '@modules/financial-entities/types';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
@@ -18,8 +15,8 @@ import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.
 import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  getTaxCategoryNameByAccountCurrency,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
@@ -60,23 +57,14 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       }
 
       // get tax category
-      const account = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-      if (!account) {
-        throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-      }
-      const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, transaction.currency);
-      const taxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(taxCategoryName);
-      if (!taxCategory) {
-        throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-      }
+      const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+        injector,
+        transaction,
+      );
 
       // set main account for dividend
-      mainAccountId ||= taxCategory.id;
-      if (mainAccountId !== taxCategory.id) {
+      mainAccountId ||= financialAccountTaxCategoryId;
+      if (mainAccountId !== financialAccountTaxCategoryId) {
         throw new GraphQLError(`Tax category is not consistent`);
       }
 
@@ -85,9 +73,9 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         ...partialEntry,
         creditAccountID1: partialEntry.isCreditorCounterparty
           ? transaction.business_id
-          : taxCategory.id,
+          : financialAccountTaxCategoryId,
         debitAccountID1: partialEntry.isCreditorCounterparty
-          ? taxCategory.id
+          ? financialAccountTaxCategoryId
           : transaction.business_id,
       };
 
@@ -188,21 +176,9 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       }
 
       // generate core ledger entries
-      let foreignAccountTaxCategory: IGetAllTaxCategoriesResult | undefined = undefined;
+      let foreignAccountTaxCategoryId: string | undefined = undefined;
       if (isForeignCurrency) {
-        const account = await injector
-          .get(FinancialAccountsProvider)
-          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-        if (!account) {
-          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-        }
-        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, transaction.currency);
-        foreignAccountTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(taxCategoryName);
-        if (!foreignAccountTaxCategory) {
-          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-        }
+        foreignAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
         const coreLedgerEntry: LedgerProto = {
           id: dividendRecord.id,
@@ -228,7 +204,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         const conversionEntry1: LedgerProto = {
           ...partialEntry,
           isCreditorCounterparty: false,
-          creditAccountID1: foreignAccountTaxCategory.id,
+          creditAccountID1: foreignAccountTaxCategoryId,
           debitAccountID1: transaction.business_id,
         };
 

@@ -273,18 +273,31 @@ export function ledgerProtoToRecordsConverter(
   });
 }
 
-export async function getFinancialAccountId(
+export async function getFinancialAccountTaxCategoryId(
   injector: Injector,
-  transaction: ValidateTransaction,
-  currency: Currency,
+  transaction: IGetTransactionsByChargeIdsResult,
+  currency?: Currency,
+  useSourceReference?: boolean,
 ): Promise<string> {
-  const account = await injector
-    .get(FinancialAccountsProvider)
-    .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
+  if (useSourceReference && !transaction.source_reference) {
+    throw new GraphQLError(
+      `Transaction ID="${transaction.id}" is missing source reference, which is required for fetching the financial account`,
+    );
+  }
+  const account = await (useSourceReference
+    ? injector
+        .get(FinancialAccountsProvider)
+        .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference!)
+    : injector
+        .get(FinancialAccountsProvider)
+        .getFinancialAccountByAccountIDLoader.load(transaction.account_id));
   if (!account) {
     throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
   }
-  const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
+  const taxCategoryName = getTaxCategoryNameByAccountCurrency(
+    account,
+    currency || (transaction.currency as Currency),
+  );
   const taxCategory = await injector
     .get(TaxCategoriesProvider)
     .taxCategoryByNamesLoader.load(taxCategoryName);
