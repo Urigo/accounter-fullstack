@@ -1,8 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
   DEFAULT_LOCAL_CURRENCY,
@@ -12,7 +10,7 @@ import {
 } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import {
-  getTaxCategoryNameByAccountCurrency,
+  getFinancialAccountTaxCategoryId,
   validateTransactionBasicVariables,
 } from './utils.helper.js';
 
@@ -108,21 +106,7 @@ export async function getEntriesFromFeeTransaction(
   };
 
   if (isSupplementalFee) {
-    const account = await injector
-      .get(FinancialAccountsProvider)
-      .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-    if (!account) {
-      throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-    }
-    const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-    const businessTaxCategory = await injector
-      .get(TaxCategoriesProvider)
-      .taxCategoryByNamesLoader.load(taxCategoryName);
-    if (!businessTaxCategory) {
-      throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-    }
-
-    mainAccount = businessTaxCategory.id;
+    mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction, currency);
   } else {
     const mainBusiness = charge.business_id ?? undefined;
 

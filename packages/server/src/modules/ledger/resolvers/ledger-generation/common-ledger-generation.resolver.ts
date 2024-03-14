@@ -3,7 +3,6 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
@@ -25,8 +24,8 @@ import {
 } from '../../helpers/fee-transactions.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  getTaxCategoryNameByAccountCurrency,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
@@ -270,22 +269,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           charge.business_id &&
           INTERNAL_WALLETS_IDS.includes(charge.business_id)
         ) {
-          const account = await injector
-            .get(FinancialAccountsProvider)
-            .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
-          if (!account) {
-            throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-          }
-          const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-          const taxCategory = await injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByNamesLoader.load(taxCategoryName);
-
-          if (!taxCategory) {
-            throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-          }
-
-          mainAccountId = taxCategory.id;
+          mainAccountId = await getFinancialAccountTaxCategoryId(
+            injector,
+            transaction,
+            currency,
+            true,
+          );
         }
 
         let amount = Number(transaction.amount);
@@ -302,19 +291,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           amount = exchangeRate * amount;
         }
 
-        const account = await injector
-          .get(FinancialAccountsProvider)
-          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-        if (!account) {
-          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-        }
-        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-        const taxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(taxCategoryName);
-        if (!taxCategory) {
-          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-        }
+        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+          injector,
+          transaction,
+          currency,
+        );
 
         const isCreditorCounterparty = amount > 0;
 
@@ -323,10 +304,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           invoiceDate: transaction.event_date,
           valueDate,
           currency,
-          creditAccountID1: isCreditorCounterparty ? mainAccountId : taxCategory.id,
+          creditAccountID1: isCreditorCounterparty ? mainAccountId : accountTaxCategoryId,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? taxCategory.id : mainAccountId,
+          debitAccountID1: isCreditorCounterparty ? accountTaxCategoryId : mainAccountId,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,

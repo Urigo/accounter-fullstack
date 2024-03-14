@@ -3,8 +3,6 @@ import { Injector } from 'graphql-modules';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, FEE_TAX_CATEGORY_ID } from '@shared/constants';
@@ -22,8 +20,8 @@ import {
 } from '../../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
+  getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  getTaxCategoryNameByAccountCurrency,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
@@ -76,19 +74,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
 
       // get tax category
-      const account = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-      if (!account) {
-        throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-      }
-      const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, transaction.currency);
-      const taxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByNamesLoader.load(taxCategoryName);
-      if (!taxCategory) {
-        throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-      }
+      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
       // preparations for core ledger entries
       let exchangeRate: number | undefined = undefined;
@@ -108,9 +94,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         ...partialEntry,
         creditAccountID1: partialEntry.isCreditorCounterparty
           ? transaction.business_id
-          : taxCategory.id,
+          : accountTaxCategoryId,
         debitAccountID1: partialEntry.isCreditorCounterparty
-          ? taxCategory.id
+          ? accountTaxCategoryId
           : transaction.business_id,
       };
 
@@ -168,21 +154,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       };
 
       if (isSupplementalFee) {
-        const account = await injector
-          .get(FinancialAccountsProvider)
-          .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-        if (!account) {
-          throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
-        }
-        const taxCategoryName = getTaxCategoryNameByAccountCurrency(account, currency);
-        const businessTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByNamesLoader.load(taxCategoryName);
-        if (!businessTaxCategory) {
-          throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
-        }
-
-        mainAccount = businessTaxCategory.id;
+        mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction, currency);
       } else {
         const mainBusiness = charge.business_id ?? undefined;
 
