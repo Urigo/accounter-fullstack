@@ -22,7 +22,7 @@
     "@urql/exchange-auth": "2.1.6",
     "chart.js": "4.4.2",
     "clsx": "2.1.0",
-    "date-fns": "3.4.0",
+    "date-fns": "3.5.0",
     "dayjs": "1.11.10",
     "decimal.js": "10.4.3",
     "deep-equal": "2.2.3",
