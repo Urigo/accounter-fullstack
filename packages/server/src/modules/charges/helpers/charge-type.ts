@@ -1,4 +1,9 @@
-import { DIVIDEND_BUSINESS_IDS, INTERNAL_WALLETS_IDS, VAT_BUSINESS_ID } from '@shared/constants';
+import {
+  BANK_DEPOSIT_TAX_CATEGORY_ID,
+  DIVIDEND_BUSINESS_IDS,
+  INTERNAL_WALLETS_IDS,
+  VAT_BUSINESS_ID,
+} from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
 
@@ -13,6 +18,13 @@ export function getChargeType(charge: IGetChargesByIdsResult) {
 
   if (charge.business_trip_id) {
     return ChargeTypeEnum.BusinessTrip;
+  }
+
+  if (
+    charge.business_id === BANK_DEPOSIT_TAX_CATEGORY_ID ||
+    charge.business_array?.includes(BANK_DEPOSIT_TAX_CATEGORY_ID)
+  ) {
+    return ChargeTypeEnum.BankDeposit;
   }
 
   if (

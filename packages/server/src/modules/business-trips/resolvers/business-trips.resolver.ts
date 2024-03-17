@@ -166,4 +166,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   MonthlyVatCharge: {
     ...commonChargeFields,
   },
+  BankDepositCharge: {
+    ...commonChargeFields,
+  },
 };

@@ -53,6 +53,10 @@ export default gql`
     counterparty: FinancialEntity
   }
 
+  extend type BankDepositCharge {
+    counterparty: FinancialEntity
+  }
+
   extend input UpdateChargeInput {
     counterpartyId: UUID
     ownerId: UUID

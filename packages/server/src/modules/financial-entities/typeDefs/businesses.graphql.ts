@@ -97,4 +97,8 @@ export default gql`
   extend type MonthlyVatCharge {
     owner: Business!
   }
+
+  extend type BankDepositCharge {
+    owner: Business!
+  }
 `;

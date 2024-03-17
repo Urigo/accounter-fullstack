@@ -167,6 +167,23 @@ export default gql`
     yearOfRelevance: String
   }
 
+  " charge of bank deposits "
+  type BankDepositCharge implements Charge {
+    id: UUID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+    yearOfRelevance: String
+  }
+
   " input variables for charge filtering "
   input ChargeFilter {
     " Include only charges with main date occurred after this date "

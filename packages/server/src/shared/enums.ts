@@ -46,4 +46,5 @@ export enum ChargeTypeEnum {
   Dividend = 'DividendCharge',
   MonthlyVat = 'MonthlyVatCharge',
   Common = 'CommonCharge',
+  BankDeposit = 'BankDepositCharge',
 }

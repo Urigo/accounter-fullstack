@@ -35,6 +35,10 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
+  extend type BankDepositCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
   " represent charge suggestions for missing info "
   type ChargeSuggestions {
     description: String
