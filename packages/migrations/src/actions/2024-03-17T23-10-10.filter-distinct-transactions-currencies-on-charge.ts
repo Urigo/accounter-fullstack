@@ -12,7 +12,7 @@ export default {
       transactions_count, invalid_transactions, documents_min_date, documents_max_date, documents_event_amount,
       documents_vat_amount, documents_currency, invoices_count, receipts_count, documents_count,
       invalid_documents, business_array, business_id, can_settle_with_receipt, tags, business_trip_id,
-      ledger_count, ledger_financial_entities)
+      ledger_count, ledger_financial_entities, year_of_relevance)
     as
     SELECT c.id,
           c.owner_id,
@@ -54,7 +54,8 @@ export default {
           tags_table.tags_array                                                                      AS tags,
           btc.business_trip_id,
           l.ledger_count,
-          l.ledger_financial_entities
+          l.ledger_financial_entities,
+          c.year_of_relevance
     FROM accounter_schema.charges c
             LEFT JOIN (SELECT extended_transactions.charge_id,
                               min(extended_transactions.event_date)                                AS min_event_date,
