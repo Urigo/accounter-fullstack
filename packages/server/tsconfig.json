@@ -14,8 +14,9 @@
       "@shared/tokens": ["./shared/tokens.js"],
       "@shared/constants": ["./shared/constants.js"],
       "@shared/helpers": ["./shared/helpers/index.js"],
-      "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/"],
-      "@accounter/pcn874-generator": ["../../pcn874-generator/src/"]
+      "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/index"],
+      "@accounter/pcn874-generator": ["../../pcn874-generator/src/index"],
+      "@accounter/pcn874-generator/types": ["../../pcn874-generator/src/types"]
     }
   },
   "exclude": ["**/__generated__"],
