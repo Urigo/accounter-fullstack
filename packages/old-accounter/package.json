@@ -13,7 +13,7 @@
     "month": "node dist/taxMonthlyReport/taxesForMonth.js",
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",
     "prettier:check": "prettier --ignore-path .gitignore --check .",
-    "scrape": "node dist/scrape.js",
+    "scrape": "node dist/old-accounter/src/scrape.js",
     "start": "node dist/old-accounter/src/index.js"
   },
   "dependencies": {
