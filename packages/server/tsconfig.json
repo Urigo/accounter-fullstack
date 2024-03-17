@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "src",
     "outDir": "dist",
     "baseUrl": "./src",
     "noUnusedLocals": false,
@@ -20,5 +19,5 @@
     }
   },
   "exclude": ["**/__generated__"],
-  "include": ["src"]
+  "include": ["src", "../green-invoice-graphql", "../pcn874-generator"]
 }
