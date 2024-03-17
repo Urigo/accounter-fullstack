@@ -2,23 +2,6 @@ import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { EXPENSES_TO_PAY_TAX_CATEGORY, INCOME_TO_COLLECT_TAX_CATEGORY } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 
-function getMinMaxDates(entries: LedgerProto[]): [Date, Date] {
-  let minDate = entries[0].invoiceDate.getTime();
-  let maxDate = entries[0].invoiceDate.getTime();
-
-  entries.map(entry => {
-    if (entry.invoiceDate.getTime() < minDate) {
-      minDate = entry.invoiceDate.getTime();
-    }
-
-    if (entry.invoiceDate.getTime() > maxDate) {
-      maxDate = entry.invoiceDate.getTime();
-    }
-  });
-
-  return [new Date(minDate), new Date(maxDate)];
-}
-
 export function handleCrossYearLedgerEntries(
   charge: IGetChargesByIdsResult,
   accountingLedgerEntries: LedgerProto[],
