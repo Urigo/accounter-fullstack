@@ -155,6 +155,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   DividendCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
+  BankDepositCharge: commonChargeFields,
   ConversionTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.is_conversion ?? false,
     ...commonTransactionFields,

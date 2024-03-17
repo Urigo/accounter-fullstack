@@ -158,4 +158,5 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   DividendCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
+  BankDepositCharge: commonChargeFields,
 };

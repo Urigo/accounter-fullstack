@@ -46,6 +46,10 @@ export default gql`
     transactions: [Transaction!]!
   }
 
+  extend type BankDepositCharge {
+    transactions: [Transaction!]!
+  }
+
   " Represent a general transaction object "
   interface Transaction {
     id: UUID!

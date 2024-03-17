@@ -3,6 +3,7 @@ import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
+import { generateLedgerRecordsForBankDeposit } from '../resolvers/ledger-generation/bank-deposit-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBusinessTrip } from '../resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
 import { generateLedgerRecordsForCommonCharge } from '../resolvers/ledger-generation/common-ledger-generation.resolver.js';
 import { generateLedgerRecordsForConversion } from '../resolvers/ledger-generation/conversion-ledger-generation.resolver.js';
@@ -28,6 +29,8 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
       return generateLedgerRecordsForBusinessTrip;
     case 'MonthlyVatCharge':
       return generateLedgerRecordsForMonthlyVat;
+    case 'BankDepositCharge':
+      return generateLedgerRecordsForBankDeposit;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
@@ -80,6 +83,8 @@ export async function ledgerUnbalancedBusinessesByCharge(
     }
     case 'MonthlyVatCharge':
       return undefined;
+    case 'BankDepositCharge':
+      throw new Error('BankDepositCharge is not supported yet');
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }

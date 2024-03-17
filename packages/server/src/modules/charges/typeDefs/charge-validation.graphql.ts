@@ -35,6 +35,10 @@ export default gql`
     validationData: ValidationData
   }
 
+  extend type BankDepositCharge {
+    validationData: ValidationData
+  }
+
   " represent a validation data for missing info "
   type ValidationData {
     isValid: Boolean!

@@ -279,6 +279,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   MonthlyVatCharge: {
     ...commonChargeLedgerResolver,
   },
+  BankDepositCharge: {
+    ...commonChargeLedgerResolver,
+  },
   GeneratedLedgerRecords: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';

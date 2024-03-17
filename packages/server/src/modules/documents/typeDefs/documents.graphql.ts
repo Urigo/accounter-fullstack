@@ -232,6 +232,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type BankDepositCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type LtdFinancialEntity {
     documents: [Document]
   }

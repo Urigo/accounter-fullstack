@@ -62,6 +62,8 @@ export const ETHERSCAN_BUSINESS_ID = 'f2ae3379-b970-45c9-a998-aced20c25b31';
 export const POALIM_BUSINESS_ID = '8fa16264-de32-4592-bffb-64a1914318ad';
 export const ISRACARD_BUSINESS_ID = '96dba127-90f4-4407-ae89-5a53afa42ca3';
 
+export const BANK_DEPOSIT_BUSINESS_ID = '1dedde76-d705-4903-8e40-cfc25bc6e321';
+
 export const SWIFT_BUSINESS_ID = 'a62a631b-54b2-4bc1-bd61-6672c3c5d45a';
 
 export const INTERNAL_WALLETS_IDS = [
