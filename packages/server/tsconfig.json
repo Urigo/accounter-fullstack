@@ -14,7 +14,8 @@
       "@shared/tokens": ["./shared/tokens.js"],
       "@shared/constants": ["./shared/constants.js"],
       "@shared/helpers": ["./shared/helpers/index.js"],
-      "*": ["./shared/types/*.d.ts"]
+      "@accounter/green-invoice-graphql": ["../green-invoice-graphql/src/"],
+      "@accounter/pcn874-generator": ["../pcn874-generator/src/"]
     }
   },
   "exclude": ["**/__generated__"],
