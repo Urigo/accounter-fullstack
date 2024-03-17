@@ -208,19 +208,12 @@ export async function getLedgerBalanceInfo(
     if (Math.abs(amount) < 0.005) {
       continue;
     }
-    const isBusiness = financialEntities?.some(
-      financialEntity => financialEntity.id === entityId && financialEntity.type === 'business',
-    );
+    const isBusiness =
+      financialEntities?.some(
+        financialEntity => financialEntity.id === entityId && financialEntity.type === 'business',
+      ) ?? true;
 
-    const isBusinessEntity =
-      isBusiness &&
-      (financialEntities
-        ? financialEntities.some(
-            financialEntity =>
-              financialEntity.id === entityId && financialEntity.type === 'business',
-          )
-        : true);
-    if (isBusinessEntity && !allowedUnbalancedBusinesses.has(entityId)) {
+    if (isBusiness && !allowedUnbalancedBusinesses.has(entityId)) {
       isBalanced = false;
     }
     unbalancedEntities.push({
