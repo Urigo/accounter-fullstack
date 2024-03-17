@@ -1,8 +1,11 @@
 import { format } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
-import type { Header, Transaction } from '@accounter/pcn874-generator/types';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
 import type { RawVatReportRecord } from './vat-report.helper';
+
+type GeneratorParameters = Parameters<typeof pcnGenerator>;
+type Header = GeneratorParameters[0];
+type Transaction = GeneratorParameters[1][number];
 
 export type ExtendedPCNTransaction = Omit<Transaction, 'totalVat'> &
   Required<Pick<Transaction, 'totalVat'>> & { isProperty: boolean };
