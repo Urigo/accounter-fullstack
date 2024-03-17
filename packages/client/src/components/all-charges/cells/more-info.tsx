@@ -94,7 +94,8 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
                 </Indicator>
               ),
               style:
-                metadata?.documentsCount || !shouldHaveDocuments
+                !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
+                !shouldHaveDocuments
                   ? {}
                   : { backgroundColor: 'rgb(236, 207, 57)' },
             },
