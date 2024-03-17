@@ -1,5 +1,5 @@
 import {
-  BANK_DEPOSIT_TAX_CATEGORY_ID,
+  BANK_DEPOSIT_BUSINESS_ID,
   DIVIDEND_BUSINESS_IDS,
   INTERNAL_WALLETS_IDS,
   VAT_BUSINESS_ID,
@@ -21,8 +21,8 @@ export function getChargeType(charge: IGetChargesByIdsResult) {
   }
 
   if (
-    charge.business_id === BANK_DEPOSIT_TAX_CATEGORY_ID ||
-    charge.business_array?.includes(BANK_DEPOSIT_TAX_CATEGORY_ID)
+    charge.business_id === BANK_DEPOSIT_BUSINESS_ID ||
+    charge.business_array?.includes(BANK_DEPOSIT_BUSINESS_ID)
   ) {
     return ChargeTypeEnum.BankDeposit;
   }
