@@ -45,7 +45,7 @@ export default gql`
     " metadata about the charge "
     metadata: ChargeMetadata
     " the tax year in which the action took place "
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " common charge "
@@ -62,7 +62,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge with conversion transactions "
@@ -79,7 +79,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge with conversion transactions "
@@ -96,7 +96,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge of internal transfer "
@@ -113,7 +113,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge of dividends "
@@ -130,7 +130,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge of dividends "
@@ -147,7 +147,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge of monthly VAT payment "
@@ -164,7 +164,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " charge of bank deposits "
@@ -181,7 +181,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearOfRelevance: String
+    yearsOfRelevance: [String]
   }
 
   " input variables for charge filtering "
@@ -252,7 +252,7 @@ export default gql`
     userDescription: String
     defaultTaxCategoryID: UUID
     businessTripID: UUID
-    yearOfRelevance: TimelessDate
+    yearsOfRelevance: [TimelessDate]
   }
 
   " result type for updateCharge "

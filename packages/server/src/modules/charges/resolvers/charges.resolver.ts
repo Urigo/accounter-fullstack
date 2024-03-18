@@ -99,7 +99,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
-        yearOfRelevance: fields.yearOfRelevance,
+        yearsOfRelevance: fields.yearsOfRelevance as IUpdateChargeParams['yearsOfRelevance'],
         chargeId,
       };
       try {

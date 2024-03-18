@@ -22,10 +22,12 @@ type Props = {
 };
 
 export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElement => {
-  const { yearOfRelevance: originalYearOfRelevance, ...charge } = originalCharge;
+  const { yearsOfRelevance: originalYearsOfRelevance, ...charge } = originalCharge;
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
-  const [yearOfRelevance, setYearOfRelevance] = useState<Date | null>(
-    originalYearOfRelevance ? new Date(originalYearOfRelevance) : null,
+  const [yearsOfRelevance, setYearsOfRelevance] = useState<Date[] | undefined>(
+    originalYearsOfRelevance
+      ? originalYearsOfRelevance.map(date => new Date(date as string))
+      : undefined,
   );
   const [
     {
@@ -157,12 +159,16 @@ export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElem
     }
   }, [businessTripsData, setBusinessTrips]);
 
-  function onSelectYear(date: Date): void {
-    setYearOfRelevance(date);
-    setValue('yearOfRelevance', format(date, 'yyyy-MM-dd') as TimelessDateString, {
-      shouldDirty: true,
-      shouldTouch: true,
-    });
+  function onSelectYears(dates: Date[]): void {
+    setYearsOfRelevance(dates);
+    setValue(
+      'yearsOfRelevance',
+      dates.map(date => format(date, 'yyyy-MM-dd') as TimelessDateString),
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      },
+    );
   }
 
   return (
@@ -263,10 +269,11 @@ export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElem
             )}
           />
           <YearPickerInput
-            label="Year of relevance"
+            label="Years of relevance"
+            type="multiple"
             // placeholder="Pick date"
-            value={yearOfRelevance}
-            onChange={onSelectYear}
+            value={yearsOfRelevance}
+            onChange={onSelectYears}
           />
         </SimpleGrid>
       </div>
