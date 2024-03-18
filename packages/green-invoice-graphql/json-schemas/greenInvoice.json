@@ -1312,7 +1312,6 @@
     "GetExpenseDraft": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["description", "result"],
       "properties": {
         "id": {
           "type": "string",
