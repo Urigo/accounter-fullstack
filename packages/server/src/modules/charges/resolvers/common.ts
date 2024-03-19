@@ -48,8 +48,10 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     isConversion: DbCharge.is_conversion ?? false,
     isSalary: DbCharge.is_salary ?? false,
   }),
-  yearOfRelevance: DbCharge =>
-    DbCharge.year_of_relevance ? format(DbCharge.year_of_relevance, 'yyyy-MM-dd') : null,
+  yearsOfRelevance: DbCharge =>
+    DbCharge.years_of_relevance
+      ? DbCharge.years_of_relevance.map(date => format(date, 'yyyy-MM-dd'))
+      : null,
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
