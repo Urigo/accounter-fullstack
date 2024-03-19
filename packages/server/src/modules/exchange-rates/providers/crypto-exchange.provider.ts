@@ -2,11 +2,11 @@ import DataLoader from 'dataloader';
 import { format, subHours } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
+import { CoinMarketCapProvider } from '@modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
-import { fetch as rawFetch } from '@whatwg-node/fetch';
 import {
   IGetCryptoCurrenciesBySymbolQuery,
   IGetCryptoCurrenciesBySymbolResult,
@@ -42,7 +42,10 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
 export class CryptoExchangeProvider {
   fiatCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
 
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private coinMarketCap: CoinMarketCapProvider,
+  ) {}
 
   public async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
     return getRateByCurrencyAndDate.run({ currency, date }, this.dbProvider);
@@ -110,19 +113,10 @@ export class CryptoExchangeProvider {
     const from = Math.floor(fromDate.getTime() / 1000);
     const to = Math.floor(date.getTime() / 1000);
 
-    // Fetch rate from CoinGecko
-    const url = new URL(
-      `https://api.coinmarketcap.com/data-api/v3/cryptocurrency/detail/chart?id=${coinmarketcapId}&range=${from}~${to}`,
-    );
-
-    const res = await rawFetch(url);
-
-    const rateData = await res?.json();
-    const ratesObject = rateData?.data?.points;
-    if (!ratesObject || Object.keys(ratesObject).length === 0) {
-      console.error(url.toString());
-      throw new GraphQLError(`Error retrieving rate of ${currencySymbol} from CoinMarketCap`);
-    }
+    const ratesObject = await this.coinMarketCap.getExchangeRates(coinmarketcapId, {
+      fromTimeStamp: from,
+      toTimeStamp: to,
+    });
 
     let timestamp: number | undefined = undefined;
     let rate: number | undefined = undefined;
