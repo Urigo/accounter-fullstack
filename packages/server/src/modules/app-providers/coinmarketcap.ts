@@ -2,7 +2,6 @@ import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
-import { fetch } from '@whatwg-node/fetch';
 
 @Injectable({
   scope: Scope.Singleton,
