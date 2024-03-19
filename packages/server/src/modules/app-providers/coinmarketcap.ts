@@ -21,22 +21,30 @@ export class CoinMarketCapProvider {
     );
 
     try {
+      console.debug(`TEMP Fetching data from CoinMarketCap for ID="${coinmarketcapId}"`);
       const res = await fetch(url).catch(err => {
         console.error(err);
         throw new Error(`failed fetching data for ID="${coinmarketcapId}"`);
       });
 
+      console.debug(`TEMP Got res: ${res}`);
+
       const rateData = await res.json();
       const ratesObject: Record<string, { c?: Array<number> } | undefined> = rateData?.data?.points;
+
+      console.debug(`TEMP Got JSON: ${rateData}`);
+
       if (!ratesObject || Object.keys(ratesObject).length === 0) {
         console.error(
           `Unexpected data received from URL: ${url.toString()}\nData: ${JSON.stringify(rateData)}`,
         );
-        throw new GraphQLError(`Unexpected response`);
+        throw new Error(`Unexpected response`);
       }
+
+      console.debug(`TEMP completed successfully: ${ratesObject}`);
       return ratesObject;
     } catch (e) {
-      throw new Error(`CoinMarketCap Error: ${(e as Error).message}`);
+      throw new GraphQLError(`CoinMarketCap Error: ${(e as Error).message}`);
     }
   }
 }
