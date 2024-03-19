@@ -11,9 +11,6 @@ export default {
         set years_of_relevance = Array[year_of_relevance]
         where year_of_relevance is not null;
     
-    alter table accounter_schema.charges
-        drop column year_of_relevance;
-    
     -- update view
     drop view accounter_schema.extended_charges;
 
@@ -186,5 +183,9 @@ export default {
                                     unnest(ARRAY [ledger_records.credit_entity1, ledger_records.credit_entity2, ledger_records.debit_entity1, ledger_records.debit_entity2]) AS financial_entity
                             FROM accounter_schema.ledger_records) l2
                         GROUP BY l2.charge_id) l ON l.charge_id = c.id;
+    
+    -- drop single-year column
+    alter table accounter_schema.charges
+        drop column year_of_relevance;
 `,
 } satisfies MigrationExecutor;
