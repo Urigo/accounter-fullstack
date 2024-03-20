@@ -448,14 +448,15 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
-        const exchangeRateTaxCategory = [
-          ...financialAccountLedgerEntries,
-          ...accountingLedgerEntries,
-        ].find(entry =>
-          isCreditorCounterparty
-            ? entry.creditAccountID1 === entityId
-            : entry.debitAccountID1 === entityId,
-        )?.[isCreditorCounterparty ? 'debitAccountID1' : 'creditAccountID1'];
+        const exchangeRateEntry = accountingLedgerEntries.find(entry =>
+          [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
+        );
+
+        const exchangeRateTaxCategory = exchangeRateEntry
+          ? exchangeRateEntry.debitAccountID1 === entityId
+            ? exchangeRateEntry.creditAccountID1
+            : exchangeRateEntry.debitAccountID1
+          : undefined;
 
         if (!exchangeRateTaxCategory) {
           throw new GraphQLError(
