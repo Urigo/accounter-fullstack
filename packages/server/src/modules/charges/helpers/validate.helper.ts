@@ -70,10 +70,11 @@ export const validateCharge = async (
   }
 
   // validate vat
+  const isVATlessBusiness = business && (business.country !== 'Israel' || business.exempt_dealer);
   const vatIsFine =
     documentsNotRequired ||
     (charge.documents_vat_amount != null &&
-      ((business && business.country !== 'Israel') || charge.documents_vat_amount !== 0));
+      (isVATlessBusiness || charge.documents_vat_amount !== 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }

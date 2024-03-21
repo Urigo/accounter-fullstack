@@ -4,6 +4,7 @@ import migration_2024_02_22T21_37_11_charge_year_of_relevance from './actions/20
 import migration_2024_02_26T11_01_45_centralize_financial_entities_shared_columns from './actions/2024-02-26T11-01-45.centralize-financial-entities-shared-columns.js';
 import migration_2024_03_17T23_10_10_filter_distinct_transactions_currencies_on_charge from './actions/2024-03-17T23-10-10.filter-distinct-transactions-currencies-on-charge.js';
 import migration_2024_03_18T17_29_15_convert_charges_year_to_years_of_relevance from './actions/2024-03-18T17-29-15.convert-charges-year-to-years-of-relevance.js';
+import migration_2024_03_21T11_54_00_exempt_dealers_business_flag from './actions/2024-03-21T11-54-00.exempt-dealers-business-flag.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool; runTo?: string }) =>
@@ -16,5 +17,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool; runTo?: string }) 
       migration_2024_02_26T11_01_45_centralize_financial_entities_shared_columns,
       migration_2024_03_17T23_10_10_filter_distinct_transactions_currencies_on_charge,
       migration_2024_03_18T17_29_15_convert_charges_year_to_years_of_relevance,
+      migration_2024_03_21T11_54_00_exempt_dealers_business_flag,
     ],
   });
