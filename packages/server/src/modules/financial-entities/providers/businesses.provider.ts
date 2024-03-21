@@ -13,120 +13,24 @@ import type {
 } from '../types.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
-    SELECT fe.*,
-      b.address,
-      b.address_hebrew,
-      b.advance_tax_rate,
-      b.bank_account_account_number,
-      b.bank_account_bank_number,
-      b.bank_account_branch_number,
-      b."bank_account_IBAN",
-      b.bank_account_swift,
-      b.can_settle_with_receipt,
-      b.contract,
-      b.country,
-      b.email,
-      b.hebrew_name,
-      b.nikuim,
-      b.no_invoices_required,
-      b.password,
-      b.phone_number,
-      b.pinkas_social_security_2021,
-      b.pinkas_social_security_2022,
-      b.registration_date,
-      b.suggestion_data,
-      b.tax_nikuim_pinkas_number,
-      b.tax_pinkas_number_2020,
-      b.tax_siduri_number_2021,
-      b.tax_siduri_number_2022,
-      b.username_vat_website,
-      b.vat_number,
-      b.vat_report_cadence,
-      b.website,
-      b.website_login_screenshot,
-      b.wizcloud_company_id,
-      b.wizcloud_token
+    SELECT *
     FROM accounter_schema.businesses b
-    LEFT JOIN accounter_schema.financial_entities fe
-      ON b.id = fe.id
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
     WHERE b.id IN $$ids;`;
 
 const getBusinessesByNames = sql<IGetBusinessesByNamesQuery>`
-    SELECT fe.*,
-      b.address,
-      b.address_hebrew,
-      b.advance_tax_rate,
-      b.bank_account_account_number,
-      b.bank_account_bank_number,
-      b.bank_account_branch_number,
-      b."bank_account_IBAN",
-      b.bank_account_swift,
-      b.can_settle_with_receipt,
-      b.contract,
-      b.country,
-      b.email,
-      b.hebrew_name,
-      b.nikuim,
-      b.no_invoices_required,
-      b.password,
-      b.phone_number,
-      b.pinkas_social_security_2021,
-      b.pinkas_social_security_2022,
-      b.registration_date,
-      b.suggestion_data,
-      b.tax_nikuim_pinkas_number,
-      b.tax_pinkas_number_2020,
-      b.tax_siduri_number_2021,
-      b.tax_siduri_number_2022,
-      b.username_vat_website,
-      b.vat_number,
-      b.vat_report_cadence,
-      b.website,
-      b.website_login_screenshot,
-      b.wizcloud_company_id,
-      b.wizcloud_token
+    SELECT *
     FROM accounter_schema.businesses b
-    LEFT JOIN accounter_schema.financial_entities fe
-      ON b.id = fe.id
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
     WHERE fe.name IN $$names;`;
 
 const getAllBusinesses = sql<IGetAllBusinessesQuery>`
-    SELECT fe.*,
-      b.address,
-      b.address_hebrew,
-      b.advance_tax_rate,
-      b.bank_account_account_number,
-      b.bank_account_bank_number,
-      b.bank_account_branch_number,
-      b."bank_account_IBAN",
-      b.bank_account_swift,
-      b.can_settle_with_receipt,
-      b.contract,
-      b.country,
-      b.email,
-      b.hebrew_name,
-      b.nikuim,
-      b.no_invoices_required,
-      b.password,
-      b.phone_number,
-      b.pinkas_social_security_2021,
-      b.pinkas_social_security_2022,
-      b.registration_date,
-      b.suggestion_data,
-      b.tax_nikuim_pinkas_number,
-      b.tax_pinkas_number_2020,
-      b.tax_siduri_number_2021,
-      b.tax_siduri_number_2022,
-      b.username_vat_website,
-      b.vat_number,
-      b.vat_report_cadence,
-      b.website,
-      b.website_login_screenshot,
-      b.wizcloud_company_id,
-      b.wizcloud_token
+    SELECT *
     FROM accounter_schema.businesses b
-    LEFT JOIN accounter_schema.financial_entities fe
-      ON b.id = fe.id;`;
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id);`;
 
 const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
     SELECT c.id as charge_id, fe.*,
@@ -142,6 +46,7 @@ const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
       b.contract,
       b.country,
       b.email,
+      b.exempt_dealer,
       b.hebrew_name,
       b.nikuim,
       b.no_invoices_required,
@@ -164,9 +69,9 @@ const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
       b.wizcloud_token
     FROM accounter_schema.charges c
     LEFT JOIN accounter_schema.businesses b
+      ON  c.owner_id = b.id
     LEFT JOIN accounter_schema.financial_entities fe
       ON b.id = fe.id
-    ON  c.owner_id = b.id
     WHERE c.id IN $$chargeIds;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
@@ -299,6 +204,10 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   can_settle_with_receipt = COALESCE(
     $canSettleWithReceipt,
     can_settle_with_receipt
+  ),
+  exempt_dealer = COALESCE(
+    $exemptDealer,
+    exempt_dealer
   )
   WHERE
     id = $businessId
