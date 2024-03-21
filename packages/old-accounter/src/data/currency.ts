@@ -95,7 +95,7 @@ export async function getCurrencyRates(pool: Pool) {
             (exchange_date, usd, eur, gbp) VALUES ($1, $2, $3, $4) RETURNING *
           `;
 
-        const values = [
+        const values: any[] = [
           format(currentDate, 'yyyy-MM-dd'),
           currencyRates.dollarRate,
           currencyRates.euroRate,
@@ -152,7 +152,7 @@ export async function compareCurrencyRatesToDB(pool: Pool) {
             (exchange_date, usd, eur) VALUES ($1, $2, $3) RETURNING *
           `;
 
-          const values = [
+          const values: any[] = [
             format(currentDate, 'yyyy-MM-dd'),
             currencyRates.dollarRate,
             currencyRates.euroRate,
