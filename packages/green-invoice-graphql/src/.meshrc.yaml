@@ -73,6 +73,9 @@ sources:
               404:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
+codegen:
+  ignoreEnumValuesFromSchema: false
+
 serve:
   browser: false
 
