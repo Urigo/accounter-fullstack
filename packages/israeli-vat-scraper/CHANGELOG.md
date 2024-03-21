@@ -1,5 +1,19 @@
 # @accounter-toolkit/israeli-vat-scraper
 
+## 0.1.1
+
+### Patch Changes
+
+- [#493](https://github.com/Urigo/accounter-fullstack/pull/493) [`8f9129d`](https://github.com/Urigo/accounter-fullstack/commit/8f9129da17b6880770a701ba08c95bc9a6e505af) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`puppeteer@22.5.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/22.5.0) (from `22.4.1`, in `dependencies`)
+
+- [#510](https://github.com/Urigo/accounter-fullstack/pull/510) [`45971d4`](https://github.com/Urigo/accounter-fullstack/commit/45971d447361a58dd6b9578710c7d1f0b2188499) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`puppeteer@22.6.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/22.6.0) (from `22.5.0`, in `dependencies`)
+
+- [#470](https://github.com/Urigo/accounter-fullstack/pull/470) [`4c86678`](https://github.com/Urigo/accounter-fullstack/commit/4c866780ef1c78880f9b62854d5ab9a5eb74db95) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate accounter-toolkit into the monorepo
+
 ## 0.1.0
 
 ### Minor Changes

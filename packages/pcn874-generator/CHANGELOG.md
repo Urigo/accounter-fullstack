@@ -1,5 +1,11 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.4.2
+
+### Patch Changes
+
+- [#470](https://github.com/Urigo/accounter-fullstack/pull/470) [`4c86678`](https://github.com/Urigo/accounter-fullstack/commit/4c866780ef1c78880f9b62854d5ab9a5eb74db95) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate accounter-toolkit into the monorepo
+
 ## 0.4.1
 
 ### Patch Changes
