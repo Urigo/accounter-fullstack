@@ -42,7 +42,7 @@
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "5.0.2",
-    "@types/pg": "8.11.2",
+    "@types/pg": "8.11.4",
     "nodemon": "3.1.0",
     "pino-pretty": "11.0.0",
     "tsc-alias": "1.8.8"
