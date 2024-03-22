@@ -38,14 +38,14 @@
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.2.67",
+    "@types/react": "18.2.69",
     "@types/react-dom": "18.2.22",
     "@vitejs/plugin-react": "4.2.1",
     "autoprefixer": "10.4.19",
     "graphql-tag": "2.12.6",
     "postcss": "8.4.38",
     "tailwindcss": "3.4.1",
-    "vite": "5.2.2"
+    "vite": "5.2.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
