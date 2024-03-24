@@ -32,8 +32,8 @@ const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
   ORDER BY t.source_reference;`;
 
 const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
-  UPDATE accounter_schema.transactions t
-  SET is_fee = TRUE
+  INSERT INTO accounter_schema.transactions_fees (id)
+  SELECT et.id
   FROM accounter_schema.extended_transactions et
           LEFT JOIN (SELECT count(et2.*)                      AS counter,
                             array_agg(DISTINCT et2.charge_id) AS charge_ids,
@@ -46,15 +46,16 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
                     ON g.source_reference = et.source_reference
           LEFT JOIN accounter_schema.charges c
                     ON c.id = et.charge_id
-  WHERE et.id = t.id
+          LEFT JOIN accounter_schema.transactions_fees f
+                    ON f.id = et.id
+  WHERE f.id IS NULL
     AND c.owner_id = $ownerId
     AND g.counter > 1
-    AND t.currency <> 'ILS'
-    AND t.amount <= 30
-    AND t.amount >= -30
-    AND t.is_fee IS NULL
-    AND t.source_description LIKE '%העברת מט%'
-  RETURNING t.id;`;
+    AND et.currency <> 'ILS'
+    AND et.amount <= 30
+    AND et.amount >= -30
+    AND et.source_description LIKE '%העברת מט%'
+  RETURNING id;`;
 
 @Injectable({
   scope: Scope.Singleton,

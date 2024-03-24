@@ -39,6 +39,7 @@ export async function createAndConnectStore(options: { connectionString: string;
             owner_id_var UUID;
             charge_id_var UUID = NULL;
             is_conversion BOOLEAN = false;
+            transaction_id_var UUID = NULL;
         BEGIN
             -- Create merged raw transactions record:
             INSERT INTO ${options.schema}.transactions_raw_list(kraken_id)
@@ -99,7 +100,7 @@ export async function createAndConnectStore(options: { connectionString: string;
 
             -- if fee is not null, create new fee transaction
             IF (NEW.fee IS NOT NULL AND NEW.fee <> 0) THEN
-              INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
+              INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
               VALUES (
                   account_id_var,
                   charge_id_var,
@@ -109,8 +110,13 @@ export async function createAndConnectStore(options: { connectionString: string;
                   NEW.value_date::text::date,
                   NEW.value_date::text::date,
                   (NEW.fee * -1),
-                  NEW.balance,
-                  true
+                  NEW.balance
+              )
+              RETURNING id INTO transaction_id_var;
+
+              INSERT INTO ${options.schema}.transactions_fees (id)
+              VALUES (
+                transaction_id_var
               );
             END IF;
 

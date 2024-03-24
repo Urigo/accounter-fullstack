@@ -6,6 +6,17 @@ import {
 import { TransactionRequiredWrapper } from './providers/transactions.provider.js';
 
 export * from './__generated__/transactions.types.js';
+export type {
+  IGetFeeTransactionsByIdsParams,
+  IGetFeeTransactionsByIdsResult,
+  IGetFeeTransactionsByIdsQuery,
+  IUpdateFeeTransactionParams,
+  IUpdateFeeTransactionResult,
+  IUpdateFeeTransactionQuery,
+  IAddFeeTransactionParams,
+  IAddFeeTransactionResult,
+  IAddFeeTransactionQuery,
+} from './__generated__/transactions-fees.types.js';
 export * from './__generated__/types.js';
 
 export type IGetTransactionsByIdsResult =

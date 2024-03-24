@@ -38,6 +38,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           account_id_var UUID;
           owner_id_var UUID;
           charge_id_var UUID = NULL;
+          transaction_id_var UUID = NULL;
         BEGIN
           -- Create merged raw transactions record:
           INSERT INTO ${options.schema}.transactions_raw_list(etana_id)
@@ -84,7 +85,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           END IF;
       
           -- create new transaction
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
           VALUES (
               account_id_var,
               charge_id_var,
@@ -99,11 +100,19 @@ export async function createAndConnectStore(options: { connectionString: string;
               NEW.time::text::date,
               NEW.time::text::date,
               new.amount,
-              0,
-              CASE WHEN NEW.action_type = 'fee' THEN TRUE ELSE FALSE END
-          );
+              0
+          )
+          RETURNING id INTO transaction_id_var;
+
+          -- extend transaction with fee
+          IF (NEW.action_type = 'fee') THEN
+              INSERT INTO ${options.schema}.transactions_fees (id)
+              VALUES (
+                transaction_id_var
+              );
+          END IF;
       
-            RETURN NEW;
+          RETURN NEW;
         END;
       $$;
       `);
