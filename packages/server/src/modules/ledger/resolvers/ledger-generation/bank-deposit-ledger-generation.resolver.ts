@@ -1,9 +1,15 @@
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, INTERNAL_WALLETS_IDS } from '@shared/constants';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  EXCHANGE_RATE_TAX_CATEGORY_ID,
+  INTERNAL_WALLETS_IDS,
+} from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
@@ -32,11 +38,20 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
 
-    const [transactions] = await Promise.all([transactionsPromise]);
+    const bankDepositTransactionsPromise = injector
+      .get(BankDepositTransactionsProvider)
+      .getDepositTransactionsByChargeId(chargeId);
+
+    const [transactions, bankDepositTransactions] = await Promise.all([
+      transactionsPromise,
+      bankDepositTransactionsPromise,
+    ]);
 
     const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+
+    let isWithdrawal = false;
 
     // generate ledger from transactions
     const [mainTransaction, interestTransactions] = transactions.reduce(
@@ -56,6 +71,10 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       },
       [transactions[0], []],
     );
+
+    if (Number(mainTransaction.amount) > 0) {
+      isWithdrawal = true;
+    }
 
     const mainTransactionPromise = async () => {
       // for each transaction, create a ledger record
@@ -189,7 +208,84 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
     await Promise.all(entriesPromises);
 
-    const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
+    const miscLedgerEntries: StrictLedgerProto[] = [];
+
+    const miscLedgerEntriesPromise = async () => {
+      // handle exchange rates
+      if (isWithdrawal && mainTransaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        const mainLedgerEntry = financialAccountLedgerEntries[0];
+        if (!mainLedgerEntry) {
+          throw new GraphQLError('Main ledger entry not found');
+        }
+
+        const depositTransactions = bankDepositTransactions.filter(t => Number(t.amount) < 0);
+        if (depositTransactions.length !== 1) {
+          if (depositTransactions.length === 0) {
+            throw new GraphQLError('Deposit transaction not found');
+          }
+          throw new GraphQLError('Multiple deposit transactions found');
+        }
+
+        const depositTransaction = depositTransactions[0];
+
+        if (
+          mainTransaction.amount.replace('-', '') !== depositTransaction.amount.replace('-', '') ||
+          mainTransaction.currency !== depositTransaction.currency
+        ) {
+          throw new GraphQLError('Deposit transaction does not match the withdrawal transaction');
+        }
+
+        const depositLedgerRecords = await injector
+          .get(LedgerProvider)
+          .getLedgerRecordsByChargesIdLoader.load(depositTransaction.charge_id);
+
+        if (depositLedgerRecords.length !== 1) {
+          if (depositLedgerRecords.length === 0) {
+            throw new GraphQLError('Deposit ledger record not found');
+          }
+          throw new GraphQLError('Multiple deposit ledger records found');
+        }
+        const depositLedgerRecord = depositLedgerRecords[0];
+
+        if (Number.isNaN(depositLedgerRecord.credit_local_amount1)) {
+          throw new GraphQLError('Deposit ledger record has invalid local amount');
+        }
+
+        const rawAmount =
+          Number(depositLedgerRecord.credit_local_amount1) -
+          mainLedgerEntry.localCurrencyCreditAmount1;
+        const amount = Math.abs(rawAmount);
+        const isCreditorCounterparty = rawAmount > 0;
+        const mainAccountId = mainLedgerEntry.creditAccountID1;
+
+        const exchangeLedgerEntry: StrictLedgerProto = {
+          id: mainTransaction.id + '|fee', // NOTE: this field is dummy
+          creditAccountID1: isCreditorCounterparty ? mainAccountId : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          localCurrencyCreditAmount1: amount,
+          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : mainAccountId,
+          localCurrencyDebitAmount1: amount,
+          description: 'Exchange ledger record',
+          isCreditorCounterparty,
+          invoiceDate: depositLedgerRecord.invoice_date,
+          valueDate: mainLedgerEntry.valueDate,
+          currency: mainLedgerEntry.currency, // NOTE: this field is dummy
+          ownerId: mainLedgerEntry.ownerId,
+          chargeId,
+        };
+        miscLedgerEntries.push(exchangeLedgerEntry);
+        updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance);
+      }
+
+      return;
+    };
+
+    await miscLedgerEntriesPromise();
+
+    const records = [
+      ...financialAccountLedgerEntries,
+      ...feeFinancialAccountLedgerEntries,
+      ...miscLedgerEntries,
+    ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);

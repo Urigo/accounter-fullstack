@@ -38,6 +38,7 @@ export async function createAndConnectStore(options: { connectionString: string;
         account_id_var UUID;
         owner_id_var UUID;
         charge_id_var UUID = NULL;
+        transaction_id_var UUID = NULL;
     BEGIN
         -- Create merged raw transactions record:
         INSERT INTO ${options.schema}.transactions_raw_list(etherscan_id)
@@ -79,7 +80,7 @@ export async function createAndConnectStore(options: { connectionString: string;
 
         -- if fee is not null, create new fee transaction
         IF (NEW.gas_fee IS NOT NULL) THEN
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance, is_fee)
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
           VALUES (
               account_id_var,
               charge_id_var,
@@ -89,8 +90,13 @@ export async function createAndConnectStore(options: { connectionString: string;
               NEW.value_date::text::date,
               NEW.value_date::text::date,
               (NEW.gas_fee * -1),
-              0,
-              true
+              0
+          )
+          RETURNING id INTO transaction_id_var;
+          
+          INSERT INTO ${options.schema}.transactions_fees (id)
+          VALUES (
+            transaction_id_var
           );
         END IF;
     
