@@ -44,6 +44,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
+          businessIds: businessIDs,
           fromAnyDate: fromDate,
           toAnyDate: toDate,
         });
@@ -152,6 +153,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const charges = await injector.get(ChargesProvider).getChargesByFilters({
           ownerIds: ownerIds ?? undefined,
+          businessIds: businessIDs,
           fromAnyDate: fromDate,
           toAnyDate: toDate,
         });
@@ -205,12 +207,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
 
           if (
-            record.debit_entity2 &&
-            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.debit_entity2))
+            record.debit_entity1 &&
+            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(record.debit_entity1))
           ) {
             const transaction = handleBusinessTransaction(
               record,
-              record.debit_entity2,
+              record.debit_entity1,
               record.credit_entity1,
               false,
               record.debit_local_amount1,
