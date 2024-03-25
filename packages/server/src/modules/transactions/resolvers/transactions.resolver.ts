@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
-import { ChargesTypes } from '@modules/charges/index.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
@@ -8,6 +7,7 @@ import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
+import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type {
   IGetTransactionsByIdsResult,
@@ -52,16 +52,15 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
-        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+        // let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
-        let chargeId = fields.chargeId;
-        if (chargeId && chargeId !== EMPTY_UUID) {
-          // case new charge ID
-          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        const existingChargePromise = async () => {
+          const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
           }
-        } else if (chargeId === EMPTY_UUID) {
+        };
+        const emptyChargePromise = async () => {
           // case unlinked from charge
           const transaction = await injector
             .get(TransactionsProvider)
@@ -109,13 +108,41 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               };
             }
           }
-        }
+        };
+
+        let chargeId = fields.chargeId;
+        const chargePromise =
+          chargeId && chargeId !== EMPTY_UUID
+            ? existingChargePromise()
+            : chargeId === EMPTY_UUID
+              ? emptyChargePromise()
+              : Promise.resolve();
+
+        const feePromise = async () => {
+          if (fields.isFee === true) {
+            return injector.get(FeeTransactionsProvider).addFeeTransaction({
+              feeTransactions: [
+                {
+                  id: transactionId,
+                  isRecurring: null,
+                },
+              ],
+            });
+          }
+          if (fields.isFee === false) {
+            return injector.get(FeeTransactionsProvider).deleteFeeTransactionsByIds({
+              transactionIds: [transactionId],
+            });
+          }
+          return Promise.resolve();
+        };
+
+        await Promise.all([chargePromise, feePromise]);
 
         const adjustedFields: IUpdateTransactionParams = {
           transactionId,
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
-          isFee: fields.isFee,
         };
 
         injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);

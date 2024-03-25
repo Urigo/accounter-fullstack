@@ -5,6 +5,8 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IAddFeeTransactionParams,
   IAddFeeTransactionQuery,
+  IDeleteFeeTransactionsByIdsParams,
+  IDeleteFeeTransactionsByIdsQuery,
   IGetFeeTransactionsByIdsQuery,
   IUpdateFeeTransactionParams,
   IUpdateFeeTransactionQuery,
@@ -16,56 +18,11 @@ const getFeeTransactionsByIds = sql<IGetFeeTransactionsByIdsQuery>`
     WHERE id IN $$transactionIds;`;
 
 const updateFeeTransaction = sql<IUpdateFeeTransactionQuery>`
-  UPDATE accounter_schema.transactions
+  UPDATE accounter_schema.transactions_fees
   SET
-    account_id = COALESCE(
-      $accountId,
-      account_id,
-      NULL
-    ),
-    charge_id = COALESCE(
-      $chargeId,
-      charge_id,
-      NULL
-    ),
-    source_id = COALESCE(
-      $sourceId,
-      source_id,
-      NULL
-    ),
-    source_description = COALESCE(
-      $sourceDescription,
-      source_description,
-      NULL
-    ),
-    currency = COALESCE(
-      $currency,
-      currency,
-      NULL
-    ),
-    event_date = COALESCE(
-      $eventDate,
-      event_date,
-      NULL
-    ),
-    debit_date = COALESCE(
-      $debitDate,
-      debit_date,
-      NULL
-    ),
-    amount = COALESCE(
-      $Amount,
-      amount,
-      NULL
-    ),
-    current_balance = COALESCE(
-      $currentBalance,
-      current_balance,
-      NULL
-    ),
-    business_id = COALESCE(
-      $businessId,
-      business_id,
+  is_recurring = COALESCE(
+      $isRecurring,
+      is_recurring,
       NULL
     )
   WHERE
@@ -78,6 +35,10 @@ const addFeeTransaction = sql<IAddFeeTransactionQuery>`
   VALUES $$feeTransactions(id, isRecurring)
   ON CONFLICT DO NOTHING
   RETURNING *;`;
+
+const deleteFeeTransactionsByIds = sql<IDeleteFeeTransactionsByIdsQuery>`
+    DELETE FROM accounter_schema.transactions_fees
+    WHERE id IN $$transactionIds;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -107,5 +68,9 @@ export class FeeTransactionsProvider {
 
   public addFeeTransaction(params: IAddFeeTransactionParams) {
     return addFeeTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteFeeTransactionsByIds(params: IDeleteFeeTransactionsByIdsParams) {
+    return deleteFeeTransactionsByIds.run(params, this.dbProvider);
   }
 }
