@@ -6,8 +6,9 @@ import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
   BusinessTransactionsInfoQuery,
+  Currency,
 } from '../../gql/graphql.js';
-import { formatStringifyAmount } from '../../helpers/index.js';
+import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -154,11 +155,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 </td>
                 <td>
                   {row.ilsBalance === 0 ? (
-                    `${formatStringifyAmount(row.ilsBalance)} ILS`
+                    `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(row.ilsBalance)}`
                   ) : (
-                    <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>{`${row.ilsBalance.toFixed(
-                      2,
-                    )} ILS`}</Mark>
+                    <Mark
+                      color={row.ilsBalance > 0 ? 'green' : 'red'}
+                    >{`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(row.ilsBalance)}`}</Mark>
                   )}
                 </td>
                 {isEur && (
@@ -175,11 +176,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isEur && (
                   <td>
                     {row.eurBalance === 0 ? (
-                      `${formatStringifyAmount(row.eurBalance)} EUR`
+                      `${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`
                     ) : (
-                      <Mark color={row.eurBalance > 0 ? 'green' : 'red'}>{`${row.eurBalance.toFixed(
-                        2,
-                      )} EUR`}</Mark>
+                      <Mark
+                        color={row.eurBalance > 0 ? 'green' : 'red'}
+                      >{`${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`}</Mark>
                     )}
                   </td>
                 )}
@@ -197,11 +198,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isUsd && (
                   <td>
                     {row.usdBalance === 0 ? (
-                      `${formatStringifyAmount(row.usdBalance)} USD`
+                      `${currencyCodeToSymbol(Currency.Usd)} ${formatStringifyAmount(row.usdBalance)}`
                     ) : (
-                      <Mark color={row.usdBalance > 0 ? 'green' : 'red'}>{`${row.usdBalance.toFixed(
-                        2,
-                      )} USD`}</Mark>
+                      <Mark
+                        color={row.usdBalance > 0 ? 'green' : 'red'}
+                      >{`${currencyCodeToSymbol(Currency.Usd)}  ${formatStringifyAmount(row.usdBalance)}`}</Mark>
                     )}
                   </td>
                 )}
@@ -219,11 +220,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isGbp && (
                   <td>
                     {row.gbpBalance === 0 ? (
-                      `${formatStringifyAmount(row.gbpBalance)} GBP`
+                      `${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`
                     ) : (
-                      <Mark color={row.gbpBalance > 0 ? 'green' : 'red'}>{`${row.gbpBalance.toFixed(
-                        2,
-                      )} GBP`}</Mark>
+                      <Mark
+                        color={row.gbpBalance > 0 ? 'green' : 'red'}
+                      >{`${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`}</Mark>
                     )}
                   </td>
                 )}
