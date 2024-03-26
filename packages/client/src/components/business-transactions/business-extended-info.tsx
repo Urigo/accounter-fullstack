@@ -129,12 +129,24 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
               <th>Date</th>
               <th>Amount</th>
               <th>Amount Balance</th>
-              {isEur && <th>EUR Amount</th>}
-              {isEur && <th>EUR Balance</th>}
-              {isUsd && <th>USD Amount</th>}
-              {isUsd && <th>USD Balance</th>}
-              {isGbp && <th>GBP Amount</th>}
-              {isGbp && <th>GBP Balance</th>}
+              {isEur && (
+                <>
+                  <th>EUR Amount</th>
+                  <th>EUR Balance</th>
+                </>
+              )}
+              {isUsd && (
+                <>
+                  <th>USD Amount</th>
+                  <th>USD Balance</th>
+                </>
+              )}
+              {isGbp && (
+                <>
+                  <th>GBP Amount</th>
+                  <th>GBP Balance</th>
+                </>
+              )}
               <th>Reference1</th>
               <th>Reference2</th>
               <th>Details</th>
@@ -163,70 +175,75 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   )}
                 </td>
                 {isEur && (
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {row.eurAmount?.raw && row.eurAmount.raw !== 0 ? (
-                      <Mark color={row.eurAmount.raw > 0 ? 'green' : 'red'}>
-                        {row.eurAmount.formatted}
-                      </Mark>
-                    ) : (
-                      row.eurAmount?.formatted
-                    )}
-                  </td>
-                )}
-                {isEur && (
-                  <td>
-                    {row.eurBalance === 0 ? (
-                      `${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`
-                    ) : (
-                      <Mark
-                        color={row.eurBalance > 0 ? 'green' : 'red'}
-                      >{`${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`}</Mark>
-                    )}
-                  </td>
-                )}
-                {isUsd && (
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {row.usdAmount?.raw && row.usdAmount.raw !== 0 ? (
-                      <Mark color={row.usdAmount.raw > 0 ? 'green' : 'red'}>
-                        {row.usdAmount.formatted}
-                      </Mark>
-                    ) : (
-                      row.usdAmount?.formatted
-                    )}
-                  </td>
+                  <>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {row.eurAmount?.raw && row.eurAmount.raw !== 0 ? (
+                        <Mark color={row.eurAmount.raw > 0 ? 'green' : 'red'}>
+                          {row.eurAmount.formatted}
+                        </Mark>
+                      ) : (
+                        row.eurAmount?.formatted
+                      )}
+                    </td>
+                    <td>
+                      {row.eurAmount?.raw !== 0 &&
+                        row.eurBalance !== 0 &&
+                        (row.eurBalance === 0 ? (
+                          `${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`
+                        ) : (
+                          <Mark
+                            color={row.eurBalance > 0 ? 'green' : 'red'}
+                          >{`${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`}</Mark>
+                        ))}
+                    </td>
+                  </>
                 )}
                 {isUsd && (
-                  <td>
-                    {row.usdBalance === 0 ? (
-                      `${currencyCodeToSymbol(Currency.Usd)} ${formatStringifyAmount(row.usdBalance)}`
-                    ) : (
-                      <Mark
-                        color={row.usdBalance > 0 ? 'green' : 'red'}
-                      >{`${currencyCodeToSymbol(Currency.Usd)}  ${formatStringifyAmount(row.usdBalance)}`}</Mark>
-                    )}
-                  </td>
+                  <>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {row.usdAmount?.raw && row.usdAmount.raw !== 0 ? (
+                        <Mark color={row.usdAmount.raw > 0 ? 'green' : 'red'}>
+                          {row.usdAmount.formatted}
+                        </Mark>
+                      ) : (
+                        row.usdAmount?.formatted
+                      )}
+                    </td>
+                    <td>
+                      {row.usdAmount?.raw !== 0 &&
+                        (row.usdBalance === 0 ? (
+                          `${currencyCodeToSymbol(Currency.Usd)} ${formatStringifyAmount(row.usdBalance)}`
+                        ) : (
+                          <Mark
+                            color={row.usdBalance > 0 ? 'green' : 'red'}
+                          >{`${currencyCodeToSymbol(Currency.Usd)}  ${formatStringifyAmount(row.usdBalance)}`}</Mark>
+                        ))}
+                    </td>
+                  </>
                 )}
                 {isGbp && (
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {row.gbpAmount?.raw && row.gbpAmount.raw !== 0 ? (
-                      <Mark color={row.gbpAmount.raw > 0 ? 'green' : 'red'}>
-                        {row.gbpAmount.formatted}
-                      </Mark>
-                    ) : (
-                      row.gbpAmount?.formatted
-                    )}
-                  </td>
-                )}
-                {isGbp && (
-                  <td>
-                    {row.gbpBalance === 0 ? (
-                      `${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`
-                    ) : (
-                      <Mark
-                        color={row.gbpBalance > 0 ? 'green' : 'red'}
-                      >{`${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`}</Mark>
-                    )}
-                  </td>
+                  <>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {row.gbpAmount?.raw && row.gbpAmount.raw !== 0 ? (
+                        <Mark color={row.gbpAmount.raw > 0 ? 'green' : 'red'}>
+                          {row.gbpAmount.formatted}
+                        </Mark>
+                      ) : (
+                        row.gbpAmount?.formatted
+                      )}
+                    </td>
+                    <td>
+                      {row.gbpAmount?.raw !== 0 &&
+                        row.gbpBalance !== 0 &&
+                        (row.gbpBalance === 0 ? (
+                          `${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`
+                        ) : (
+                          <Mark
+                            color={row.gbpBalance > 0 ? 'green' : 'red'}
+                          >{`${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`}</Mark>
+                        ))}
+                    </td>
+                  </>
                 )}
                 <td>{row.reference1}</td>
                 <td>{row.reference2}</td>
