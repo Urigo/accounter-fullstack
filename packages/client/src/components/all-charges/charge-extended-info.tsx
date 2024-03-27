@@ -5,7 +5,11 @@ import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } f
 import { useDisclosure } from '@mantine/hooks';
 import { FetchChargeDocument } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
-import { ConfirmationModal, RegenerateLedgerRecordsButton } from '../common/index.js';
+import {
+  BusinessTripReport,
+  ConfirmationModal,
+  RegenerateLedgerRecordsButton,
+} from '../common/index.js';
 import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
@@ -45,6 +49,12 @@ import { TransactionsTable } from './transactions/transactions-table.js';
       }
       ... on SalaryCharge {
         ...TableSalariesFields
+      }
+      ... on BusinessTripCharge {
+        businessTrip {
+          id
+          ...BusinessTripReportFields
+        }
       }
     }
   }
@@ -144,6 +154,15 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                 <Accordion.Control disabled={!isSalaryCharge}>Salaries</Accordion.Control>
                 <Accordion.Panel>
                   <SalariesTable salaryRecordsProps={charge} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {charge.__typename === 'BusinessTripCharge' && (
+              <Accordion.Item value="businessTrip">
+                <Accordion.Control>Business Trip</Accordion.Control>
+                <Accordion.Panel>
+                  <BusinessTripReport data={charge.businessTrip!} />
                 </Accordion.Panel>
               </Accordion.Item>
             )}
