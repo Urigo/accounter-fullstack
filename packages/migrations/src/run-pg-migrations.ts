@@ -9,10 +9,9 @@ import migration_2024_03_21T15_33_43_transactions_extension_tables from './actio
 import migration_2024_03_31T11_01_12_flight_class_type from './actions/2024-03-31T11-01-12.flight-class-type.js';
 import { runMigrations } from './pg-migrator.js';
 
-export const runPGMigrations = (args: { slonik: DatabasePool; runTo?: string }) =>
+export const runPGMigrations = (args: { slonik: DatabasePool }) =>
   runMigrations({
     slonik: args.slonik,
-    runTo: args.runTo,
     migrations: [
       migration_2024_01_29T13_15_23_initial,
       migration_2024_02_22T21_37_11_charge_year_of_relevance,
