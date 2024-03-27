@@ -8,10 +8,9 @@ import migration_2024_03_21T11_54_00_exempt_dealers_business_flag from './action
 import migration_2024_03_21T15_33_43_transactions_extension_tables from './actions/2024-03-21T15-33-43.transactions-extension-tables.js';
 import { runMigrations } from './pg-migrator.js';
 
-export const runPGMigrations = (args: { slonik: DatabasePool; runTo?: string }) =>
+export const runPGMigrations = (args: { slonik: DatabasePool }) =>
   runMigrations({
     slonik: args.slonik,
-    runTo: args.runTo,
     migrations: [
       migration_2024_01_29T13_15_23_initial,
       migration_2024_02_22T21_37_11_charge_year_of_relevance,

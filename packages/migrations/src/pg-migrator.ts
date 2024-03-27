@@ -3,8 +3,6 @@ import {
   sql,
   type DatabasePool,
   type DatabaseTransactionConnection,
-  type SqlTaggedTemplate,
-  type TaggedTemplateLiteralInvocation,
 } from 'slonik';
 
 export type MigrationExecutor = {
@@ -18,20 +16,20 @@ export type MigrationExecutor = {
    * You can either return a SQL query to run or instead use the connection within the function to run custom logic.
    * You can also return an array of named steps so you can see the progress in the logs.
    */
-  run: (args: { connection: CommonQueryMethods; sql: SqlTaggedTemplate }) =>
+  run: (args: { connection: CommonQueryMethods; sql: typeof sql.unsafe }) =>
     | Promise<void>
-    | TaggedTemplateLiteralInvocation
+    | ReturnType<typeof sql.unsafe>
     | Array<{
         name: string;
-        query: TaggedTemplateLiteralInvocation;
+        query: ReturnType<typeof sql.unsafe>;
       }>;
 };
 
 const seedMigrationsIfNotExists = async (args: { connection: DatabaseTransactionConnection }) => {
-  await args.connection.query(sql`
+  await args.connection.query(sql.unsafe`
     CREATE SCHEMA IF NOT EXISTS accounter_schema;
   `);
-  await args.connection.query(sql`
+  await args.connection.query(sql.unsafe`
     CREATE TABLE IF NOT EXISTS accounter_schema.migration (
       "name" text NOT NULL,
       "hash" text NOT NULL,
@@ -42,7 +40,7 @@ const seedMigrationsIfNotExists = async (args: { connection: DatabaseTransaction
 };
 
 async function runMigration(connection: CommonQueryMethods, migration: MigrationExecutor) {
-  const exists = await connection.maybeOneFirst(sql`
+  const exists = await connection.maybeOneFirst(sql.unsafe`
     SELECT true
     FROM
       accounter_schema.migration
@@ -57,7 +55,7 @@ async function runMigration(connection: CommonQueryMethods, migration: Migration
   const startTime = Date.now();
   console.log(`Running migration: ${migration.name}`);
 
-  const result = await migration.run({ connection, sql });
+  const result = await migration.run({ connection, sql: sql.unsafe });
   if (Array.isArray(result)) {
     for (const item of result) {
       console.log(`  Starting step ${item.name}`);
@@ -72,7 +70,7 @@ async function runMigration(connection: CommonQueryMethods, migration: Migration
   }
 
   // TODO: hash verification (but tbh nobody cares about that)
-  await connection.query(sql`
+  await connection.query(sql.unsafe`
     INSERT INTO accounter_schema.migration ("name", "hash")
     VALUES (${migration.name}, ${migration.name});
   `);
