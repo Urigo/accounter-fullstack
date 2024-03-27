@@ -16,3 +16,4 @@ export * from './nav-bar.js';
 export * from './notification.js';
 export * from './simple-grid.js';
 export * from './footer.js';
+export * from './business-trip-report/index.js';
