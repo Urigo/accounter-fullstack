@@ -1325,7 +1325,26 @@
     yaml "^2.3.1"
     yargs "^17.0.0"
 
-"@graphql-codegen/client-preset@4.2.4", "@graphql-codegen/client-preset@^4.2.2":
+"@graphql-codegen/client-preset@4.2.5":
+  version "4.2.5"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/client-preset/-/client-preset-4.2.5.tgz#1cf2a19aaa367b81920999a3511cb1e11a632b4a"
+  integrity sha512-hAdB6HN8EDmkoBtr0bPUN/7NH6svzqbcTDMWBCRXPESXkl7y80po+IXrXUjsSrvhKG8xkNXgJNz/2mjwHzywcA==
+  dependencies:
+    "@babel/helper-plugin-utils" "^7.20.2"
+    "@babel/template" "^7.20.7"
+    "@graphql-codegen/add" "^5.0.2"
+    "@graphql-codegen/gql-tag-operations" "4.0.6"
+    "@graphql-codegen/plugin-helpers" "^5.0.3"
+    "@graphql-codegen/typed-document-node" "^5.0.6"
+    "@graphql-codegen/typescript" "^4.0.6"
+    "@graphql-codegen/typescript-operations" "^4.2.0"
+    "@graphql-codegen/visitor-plugin-common" "^5.1.0"
+    "@graphql-tools/documents" "^1.0.0"
+    "@graphql-tools/utils" "^10.0.0"
+    "@graphql-typed-document-node/core" "3.2.0"
+    tslib "~2.6.0"
+
+"@graphql-codegen/client-preset@^4.2.2":
   version "4.2.4"
   resolved "https://registry.yarnpkg.com/@graphql-codegen/client-preset/-/client-preset-4.2.4.tgz#a20e85b07b77282bb27b2e8e014bed5d491443e7"
   integrity sha512-k1c8v2YxJhhITGQGxViG9asLAoop9m7X9duU7Zztqjc98ooxsUzXICfvAWsH3mLAUibXAx4Ax6BPzKsTtQmBPg==
@@ -1770,7 +1789,7 @@
     tsconfig-paths "^4.2.0"
     tslib "^2.4.0"
     typescript "^5.4.2"
-    uWebSockets.js "github:uNetworking/uWebSockets.js#semver:^20"
+    uWebSockets.js "uNetworking/uWebSockets.js#semver:^20"
     yargs "^17.7.1"
   optionalDependencies:
     node-libcurl "^4.0.0"
@@ -3210,17 +3229,17 @@
   dependencies:
     defer-to-connect "^2.0.1"
 
-"@tanstack/query-core@5.28.8":
-  version "5.28.8"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.28.8.tgz#48571172ed2d70fc0eae7004ccf445ad4e8b0558"
-  integrity sha512-cx64XHeB0kvKxFt22ibvegPeOxnaWVFUbAuhXoIrb7+XePEexHWoB9Kq5n9qroNPkRwQZwgFAP9HNbQz5ohoIg==
+"@tanstack/query-core@5.28.9":
+  version "5.28.9"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.28.9.tgz#170a7a8794ab73aeffbaf711ac62126479a5d026"
+  integrity sha512-hNlfCiqZevr3GRVPXS3MhaGW5hjcxvCsIQ4q6ff7EPlvFwYZaS+0d9EIIgofnegDaU2BbCDlyURoYfRl5rmzow==
 
-"@tanstack/react-query@5.28.8":
-  version "5.28.8"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.28.8.tgz#8afc45057f0d8f0b9ba78093e749dc3b4ee5a7a4"
-  integrity sha512-4XYhoRmcThqziB32HsyiBLNXJcukaeGfYwAQ+fZqUUE3ZP4oB/Zy41UJdql+TUg98+vsezfbixxAwAbGHfc5Hg==
+"@tanstack/react-query@5.28.9":
+  version "5.28.9"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.28.9.tgz#13c2049daa5db6c3137473e279b209f76d39708e"
+  integrity sha512-vwifBkGXsydsLxFOBMe3+f8kvtDoqDRDwUNjPHVDDt+FoBetCbOWAUHgZn4k+CVeZgLmy7bx6aKeDbe3e8koOQ==
   dependencies:
-    "@tanstack/query-core" "5.28.8"
+    "@tanstack/query-core" "5.28.9"
 
 "@theguild/eslint-config@0.11.4":
   version "0.11.4"
@@ -3529,13 +3548,21 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@18.2.70":
+"@types/react@*":
   version "18.2.70"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.70.tgz#89a37f9e0a6a4931f4259c598f40fd44dd6abf71"
   integrity sha512-hjlM2hho2vqklPhopNkXkdkeq6Lv8WSZTpr7956zY+3WS5cfYUewtCzsJLsbW5dEv3lfSeQ4W14ZFeKC437JRQ==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
+    csstype "^3.0.2"
+
+"@types/react@18.2.72":
+  version "18.2.72"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.72.tgz#3341a6d0746d1c7d8510810319323850c04bd6ed"
+  integrity sha512-/e7GWxGzXQF7OJAua7UAYqYi/4VpXEfbGtmYQcAQwP3SjjjAXfybTf/JK5S+SaetB/ChXl8Y2g1hCsj7jDXxcg==
+  dependencies:
+    "@types/prop-types" "*"
     csstype "^3.0.2"
 
 "@types/scheduler@*":
@@ -4786,6 +4813,15 @@ chromium-bidi@0.5.13:
   version "0.5.13"
   resolved "https://registry.yarnpkg.com/chromium-bidi/-/chromium-bidi-0.5.13.tgz#e16512d77b161f2f92da91a48ea2ec4185668549"
   integrity sha512-OHbYCetDxdW/xmlrafgOiLsIrw4Sp1BEeolbZ1UGJO5v/nekQOJBj/Kzyw6sqKcAVabUTo0GS3cTYgr6zIf00g==
+  dependencies:
+    mitt "3.0.1"
+    urlpattern-polyfill "10.0.0"
+    zod "3.22.4"
+
+chromium-bidi@0.5.14:
+  version "0.5.14"
+  resolved "https://registry.yarnpkg.com/chromium-bidi/-/chromium-bidi-0.5.14.tgz#0edd73fe91bdb3c7a1d6c890e5c68520cbf97eb9"
+  integrity sha512-zm4mX61/U4KXs+S/0WIBHpOWqtpW6FPv1i7n4UZqDDc5LOQ9/Y1MAnB95nO7i/lFFuijLjpe1XMdNcqDqwlH5w==
   dependencies:
     mitt "3.0.1"
     urlpattern-polyfill "10.0.0"
@@ -10435,7 +10471,18 @@ puppeteer-core@22.6.0:
     devtools-protocol "0.0.1262051"
     ws "8.16.0"
 
-puppeteer@*, puppeteer@22.6.0:
+puppeteer-core@22.6.1:
+  version "22.6.1"
+  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-22.6.1.tgz#a6e7922a86fe9fdd3cdcbf73076332d8aefa1435"
+  integrity sha512-rShSd0xtyDSEJYys5nnzQnnwtrafQWg/lWCppyjZIIbYadWP8B1u0XJD/Oe+Xgw8v1hLHX0loNoA0ItRmNLnBg==
+  dependencies:
+    "@puppeteer/browsers" "2.2.0"
+    chromium-bidi "0.5.14"
+    debug "4.3.4"
+    devtools-protocol "0.0.1262051"
+    ws "8.16.0"
+
+puppeteer@*:
   version "22.6.0"
   resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-22.6.0.tgz#1e916e1b6bcffd00ca05766e7fbab0c3c8a1ccd2"
   integrity sha512-TYeza4rl1YXfxqUVw/0hWUWYX5cicnf6qu5kkDV+t7QrESCjMoSNnva4ZA/MRGQ03HnB9BOFw9nxs/SKek5KDA==
@@ -10444,6 +10491,16 @@ puppeteer@*, puppeteer@22.6.0:
     cosmiconfig "9.0.0"
     devtools-protocol "0.0.1262051"
     puppeteer-core "22.6.0"
+
+puppeteer@22.6.1:
+  version "22.6.1"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-22.6.1.tgz#070c2463d71f3a26fd07aeb8e38a8d0289345513"
+  integrity sha512-736QHNKtPD4tPeFbIn73E4l0CWsLzvRFlm0JsLG/VsyM8Eh0FRFNmMp+M3+GSMwdmYxqOVpTgzB6VQDxWxu8xQ==
+  dependencies:
+    "@puppeteer/browsers" "2.2.0"
+    cosmiconfig "9.0.0"
+    devtools-protocol "0.0.1262051"
+    puppeteer-core "22.6.1"
 
 pvtsutils@^1.3.2, pvtsutils@^1.3.5:
   version "1.3.5"
@@ -10529,10 +10586,10 @@ react-dropzone@14.2.3:
     file-selector "^0.6.0"
     prop-types "^15.8.1"
 
-react-hook-form@7.51.1:
-  version "7.51.1"
-  resolved "https://registry.yarnpkg.com/react-hook-form/-/react-hook-form-7.51.1.tgz#3ce5f8b5ef41903b4054a641cef8c0dc8bf8ae85"
-  integrity sha512-ifnBjl+kW0ksINHd+8C/Gp6a4eZOdWyvRv0UBaByShwU8JbVx5hTcTWEcd5VdybvmPTATkVVXk9npXArHmo56w==
+react-hook-form@7.51.2:
+  version "7.51.2"
+  resolved "https://registry.yarnpkg.com/react-hook-form/-/react-hook-form-7.51.2.tgz#79f7f72ee217c5114ff831012d1a7ec344096e7f"
+  integrity sha512-y++lwaWjtzDt/XNnyGDQy6goHskFualmDlf+jzEZvjvz6KWDf7EboL7pUvRCzPTJd0EOPpdekYaQLEvvG6m6HA==
 
 react-is@^16.13.1, react-is@^16.7.0:
   version "16.13.1"
@@ -11474,16 +11531,7 @@ string-similarity@^4.0.1:
   resolved "https://registry.yarnpkg.com/string-similarity/-/string-similarity-4.0.4.tgz#42d01ab0b34660ea8a018da8f56a3309bb8b2a5b"
   integrity sha512-/q/8Q4Bl4ZKAPjj8WerIBJWALKkaPRfrvhfF8k/B23i4nzrlRj2/go1m90In7nG/3XDSbOo0+pu6RvCTM9RGMQ==
 
-"string-width-cjs@npm:string-width@^4.2.0":
-  version "4.2.3"
-  resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
-  integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
-  dependencies:
-    emoji-regex "^8.0.0"
-    is-fullwidth-code-point "^3.0.0"
-    strip-ansi "^6.0.1"
-
-"string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+"string-width-cjs@npm:string-width@^4.2.0", "string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -11592,14 +11640,7 @@ stringify-entities@^4.0.0:
     character-entities-html4 "^2.0.0"
     character-entities-legacy "^3.0.0"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
-  integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
-  dependencies:
-    ansi-regex "^5.0.1"
-
-strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -12180,7 +12221,6 @@ typescript@5.4.3, typescript@^5.4.2:
 
 "uWebSockets.js@github:uNetworking/uWebSockets.js#semver:^20":
   version "20.43.0"
-  uid "1977b5039938ad863d42fc4958d48c17e5a1fa06"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/1977b5039938ad863d42fc4958d48c17e5a1fa06"
 
 ua-parser-js@^1.0.35:
@@ -12766,7 +12806,7 @@ wonka@^6.3.2:
   resolved "https://registry.yarnpkg.com/wonka/-/wonka-6.3.4.tgz#76eb9316e3d67d7febf4945202b5bdb2db534594"
   integrity sha512-CjpbqNtBGNAeyNS/9W6q3kSkKE52+FjIj7AkFlLr11s/VWGUu6a2CdYSdGxocIhIVjaW/zchesBQUKPVU69Cqg==
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
@@ -12779,15 +12819,6 @@ wrap-ansi@^6.0.1, wrap-ansi@^6.2.0:
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-6.2.0.tgz#e9393ba07102e6c91a3b221478f0257cd2856e53"
   integrity sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==
-  dependencies:
-    ansi-styles "^4.0.0"
-    string-width "^4.1.0"
-    strip-ansi "^6.0.0"
-
-wrap-ansi@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
-  integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
   dependencies:
     ansi-styles "^4.0.0"
     string-width "^4.1.0"
