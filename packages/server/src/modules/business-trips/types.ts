@@ -24,6 +24,7 @@ export type {
   IInsertBusinessTripTransactionQuery,
 } from './__generated__/business-trips-transactions.types.js';
 export type {
+  flight_class,
   IGetAllBusinessTripsFlightsTransactionsParams,
   IGetAllBusinessTripsFlightsTransactionsResult,
   IGetAllBusinessTripsFlightsTransactionsQuery,

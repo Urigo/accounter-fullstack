@@ -25,8 +25,8 @@ export enum Currency {
   Gbp = 'GBP',
   Eur = 'EUR',
   Grt = 'GRT',
-  Usdc = 'USDC',
   Eth = 'ETH',
+  Usdc = 'USDC',
 }
 
 export enum DocumentType {

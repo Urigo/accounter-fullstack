@@ -1,24 +1,12 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { BusinessTripSummaryCategories } from '@shared/gql-types';
-import { TimelessDateString } from '@shared/types';
-import {
-  calculateTotalReportSummaryCategory,
-  convertSummaryCategoryDataToRow,
-  summaryCategoryDataCollector,
-  SummaryData,
-} from '../helpers/business-trip-report.helper.js';
+import type { TimelessDateString } from '@shared/types';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
-import type {
-  BusinessTripsModule,
-  currency,
-  IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-} from '../types.js';
+import type { BusinessTripsModule } from '../types.js';
+import { businessTripSummary } from './business-trip-summary.resolver.js';
 import { commonBusinessTransactionFields, commonChargeFields } from './common.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
@@ -138,70 +126,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         );
       }
     },
-    summary: async (dbBusinessTrip, _, { injector }) => {
-      try {
-        const {
-          flightTransactions,
-          accommodationsTransactions,
-          travelAndSubsistenceTransactions,
-          otherTransactions,
-        } = await injector
-          .get(BusinessTripTransactionsProvider)
-          .getBusinessTripExtendedTransactionsByBusinessTripId(dbBusinessTrip.id);
-
-        const transactions = await injector
-          .get(TransactionsProvider)
-          .getTransactionByIdLoader.loadMany(
-            Array.from(
-              new Set(
-                [
-                  ...flightTransactions,
-                  ...accommodationsTransactions,
-                  ...travelAndSubsistenceTransactions,
-                  ...otherTransactions,
-                ].map(t => t.transaction_id),
-              ),
-            ).filter(Boolean) as string[],
-          )
-          .then(
-            res =>
-              res.filter(t => t && t instanceof Error === false) as IGetTransactionsByIdsResult[],
-          );
-
-        const summaryData: Partial<SummaryData> = {};
-
-        const categoryDataCollector =
-          (categoryName: BusinessTripSummaryCategories) =>
-          (businessTripTransactions: IGetBusinessTripsTransactionsByBusinessTripIdsResult) =>
-            summaryCategoryDataCollector(
-              businessTripTransactions,
-              summaryData,
-              categoryName,
-              transactions,
-            );
-
-        await Promise.all([
-          ...flightTransactions.map(categoryDataCollector('FLIGHT')),
-          ...accommodationsTransactions.map(categoryDataCollector('ACCOMMODATION')),
-          ...travelAndSubsistenceTransactions.map(categoryDataCollector('TRAVEL_AND_SUBSISTENCE')),
-          ...otherTransactions.map(categoryDataCollector('OTHER')),
-        ]);
-
-        const totalSumCategory = calculateTotalReportSummaryCategory(summaryData);
-        summaryData['TOTAL'] = totalSumCategory;
-
-        return {
-          rows: Object.entries(summaryData).map(([category, data]) =>
-            convertSummaryCategoryDataToRow(category as BusinessTripSummaryCategories, data),
-          ),
-        };
-      } catch (e) {
-        console.error(`Error fetching business trip transactions`, e);
-        throw new GraphQLError(
-          (e as Error)?.message ?? `Error fetching business trip transactions`,
-        );
-      }
-    },
+    summary: businessTripSummary,
   },
   BusinessTripUncategorizedTransaction: {
     __isTypeOf: DbTransaction => !DbTransaction.category,
