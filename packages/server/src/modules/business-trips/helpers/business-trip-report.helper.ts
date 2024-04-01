@@ -25,6 +25,7 @@ export type TripMetaData = {
   tripDuration: number;
   hasAccommodationExpenses: boolean;
   destination: string | null;
+  endDate: Date;
 };
 
 export function convertSummaryCategoryDataToRow(
@@ -145,12 +146,6 @@ export async function flightTransactionDataCollector(
   const { currency, isForeign, localAmount, exchangeRate, foreignAmount } =
     await getTransactionAmountsData(injector, businessTripTransaction, transactions);
 
-  // populate currency
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  if (isForeign) {
-    category[currency] ||= { total: 0, taxable: 0 };
-  }
-
   // calculate taxable amount
   const fullyTaxableClasses: flight_class[] = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'];
   if (!businessTripTransaction.class) {
@@ -168,9 +163,11 @@ export async function flightTransactionDataCollector(
   const localTaxable = localAmount;
 
   // update amounts
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
   category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
   category[DEFAULT_LOCAL_CURRENCY].taxable += localTaxable;
   if (isForeign) {
+    category[currency] ||= { total: 0, taxable: 0 };
     category[currency]!.total += foreignAmount;
     category[currency]!.taxable += localTaxable / exchangeRate;
   }
@@ -181,6 +178,7 @@ export async function accommodationTransactionDataCollector(
   businessTripTransaction: IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
   transactions: IGetTransactionsByIdsResult[],
+  destination: string | null,
 ): Promise<void> {
   // populate category
   partialSummaryData['ACCOMMODATION'] ??= {};
@@ -188,12 +186,6 @@ export async function accommodationTransactionDataCollector(
 
   const { currency, isForeign, localAmount, exchangeRate, foreignAmount, usdRate } =
     await getTransactionAmountsData(injector, businessTripTransaction, transactions);
-
-  // populate currency
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  if (isForeign) {
-    category[currency] ||= { total: 0, taxable: 0 };
-  }
 
   if (!businessTripTransaction.nights_count) {
     throw new GraphQLError(
@@ -205,15 +197,20 @@ export async function accommodationTransactionDataCollector(
   }
 
   // calculate taxable amount
-  const maxTaxableUsd = accommodationMaxTaxableUSD(businessTripTransaction.nights_count);
+  const maxTaxableUsd = accommodationMaxTaxableUSD(
+    businessTripTransaction.nights_count,
+    destination,
+  );
   const isFullyTaxable = localAmount / exchangeRate >= maxTaxableUsd;
 
   const localTaxable = isFullyTaxable ? localAmount : maxTaxableUsd * usdRate;
 
   // update amounts
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
   category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
   category[DEFAULT_LOCAL_CURRENCY].taxable += localTaxable;
   if (isForeign) {
+    category[currency] ||= { total: 0, taxable: 0 };
     category[currency]!.total += foreignAmount;
     category[currency]!.taxable += localTaxable / exchangeRate;
   }
@@ -231,33 +228,92 @@ export async function otherTransactionsDataCollector(
   partialSummaryData['OTHER'] ??= {};
   const category = partialSummaryData['OTHER'] as SummaryCategoryData;
 
-  const { currency, isForeign, localAmount, exchangeRate, foreignAmount } =
-    await getTransactionAmountsData(injector, businessTripTransaction, transactions);
+  const [usdRate, ...transactionsAmountData] = await Promise.all([
+    injector
+      .get(ExchangeProvider)
+      .getExchangeRates(Currency.Usd, DEFAULT_LOCAL_CURRENCY, tripMetaData.endDate),
+    ...[...otherTransactions, ...travelAndSubsistenceTransactions].map(businessTripTransaction =>
+      getTransactionAmountsData(injector, businessTripTransaction, transactions),
+    ),
+  ]);
 
-  // populate currency
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  if (isForeign) {
-    category[currency] ||= { total: 0, taxable: 0 };
-  }
+  const dailyTaxableLimit = tripMetaData.hasAccommodationExpenses ? 94 : 147;
+  const increasedLimitDestination = isIncreasedLimitDestination(tripMetaData.destination)
+    ? 1.25
+    : 1;
+  const maxTaxableUsd = dailyTaxableLimit * tripMetaData.tripDuration * increasedLimitDestination;
+  const maxTaxableLocal = maxTaxableUsd * usdRate;
 
-  // calculate taxable amount
-  const localTaxable = _____;
+  const totalAmountLocal = transactionsAmountData.reduce(
+    (sum, transactionData) => sum + transactionData.localAmount,
+    0,
+  );
 
-  // update amounts
-  category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
-  category[DEFAULT_LOCAL_CURRENCY].taxable += localTaxable;
-  if (isForeign) {
-    category[currency]!.total += foreignAmount;
-    category[currency]!.taxable += localTaxable / exchangeRate;
+  if (totalAmountLocal > maxTaxableLocal) {
+    category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
+    category[DEFAULT_LOCAL_CURRENCY].total += totalAmountLocal;
+    category[DEFAULT_LOCAL_CURRENCY].taxable += maxTaxableLocal;
+  } else {
+    transactionsAmountData.map(
+      ({ isForeign, localAmount, foreignAmount, exchangeRate, currency }) => {
+        // update amounts
+        category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
+        category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
+        category[DEFAULT_LOCAL_CURRENCY].taxable += localAmount;
+        if (isForeign) {
+          category[currency] ||= { total: 0, taxable: 0 };
+          category[currency]!.total += foreignAmount;
+          category[currency]!.taxable += localAmount / exchangeRate;
+        }
+      },
+    );
   }
 }
 
-function accommodationMaxTaxableUSD(nights: number) {
+function isIncreasedLimitDestination(destination: string | null) {
+  if (!destination) {
+    return false;
+  }
+  const increasedLimitDestinations = [
+    'australia',
+    'austria',
+    'italy',
+    'iceland',
+    'ireland',
+    'angola',
+    'belgium',
+    'germany',
+    'dubai',
+    'denmark',
+    'netherlands',
+    'hong kong',
+    'united kingdom',
+    'taiwan',
+    'greece',
+    'japan',
+    'luxembourg',
+    'norway',
+    'spain',
+    'oman',
+    'finland',
+    'france',
+    'qatar',
+    'korea',
+    'cameroon ',
+    'canada',
+    'sweden',
+    'switzerland',
+  ];
+  return increasedLimitDestinations.includes(destination.toLowerCase());
+}
+
+function accommodationMaxTaxableUSD(nights: number, destination: string | null) {
+  const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
   if (nights <= 7) {
-    return nights * 335;
+    return nights * 335 * increasedLimitDestination;
   }
   if (nights <= 90) {
-    return 7 * 335 + (nights - 7) * 147;
+    return 7 * 335 + (nights - 7) * 147 * increasedLimitDestination;
   }
 
   throw new GraphQLError(`Taxability logic for more than 90 nights is not implemented yet`);

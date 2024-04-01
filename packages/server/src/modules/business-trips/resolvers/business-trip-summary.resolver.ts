@@ -64,6 +64,7 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
           accommodationsTransaction,
           summaryData,
           transactions,
+          dbBusinessTrip.destination,
         ),
       ),
       otherTransactionsDataCollector(
@@ -76,6 +77,7 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
           tripDuration,
           hasAccommodationExpenses: accommodationsTransactions.length > 0,
           destination: dbBusinessTrip.destination,
+          endDate: dbBusinessTrip.to_date,
         },
       ),
     ]);
