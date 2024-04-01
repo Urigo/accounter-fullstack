@@ -1,10 +1,12 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { TimelessDateString } from '@shared/types';
+import type { TimelessDateString } from '@shared/types';
+import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
+import { businessTripSummary } from './business-trip-summary.resolver.js';
 import { commonBusinessTransactionFields, commonChargeFields } from './common.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
@@ -92,6 +94,13 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         end: format(dbBusinessTrip.to_date, 'yyyy-MM-dd') as TimelessDateString,
       };
     },
+    purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,
+    destination: dbBusinessTrip => dbBusinessTrip.destination,
+    attendees: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripAttendeesProvider)
+        .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
+    },
     transactions: async (dbBusinessTrip, _, { injector }) => {
       try {
         const {
@@ -117,6 +126,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         );
       }
     },
+    summary: businessTripSummary,
   },
   BusinessTripUncategorizedTransaction: {
     __isTypeOf: DbTransaction => !DbTransaction.category,

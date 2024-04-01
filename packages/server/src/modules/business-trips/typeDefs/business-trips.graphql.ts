@@ -76,7 +76,11 @@ export default gql`
     id: UUID!
     name: String!
     dates: DateRange
+    destination: String
+    purpose: String
+    attendees: [Business!]!
     transactions: [BusinessTripTransaction!]!
+    summary: BusinessTripSummary!
   }
 
   " business trip transaction prototype "
@@ -165,5 +169,31 @@ export default gql`
     deductibleExpense: Boolean
     " סוג ההוצאה "
     expenseType: String
+  }
+
+  " represent business trip summary data "
+  type BusinessTripSummary {
+    excessExpenditure: FinancialAmount
+    excessTax: Float
+    rows: [BusinessTripSummaryRow!]!
+  }
+
+  " represent business trip summary data row "
+  type BusinessTripSummaryRow {
+    type: BusinessTripSummaryCategories!
+    totalForeignCurrencies: [FinancialAmount!]!
+    totalLocalCurrency: FinancialAmount
+    taxableForeignCurrencies: [FinancialAmount!]!
+    taxableLocalCurrency: FinancialAmount
+    excessExpenditure: FinancialAmount
+  }
+
+  " represent category type of business trip summary"
+  enum BusinessTripSummaryCategories {
+    ACCOMMODATION
+    FLIGHT
+    TRAVEL_AND_SUBSISTENCE
+    OTHER
+    TOTAL
   }
 `;

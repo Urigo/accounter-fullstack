@@ -6,6 +6,7 @@ import migration_2024_03_17T23_10_10_filter_distinct_transactions_currencies_on_
 import migration_2024_03_18T17_29_15_convert_charges_year_to_years_of_relevance from './actions/2024-03-18T17-29-15.convert-charges-year-to-years-of-relevance.js';
 import migration_2024_03_21T11_54_00_exempt_dealers_business_flag from './actions/2024-03-21T11-54-00.exempt-dealers-business-flag.js';
 import migration_2024_03_21T15_33_43_transactions_extension_tables from './actions/2024-03-21T15-33-43.transactions-extension-tables.js';
+import migration_2024_03_31T11_01_12_flight_class_type from './actions/2024-03-31T11-01-12.flight-class-type.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -19,5 +20,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_03_18T17_29_15_convert_charges_year_to_years_of_relevance,
       migration_2024_03_21T11_54_00_exempt_dealers_business_flag,
       migration_2024_03_21T15_33_43_transactions_extension_tables,
+      migration_2024_03_31T11_01_12_flight_class_type,
     ],
   });

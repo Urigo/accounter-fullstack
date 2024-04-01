@@ -1,9 +1,11 @@
+import { Currency } from '../gql/graphql.js';
+
 export const formatCurrency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
 
-export function currencyCodeToSymbol(currency_code: string): string {
+export function currencyCodeToSymbol(currency_code: Currency): string {
   let currencySymbol = '₪';
   if (currency_code === 'USD') {
     currencySymbol = '$';
