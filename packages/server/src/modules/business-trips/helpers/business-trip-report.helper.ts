@@ -14,9 +14,9 @@ import type {
   flight_class,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
-  IGetBusinessTripsOtherTransactionsByBusinessTripIdsResult,
+  // IGetBusinessTripsOtherTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-  IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult,
+  // IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult,
 } from '../types.js';
 
 export type SummaryCategoryData = { [key in currency]?: { total: number; taxable: number } };
@@ -88,7 +88,7 @@ function getTransactionCoreData(
     );
   }
   return {
-    amount: Number(transaction.amount),
+    amount: Number(transaction.amount) * -1,
     currency: transaction.currency,
     date: new Date(transaction.debit_date),
   };
@@ -204,6 +204,7 @@ export async function accommodationTransactionDataCollector(
   const isFullyTaxable = localAmount / exchangeRate >= maxTaxableUsd;
 
   const localTaxable = isFullyTaxable ? localAmount : maxTaxableUsd * usdRate;
+  const foreignTaxable = isFullyTaxable ? foreignAmount : maxTaxableUsd;
 
   // update amounts
   category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
@@ -212,18 +213,21 @@ export async function accommodationTransactionDataCollector(
   if (isForeign) {
     category[currency] ||= { total: 0, taxable: 0 };
     category[currency]!.total += foreignAmount;
-    category[currency]!.taxable += localTaxable / exchangeRate;
+    category[currency]!.taxable += foreignTaxable;
   }
 }
 
 export async function otherTransactionsDataCollector(
   injector: Injector,
-  travelAndSubsistenceTransactions: IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult[],
-  otherTransactions: IGetBusinessTripsOtherTransactionsByBusinessTripIdsResult[],
+  otherTransactions: IGetBusinessTripsTransactionsByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   transactions: IGetTransactionsByIdsResult[],
   tripMetaData: TripMetaData,
 ): Promise<void> {
+  if (otherTransactions.length === 0) {
+    return;
+  }
+
   // populate category
   partialSummaryData['OTHER'] ??= {};
   const category = partialSummaryData['OTHER'] as SummaryCategoryData;
@@ -232,7 +236,7 @@ export async function otherTransactionsDataCollector(
     injector
       .get(ExchangeProvider)
       .getExchangeRates(Currency.Usd, DEFAULT_LOCAL_CURRENCY, tripMetaData.endDate),
-    ...[...otherTransactions, ...travelAndSubsistenceTransactions].map(businessTripTransaction =>
+    ...otherTransactions.map(businessTripTransaction =>
       getTransactionAmountsData(injector, businessTripTransaction, transactions),
     ),
   ]);

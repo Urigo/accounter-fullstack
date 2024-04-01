@@ -52,7 +52,9 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
     if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
       throw new GraphQLError(`Business trip dates are not set (ID ${dbBusinessTrip.id})`);
     }
-    const tripDuration = differenceInDays(dbBusinessTrip.from_date, dbBusinessTrip.to_date);
+    const tripDuration = Math.abs(
+      differenceInDays(dbBusinessTrip.from_date, dbBusinessTrip.to_date),
+    );
 
     await Promise.all([
       ...flightTransactions.map(flightTransaction =>
@@ -69,8 +71,7 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       ),
       otherTransactionsDataCollector(
         injector,
-        travelAndSubsistenceTransactions,
-        otherTransactions,
+        [...travelAndSubsistenceTransactions, ...otherTransactions],
         summaryData,
         transactions,
         {
