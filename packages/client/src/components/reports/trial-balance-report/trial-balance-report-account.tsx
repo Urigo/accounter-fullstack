@@ -1,8 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { ActionIcon, Text, Tooltip } from '@mantine/core';
 import { TrialBalanceReportQuery } from '../../../gql/graphql.js';
-import { formatStringifyAmount } from '../../../helpers/index.js';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
@@ -34,17 +33,13 @@ export const TrialBalanceReportBusiness = ({
         <td>{sortCodeId}</td>
         <td>{record.business.id}</td>
         <td>{record.business.name ?? undefined}</td>
+        <td>{rowDebit ? record?.debit?.formatted : undefined}</td>
+        <td>{rowCredit ? record?.credit?.formatted : undefined}</td>
         <td>
-          {rowTotal < -0.001 ? formatStringifyAmount(-1 * (record.total.raw ?? 0)) : undefined}
-          <br />
-          {rowDebit ? `(${formatStringifyAmount(rowDebit)})` : undefined}
+          {(rowTotal > 0.001 || rowTotal < -0.001) && (
+            <Text color={rowTotal > 0 ? 'green' : 'red'}>{record?.total?.formatted}</Text>
+          )}
         </td>
-        <td>
-          {rowTotal > 0.001 ? formatStringifyAmount(record.total.raw ?? 0) : undefined}
-          <br />
-          {rowDebit ? `(${formatStringifyAmount(rowCredit)})` : undefined}
-        </td>
-        <td>{}</td>
         <td>
           <Tooltip label="Detailed records">
             <ActionIcon variant="default" onClick={(): void => setIsExtended(i => !i)} size={30}>

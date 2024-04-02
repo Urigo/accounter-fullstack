@@ -100,9 +100,9 @@ export const TrialBalanceTable = ({
           <th>Sort Code</th>
           <th>Account</th>
           <th>Account Name</th>
-          <th>Debit</th>
-          <th>Credit</th>
-          <th>Total</th>
+          <th>Total Debit</th>
+          <th>Total Credit</th>
+          <th>Balance</th>
         </tr>
       </thead>
       <tbody>
