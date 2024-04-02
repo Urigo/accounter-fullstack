@@ -18,7 +18,7 @@
     "@mantine/dropzone": "6.0.21",
     "@mantine/hooks": "6.0.21",
     "@mantine/notifications": "6.0.21",
-    "@tanstack/react-query": "5.28.12",
+    "@tanstack/react-query": "5.28.14",
     "@urql/exchange-auth": "2.1.6",
     "chart.js": "4.4.2",
     "clsx": "2.1.0",
@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.2.73",
+    "@types/react": "18.2.74",
     "@types/react-dom": "18.2.23",
     "@vitejs/plugin-react": "4.2.1",
     "autoprefixer": "10.4.19",
