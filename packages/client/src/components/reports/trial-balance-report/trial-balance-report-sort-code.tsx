@@ -1,7 +1,9 @@
 import { ReactElement } from 'react';
-import { formatStringifyAmount } from '../../../helpers';
-import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-report-account';
-import { TrialBalanceReportFilters } from './trial-balance-report-filters';
+import { Text } from '@mantine/core';
+import { Currency } from '../../../gql/graphql.js';
+import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
+import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-report-account.js';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedSortCode = {
   id: number;
@@ -50,14 +52,32 @@ export const TrialBalanceReportSortCode = ({
             <td colSpan={2}>Group total:</td>
             <td colSpan={1}>{sortCode.id}</td>
             <td colSpan={1}>
-              {formatStringifyAmount(sortCode.debit)}
-              <br />({formatStringifyAmount(sortCode.totalDebit)})
+              {!!sortCode.totalDebit &&
+                `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.totalDebit)}`}
             </td>
             <td colSpan={1}>
-              {formatStringifyAmount(sortCode.credit)}
-              <br />({formatStringifyAmount(sortCode.totalCredit)})
+              {!!sortCode.totalCredit &&
+                `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.totalCredit)}`}
             </td>
-            <td colSpan={1}>{formatStringifyAmount(sortCode.sum)}</td>
+            <td colSpan={1}>
+              <Text
+                c={sortCode.sum > 0 ? 'green' : sortCode.sum < 0 ? 'red' : undefined}
+              >{`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.sum)}`}</Text>
+              {!!sortCode.debit && (
+                <>
+                  <br />
+                  Total Debit Balances:{' '}
+                  {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.debit)}`}
+                </>
+              )}
+              {!!sortCode.credit && (
+                <>
+                  <br />
+                  Total Credit Balances:{' '}
+                  {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.credit)}`}
+                </>
+              )}
+            </td>
           </>
         ) : undefined}
       </tr>

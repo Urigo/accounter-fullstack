@@ -1,7 +1,9 @@
 import { ReactElement } from 'react';
-import { formatStringifyAmount } from '../../../helpers';
-import { TrialBalanceReportFilters } from './trial-balance-report-filters';
-import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-report-sort-code';
+import { Text } from '@mantine/core';
+import { Currency } from '../../../gql/graphql.js';
+import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
+import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-report-sort-code.js';
 
 interface Props {
   data: {
@@ -38,9 +40,19 @@ export const TrialBalanceReportGroup = ({
       <tr key={'group' + group} className="bg-gray-100">
         <td colSpan={2}>Group total:</td>
         <td colSpan={1}>{group.replaceAll('0', '*')}</td>
-        <td colSpan={1}>({formatStringifyAmount(data.totalDebit)})</td>
-        <td colSpan={1}>({formatStringifyAmount(data.totalCredit)})</td>
-        <td colSpan={1}>{formatStringifyAmount(data.sum)}</td>
+        <td colSpan={1}>
+          {!!data.totalDebit &&
+            `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.totalDebit)}`}
+        </td>
+        <td colSpan={1}>
+          {!!data.totalCredit &&
+            `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.totalCredit)}`}
+        </td>
+        <td colSpan={1}>
+          <Text fw={700} c={data.sum > 0 ? 'green' : data.sum < 0 ? 'red' : undefined}>
+            {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.sum)}`}
+          </Text>
+        </td>
       </tr>
     </>
   );
