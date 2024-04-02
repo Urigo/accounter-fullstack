@@ -5,7 +5,7 @@ export default gql`
   extend type Query {
     business(id: UUID!): Business! @auth(role: ACCOUNTANT)
     " TODO: This is temporary & should be replaced after auth and financial entities hierarchy is implemented "
-    allBusinesses(page: Int, limit: Int): PaginatedBusinesses @auth(role: ACCOUNTANT)
+    allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @auth(role: ACCOUNTANT)
   }
 
   " represent a financial entity of any type that may hold financial accounts (company, business, individual) "
