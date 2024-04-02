@@ -11,8 +11,8 @@ import { BusinessesFilters } from './businesses-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllBusinessesForScreen($page: Int, $limit: Int) {
-    allBusinesses(page: $page, limit: $limit) {
+  query AllBusinessesForScreen($page: Int, $limit: Int, $name: String) {
+    allBusinesses(page: $page, limit: $limit, name: $name) {
       nodes {
         __typename
         id
@@ -33,6 +33,9 @@ export const Businesses = (): ReactElement => {
   const { get } = useUrlQuery();
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
+  const [businessName, setBusinessName] = useState(
+    get('name') ? (get('page') as string) : undefined,
+  );
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }] = useQuery({
@@ -40,6 +43,7 @@ export const Businesses = (): ReactElement => {
     variables: {
       page: activePage,
       limit: 100,
+      name: businessName,
     },
   });
 
@@ -50,6 +54,8 @@ export const Businesses = (): ReactElement => {
         <BusinessesFilters
           activePage={activePage}
           setPage={setActivePage}
+          businessName={businessName}
+          setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
         <Tooltip label="Expand all businesses">
@@ -59,7 +65,16 @@ export const Businesses = (): ReactElement => {
         </Tooltip>
       </div>,
     );
-  }, [data, activePage, isAllOpened, setFiltersContext, setActivePage, setIsAllOpened]);
+  }, [
+    data,
+    activePage,
+    businessName,
+    isAllOpened,
+    setFiltersContext,
+    setActivePage,
+    setBusinessName,
+    setIsAllOpened,
+  ]);
 
   const businesses =
     data?.allBusinesses?.nodes

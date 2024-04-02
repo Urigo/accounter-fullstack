@@ -1,5 +1,6 @@
 import { Resolvers } from '@shared/gql-types';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
+import { filterBusinessByName } from '../helpers/utils.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -21,24 +22,28 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
       return dbFe;
     },
-    allBusinesses: async (_, { page, limit }, { injector }) => {
+    allBusinesses: async (_, { page, limit, name }, { injector }) => {
       const businesses = await injector.get(BusinessesProvider).getAllBusinesses();
 
+      const filteredBusinesses = businesses.filter(business =>
+        filterBusinessByName(business, name),
+      );
+
       page ??= 1;
-      let pageBusinesses = businesses.sort((a, b) =>
+      let pageBusinesses = filteredBusinesses.sort((a, b) =>
         a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
       );
 
       // handle pagination
       if (limit) {
-        pageBusinesses = businesses.slice(page * limit - limit, page * limit);
+        pageBusinesses = filteredBusinesses.slice(page * limit - limit, page * limit);
       }
 
       return {
         __typename: 'PaginatedBusinesses',
         nodes: pageBusinesses,
         pageInfo: {
-          totalPages: limit ? Math.ceil(businesses.length / limit) : 1,
+          totalPages: limit ? Math.ceil(filteredBusinesses.length / limit) : 1,
           currentPage: page + 1,
           pageSize: limit,
         },
