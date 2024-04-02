@@ -26,7 +26,7 @@ async function getMonthDashboard(page: Page, monthDate: Date, options?: isracard
   const accountsUrl = `${SERVICE_URL}?reqName=DashboardMonth&actionCode=0&billingDate=${billingDate}&format=Json`;
   const getDashboardFunction = fetchGetWithinPage<IsracardDashboardMonth>(page, accountsUrl);
 
-  if (options && options.validateSchema) {
+  if (options?.validateSchema) {
     const data = await getDashboardFunction;
     const validation = await validateSchema(isracardDashboardMonth, data);
     return {
@@ -44,7 +44,7 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: israc
   const transUrl = `${SERVICE_URL}?reqName=CardsTransactionsList&month=${monthStr}&year=${monthDate.getFullYear()}&requiredDate=N`;
   const getTransactionsFunction = fetchGetWithinPage<IsracardCardsTransactionsList>(page, transUrl);
 
-  if (options && options.validateSchema) {
+  if (options?.validateSchema) {
     const data = await getTransactionsFunction;
     const validation = await validateSchema(isracardCardsTransactionsList, data);
     return {
