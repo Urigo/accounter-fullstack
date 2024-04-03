@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -300,4 +301,112 @@ export async function getFinancialAccountTaxCategoryId(
   }
 
   return taxCategory.id;
+}
+
+export function multipleForeignCurrenciesBalanceEntries(
+  accountingEntries: LedgerProto[],
+  financialAccountEntries: LedgerProto[],
+  otherEntries: LedgerProto[],
+  charge: IGetChargesByIdsResult,
+): LedgerProto[] {
+  const entries = [...accountingEntries, ...financialAccountEntries, ...otherEntries];
+
+  const ledgerEntries: LedgerProto[] = [];
+
+  if (charge.business_id) {
+    const mainBusiness: string = charge.business_id;
+
+    const currenciesBalanceMap = new Map<Currency, { local: number; foreign: number }>();
+
+    for (const entry of entries) {
+      if (entry.currency === DEFAULT_LOCAL_CURRENCY) {
+        continue;
+      }
+      if (entry.debitAccountID1 === mainBusiness) {
+        const { currency, localCurrencyDebitAmount1, debitAmount1 } = entry;
+        currenciesBalanceMap.set(currency, {
+          local:
+            (currenciesBalanceMap.get(currency)?.local ?? 0) - (localCurrencyDebitAmount1 ?? 0),
+          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) - (debitAmount1 ?? 0),
+        });
+      }
+      if (entry.creditAccountID1 === mainBusiness) {
+        const { currency, localCurrencyCreditAmount1, creditAmount1 } = entry;
+
+        currenciesBalanceMap.set(currency, {
+          local:
+            (currenciesBalanceMap.get(currency)?.local ?? 0) + (localCurrencyCreditAmount1 ?? 0),
+          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) + (creditAmount1 ?? 0),
+        });
+      }
+      if (entry.debitAccountID2 && !entry.isCreditorCounterparty) {
+        const { currency, localCurrencyDebitAmount2, debitAmount2 } = entry;
+
+        currenciesBalanceMap.set(currency, {
+          local:
+            (currenciesBalanceMap.get(currency)?.local ?? 0) - (localCurrencyDebitAmount2 ?? 0),
+          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) - (debitAmount2 ?? 0),
+        });
+      }
+      if (entry.creditAccountID2 === mainBusiness) {
+        const { currency, localCurrencyCreditAmount2, creditAmount2 } = entry;
+
+        currenciesBalanceMap.set(currency, {
+          local:
+            (currenciesBalanceMap.get(currency)?.local ?? 0) + (localCurrencyCreditAmount2 ?? 0),
+          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) + (creditAmount2 ?? 0),
+        });
+      }
+    }
+
+    const transactionEntry = financialAccountEntries.find(entry =>
+      [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+    );
+    const documentEntry = accountingEntries.find(entry =>
+      [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+    );
+    if (!transactionEntry || !documentEntry) {
+      throw new GraphQLError(
+        `Failed to locate transaction or document entry for business ID="${mainBusiness}"`,
+      );
+    }
+
+    let localAmount = 0;
+    for (const [currency, { local, foreign }] of currenciesBalanceMap) {
+      if (currency === DEFAULT_LOCAL_CURRENCY) {
+        continue;
+      }
+      if (Math.abs(foreign) < 0.005) {
+        continue;
+      }
+      if (localAmount === 0) {
+        localAmount = local;
+      }
+      const isCreditorCounterparty = foreign < 0;
+      const ledgerEntry: LedgerProto = {
+        id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
+        ...(isCreditorCounterparty
+          ? {
+              creditAccountID1: mainBusiness,
+            }
+          : {
+              debitAccountID1: mainBusiness,
+            }),
+        localCurrencyCreditAmount1: Math.abs(localAmount),
+        localCurrencyDebitAmount1: Math.abs(localAmount),
+        creditAmount1: Math.abs(foreign),
+        debitAmount1: Math.abs(foreign),
+        description: 'Foreign currency balance',
+        isCreditorCounterparty,
+        invoiceDate: documentEntry.invoiceDate,
+        valueDate: transactionEntry.valueDate,
+        currency,
+        ownerId: transactionEntry.ownerId,
+        chargeId: charge.id,
+      };
+      ledgerEntries.push(ledgerEntry);
+    }
+  }
+
+  return ledgerEntries;
 }
