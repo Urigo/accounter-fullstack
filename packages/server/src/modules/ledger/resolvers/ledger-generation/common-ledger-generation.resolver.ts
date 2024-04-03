@@ -27,6 +27,7 @@ import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
   ledgerProtoToRecordsConverter,
+  multipleForeignCurrenciesBalanceEntries,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../../helpers/utils.helper.js';
@@ -407,6 +408,21 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
 
+    // multiple currencies balance
+    const foreignCurrencyCount = currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
+    if (foreignCurrencyCount >= 2) {
+      const entries = multipleForeignCurrenciesBalanceEntries(
+        accountingLedgerEntries,
+        financialAccountLedgerEntries,
+        feeFinancialAccountLedgerEntries,
+        charge,
+      );
+      for (const ledgerEntry of entries) {
+        miscLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      }
+    }
+
     // Add ledger completion entries
     const { balanceSum, isBalanced, unbalancedEntities, financialEntities } =
       await getLedgerBalanceInfo(injector, ledgerBalance, allowedUnbalancedBusinesses);
@@ -433,13 +449,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // check if exchange rate record is needed
       const hasMultipleDates = dates.size > 1;
-      const foreignCurrencyCount =
-        currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
+
       const mightRequireExchangeRateRecord =
         (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
       const unbalancedBusinesses = unbalancedEntities.filter(({ entityId }) =>
         financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
       );
+
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
         const documentEntry = accountingLedgerEntries[0];
