@@ -6,7 +6,7 @@ import {
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { EditMiniButton } from '../../common/index.js';
+import { EditMiniButton, SplitDocumentsButton } from '../../common/index.js';
 import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -21,6 +21,7 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
     ...DocumentsTableCreditorFields
     ...DocumentsTableDebtorFields
     ...DocumentFilesFields
+    ...SplitDocumentsButtonFields
   }
 `;
 
@@ -79,6 +80,7 @@ export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactE
       <Files data={document} />
       <td>
         <EditMiniButton onClick={editDocument} tooltip="Edit Document" />
+        <SplitDocumentsButton document={document} />
       </td>
     </tr>
   );

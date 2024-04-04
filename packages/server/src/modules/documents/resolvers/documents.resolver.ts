@@ -197,9 +197,114 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       } catch (e) {
         return {
           __typename: 'CommonError',
-          message: `Error inserting new ledger record:\n  ${
-            (e as Error)?.message ?? 'Unknown error'
-          }`,
+          message: `Error inserting new document:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
+        };
+      }
+    },
+    splitDocument: async (
+      _,
+      { documentId, splitAmount, underSameCharge = false },
+      { injector },
+    ) => {
+      try {
+        const document = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByIdLoader.load(documentId);
+        if (!document) {
+          throw new Error(`Document ID='${documentId}' not found`);
+        }
+
+        if (!document.total_amount || Math.abs(splitAmount) > Math.abs(document.total_amount)) {
+          throw new Error('Split amount is greater than the original amount');
+        }
+
+        const newAmount = document.total_amount - splitAmount;
+
+        // set VAT values
+        let newVat: number | undefined = undefined;
+        let splitVat: number | undefined = undefined;
+        if (document.vat_amount) {
+          const splitPercentage = splitAmount / document.total_amount;
+          splitVat = Number((document.vat_amount * splitPercentage).toFixed(2));
+          newVat = document.vat_amount - splitVat;
+        }
+
+        let newChargeId = document.charge_id_new;
+        if (!underSameCharge && document.charge_id_new) {
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(document.charge_id_new);
+
+          if (!charge) {
+            throw new Error(`Charge ID='${document.charge_id_new}' not found`);
+          }
+
+          // generate new charge
+          const newCharge = await injector.get(ChargesProvider).generateCharge({
+            ownerId: charge.owner_id,
+            userDescription: 'Document splitted from charge',
+          });
+
+          if (!newCharge || newCharge.length === 0) {
+            throw new GraphQLError(`Failed to generate new charge for document ID="${documentId}"`);
+          }
+          newChargeId = newCharge?.[0]?.id;
+        }
+
+        const updatedDocument: IUpdateDocumentParams = {
+          documentId: document.id,
+          totalAmount: newAmount,
+          vatAmount: newVat,
+        };
+
+        const newDocument: IInsertDocumentsParams['document']['0'] = {
+          ...document,
+          image: document.image_url,
+          file: document.file_url,
+          documentType: document.type,
+          serialNumber: document.serial_number,
+          date: document.date,
+          currencyCode: document.currency_code,
+          amount: splitAmount,
+          vat: splitVat,
+          chargeId: newChargeId,
+        };
+
+        const updatedDocumentPromise = injector
+          .get(DocumentsProvider)
+          .updateDocument(updatedDocument)
+          .catch(e => {
+            console.error(e);
+            throw new Error('Failed to update splitted document');
+          });
+
+        const splittedDocumentPromise = injector
+          .get(DocumentsProvider)
+          .insertDocuments({ document: [{ ...newDocument }] })
+          .catch(e => {
+            console.error(e);
+            throw new Error('Failed to insert splitted document');
+          });
+
+        const [res1, res2] = await Promise.all([updatedDocumentPromise, splittedDocumentPromise]);
+
+        if (!res1 || res1.length === 0) {
+          throw new Error(`Failed to update amount for splitted document ID='${document.id}'`);
+        }
+        if (!res2 || res2.length === 0) {
+          throw new Error(`Failed to create splitted document out of document ID='${document.id}'`);
+        }
+
+        if (res1[0].charge_id_new) {
+          /* clear cache */
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.clear(res1[0].charge_id_new);
+        }
+
+        return { documents: [res1[0], res2[0]] };
+      } catch (e) {
+        return {
+          __typename: 'CommonError',
+          message: `Error splitting document:\n  ${(e as Error)?.message ?? 'Unknown error'}`,
         };
       }
     },
