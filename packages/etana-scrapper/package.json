@@ -15,7 +15,7 @@
     "csv-parse": "5.5.5",
     "diary": "0.4.5",
     "dotenv": "16.4.5",
-    "pg-promise": "11.5.5"
+    "pg-promise": "11.6.0"
   },
   "devDependencies": {
     "@types/node": "20.12.3",
