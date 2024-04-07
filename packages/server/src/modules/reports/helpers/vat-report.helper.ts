@@ -63,7 +63,7 @@ export function adjustTaxRecords(
     const rate = getRateForCurrency(doc.currency_code, exchangeRates);
 
     // convert document vat to ILS
-    doc.vat_amount &&= doc.vat_amount * rate;
+    const vat = doc.vat_amount ? doc.vat_amount * rate : null;
 
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
@@ -76,7 +76,7 @@ export function adjustTaxRecords(
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
       documentAmount: String((doc.type === DocumentType.CreditInvoice ? -1 : 1) * doc.total_amount),
-      vat: doc.vat_amount,
+      vat,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
       isExpense:
