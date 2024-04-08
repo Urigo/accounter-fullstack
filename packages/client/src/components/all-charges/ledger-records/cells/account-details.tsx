@@ -179,11 +179,12 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
       ? diffDebitAmount1
       : diffDebitAmount2;
 
+  const isAccountDiff = diffCreditAccount?.id !== creditAccount?.id && !!diffCreditAccount?.name;
+  const isLocalAmountDiff =
+    diffLocalAmount && diffLocalAmount?.formatted !== localAmount?.formatted;
   const diffIsForeign = foreignAmount != null && foreignAmount.currency !== 'ILS';
-  const hasDiffs =
-    diffCreditAccount?.id !== creditAccount?.id ||
-    diffLocalAmount?.formatted !== localAmount?.formatted ||
-    diffForeignAmount?.formatted !== foreignAmount?.formatted;
+  const isForeignAmountDiff =
+    diffForeignAmount && diffForeignAmount?.formatted !== foreignAmount?.formatted && diffIsForeign;
 
   return (
     <td>
@@ -193,24 +194,42 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
             <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
               <NavLink
                 label={creditAccount?.name}
-                className="[&>*>.mantine-NavLink-label]:font-semibold"
+                className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
               />
             </a>
-            {isForeign && <p>{foreignAmount.formatted}</p>}
-            {localAmount != null && <p>{localAmount.formatted}</p>}
+            {isAccountDiff && (
+              <div className="border-2 border-yellow-500 rounded-md">
+                <a href={getHref(diffCreditAccount.id)} target="_blank" rel="noreferrer">
+                  <NavLink
+                    label={diffCreditAccount.name}
+                    className="[&>*>.mantine-NavLink-label]:font-semibold"
+                  />
+                </a>
+              </div>
+            )}
+
+            <div className="flex gap-2  items-center">
+              {isForeign && (
+                <p className={isForeignAmountDiff ? 'line-through' : ''}>
+                  {foreignAmount.formatted}
+                </p>
+              )}
+              {isForeignAmountDiff && (
+                <p className="border-2 border-yellow-500 rounded-md">
+                  {diffForeignAmount.formatted}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2  items-center">
+              {localAmount != null && (
+                <p className={isLocalAmountDiff ? 'line-through' : ''}>{localAmount.formatted}</p>
+              )}
+              {isLocalAmountDiff && (
+                <p className="border-2 border-yellow-500 rounded-md">{diffLocalAmount.formatted}</p>
+              )}
+            </div>
           </>
-        )}
-        {hasDiffs && diffCreditAccount?.name && (
-          <div className="border-2 border-red-500 rounded-md">
-            <a href={getHref(diffCreditAccount?.id)} target="_blank" rel="noreferrer">
-              <NavLink
-                label={diffCreditAccount?.name}
-                className="[&>*>.mantine-NavLink-label]:font-semibold"
-              />
-            </a>
-            {diffIsForeign && <p>{diffForeignAmount?.formatted}</p>}
-            {diffLocalAmount != null && <p>{diffLocalAmount?.formatted}</p>}
-          </div>
         )}
       </div>
     </td>
