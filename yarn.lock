@@ -89,7 +89,7 @@
     json5 "^2.2.2"
     semver "^6.3.1"
 
-"@babel/core@^7.14.0", "@babel/core@^7.22.9", "@babel/core@^7.23.5", "@babel/core@^7.24.0":
+"@babel/core@^7.14.0", "@babel/core@^7.23.5", "@babel/core@^7.24.0":
   version "7.24.4"
   resolved "https://registry.yarnpkg.com/@babel/core/-/core-7.24.4.tgz#1f758428e88e0d8c563874741bc4ffc4f71a4717"
   integrity sha512-MBVlMXP+kkl5394RBLSxxk/iLTeVGuXTV3cIDXavPpMMqnSnt6apKgan/U8O3USWZCWZT/TbgfEpKa4uMgN4Dg==
@@ -1735,10 +1735,10 @@
   dependencies:
     localforage "1.10.0"
 
-"@graphql-mesh/cli@0.89.8":
-  version "0.89.8"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.89.8.tgz#af2e4c7395ee379dede072b13d57184f7e0d7edd"
-  integrity sha512-tN9PKac0XxwIcDrYwKZNDQra/3n0qNR/fPzXMbg+LhPLItcMjnDPKi8E0GGxTR5H/b/EUjPRflz4r9pRwQYyxA==
+"@graphql-mesh/cli@0.89.9":
+  version "0.89.9"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.89.9.tgz#29e77a698964ef96e62353f69074814cd8ad4c86"
+  integrity sha512-JZ8TlstarYex2yxIYJJCBbOzpQM8mGScPpMqUAQyyYd95Rg/Q2cYBlUy4+KsxdBoioDSYmtGKqmp7q00IFxDxA==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
@@ -1746,10 +1746,10 @@
     "@graphql-codegen/typescript-generic-sdk" "^3.1.0"
     "@graphql-codegen/typescript-operations" "^4.0.0"
     "@graphql-codegen/typescript-resolvers" "^4.0.0"
-    "@graphql-mesh/config" "^0.99.8"
+    "@graphql-mesh/config" "^0.99.9"
     "@graphql-mesh/cross-helpers" "^0.4.1"
-    "@graphql-mesh/http" "^0.98.7"
-    "@graphql-mesh/runtime" "^0.98.7"
+    "@graphql-mesh/http" "^0.98.8"
+    "@graphql-mesh/runtime" "^0.98.8"
     "@graphql-mesh/store" "^0.97.5"
     "@graphql-mesh/types" "^0.97.5"
     "@graphql-mesh/utils" "^0.97.5"
@@ -1775,10 +1775,10 @@
   optionalDependencies:
     node-libcurl "^4.0.0"
 
-"@graphql-mesh/config@0.99.8", "@graphql-mesh/config@^0.99.8":
-  version "0.99.8"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.99.8.tgz#8ac476e1907bb319d2a24c4eb453eb2d61cdc73a"
-  integrity sha512-MQ5MVlnVzmeZ1mNFa5ap51kZEDuPTTBrodNUhPlaYbun1bFSt+jACicOiFDVgQ9uHcjNg4v+q78nwzXdUyHeGg==
+"@graphql-mesh/config@0.99.9", "@graphql-mesh/config@^0.99.9":
+  version "0.99.9"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.99.9.tgz#224d4fa8467112ee5db15b14c16e63ad26cd6bef"
+  integrity sha512-NUibt2GLcgiBYjsJ4JGjsoZwg8Cx+8gMXdJpKbfmkRfd8vKilm5u1vXoJCK/L+2m/ZP4qkGIRjFEk2d1lubSmQ==
   dependencies:
     "@envelop/core" "^5.0.0"
     "@graphql-mesh/cache-localforage" "^0.97.5"
@@ -1800,10 +1800,10 @@
   dependencies:
     path-browserify "1.0.1"
 
-"@graphql-mesh/http@0.98.7", "@graphql-mesh/http@^0.98.7":
-  version "0.98.7"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.98.7.tgz#c6033188365db8b3f9306b25bc7ee88e6788eb75"
-  integrity sha512-KWoQ58CS5Hl7ONbO7ClElOPbRX7JOeR4yxoypexHahfaWjAoUuF7kVGwRFeVzZiT2HEz3J+fGIx+vlBCD5yp6w==
+"@graphql-mesh/http@0.98.8", "@graphql-mesh/http@^0.98.8":
+  version "0.98.8"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.98.8.tgz#39802b0a5a360e8e28aedce4504849ead9a8de91"
+  integrity sha512-MFmExMMNF2ZYsKebSguV/sIcjZKfmkdCnW9ZzmDYUlF8lb0oItAA4J693km/1f494xh57wC3wBtkEPgEBf+AJA==
   dependencies:
     "@whatwg-node/server" "^0.9.0"
     graphql-yoga "^5.1.1"
@@ -1836,10 +1836,10 @@
     "@graphql-tools/schema" "^10.0.0"
     "@graphql-tools/stitch" "^9.0.0"
 
-"@graphql-mesh/runtime@0.98.7", "@graphql-mesh/runtime@^0.98.7":
-  version "0.98.7"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.98.7.tgz#92e39beb1c739d086cd8384e93c426b40d383373"
-  integrity sha512-8ytRY9F/7fWj5xIX14WgJBUtoJ3OB5mbIsu8ZtK0KJuHgZw7/S9pu0tBeROWFhMcrI7Y0yKIWgo4jx4eT29t0g==
+"@graphql-mesh/runtime@0.98.8", "@graphql-mesh/runtime@^0.98.8":
+  version "0.98.8"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.98.8.tgz#f8f37b44bf5c53824ba23b5045e06d7792bb5ad6"
+  integrity sha512-s8EVdZbWI0r5kvQwDTobc8rU2ox+cGCv6vWGbmdN1NUwKDi4W8Fcisyc/2k7xX+FzCcW3uknlmE3sIbLVsmzUQ==
   dependencies:
     "@envelop/core" "^5.0.0"
     "@envelop/extended-validation" "^4.0.0"
@@ -2190,7 +2190,7 @@
     "@graphql-tools/utils" "^9.2.1"
     tslib "^2.4.0"
 
-"@graphql-tools/graphql-tag-pluck@8.0.1":
+"@graphql-tools/graphql-tag-pluck@8.0.1", "@graphql-tools/graphql-tag-pluck@^8.0.0":
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.0.1.tgz#480d804a0fd7576f5ee06460528f1ee2b426f50e"
   integrity sha512-4sfBJSoXxVB4rRCCp2GTFhAYsUJgAPSKxSV+E3Voc600mK52JO+KsHCCTnPgCeyJFMNR9l94J6+tqxVKmlqKvw==
@@ -2200,19 +2200,6 @@
     "@babel/traverse" "^7.16.8"
     "@babel/types" "^7.16.8"
     "@graphql-tools/utils" "^10.0.0"
-    tslib "^2.4.0"
-
-"@graphql-tools/graphql-tag-pluck@^8.0.0":
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.3.0.tgz#11bb8c627253137b39b34fb765cd6ebe506388b9"
-  integrity sha512-gNqukC+s7iHC7vQZmx1SEJQmLnOguBq+aqE2zV2+o1hxkExvKqyFli1SY/9gmukFIKpKutCIj+8yLOM+jARutw==
-  dependencies:
-    "@babel/core" "^7.22.9"
-    "@babel/parser" "^7.16.8"
-    "@babel/plugin-syntax-import-assertions" "^7.20.0"
-    "@babel/traverse" "^7.16.8"
-    "@babel/types" "^7.16.8"
-    "@graphql-tools/utils" "^10.0.13"
     tslib "^2.4.0"
 
 "@graphql-tools/import@6.7.18":
