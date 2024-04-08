@@ -10,7 +10,7 @@ export default gql`
     updateTransaction(
       transactionId: UUID!
       fields: UpdateTransactionInput!
-    ): UpdateTransactionResult! @auth(role: ADMIN)
+    ): UpdateTransactionResult! @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {
