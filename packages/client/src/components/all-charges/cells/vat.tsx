@@ -69,7 +69,7 @@ export const Vat = ({ data }: Props): ReactElement => {
     <td>
       <div style={{ color: vatIssueFlag ? 'red' : 'green', whiteSpace: 'nowrap' }}>
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-          {vat ? vat.formatted : vatIssueFlag ? 'Missing' : null}
+          {vat?.formatted}
         </Indicator>
       </div>
     </td>
