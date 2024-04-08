@@ -13,7 +13,8 @@ export function ToggleExpansionButton(props: {
     <Tooltip label="Expand info">
       <ActionIcon
         variant="default"
-        onClick={(): void => {
+        onClick={(event): void => {
+          event.stopPropagation();
           toggleExpansion(i => {
             if (onClickAction) {
               onClickAction(i);

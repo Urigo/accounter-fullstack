@@ -20,7 +20,10 @@ export function ToggleMergeSelected(props: {
   return (
     <Tooltip label="Select for merge">
       <ActionIcon
-        onClick={(): void => toggleMergeSelected()}
+        onClick={(event): void => {
+          event.stopPropagation();
+          toggleMergeSelected();
+        }}
         variant={variant}
         color={color}
         className={mergeSelected ? 'bg-blue-500' : undefined}

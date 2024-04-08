@@ -115,7 +115,13 @@ export const AllChargesRow = ({
 
   return (
     <>
-      <tr>
+      <tr
+        onClick={() => {
+          if (hasExtendedInfo) {
+            setOpened(prev => !prev);
+          }
+        }}
+      >
         <TypeCell data={charge} />
         <DateCell data={charge} />
         <Amount data={charge} />
@@ -129,7 +135,12 @@ export const AllChargesRow = ({
         <AccountantApproval data={charge} />
         <td>
           <div className="flex flex-col gap-2">
-            <EditMiniButton onClick={setEditCharge} />
+            <EditMiniButton
+              onClick={event => {
+                event.stopPropagation();
+                setEditCharge();
+              }}
+            />
             {toggleMergeCharge && (
               <ToggleMergeSelected
                 toggleMergeSelected={(): void => toggleMergeCharge()}
