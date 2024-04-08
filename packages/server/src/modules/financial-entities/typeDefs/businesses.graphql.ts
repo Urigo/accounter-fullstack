@@ -31,6 +31,7 @@ export default gql`
     email: String
     website: String
     phoneNumber: String
+    exemptDealer: Boolean
   }
 
   " Financial entity, identifier by ID, represents an actual person "
@@ -63,6 +64,7 @@ export default gql`
     phoneNumber: String
     governmentId: String
     taxCategory: UUID
+    exemptDealer: Boolean
   }
 
   extend interface Charge {
