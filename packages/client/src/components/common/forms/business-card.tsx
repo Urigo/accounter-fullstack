@@ -2,7 +2,7 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader, Select } from '@mantine/core';
+import { ActionIcon, Loader, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessesRowFieldsFragment,
@@ -26,6 +26,7 @@ import { SimpleGrid, TextInput } from '../index.js';
       ... on LtdFinancialEntity {
         address
         email
+        exemptDealer
         governmentId
         hebrewName
         name
@@ -340,6 +341,14 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
                       searchable
                       error={fieldState.error?.message}
                     />
+                  )}
+                />
+                <Controller
+                  name="exemptDealer"
+                  control={control}
+                  defaultValue={business.exemptDealer}
+                  render={({ field: { value, ...field } }): ReactElement => (
+                    <Switch {...field} checked={value === true} label="Exempt Dealer" />
                   )}
                 />
               </SimpleGrid>

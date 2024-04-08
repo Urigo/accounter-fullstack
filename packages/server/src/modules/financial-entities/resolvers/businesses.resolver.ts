@@ -60,6 +60,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       const adjustedFields: IUpdateBusinessParams = {
         address: fields.address,
         email: fields.email,
+        exemptDealer: fields.exemptDealer,
         vatNumber: fields.governmentId,
         hebrewName: fields.hebrewName,
         phoneNumber: fields.phoneNumber,
@@ -73,7 +74,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           fields.email ||
           fields.governmentId ||
           fields.phoneNumber ||
-          fields.website
+          fields.website ||
+          fields.exemptDealer
         ) {
           await injector
             .get(BusinessesProvider)
@@ -142,6 +144,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,
+    exemptDealer: DbBusiness => DbBusiness.exempt_dealer,
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,
   },
