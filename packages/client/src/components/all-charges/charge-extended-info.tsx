@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
@@ -65,6 +65,7 @@ interface Props {
 }
 
 export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
+  const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [opened, { toggle }] = useDisclosure(false);
   const [{ data, fetching }] = useQuery({
     query: FetchChargeDocument,
@@ -80,7 +81,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
 
-  const defaultAccordionValue = (): string[] => {
+  useEffect(() => {
     const tabs = [];
     if (hasTransactions) {
       tabs.push('transactions');
@@ -94,8 +95,16 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
     if (isSalaryCharge) {
       tabs.push('salaries');
     }
-    return tabs;
-  };
+    setAccordionItems(tabs);
+  }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge]);
+
+  function toggleAccordionItem(item: string): void {
+    if (accordionItems.includes(item)) {
+      setAccordionItems(current => current.filter(currItem => currItem !== item));
+    } else {
+      setAccordionItems(current => [...current, item]);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -103,11 +112,11 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
       {!fetching && charge && (
-        <div className="flex flex-row gap-5">
+        <div className="flex flex-row">
           <Accordion
             className="w-full"
             multiple
-            defaultValue={defaultAccordionValue()}
+            value={accordionItems}
             chevron={<Plus size="1rem" />}
             styles={{
               chevron: {
@@ -119,7 +128,12 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
           >
             {charge.__typename === 'ConversionCharge' && (
               <Accordion.Item value="conversion">
-                <Accordion.Control disabled={!hasTransactions}>Conversion Info</Accordion.Control>
+                <Accordion.Control
+                  disabled={!hasTransactions}
+                  onClick={() => toggleAccordionItem('conversion')}
+                >
+                  Conversion Info
+                </Accordion.Control>
                 <Accordion.Panel>
                   <ConversionInfo chargeProps={charge} />
                 </Accordion.Panel>
@@ -127,23 +141,39 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             )}
 
             <Accordion.Item value="transactions">
-              <Accordion.Control disabled={!hasTransactions}>Transactions</Accordion.Control>
+              <Accordion.Control
+                disabled={!hasTransactions}
+                onClick={() => toggleAccordionItem('transactions')}
+              >
+                Transactions
+              </Accordion.Control>
               <Accordion.Panel>
                 <TransactionsTable transactionsProps={charge} />
               </Accordion.Panel>
             </Accordion.Item>
 
             <Accordion.Item value="documents">
-              <div className="flex flex-row items-center pl-2 justify-between w-full">
-                {hasDocs && (
-                  <Tooltip label="Documents Gallery">
-                    <ActionIcon onClick={toggle} variant="outline">
-                      <Photo size={20} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-                <Accordion.Control disabled={!hasDocs}>Documents</Accordion.Control>
-              </div>
+              <Accordion.Control
+                disabled={!hasDocs}
+                onClick={() => toggleAccordionItem('documents')}
+              >
+                <div className="flex flex-row items-center gap-2 justify-start w-full">
+                  {hasDocs && (
+                    <Tooltip label="Documents Gallery">
+                      <ActionIcon
+                        onClick={event => {
+                          event.stopPropagation();
+                          toggle();
+                        }}
+                        variant="outline"
+                      >
+                        <Photo size={20} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                  Documents
+                </div>
+              </Accordion.Control>
               <Accordion.Panel>
                 <DocumentsTable documentsProps={charge} />
               </Accordion.Panel>
@@ -151,7 +181,12 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
 
             {charge.__typename === 'SalaryCharge' && (
               <Accordion.Item value="salaries">
-                <Accordion.Control disabled={!isSalaryCharge}>Salaries</Accordion.Control>
+                <Accordion.Control
+                  disabled={!isSalaryCharge}
+                  onClick={() => toggleAccordionItem('salaries')}
+                >
+                  Salaries
+                </Accordion.Control>
                 <Accordion.Panel>
                   <SalariesTable salaryRecordsProps={charge} />
                 </Accordion.Panel>
@@ -160,7 +195,9 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
 
             {charge.__typename === 'BusinessTripCharge' && (
               <Accordion.Item value="businessTrip">
-                <Accordion.Control>Business Trip</Accordion.Control>
+                <Accordion.Control onClick={() => toggleAccordionItem('businessTrip')}>
+                  Business Trip
+                </Accordion.Control>
                 <Accordion.Panel>
                   <BusinessTripReport data={charge.businessTrip!} />
                 </Accordion.Panel>
@@ -168,10 +205,15 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             )}
 
             <Accordion.Item value="ledger">
-              <div className="flex flex-row items-center pl-2 justify-between w-full">
-                <RegenerateLedgerRecordsButton chargeId={charge.id} variant="outline" />
-                <Accordion.Control disabled={!hasLedgerRecords}>Ledger Records</Accordion.Control>
-              </div>
+              <Accordion.Control
+                disabled={!hasLedgerRecords}
+                onClick={() => toggleAccordionItem('ledger')}
+              >
+                <div className="flex flex-row items-center gap-2 justify-start w-full">
+                  <RegenerateLedgerRecordsButton chargeId={charge.id} variant="outline" />
+                  Ledger Records
+                </div>
+              </Accordion.Control>
               <Accordion.Panel>
                 <LedgerRecordTable ledgerRecordsProps={charge} />
               </Accordion.Panel>
@@ -227,7 +269,13 @@ export function ChargeExtendedInfoMenu({
       />
       <Menu shadow="md" width={200} opened={opened}>
         <Menu.Target>
-          <Burger opened={opened} onClick={(): void => setOpened(o => !o)} />
+          <Burger
+            opened={opened}
+            onClick={(event): void => {
+              event.stopPropagation();
+              setOpened(o => !o);
+            }}
+          />
         </Menu.Target>
 
         <Menu.Dropdown>

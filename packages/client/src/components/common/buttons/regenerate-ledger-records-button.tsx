@@ -28,7 +28,13 @@ export function RegenerateLedgerRecordsButton({ chargeId, ...buttonProps }: Prop
         title="Are you sure you want to regenerate ledger records?"
       />
       <Tooltip label="Regenerate Ledger">
-        <ActionIcon onClick={(): void => setOpened(true)} {...buttonProps}>
+        <ActionIcon
+          onClick={(event): void => {
+            event.stopPropagation();
+            setOpened(true);
+          }}
+          {...buttonProps}
+        >
           <RefreshDot size={20} />
         </ActionIcon>
       </Tooltip>

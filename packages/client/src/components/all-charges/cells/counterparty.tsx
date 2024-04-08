@@ -85,7 +85,12 @@ export const Counterparty = ({ data }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {!isError && id && (
-            <a href={getHref(id)} target="_blank" rel="noreferrer">
+            <a
+              href={getHref(id)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={event => event.stopPropagation()}
+            >
               <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
             </a>
           )}
