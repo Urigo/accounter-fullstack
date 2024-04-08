@@ -37,8 +37,10 @@ export const GeneralDate = ({ data, diff, type }: Props): ReactElement => {
   return (
     <td>
       {formattedDate ?? 'Missing Data'}
-      {diffShowDate && showDate !== diffShowDate && (
-        <div className="flex flex-col border-2 border-red-500 rounded-md">{diffFormattedDate}</div>
+      {diffFormattedDate && showDate !== diffShowDate && (
+        <div className="flex flex-col border-2 border-yellow-500 rounded-md">
+          {diffFormattedDate}
+        </div>
       )}
     </td>
   );

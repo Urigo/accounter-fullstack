@@ -59,7 +59,9 @@ export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement =
             key={record.id}
             ledgerRecordProps={record}
             matchingStatus={
-              data.validate?.matches?.some(id => id === record.id) ? undefined : 'Diff'
+              !data.validate?.matches || data.validate.matches?.some(id => id === record.id)
+                ? undefined
+                : 'Diff'
             }
             diffs={data.validate?.differences?.find(diffRecord => diffRecord.id === record.id)}
           />
