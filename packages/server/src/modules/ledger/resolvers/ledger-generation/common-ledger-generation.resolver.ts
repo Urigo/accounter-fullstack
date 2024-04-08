@@ -11,6 +11,7 @@ import type { currency } from '@modules/transactions/types.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
+  INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID,
   INPUT_VAT_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
@@ -468,11 +469,18 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
         );
 
-        const exchangeRateTaxCategory = exchangeRateEntry
-          ? exchangeRateEntry.debitAccountID1 === entityId
-            ? exchangeRateEntry.creditAccountID1
-            : exchangeRateEntry.debitAccountID1
-          : undefined;
+        let exchangeRateTaxCategory: string | undefined = undefined;
+        if (exchangeRateEntry) {
+          exchangeRateTaxCategory =
+            exchangeRateEntry.debitAccountID1 === entityId
+              ? exchangeRateEntry.creditAccountID1
+              : exchangeRateEntry.debitAccountID1;
+
+          const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
+          if (isIncomeCharge) {
+            exchangeRateTaxCategory = INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID;
+          }
+        }
 
         if (!exchangeRateTaxCategory) {
           throw new GraphQLError(
