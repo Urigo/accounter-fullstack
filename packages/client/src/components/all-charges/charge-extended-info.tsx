@@ -207,7 +207,10 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
             <Accordion.Item value="ledger">
               <Accordion.Control
                 disabled={!hasLedgerRecords}
-                onClick={() => toggleAccordionItem('ledger')}
+                onClick={event => {
+                  event.stopPropagation();
+                  toggleAccordionItem('ledger');
+                }}
               >
                 <div className="flex flex-row items-center gap-2 justify-start w-full">
                   <RegenerateLedgerRecordsButton chargeId={charge.id} variant="outline" />

@@ -56,15 +56,31 @@ export const LedgerRecordRow = ({
       <AccountDetails data={record} diff={diffsRecord} cred first={false} />
       <td>
         <div className="flex flex-col">
-          {record.description}
-          {diffsRecord?.description && diffsRecord?.description !== record.description && (
+          <p
+            className={
+              !diffsRecord?.description || diffsRecord.description === record.description
+                ? ''
+                : 'line-through'
+            }
+          >
+            {record.description}
+          </p>
+          {diffsRecord?.description && diffsRecord.description !== record.description && (
             <div className="border-2 border-yellow-500 rounded-md">{diffsRecord?.description}</div>
           )}
         </div>
       </td>
       <td>
         <div className="flex flex-col">
-          {record.reference1}
+          <p
+            className={
+              !diffsRecord?.reference1 || diffsRecord.reference1 === record.reference1
+                ? ''
+                : 'line-through'
+            }
+          >
+            {record.reference1}
+          </p>
           {diffsRecord?.reference1 && diffsRecord?.reference1 !== record.reference1 && (
             <div className="border-2 border-yellow-500 rounded-md">{diffsRecord?.reference1}</div>
           )}

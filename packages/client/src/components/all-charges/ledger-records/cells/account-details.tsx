@@ -179,12 +179,9 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
       ? diffDebitAmount1
       : diffDebitAmount2;
 
-  const isAccountDiff = diffCreditAccount?.id !== creditAccount?.id && !!diffCreditAccount?.name;
-  const isLocalAmountDiff =
-    diffLocalAmount && diffLocalAmount?.formatted !== localAmount?.formatted;
-  const diffIsForeign = foreignAmount != null && foreignAmount.currency !== 'ILS';
-  const isForeignAmountDiff =
-    diffForeignAmount && diffForeignAmount?.formatted !== foreignAmount?.formatted && diffIsForeign;
+  const isAccountDiff = diff && diffCreditAccount?.id !== creditAccount?.id;
+  const isLocalAmountDiff = diff && diffLocalAmount?.formatted !== localAmount?.formatted;
+  const isForeignAmountDiff = diff && diffForeignAmount?.formatted !== foreignAmount?.formatted;
 
   return (
     <td>
@@ -197,7 +194,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
                 className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
               />
             </a>
-            {isAccountDiff && (
+            {isAccountDiff && diffCreditAccount && (
               <div className="border-2 border-yellow-500 rounded-md">
                 <a href={getHref(diffCreditAccount.id)} target="_blank" rel="noreferrer">
                   <NavLink
@@ -214,7 +211,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
                   {foreignAmount.formatted}
                 </p>
               )}
-              {isForeignAmountDiff && (
+              {isForeignAmountDiff && diffForeignAmount && (
                 <p className="border-2 border-yellow-500 rounded-md">
                   {diffForeignAmount.formatted}
                 </p>
@@ -225,7 +222,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
               {localAmount != null && (
                 <p className={isLocalAmountDiff ? 'line-through' : ''}>{localAmount.formatted}</p>
               )}
-              {isLocalAmountDiff && (
+              {isLocalAmountDiff && diffLocalAmount && (
                 <p className="border-2 border-yellow-500 rounded-md">{diffLocalAmount.formatted}</p>
               )}
             </div>
