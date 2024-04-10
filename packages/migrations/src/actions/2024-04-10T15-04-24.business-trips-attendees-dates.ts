@@ -8,5 +8,11 @@ export default {
 
   alter table accounter_schema.business_trips_attendees
     add departure date;
+
+  alter table accounter_schema.business_trips
+    drop column from_date;
+
+  alter table accounter_schema.business_trips
+    drop column to_date;
 `,
 } satisfies MigrationExecutor;
