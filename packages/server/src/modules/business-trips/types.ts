@@ -1,3 +1,5 @@
+import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.types.js';
+
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
 export * from './__generated__/business-trips-attendees.types.js';
@@ -104,3 +106,7 @@ export type {
   IInsertBusinessTripOtherTransactionResult,
   IInsertBusinessTripOtherTransactionQuery,
 } from './__generated__/business-trips-transactions-other.types.js';
+export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
+  id: NonNullable<IGetAllBusinessTripsResult['id']>;
+  name: NonNullable<IGetAllBusinessTripsResult['name']>;
+};
