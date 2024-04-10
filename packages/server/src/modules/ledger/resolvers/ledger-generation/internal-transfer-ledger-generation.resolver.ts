@@ -139,6 +139,9 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         validateTransactionBasicVariables(transaction);
 
       let amount = Number(transaction.amount);
+      if (amount === 0) {
+        continue;
+      }
       let foreignAmount: number | undefined = undefined;
 
       if (currency !== DEFAULT_LOCAL_CURRENCY) {
