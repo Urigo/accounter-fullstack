@@ -26,7 +26,7 @@
     "dayjs": "1.11.10",
     "decimal.js": "10.4.3",
     "deep-equal": "2.2.3",
-    "embla-carousel-react": "8.0.1",
+    "embla-carousel-react": "8.0.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "7.51.2",
