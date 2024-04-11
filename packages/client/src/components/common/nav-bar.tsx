@@ -50,6 +50,13 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
             />
           </li>
           <li>
+            <NavLink
+              className="text-gray-700 rounded"
+              label="Business Trips"
+              onClick={(): void => navigate('/business-trips')}
+            />
+          </li>
+          <li>
             <NavLink className="text-gray-700 rounded" label="Reports" childrenOffset={28}>
               <NavLink
                 className="text-gray-700 rounded"

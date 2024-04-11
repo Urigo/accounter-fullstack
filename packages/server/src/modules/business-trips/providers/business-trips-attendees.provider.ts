@@ -38,7 +38,7 @@ const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendee
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`
   INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure)
-  VALUES $$businessTripAttendees(businessTripId, businessId, arrival, departure)
+  VALUES ($businessTripId, $businessId, $arrival, $departure)
   ON CONFLICT DO NOTHING
   RETURNING *;`;
 
@@ -62,7 +62,7 @@ const updateBusinessTripAttendee = sql<IUpdateBusinessTripAttendeeQuery>`
 const removeBusinessTripAttendees = sql<IRemoveBusinessTripAttendeesQuery>`
   DELETE FROM accounter_schema.business_trips_attendees
   WHERE business_trip_id = $businessTripId
-    AND attendee_business_id in $$businessId
+    AND attendee_business_id = $businessId
   RETURNING *;`;
 
 @Injectable({

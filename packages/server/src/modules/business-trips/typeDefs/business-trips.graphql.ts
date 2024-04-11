@@ -78,7 +78,7 @@ export default gql`
     dates: DateRange
     destination: String
     purpose: String
-    attendees: [Business!]!
+    attendees: [BusinessTripAttendee!]!
     transactions: [BusinessTripTransaction!]!
     summary: BusinessTripSummary!
   }
@@ -188,7 +188,7 @@ export default gql`
     excessExpenditure: FinancialAmount
   }
 
-  " represent category type of business trip summary"
+  " represent category type of business trip summary "
   enum BusinessTripSummaryCategories {
     ACCOMMODATION
     FLIGHT

@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { BusinessTransactionsSummery } from './components/business-transactions';
+import { BusinessTrips } from './components/business-trips';
 import { Businesses } from './components/businesses';
 import { ChartPage } from './components/charts';
 import { Footer } from './components/common';
@@ -22,6 +23,7 @@ export function App(): ReactElement {
         <Route path="/" element={<AllCharges />} />
         <Route path="/all-charges" element={<AllCharges />} />
         <Route path="/businesses" element={<Businesses />} />
+        <Route path="/business-trips" element={<BusinessTrips />} />
         <Route path="/business-transactions" element={<BusinessTransactionsSummery />} />
         <Route path="/charts" element={<ChartPage />} />
         <Route path="/documents" element={<DocumentsReport />} />

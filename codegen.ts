@@ -51,6 +51,8 @@ const config: CodegenConfig = {
           BusinessTransaction: '@shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
           BusinessTrip: '@modules/business-trips/types.js#BusinessTripProto',
+          BusinessTripAttendee:
+            '@modules/business-trips/types.js#IGetBusinessTripsAttendeesByBusinessTripIdsResult',
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult',
