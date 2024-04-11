@@ -3,7 +3,7 @@ import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container } from '@mantine/core';
 import { BusinessTripsScreenDocument } from '../../gql/graphql.js';
-import { AccounterLoader } from '../common';
+import { AccounterLoader, InsertBusinessTripModal } from '../common';
 import { EditableBusinessTrip } from './editable-business-trip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -12,6 +12,9 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
     allBusinessTrips {
       id
       name
+      dates {
+        start
+      }
       ...EditableBusinessTrip
     }
   }
@@ -38,16 +41,28 @@ export const BusinessTrips = (): ReactElement => {
           },
         }}
       >
-        {data?.allBusinessTrips.map(businessTrip => (
-          <Accordion.Item value={businessTrip.id} key={businessTrip.id}>
-            <Accordion.Control>{businessTrip.name}</Accordion.Control>
-            <Accordion.Panel>
-              <EditableBusinessTrip data={businessTrip} />
-            </Accordion.Panel>
-          </Accordion.Item>
-        ))}
+        {data?.allBusinessTrips
+          .sort((a, b) => {
+            // sort by start date (if available, newest top) and then by name
+            if (a.dates?.start && b.dates?.start) {
+              return a.dates.start < b.dates.start ? 1 : -1;
+            }
+            if (a.dates?.start) return -1;
+            if (b.dates?.start) return 1;
+            return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
+          })
+          .map(businessTrip => (
+            <Accordion.Item value={businessTrip.id} key={businessTrip.id}>
+              <Accordion.Control>{businessTrip.name}</Accordion.Control>
+              <Accordion.Panel>
+                <EditableBusinessTrip data={businessTrip} isExtended />
+              </Accordion.Panel>
+            </Accordion.Item>
+          ))}
       </Accordion>
-      {/* TODO: add business trip button + modal */}
+      <div className="flex justify-end mx-4">
+        <InsertBusinessTripModal />
+      </div>
     </Container>
   );
 };

@@ -81,6 +81,7 @@ export default gql`
     attendees: [BusinessTripAttendee!]!
     transactions: [BusinessTripTransaction!]!
     summary: BusinessTripSummary!
+    uncategorizedTransactions: [Transaction!]!
   }
 
   " business trip transaction prototype "

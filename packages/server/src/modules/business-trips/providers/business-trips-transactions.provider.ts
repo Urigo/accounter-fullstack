@@ -7,6 +7,8 @@ import type {
   IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
   IGetBusinessTripsTransactionsByIdsQuery,
+  IGetUncategorizedTransactionsByBusinessTripIdParams,
+  IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripTransactionParams,
   IInsertBusinessTripTransactionQuery,
   IUpdateBusinessTripTransactionParams,
@@ -84,8 +86,20 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
 
 const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
   INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, date, value_date, amount, currency, employee_business_id, payed_by_employee, transaction_id)
-  VALUES($business_trip_id, $category, $date, $valueDate, $amount, $currency, $employeeBusinessId, $payedByEmployee, $transactionId)
+  VALUES($businessTripId, $category, $date, $valueDate, $amount, $currency, $employeeBusinessId, $payedByEmployee, $transactionId)
   RETURNING *;`;
+
+const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransactionsByBusinessTripIdQuery>`
+  SELECT t.*
+  FROM accounter_schema.extended_transactions t
+  LEFT JOIN accounter_schema.business_trip_charges btc
+    ON t.charge_id = btc.charge_id
+  LEFT JOIN accounter_schema.business_trips_transactions btt
+    ON btc.business_trip_id = btt.business_trip_id
+      AND btt.transaction_id = t.id
+
+  WHERE btc.business_trip_id = $businessTripId
+    AND btt.id IS NULL;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -250,5 +264,11 @@ export class BusinessTripTransactionsProvider {
       travelAndSubsistenceTransactions,
       otherTransactions,
     };
+  }
+
+  public getUncategorizedTransactionsByBusinessTripId(
+    params: IGetUncategorizedTransactionsByBusinessTripIdParams,
+  ) {
+    return getUncategorizedTransactionsByBusinessTripId.run(params, this.dbProvider);
   }
 }

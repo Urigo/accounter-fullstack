@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import type { TimelessDateString } from '@shared/types';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
@@ -127,6 +128,12 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       }
     },
     summary: businessTripSummary,
+    uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripTransactionsProvider)
+        .getUncategorizedTransactionsByBusinessTripId({ businessTripId: dbBusinessTrip.id })
+        .then(res => res as IGetTransactionsByIdsResult[]);
+    },
   },
   BusinessTripUncategorizedTransaction: {
     __isTypeOf: DbTransaction => !DbTransaction.category,

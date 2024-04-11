@@ -1,11 +1,14 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { Accordion } from '@mantine/core';
-import { EditableBusinessTripFragmentDoc } from '../../gql/graphql.js';
-import type { EditableBusinessTripFragment } from '../../gql/graphql.js';
+import {
+  EditableBusinessTripFragmentDoc,
+  type EditableBusinessTripFragment,
+} from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
+import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -13,22 +16,17 @@ import { ReportHeader } from '../common/business-trip-report/parts/report-header
     id
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
+    ...BusinessTripUncategorizedTransactionsFields
     # ...BusinessTripReportSummaryFields
-    name
-      destination
-      purpose
-      dates {
-        start
-        end
-      }
   }
 `;
 
 interface Props {
   data: FragmentType<typeof EditableBusinessTripFragmentDoc>;
+  isExtended?: boolean;
 }
 
-export function EditableBusinessTrip({ data }: Props): ReactElement {
+export function EditableBusinessTrip({ data, isExtended = false }: Props): ReactElement {
   const [trip, setTrip] = useState<EditableBusinessTripFragment>(
     getFragmentData(EditableBusinessTripFragmentDoc, data),
   );
@@ -70,6 +68,17 @@ export function EditableBusinessTrip({ data }: Props): ReactElement {
             <Attendees data={trip} onChange={onChangeDo} />
           </Accordion.Panel>
         </Accordion.Item>
+
+        {isExtended && (
+          <Accordion.Item value="uncategorized-transactions">
+            <Accordion.Control onClick={() => toggleAccordionItem('uncategorized-transactions')}>
+              Uncategorized Transactions
+            </Accordion.Control>
+            <Accordion.Panel>
+              <UncategorizedTransactions data={trip} onChange={onChangeDo} />
+            </Accordion.Panel>
+          </Accordion.Item>
+        )}
 
         <Accordion.Item value="summary">
           <Accordion.Control onClick={() => toggleAccordionItem('summary')}>
