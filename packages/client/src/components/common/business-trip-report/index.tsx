@@ -12,6 +12,7 @@ import { Flights } from './parts/flights.js';
 import { Other } from './parts/other.js';
 import { ReportHeader } from './parts/report-header';
 import { Summary } from './parts/summary.js';
+import { TravelAndSubsistence } from './parts/travel-and-subsistence.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,7 +20,9 @@ import { Summary } from './parts/summary.js';
     id
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
+    ...BusinessTripReportFlightsFields
     ...BusinessTripReportAccommodationsFields
+    ...BusinessTripReportTravelAndSubsistenceFields
     ...BusinessTripReportOtherFields
     ...BusinessTripReportSummaryFields
   }
@@ -38,7 +41,7 @@ export const BusinessTripReport = ({ data }: Props): ReactElement => {
       <Attendees data={reportData} />
       <Flights data={reportData} />
       <Accommodations data={reportData} />
-      {/* <TravelAndSubsistence data={reportData} /> */}
+      <TravelAndSubsistence data={reportData} />
       <Other data={reportData} />
       <Summary data={reportData} />
     </>

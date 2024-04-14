@@ -13,6 +13,7 @@ import { Attendees } from '../common/business-trip-report/parts/attendees.js';
 import { Flights } from '../common/business-trip-report/parts/flights.js';
 import { Other } from '../common/business-trip-report/parts/other.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
+import { TravelAndSubsistence } from '../common/business-trip-report/parts/travel-and-subsistence.js';
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -24,6 +25,7 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
     ...BusinessTripUncategorizedTransactionsFields
     ...BusinessTripReportFlightsFields
     ...BusinessTripReportAccommodationsFields
+    ...BusinessTripReportTravelAndSubsistenceFields
     ...BusinessTripReportOtherFields
     # ...BusinessTripReportSummaryFields
   }
@@ -126,7 +128,14 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
           </Accordion.Panel>
         </Accordion.Item>
 
-        {/* t&s */}
+        <Accordion.Item value="travelAndSubsistence">
+          <Accordion.Control onClick={() => toggleAccordionItem('travelAndSubsistence')}>
+            Travel & Subsistence
+          </Accordion.Control>
+          <Accordion.Panel>
+            <TravelAndSubsistence data={trip} onChange={onChangeDo} />
+          </Accordion.Panel>
+        </Accordion.Item>
 
         <Accordion.Item value="other">
           <Accordion.Control onClick={() => toggleAccordionItem('other')}>Other</Accordion.Control>
