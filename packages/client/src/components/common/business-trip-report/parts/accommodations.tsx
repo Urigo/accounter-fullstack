@@ -4,6 +4,7 @@ import { BusinessTripReportAccommodationsFieldsFragmentDoc } from '../../../../g
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { AddAccommodationTransaction } from '../buttons/add-accommodation-transaction.jsx';
 import { AccommodationsRow } from './accommodations-row.js';
+import { CoreTransactionHeader } from './core-transaction-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -37,9 +38,7 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
       <Table highlightOnHover withBorder>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Employee Payment</th>
+            <CoreTransactionHeader />
             <th>Location</th>
             <th>Nights</th>
             <th />

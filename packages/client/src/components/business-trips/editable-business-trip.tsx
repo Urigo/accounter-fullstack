@@ -22,11 +22,13 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
   fragment EditableBusinessTrip on BusinessTrip {
     id
     name
-    ... on BusinessTrip @defer {
-      uncategorizedTransactions {
+    uncategorizedTransactions {
+      ... on Transaction @defer {
         id
       }
-      summary {
+    }
+    summary {
+      ... on BusinessTripSummary @defer {
         errors
       }
     }

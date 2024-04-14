@@ -1,7 +1,7 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-import { Check } from 'tabler-icons-react';
+import { Check, X } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Select, Text, TextInput, ThemeIcon } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
@@ -31,6 +31,9 @@ import { CurrencyInput } from '../../index.js';
         name
       }
       payedByEmployee
+      transaction {
+        id
+      }
   }
 `;
 
@@ -200,18 +203,36 @@ export const CoreTransactionRow = ({
                 />
               )}
             />
+          ) : businessTripTransaction.payedByEmployee ? (
+            <>
+              <ThemeIcon variant="default" radius="lg">
+                <Check />
+              </ThemeIcon>
+              <Text c={businessTripTransaction.employee?.name ? undefined : 'red'}>
+                {businessTripTransaction.employee?.name ?? 'Missing'}
+              </Text>
+            </>
           ) : (
             <>
-              {businessTripTransaction.payedByEmployee && (
-                <ThemeIcon variant="default" radius="lg">
-                  <Check />
-                </ThemeIcon>
-              )}
-              {businessTripTransaction.employee?.name}
+              <ThemeIcon variant="default" radius="lg">
+                <X />
+              </ThemeIcon>
+              Transaction Link (TBD)
+              {businessTripTransaction.transaction?.id}
             </>
           )}
         </div>
       </td>
+    </>
+  );
+};
+
+export const CoreTransactionHeader = (): ReactElement => {
+  return (
+    <>
+      <th>Date</th>
+      <th>Amount</th>
+      <th>Payed By Attendee</th>
     </>
   );
 };

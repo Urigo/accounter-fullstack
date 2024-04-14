@@ -8,32 +8,34 @@ import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
 /* GraphQL */ `
   fragment BusinessTripReportSummaryFields on BusinessTrip {
     id
-    summary {
-      excessExpenditure {
-        formatted
-      }
-      excessTax
-      rows {
-        type
-        totalForeignCurrencies {
-          currency
-          formatted
-        }
-        totalLocalCurrency {
-          formatted
-        }
-        taxableForeignCurrencies {
-          currency
-          formatted
-        }
-        taxableLocalCurrency {
-          formatted
-        }
+    ... on BusinessTrip @defer {
+      summary {
         excessExpenditure {
           formatted
         }
+        excessTax
+        rows {
+          type
+          totalForeignCurrencies {
+            currency
+            formatted
+          }
+          totalLocalCurrency {
+            formatted
+          }
+          taxableForeignCurrencies {
+            currency
+            formatted
+          }
+          taxableLocalCurrency {
+            formatted
+          }
+          excessExpenditure {
+            formatted
+          }
+        }
+        errors
       }
-      errors
     }
   }
 `;
@@ -52,6 +54,10 @@ function upperFirst(raw: string): string {
 
 export const Summary = ({ data }: Props): ReactElement => {
   const { summary } = getFragmentData(BusinessTripReportSummaryFieldsFragmentDoc, data);
+
+  if (!summary) {
+    return <Text>Loading...</Text>;
+  }
 
   const foreignCurrencies = Array.from(
     new Set<Currency>(

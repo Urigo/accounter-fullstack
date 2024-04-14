@@ -3,6 +3,7 @@ import { Table } from '@mantine/core';
 import { BusinessTripReportFlightsFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { AddFlightTransaction } from '../buttons/add-flight-transaction.js';
+import { CoreTransactionHeader } from './core-transaction-row.js';
 import { FlightsRow } from './flights-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -37,9 +38,7 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
       <Table highlightOnHover withBorder>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Employee Payment</th>
+            <CoreTransactionHeader />
             <th>Flight</th>
             <th />
           </tr>

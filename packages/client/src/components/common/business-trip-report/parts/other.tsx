@@ -3,6 +3,7 @@ import { Table } from '@mantine/core';
 import { BusinessTripReportOtherFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { AddOtherTransaction } from '../buttons/add-other-transaction.js';
+import { CoreTransactionHeader } from './core-transaction-row.js';
 import { OtherRow } from './other-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -34,9 +35,7 @@ export const Other = ({ data, onChange }: Props): ReactElement => {
       <Table highlightOnHover withBorder>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Employee Payment</th>
+            <CoreTransactionHeader />
             <th>Expense Type</th>
             <th>Deductible Expense</th>
             <th />
