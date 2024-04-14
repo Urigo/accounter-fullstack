@@ -3,46 +3,48 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripFlightsTransactionParams,
+  IDeleteBusinessTripFlightsTransactionQuery,
   IGetAllBusinessTripsFlightsTransactionsQuery,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsFlightsTransactionsByChargeIdsQuery,
   IGetBusinessTripsFlightsTransactionsByIdsQuery,
-  IInsertBusinessTripFlightTransactionParams,
-  IInsertBusinessTripFlightTransactionQuery,
-  IUpdateBusinessTripFlightTransactionParams,
-  IUpdateBusinessTripFlightTransactionQuery,
+  IInsertBusinessTripFlightsTransactionParams,
+  IInsertBusinessTripFlightsTransactionQuery,
+  IUpdateBusinessTripFlightsTransactionParams,
+  IUpdateBusinessTripFlightsTransactionQuery,
 } from '../types.js';
 
 const getAllBusinessTripsFlightsTransactions = sql<IGetAllBusinessTripsFlightsTransactionsQuery>`
-  SELECT f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
-  FROM accounter_schema.business_trips_transactions_flights f
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON f.id = t.id`;
+  SELECT *
+  FROM accounter_schema.business_trips_transactions_flights
+  LEFT JOIN accounter_schema.extended_business_trip_transactions
+  USING (id);`;
 
 const getBusinessTripsFlightsTransactionsByChargeIds = sql<IGetBusinessTripsFlightsTransactionsByChargeIdsQuery>`
   SELECT btc.charge_id, f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_flights f
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON f.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsFlightsTransactionsByBusinessTripIds = sql<IGetBusinessTripsFlightsTransactionsByBusinessTripIdsQuery>`
-  SELECT f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_flights f
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON f.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsFlightsTransactionsByIds = sql<IGetBusinessTripsFlightsTransactionsByIdsQuery>`
-  SELECT f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_flights f
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON f.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
-const updateBusinessTripFlightTransaction = sql<IUpdateBusinessTripFlightTransactionQuery>`
+const updateBusinessTripFlightsTransaction = sql<IUpdateBusinessTripFlightsTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_flights
   SET
   origin = COALESCE(
@@ -62,10 +64,16 @@ const updateBusinessTripFlightTransaction = sql<IUpdateBusinessTripFlightTransac
   RETURNING *;
 `;
 
-const insertBusinessTripFlightTransaction = sql<IInsertBusinessTripFlightTransactionQuery>`
+const insertBusinessTripFlightsTransaction = sql<IInsertBusinessTripFlightsTransactionQuery>`
   INSERT INTO accounter_schema.business_trips_transactions_flights (id, origin, destination, class)
   VALUES($id, $origin, $destination, $class)
   RETURNING *;`;
+
+const deleteBusinessTripFlightsTransaction = sql<IDeleteBusinessTripFlightsTransactionQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_flights
+  WHERE id = $businessTripTransactionId
+  RETURNING id;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -142,11 +150,15 @@ export class BusinessTripFlightsTransactionsProvider {
     },
   );
 
-  public updateBusinessTripFlightTransaction(params: IUpdateBusinessTripFlightTransactionParams) {
-    return updateBusinessTripFlightTransaction.run(params, this.dbProvider);
+  public updateBusinessTripFlightsTransaction(params: IUpdateBusinessTripFlightsTransactionParams) {
+    return updateBusinessTripFlightsTransaction.run(params, this.dbProvider);
   }
 
-  public insertBusinessTripFlightTransaction(params: IInsertBusinessTripFlightTransactionParams) {
-    return insertBusinessTripFlightTransaction.run(params, this.dbProvider);
+  public insertBusinessTripFlightsTransaction(params: IInsertBusinessTripFlightsTransactionParams) {
+    return insertBusinessTripFlightsTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripFlightsTransaction(params: IDeleteBusinessTripFlightsTransactionParams) {
+    return deleteBusinessTripFlightsTransaction.run(params, this.dbProvider);
   }
 }

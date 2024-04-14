@@ -9,8 +9,8 @@ export default gql`
 
   extend type Mutation {
     updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge @auth(role: ADMIN)
-    insertBusinessTrip(fields: InsertBusinessTripInput!): BusinessTrip! @auth(role: ADMIN)
-    updateBusinessTrip(fields: BusinessTripUpdateInput!): BusinessTrip! @auth(role: ADMIN)
+    insertBusinessTrip(fields: InsertBusinessTripInput!): UUID! @auth(role: ADMIN)
+    updateBusinessTrip(fields: BusinessTripUpdateInput!): UUID! @auth(role: ADMIN)
   }
 
   " the input for creating a business trip "
@@ -25,8 +25,8 @@ export default gql`
   " the input for updating a business trip "
   input BusinessTripUpdateInput {
     name: String
-    fromDate: TimelessDate
-    toDate: TimelessDate
+    destination: String
+    tripPurpose: String
   }
 
   extend interface Charge {
@@ -78,9 +78,14 @@ export default gql`
     dates: DateRange
     destination: String
     purpose: String
-    attendees: [Business!]!
+    attendees: [BusinessTripAttendee!]!
     transactions: [BusinessTripTransaction!]!
+    flightTransactions: [BusinessTripFlightTransaction!]!
+    accommodationTransactions: [BusinessTripAccommodationTransaction!]!
+    travelAndSubsistenceTransactions: [BusinessTripTravelAndSubsistenceTransaction!]!
+    otherTransactions: [BusinessTripOtherTransaction!]!
     summary: BusinessTripSummary!
+    uncategorizedTransactions: [Transaction!]!
   }
 
   " business trip transaction prototype "
@@ -176,6 +181,7 @@ export default gql`
     excessExpenditure: FinancialAmount
     excessTax: Float
     rows: [BusinessTripSummaryRow!]!
+    errors: [String!]
   }
 
   " represent business trip summary data row "
@@ -188,7 +194,7 @@ export default gql`
     excessExpenditure: FinancialAmount
   }
 
-  " represent category type of business trip summary"
+  " represent category type of business trip summary "
   enum BusinessTripSummaryCategories {
     ACCOMMODATION
     FLIGHT

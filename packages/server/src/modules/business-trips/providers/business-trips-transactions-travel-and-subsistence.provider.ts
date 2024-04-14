@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripTravelAndSubsistenceTransactionParams,
+  IDeleteBusinessTripTravelAndSubsistenceTransactionQuery,
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsQuery,
   IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTravelAndSubsistenceTransactionsByChargeIdsQuery,
@@ -14,32 +16,32 @@ import type {
 } from '../types.js';
 
 const getAllBusinessTripsTravelAndSubsistenceTransactions = sql<IGetAllBusinessTripsTravelAndSubsistenceTransactionsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_tns a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id`;
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id);`;
 
 const getBusinessTripsTravelAndSubsistenceTransactionsByChargeIds = sql<IGetBusinessTripsTravelAndSubsistenceTransactionsByChargeIdsQuery>`
   SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_tns a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIds = sql<IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_tns a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsTravelAndSubsistenceTransactionsByIds = sql<IGetBusinessTripsTravelAndSubsistenceTransactionsByIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_tns a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripTravelAndSubsistenceTransaction = sql<IUpdateBusinessTripTravelAndSubsistenceTransactionQuery>`
@@ -58,6 +60,12 @@ const insertBusinessTripTravelAndSubsistenceTransaction = sql<IInsertBusinessTri
   INSERT INTO accounter_schema.business_trips_transactions_tns (id, expense_type)
   VALUES($id, $expenseType)
   RETURNING *;`;
+
+const deleteBusinessTripTravelAndSubsistenceTransaction = sql<IDeleteBusinessTripTravelAndSubsistenceTransactionQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_tns
+  WHERE id = $businessTripTransactionId
+  RETURNING id;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -153,5 +161,11 @@ export class BusinessTripTravelAndSubsistenceTransactionsProvider {
     params: IInsertBusinessTripTravelAndSubsistenceTransactionParams,
   ) {
     return insertBusinessTripTravelAndSubsistenceTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripTravelAndSubsistenceTransaction(
+    params: IDeleteBusinessTripTravelAndSubsistenceTransactionParams,
+  ) {
+    return deleteBusinessTripTravelAndSubsistenceTransaction.run(params, this.dbProvider);
   }
 }

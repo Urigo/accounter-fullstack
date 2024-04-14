@@ -8,6 +8,7 @@ import {
   calculateTotalReportSummaryCategory,
   convertSummaryCategoryDataToRow,
   flightTransactionDataCollector,
+  onlyUnique,
   otherTransactionsDataCollector,
   SummaryData,
 } from '../helpers/business-trip-report.helper.js';
@@ -50,15 +51,26 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
     const summaryData: Partial<SummaryData> = {};
 
     if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
-      throw new GraphQLError(`Business trip dates are not set (ID ${dbBusinessTrip.id})`);
+      return {
+        rows: [],
+        errors: ['Business trip dates are not set'],
+      };
     }
     const tripDuration = Math.abs(
       differenceInDays(dbBusinessTrip.from_date, dbBusinessTrip.to_date),
     );
 
+    const errors: string[] = [];
+
     await Promise.all([
       ...flightTransactions.map(flightTransaction =>
-        flightTransactionDataCollector(injector, flightTransaction, summaryData, transactions),
+        flightTransactionDataCollector(injector, flightTransaction, summaryData, transactions).then(
+          res => {
+            if (res && typeof res === 'string') {
+              errors.push(res);
+            }
+          },
+        ),
       ),
       ...accommodationsTransactions.map(accommodationsTransaction =>
         accommodationTransactionDataCollector(
@@ -67,7 +79,11 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
           summaryData,
           transactions,
           dbBusinessTrip.destination,
-        ),
+        ).then(res => {
+          if (res && typeof res === 'string') {
+            errors.push(res);
+          }
+        }),
       ),
       otherTransactionsDataCollector(
         injector,
@@ -80,7 +96,11 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
           destination: dbBusinessTrip.destination,
           endDate: dbBusinessTrip.to_date,
         },
-      ),
+      ).then(res => {
+        if (res && typeof res === 'string') {
+          errors.push(res);
+        }
+      }),
     ]);
 
     const totalSumCategory = calculateTotalReportSummaryCategory(summaryData);
@@ -90,6 +110,7 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       rows: Object.entries(summaryData).map(([category, data]) =>
         convertSummaryCategoryDataToRow(category as BusinessTripSummaryCategories, data),
       ),
+      errors: errors.length ? errors.filter(onlyUnique) : undefined,
     };
   } catch (e) {
     console.error(`Error fetching business trip transactions`, e);

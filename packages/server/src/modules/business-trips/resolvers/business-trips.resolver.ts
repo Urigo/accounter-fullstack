@@ -1,8 +1,13 @@
 import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import type { TimelessDateString } from '@shared/types';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
+import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
+import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
+import { BusinessTripOtherTransactionsProvider } from '../providers/business-trips-transactions-other.provider.js';
+import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
@@ -126,7 +131,35 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         );
       }
     },
+    flightTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripFlightsTransactionsProvider)
+        .getBusinessTripsFlightsTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+    },
+    accommodationTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripAccommodationsTransactionsProvider)
+        .getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+    },
+    travelAndSubsistenceTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
+        .getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdLoader.load(
+          dbBusinessTrip.id,
+        );
+    },
+    otherTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripOtherTransactionsProvider)
+        .getBusinessTripsOtherTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+    },
     summary: businessTripSummary,
+    uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripTransactionsProvider)
+        .getUncategorizedTransactionsByBusinessTripId({ businessTripId: dbBusinessTrip.id })
+        .then(res => res as IGetTransactionsByIdsResult[]);
+    },
   },
   BusinessTripUncategorizedTransaction: {
     __isTypeOf: DbTransaction => !DbTransaction.category,

@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { WorldUpload } from 'tabler-icons-react';
-import { ActionIcon, Modal } from '@mantine/core';
+import { ActionIcon, Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { InsertBusinessTrip } from '..';
 
@@ -13,15 +13,15 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
 
   function onInsertDone(): void {
     close();
-    if (onDone) {
-      onDone();
-    }
+    onDone?.();
   }
   return (
     <>
-      <ActionIcon onClick={open}>
-        <WorldUpload size={20} />
-      </ActionIcon>
+      <Tooltip label="Insert New Business Trip">
+        <ActionIcon onClick={open}>
+          <WorldUpload size={20} />
+        </ActionIcon>
+      </Tooltip>
       <Modal centered opened={opened} onClose={close} title="Insert Business Trip">
         <InsertBusinessTrip onDone={onInsertDone} />
       </Modal>

@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Grid, Table, Text, Title } from '@mantine/core';
+import { Grid, List, Paper, Table, Text } from '@mantine/core';
 import { BusinessTripReportSummaryFieldsFragmentDoc, Currency } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
@@ -8,30 +8,33 @@ import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
 /* GraphQL */ `
   fragment BusinessTripReportSummaryFields on BusinessTrip {
     id
-    summary {
-      excessExpenditure {
-        formatted
-      }
-      excessTax
-      rows {
-        type
-        totalForeignCurrencies {
-          currency
-          formatted
-        }
-        totalLocalCurrency {
-          formatted
-        }
-        taxableForeignCurrencies {
-          currency
-          formatted
-        }
-        taxableLocalCurrency {
-          formatted
-        }
+    ... on BusinessTrip @defer {
+      summary {
         excessExpenditure {
           formatted
         }
+        excessTax
+        rows {
+          type
+          totalForeignCurrencies {
+            currency
+            formatted
+          }
+          totalLocalCurrency {
+            formatted
+          }
+          taxableForeignCurrencies {
+            currency
+            formatted
+          }
+          taxableLocalCurrency {
+            formatted
+          }
+          excessExpenditure {
+            formatted
+          }
+        }
+        errors
       }
     }
   }
@@ -52,6 +55,10 @@ function upperFirst(raw: string): string {
 export const Summary = ({ data }: Props): ReactElement => {
   const { summary } = getFragmentData(BusinessTripReportSummaryFieldsFragmentDoc, data);
 
+  if (!summary) {
+    return <Text>Loading...</Text>;
+  }
+
   const foreignCurrencies = Array.from(
     new Set<Currency>(
       summary.rows.flatMap(
@@ -62,8 +69,19 @@ export const Summary = ({ data }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <Title order={5}>Summary</Title>
-      <Table>
+      {summary.errors?.length && (
+        <Paper shadow="xs" p="md">
+          <Text c="red">Errors:</Text>
+          <List size="sm" withPadding>
+            {summary.errors.map((error, i) => (
+              <List.Item key={i}>
+                <Text c="red">{error}</Text>
+              </List.Item>
+            ))}
+          </List>
+        </Paper>
+      )}
+      <Table highlightOnHover withBorder>
         <thead>
           <tr>
             <th>Expense Type</th>

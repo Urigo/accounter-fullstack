@@ -3,46 +3,48 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripAccommodationsTransactionParams,
+  IDeleteBusinessTripAccommodationsTransactionQuery,
   IGetAllBusinessTripsAccommodationsTransactionsQuery,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByIdsQuery,
-  IInsertBusinessTripAccommodationTransactionParams,
-  IInsertBusinessTripAccommodationTransactionQuery,
-  IUpdateBusinessTripAccommodationTransactionParams,
-  IUpdateBusinessTripAccommodationTransactionQuery,
+  IInsertBusinessTripAccommodationsTransactionParams,
+  IInsertBusinessTripAccommodationsTransactionQuery,
+  IUpdateBusinessTripAccommodationsTransactionParams,
+  IUpdateBusinessTripAccommodationsTransactionQuery,
 } from '../types.js';
 
 const getAllBusinessTripsAccommodationsTransactions = sql<IGetAllBusinessTripsAccommodationsTransactionsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id`;
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id);`;
 
 const getBusinessTripsAccommodationsTransactionsByChargeIds = sql<IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery>`
   SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsAccommodationsTransactionsByBusinessTripIds = sql<IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsAccommodationsTransactionsByIds = sql<IGetBusinessTripsAccommodationsTransactionsByIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
-const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccommodationTransactionQuery>`
+const updateBusinessTripAccommodationsTransaction = sql<IUpdateBusinessTripAccommodationsTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_accommodations
   SET
   country = COALESCE(
@@ -58,10 +60,16 @@ const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccomm
   RETURNING *;
 `;
 
-const insertBusinessTripAccommodationTransaction = sql<IInsertBusinessTripAccommodationTransactionQuery>`
+const insertBusinessTripAccommodationsTransaction = sql<IInsertBusinessTripAccommodationsTransactionQuery>`
   INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count)
   VALUES($id, $country, $nightsCount)
   RETURNING *;`;
+
+const deleteBusinessTripAccommodationsTransaction = sql<IDeleteBusinessTripAccommodationsTransactionQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_accommodations
+  WHERE id = $businessTripTransactionId
+  RETURNING id;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -74,7 +82,7 @@ export class BusinessTripAccommodationsTransactionsProvider {
     return getAllBusinessTripsAccommodationsTransactions.run(undefined, this.dbProvider);
   }
 
-  private async batchBusinessTripsAccommodationTransactionsByChargeIds(
+  private async batchBusinessTripsAccommodationsTransactionsByChargeIds(
     chargeIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -90,14 +98,14 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsAccommodationTransactionsByChargeIds(ids),
+  public getBusinessTripsAccommodationsTransactionsByChargeIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsAccommodationsTransactionsByChargeIds(ids),
     {
       cache: false,
     },
   );
 
-  private async batchBusinessTripsAccommodationTransactionsByBusinessTripIds(
+  private async batchBusinessTripsAccommodationsTransactionsByBusinessTripIds(
     businessTripIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -113,15 +121,15 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader = new DataLoader(
+  public getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) =>
-      this.batchBusinessTripsAccommodationTransactionsByBusinessTripIds(ids),
+      this.batchBusinessTripsAccommodationsTransactionsByBusinessTripIds(ids),
     {
       cache: false,
     },
   );
 
-  private async batchBusinessTripsAccommodationTransactionsByIds(
+  private async batchBusinessTripsAccommodationsTransactionsByIds(
     transactionIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -137,22 +145,28 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsAccommodationTransactionsByIds(ids),
+  public getBusinessTripsAccommodationsTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsAccommodationsTransactionsByIds(ids),
     {
       cache: false,
     },
   );
 
-  public updateBusinessTripAccommodationTransaction(
-    params: IUpdateBusinessTripAccommodationTransactionParams,
+  public updateBusinessTripAccommodationsTransaction(
+    params: IUpdateBusinessTripAccommodationsTransactionParams,
   ) {
-    return updateBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+    return updateBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
   }
 
-  public insertBusinessTripAccommodationTransaction(
-    params: IInsertBusinessTripAccommodationTransactionParams,
+  public insertBusinessTripAccommodationsTransaction(
+    params: IInsertBusinessTripAccommodationsTransactionParams,
   ) {
-    return insertBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+    return insertBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripAccommodationsTransaction(
+    params: IDeleteBusinessTripAccommodationsTransactionParams,
+  ) {
+    return deleteBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
   }
 }

@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripOtherTransactionParams,
+  IDeleteBusinessTripOtherTransactionQuery,
   IGetAllBusinessTripsOtherTransactionsQuery,
   IGetBusinessTripsOtherTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsOtherTransactionsByChargeIdsQuery,
@@ -14,32 +16,32 @@ import type {
 } from '../types.js';
 
 const getAllBusinessTripsOtherTransactions = sql<IGetAllBusinessTripsOtherTransactionsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT*
   FROM accounter_schema.business_trips_transactions_other a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id`;
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id);`;
 
 const getBusinessTripsOtherTransactionsByChargeIds = sql<IGetBusinessTripsOtherTransactionsByChargeIdsQuery>`
   SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_other a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsOtherTransactionsByBusinessTripIds = sql<IGetBusinessTripsOtherTransactionsByBusinessTripIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_other a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsOtherTransactionsByIds = sql<IGetBusinessTripsOtherTransactionsByIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_other a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransactionQuery>`
@@ -62,6 +64,12 @@ const insertBusinessTripOtherTransaction = sql<IInsertBusinessTripOtherTransacti
   INSERT INTO accounter_schema.business_trips_transactions_other (id, deductible_expense, expense_type)
   VALUES($id, $deductibleExpense, $expenseType)
   RETURNING *;`;
+
+const deleteBusinessTripOtherTransaction = sql<IDeleteBusinessTripOtherTransactionQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_other
+  WHERE id = $businessTripTransactionId
+  RETURNING id;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -143,5 +151,9 @@ export class BusinessTripOtherTransactionsProvider {
 
   public insertBusinessTripOtherTransaction(params: IInsertBusinessTripOtherTransactionParams) {
     return insertBusinessTripOtherTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripOtherTransaction(params: IDeleteBusinessTripOtherTransactionParams) {
+    return deleteBusinessTripOtherTransaction.run(params, this.dbProvider);
   }
 }

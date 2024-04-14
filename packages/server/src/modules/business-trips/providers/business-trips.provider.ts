@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 import type {
+  BusinessTripProto,
   IGetAllBusinessTripsQuery,
   IGetBusinessTripsByIdsQuery,
   IInsertBusinessTripParams,
@@ -15,17 +16,17 @@ import type {
 
 const getAllBusinessTrips = sql<IGetAllBusinessTripsQuery>`
   SELECT *
-  FROM accounter_schema.business_trips`;
+  FROM accounter_schema.extended_business_trips`;
 
 const getBusinessTripsByIds = sql<IGetBusinessTripsByIdsQuery>`
   SELECT bt.*
-  FROM accounter_schema.business_trips bt
+  FROM accounter_schema.extended_business_trips bt
   WHERE ($isBusinessTripsIds = 0 OR bt.id IN $$businessTripsIds);`;
 
 const getBusinessTripsByChargeIds = sql<IGetBusinessTripsByChargeIdsQuery>`
   SELECT btc.charge_id, bt.*
   FROM accounter_schema.business_trip_charges btc
-  LEFT JOIN accounter_schema.business_trips bt
+  LEFT JOIN accounter_schema.extended_business_trips bt
     ON btc.business_trip_id = bt.id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
@@ -44,23 +45,23 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
     $name,
     name
   ),
-  from_date = COALESCE(
-    $fromDate,
-    from_date
+  destination = COALESCE(
+    $destination,
+    destination
   ),
-  to_date = COALESCE(
-    $toDate,
-    to_date
+  trip_purpose = COALESCE(
+    $tripPurpose,
+    trip_purpose
   )
   WHERE
     id = $businessTripId
-  RETURNING *;
+  RETURNING id;
 `;
 
 const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
-  INSERT INTO accounter_schema.business_trips (name, from_date, to_date, destination, trip_purpose)
-  VALUES($name, $fromDate, $toDate, $destination, $tripPurpose)
-  RETURNING *;`;
+  INSERT INTO accounter_schema.business_trips (name, destination, trip_purpose)
+  VALUES($name, $destination, $tripPurpose)
+  RETURNING id;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -70,7 +71,7 @@ export class BusinessTripsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public getAllBusinessTrips() {
-    return getAllBusinessTrips.run(undefined, this.dbProvider);
+    return getAllBusinessTrips.run(undefined, this.dbProvider) as Promise<BusinessTripProto[]>;
   }
 
   private async batchBusinessTripsByIds(businessTripsIds: readonly string[]) {
@@ -85,7 +86,8 @@ export class BusinessTripsProvider {
   }
 
   public getBusinessTripsByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsByIds(ids),
+    (ids: readonly string[]) =>
+      this.batchBusinessTripsByIds(ids) as Promise<(BusinessTripProto | undefined)[]>,
     {
       cache: false,
     },

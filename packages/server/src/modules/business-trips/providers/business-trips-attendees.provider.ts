@@ -10,6 +10,8 @@ import type {
   IGetBusinessTripsAttendeesByChargeIdsQuery,
   IRemoveBusinessTripAttendeesParams,
   IRemoveBusinessTripAttendeesQuery,
+  IUpdateBusinessTripAttendeeParams,
+  IUpdateBusinessTripAttendeeQuery,
 } from '../types.js';
 
 const getAllBusinessTripsAttendees = sql<IGetAllBusinessTripsAttendeesQuery>`
@@ -26,7 +28,7 @@ const getBusinessTripsAttendeesByChargeIds = sql<IGetBusinessTripsAttendeesByCha
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendeesByBusinessTripIdsQuery>`
-  SELECT bta.business_trip_id, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at
+  SELECT bta.business_trip_id, bta.arrival, bta.departure, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at
   FROM accounter_schema.financial_entities fe
   LEFT JOIN accounter_schema.business_trips_attendees bta
     ON bta.attendee_business_id = fe.id
@@ -35,15 +37,32 @@ const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendee
   WHERE ($isBusinessTripIds = 0 OR bta.business_trip_id IN $$businessTripIds);`;
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`
-  INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id)
-  VALUES $$businessTripAttendees(businessTripId, businessId)
+  INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure)
+  VALUES ($businessTripId, $businessId, $arrival, $departure)
   ON CONFLICT DO NOTHING
   RETURNING *;`;
+
+const updateBusinessTripAttendee = sql<IUpdateBusinessTripAttendeeQuery>`
+  UPDATE accounter_schema.business_trips_attendees
+  SET
+  arrival = COALESCE(
+    $arrival,
+    arrival
+  ),
+  departure = COALESCE(
+    $departure,
+    departure
+  )
+  WHERE
+    business_trip_id = $businessTripId
+    AND attendee_business_id = $attendeeBusinessId
+  RETURNING *;
+`;
 
 const removeBusinessTripAttendees = sql<IRemoveBusinessTripAttendeesQuery>`
   DELETE FROM accounter_schema.business_trips_attendees
   WHERE business_trip_id = $businessTripId
-    AND attendee_business_id in $$businessId
+    AND attendee_business_id = $businessId
   RETURNING *;`;
 
 @Injectable({
@@ -97,6 +116,10 @@ export class BusinessTripAttendeesProvider {
 
   public addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
     return addBusinessTripAttendees.run(params, this.dbProvider);
+  }
+
+  public updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {
+    return updateBusinessTripAttendee.run(params, this.dbProvider);
   }
 
   public removeBusinessTripAttendees(params: IRemoveBusinessTripAttendeesParams) {

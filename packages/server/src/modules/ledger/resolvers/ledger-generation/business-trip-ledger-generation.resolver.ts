@@ -202,7 +202,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             : matchingEntry.creditAccountID1;
           const ledgerEntry: StrictLedgerProto = {
             ...matchingEntry,
-            id: businessTripTransaction.id,
+            id: businessTripTransaction.id!,
             isCreditorCounterparty,
             creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
             debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
@@ -248,7 +248,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
           const isCreditorCounterparty = amount > 0;
           const ledgerEntry: StrictLedgerProto = {
-            id: businessTripTransaction.id,
+            id: businessTripTransaction.id!,
             invoiceDate: businessTripTransaction.date,
             valueDate: businessTripTransaction.date,
             currency: businessTripTransaction.currency as Currency,
@@ -262,7 +262,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
               : businessTripTransaction.employee_business_id,
             debitAmount1: absForeignAmount,
             localCurrencyDebitAmount1: absAmount,
-            reference1: businessTripTransaction.id,
+            reference1: businessTripTransaction.id!,
             isCreditorCounterparty,
             ownerId: charge.owner_id,
             currencyRate: exchangeRate,

@@ -25,6 +25,10 @@ const links: Link[] = [
     to: '/business-transactions',
   },
   {
+    label: 'Business Trips',
+    to: '/business-trips',
+  },
+  {
     label: 'Trial Balance Report',
     to: '/reports/trial-balance',
   },
