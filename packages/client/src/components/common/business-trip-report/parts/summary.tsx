@@ -75,7 +75,7 @@ export const Summary = ({ data }: Props): ReactElement => {
           </List>
         </Paper>
       )}
-      <Table>
+      <Table highlightOnHover withBorder>
         <thead>
           <tr>
             <th>Expense Type</th>

@@ -1,7 +1,7 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion } from '@mantine/core';
+import { Accordion, Card } from '@mantine/core';
 import {
   EditableBusinessTripDocument,
   EditableBusinessTripFragmentDoc,
@@ -76,7 +76,8 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
   }, [updatedTripDate?.businessTrip]);
 
   return (
-    <div className="flex flex-col gap-5 mt-5">
+    // <div className="flex flex-col gap-5 mt-5">
+    <Card shadow="sm" radius="md" withBorder>
       <ReportHeader data={trip} />
       <Accordion
         className="w-full"
@@ -154,6 +155,7 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
           </Accordion.Panel>
         </Accordion.Item>
       </Accordion>
-    </div>
+    </Card>
+    // </div>
   );
 }
