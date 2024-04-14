@@ -7,6 +7,7 @@ import {
 } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
+import { Flights } from '../common/business-trip-report/parts/flights.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 
@@ -17,6 +18,7 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
     ...BusinessTripUncategorizedTransactionsFields
+    ...BusinessTripReportFlightsFields
     # ...BusinessTripReportSummaryFields
   }
 `;
@@ -79,6 +81,19 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
             </Accordion.Panel>
           </Accordion.Item>
         )}
+
+        <Accordion.Item value="flights">
+          <Accordion.Control onClick={() => toggleAccordionItem('flights')}>
+            Flights
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Flights data={trip} onChange={onChangeDo} />
+          </Accordion.Panel>
+        </Accordion.Item>
+
+        {/* accommodations */}
+        {/* t&s */}
+        {/* other */}
 
         <Accordion.Item value="summary">
           <Accordion.Control onClick={() => toggleAccordionItem('summary')}>
