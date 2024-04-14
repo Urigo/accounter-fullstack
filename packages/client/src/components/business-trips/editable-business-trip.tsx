@@ -1,11 +1,14 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
+import { useQuery } from 'urql';
 import { Accordion } from '@mantine/core';
 import {
+  EditableBusinessTripDocument,
   EditableBusinessTripFragmentDoc,
   type EditableBusinessTripFragment,
 } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { Accommodations } from '../common/business-trip-report/parts/accommodations.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
 import { Flights } from '../common/business-trip-report/parts/flights.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
@@ -19,7 +22,18 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
     ...BusinessTripReportAttendeesFields
     ...BusinessTripUncategorizedTransactionsFields
     ...BusinessTripReportFlightsFields
+    ...BusinessTripReportAccommodationsFields
     # ...BusinessTripReportSummaryFields
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query EditableBusinessTrip($businessTripId: UUID!) {
+    businessTrip(id: $businessTripId) {
+      id
+      ...EditableBusinessTrip
+    }
   }
 `;
 
@@ -33,6 +47,12 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
     getFragmentData(EditableBusinessTripFragmentDoc, data),
   );
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
+  const [{ data: updatedTripDate }, fetchUpdatedBusinessTrip] = useQuery({
+    query: EditableBusinessTripDocument,
+    variables: {
+      businessTripId: trip.id,
+    },
+  });
 
   function toggleAccordionItem(item: string): void {
     if (accordionItems.includes(item)) {
@@ -42,9 +62,13 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
     }
   }
 
-  const onChangeDo = useCallback(() => {
-    // setTrip();
-  }, [setTrip]);
+  const onChangeDo = fetchUpdatedBusinessTrip;
+
+  useEffect(() => {
+    if (updatedTripDate?.businessTrip) {
+      setTrip(getFragmentData(EditableBusinessTripFragmentDoc, updatedTripDate.businessTrip));
+    }
+  }, [updatedTripDate?.businessTrip]);
 
   return (
     <div className="flex flex-col gap-5 mt-5">
@@ -91,7 +115,15 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
           </Accordion.Panel>
         </Accordion.Item>
 
-        {/* accommodations */}
+        <Accordion.Item value="accommodations">
+          <Accordion.Control onClick={() => toggleAccordionItem('accommodations')}>
+            Accommodations
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Accommodations data={trip} onChange={onChangeDo} />
+          </Accordion.Panel>
+        </Accordion.Item>
+
         {/* t&s */}
         {/* other */}
 

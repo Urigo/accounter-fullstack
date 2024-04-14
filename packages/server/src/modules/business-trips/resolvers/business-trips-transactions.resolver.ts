@@ -219,9 +219,6 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
       try {
         await Promise.all([
           injector
-            .get(BusinessTripTransactionsProvider)
-            .deleteBusinessTripTransaction({ businessTripTransactionId }),
-          injector
             .get(BusinessTripFlightsTransactionsProvider)
             .deleteBusinessTripFlightsTransaction({ businessTripTransactionId }),
           injector
@@ -234,6 +231,11 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
             .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
             .deleteBusinessTripTravelAndSubsistenceTransaction({ businessTripTransactionId }),
         ]);
+
+        // core transaction must be deleted AFTER all extensions were dropped
+        await injector
+          .get(BusinessTripTransactionsProvider)
+          .deleteBusinessTripTransaction({ businessTripTransactionId });
 
         return true;
       } catch (e) {

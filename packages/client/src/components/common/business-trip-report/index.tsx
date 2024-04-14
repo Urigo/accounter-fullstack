@@ -16,6 +16,7 @@ import { Summary } from './parts/summary.js';
     id
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
+    ...BusinessTripReportAccommodationsFields
     ...BusinessTripReportSummaryFields
   }
 `;

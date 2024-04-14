@@ -9,7 +9,7 @@ import {
   AllBusinessTripAttendeesDocument,
   BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
   Currency,
-  UpdateBusinessTripFlightTransactionInput,
+  UpdateBusinessTripFlightsTransactionInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
@@ -37,7 +37,7 @@ import { CurrencyInput } from '../../index.js';
 interface Props {
   data: FragmentType<typeof BusinessTripReportCoreTransactionRowFieldsFragmentDoc>;
   isEditMode: boolean;
-  control: Control<UpdateBusinessTripFlightTransactionInput, unknown>;
+  control: Control<UpdateBusinessTripFlightsTransactionInput, unknown>;
   businessTripId: string;
 }
 
@@ -47,7 +47,7 @@ export const CoreTransactionRow = ({
   control,
   businessTripId,
 }: Props): ReactElement => {
-  const flightTransaction = getFragmentData(
+  const businessTripTransaction = getFragmentData(
     BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
     data,
   );
@@ -86,12 +86,12 @@ export const CoreTransactionRow = ({
     <>
       <td>
         <div className="flex flex-col gap-2 justify-center">
-          {isEditMode && flightTransaction.payedByEmployee ? (
+          {isEditMode && businessTripTransaction.payedByEmployee ? (
             <>
               <Controller
                 name="date"
                 control={control}
-                defaultValue={flightTransaction.date}
+                defaultValue={businessTripTransaction.date}
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
@@ -101,7 +101,8 @@ export const CoreTransactionRow = ({
                 render={({ field, fieldState }): ReactElement => (
                   <TextInput
                     {...field}
-                    form={`form ${flightTransaction.id}`}
+                    data-autofocus
+                    form={`form ${businessTripTransaction.id}`}
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Date"
@@ -111,7 +112,7 @@ export const CoreTransactionRow = ({
               <Controller
                 name="valueDate"
                 control={control}
-                defaultValue={flightTransaction.valueDate}
+                defaultValue={businessTripTransaction.valueDate}
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
@@ -121,7 +122,7 @@ export const CoreTransactionRow = ({
                 render={({ field, fieldState }): ReactElement => (
                   <TextInput
                     {...field}
-                    form={`form ${flightTransaction.id}`}
+                    form={`form ${businessTripTransaction.id}`}
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Value Date"
@@ -131,32 +132,33 @@ export const CoreTransactionRow = ({
             </>
           ) : (
             <>
-              {flightTransaction.date && format(new Date(flightTransaction.date), 'dd/MM/yy')}
+              {businessTripTransaction.date &&
+                format(new Date(businessTripTransaction.date), 'dd/MM/yy')}
               <Text fz="sm" c="dimmed">
-                {flightTransaction.valueDate &&
-                  format(new Date(flightTransaction.valueDate), 'dd/MM/yy')}
+                {businessTripTransaction.valueDate &&
+                  format(new Date(businessTripTransaction.valueDate), 'dd/MM/yy')}
               </Text>
             </>
           )}
         </div>
       </td>
       <td>
-        {isEditMode && flightTransaction.payedByEmployee ? (
+        {isEditMode && businessTripTransaction.payedByEmployee ? (
           <Controller
             name="amount"
             control={control}
-            defaultValue={flightTransaction.amount?.raw ?? undefined}
+            defaultValue={businessTripTransaction.amount?.raw ?? undefined}
             render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
               <Controller
                 name="currency"
                 control={control}
-                defaultValue={flightTransaction.amount?.currency ?? Currency.Ils}
+                defaultValue={businessTripTransaction.amount?.currency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
                 }): ReactElement => (
                   <CurrencyInput
-                    form={`form ${flightTransaction.id}`}
+                    form={`form ${businessTripTransaction.id}`}
                     {...amountField}
                     value={amountField.value ?? undefined}
                     error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
@@ -164,7 +166,7 @@ export const CoreTransactionRow = ({
                     currencyCodeProps={{
                       ...currencyCodeField,
                       label: 'Currency',
-                      form: `form ${flightTransaction.id}`,
+                      form: `form ${businessTripTransaction.id}`,
                     }}
                   />
                 )}
@@ -172,20 +174,19 @@ export const CoreTransactionRow = ({
             )}
           />
         ) : (
-          <div>{flightTransaction.amount?.formatted}</div>
+          <div>{businessTripTransaction.amount?.formatted}</div>
         )}
       </td>
       <td>
         <div className="flex flex-col gap-2 justify-center">
-          {isEditMode && flightTransaction.payedByEmployee ? (
+          {isEditMode && businessTripTransaction.payedByEmployee ? (
             <Controller
               name="employeeBusinessId"
               control={control}
-              defaultValue={flightTransaction.employee?.id}
+              defaultValue={businessTripTransaction.employee?.id}
               render={({ field, fieldState }): ReactElement => (
                 <Select
-                  form={`form ${flightTransaction.id}`}
-                  data-autofocus
+                  form={`form ${businessTripTransaction.id}`}
                   {...field}
                   data={attendees}
                   value={field.value}
@@ -201,12 +202,12 @@ export const CoreTransactionRow = ({
             />
           ) : (
             <>
-              {flightTransaction.payedByEmployee && (
+              {businessTripTransaction.payedByEmployee && (
                 <ThemeIcon variant="default" radius="lg">
                   <Check />
                 </ThemeIcon>
               )}
-              {flightTransaction.employee?.name}
+              {businessTripTransaction.employee?.name}
             </>
           )}
         </div>
