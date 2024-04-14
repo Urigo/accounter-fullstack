@@ -138,7 +138,7 @@ export async function flightTransactionDataCollector(
   businessTripTransaction: IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
   transactions: IGetTransactionsByIdsResult[],
-): Promise<void> {
+): Promise<string | void> {
   // populate category
   partialSummaryData['FLIGHT'] ??= {};
   const category = partialSummaryData['FLIGHT'] as SummaryCategoryData;
@@ -149,14 +149,14 @@ export async function flightTransactionDataCollector(
   // calculate taxable amount
   const fullyTaxableClasses: flight_class[] = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'];
   if (!businessTripTransaction.class) {
-    throw new GraphQLError(
-      `Flight class not found for flight transaction ID ${businessTripTransaction.id}`,
-    );
+    console.error(`Flight class not found for flight transaction ID ${businessTripTransaction.id}`);
+    return 'Flights transactions: some transactions are missing class';
   }
   if (!fullyTaxableClasses.includes(businessTripTransaction.class)) {
-    throw new GraphQLError(
+    console.error(
       `Taxability logic for flight class ${businessTripTransaction.class} is not implemented yet (trip transaction ID: ${businessTripTransaction.id})`,
     );
+    return `Flights transactions: taxability logic for class ${businessTripTransaction.class} is not implemented yet`;
   }
 
   // for all classes <= business, the amount is fully taxable
@@ -171,6 +171,8 @@ export async function flightTransactionDataCollector(
     category[currency]!.total += foreignAmount;
     category[currency]!.taxable += localTaxable / exchangeRate;
   }
+
+  return void 0;
 }
 
 export async function accommodationTransactionDataCollector(
@@ -179,7 +181,7 @@ export async function accommodationTransactionDataCollector(
   partialSummaryData: Partial<SummaryData>,
   transactions: IGetTransactionsByIdsResult[],
   destination: string | null,
-): Promise<void> {
+): Promise<string | void> {
   // populate category
   partialSummaryData['ACCOMMODATION'] ??= {};
   const category = partialSummaryData['ACCOMMODATION'] as SummaryCategoryData;
@@ -188,12 +190,14 @@ export async function accommodationTransactionDataCollector(
     await getTransactionAmountsData(injector, businessTripTransaction, transactions);
 
   if (!businessTripTransaction.nights_count) {
-    throw new GraphQLError(
+    console.error(
       `Nights count not found for accommodation trip transaction ID ${businessTripTransaction.id}`,
     );
+    return 'Accommodation transactions: some transactions are missing nights count';
   }
   if (!Number.isInteger(businessTripTransaction.nights_count)) {
-    throw new GraphQLError(`Nights count must be an integer`);
+    console.error(`Nights count must be an integer`);
+    return 'Accommodation transactions: nights count must be an integer';
   }
 
   // calculate taxable amount
@@ -215,6 +219,8 @@ export async function accommodationTransactionDataCollector(
     category[currency]!.total += foreignAmount;
     category[currency]!.taxable += foreignTaxable;
   }
+
+  return void 0;
 }
 
 export async function otherTransactionsDataCollector(
@@ -223,9 +229,9 @@ export async function otherTransactionsDataCollector(
   partialSummaryData: Partial<SummaryData>,
   transactions: IGetTransactionsByIdsResult[],
   tripMetaData: TripMetaData,
-): Promise<void> {
+): Promise<string | void> {
   if (otherTransactions.length === 0) {
-    return;
+    return void 0;
   }
 
   // populate category
@@ -272,6 +278,8 @@ export async function otherTransactionsDataCollector(
       },
     );
   }
+
+  return void 0;
 }
 
 function isIncreasedLimitDestination(destination: string | null) {
@@ -321,4 +329,8 @@ function accommodationMaxTaxableUSD(nights: number, destination: string | null) 
   }
 
   throw new GraphQLError(`Taxability logic for more than 90 nights is not implemented yet`);
+}
+
+export function onlyUnique(value: string, index: number, array: string[]) {
+  return array.indexOf(value) === index;
 }

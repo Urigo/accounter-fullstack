@@ -13,6 +13,7 @@ import { Attendees } from '../common/business-trip-report/parts/attendees.js';
 import { Flights } from '../common/business-trip-report/parts/flights.js';
 import { Other } from '../common/business-trip-report/parts/other.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
+import { Summary } from '../common/business-trip-report/parts/summary.js';
 import { TravelAndSubsistence } from '../common/business-trip-report/parts/travel-and-subsistence.js';
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 
@@ -27,7 +28,7 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
     ...BusinessTripReportAccommodationsFields
     ...BusinessTripReportTravelAndSubsistenceFields
     ...BusinessTripReportOtherFields
-    # ...BusinessTripReportSummaryFields
+    ...BusinessTripReportSummaryFields
   }
 `;
 
@@ -148,7 +149,9 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
           <Accordion.Control onClick={() => toggleAccordionItem('summary')}>
             Summary
           </Accordion.Control>
-          <Accordion.Panel>{/* <Summary data={trip} /> */}</Accordion.Panel>
+          <Accordion.Panel>
+            <Summary data={trip} />
+          </Accordion.Panel>
         </Accordion.Item>
       </Accordion>
     </div>

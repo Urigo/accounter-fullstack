@@ -42,6 +42,11 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
     data,
   );
 
+  if (!uncategorizedTransactions?.length) {
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <></>;
+  }
+
   return (
     <div className="flex flex-col gap-2 mt-5">
       <Table highlightOnHover withBorder>

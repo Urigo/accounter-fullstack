@@ -181,6 +181,7 @@ export default gql`
     excessExpenditure: FinancialAmount
     excessTax: Float
     rows: [BusinessTripSummaryRow!]!
+    errors: [String!]
   }
 
   " represent business trip summary data row "

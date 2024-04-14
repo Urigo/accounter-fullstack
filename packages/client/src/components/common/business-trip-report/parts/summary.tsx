@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Grid, Table, Text, Title } from '@mantine/core';
+import { Grid, List, Paper, Table, Text } from '@mantine/core';
 import { BusinessTripReportSummaryFieldsFragmentDoc, Currency } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
@@ -33,6 +33,7 @@ import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
           formatted
         }
       }
+      errors
     }
   }
 `;
@@ -62,7 +63,18 @@ export const Summary = ({ data }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <Title order={5}>Summary</Title>
+      {summary.errors?.length && (
+        <Paper shadow="xs" p="md">
+          <Text c="red">Errors:</Text>
+          <List size="sm" withPadding>
+            {summary.errors.map((error, i) => (
+              <List.Item key={i}>
+                <Text c="red">{error}</Text>
+              </List.Item>
+            ))}
+          </List>
+        </Paper>
+      )}
       <Table>
         <thead>
           <tr>
