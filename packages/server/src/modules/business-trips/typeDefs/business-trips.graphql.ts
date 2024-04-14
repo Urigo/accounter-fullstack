@@ -80,6 +80,10 @@ export default gql`
     purpose: String
     attendees: [BusinessTripAttendee!]!
     transactions: [BusinessTripTransaction!]!
+    flightTransactions: [BusinessTripFlightTransaction!]!
+    accommodationTransactions: [BusinessTripAccommodationTransaction!]!
+    travelAndSubsistenceTransactions: [BusinessTripTravelAndSubsistenceTransaction!]!
+    otherTransactions: [BusinessTripOtherTransaction!]!
     summary: BusinessTripSummary!
     uncategorizedTransactions: [Transaction!]!
   }

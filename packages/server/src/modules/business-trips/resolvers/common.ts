@@ -31,7 +31,7 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
     businessTrip: (DbTransaction, _, { injector }) =>
       injector
         .get(BusinessTripsProvider)
-        .getBusinessTripsByIdLoader.load(DbTransaction.business_trip_id)
+        .getBusinessTripsByIdLoader.load(DbTransaction.business_trip_id!)
         .then(res => {
           if (!res) {
             throw new GraphQLError(

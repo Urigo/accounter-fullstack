@@ -19,14 +19,17 @@ export type {
   IGetBusinessTripsTransactionsByIdsResult,
   IGetBusinessTripsTransactionsByIdsQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
-  IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IGetUncategorizedTransactionsByBusinessTripIdResult,
+  IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IUpdateBusinessTripTransactionParams,
   IUpdateBusinessTripTransactionResult,
   IUpdateBusinessTripTransactionQuery,
   IInsertBusinessTripTransactionParams,
   IInsertBusinessTripTransactionResult,
   IInsertBusinessTripTransactionQuery,
+  IDeleteBusinessTripTransactionParams,
+  IDeleteBusinessTripTransactionResult,
+  IDeleteBusinessTripTransactionQuery,
 } from './__generated__/business-trips-transactions.types.js';
 export type {
   flight_class,
@@ -48,6 +51,9 @@ export type {
   IInsertBusinessTripFlightTransactionParams,
   IInsertBusinessTripFlightTransactionResult,
   IInsertBusinessTripFlightTransactionQuery,
+  IDeleteBusinessTripFlightTransactionParams,
+  IDeleteBusinessTripFlightTransactionResult,
+  IDeleteBusinessTripFlightTransactionQuery,
 } from './__generated__/business-trips-transactions-flights.types.js';
 export type {
   IGetAllBusinessTripsAccommodationsTransactionsParams,
@@ -68,6 +74,9 @@ export type {
   IInsertBusinessTripAccommodationTransactionParams,
   IInsertBusinessTripAccommodationTransactionResult,
   IInsertBusinessTripAccommodationTransactionQuery,
+  IDeleteBusinessTripAccommodationTransactionParams,
+  IDeleteBusinessTripAccommodationTransactionResult,
+  IDeleteBusinessTripAccommodationTransactionQuery,
 } from './__generated__/business-trips-transactions-accommodations.types.js';
 export type {
   IGetAllBusinessTripsTravelAndSubsistenceTransactionsParams,
@@ -88,6 +97,9 @@ export type {
   IInsertBusinessTripTravelAndSubsistenceTransactionParams,
   IInsertBusinessTripTravelAndSubsistenceTransactionResult,
   IInsertBusinessTripTravelAndSubsistenceTransactionQuery,
+  IDeleteBusinessTripTravelAndSubsistenceTransactionParams,
+  IDeleteBusinessTripTravelAndSubsistenceTransactionResult,
+  IDeleteBusinessTripTravelAndSubsistenceTransactionQuery,
 } from './__generated__/business-trips-transactions-travel-and-subsistence.types.js';
 export type {
   IGetAllBusinessTripsOtherTransactionsParams,
@@ -108,6 +120,9 @@ export type {
   IInsertBusinessTripOtherTransactionParams,
   IInsertBusinessTripOtherTransactionResult,
   IInsertBusinessTripOtherTransactionQuery,
+  IDeleteBusinessTripOtherTransactionParams,
+  IDeleteBusinessTripOtherTransactionResult,
+  IDeleteBusinessTripOtherTransactionQuery,
 } from './__generated__/business-trips-transactions-other.types.js';
 export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
   id: NonNullable<IGetAllBusinessTripsResult['id']>;

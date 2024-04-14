@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripAccommodationTransactionParams,
+  IDeleteBusinessTripAccommodationTransactionQuery,
   IGetAllBusinessTripsAccommodationsTransactionsQuery,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery,
@@ -14,32 +16,32 @@ import type {
 } from '../types.js';
 
 const getAllBusinessTripsAccommodationsTransactions = sql<IGetAllBusinessTripsAccommodationsTransactionsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id`;
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id);`;
 
 const getBusinessTripsAccommodationsTransactionsByChargeIds = sql<IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery>`
   SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.business_trip_id = btc.business_trip_id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsAccommodationsTransactionsByBusinessTripIds = sql<IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
 
 const getBusinessTripsAccommodationsTransactionsByIds = sql<IGetBusinessTripsAccommodationsTransactionsByIdsQuery>`
-  SELECT a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.business_trips_transactions t
-    ON a.id = t.id
+  LEFT JOIN accounter_schema.extended_business_trip_transactions t
+    USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
 const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccommodationTransactionQuery>`
@@ -62,6 +64,12 @@ const insertBusinessTripAccommodationTransaction = sql<IInsertBusinessTripAccomm
   INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count)
   VALUES($id, $country, $nightsCount)
   RETURNING *;`;
+
+const deleteBusinessTripAccommodationTransaction = sql<IDeleteBusinessTripAccommodationTransactionQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_accommodations
+  WHERE id = $businessTripTransactionId
+  RETURNING id;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -154,5 +162,11 @@ export class BusinessTripAccommodationsTransactionsProvider {
     params: IInsertBusinessTripAccommodationTransactionParams,
   ) {
     return insertBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripAccommodationTransaction(
+    params: IDeleteBusinessTripAccommodationTransactionParams,
+  ) {
+    return deleteBusinessTripAccommodationTransaction.run(params, this.dbProvider);
   }
 }
