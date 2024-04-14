@@ -19,7 +19,7 @@ export function SelectTransactionCategory(props: {
 
   return (
     <>
-      <Tooltip label="Edit">
+      <Tooltip label="Edit Category">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -80,9 +80,9 @@ function ModalContent({
 
   return (
     <Modal opened={opened} onClose={close} centered>
-      <Modal.Title>Add Attendee</Modal.Title>
+      <Modal.Title>Set Transaction Category</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 mt-3">
           <Controller
             name="category"
             control={control}
@@ -102,7 +102,7 @@ function ModalContent({
             )}
           />
 
-          <div className="flex justify-center mt-5 gap-3">
+          <div className="flex justify-center gap-3">
             <button
               type="submit"
               className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
