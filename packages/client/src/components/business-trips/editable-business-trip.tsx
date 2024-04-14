@@ -73,6 +73,7 @@ export function EditableBusinessTrip({
     variables: {
       businessTripId: trip.id,
     },
+    pause: true,
   });
 
   function toggleAccordionItem(item: string): void {

@@ -16,6 +16,7 @@ import { CoreTransactionRow } from './core-transaction-row.js';
 /* GraphQL */ `
   fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
       id
+      payedByEmployee
       ...BusinessTripReportCoreTransactionRowFields
       origin
       destination
@@ -76,6 +77,7 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
                   defaultValue={flightTransaction.origin}
                   render={({ field, fieldState }): ReactElement => (
                     <TextInput
+                      data-autofocus={flightTransaction.payedByEmployee ? undefined : true}
                       form={`form ${flightTransaction.id}`}
                       {...field}
                       value={field.value ?? undefined}

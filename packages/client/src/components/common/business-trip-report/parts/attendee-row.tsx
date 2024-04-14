@@ -70,6 +70,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
               render={({ field, fieldState }): ReactElement => (
                 <TextInput
                   {...field}
+                  data-autofocus
                   value={field.value ?? undefined}
                   error={fieldState.error?.message}
                   label="Arrival"
