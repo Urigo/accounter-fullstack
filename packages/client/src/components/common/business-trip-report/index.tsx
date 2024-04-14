@@ -6,7 +6,10 @@
 import { ReactElement } from 'react';
 import { BusinessTripReportFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { Accommodations } from './parts/accommodations.js';
 import { Attendees } from './parts/attendees.js';
+import { Flights } from './parts/flights.js';
+import { Other } from './parts/other.js';
 import { ReportHeader } from './parts/report-header';
 import { Summary } from './parts/summary.js';
 
@@ -17,6 +20,7 @@ import { Summary } from './parts/summary.js';
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
     ...BusinessTripReportAccommodationsFields
+    ...BusinessTripReportOtherFields
     ...BusinessTripReportSummaryFields
   }
 `;
@@ -32,10 +36,10 @@ export const BusinessTripReport = ({ data }: Props): ReactElement => {
     <>
       <ReportHeader data={reportData} />
       <Attendees data={reportData} />
-      {/* flights */}
-      {/* accommodations */}
-      {/* t&s */}
-      {/* other */}
+      <Flights data={reportData} />
+      <Accommodations data={reportData} />
+      {/* <TravelAndSubsistence data={reportData} /> */}
+      <Other data={reportData} />
       <Summary data={reportData} />
     </>
   );
