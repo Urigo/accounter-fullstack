@@ -29,8 +29,7 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
   );
 
   if (!accommodationTransactions.length) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <></>;
+    return <AddAccommodationTransaction businessTripId={id} onAdd={onChange} />;
   }
 
   return (

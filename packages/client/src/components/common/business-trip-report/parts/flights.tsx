@@ -29,8 +29,7 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
   );
 
   if (!flightTransactions.length) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <></>;
+    return <AddFlightTransaction businessTripId={id} onAdd={onChange} />;
   }
 
   return (

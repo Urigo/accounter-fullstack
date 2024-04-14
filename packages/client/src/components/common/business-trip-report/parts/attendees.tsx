@@ -25,6 +25,10 @@ interface Props {
 export const Attendees = ({ data, onChange }: Props): ReactElement => {
   const { attendees, id } = getFragmentData(BusinessTripReportAttendeesFieldsFragmentDoc, data);
 
+  if (!attendees.length) {
+    return <AddAttendee businessTripId={id} onAdd={onChange} />;
+  }
+
   return (
     <div className="flex flex-col gap-2 mt-5">
       <Table highlightOnHover withBorder>

@@ -26,8 +26,7 @@ export const Other = ({ data, onChange }: Props): ReactElement => {
   const { otherTransactions, id } = getFragmentData(BusinessTripReportOtherFieldsFragmentDoc, data);
 
   if (!otherTransactions.length) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <></>;
+    return <AddOtherTransaction businessTripId={id} onAdd={onChange} />;
   }
 
   return (

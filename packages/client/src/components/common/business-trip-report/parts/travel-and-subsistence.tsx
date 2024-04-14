@@ -29,8 +29,7 @@ export const TravelAndSubsistence = ({ data, onChange }: Props): ReactElement =>
   );
 
   if (!travelAndSubsistenceTransactions.length) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <></>;
+    return <AddTravelAndSubsistenceTransaction businessTripId={id} onAdd={onChange} />;
   }
 
   return (
