@@ -1,7 +1,7 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion, Card } from '@mantine/core';
+import { Accordion, Card, Indicator } from '@mantine/core';
 import {
   EditableBusinessTripDocument,
   EditableBusinessTripFragmentDoc,
@@ -21,6 +21,15 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
 /* GraphQL */ `
   fragment EditableBusinessTrip on BusinessTrip {
     id
+    name
+    ... on BusinessTrip @defer {
+      uncategorizedTransactions {
+        id
+      }
+      summary {
+        errors
+      }
+    }
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportAttendeesFields
     ...BusinessTripUncategorizedTransactionsFields
@@ -44,15 +53,20 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
 
 interface Props {
   data: FragmentType<typeof EditableBusinessTripFragmentDoc>;
+  isFetching?: boolean;
   isExtended?: boolean;
 }
 
-export function EditableBusinessTrip({ data, isExtended = false }: Props): ReactElement {
+export function EditableBusinessTrip({
+  data,
+  isExtended = false,
+  isFetching = false,
+}: Props): ReactElement {
   const [trip, setTrip] = useState<EditableBusinessTripFragment>(
     getFragmentData(EditableBusinessTripFragmentDoc, data),
   );
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
-  const [{ data: updatedTripDate }, fetchUpdatedBusinessTrip] = useQuery({
+  const [{ data: updatedTripDate, fetching: reFetching }, fetchUpdatedBusinessTrip] = useQuery({
     query: EditableBusinessTripDocument,
     variables: {
       businessTripId: trip.id,
@@ -75,87 +89,113 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
     }
   }, [updatedTripDate?.businessTrip]);
 
+  const indicatorUp = useMemo(() => {
+    return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
+  }, [trip]);
+
+  const isProcessing = useMemo(() => {
+    return isFetching || reFetching;
+  }, [isFetching, reFetching]);
+
   return (
-    // <div className="flex flex-col gap-5 mt-5">
-    <Card shadow="sm" radius="md" withBorder>
-      <ReportHeader data={trip} />
-      <Accordion
-        className="w-full"
-        multiple
-        value={accordionItems}
-        chevron={<Plus size="1rem" />}
-        styles={{
-          chevron: {
-            '&[data-rotate]': {
-              transform: 'rotate(45deg)',
-            },
-          },
-        }}
-      >
-        <Accordion.Item value="attendees">
-          <Accordion.Control onClick={() => toggleAccordionItem('attendees')}>
-            Attendees
-          </Accordion.Control>
-          <Accordion.Panel>
-            <Attendees data={trip} onChange={onChangeDo} />
-          </Accordion.Panel>
-        </Accordion.Item>
+    <Accordion.Item value={trip.id}>
+      <Accordion.Control>
+        <Indicator
+          inline
+          size={12}
+          processing={isProcessing}
+          disabled={!isProcessing && !indicatorUp}
+          color={isProcessing ? 'yellow' : 'red'}
+          zIndex="auto"
+        >
+          {trip.name}
+        </Indicator>
+      </Accordion.Control>
+      <Accordion.Panel>
+        <Card shadow="sm" radius="md" withBorder>
+          <ReportHeader data={trip} />
+          <Accordion
+            className="w-full"
+            multiple
+            value={accordionItems}
+            chevron={<Plus size="1rem" />}
+            styles={{
+              chevron: {
+                '&[data-rotate]': {
+                  transform: 'rotate(45deg)',
+                },
+              },
+            }}
+          >
+            <Accordion.Item value="attendees">
+              <Accordion.Control onClick={() => toggleAccordionItem('attendees')}>
+                Attendees
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Attendees data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
 
-        {isExtended && (
-          <Accordion.Item value="uncategorized-transactions">
-            <Accordion.Control onClick={() => toggleAccordionItem('uncategorized-transactions')}>
-              Uncategorized Transactions
-            </Accordion.Control>
-            <Accordion.Panel>
-              <UncategorizedTransactions data={trip} onChange={onChangeDo} />
-            </Accordion.Panel>
-          </Accordion.Item>
-        )}
+            {isExtended && (
+              <Accordion.Item value="uncategorized-transactions">
+                <Accordion.Control
+                  onClick={() => toggleAccordionItem('uncategorized-transactions')}
+                >
+                  Uncategorized Transactions
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <UncategorizedTransactions data={trip} onChange={onChangeDo} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
 
-        <Accordion.Item value="flights">
-          <Accordion.Control onClick={() => toggleAccordionItem('flights')}>
-            Flights
-          </Accordion.Control>
-          <Accordion.Panel>
-            <Flights data={trip} onChange={onChangeDo} />
-          </Accordion.Panel>
-        </Accordion.Item>
+            <Accordion.Item value="flights">
+              <Accordion.Control onClick={() => toggleAccordionItem('flights')}>
+                Flights
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Flights data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
 
-        <Accordion.Item value="accommodations">
-          <Accordion.Control onClick={() => toggleAccordionItem('accommodations')}>
-            Accommodations
-          </Accordion.Control>
-          <Accordion.Panel>
-            <Accommodations data={trip} onChange={onChangeDo} />
-          </Accordion.Panel>
-        </Accordion.Item>
+            <Accordion.Item value="accommodations">
+              <Accordion.Control onClick={() => toggleAccordionItem('accommodations')}>
+                Accommodations
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Accommodations data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
 
-        <Accordion.Item value="travelAndSubsistence">
-          <Accordion.Control onClick={() => toggleAccordionItem('travelAndSubsistence')}>
-            Travel & Subsistence
-          </Accordion.Control>
-          <Accordion.Panel>
-            <TravelAndSubsistence data={trip} onChange={onChangeDo} />
-          </Accordion.Panel>
-        </Accordion.Item>
+            <Accordion.Item value="travelAndSubsistence">
+              <Accordion.Control onClick={() => toggleAccordionItem('travelAndSubsistence')}>
+                Travel & Subsistence
+              </Accordion.Control>
+              <Accordion.Panel>
+                <TravelAndSubsistence data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
 
-        <Accordion.Item value="other">
-          <Accordion.Control onClick={() => toggleAccordionItem('other')}>Other</Accordion.Control>
-          <Accordion.Panel>
-            <Other data={trip} onChange={onChangeDo} />
-          </Accordion.Panel>
-        </Accordion.Item>
+            <Accordion.Item value="other">
+              <Accordion.Control onClick={() => toggleAccordionItem('other')}>
+                Other
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Other data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
 
-        <Accordion.Item value="summary">
-          <Accordion.Control onClick={() => toggleAccordionItem('summary')}>
-            Summary
-          </Accordion.Control>
-          <Accordion.Panel>
-            <Summary data={trip} />
-          </Accordion.Panel>
-        </Accordion.Item>
-      </Accordion>
-    </Card>
-    // </div>
+            <Accordion.Item value="summary">
+              <Accordion.Control onClick={() => toggleAccordionItem('summary')}>
+                Summary
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Summary data={trip} />
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        </Card>
+      </Accordion.Panel>
+    </Accordion.Item>
   );
 }

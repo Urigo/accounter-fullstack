@@ -52,12 +52,12 @@ export const BusinessTrips = (): ReactElement => {
             return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
           })
           .map(businessTrip => (
-            <Accordion.Item value={businessTrip.id} key={businessTrip.id}>
-              <Accordion.Control>{businessTrip.name}</Accordion.Control>
-              <Accordion.Panel>
-                <EditableBusinessTrip data={businessTrip} isExtended />
-              </Accordion.Panel>
-            </Accordion.Item>
+            <EditableBusinessTrip
+              data={businessTrip}
+              isFetching={fetching}
+              isExtended
+              key={businessTrip.id}
+            />
           ))}
       </Accordion>
       <div className="flex justify-end mx-4">
