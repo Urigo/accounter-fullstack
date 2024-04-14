@@ -184,7 +184,9 @@
           "textCode",
           "transactionType",
           "valueDate",
-          "displayRTGSIncomingTrsDetails"
+          "displayRTGSIncomingTrsDetails",
+          "formattedEventAmount",
+          "formattedCurrentBalance"
         ],
         "properties": {
           "activityDescription": {
@@ -347,6 +349,12 @@
           "displayRTGSIncomingTrsDetails": {
             "type": "number",
             "enum": [0, 1]
+          },
+          "formattedEventAmount": {
+            "type": "string"
+          },
+          "formattedCurrentBalance": {
+            "type": "string"
           }
         }
       }
