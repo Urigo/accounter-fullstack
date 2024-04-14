@@ -4,7 +4,7 @@ import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
-  AddBusinessTripFlightTransactionInput,
+  AddBusinessTripFlightsTransactionInput,
   AllBusinessTripAttendeesDocument,
   Currency,
 } from '../../../../gql/graphql.js';
@@ -13,7 +13,7 @@ import { CurrencyInput } from '../../index.js';
 
 type ModalProps = {
   businessTripId: string;
-  control: Control<AddBusinessTripFlightTransactionInput, unknown>;
+  control: Control<AddBusinessTripFlightsTransactionInput, unknown>;
   setFetching: (fetching: boolean) => void;
 };
 
