@@ -6,10 +6,10 @@ export default gql`
     updateBusinessTripTransactionCategory(
       fields: UpdateBusinessTripTransactionCategoryInput!
     ): UUID! @auth(role: ADMIN)
-    updateBusinessTripFlightTransaction(fields: UpdateBusinessTripFlightTransactionInput!): UUID!
+    updateBusinessTripFlightsTransaction(fields: UpdateBusinessTripFlightsTransactionInput!): UUID!
       @auth(role: ADMIN)
-    updateBusinessTripAccommodationTransaction(
-      fields: UpdateBusinessTripAccommodationTransactionInput!
+    updateBusinessTripAccommodationsTransaction(
+      fields: UpdateBusinessTripAccommodationsTransactionInput!
     ): UUID! @auth(role: ADMIN)
     updateBusinessTripOtherTransaction(fields: UpdateBusinessTripOtherTransactionInput!): UUID!
       @auth(role: ADMIN)
@@ -18,10 +18,10 @@ export default gql`
     ): UUID! @auth(role: ADMIN)
     deleteBusinessTripTransaction(businessTripTransactionId: UUID!): Boolean! @auth(role: ADMIN)
 
-    addBusinessTripFlightTransaction(fields: AddBusinessTripFlightTransactionInput!): UUID!
+    addBusinessTripFlightsTransaction(fields: AddBusinessTripFlightsTransactionInput!): UUID!
       @auth(role: ADMIN)
-    addBusinessTripAccommodationTransaction(
-      fields: AddBusinessTripAccommodationTransactionInput!
+    addBusinessTripAccommodationsTransaction(
+      fields: AddBusinessTripAccommodationsTransactionInput!
     ): UUID! @auth(role: ADMIN)
     addBusinessTripOtherTransaction(fields: AddBusinessTripOtherTransactionInput!): UUID!
       @auth(role: ADMIN)
@@ -45,8 +45,8 @@ export default gql`
     OTHER
   }
 
-  " the input for updating a business trip flight transaction "
-  input UpdateBusinessTripFlightTransactionInput {
+  " the input for updating a business trip flights transaction "
+  input UpdateBusinessTripFlightsTransactionInput {
     id: UUID!
     businessTripId: UUID!
     date: TimelessDate
@@ -69,7 +69,7 @@ export default gql`
   }
 
   " the input for updating a business trip accommodation transaction "
-  input UpdateBusinessTripAccommodationTransactionInput {
+  input UpdateBusinessTripAccommodationsTransactionInput {
     id: UUID!
     businessTripId: UUID!
     date: TimelessDate
@@ -109,8 +109,8 @@ export default gql`
     expenseType: String
   }
 
-  " the input for adding a new business trip flight transaction "
-  input AddBusinessTripFlightTransactionInput {
+  " the input for adding a new business trip flights transaction "
+  input AddBusinessTripFlightsTransactionInput {
     businessTripId: UUID!
     date: TimelessDate
     valueDate: TimelessDate
@@ -124,7 +124,7 @@ export default gql`
   }
 
   " the input for adding a new business trip accommodation transaction "
-  input AddBusinessTripAccommodationTransactionInput {
+  input AddBusinessTripAccommodationsTransactionInput {
     businessTripId: UUID!
     date: TimelessDate
     valueDate: TimelessDate

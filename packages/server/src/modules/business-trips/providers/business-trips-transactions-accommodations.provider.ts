@@ -3,16 +3,16 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IDeleteBusinessTripAccommodationTransactionParams,
-  IDeleteBusinessTripAccommodationTransactionQuery,
+  IDeleteBusinessTripAccommodationsTransactionParams,
+  IDeleteBusinessTripAccommodationsTransactionQuery,
   IGetAllBusinessTripsAccommodationsTransactionsQuery,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByChargeIdsQuery,
   IGetBusinessTripsAccommodationsTransactionsByIdsQuery,
-  IInsertBusinessTripAccommodationTransactionParams,
-  IInsertBusinessTripAccommodationTransactionQuery,
-  IUpdateBusinessTripAccommodationTransactionParams,
-  IUpdateBusinessTripAccommodationTransactionQuery,
+  IInsertBusinessTripAccommodationsTransactionParams,
+  IInsertBusinessTripAccommodationsTransactionQuery,
+  IUpdateBusinessTripAccommodationsTransactionParams,
+  IUpdateBusinessTripAccommodationsTransactionQuery,
 } from '../types.js';
 
 const getAllBusinessTripsAccommodationsTransactions = sql<IGetAllBusinessTripsAccommodationsTransactionsQuery>`
@@ -44,7 +44,7 @@ const getBusinessTripsAccommodationsTransactionsByIds = sql<IGetBusinessTripsAcc
     USING (id)
   WHERE ($isIds = 0 OR t.id IN $$transactionIds);`;
 
-const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccommodationTransactionQuery>`
+const updateBusinessTripAccommodationsTransaction = sql<IUpdateBusinessTripAccommodationsTransactionQuery>`
   UPDATE accounter_schema.business_trips_transactions_accommodations
   SET
   country = COALESCE(
@@ -60,12 +60,12 @@ const updateBusinessTripAccommodationTransaction = sql<IUpdateBusinessTripAccomm
   RETURNING *;
 `;
 
-const insertBusinessTripAccommodationTransaction = sql<IInsertBusinessTripAccommodationTransactionQuery>`
+const insertBusinessTripAccommodationsTransaction = sql<IInsertBusinessTripAccommodationsTransactionQuery>`
   INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count)
   VALUES($id, $country, $nightsCount)
   RETURNING *;`;
 
-const deleteBusinessTripAccommodationTransaction = sql<IDeleteBusinessTripAccommodationTransactionQuery>`
+const deleteBusinessTripAccommodationsTransaction = sql<IDeleteBusinessTripAccommodationsTransactionQuery>`
   DELETE FROM accounter_schema.business_trips_transactions_accommodations
   WHERE id = $businessTripTransactionId
   RETURNING id;
@@ -82,7 +82,7 @@ export class BusinessTripAccommodationsTransactionsProvider {
     return getAllBusinessTripsAccommodationsTransactions.run(undefined, this.dbProvider);
   }
 
-  private async batchBusinessTripsAccommodationTransactionsByChargeIds(
+  private async batchBusinessTripsAccommodationsTransactionsByChargeIds(
     chargeIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -98,14 +98,14 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsAccommodationTransactionsByChargeIds(ids),
+  public getBusinessTripsAccommodationsTransactionsByChargeIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsAccommodationsTransactionsByChargeIds(ids),
     {
       cache: false,
     },
   );
 
-  private async batchBusinessTripsAccommodationTransactionsByBusinessTripIds(
+  private async batchBusinessTripsAccommodationsTransactionsByBusinessTripIds(
     businessTripIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -121,15 +121,15 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader = new DataLoader(
+  public getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) =>
-      this.batchBusinessTripsAccommodationTransactionsByBusinessTripIds(ids),
+      this.batchBusinessTripsAccommodationsTransactionsByBusinessTripIds(ids),
     {
       cache: false,
     },
   );
 
-  private async batchBusinessTripsAccommodationTransactionsByIds(
+  private async batchBusinessTripsAccommodationsTransactionsByIds(
     transactionIds: readonly string[],
   ) {
     const businessTripsAccommodationsTransactions =
@@ -145,28 +145,28 @@ export class BusinessTripAccommodationsTransactionsProvider {
     );
   }
 
-  public getBusinessTripsAccommodationTransactionsByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsAccommodationTransactionsByIds(ids),
+  public getBusinessTripsAccommodationsTransactionsByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsAccommodationsTransactionsByIds(ids),
     {
       cache: false,
     },
   );
 
-  public updateBusinessTripAccommodationTransaction(
-    params: IUpdateBusinessTripAccommodationTransactionParams,
+  public updateBusinessTripAccommodationsTransaction(
+    params: IUpdateBusinessTripAccommodationsTransactionParams,
   ) {
-    return updateBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+    return updateBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
   }
 
-  public insertBusinessTripAccommodationTransaction(
-    params: IInsertBusinessTripAccommodationTransactionParams,
+  public insertBusinessTripAccommodationsTransaction(
+    params: IInsertBusinessTripAccommodationsTransactionParams,
   ) {
-    return insertBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+    return insertBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
   }
 
-  public deleteBusinessTripAccommodationTransaction(
-    params: IDeleteBusinessTripAccommodationTransactionParams,
+  public deleteBusinessTripAccommodationsTransaction(
+    params: IDeleteBusinessTripAccommodationsTransactionParams,
   ) {
-    return deleteBusinessTripAccommodationTransaction.run(params, this.dbProvider);
+    return deleteBusinessTripAccommodationsTransaction.run(params, this.dbProvider);
   }
 }

@@ -139,7 +139,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     accommodationTransactions: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripAccommodationsTransactionsProvider)
-        .getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+        .getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
     travelAndSubsistenceTransactions: async (dbBusinessTrip, _, { injector }) => {
       return injector

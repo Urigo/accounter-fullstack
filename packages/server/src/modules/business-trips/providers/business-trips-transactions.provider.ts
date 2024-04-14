@@ -204,7 +204,7 @@ export class BusinessTripTransactionsProvider {
       this.flightTransactionsProvider.getBusinessTripsFlightsTransactionsByChargeIdLoader.load(
         chargeId,
       ),
-      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationTransactionsByChargeIdLoader.load(
+      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationsTransactionsByChargeIdLoader.load(
         chargeId,
       ),
       this.travelAndSubsistenceTransactionsProvider.getBusinessTripsTravelAndSubsistenceTransactionsByChargeIdLoader.load(
@@ -245,7 +245,7 @@ export class BusinessTripTransactionsProvider {
       this.flightTransactionsProvider.getBusinessTripsFlightsTransactionsByBusinessTripIdLoader.load(
         businessTripId,
       ),
-      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationTransactionsByBusinessTripIdLoader.load(
+      this.accommodationsTransactionsProvider.getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader.load(
         businessTripId,
       ),
       this.travelAndSubsistenceTransactionsProvider.getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdLoader.load(

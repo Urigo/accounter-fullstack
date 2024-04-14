@@ -5,11 +5,16 @@ import { BusinessTripFlightsTransactionsProvider } from '../providers/business-t
 import { BusinessTripOtherTransactionsProvider } from '../providers/business-trips-transactions-other.provider.js';
 import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
-import type { BusinessTripsModule, IUpdateBusinessTripTransactionParams } from '../types.js';
+import type {
+  business_trip_transaction_type,
+  BusinessTripsModule,
+  IUpdateBusinessTripTransactionParams,
+} from '../types.js';
 
 async function coreTransactionUpdate(
   injector: Injector,
   fields: IUpdateBusinessTripTransactionParams & { id: string },
+  categoryToValidate?: business_trip_transaction_type,
 ) {
   const { id, businessTripId, date, valueDate, amount, currency, employeeBusinessId } = fields;
   const [currentTransaction] = await injector
@@ -19,8 +24,10 @@ async function coreTransactionUpdate(
   if (!currentTransaction) {
     throw new GraphQLError(`Business trip transaction with id ${id} not found`);
   }
-  if (currentTransaction.category !== 'FLIGHT') {
-    throw new GraphQLError(`Business trip transaction with id ${id} is not a flight transaction`);
+  if (categoryToValidate && currentTransaction.category !== categoryToValidate) {
+    throw new GraphQLError(
+      `Business trip transaction with id ${id} is not a ${categoryToValidate} transaction`,
+    );
   }
 
   const hasCommonFieldsToUpdate =
@@ -66,14 +73,14 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
           case 'FLIGHT':
             await injector
               .get(BusinessTripFlightsTransactionsProvider)
-              .insertBusinessTripFlightTransaction({
+              .insertBusinessTripFlightsTransaction({
                 id,
               });
             break;
           case 'ACCOMMODATION':
             await injector
               .get(BusinessTripAccommodationsTransactionsProvider)
-              .insertBusinessTripAccommodationTransaction({
+              .insertBusinessTripAccommodationsTransaction({
                 id,
               });
             break;
@@ -98,16 +105,16 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         throw new GraphQLError((e as Error)?.message ?? `Error updating charge's business trip`);
       }
     },
-    updateBusinessTripFlightTransaction: async (_, { fields }, { injector }) => {
+    updateBusinessTripFlightsTransaction: async (_, { fields }, { injector }) => {
       try {
-        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields);
+        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields, 'FLIGHT');
 
         const { id, origin, destination, flightClass } = fields;
         const hasFlightFliedsToUpdate = origin || destination || flightClass;
         const flightTransactionUpdate = hasFlightFliedsToUpdate
           ? injector
               .get(BusinessTripFlightsTransactionsProvider)
-              .updateBusinessTripFlightTransaction({
+              .updateBusinessTripFlightsTransaction({
                 businessTripTransactionId: id,
                 origin,
                 destination,
@@ -125,16 +132,20 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         );
       }
     },
-    updateBusinessTripAccommodationTransaction: async (_, { fields }, { injector }) => {
+    updateBusinessTripAccommodationsTransaction: async (_, { fields }, { injector }) => {
       try {
-        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields);
+        const coreTransactionUpdatePromise = coreTransactionUpdate(
+          injector,
+          fields,
+          'ACCOMMODATION',
+        );
 
         const { id, country, nightsCount } = fields;
         const hasAccommodationFieldsToUpdate = country || nightsCount;
         const accommodationTransactionUpdate = hasAccommodationFieldsToUpdate
           ? injector
               .get(BusinessTripAccommodationsTransactionsProvider)
-              .updateBusinessTripAccommodationTransaction({
+              .updateBusinessTripAccommodationsTransaction({
                 businessTripTransactionId: id,
                 country,
                 nightsCount,
@@ -153,7 +164,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
     },
     updateBusinessTripOtherTransaction: async (_, { fields }, { injector }) => {
       try {
-        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields);
+        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields, 'OTHER');
 
         const { id, expenseType, deductibleExpense } = fields;
         const hasOtherFieldsToUpdate = expenseType || deductibleExpense != null;
@@ -177,7 +188,11 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
     },
     updateBusinessTripTravelAndSubsistenceTransaction: async (_, { fields }, { injector }) => {
       try {
-        const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields);
+        const coreTransactionUpdatePromise = coreTransactionUpdate(
+          injector,
+          fields,
+          'TRAVEL_AND_SUBSISTENCE',
+        );
 
         const { id, expenseType } = fields;
         const hasTravelAndSubsistenceFieldsToUpdate = expenseType;
@@ -208,10 +223,10 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
             .deleteBusinessTripTransaction({ businessTripTransactionId }),
           injector
             .get(BusinessTripFlightsTransactionsProvider)
-            .deleteBusinessTripFlightTransaction({ businessTripTransactionId }),
+            .deleteBusinessTripFlightsTransaction({ businessTripTransactionId }),
           injector
             .get(BusinessTripAccommodationsTransactionsProvider)
-            .deleteBusinessTripAccommodationTransaction({ businessTripTransactionId }),
+            .deleteBusinessTripAccommodationsTransaction({ businessTripTransactionId }),
           injector
             .get(BusinessTripOtherTransactionsProvider)
             .deleteBusinessTripOtherTransaction({ businessTripTransactionId }),
@@ -226,7 +241,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         throw new GraphQLError((e as Error)?.message ?? `Error deleting business trip transaction`);
       }
     },
-    addBusinessTripFlightTransaction: async (_, { fields }, { injector }) => {
+    addBusinessTripFlightsTransaction: async (_, { fields }, { injector }) => {
       try {
         const [coreTransaction] = await injector
           .get(BusinessTripTransactionsProvider)
@@ -238,7 +253,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
 
         await injector
           .get(BusinessTripFlightsTransactionsProvider)
-          .insertBusinessTripFlightTransaction({
+          .insertBusinessTripFlightsTransaction({
             id: coreTransaction.id,
             origin: fields.origin,
             destination: fields.destination,
@@ -253,7 +268,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         );
       }
     },
-    addBusinessTripAccommodationTransaction: async (_, { fields }, { injector }) => {
+    addBusinessTripAccommodationsTransaction: async (_, { fields }, { injector }) => {
       try {
         const [coreTransaction] = await injector
           .get(BusinessTripTransactionsProvider)
@@ -265,7 +280,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
 
         await injector
           .get(BusinessTripAccommodationsTransactionsProvider)
-          .insertBusinessTripAccommodationTransaction({
+          .insertBusinessTripAccommodationsTransaction({
             id: coreTransaction.id,
             country: fields.country,
             nightsCount: fields.nightsCount,
