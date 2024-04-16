@@ -5,11 +5,12 @@ import { PopUpDrawer, UploadDocument } from '..';
 import { writeToClipboard } from '../../../helpers';
 
 interface Props {
-  uploadDocument: string;
-  setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
+  chargeId: string;
+  close: () => void;
+  onChange?: () => void;
 }
 
-export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props): ReactElement => {
+export const UploadDocumentModal = ({ chargeId, close, onChange }: Props): ReactElement => {
   return (
     <PopUpDrawer
       modalSize="40%"
@@ -18,10 +19,10 @@ export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props
         <div className="flex flex-row mx-3 pt-3 sm:text-1xl gap-10">
           <h1 className="sm:text-2xl font-small text-gray-900">Upload Document:</h1>
           <div className="flex flex-row gap-2">
-            Charge ID: {uploadDocument}
+            Charge ID: {chargeId}
             <ActionIcon
               variant="default"
-              onClick={(): void => writeToClipboard(uploadDocument)}
+              onClick={(): void => writeToClipboard(chargeId)}
               size={30}
             >
               <Copy size={20} />
@@ -29,13 +30,10 @@ export const UploadDocumentModal = ({ uploadDocument, setUploadDocument }: Props
           </div>
         </div>
       }
-      opened={!!uploadDocument}
-      onClose={(): void => setUploadDocument(undefined)}
+      opened={!!chargeId}
+      onClose={close}
     >
-      <UploadDocument
-        chargeId={uploadDocument}
-        closeModal={(): void => setUploadDocument(undefined)}
-      />
+      <UploadDocument chargeId={chargeId} closeModal={close} onChange={onChange} />
     </PopUpDrawer>
   );
 };

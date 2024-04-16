@@ -1,13 +1,24 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Paper } from '@mantine/core';
 import {
+  AllChargesAccountantApprovalFieldsFragmentDoc,
+  AllChargesAmountFieldsFragmentDoc,
+  AllChargesBusinessTripFieldsFragmentDoc,
+  AllChargesDateFieldsFragmentDoc,
+  AllChargesDescriptionFieldsFragmentDoc,
+  AllChargesEntityFieldsFragmentDoc,
+  AllChargesMoreInfoFieldsFragmentDoc,
   AllChargesRowFieldsFragment,
   AllChargesRowFieldsFragmentDoc,
   AllChargesTableFieldsFragment,
+  AllChargesTagsFieldsFragmentDoc,
+  AllChargesTaxCategoryFieldsFragmentDoc,
+  AllChargesTypeFieldsFragmentDoc,
+  AllChargesVatFieldsFragmentDoc,
   ChargeForRowDocument,
 } from '../../gql/graphql.js';
-import { getFragmentData } from '../../gql/index.js';
+import { getFragmentData, isFragmentReady } from '../../gql/index.js';
 import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
 import {
   AccountantApproval,
@@ -28,23 +39,23 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id
-    ... on Charge @defer {
-      metadata {
+    metadata {
+      ... on ChargeMetadata @defer {
         transactionsCount
         documentsCount
       }
     }
-    ...AllChargesAccountantApprovalFields
-    ...AllChargesAmountFields
-    ...AllChargesBusinessTripFields
-    ...AllChargesDateFields
-    ...AllChargesDescriptionFields
-    ...AllChargesEntityFields
-    ...AllChargesMoreInfoFields
-    ...AllChargesTagsFields
-    ...AllChargesTaxCategoryFields
-    ...AllChargesTypeFields
-    ...AllChargesVatFields
+    ...AllChargesAccountantApprovalFields @defer
+    ...AllChargesAmountFields @defer
+    ...AllChargesBusinessTripFields @defer
+    ...AllChargesDateFields @defer
+    ...AllChargesDescriptionFields @defer
+    ...AllChargesEntityFields @defer
+    ...AllChargesMoreInfoFields @defer
+    ...AllChargesTagsFields @defer
+    ...AllChargesTaxCategoryFields @defer
+    ...AllChargesTypeFields @defer
+    ...AllChargesVatFields @defer
   }
 `;
 
@@ -59,11 +70,11 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
 `;
 
 interface Props {
-  setEditCharge: () => void;
-  setInsertDocument: () => void;
+  setEditCharge: (onChange: () => void) => void;
+  setInsertDocument: (onChange: () => void) => void;
   setMatchDocuments: () => void;
-  setUploadDocument: () => void;
-  toggleMergeCharge?: () => void;
+  setUploadDocument: (onChange: () => void) => void;
+  toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: AllChargesTableFieldsFragment;
   isAllOpened: boolean;
@@ -92,9 +103,7 @@ export const AllChargesRow = ({
     },
   });
 
-  const updateCharge = useCallback(() => {
-    fetchCharge();
-  }, [fetchCharge]);
+  const onChange = fetchCharge;
 
   useEffect(() => {
     const updatedCharge = newData?.chargesByIDs?.[0];
@@ -111,7 +120,10 @@ export const AllChargesRow = ({
     setOpened(isAllOpened);
   }, [isAllOpened]);
 
-  const hasExtendedInfo = !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount);
+  const hasExtendedInfo = useMemo(
+    () => !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount),
+    [charge.metadata?.documentsCount, charge.metadata?.transactionsCount],
+  );
 
   return (
     <>
@@ -122,28 +134,123 @@ export const AllChargesRow = ({
           }
         }}
       >
-        <TypeCell data={charge} />
-        <DateCell data={charge} />
-        <Amount data={charge} />
-        <Vat data={charge} />
-        <Counterparty data={charge} />
-        <Description data={charge} />
-        <Tags data={charge} />
-        <TaxCategory data={charge} />
-        <BusinessTrip data={charge} />
-        <MoreInfo data={charge} />
-        <AccountantApproval data={charge} />
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesTypeFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <TypeCell data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesDateFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <DateCell data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesAmountFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <Amount data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(AllChargesRowFieldsFragmentDoc, AllChargesVatFieldsFragmentDoc, charge) ? (
+          <Vat data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesEntityFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <Counterparty data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesDescriptionFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <Description data={charge} onChange={onChange} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesTagsFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <Tags data={charge} onChange={onChange} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesTaxCategoryFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <TaxCategory data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesBusinessTripFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <BusinessTrip data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesMoreInfoFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <MoreInfo data={charge} />
+        ) : (
+          <td />
+        )}
+
+        {isFragmentReady(
+          AllChargesRowFieldsFragmentDoc,
+          AllChargesAccountantApprovalFieldsFragmentDoc,
+          charge,
+        ) ? (
+          <AccountantApproval data={charge} onChange={onChange} />
+        ) : (
+          <td />
+        )}
+
         <td>
           <div className="flex flex-col gap-2">
             <EditMiniButton
               onClick={event => {
                 event.stopPropagation();
-                setEditCharge();
+                setEditCharge(onChange);
               }}
             />
             {toggleMergeCharge && (
               <ToggleMergeSelected
-                toggleMergeSelected={(): void => toggleMergeCharge()}
+                toggleMergeSelected={(): void => toggleMergeCharge(onChange)}
                 mergeSelected={isSelectedForMerge}
               />
             )}
@@ -153,19 +260,15 @@ export const AllChargesRow = ({
           <div className="flex flex-col gap-2">
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
-              setInsertDocument={setInsertDocument}
+              setInsertDocument={() => setInsertDocument(onChange)}
               setMatchDocuments={setMatchDocuments}
-              setUploadDocument={setUploadDocument}
+              setUploadDocument={() => setUploadDocument(onChange)}
             />
             {hasExtendedInfo && (
               <ToggleExpansionButton
                 toggleExpansion={setOpened}
                 isExpanded={opened}
-                onClickAction={state => {
-                  if (state) {
-                    updateCharge();
-                  }
-                }}
+                onClickAction={() => onChange()}
               />
             )}
           </div>

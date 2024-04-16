@@ -12,12 +12,12 @@ import { DragFile, ListCapsule } from '../../common/index.js';
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
     id
+    metadata {
+      transactionsCount
+      documentsCount
+      isSalary
+    }
     ... on Charge @defer {
-      metadata {
-        transactionsCount
-        documentsCount
-        isSalary
-      }
       validationData {
         missingInfo
       }
@@ -49,10 +49,15 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
     }
   }, [__typename]);
 
-  const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
+  const isTransactionsError = useMemo(
+    () => validationData?.missingInfo?.includes(MissingChargeInfo.Transactions),
+    [validationData?.missingInfo],
+  );
 
-  const isDocumentsError =
-    shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
+  const isDocumentsError = useMemo(
+    () => shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents),
+    [shouldHaveDocuments, validationData?.missingInfo],
+  );
   return (
     <td>
       <DragFile chargeId={id}>
@@ -82,7 +87,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
             {
               content: (
                 <Indicator
-                  key="ledger"
+                  key="documents"
                   inline
                   size={12}
                   disabled={!isDocumentsError}
@@ -122,11 +127,9 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
         }
         ... on Ledger @defer {
           validate {
-            ... on LedgerValidation @defer {
-              isValid
-              differences {
-                id
-              }
+            isValid
+            differences {
+              id
             }
           }
         }
@@ -141,10 +144,16 @@ type LedgerInfoProps = {
 
 const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
   const { ledger } = getFragmentData(AllChargesMoreLedgerInfoFieldsFragmentDoc, data);
-  const isValidationComplete = ledger?.validate?.differences !== undefined;
-  const isLedgerError = !ledger || ledger.records.length === 0;
-  const isLedgerUnbalanced = !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced;
-  const isLedgerValidated = ledger?.validate?.isValid;
+  const isValidationComplete = useMemo(
+    () => ledger?.validate?.differences !== undefined,
+    [ledger?.validate?.differences],
+  );
+  const isLedgerError = useMemo(() => !ledger || ledger.records.length === 0, [ledger]);
+  const isLedgerUnbalanced = useMemo(
+    () => !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced,
+    [isLedgerError, ledger?.balance],
+  );
+  const isLedgerValidated = useMemo(() => ledger?.validate?.isValid, [ledger?.validate?.isValid]);
 
   const ledgerRecordsCount = isLedgerError ? 0 : ledger?.records.length;
   return (
@@ -153,7 +162,7 @@ const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
       inline
       size={12}
       processing={!isValidationComplete}
-      disabled={!isLedgerError && !isLedgerUnbalanced && isLedgerValidated}
+      disabled={isValidationComplete && !isLedgerError && !isLedgerUnbalanced && isLedgerValidated}
       color={ledger?.validate?.differences?.length ? 'orange' : 'red'}
       zIndex="auto"
     >

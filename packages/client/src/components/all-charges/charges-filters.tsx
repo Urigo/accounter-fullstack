@@ -338,6 +338,12 @@ function ChargesFiltersForm({
               onChange={(event): void => setValue('unbalanced', event.currentTarget.checked)}
               label="Unbalanced businesses"
             />
+
+            <Switch
+              defaultChecked={filter.withoutLedger ?? false}
+              onChange={(event): void => setValue('withoutLedger', event.currentTarget.checked)}
+              label="Without ledger"
+            />
           </div>
         </SimpleGrid>
         <div className="flex justify-center mt-5 gap-3">

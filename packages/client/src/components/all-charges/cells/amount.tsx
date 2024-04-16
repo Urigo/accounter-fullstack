@@ -22,13 +22,16 @@ export const Amount = ({ data }: Props): ReactElement => {
 
   return (
     <td>
-      <div
-        style={{
-          color: Number(charge.totalAmount?.raw) > 0 ? 'green' : 'red',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {charge.totalAmount?.formatted}
+      <div>
+        <p
+          className={
+            (charge.totalAmount?.raw ?? 0) > 0
+              ? 'whitespace-nowrap text-green-700'
+              : 'whitespace-nowrap text-red-500'
+          }
+        >
+          {charge.totalAmount?.formatted}
+        </p>
       </div>
     </td>
   );

@@ -23,10 +23,11 @@ import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
 
 type Props = {
   chargeId: string;
-  closeModal?: () => void;
+  closeModal: () => void;
+  onChange?: () => void;
 };
 
-export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement => {
+export const UploadDocument = ({ chargeId, closeModal, onChange }: Props): ReactElement => {
   const [res, mutate] = useMutation(UploadDocumentDocument);
   const [value, setValue] = useState<File | null>(null);
 
@@ -48,13 +49,12 @@ export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement =>
               }`,
             );
           } else if (res.data) {
+            onChange?.();
             showNotification({
               title: 'Upload Success!',
               message: 'Hey there, you add new document!',
             });
-            if (closeModal) {
-              closeModal();
-            }
+            closeModal();
           }
         })
         .catch(e => {
@@ -65,7 +65,7 @@ export const UploadDocument = ({ chargeId, closeModal }: Props): ReactElement =>
           console.error(`Error uploading document: ${(e as Error)?.message}`);
         });
     }
-  }, [mutate, closeModal, value, chargeId]);
+  }, [mutate, closeModal, onChange, value, chargeId]);
 
   return (
     <div className="px-5 w-max h-max justify-items-center">

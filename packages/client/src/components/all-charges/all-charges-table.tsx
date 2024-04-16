@@ -8,9 +8,9 @@ import { AllChargesRow } from './all-charges-row.js';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
-    ... on Charge @defer {
       owner {
-        id
+        ... on Business @defer {
+          id
       }
     }
     ...AllChargesRowFields
@@ -18,8 +18,8 @@ import { AllChargesRow } from './all-charges-row.js';
 `;
 
 interface Props {
-  setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
-  setInsertDocument: Dispatch<SetStateAction<string | undefined>>;
+  setEditChargeId: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
+  setInsertDocument: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   setMatchDocuments: Dispatch<
     React.SetStateAction<
       | {
@@ -29,9 +29,9 @@ interface Props {
       | undefined
     >
   >;
-  setUploadDocument: Dispatch<SetStateAction<string | undefined>>;
-  toggleMergeCharge?: (chargeId: string) => void;
-  mergeSelectedCharges?: string[];
+  setUploadDocument: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
+  toggleMergeCharge?: (chargeId: string, onChange: () => void) => void;
+  mergeSelectedCharges?: Set<string>;
   data?: FragmentType<typeof AllChargesTableFieldsFragmentDoc>[];
   isAllOpened: boolean;
 }
@@ -73,16 +73,24 @@ export const AllChargesTable = ({
           <AllChargesRow
             key={charge.id}
             data={charge}
-            setEditCharge={(): void => setEditChargeId(charge.id)}
-            setInsertDocument={(): void => setInsertDocument(charge.id)}
+            setEditCharge={(onChange: () => void): void =>
+              setEditChargeId({ id: charge.id, onChange })
+            }
+            setInsertDocument={(onChange: () => void): void =>
+              setInsertDocument({ id: charge.id, onChange })
+            }
             setMatchDocuments={(): void =>
               setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
             }
-            setUploadDocument={(): void => setUploadDocument(charge.id)}
-            toggleMergeCharge={
-              toggleMergeCharge ? (): void => toggleMergeCharge(charge.id) : undefined
+            setUploadDocument={(onChange: () => void): void =>
+              setUploadDocument({ id: charge.id, onChange })
             }
-            isSelectedForMerge={mergeSelectedCharges?.includes(charge.id) ?? false}
+            toggleMergeCharge={
+              toggleMergeCharge
+                ? (onChange: () => void): void => toggleMergeCharge(charge.id, onChange)
+                : undefined
+            }
+            isSelectedForMerge={mergeSelectedCharges?.has(charge.id) ?? false}
             isAllOpened={isAllOpened}
           />
         ))}

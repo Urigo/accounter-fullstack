@@ -1,16 +1,16 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
 import { ActionIcon, ActionIconProps, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { MergeChargesSelectionForm } from './merge-charges-selection-form';
 
 export function MergeChargesButton(props: {
-  chargeIDs: string[];
+  selected: { id: string; onChange: () => void }[];
   resetMerge: () => void;
 }): ReactElement {
   const [opened, { close, open }] = useDisclosure(false);
-  const { chargeIDs, resetMerge } = props;
-  const distinctIDs = new Set(chargeIDs);
+  const { selected, resetMerge } = props;
+  const distinctIDs = new Set(selected.map(({ id }) => id));
   const isMergable = distinctIDs.size >= 1;
 
   const [variant, setVariant] = useState<ActionIconProps['variant']>(
@@ -22,6 +22,11 @@ export function MergeChargesButton(props: {
     setVariant(isMergable ? 'filled' : 'default');
     setColor(isMergable ? 'blue' : 'gray');
   }, [isMergable]);
+
+  const onDone = useCallback(() => {
+    close();
+    selected.map(({ onChange }) => onChange());
+  }, [selected, close]);
 
   return (
     <>
@@ -40,7 +45,7 @@ export function MergeChargesButton(props: {
       <Modal opened={opened} onClose={close} size="auto" centered>
         <MergeChargesSelectionForm
           chargeIds={Array.from(distinctIDs)}
-          onDone={close}
+          onDone={onDone}
           resetMerge={resetMerge}
         />
       </Modal>

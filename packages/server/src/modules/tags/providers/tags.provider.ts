@@ -10,12 +10,14 @@ import type {
   IGetTagsByChargeIDsQuery,
   IInsertChargeTagsParams,
   IInsertChargeTagsQuery,
+  tags_enum,
 } from '../types.js';
 
 const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
-    SELECT *
+    SELECT charge_id, array_agg(tag_name) as tags
     FROM accounter_schema.tags
-    WHERE charge_id IN $$chargeIDs;`;
+    WHERE charge_id IN $$chargeIDs
+    GROUP BY charge_id;`;
 
 const clearChargeTags = sql<IClearChargeTagsQuery>`
     DELETE FROM accounter_schema.tags
@@ -55,10 +57,16 @@ export class TagsProvider {
     ]);
   }
 
-  private async batchTagsByChargeID(params: readonly string[]) {
-    const IDS = Array.from(new Set(params));
-    const tags = await getTagsByChargeIDs.run({ chargeIDs: IDS }, this.dbProvider);
-    return params.map(id => tags.filter(tag => tag.charge_id === id));
+  private async batchTagsByChargeID(chargeIDs: readonly string[]) {
+    const tagsArray = await getTagsByChargeIDs.run({ chargeIDs }, this.dbProvider);
+    const tags = Object.fromEntries(
+      tagsArray.map(tag => [
+        tag.charge_id,
+        ((tag.tags as unknown as string)?.replace(/[{}]/g, '').split(',') as Array<tags_enum>) ??
+          [],
+      ]),
+    );
+    return chargeIDs.map(id => tags[id] ?? []);
   }
 
   public getTagsByChargeIDLoader = new DataLoader(

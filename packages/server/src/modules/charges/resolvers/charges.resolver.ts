@@ -72,6 +72,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           businessIds: filters?.byBusinesses,
           withoutInvoice: filters?.withoutInvoice,
           withoutDocuments: filters?.withoutDocuments,
+          withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
           accountantApproval: filters?.accountantApproval,
         })
@@ -115,10 +116,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         // handle tags
         if (fields?.tags?.length) {
           const newTags = fields.tags.map(t => t.name);
-          const pastTagsItems = await injector
-            .get(TagsProvider)
-            .getTagsByChargeIDLoader.load(chargeId);
-          const pastTags = pastTagsItems.map(({ tag_name }) => tag_name);
+          const pastTags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(chargeId);
           // clear removed tags
           const tagsToRemove = pastTags.filter(tag => !newTags.includes(tag));
           if (tagsToRemove.length) {

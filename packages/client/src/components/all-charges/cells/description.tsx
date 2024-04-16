@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
 import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
@@ -10,26 +10,37 @@ import { ConfirmMiniButton } from '../../common/index.js';
   fragment AllChargesDescriptionFields on Charge {
     id
     userDescription
-    validationData {
-      missingInfo
-    }
-    missingInfoSuggestions {
-      description
+    ... on Charge @defer {
+      validationData {
+        missingInfo
+      }
+      missingInfoSuggestions {
+        description
+      }
     }
   }
 `;
 
 type Props = {
   data: FragmentType<typeof AllChargesDescriptionFieldsFragmentDoc>;
+  onChange: () => void;
 };
 
-export const Description = ({ data }: Props): ReactElement => {
+export const Description = ({ data, onChange }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
-  const isError = charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
-  const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
+  const isError = useMemo(
+    () => charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description),
+    [charge?.validationData?.missingInfo],
+  );
+  const hasAlternative = useMemo(
+    () => isError && !!charge.missingInfoSuggestions?.description?.trim().length,
+    [isError, charge.missingInfoSuggestions?.description],
+  );
   const { userDescription, id: chargeId } = charge;
-  let cellText = userDescription?.trim();
-  cellText ||= charge.missingInfoSuggestions?.description ?? 'Missing';
+  const cellText = useMemo(
+    () => userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing',
+    [userDescription, charge.missingInfoSuggestions?.description],
+  );
 
   const { updateCharge, fetching } = useUpdateCharge();
 
@@ -39,10 +50,10 @@ export const Description = ({ data }: Props): ReactElement => {
         updateCharge({
           chargeId,
           fields: { userDescription: value },
-        });
+        }).then(onChange);
       }
     },
-    [chargeId, updateCharge],
+    [chargeId, updateCharge, onChange],
   );
 
   return (

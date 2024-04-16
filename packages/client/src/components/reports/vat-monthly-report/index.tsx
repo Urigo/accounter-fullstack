@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
 import {
@@ -57,12 +57,18 @@ export const VatMonthlyReport = (): ReactElement => {
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
 
   // modals state
-  const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
+  const [insertDocument, setInsertDocument] = useState<
+    { id: string; onChange: () => void } | undefined
+  >(undefined);
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
   );
-  const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
-  const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
+  const [uploadDocument, setUploadDocument] = useState<
+    { id: string; onChange: () => void } | undefined
+  >(undefined);
+  const [editCharge, setEditCharge] = useState<{ id: string; onChange: () => void } | undefined>(
+    undefined,
+  );
 
   // fetch data
   const [{ data, fetching }] = useQuery({
@@ -92,10 +98,23 @@ export const VatMonthlyReport = (): ReactElement => {
       <div className="flex flex-row gap-2">
         <PCNGenerator filter={filter} isLoading={fetching} />
         <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
-        <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton
+          selected={mergeSelectedCharges.map(id => ({
+            id,
+            onChange: (): void => {
+              return;
+            },
+          }))}
+          resetMerge={onResetMerge}
+        />
       </div>,
     );
   }, [data, filter, fetching, setFiltersContext, mergeSelectedCharges]);
+
+  const mergeSelectedChargesSet = useMemo(
+    () => new Set(mergeSelectedCharges),
+    [mergeSelectedCharges],
+  );
   return fetching ? (
     <AccounterLoader />
   ) : (
@@ -118,46 +137,48 @@ export const VatMonthlyReport = (): ReactElement => {
 
       <MissingInfoTable
         data={data?.vatReport}
-        setEditChargeId={setEditChargeId}
+        setEditCharge={setEditCharge}
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
         toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedCharges}
+        mergeSelectedCharges={mergeSelectedChargesSet}
       />
 
       <BusinessTripsTable
         data={data?.vatReport}
-        setEditChargeId={setEditChargeId}
+        setEditCharge={setEditCharge}
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
         toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedCharges}
+        mergeSelectedCharges={mergeSelectedChargesSet}
       />
 
       <MiscTable
         data={data?.vatReport}
-        setEditChargeId={setEditChargeId}
+        setEditCharge={setEditCharge}
         setInsertDocument={setInsertDocument}
         setUploadDocument={setUploadDocument}
         setMatchDocuments={setMatchDocuments}
         toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedCharges}
+        mergeSelectedCharges={mergeSelectedChargesSet}
       />
 
       {/* modification modals */}
-      <EditChargeModal chargeId={editChargeId} onDone={(): void => setEditChargeId(undefined)} />
+      {editCharge && (
+        <EditChargeModal chargeId={editCharge.id} close={(): void => setEditCharge(undefined)} />
+      )}
       {insertDocument && (
         <InsertDocumentModal
-          insertDocument={insertDocument}
-          setInsertDocument={setInsertDocument}
+          chargeId={insertDocument.id}
+          close={() => setInsertDocument(undefined)}
         />
       )}
       {uploadDocument && (
         <UploadDocumentModal
-          uploadDocument={uploadDocument}
-          setUploadDocument={setUploadDocument}
+          chargeId={uploadDocument?.id}
+          close={() => setUploadDocument(undefined)}
         />
       )}
       {matchDocuments && (

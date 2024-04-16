@@ -20,13 +20,11 @@ type Props = {
 export const DateCell = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(AllChargesDateFieldsFragmentDoc, data);
   const { minDebitDate, minEventDate, minDocumentsDate } = charge;
-  const hasDate = minDebitDate || minEventDate || minDocumentsDate;
+  const displayDate = minDebitDate || minEventDate || minDocumentsDate;
 
   return (
     <td>
-      <div>
-        {hasDate && format(new Date(minDocumentsDate || minDebitDate || minEventDate), 'dd/MM/yy')}
-      </div>
+      <div>{displayDate && format(new Date(displayDate), 'dd/MM/yy')}</div>
     </td>
   );
 };

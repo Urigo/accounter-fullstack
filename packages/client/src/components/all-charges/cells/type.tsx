@@ -50,6 +50,8 @@ export const TypeCell = ({ data }: Props): ReactElement => {
         return { text: 'Monthly VAT', icon: <ReceiptTax /> };
       case 'BankDepositCharge':
         return { text: 'Bank Deposit', icon: <PigMoney /> };
+      default:
+        return { text: 'Unknown', icon: <Coin /> };
     }
   }, [__typename]);
   return (

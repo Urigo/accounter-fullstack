@@ -8,10 +8,11 @@ import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {
   chargeId: string;
+  onChange?: () => void;
   closeModal?: () => void;
 };
 
-export const InsertDocument = ({ chargeId, closeModal }: Props): ReactElement => {
+export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): ReactElement => {
   const {
     control,
     handleSubmit,
@@ -35,10 +36,8 @@ export const InsertDocument = ({ chargeId, closeModal }: Props): ReactElement =>
       data.documentType ??= DocumentType.Unprocessed;
       insertDocument({
         record: { ...data, chargeId },
-      });
-      if (closeModal) {
-        closeModal();
-      }
+      }).then(() => onChange?.());
+      closeModal?.();
     }
   };
 

@@ -17,8 +17,10 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
       name
       id
     }
-    validationData {
-      missingInfo
+    ... on Charge {
+      validationData {
+        missingInfo
+      }
     }
   }
 `;
@@ -47,9 +49,13 @@ export const Counterparty = ({ data }: Props): ReactElement => {
     }
   }, [__typename]);
 
-  const isError =
-    shouldHaveCounterparty && validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty);
-  const { name = 'Missing', id } = counterparty || {};
+  const isError = useMemo(
+    () =>
+      shouldHaveCounterparty &&
+      validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty),
+    [shouldHaveCounterparty, validationData?.missingInfo],
+  );
+  const { name, id } = counterparty ?? { name: 'Missing', id: undefined };
 
   const encodedFilters = get('chargesFilters');
 
