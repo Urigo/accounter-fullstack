@@ -79,7 +79,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
         <ListCapsule
           items={tags.map(t => t.name)}
-          style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
+          extraClassName={hasAlternative ? 'bg-yellow-400' : undefined}
         />
       </Indicator>
       {hasAlternative && (

@@ -83,9 +83,7 @@ export function Counterparty({ data }: Props): ReactElement {
     [encodedFilters],
   );
 
-  const content = (
-    <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{name}</p>
-  );
+  const content = <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{name}</p>;
 
   return (
     <td>

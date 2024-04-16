@@ -128,11 +128,11 @@ export const Amount = ({ data, refetchDocument }: Props): ReactElement => {
             zIndex="auto"
           >
             <p
-              style={{
-                color: Number(amount?.raw) > 0 ? 'green' : 'red',
-                whiteSpace: 'nowrap',
-                backgroundColor: hasAlternative ? 'rgb(236, 207, 57)' : undefined,
-              }}
+              className={[
+                'whitespace-nowrap',
+                hasAlternative ? 'bg-yellow-400' : '',
+                Number(amount?.raw) > 0 ? 'text-green-700' : 'text-red-500',
+              ].join(' ')}
             >
               {amount?.formatted}
             </p>

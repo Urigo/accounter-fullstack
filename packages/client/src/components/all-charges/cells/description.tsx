@@ -61,7 +61,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            <p style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}>{cellText}</p>
+            <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
           </Indicator>
         </div>
         {hasAlternative && (
