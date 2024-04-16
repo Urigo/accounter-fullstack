@@ -194,9 +194,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         financialEntities,
       );
     },
-    validate: async ({ charge }, _, context, info) => {
-      const { injector } = context;
-
+    validate: async ({ charge, records }, _, context, info) => {
       try {
         const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
         if (!generated || 'message' in generated) {
@@ -207,16 +205,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           };
         }
 
-        const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
+        const newRecords = generated.records as IGetLedgerRecordsByChargesIdsResult[];
 
-        const storageLedgerRecords = await injector
-          .get(LedgerProvider)
-          .getLedgerRecordsByChargesIdLoader.load(charge.id);
-
-        const fullMatching = ledgerRecordsGenerationFullMatchComparison(
-          storageLedgerRecords,
-          records,
-        );
+        const fullMatching = ledgerRecordsGenerationFullMatchComparison(records, newRecords);
 
         if (fullMatching.isFullyMatched) {
           return {
