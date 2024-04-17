@@ -43,6 +43,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     invalidDocuments: DbCharge.invalid_documents ?? true,
     transactionsCount: Number(DbCharge.transactions_count) ?? 0,
     invalidTransactions: DbCharge.invalid_transactions ?? true,
+    ledgerCount: Number(DbCharge.ledger_count) ?? 0,
+    invalidLedger: false, // TODO: implement
     optionalBusinesses:
       DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
     isConversion: DbCharge.is_conversion ?? false,

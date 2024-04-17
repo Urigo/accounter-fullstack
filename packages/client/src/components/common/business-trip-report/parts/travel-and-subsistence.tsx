@@ -20,7 +20,7 @@ import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.jsx';
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const TravelAndSubsistence = ({ data, onChange }: Props): ReactElement => {
@@ -29,7 +29,7 @@ export const TravelAndSubsistence = ({ data, onChange }: Props): ReactElement =>
     data,
   );
 
-  if (!travelAndSubsistenceTransactions.length) {
+  if (!travelAndSubsistenceTransactions?.length) {
     return <AddTravelAndSubsistenceTransaction businessTripId={id} onAdd={onChange} />;
   }
 

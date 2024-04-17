@@ -286,6 +286,8 @@ export default gql`
     optionalBusinesses: [String!]!
     isConversion: Boolean!
     isSalary: Boolean!
+    ledgerCount: Int!
+    invalidLedger: Boolean!
   }
 
   extend interface Document {

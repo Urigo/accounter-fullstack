@@ -6,16 +6,21 @@ import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger
 
 type Props = {
   chargeId: string;
+  onChange: () => void;
 } & ActionIconProps;
 
-export function RegenerateLedgerRecordsButton({ chargeId, ...buttonProps }: Props): ReactElement {
+export function RegenerateLedgerRecordsButton({
+  chargeId,
+  onChange,
+  ...buttonProps
+}: Props): ReactElement {
   const [opened, setOpened] = useState(false);
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
 
   function onRegenerate(): void {
     regenerateLedgerRecords({
       chargeId,
-    });
+    }).then(onChange);
     setOpened(false);
   }
 

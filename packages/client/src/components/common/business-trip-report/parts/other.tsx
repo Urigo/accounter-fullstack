@@ -20,13 +20,13 @@ import { OtherRow } from './other-row.js';
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportOtherFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const Other = ({ data, onChange }: Props): ReactElement => {
   const { otherTransactions, id } = getFragmentData(BusinessTripReportOtherFieldsFragmentDoc, data);
 
-  if (!otherTransactions.length) {
+  if (!otherTransactions?.length) {
     return <AddOtherTransaction businessTripId={id} onAdd={onChange} />;
   }
 

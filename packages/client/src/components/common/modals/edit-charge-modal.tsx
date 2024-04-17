@@ -53,7 +53,7 @@ export const EditChargeModal = ({ chargeId, close, onChange }: Props): ReactElem
 export const EditChargeModalContent = ({
   chargeId,
   close,
-  onChange,
+  onChange = (): void => {},
 }: Omit<Props, 'chargeId'> & { chargeId: string }): ReactElement => {
   const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,

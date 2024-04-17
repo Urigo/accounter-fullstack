@@ -6,9 +6,10 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment ConversionChargeInfo on ConversionCharge {
+  fragment ConversionChargeInfo on Charge {
     id
-    ... on ConversionCharge @defer {
+    __typename
+    ... on ConversionCharge {
       eventRate {
         from
         to
@@ -19,7 +20,7 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
         to
         rate
       }
-    }
+      }
   }
 `;
 
@@ -28,7 +29,13 @@ type Props = {
 };
 
 export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
-  const { eventRate, officialRate } = getFragmentData(ConversionChargeInfoFragmentDoc, chargeProps);
+  const charge = getFragmentData(ConversionChargeInfoFragmentDoc, chargeProps);
+  if (charge.__typename !== 'ConversionCharge') {
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <></>;
+  }
+
+  const { eventRate, officialRate } = charge;
   return (
     <Grid justify="center">
       {officialRate && (

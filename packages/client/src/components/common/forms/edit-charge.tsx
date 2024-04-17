@@ -19,7 +19,7 @@ import { useUpdateCharge } from '../../../hooks/use-update-charge';
 type Props = {
   charge: EditChargeQuery['chargesByIDs'][number];
   close: () => void;
-  onChange?: () => void;
+  onChange: () => void;
 };
 
 export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): ReactElement => {

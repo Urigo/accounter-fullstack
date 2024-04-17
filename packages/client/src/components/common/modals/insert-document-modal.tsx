@@ -10,7 +10,11 @@ interface Props {
   onChange?: () => void;
 }
 
-export const InsertDocumentModal = ({ chargeId, close, onChange }: Props): ReactElement => {
+export const InsertDocumentModal = ({
+  chargeId,
+  close,
+  onChange = (): void => {},
+}: Props): ReactElement => {
   return (
     <PopUpDrawer
       modalSize="40%"

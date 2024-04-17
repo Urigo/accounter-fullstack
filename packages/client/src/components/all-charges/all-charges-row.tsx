@@ -278,7 +278,7 @@ export const AllChargesRow = ({
         <tr>
           <td colSpan={13}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
-              <ChargeExtendedInfo chargeID={charge.id} />
+              <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} />
             </Paper>
           </td>
         </tr>

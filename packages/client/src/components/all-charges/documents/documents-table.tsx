@@ -8,20 +8,19 @@ import { DocumentsTableRow } from './documents-table-row.js';
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
-    ... on Charge @defer {
       additionalDocuments {
         id
         ...TableDocumentsRowFields
       }
-    }
   }
 `;
 
 type Props = {
   documentsProps: FragmentType<typeof TableDocumentsFieldsFragmentDoc>;
+  onChange: () => void;
 };
 
-export const DocumentsTable = ({ documentsProps }: Props): ReactElement => {
+export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElement => {
   const { additionalDocuments: documents } = getFragmentData(
     TableDocumentsFieldsFragmentDoc,
     documentsProps,
@@ -56,6 +55,7 @@ export const DocumentsTable = ({ documentsProps }: Props): ReactElement => {
       <EditDocumentModal
         documentId={editDocumentId}
         onDone={(): void => setEditDocumentId(undefined)}
+        onChange={onChange}
       />
     </>
   );

@@ -24,7 +24,7 @@ import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
 type Props = {
   chargeId: string;
   closeModal: () => void;
-  onChange?: () => void;
+  onChange: () => void;
 };
 
 export const UploadDocument = ({ chargeId, closeModal, onChange }: Props): ReactElement => {

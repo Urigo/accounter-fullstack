@@ -20,7 +20,7 @@ import { CoreTransactionHeader } from './core-transaction-row.js';
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportAccommodationsFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const Accommodations = ({ data, onChange }: Props): ReactElement => {
@@ -29,7 +29,7 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
     data,
   );
 
-  if (!accommodationTransactions.length) {
+  if (!accommodationTransactions?.length) {
     return <AddAccommodationTransaction businessTripId={id} onAdd={onChange} />;
   }
 

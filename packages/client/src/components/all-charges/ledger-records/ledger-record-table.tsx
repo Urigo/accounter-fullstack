@@ -8,21 +8,19 @@ import { LedgerRecordRow } from './ledger-record-row.js';
 /* GraphQL */ `
   fragment TableLedgerRecordsFields on Charge {
     id
-    ... on Charge @defer {
-      ledger {
-        __typename
-        records {
-          id
-          ...TableLedgerRecordsRowFields
-        }
-        ... on Ledger @defer {
-          validate {
-            ... on LedgerValidation @defer {
-              matches
-              differences {
-                id
-                ...TableLedgerRecordsRowFields
-              }
+    ledger {
+      __typename
+      records {
+        id
+        ...TableLedgerRecordsRowFields
+      }
+      ... on Ledger @defer {
+        validate {
+          ... on LedgerValidation @defer {
+            matches
+            differences {
+              id
+              ...TableLedgerRecordsRowFields
             }
           }
         }

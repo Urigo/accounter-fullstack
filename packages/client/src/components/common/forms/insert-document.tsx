@@ -8,7 +8,7 @@ import { ModifyDocumentFields } from './modify-document-fields';
 
 type Props = {
   chargeId: string;
-  onChange?: () => void;
+  onChange: () => void;
   closeModal?: () => void;
 };
 
