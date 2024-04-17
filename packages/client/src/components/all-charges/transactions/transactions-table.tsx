@@ -61,7 +61,7 @@ export const TransactionsTable = ({ transactionsProps, onChange }: Props): React
               <Account data={transaction} />
               <Description data={transaction} />
               <SourceID data={transaction} />
-              <Counterparty data={transaction} />
+              <Counterparty data={transaction} onChange={onChange} />
               <td>
                 <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
               </td>

@@ -48,6 +48,7 @@ export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElemen
               key={document.id}
               documentData={document}
               editDocument={(): void => setEditDocumentId(document.id)}
+              onChange={onChange}
             />
           ))}
         </tbody>

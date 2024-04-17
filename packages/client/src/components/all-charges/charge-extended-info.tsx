@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
@@ -69,12 +69,17 @@ export function ChargeExtendedInfo({
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [opened, { toggle }] = useDisclosure(false);
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
       chargeIDs: [chargeID],
     },
   });
+
+  const onExtendedChange = useCallback(() => {
+    refetchExtensionInfo();
+    onChange();
+  }, [refetchExtensionInfo, onChange]);
 
   const charge = data?.chargesByIDs?.[0];
 
@@ -190,7 +195,7 @@ export function ChargeExtendedInfo({
               </Accordion.Control>
               <Accordion.Panel>
                 {transactionsAreReady && (
-                  <TransactionsTable transactionsProps={charge} onChange={onChange} />
+                  <TransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
                 )}
               </Accordion.Panel>
             </Accordion.Item>
@@ -219,7 +224,9 @@ export function ChargeExtendedInfo({
                 </div>
               </Accordion.Control>
               <Accordion.Panel>
-                {docsAreReady && <DocumentsTable documentsProps={charge} onChange={onChange} />}
+                {docsAreReady && (
+                  <DocumentsTable documentsProps={charge} onChange={onExtendedChange} />
+                )}
               </Accordion.Panel>
             </Accordion.Item>
 
@@ -259,7 +266,7 @@ export function ChargeExtendedInfo({
                 <div className="flex flex-row items-center gap-2 justify-start w-full">
                   <RegenerateLedgerRecordsButton
                     chargeId={charge.id}
-                    onChange={onChange}
+                    onChange={onExtendedChange}
                     variant="outline"
                   />
                   Ledger Records
@@ -273,7 +280,7 @@ export function ChargeExtendedInfo({
           {galleryIsReady && (
             <Box maw="1/6">
               <Collapse in={opened} transitionDuration={500} transitionTimingFunction="linear">
-                <DocumentsGallery chargeProps={charge} onChange={onChange} />
+                <DocumentsGallery chargeProps={charge} onChange={onExtendedChange} />
               </Collapse>
             </Box>
           )}

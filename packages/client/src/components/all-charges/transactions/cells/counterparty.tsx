@@ -25,9 +25,10 @@ import { ConfirmMiniButton } from '../../../common/index.js';
 
 type Props = {
   data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
+  onChange?: () => void;
 };
 
-export function Counterparty({ data }: Props): ReactElement {
+export function Counterparty({ data, onChange }: Props): ReactElement {
   const { get } = useUrlQuery();
   const {
     counterparty,
@@ -50,9 +51,9 @@ export function Counterparty({ data }: Props): ReactElement {
         fields: {
           counterpartyId,
         },
-      });
+      }).then(onChange);
     },
-    [transactionId, updateTransaction],
+    [transactionId, updateTransaction, onChange],
   );
 
   const encodedFilters = get('chargesFilters');
