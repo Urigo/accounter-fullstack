@@ -1,6 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
+import { Charge } from './components/all-charges/charge';
 import { BusinessTransactionsSummery } from './components/business-transactions';
 import { BusinessTrips } from './components/business-trips';
 import { Businesses } from './components/businesses';
@@ -24,6 +25,8 @@ export function App(): ReactElement {
         <Route path="/" element={<AllCharges />} />
 
         <Route path="all-charges" element={<AllCharges />} />
+        <Route path="charges" element={<AllCharges />} />
+        <Route path="charges/:chargeId" element={<Charge />} />
         <Route path="businesses" element={<Businesses />} />
         <Route path="business-trips" element={<BusinessTrips />} />
         <Route path="business-transactions" element={<BusinessTransactionsSummery />} />

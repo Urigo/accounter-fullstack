@@ -10,7 +10,7 @@ type Link = {
 const links: Link[] = [
   {
     label: 'All Charges',
-    to: '/all-charges',
+    to: '/charges',
   },
   {
     label: 'Documents',
@@ -54,7 +54,7 @@ export const NavBar = (): ReactElement => {
   return (
     <header className="bg-gray-200">
       <div className="flex flex-wrap p-5 flex-col md:flex-row items-center">
-        <Link to="/" className="flex font-medium items-center text-gray-900 md:mb-0">
+        <Link to="/charges" className="flex font-medium items-center text-gray-900 md:mb-0">
           <Icon name="logo" />
           <span className="ml-3 text-xl">Accounter</span>
         </Link>
