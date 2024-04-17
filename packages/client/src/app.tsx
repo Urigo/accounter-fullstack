@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import { AllCharges } from './components/all-charges';
 import { Charge } from './components/all-charges/charge';
 import { BusinessTransactionsSummery } from './components/business-transactions';
+import { BusinessTransactionsSingle } from './components/business-transactions/business-transactions-single';
 import { BusinessTrips } from './components/business-trips';
 import { Businesses } from './components/businesses';
 import { ChartPage } from './components/charts';
@@ -30,6 +31,7 @@ export function App(): ReactElement {
         <Route path="businesses" element={<Businesses />} />
         <Route path="business-trips" element={<BusinessTrips />} />
         <Route path="business-transactions" element={<BusinessTransactionsSummery />} />
+        <Route path="business-transactions/:businessId" element={<BusinessTransactionsSingle />} />
         <Route path="charts" element={<ChartPage />} />
         <Route path="documents" element={<DocumentsReport />} />
         <Route path="reports">
