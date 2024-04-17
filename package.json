@@ -9,7 +9,7 @@
     ]
   },
   "engines": {
-    "node": "21.7.2"
+    "node": "21.7.3"
   },
   "scripts": {
     "build": "yarn workspaces run build",
