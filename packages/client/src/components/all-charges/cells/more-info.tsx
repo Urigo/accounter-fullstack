@@ -13,25 +13,13 @@ import { DragFile, ListCapsule } from '../../common/index.js';
       documentsCount
       ledgerCount
       isSalary
+      ... on ChargeMetadata @defer {
+        invalidLedger
+      }
     }
     ... on Charge @defer {
       validationData {
         missingInfo
-      }
-    }
-    ... on Charge @defer {
-      ledger {
-        balance {
-          isBalanced
-        }
-        ... on Ledger @defer {
-          validate {
-            isValid
-            differences {
-              id
-            }
-          }
-        }
       }
     }
   }
@@ -43,7 +31,7 @@ type Props = {
 
 export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   const data = getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, rawData);
-  const { metadata, validationData, ledger, id, __typename } = data;
+  const { metadata, validationData, id, __typename } = data;
 
   const shouldHaveDocuments = useMemo((): boolean => {
     switch (__typename) {
@@ -70,19 +58,8 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
     [shouldHaveDocuments, validationData?.missingInfo],
   );
 
-  const isProcessingLedger = useMemo(
-    () => ledger?.validate?.differences === undefined,
-    [ledger?.validate?.differences],
-  );
-  const isLedgerUnbalanced = useMemo(
-    () => ledger?.balance && !ledger?.balance.isBalanced,
-    [ledger?.balance],
-  );
-  const isLedgerValidated = useMemo(() => ledger?.validate?.isValid, [ledger?.validate?.isValid]);
-  const isLedgerError = useMemo(
-    () => !ledger || isLedgerUnbalanced || !isLedgerValidated,
-    [ledger, isLedgerUnbalanced, isLedgerValidated],
-  );
+  const isProcessingLedger = useMemo(() => !metadata?.invalidLedger, [metadata?.invalidLedger]);
+  const ledgerStatus = useMemo(() => metadata?.invalidLedger, [metadata?.invalidLedger]);
 
   return (
     <td>
@@ -113,8 +90,8 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
                   inline
                   size={12}
                   processing={isProcessingLedger}
-                  disabled={!isProcessingLedger && !isLedgerError}
-                  color={ledger?.validate?.differences?.length ? 'orange' : 'red'}
+                  disabled={ledgerStatus === 'VALID'}
+                  color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
                   zIndex="auto"
                 >
                   <div className="whitespace-nowrap">

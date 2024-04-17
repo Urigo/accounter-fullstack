@@ -56,6 +56,7 @@ const config: CodegenConfig = {
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult',
+          ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
