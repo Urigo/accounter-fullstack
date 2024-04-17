@@ -16,26 +16,25 @@ import {
 /* GraphQL */ `
   fragment TableTransactionsFields on Charge {
     id
-    ... on Charge @defer {
-      transactions {
-        id
-        ...TransactionsTableEventDateFields
-        ...TransactionsTableDebitDateFields
-        ...TransactionsTableAmountFields
-        ...TransactionsTableAccountFields
-        ...TransactionsTableDescriptionFields
-        ...TransactionsTableSourceIDFields
-        ...TransactionsTableEntityFields
-      }
+    transactions {
+      id
+      ...TransactionsTableEventDateFields
+      ...TransactionsTableDebitDateFields
+      ...TransactionsTableAmountFields
+      ...TransactionsTableAccountFields
+      ...TransactionsTableDescriptionFields
+      ...TransactionsTableSourceIDFields
+      ...TransactionsTableEntityFields
     }
   }
 `;
 
 type Props = {
   transactionsProps: FragmentType<typeof TableTransactionsFieldsFragmentDoc>;
+  onChange: () => void;
 };
 
-export const TransactionsTable = ({ transactionsProps }: Props): ReactElement => {
+export const TransactionsTable = ({ transactionsProps, onChange }: Props): ReactElement => {
   const { transactions } = getFragmentData(TableTransactionsFieldsFragmentDoc, transactionsProps);
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (
@@ -62,7 +61,7 @@ export const TransactionsTable = ({ transactionsProps }: Props): ReactElement =>
               <Account data={transaction} />
               <Description data={transaction} />
               <SourceID data={transaction} />
-              <Counterparty data={transaction} />
+              <Counterparty data={transaction} onChange={onChange} />
               <td>
                 <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
               </td>
@@ -72,7 +71,8 @@ export const TransactionsTable = ({ transactionsProps }: Props): ReactElement =>
       </table>
       <EditTransactionModal
         transactionID={editTransactionId}
-        setEditTransaction={setEditTransactionId}
+        close={() => setEditTransactionId(undefined)}
+        onChange={onChange}
       />
     </>
   );

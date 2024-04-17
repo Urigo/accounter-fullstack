@@ -34,14 +34,22 @@ import { ChargesFilters } from './charges-filters';
 
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [editChargeId, setEditChargeId] = useState<string | undefined>(undefined);
-  const [insertDocument, setInsertDocument] = useState<string | undefined>(undefined);
+  const [editChargeId, setEditChargeId] = useState<
+    { id: string; onChange: () => void } | undefined
+  >(undefined);
+  const [insertDocument, setInsertDocument] = useState<
+    { id: string; onChange: () => void } | undefined
+  >(undefined);
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
   );
-  const [uploadDocument, setUploadDocument] = useState<string | undefined>(undefined);
+  const [uploadDocument, setUploadDocument] = useState<
+    { id: string; onChange: () => void } | undefined
+  >(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
+  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
+    Array<{ id: string; onChange: () => void }>
+  >([]);
   const { get } = useUrlQuery();
   const { userContext } = useContext(UserContext);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
@@ -58,11 +66,11 @@ export const AllCharges = (): ReactElement => {
   );
 
   const toggleMergeCharge = useCallback(
-    (chargeId: string) => {
-      if (mergeSelectedCharges.includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(id => id !== chargeId));
+    (chargeId: string, onChange: () => void) => {
+      if (mergeSelectedCharges.map(selected => selected.id).includes(chargeId)) {
+        setMergeSelectedCharges(mergeSelectedCharges.filter(selected => selected.id !== chargeId));
       } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, chargeId]);
+        setMergeSelectedCharges([...mergeSelectedCharges, { id: chargeId, onChange }]);
       }
     },
     [mergeSelectedCharges],
@@ -96,7 +104,7 @@ export const AllCharges = (): ReactElement => {
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
-        <MergeChargesButton chargeIDs={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
       </div>,
     );
   }, [
@@ -123,22 +131,30 @@ export const AllCharges = (): ReactElement => {
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
           toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={mergeSelectedCharges}
+          mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
           data={data?.allCharges?.nodes}
           isAllOpened={isAllOpened}
         />
       )}
-      <EditChargeModal chargeId={editChargeId} onDone={(): void => setEditChargeId(undefined)} />
+      {editChargeId && (
+        <EditChargeModal
+          chargeId={editChargeId?.id}
+          close={() => setEditChargeId(undefined)}
+          onChange={editChargeId.onChange}
+        />
+      )}
       {insertDocument && (
         <InsertDocumentModal
-          insertDocument={insertDocument}
-          setInsertDocument={setInsertDocument}
+          chargeId={insertDocument.id}
+          onChange={insertDocument.onChange}
+          close={(): void => setInsertDocument(undefined)}
         />
       )}
       {uploadDocument && (
         <UploadDocumentModal
-          uploadDocument={uploadDocument}
-          setUploadDocument={setUploadDocument}
+          chargeId={uploadDocument.id}
+          close={() => setUploadDocument(undefined)}
+          onChange={uploadDocument.onChange}
         />
       )}
       {matchDocuments && (

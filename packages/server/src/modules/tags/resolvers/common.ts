@@ -6,5 +6,5 @@ export const commonTagsChargeFields: TagsModule.ChargeResolvers = {
     injector
       .get(TagsProvider)
       .getTagsByChargeIDLoader.load(DbCharge.id)
-      .then(tags => tags.map(tag => ({ name: tag.tag_name }))),
+      .then(tags => tags.map(tag => ({ name: tag }))),
 };

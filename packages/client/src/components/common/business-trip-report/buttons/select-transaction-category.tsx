@@ -12,7 +12,7 @@ import { useUpdateBusinessTripTransactionCategory } from '../../../../hooks/use-
 export function SelectTransactionCategory(props: {
   businessTripId: string;
   transactionId: string;
-  onChange?: () => void;
+  onChange: () => void;
 }): ReactElement {
   const { businessTripId, transactionId, onChange } = props;
   const [opened, { close, open }] = useDisclosure(false);
@@ -52,7 +52,7 @@ const categories = Object.entries(BusinessTripTransactionCategories).map(([key, 
 type ModalProps = {
   opened: boolean;
   close: () => void;
-  onChange?: () => void;
+  onChange: () => void;
   businessTripId: string;
   transactionId: string;
 };

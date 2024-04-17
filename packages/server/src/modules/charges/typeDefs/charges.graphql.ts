@@ -286,6 +286,15 @@ export default gql`
     optionalBusinesses: [String!]!
     isConversion: Boolean!
     isSalary: Boolean!
+    ledgerCount: Int!
+    invalidLedger: LedgerValidationStatus!
+  }
+
+  " represent charge's metadata ledger validation status "
+  enum LedgerValidationStatus {
+    VALID
+    INVALID
+    DIFF
   }
 
   extend interface Document {

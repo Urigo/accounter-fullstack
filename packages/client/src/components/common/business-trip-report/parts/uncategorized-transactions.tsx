@@ -33,7 +33,7 @@ import { SelectTransactionCategory } from '../buttons/select-transaction-categor
 
 interface Props {
   data: FragmentType<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const UncategorizedTransactions = ({ data, onChange }: Props): ReactElement => {

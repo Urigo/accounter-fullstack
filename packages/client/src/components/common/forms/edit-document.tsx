@@ -124,9 +124,10 @@ import { ModifyDocumentFields } from './modify-document-fields';
 interface Props {
   documentId: string;
   onDone: () => void;
+  onChange: () => void;
 }
 
-export const EditDocument = ({ documentId, onDone }: Props): ReactElement => {
+export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElement => {
   const [{ data: documentData, fetching: fetchingDocument }] = useQuery({
     query: EditDocumentDocument,
     variables: {
@@ -153,14 +154,12 @@ export const EditDocument = ({ documentId, onDone }: Props): ReactElement => {
     }
 
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
-    if (onDone) {
-      onDone();
-    }
+    onDone?.();
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       updateDocument({
         documentId,
         fields: dataToUpdate,
-      });
+      }).then(onChange);
     }
   };
 

@@ -4,9 +4,10 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment TableSalariesFields on SalaryCharge {
+  fragment TableSalariesFields on Charge {
     id
-    ... on SalaryCharge @defer {
+    __typename
+    ... on SalaryCharge {
       salaryRecords {
         directAmount {
           formatted
@@ -15,6 +16,7 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
           formatted
         }
         employee {
+          id
           name
         }
         pensionFund {
@@ -62,7 +64,13 @@ type Props = {
 };
 
 export const SalariesTable = ({ salaryRecordsProps }: Props): ReactElement => {
-  const { salaryRecords } = getFragmentData(TableSalariesFieldsFragmentDoc, salaryRecordsProps);
+  const charge = getFragmentData(TableSalariesFieldsFragmentDoc, salaryRecordsProps);
+  if (charge.__typename !== 'SalaryCharge') {
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <></>;
+  }
+
+  const { salaryRecords } = charge;
   return (
     <table className="w-full h-full">
       <thead>

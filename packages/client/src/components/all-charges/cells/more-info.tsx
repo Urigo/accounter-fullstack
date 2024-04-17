@@ -1,10 +1,6 @@
 import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
-import {
-  AllChargesMoreInfoFieldsFragmentDoc,
-  AllChargesMoreLedgerInfoFieldsFragmentDoc,
-  MissingChargeInfo,
-} from '../../../gql/graphql.js';
+import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { DragFile, ListCapsule } from '../../common/index.js';
 
@@ -12,17 +8,20 @@ import { DragFile, ListCapsule } from '../../common/index.js';
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
     id
-    ... on Charge @defer {
-      metadata {
-        transactionsCount
-        documentsCount
-        isSalary
+    metadata {
+      transactionsCount
+      documentsCount
+      ledgerCount
+      isSalary
+      ... on ChargeMetadata @defer {
+        invalidLedger
       }
+    }
+    ... on Charge @defer {
       validationData {
         missingInfo
       }
     }
-    ...AllChargesMoreLedgerInfoFields
   }
 `;
 
@@ -49,17 +48,26 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
     }
   }, [__typename]);
 
-  const isTransactionsError = validationData?.missingInfo?.includes(MissingChargeInfo.Transactions);
+  const isTransactionsError = useMemo(
+    () => validationData?.missingInfo?.includes(MissingChargeInfo.Transactions),
+    [validationData?.missingInfo],
+  );
 
-  const isDocumentsError =
-    shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents);
+  const isDocumentsError = useMemo(
+    () => shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents),
+    [shouldHaveDocuments, validationData?.missingInfo],
+  );
+
+  const isProcessingLedger = useMemo(() => !metadata?.invalidLedger, [metadata?.invalidLedger]);
+  const ledgerStatus = useMemo(() => metadata?.invalidLedger, [metadata?.invalidLedger]);
+
   return (
     <td>
       <DragFile chargeId={id}>
         <ListCapsule
           items={[
             {
-              style: metadata?.transactionsCount ? {} : { backgroundColor: 'rgb(236, 207, 57)' },
+              extraClassName: metadata?.transactionsCount ? undefined : 'bg-yellow-400',
               content: (
                 <Indicator
                   key="transactions"
@@ -76,13 +84,26 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
               ),
             },
             {
-              style: {},
-              content: <LedgerInfo data={data} />,
+              content: (
+                <Indicator
+                  key="ledger"
+                  inline
+                  size={12}
+                  processing={isProcessingLedger}
+                  disabled={ledgerStatus === 'VALID'}
+                  color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
+                  zIndex="auto"
+                >
+                  <div className="whitespace-nowrap">
+                    Ledger Records: {metadata?.ledgerCount ?? 0}
+                  </div>
+                </Indicator>
+              ),
             },
             {
               content: (
                 <Indicator
-                  key="ledger"
+                  key="documents"
                   inline
                   size={12}
                   disabled={!isDocumentsError}
@@ -94,72 +115,15 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
                   </div>
                 </Indicator>
               ),
-              style:
+              extraClassName:
                 !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
                 !shouldHaveDocuments
-                  ? {}
-                  : { backgroundColor: 'rgb(236, 207, 57)' },
+                  ? undefined
+                  : 'bg-yellow-400',
             },
           ]}
         />
       </DragFile>
     </td>
-  );
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment AllChargesMoreLedgerInfoFields on Charge {
-    id
-    ... on Charge @defer {
-      ledger {
-        __typename
-        records {
-          id
-        }
-        balance {
-          isBalanced
-        }
-        ... on Ledger @defer {
-          validate {
-            ... on LedgerValidation @defer {
-              isValid
-              differences {
-                id
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type LedgerInfoProps = {
-  data: FragmentType<typeof AllChargesMoreLedgerInfoFieldsFragmentDoc>;
-};
-
-const LedgerInfo = ({ data }: LedgerInfoProps): ReactElement => {
-  const { ledger } = getFragmentData(AllChargesMoreLedgerInfoFieldsFragmentDoc, data);
-  const isValidationComplete = ledger?.validate?.differences !== undefined;
-  const isLedgerError = !ledger || ledger.records.length === 0;
-  const isLedgerUnbalanced = !isLedgerError && ledger?.balance && !ledger?.balance.isBalanced;
-  const isLedgerValidated = ledger?.validate?.isValid;
-
-  const ledgerRecordsCount = isLedgerError ? 0 : ledger?.records.length;
-  return (
-    <Indicator
-      key="ledger"
-      inline
-      size={12}
-      processing={!isValidationComplete}
-      disabled={!isLedgerError && !isLedgerUnbalanced && isLedgerValidated}
-      color={ledger?.validate?.differences?.length ? 'orange' : 'red'}
-      zIndex="auto"
-    >
-      <div className="whitespace-nowrap">
-        Ledger Records: {isLedgerError ? 'Error' : ledgerRecordsCount}
-      </div>
-    </Indicator>
   );
 };

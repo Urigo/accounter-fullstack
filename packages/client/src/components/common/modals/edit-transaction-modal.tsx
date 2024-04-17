@@ -6,12 +6,14 @@ import { writeToClipboard } from '../../../helpers';
 
 interface Props {
   transactionID?: string;
-  setEditTransaction: React.Dispatch<React.SetStateAction<string | undefined>>;
+  close: () => void;
+  onChange: () => void;
 }
 
 export const EditTransactionModal = ({
-  setEditTransaction,
+  close,
   transactionID,
+  onChange,
 }: Props): ReactElement | null => {
   if (!transactionID) return null;
   return (
@@ -35,12 +37,9 @@ export const EditTransactionModal = ({
         </div>
       }
       opened={!!transactionID}
-      onClose={(): void => setEditTransaction(undefined)}
+      onClose={close}
     >
-      <EditTransaction
-        transactionID={transactionID}
-        onDone={(): void => setEditTransaction(undefined)}
-      />
+      <EditTransaction transactionID={transactionID} onDone={close} onChange={onChange} />
     </PopUpDrawer>
   );
 };

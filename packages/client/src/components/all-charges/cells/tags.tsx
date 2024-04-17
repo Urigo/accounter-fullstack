@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
@@ -10,27 +10,32 @@ import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
   fragment AllChargesTagsFields on Charge {
     __typename
     id
-    ... on Charge @defer {
-      tags {
+    tags {
         name
-      }
-      validationData {
-        missingInfo
-      }
-      missingInfoSuggestions {
-        tags {
-          name
+    }
+    ... on Charge @defer {
+        validationData {
+          ...on ValidationData {
+            missingInfo
+          }
         }
-      }
+        missingInfoSuggestions {
+          ...on ChargeSuggestions {
+            tags {
+              name
+            }
+          }
+        }
     }
   }
 `;
 
 type Props = {
   data: FragmentType<typeof AllChargesTagsFieldsFragmentDoc>;
+  onChange: () => void;
 };
 
-export const Tags = ({ data }: Props): ReactElement => {
+export const Tags = ({ data, onChange }: Props): ReactElement => {
   const {
     tags: originalTags,
     id: chargeId,
@@ -40,21 +45,33 @@ export const Tags = ({ data }: Props): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags ?? []);
 
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
-  const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
+  const isError = useMemo(
+    () => validationData?.missingInfo?.includes(MissingChargeInfo.Tags),
+    [validationData?.missingInfo],
+  );
+  const hasAlternative = useMemo(
+    () => isError && !!missingInfoSuggestions?.tags?.length,
+    [isError, missingInfoSuggestions?.tags?.length],
+  );
 
-  if (tags?.length === 0 && hasAlternative) {
-    setTags(missingInfoSuggestions?.tags);
-  }
+  useEffect(() => {
+    if (tags.length === 0 && hasAlternative) {
+      setTags(missingInfoSuggestions?.tags ?? []);
+    }
+  }, [tags.length, hasAlternative, missingInfoSuggestions?.tags]);
+
+  useEffect(() => {
+    setTags(originalTags ?? []);
+  }, [originalTags]);
 
   const updateTag = useCallback(
     (tags?: Array<{ name: string }>) => {
       updateCharge({
         chargeId,
         fields: { tags },
-      });
+      }).then(onChange);
     },
-    [chargeId, updateCharge],
+    [chargeId, updateCharge, onChange],
   );
 
   return (
@@ -62,12 +79,12 @@ export const Tags = ({ data }: Props): ReactElement => {
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
         <ListCapsule
           items={tags.map(t => t.name)}
-          style={hasAlternative ? { backgroundColor: 'rgb(236, 207, 57)' } : {}}
+          extraClassName={hasAlternative ? 'bg-yellow-400' : undefined}
         />
       </Indicator>
       {hasAlternative && (
         <ConfirmMiniButton
-          onClick={(): void => updateTag(missingInfoSuggestions.tags)}
+          onClick={(): void => updateTag(missingInfoSuggestions!.tags)}
           disabled={fetching}
         />
       )}

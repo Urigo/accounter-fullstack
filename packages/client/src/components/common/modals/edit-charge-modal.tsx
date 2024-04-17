@@ -40,16 +40,20 @@ import { writeToClipboard } from '../../../helpers';
 
 interface Props {
   chargeId?: string;
-  onDone: () => void;
+  close: () => void;
+  onChange?: () => void;
 }
 
-export const EditChargeModal = ({ chargeId, onDone }: Props): ReactElement | null => {
-  return chargeId ? <EditChargeModalContent chargeId={chargeId} onDone={onDone} /> : null;
+export const EditChargeModal = ({ chargeId, close, onChange }: Props): ReactElement | null => {
+  return chargeId ? (
+    <EditChargeModalContent chargeId={chargeId} close={close} onChange={onChange} />
+  ) : null;
 };
 
 export const EditChargeModalContent = ({
   chargeId,
-  onDone,
+  close,
+  onChange = (): void => {},
 }: Omit<Props, 'chargeId'> & { chargeId: string }): ReactElement => {
   const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,
@@ -80,12 +84,12 @@ export const EditChargeModalContent = ({
         </div>
       }
       opened={!!chargeId}
-      onClose={onDone}
+      onClose={close}
     >
       {fetchingCharge || !charge ? (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       ) : (
-        <EditCharge charge={charge} onDone={onDone} />
+        <EditCharge charge={charge} close={close} onChange={onChange} />
       )}
     </PopUpDrawer>
   );

@@ -37,9 +37,14 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
 type Props = {
   documentData: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>;
   editDocument: () => void;
+  onChange?: () => void;
 };
 
-export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactElement => {
+export const DocumentsTableRow = ({
+  documentData,
+  editDocument,
+  onChange,
+}: Props): ReactElement => {
   const [document, setDocument] = useState<TableDocumentsRowFieldsFragment>(
     getFragmentData(TableDocumentsRowFieldsFragmentDoc, documentData),
   );
@@ -53,8 +58,12 @@ export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactE
   });
 
   const refetchDocument = useCallback(() => {
-    fetchDocument();
-  }, [fetchDocument]);
+    if (onChange) {
+      onChange();
+    } else {
+      fetchDocument();
+    }
+  }, [fetchDocument, onChange]);
 
   useEffect(() => {
     const updatedDocument = newData?.documentById;
@@ -70,12 +79,12 @@ export const DocumentsTableRow = ({ documentData, editDocument }: Props): ReactE
   return (
     <tr key={document.id}>
       <DateCell data={document} />
-      <Amount data={document} refetchDocument={(): void => refetchDocument()} />
+      <Amount data={document} refetchDocument={refetchDocument} />
       <Vat data={document} />
       <TypeCell data={document} />
       <Serial data={document} />
-      <Creditor data={document} refetchDocument={(): void => refetchDocument()} />
-      <Debtor data={document} refetchDocument={(): void => refetchDocument()} />
+      <Creditor data={document} refetchDocument={refetchDocument} />
+      <Debtor data={document} refetchDocument={refetchDocument} />
       <Files data={document} />
       <td>
         <EditMiniButton onClick={editDocument} tooltip="Edit Document" />

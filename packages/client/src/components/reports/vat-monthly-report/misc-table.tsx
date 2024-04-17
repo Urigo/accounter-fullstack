@@ -17,19 +17,23 @@ import { AllChargesTable } from '../../all-charges/all-charges-table.js';
 
 type Props = {
   data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
-  setEditChargeId: Dispatch<SetStateAction<string | undefined>>;
-  setInsertDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
-  setUploadDocument: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
+  setInsertDocument: React.Dispatch<
+    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
+  >;
+  setUploadDocument: React.Dispatch<
+    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
+  >;
   setMatchDocuments: React.Dispatch<
     React.SetStateAction<{ id: string; ownerId: string } | undefined>
   >;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
 };
 
 export const MiscTable = ({
   data,
-  setEditChargeId,
+  setEditCharge,
   setInsertDocument,
   setUploadDocument,
   setMatchDocuments,
@@ -49,7 +53,7 @@ export const MiscTable = ({
       </span>
       {isOpened && chargesData && (
         <AllChargesTable
-          setEditChargeId={setEditChargeId}
+          setEditChargeId={setEditCharge}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}

@@ -1,12 +1,21 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { FetchChargeDocument } from '../../gql/graphql.js';
+import {
+  ConversionChargeInfoFragmentDoc,
+  DocumentsGalleryFieldsFragmentDoc,
+  FetchChargeDocument,
+  TableDocumentsFieldsFragmentDoc,
+  TableLedgerRecordsFieldsFragmentDoc,
+  TableSalariesFieldsFragmentDoc,
+  TableTransactionsFieldsFragmentDoc,
+} from '../../gql/graphql.js';
+import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import {
-  BusinessTripReport,
+  BusinessTripSummarizedReport,
   ConfirmationModal,
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
@@ -23,37 +32,26 @@ import { TransactionsTable } from './transactions/transactions-table.js';
     chargesByIDs(chargeIDs: $chargeIDs) {
       __typename
       id
-      ... on Charge @defer {
-        ledger {
-          records {
-            id
-          }
-          balance {
-            isBalanced
-          }
-        }
-      }
       metadata {
         transactionsCount
         documentsCount
+        ledgerCount
       }
       tags {
         name
       }
-      ...DocumentsGalleryFields
-      ...TableDocumentsFields
-      ...TableLedgerRecordsFields
-      ...TableTransactionsFields
-      ... on ConversionCharge {
-        ...ConversionChargeInfo
-      }
-      ... on SalaryCharge {
-        ...TableSalariesFields
-      }
+      ...DocumentsGalleryFields @defer
+      ...TableDocumentsFields @defer
+      ...TableLedgerRecordsFields @defer
+      ...TableTransactionsFields @defer
+      ...ConversionChargeInfo @defer
+      ...TableSalariesFields @defer
       ... on BusinessTripCharge {
         businessTrip {
           id
-          ...BusinessTripReportFields
+          ... on BusinessTrip @defer {
+            ...BusinessTripReportFields
+          }
         }
       }
     }
@@ -62,21 +60,30 @@ import { TransactionsTable } from './transactions/transactions-table.js';
 
 interface Props {
   chargeID: string;
+  onChange?: () => void;
 }
 
-export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
+export function ChargeExtendedInfo({
+  chargeID,
+  onChange = (): void => void 0,
+}: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [opened, { toggle }] = useDisclosure(false);
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
       chargeIDs: [chargeID],
     },
   });
 
+  const onExtendedChange = useCallback(() => {
+    refetchExtensionInfo();
+    onChange();
+  }, [refetchExtensionInfo, onChange]);
+
   const charge = data?.chargesByIDs?.[0];
 
-  const hasLedgerRecords = !!(charge?.ledger?.records && charge.ledger.records.length > 0);
+  const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
@@ -105,6 +112,41 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
       setAccordionItems(current => [...current, item]);
     }
   }
+
+  const galleryIsReady = isFragmentReady(
+    FetchChargeDocument,
+    DocumentsGalleryFieldsFragmentDoc,
+    charge,
+  );
+
+  const docsAreReady = isFragmentReady(
+    FetchChargeDocument,
+    TableDocumentsFieldsFragmentDoc,
+    charge,
+  );
+
+  const ledgerRecordsAreReady = isFragmentReady(
+    FetchChargeDocument,
+    TableLedgerRecordsFieldsFragmentDoc,
+    charge,
+  );
+
+  const transactionsAreReady = isFragmentReady(
+    FetchChargeDocument,
+    TableTransactionsFieldsFragmentDoc,
+    charge,
+  );
+
+  const conversionIsReady = useMemo(() => {
+    return (
+      charge?.__typename === 'ConversionCharge' &&
+      isFragmentReady(FetchChargeDocument, ConversionChargeInfoFragmentDoc, charge)
+    );
+  }, [charge]);
+
+  const salariesAreReady =
+    charge?.__typename === 'SalaryCharge' &&
+    isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
 
   return (
     <div className="flex flex-col gap-5">
@@ -135,7 +177,11 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                   Conversion Info
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <ConversionInfo chargeProps={charge} />
+                  {conversionIsReady && (
+                    <ConversionInfo
+                      chargeProps={charge as FragmentType<typeof ConversionChargeInfoFragmentDoc>}
+                    />
+                  )}
                 </Accordion.Panel>
               </Accordion.Item>
             )}
@@ -148,7 +194,9 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                 Transactions
               </Accordion.Control>
               <Accordion.Panel>
-                <TransactionsTable transactionsProps={charge} />
+                {transactionsAreReady && (
+                  <TransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
+                )}
               </Accordion.Panel>
             </Accordion.Item>
 
@@ -166,6 +214,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                           toggle();
                         }}
                         variant="outline"
+                        loading={!galleryIsReady}
                       >
                         <Photo size={20} />
                       </ActionIcon>
@@ -175,7 +224,9 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                 </div>
               </Accordion.Control>
               <Accordion.Panel>
-                <DocumentsTable documentsProps={charge} />
+                {docsAreReady && (
+                  <DocumentsTable documentsProps={charge} onChange={onExtendedChange} />
+                )}
               </Accordion.Panel>
             </Accordion.Item>
 
@@ -188,7 +239,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                   Salaries
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <SalariesTable salaryRecordsProps={charge} />
+                  {salariesAreReady && <SalariesTable salaryRecordsProps={charge} />}
                 </Accordion.Panel>
               </Accordion.Item>
             )}
@@ -199,7 +250,7 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                   Business Trip
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <BusinessTripReport data={charge.businessTrip!} />
+                  <BusinessTripSummarizedReport data={charge.businessTrip!} />
                 </Accordion.Panel>
               </Accordion.Item>
             )}
@@ -213,20 +264,26 @@ export function ChargeExtendedInfo({ chargeID }: Props): ReactElement {
                 }}
               >
                 <div className="flex flex-row items-center gap-2 justify-start w-full">
-                  <RegenerateLedgerRecordsButton chargeId={charge.id} variant="outline" />
+                  <RegenerateLedgerRecordsButton
+                    chargeId={charge.id}
+                    onChange={onExtendedChange}
+                    variant="outline"
+                  />
                   Ledger Records
                 </div>
               </Accordion.Control>
               <Accordion.Panel>
-                <LedgerRecordTable ledgerRecordsProps={charge} />
+                {ledgerRecordsAreReady && <LedgerRecordTable ledgerRecordsProps={charge} />}
               </Accordion.Panel>
             </Accordion.Item>
           </Accordion>
-          <Box maw="1/6">
-            <Collapse in={opened} transitionDuration={500} transitionTimingFunction="linear">
-              <DocumentsGallery chargeProps={charge} />
-            </Collapse>
-          </Box>
+          {galleryIsReady && (
+            <Box maw="1/6">
+              <Collapse in={opened} transitionDuration={500} transitionTimingFunction="linear">
+                <DocumentsGallery chargeProps={charge} onChange={onExtendedChange} />
+              </Collapse>
+            </Box>
+          )}
         </div>
       )}
       {!fetching && !charge && <p>Error fetching extended information for this charge</p>}

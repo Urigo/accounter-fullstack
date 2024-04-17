@@ -8,11 +8,11 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
   fragment AllChargesTaxCategoryFields on Charge {
     __typename
     id
+    taxCategory {
+        id
+        name
+    }
     ... on Charge @defer {
-      taxCategory {
-          id
-          name
-      }
       validationData {
         missingInfo
       }
@@ -42,11 +42,14 @@ export const TaxCategory = ({ data }: Props): ReactElement => {
     }
   }, [__typename]);
 
+  const isError = useMemo(
+    () => validationData?.missingInfo?.includes(MissingChargeInfo.TaxCategory),
+    [validationData?.missingInfo],
+  );
+
   if (!shouldHaveTaxCategory) {
     return <td />;
   }
-
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.TaxCategory);
 
   return (
     <td>

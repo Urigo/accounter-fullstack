@@ -198,7 +198,7 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
             )}
-            {isError && <p style={{ backgroundColor: 'rgb(236, 207, 57)' }}>{name}</p>}
+            {isError && <p className="bg-yellow-400">{name}</p>}
           </Indicator>
         </div>
         {hasAlternative && (

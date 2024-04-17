@@ -20,7 +20,7 @@ import { FlightsRow } from './flights-row.js';
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportFlightsFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const Flights = ({ data, onChange }: Props): ReactElement => {
@@ -29,7 +29,7 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
     data,
   );
 
-  if (!flightTransactions.length) {
+  if (!flightTransactions?.length) {
     return <AddFlightTransaction businessTripId={id} onAdd={onChange} />;
   }
 

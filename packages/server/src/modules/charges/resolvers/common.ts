@@ -34,20 +34,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
   validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
-  metadata: DbCharge => ({
-    createdAt: DbCharge.created_at,
-    updatedAt: DbCharge.updated_at,
-    invoicesCount: Number(DbCharge.invoices_count) ?? 0,
-    receiptsCount: Number(DbCharge.receipts_count) ?? 0,
-    documentsCount: Number(DbCharge.documents_count) ?? 0,
-    invalidDocuments: DbCharge.invalid_documents ?? true,
-    transactionsCount: Number(DbCharge.transactions_count) ?? 0,
-    invalidTransactions: DbCharge.invalid_transactions ?? true,
-    optionalBusinesses:
-      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
-    isConversion: DbCharge.is_conversion ?? false,
-    isSalary: DbCharge.is_salary ?? false,
-  }),
+  metadata: DbCharge => DbCharge,
   yearsOfRelevance: DbCharge =>
     DbCharge.years_of_relevance
       ? DbCharge.years_of_relevance.map(date => format(date, 'yyyy-MM-dd'))

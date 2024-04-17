@@ -32,7 +32,7 @@ const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
 interface Props {
   data: FragmentType<typeof BusinessTripReportFlightsRowFieldsFragmentDoc>;
   businessTripId: string;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {

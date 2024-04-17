@@ -25,7 +25,7 @@ import { CoreTransactionRow } from './core-transaction-row.jsx';
 interface Props {
   data: FragmentType<typeof BusinessTripReportOtherRowFieldsFragmentDoc>;
   businessTripId: string;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElement => {

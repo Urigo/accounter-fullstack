@@ -18,10 +18,11 @@ import { useUpdateCharge } from '../../../hooks/use-update-charge';
 
 type Props = {
   charge: EditChargeQuery['chargesByIDs'][number];
-  onDone: () => void;
+  close: () => void;
+  onChange: () => void;
 };
 
-export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElement => {
+export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): ReactElement => {
   const { yearsOfRelevance: originalYearsOfRelevance, ...charge } = originalCharge;
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
   const [yearsOfRelevance, setYearsOfRelevance] = useState<Date[] | undefined>(
@@ -62,12 +63,12 @@ export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElem
     }
 
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
-    onDone();
+    close();
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       updateCharge({
         chargeId: charge.id,
         fields: dataToUpdate,
-      });
+      }).then(() => onChange?.());
     }
   };
 
@@ -289,7 +290,7 @@ export const EditCharge = ({ charge: originalCharge, onDone }: Props): ReactElem
         <button
           type="button"
           className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
-          onClick={onDone}
+          onClick={close}
         >
           Cancel
         </button>

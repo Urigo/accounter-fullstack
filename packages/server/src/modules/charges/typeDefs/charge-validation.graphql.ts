@@ -66,5 +66,7 @@ export default gql`
     withoutInvoice: Boolean
     " Include only charges that are not balances "
     unbalanced: Boolean
+    " Include only charges that doesn't have ledger records linked "
+    withoutLedger: Boolean
   }
 `;

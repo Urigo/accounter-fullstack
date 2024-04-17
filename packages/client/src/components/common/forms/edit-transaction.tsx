@@ -53,9 +53,10 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 type Props = {
   transactionID: string;
   onDone?: () => void;
+  onChange: () => void;
 };
 
-export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement => {
+export const EditTransaction = ({ transactionID, onDone, onChange }: Props): ReactElement => {
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: EditTransactionDocument,
     variables: {
@@ -85,14 +86,12 @@ export const EditTransaction = ({ transactionID, onDone }: Props): ReactElement 
     }
 
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
-    if (onDone) {
-      onDone();
-    }
+    onDone?.();
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       updateTransaction({
         transactionId: transaction.id,
         fields: dataToUpdate,
-      });
+      }).then(onChange);
     }
   };
 

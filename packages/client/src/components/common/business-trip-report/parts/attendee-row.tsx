@@ -24,7 +24,7 @@ import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
 interface Props {
   data: FragmentType<typeof BusinessTripReportAttendeeRowFieldsFragmentDoc>;
   businessTripId: string;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactElement => {

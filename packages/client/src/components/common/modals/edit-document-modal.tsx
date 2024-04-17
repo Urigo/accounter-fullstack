@@ -7,9 +7,10 @@ import { writeToClipboard } from '../../../helpers';
 interface Props {
   documentId?: string;
   onDone: () => void;
+  onChange: () => void;
 }
 
-export const EditDocumentModal = ({ onDone, documentId }: Props): ReactElement | null => {
+export const EditDocumentModal = ({ onDone, onChange, documentId }: Props): ReactElement | null => {
   if (!documentId) return null;
   return (
     <PopUpDrawer
@@ -37,7 +38,7 @@ export const EditDocumentModal = ({ onDone, documentId }: Props): ReactElement |
         </div>
       }
     >
-      <EditDocument documentId={documentId} onDone={onDone} />
+      <EditDocument documentId={documentId} onDone={onDone} onChange={onChange} />
     </PopUpDrawer>
   );
 };

@@ -9,25 +9,23 @@ import { EditDocumentModal } from '../../common/index.js';
 /* GraphQL */ `
   fragment DocumentsGalleryFields on Charge {
     id
-    ... on Charge @defer {
-      additionalDocuments {
-        id
-        image
-        ... on Invoice {
-          documentType
-        }
-        ... on Proforma {
-          documentType
-        }
-        ... on Receipt {
-          documentType
-        }
-        ... on InvoiceReceipt {
-          documentType
-        }
-        ... on CreditInvoice {
-          documentType
-        }
+    additionalDocuments {
+      id
+      image
+      ... on Invoice {
+        documentType
+      }
+      ... on Proforma {
+        documentType
+      }
+      ... on Receipt {
+        documentType
+      }
+      ... on InvoiceReceipt {
+        documentType
+      }
+      ... on CreditInvoice {
+        documentType
       }
     }
   }
@@ -35,9 +33,10 @@ import { EditDocumentModal } from '../../common/index.js';
 
 type Props = {
   chargeProps: FragmentType<typeof DocumentsGalleryFieldsFragmentDoc>;
+  onChange: () => void;
 };
 
-export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
+export const DocumentsGallery = ({ chargeProps, onChange }: Props): ReactElement => {
   const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
   const [openModal, setOpenModal] = useState<string | undefined>(undefined);
 
@@ -71,7 +70,11 @@ export const DocumentsGallery = ({ chargeProps }: Props): ReactElement => {
               ))}
             </Carousel>
           </div>
-          <EditDocumentModal documentId={openModal} onDone={(): void => setOpenModal(undefined)} />
+          <EditDocumentModal
+            documentId={openModal}
+            onDone={(): void => setOpenModal(undefined)}
+            onChange={onChange}
+          />
         </>
       ) : (
         <Badge color="red">No Documents Related</Badge>

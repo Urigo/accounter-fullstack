@@ -19,13 +19,13 @@ import { AttendeeRow } from './attendee-row.js';
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportAttendeesFieldsFragmentDoc>;
-  onChange?: () => void;
+  onChange: () => void;
 }
 
 export const Attendees = ({ data, onChange }: Props): ReactElement => {
   const { attendees, id } = getFragmentData(BusinessTripReportAttendeesFieldsFragmentDoc, data);
 
-  if (!attendees.length) {
+  if (!attendees?.length) {
     return <AddAttendee businessTripId={id} onAdd={onChange} />;
   }
 
@@ -44,7 +44,12 @@ export const Attendees = ({ data, onChange }: Props): ReactElement => {
           {attendees
             .sort((a, b) => (a.name.toLocaleLowerCase() > b.name.toLocaleLowerCase() ? 1 : -1))
             .map(attendee => (
-              <AttendeeRow data={attendee} businessTripId={id} key={attendee.id} />
+              <AttendeeRow
+                data={attendee}
+                businessTripId={id}
+                onChange={onChange}
+                key={attendee.id}
+              />
             ))}
           <tr>
             <td colSpan={4}>

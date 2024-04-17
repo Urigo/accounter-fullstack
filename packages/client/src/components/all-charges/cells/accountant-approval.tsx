@@ -14,9 +14,10 @@ import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-cha
 
 interface Props {
   data: FragmentType<typeof AllChargesAccountantApprovalFieldsFragmentDoc>;
+  onChange: () => void;
 }
 
-export function AccountantApproval({ data }: Props): ReactElement {
+export function AccountantApproval({ data, onChange }: Props): ReactElement {
   const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
   const [checked, setChecked] = useState(charge.accountantApproval);
   const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
@@ -26,7 +27,7 @@ export function AccountantApproval({ data }: Props): ReactElement {
     toggleChargeAccountantApproval({
       chargeId: charge.id,
       approved,
-    });
+    }).then(onChange);
   }
 
   return (

@@ -1,5 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
+import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags_enum } from '@modules/tags/types.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -72,6 +75,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           businessIds: filters?.byBusinesses,
           withoutInvoice: filters?.withoutInvoice,
           withoutDocuments: filters?.withoutDocuments,
+          withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
           accountantApproval: filters?.accountantApproval,
         })
@@ -115,10 +119,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         // handle tags
         if (fields?.tags?.length) {
           const newTags = fields.tags.map(t => t.name);
-          const pastTagsItems = await injector
-            .get(TagsProvider)
-            .getTagsByChargeIDLoader.load(chargeId);
-          const pastTags = pastTagsItems.map(({ tag_name }) => tag_name);
+          const pastTags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(chargeId);
           // clear removed tags
           const tagsToRemove = pastTags.filter(tag => !newTags.includes(tag));
           if (tagsToRemove.length) {
@@ -292,5 +293,54 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,
+  },
+  ChargeMetadata: {
+    createdAt: DbCharge => DbCharge.created_at,
+    updatedAt: DbCharge => DbCharge.updated_at,
+    invoicesCount: DbCharge => Number(DbCharge.invoices_count) ?? 0,
+    receiptsCount: DbCharge => Number(DbCharge.receipts_count) ?? 0,
+    documentsCount: DbCharge => Number(DbCharge.documents_count) ?? 0,
+    invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
+    transactionsCount: DbCharge => {
+      return Number(DbCharge.transactions_count) ?? 0;
+    },
+    invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
+    ledgerCount: DbCharge => Number(DbCharge.ledger_count) ?? 0,
+    invalidLedger: async (DbCharge, _, context, info) => {
+      try {
+        const generatedledgerPromise = ledgerGenerationByCharge(DbCharge)(
+          DbCharge,
+          {},
+          context,
+          info,
+        );
+
+        const currentRecordPromise = context.injector
+          .get(LedgerProvider)
+          .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
+
+        const [currentRecord, generated] = await Promise.all([
+          currentRecordPromise,
+          generatedledgerPromise,
+        ]);
+
+        if (!generated || 'message' in generated || generated.balance?.isBalanced === false) {
+          return 'INVALID';
+        }
+
+        const fullMatching = ledgerRecordsGenerationFullMatchComparison(
+          currentRecord,
+          generated.records,
+        );
+
+        return fullMatching.isFullyMatched ? 'VALID' : 'DIFF';
+      } catch (err) {
+        return 'INVALID';
+      }
+    },
+    optionalBusinesses: DbCharge =>
+      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
+    isConversion: DbCharge => DbCharge.is_conversion ?? false,
+    isSalary: DbCharge => DbCharge.is_salary ?? false,
   },
 };

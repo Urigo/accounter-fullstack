@@ -12,15 +12,15 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
   fragment AllChargesVatFields on Charge {
     __typename
     id
+    vat {
+      raw
+      formatted
+    }
+    totalAmount {
+      raw
+      currency
+    }
     ... on Charge @defer {
-      vat {
-        raw
-        formatted
-      }
-      totalAmount {
-        raw
-        currency
-      }
       validationData {
         missingInfo
       }
@@ -37,6 +37,22 @@ export const Vat = ({ data }: Props): ReactElement => {
     AllChargesVatFieldsFragmentDoc,
     data,
   );
+
+  const isError = useMemo(
+    () => validationData?.missingInfo?.includes(MissingChargeInfo.Vat),
+    [validationData?.missingInfo],
+  );
+  const isLocalCurrencyButNoVat = useMemo(
+    () => !vat && totalAmount?.currency === Currency.Ils,
+    [vat, totalAmount?.currency],
+  );
+  const vatIsNegativeToAmount = useMemo(
+    () =>
+      ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
+      ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0),
+    [vat?.raw, totalAmount?.raw],
+  );
+  const vatIssueFlag = isLocalCurrencyButNoVat || vatIsNegativeToAmount;
 
   const shouldHaveVat = useMemo((): boolean => {
     switch (__typename) {
@@ -56,18 +72,13 @@ export const Vat = ({ data }: Props): ReactElement => {
     return <td />;
   }
 
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Vat);
-
-  const isLocalCurrencyButNoVat = !vat && totalAmount?.currency === Currency.Ils;
-  const vatIsNegativeToAmount =
-    ((vat?.raw ?? 0) > 0 && (totalAmount?.raw ?? 0) < 0) ||
-    ((vat?.raw ?? 0) < 0 && (totalAmount?.raw ?? 0) > 0);
-
-  const vatIssueFlag = isLocalCurrencyButNoVat || vatIsNegativeToAmount;
-
   return (
     <td>
-      <div style={{ color: vatIssueFlag ? 'red' : 'green', whiteSpace: 'nowrap' }}>
+      <div
+        className={
+          vatIssueFlag ? 'whitespace-nowrap text-red-500' : 'whitespace-nowrap text-green-700'
+        }
+      >
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {vat?.formatted}
         </Indicator>
