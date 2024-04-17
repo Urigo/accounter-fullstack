@@ -1,6 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from 'react-router-dom';
 import { App } from './app';
 import { Providers } from './providers/index';
 import './index.css';
@@ -9,12 +14,22 @@ const rootElement = document.getElementById('root');
 
 const root = createRoot(rootElement!);
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route
+      path="*"
+      element={
+        <Providers>
+          <App />
+        </Providers>
+      }
+      errorElement={<p>error</p>} // TODO: implement
+    />,
+  ),
+);
+
 root.render(
   <StrictMode>
-    <BrowserRouter>
-      <Providers>
-        <App />
-      </Providers>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </StrictMode>,
 );
