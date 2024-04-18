@@ -66,7 +66,10 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
         </div>
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={(): void => updateUserDescription(charge.missingInfoSuggestions!.description!)}
+            onClick={(event): void => {
+              event.stopPropagation();
+              updateUserDescription(charge.missingInfoSuggestions!.description!);
+            }}
             disabled={fetching}
           />
         )}

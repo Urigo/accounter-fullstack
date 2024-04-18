@@ -35,7 +35,10 @@ export function AccountantApproval({ data, onChange }: Props): ReactElement {
       <Switch
         color="green"
         checked={checked}
-        onChange={(event): void => onToggle(event.currentTarget.checked)}
+        onChange={(event): void => {
+          event.stopPropagation();
+          onToggle(event.currentTarget.checked);
+        }}
       />
     </td>
   );
