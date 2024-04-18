@@ -15,12 +15,14 @@ interface BusinessTransactionsFilterFormProps {
   filter: BusinessTransactionsFilter;
   setFilter: (filter: BusinessTransactionsFilter) => void;
   closeModal: () => void;
+  single?: boolean;
 }
 
 function BusinessTransactionsFilterForm({
   filter,
   setFilter,
   closeModal,
+  single = false,
 }: BusinessTransactionsFilterFormProps): ReactElement {
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
@@ -57,7 +59,9 @@ function BusinessTransactionsFilterForm({
   };
 
   function clearFilter(): void {
-    setFilter({});
+    setFilter({
+      businessIDs: single ? filter.businessIDs : undefined,
+    });
     closeModal();
   }
 
@@ -83,24 +87,26 @@ function BusinessTransactionsFilterForm({
             />
           )}
         />
-        <Controller
-          name="businessIDs"
-          control={control}
-          defaultValue={filter.businessIDs}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={businesses}
-              value={field.value ?? undefined}
-              disabled={feLoading}
-              label="Businesses"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
+        {!single && (
+          <Controller
+            name="businessIDs"
+            control={control}
+            defaultValue={filter.businessIDs}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                data={businesses}
+                value={field.value ?? undefined}
+                disabled={feLoading}
+                label="Businesses"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+        )}
         <Controller
           name="fromDate"
           control={control}
@@ -216,6 +222,7 @@ export function BusinessTransactionsFilters({
         onClose={(): void => setOpened(false)}
         content={
           <BusinessTransactionsFilterForm
+            single
             filter={filter}
             setFilter={onSetFilter}
             closeModal={(): void => setOpened(false)}

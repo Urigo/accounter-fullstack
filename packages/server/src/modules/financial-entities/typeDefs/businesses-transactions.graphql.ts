@@ -69,5 +69,6 @@ export default gql`
     reference2: String
     details: String
     counterAccount: FinancialEntity
+    chargeId: UUID!
   }
 `;

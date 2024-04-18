@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
-import { Mark, Table } from '@mantine/core';
+import { Mark, NavLink, Table } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
@@ -46,6 +46,7 @@ import { AccounterLoader } from '../common/index.js';
             id
             name
           }
+          chargeId
         }
       }
       ... on CommonError {
@@ -155,7 +156,13 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           </thead>
           <tbody>
             {extendedTransactions.map((row, index) => (
-              <tr key={index}>
+              <tr
+                key={index}
+                onClick={event => {
+                  event.stopPropagation();
+                  window.open(`/charges/${row.chargeId}`, '_blank', 'noreferrer');
+                }}
+              >
                 <td>{row.business.name}</td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -248,7 +255,21 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <td>{row.reference1}</td>
                 <td>{row.reference2}</td>
                 <td>{row.details}</td>
-                <td>{row.counterAccount?.name}</td>
+                <td>
+                  {row.counterAccount && (
+                    <a
+                      href={`/business-transactions/${row.counterAccount?.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={event => event.stopPropagation()}
+                    >
+                      <NavLink
+                        label={row.counterAccount?.name}
+                        className="[&>*>.mantine-NavLink-label]:font-semibold"
+                      />
+                    </a>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

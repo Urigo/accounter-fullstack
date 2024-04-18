@@ -25,7 +25,7 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
             <NavLink
               className="text-gray-700 rounded"
               label="All Charges"
-              onClick={(): void => navigate('/all-charges')}
+              onClick={(): void => navigate('/charges')}
             />
           </li>
           <li>
