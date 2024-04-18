@@ -386,6 +386,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
               return res;
             })
         : null,
+    chargeId: parent => parent.chargeId,
   },
   TaxCategory: {
     __isTypeOf: parent => 'hashavshevet_name' in parent,
