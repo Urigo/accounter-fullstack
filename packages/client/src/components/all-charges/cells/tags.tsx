@@ -84,7 +84,10 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
       </Indicator>
       {hasAlternative && (
         <ConfirmMiniButton
-          onClick={(): void => updateTag(missingInfoSuggestions!.tags)}
+          onClick={(event): void => {
+            event.stopPropagation();
+            updateTag(missingInfoSuggestions!.tags);
+          }}
           disabled={fetching}
         />
       )}
