@@ -36,12 +36,12 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
   const BASE_URL = 'https://biz2.bankhapoalim.co.il/authenticate/logon/main';
   await page.goto(BASE_URL);
 
-  await page.waitForSelector('#inputSend');
+  await page.waitForSelector('.submit-btn');
 
-  await page.type('#userID', credentials.userCode);
-  await page.type('#userPassword', credentials.password);
+  await page.type('#user-code', credentials.userCode);
+  await page.type('#password', credentials.password);
 
-  page.click('#inputSend');
+  page.click('.submit-btn');
 
   const answers = await inquirer.prompt([
     {
@@ -51,12 +51,12 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
     },
   ]);
 
-  await page.type('#codeForOtp', answers.SMSPassword);
+  await page.type('input[formcontrolname="code"]', answers.SMSPassword);
 
   await Promise.all([
     page.waitForNavigation(),
     page.keyboard.press('Enter'),
-    page.click('#buttonNo'),
+    page.click('button.next'),
   ]);
 }
 
