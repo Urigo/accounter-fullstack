@@ -42,5 +42,8 @@
       "@accounter/pcn874-generator": ["packages/pcn874-generator/src/"]
     }
   },
+  "ts-node": {
+    "esm": true
+  },
   "exclude": ["**/node_modules", "**/dist"]
 }

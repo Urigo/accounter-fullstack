@@ -56,6 +56,7 @@
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
+    "@graphql-mesh/compose-cli": "0.2.5",
     "@graphql-mesh/config": "0.99.9",
     "@graphql-mesh/cross-helpers": "0.4.1",
     "@graphql-mesh/http": "0.98.8",
@@ -64,6 +65,7 @@
     "@graphql-mesh/store": "0.97.5",
     "@graphql-mesh/types": "0.97.5",
     "@graphql-mesh/utils": "0.97.5",
+    "@omnigraph/json-schema": "0.99.6",
     "graphql": "16.8.1",
     "path": "0.12.7"
   },
