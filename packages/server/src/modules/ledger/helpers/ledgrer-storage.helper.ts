@@ -265,6 +265,9 @@ export async function storeInitialGeneratedRecords(
     const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(
       convertToStorageInputRecord,
     );
-    await injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
+    if (ledgerRecords.length) {
+      return injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
+    }
   }
+  return void 0;
 }

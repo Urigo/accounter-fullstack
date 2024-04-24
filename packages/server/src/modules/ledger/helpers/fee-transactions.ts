@@ -1,4 +1,4 @@
-import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
@@ -11,6 +11,7 @@ import {
 import type { LedgerProto } from '@shared/types';
 import {
   getFinancialAccountTaxCategoryId,
+  LedgerError,
   validateTransactionBasicVariables,
 } from './utils.helper.js';
 
@@ -34,8 +35,8 @@ export function isSupplementalFeeTransaction(
     return false;
   }
   if (!transaction.business_id) {
-    throw new Error(
-      `Transaction ID="${transaction.id}" is missing business_id, which is required to figure if fee is supplemental`,
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing business_id, which is required to figure if fee is supplemental`,
     );
   }
 
@@ -47,7 +48,7 @@ export function isSupplementalFeeTransaction(
   if (fundamentalFeeBusinesses.includes(transaction.business_id)) {
     return false;
   }
-  throw new Error(
+  throw new LedgerError(
     `Unable to determine if business ID="${transaction.business_id}" is supplemental or fundamental fee`,
   );
 }
@@ -55,14 +56,13 @@ export function isSupplementalFeeTransaction(
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<Array<LedgerProto>> {
-  const { injector } = context;
   const ledgerEntries: Array<LedgerProto> = [];
 
   if (!transaction.is_fee) {
-    throw new GraphQLError(
-      `Who did a non-fee transaction marked as fee? (Transaction ID="${transaction.id}")`,
+    throw new LedgerError(
+      `Seems like did a non-fee transaction marked as fee (Transaction ID="${transaction.id}")`,
     );
   }
 

@@ -1,21 +1,18 @@
-import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
-  INTERNAL_WALLETS_IDS,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
+  LedgerError,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
@@ -29,6 +26,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 > = async (charge, _, context) => {
   const chargeId = charge.id;
   const { injector } = context;
+
+  const errors: Set<string> = new Set();
 
   try {
     // validate ledger records are balanced
@@ -76,72 +75,25 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       isWithdrawal = true;
     }
 
-    const mainTransactionPromise = async () => {
-      // for each transaction, create a ledger record
-      const { currency, valueDate, transactionBusinessId } =
-        validateTransactionBasicVariables(mainTransaction);
-
-      let mainAccountId: string = transactionBusinessId;
-
-      if (
-        mainTransaction.source_reference &&
-        charge.business_id &&
-        INTERNAL_WALLETS_IDS.includes(charge.business_id)
-      ) {
-        mainAccountId = await getFinancialAccountTaxCategoryId(
-          injector,
-          mainTransaction,
-          currency,
-          true,
-        );
-      }
-
-      let amount = Number(mainTransaction.amount);
-      let foreignAmount: number | undefined = undefined;
-
-      if (currency !== DEFAULT_LOCAL_CURRENCY) {
-        // get exchange rate for currency
-        const exchangeRate = await injector
-          .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
-
-        foreignAmount = amount;
-        // calculate amounts in ILS
-        amount = exchangeRate * amount;
-      }
-
-      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-        injector,
+    const mainTransactionPromise = async () =>
+      ledgerEntryFromMainTransaction(
         mainTransaction,
-        currency,
-      );
-
-      const isCreditorCounterparty = amount > 0;
-
-      const ledgerEntry: StrictLedgerProto = {
-        id: mainTransaction.id,
-        invoiceDate: mainTransaction.event_date,
-        valueDate,
-        currency,
-        creditAccountID1: isCreditorCounterparty ? mainAccountId : accountTaxCategoryId,
-        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-        localCurrencyCreditAmount1: Math.abs(amount),
-        debitAccountID1: isCreditorCounterparty ? accountTaxCategoryId : mainAccountId,
-        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-        localCurrencyDebitAmount1: Math.abs(amount),
-        description: mainTransaction.source_description ?? undefined,
-        reference1: mainTransaction.source_id,
-        isCreditorCounterparty,
-        ownerId: charge.owner_id,
-        currencyRate: mainTransaction.currency_rate
-          ? Number(mainTransaction.currency_rate)
-          : undefined,
+        injector,
         chargeId,
-      };
-
-      financialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-    };
+        charge.owner_id,
+        charge.business_id ?? undefined,
+      )
+        .then(ledgerEntry => {
+          financialAccountLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        })
+        .catch(e => {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        });
 
     // create a ledger record for fee transactions
     const interestTransactionsPromises = interestTransactions.map(async transaction => {
@@ -156,7 +108,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           ownerId: charge.owner_id,
         });
       if (!businessTaxCategory) {
-        throw new GraphQLError(`Business ID="${transactionBusinessId}" is missing tax category`);
+        errors.add(`Business ID="${transactionBusinessId}" is missing tax category`);
+        return;
       }
 
       let amount = Number(transaction.amount);
@@ -215,15 +168,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       if (isWithdrawal && mainTransaction.currency !== DEFAULT_LOCAL_CURRENCY) {
         const mainLedgerEntry = financialAccountLedgerEntries[0];
         if (!mainLedgerEntry) {
-          throw new GraphQLError('Main ledger entry not found');
+          throw new LedgerError('Main ledger entry not found');
         }
 
         const depositTransactions = bankDepositTransactions.filter(t => Number(t.amount) < 0);
         if (depositTransactions.length !== 1) {
           if (depositTransactions.length === 0) {
-            throw new GraphQLError('Deposit transaction not found');
+            throw new LedgerError('Deposit transaction not found');
           }
-          throw new GraphQLError('Multiple deposit transactions found');
+          throw new LedgerError('Multiple deposit transactions found');
         }
 
         const depositTransaction = depositTransactions[0];
@@ -232,7 +185,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           mainTransaction.amount.replace('-', '') !== depositTransaction.amount.replace('-', '') ||
           mainTransaction.currency !== depositTransaction.currency
         ) {
-          throw new GraphQLError('Deposit transaction does not match the withdrawal transaction');
+          throw new LedgerError('Deposit transaction does not match the withdrawal transaction');
         }
 
         const depositLedgerRecords = await injector
@@ -241,14 +194,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
         if (depositLedgerRecords.length !== 1) {
           if (depositLedgerRecords.length === 0) {
-            throw new GraphQLError('Deposit ledger record not found');
+            throw new LedgerError('Deposit ledger record not found');
           }
-          throw new GraphQLError('Multiple deposit ledger records found');
+          throw new LedgerError('Multiple deposit ledger records found');
         }
         const depositLedgerRecord = depositLedgerRecords[0];
 
         if (Number.isNaN(depositLedgerRecord.credit_local_amount1)) {
-          throw new GraphQLError('Deposit ledger record has invalid local amount');
+          throw new LedgerError('Deposit ledger record has invalid local amount');
         }
 
         const rawAmount =
@@ -279,7 +232,13 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       return;
     };
 
-    await miscLedgerEntriesPromise();
+    await miscLedgerEntriesPromise().catch(e => {
+      if (e instanceof LedgerError) {
+        errors.add(e.message);
+      } else {
+        throw e;
+      }
+    });
 
     const records = [
       ...financialAccountLedgerEntries,
@@ -293,6 +252,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       records: ledgerProtoToRecordsConverter(records),
       charge,
       balance: ledgerBalanceInfo,
+      errors: Array.from(errors),
     };
   } catch (e) {
     return {

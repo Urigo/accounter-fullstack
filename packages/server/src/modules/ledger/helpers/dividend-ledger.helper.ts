@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
   DIVIDEND_PAYMENT_BUSINESS_IDS,
@@ -10,14 +9,15 @@ export function splitDividendTransactions(transactions: Array<IGetTransactionsBy
   const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
   const withholdingTaxTransactions = [];
   const paymentsTransactions = [];
+  const errors: string[] = [];
   for (const transaction of mainTransactions) {
     if (transaction.business_id === DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID) {
       withholdingTaxTransactions.push(transaction);
     } else if (DIVIDEND_PAYMENT_BUSINESS_IDS.includes(transaction.business_id as string)) {
       paymentsTransactions.push(transaction);
     } else {
-      throw new GraphQLError(`Transaction ID: ${transaction.id} is not a dividend transaction`);
+      errors.push(`Transaction ID: ${transaction.id} is not a dividend transaction`);
     }
   }
-  return { withholdingTaxTransactions, paymentsTransactions, feeTransactions };
+  return { withholdingTaxTransactions, paymentsTransactions, feeTransactions, errors };
 }

@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
@@ -14,14 +13,20 @@ import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type { LedgerBalanceInfoType, LedgerProto, StrictLedgerProto } from '@shared/types';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
+export class LedgerError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export function isTransactionsOppositeSign([first, second]: IGetTransactionsByChargeIdsResult[]) {
   if (!first || !second) {
-    throw new GraphQLError('Transactions are missing');
+    throw new LedgerError('Transactions are missing');
   }
   const firstAmount = Number(first.amount);
   const secondAmount = Number(second.amount);
   if (Number.isNaN(firstAmount) || Number.isNaN(secondAmount)) {
-    throw new Error('Transaction amount is not a number');
+    throw new LedgerError('Transaction amount is not a number');
   }
   return Number(first.amount) > 0 !== Number(second.amount) > 0;
 }
@@ -53,7 +58,9 @@ export function getTaxCategoryNameByAccountCurrency(
       console.error(`Unknown currency for account's tax category: ${currency}`);
   }
   if (!taxCategoryName) {
-    throw new GraphQLError(`Account ID="${account.id}" is missing tax category name`);
+    throw new LedgerError(
+      `Account number "${account.account_number}" is missing tax category name`,
+    );
   }
   return taxCategoryName;
 }
@@ -61,14 +68,16 @@ export function getTaxCategoryNameByAccountCurrency(
 export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
   const currency = formatCurrency(transaction.currency);
   if (!transaction.debit_date) {
-    throw new GraphQLError(
-      `Transaction ID="${transaction.id}" is missing debit date for currency ${currency}`,
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${currency}`,
     );
   }
   const valueDate = transaction.debit_timestamp ?? transaction.debit_date;
 
   if (!transaction.business_id) {
-    throw new GraphQLError(`Transaction ID="${transaction.id}" is missing business_id`);
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing business_id`,
+    );
   }
 
   const transactionBusinessId = transaction.business_id;
@@ -90,13 +99,15 @@ export function validateTransactionRequiredVariables(
   transaction: IGetTransactionsByChargeIdsResult,
 ): ValidateTransaction {
   if (!transaction.debit_date) {
-    throw new GraphQLError(
-      `Transaction ID="${transaction.id}" is missing debit date for currency ${transaction.currency}`,
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${transaction.currency}`,
     );
   }
 
   if (!transaction.business_id) {
-    throw new GraphQLError(`Transaction ID="${transaction.id}" is missing business_id`);
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing business_id`,
+    );
   }
 
   const debit_timestamp = transaction.debit_timestamp ?? transaction.debit_date;
@@ -274,8 +285,8 @@ export async function getFinancialAccountTaxCategoryId(
   useSourceReference?: boolean,
 ): Promise<string> {
   if (useSourceReference && !transaction.source_reference) {
-    throw new GraphQLError(
-      `Transaction ID="${transaction.id}" is missing source reference, which is required for fetching the financial account`,
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing source reference, which is required for fetching the financial account`,
     );
   }
   const account = await (useSourceReference
@@ -286,7 +297,9 @@ export async function getFinancialAccountTaxCategoryId(
         .get(FinancialAccountsProvider)
         .getFinancialAccountByAccountIDLoader.load(transaction.account_id));
   if (!account) {
-    throw new GraphQLError(`Transaction ID="${transaction.id}" is missing account`);
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing account`,
+    );
   }
   const taxCategoryName = getTaxCategoryNameByAccountCurrency(
     account,
@@ -297,7 +310,7 @@ export async function getFinancialAccountTaxCategoryId(
     .taxCategoryByNamesLoader.load(taxCategoryName);
 
   if (!taxCategory) {
-    throw new GraphQLError(`Account ID="${account.id}" is missing tax category`);
+    throw new LedgerError(`Account number "${account.account_number}" is missing tax category`);
   }
 
   return taxCategory.id;
@@ -366,7 +379,7 @@ export function multipleForeignCurrenciesBalanceEntries(
       [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
     );
     if (!transactionEntry || !documentEntry) {
-      throw new GraphQLError(
+      throw new LedgerError(
         `Failed to locate transaction or document entry for business ID="${mainBusiness}"`,
       );
     }

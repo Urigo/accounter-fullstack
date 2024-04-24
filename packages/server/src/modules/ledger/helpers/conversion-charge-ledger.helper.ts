@@ -1,16 +1,16 @@
-import { GraphQLError } from 'graphql';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
+import { LedgerError } from './utils.helper.js';
 
 export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
   const baseRate = base.currencyRate ?? 0;
   const quoteRate = quote.currencyRate ?? 0;
   if (!baseRate && !quoteRate) {
-    throw new GraphQLError('Conversion records are missing currency rate');
+    throw new LedgerError('Conversion records are missing currency rate');
   }
   if (!!baseRate && !!quoteRate && baseRate !== quoteRate) {
-    throw new GraphQLError('Conversion records have mismatching currency rates');
+    throw new LedgerError('Conversion records have mismatching currency rates');
   }
   const bankRate = baseRate || quoteRate;
 
@@ -24,7 +24,7 @@ export function conversionFeeCalculator(
   localCurrencyRate?: number,
 ): { localAmount: number; foreignAmount?: number; currency: Currency } {
   if (base.currency === quote.currency) {
-    throw new GraphQLError('Conversion records must have different currencies');
+    throw new LedgerError('Conversion records must have different currencies');
   }
   const eventRate = getConversionBankRate(base, quote);
 
@@ -40,7 +40,7 @@ export function conversionFeeCalculator(
   const baseAmountConvertedByEventRate = baseAmount / eventRate;
   const minimalPrecision = Math.max(baseAmount / 10_000_000, 0.005);
   if (baseAmountConvertedByEventRate - quoteAmount > minimalPrecision) {
-    throw new GraphQLError(
+    throw new LedgerError(
       'Conversion records have mismatching amounts, taking the bank rate into account',
     );
   }
@@ -55,7 +55,7 @@ export function conversionFeeCalculator(
     if (base.currency === DEFAULT_LOCAL_CURRENCY) {
       localCurrencyRate = 1 / officialRate;
     } else {
-      throw new GraphQLError('Conversion records are missing local currency rate');
+      throw new LedgerError('Conversion records are missing local currency rate');
     }
   }
   const feeAmountByLocalCurrency = feeAmountByQuoteCurrency * localCurrencyRate;

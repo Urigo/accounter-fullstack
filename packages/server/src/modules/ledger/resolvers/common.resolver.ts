@@ -10,6 +10,7 @@ export const commonChargeLedgerResolver: LedgerModule.ChargeResolvers = {
     return {
       records: ledgerRecords,
       charge: DbCharge,
+      errors: [],
     };
   },
 };

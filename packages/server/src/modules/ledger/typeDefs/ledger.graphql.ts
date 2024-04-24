@@ -84,6 +84,7 @@ export default gql`
     isValid: Boolean!
     matches: [UUID!]!
     differences: [LedgerRecord!]!
+    errors: [String!]!
   }
 
   " result type for ledger records "

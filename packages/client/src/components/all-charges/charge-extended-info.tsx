@@ -4,6 +4,7 @@ import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  AllChargesErrorsFieldsFragmentDoc,
   ConversionChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
   FetchChargeDocument,
@@ -19,6 +20,7 @@ import {
   ConfirmationModal,
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
+import { ChargeErrors } from './charge-errors.js';
 import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
@@ -54,6 +56,7 @@ import { TransactionsTable } from './transactions/transactions-table.js';
           }
         }
       }
+      ...AllChargesErrorsFields @defer
     }
   }
 `;
@@ -152,6 +155,9 @@ export function ChargeExtendedInfo({
     <div className="flex flex-col gap-5">
       {fetching && (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+      )}
+      {isFragmentReady(FetchChargeDocument, AllChargesErrorsFieldsFragmentDoc, charge) && (
+        <ChargeErrors data={charge} />
       )}
       {!fetching && charge && (
         <div className="flex flex-row">

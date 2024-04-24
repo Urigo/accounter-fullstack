@@ -124,7 +124,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               feeTransactions: [
                 {
                   id: transactionId,
-                  isRecurring: null,
+                  isRecurring: false,
                 },
               ],
             });
@@ -137,7 +137,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           return Promise.resolve();
         };
 
-        await Promise.all([chargePromise, feePromise]);
+        await Promise.all([chargePromise, feePromise()]);
 
         const adjustedFields: IUpdateTransactionParams = {
           transactionId,

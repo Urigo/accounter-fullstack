@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -21,6 +20,7 @@ import {
   generatePartialLedgerEntry,
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
+  LedgerError,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
@@ -35,21 +35,25 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   const { injector } = context;
   const chargeId = charge.id;
 
+  const errors: Set<string> = new Set();
+
   try {
     // figure out VAT month
     const transactionDate =
       charge.transactions_min_debit_date ?? charge.transactions_min_event_date ?? undefined;
     if (!charge.user_description) {
-      throw new GraphQLError(
+      errors.add(
         `Monthly VAT charge must have description that indicates it's month (ID="${chargeId}")`,
       );
     }
-    const vatDate = getMonthFromDescription(charge.user_description, transactionDate);
+    const vatDate = charge.user_description
+      ? getMonthFromDescription(charge.user_description, transactionDate)
+      : null;
     if (!vatDate) {
-      throw new GraphQLError(`Cannot extract charge ID="${chargeId}" VAT month`);
+      errors.add(`Cannot extract charge ID="${chargeId}" VAT month`);
     }
 
-    const [year, month] = vatDate.split('-').map(Number);
+    const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
     const ledgerDate = new Date(year, month, 0);
     const fromDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd') as TimelessDateString;
     const toDate = format(ledgerDate, 'yyyy-MM-dd') as TimelessDateString;
@@ -81,144 +85,156 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         outputsVatTaxCategoryPromise,
       ]);
 
-    if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
-      throw new GraphQLError(`Missing some of the VAT tax categories`);
-    }
-
-    const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
-      income as RawVatReportRecord[],
-    );
-    const [expensesVat, roundedExpensesVat] = getVatDataFromVatReportRecords(
-      expenses as RawVatReportRecord[],
-    );
-
-    // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
-    ledgerBalance.set(outputsVatTaxCategory.id, {
-      amount: incomeVat,
-      entityId: outputsVatTaxCategory.id,
-    });
-    ledgerBalance.set(inputsVatTaxCategory.id, {
-      amount: expensesVat * -1,
-      entityId: inputsVatTaxCategory.id,
-    });
-
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
+    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
-    // for each transaction, create a ledger record
-    const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
-      const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
-      if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-        throw new GraphQLError(
-          `Monthly VAT currency supposed to be local, got ${transaction.currency}`,
-        );
-      }
-
-      // preparations for core ledger entries
-      let exchangeRate: number | undefined = undefined;
-      if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-        // get exchange rate for currency
-        exchangeRate = await injector
-          .get(ExchangeProvider)
-          .getExchangeRates(
-            transaction.currency,
-            DEFAULT_LOCAL_CURRENCY,
-            transaction.debit_timestamp,
-          );
-      }
-
-      const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
-
-      const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-        injector,
-        transaction,
-        DEFAULT_LOCAL_CURRENCY,
+    if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
+      errors.add(`Missing some of the VAT tax categories`);
+    } else {
+      const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
+        income as RawVatReportRecord[],
+      );
+      const [expensesVat, roundedExpensesVat] = getVatDataFromVatReportRecords(
+        expenses as RawVatReportRecord[],
       );
 
-      const ledgerEntry: LedgerProto = {
-        ...partialEntry,
-        ...(partialEntry.isCreditorCounterparty
-          ? {
-              creditAccountID1: VAT_BUSINESS_ID,
-              debitAccountID1: financialAccountTaxCategoryId,
-            }
-          : {
-              creditAccountID1: financialAccountTaxCategoryId,
-              debitAccountID1: VAT_BUSINESS_ID,
-            }),
-      };
-
-      financialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-    });
-
-    await Promise.all(mainTransactionsPromises);
-
-    const accountingLedgerMaterials: Array<{
-      amount: number;
-      taxCategoryId: string;
-      counterpartyId?: string;
-    }> = [];
-    accountingLedgerMaterials.push(
-      {
-        amount: roundedIncomeVat,
-        taxCategoryId: outputsVatTaxCategory.id,
-        counterpartyId: VAT_BUSINESS_ID,
-      },
-      {
-        amount: roundedExpensesVat * -1,
-        taxCategoryId: inputsVatTaxCategory.id,
-        counterpartyId: VAT_BUSINESS_ID,
-      },
-    );
-
-    const roundedIncomeVatDiff = Math.round((roundedIncomeVat - incomeVat) * 100) / 100;
-    if (roundedIncomeVatDiff) {
-      accountingLedgerMaterials.push({
-        amount: roundedIncomeVatDiff * -1,
-        taxCategoryId: outputsVatTaxCategory.id,
-        counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+      // validate ledger records are balanced
+      ledgerBalance.set(outputsVatTaxCategory.id, {
+        amount: incomeVat,
+        entityId: outputsVatTaxCategory.id,
       });
-    }
-
-    const roundedExpensesVatDiff = Math.round((roundedExpensesVat - expensesVat) * 100) / 100;
-    if (roundedExpensesVatDiff) {
-      accountingLedgerMaterials.push({
-        amount: roundedExpensesVatDiff,
-        taxCategoryId: inputsVatTaxCategory.id,
-        counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+      ledgerBalance.set(inputsVatTaxCategory.id, {
+        amount: expensesVat * -1,
+        entityId: inputsVatTaxCategory.id,
       });
-    }
 
-    accountingLedgerMaterials.map(({ amount, taxCategoryId, counterpartyId }) => {
-      if (amount === 0) {
-        return;
+      // for each transaction, create a ledger record
+      const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
+        try {
+          const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
+          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+            throw new LedgerError(
+              `Monthly VAT currency supposed to be local, got ${transaction.currency}`,
+            );
+          }
+
+          // preparations for core ledger entries
+          let exchangeRate: number | undefined = undefined;
+          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+            // get exchange rate for currency
+            exchangeRate = await injector
+              .get(ExchangeProvider)
+              .getExchangeRates(
+                transaction.currency,
+                DEFAULT_LOCAL_CURRENCY,
+                transaction.debit_timestamp,
+              );
+          }
+
+          const partialEntry = generatePartialLedgerEntry(
+            transaction,
+            charge.owner_id,
+            exchangeRate,
+          );
+
+          const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+            injector,
+            transaction,
+            DEFAULT_LOCAL_CURRENCY,
+          );
+
+          const ledgerEntry: LedgerProto = {
+            ...partialEntry,
+            ...(partialEntry.isCreditorCounterparty
+              ? {
+                  creditAccountID1: VAT_BUSINESS_ID,
+                  debitAccountID1: financialAccountTaxCategoryId,
+                }
+              : {
+                  creditAccountID1: financialAccountTaxCategoryId,
+                  debitAccountID1: VAT_BUSINESS_ID,
+                }),
+          };
+
+          financialAccountLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        } catch (e) {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        }
+      });
+
+      await Promise.all(mainTransactionsPromises);
+
+      const accountingLedgerMaterials: Array<{
+        amount: number;
+        taxCategoryId: string;
+        counterpartyId?: string;
+      }> = [];
+      accountingLedgerMaterials.push(
+        {
+          amount: roundedIncomeVat,
+          taxCategoryId: outputsVatTaxCategory.id,
+          counterpartyId: VAT_BUSINESS_ID,
+        },
+        {
+          amount: roundedExpensesVat * -1,
+          taxCategoryId: inputsVatTaxCategory.id,
+          counterpartyId: VAT_BUSINESS_ID,
+        },
+      );
+
+      const roundedIncomeVatDiff = Math.round((roundedIncomeVat - incomeVat) * 100) / 100;
+      if (roundedIncomeVatDiff) {
+        accountingLedgerMaterials.push({
+          amount: roundedIncomeVatDiff * -1,
+          taxCategoryId: outputsVatTaxCategory.id,
+          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+        });
       }
 
-      const isCreditorCounterparty = amount > 0;
+      const roundedExpensesVatDiff = Math.round((roundedExpensesVat - expensesVat) * 100) / 100;
+      if (roundedExpensesVatDiff) {
+        accountingLedgerMaterials.push({
+          amount: roundedExpensesVatDiff,
+          taxCategoryId: inputsVatTaxCategory.id,
+          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+        });
+      }
 
-      const ledgerProto: LedgerProto = {
-        id: chargeId,
-        invoiceDate: ledgerDate,
-        valueDate: ledgerDate,
-        currency: DEFAULT_LOCAL_CURRENCY,
-        creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
-        localCurrencyCreditAmount1: Math.abs(amount),
-        debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
-        localCurrencyDebitAmount1: Math.abs(amount),
-        description:
-          counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
-            ? 'Balance cancellation'
-            : `VAT command ${vatDate}`,
-        isCreditorCounterparty,
-        ownerId: charge.owner_id,
-        chargeId,
-      };
+      accountingLedgerMaterials.map(({ amount, taxCategoryId, counterpartyId }) => {
+        if (amount === 0) {
+          return;
+        }
 
-      accountingLedgerEntries.push(ledgerProto);
-      updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
-    });
+        const isCreditorCounterparty = amount > 0;
+
+        const ledgerProto: LedgerProto = {
+          id: chargeId,
+          invoiceDate: ledgerDate,
+          valueDate: ledgerDate,
+          currency: DEFAULT_LOCAL_CURRENCY,
+          creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description:
+            counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
+              ? 'Balance cancellation'
+              : `VAT command ${vatDate}`,
+          isCreditorCounterparty,
+          ownerId: charge.owner_id,
+          chargeId,
+        };
+
+        accountingLedgerEntries.push(ledgerProto);
+        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
+      });
+    }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
 
@@ -229,6 +245,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       records: ledgerProtoToRecordsConverter(records),
       charge,
       balance: ledgerBalanceInfo,
+      errors: Array.from(errors),
     };
   } catch (e) {
     return {
