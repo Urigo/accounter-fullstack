@@ -204,6 +204,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             isValid: false,
             differences: [],
             matches: [],
+            errors: [],
           };
         }
 
@@ -216,6 +217,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             isValid: true,
             differences: [],
             matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+            errors: generated.errors,
           };
         }
 
@@ -225,19 +227,20 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
 
         return {
-          isValid: fullMatching.isFullyMatched,
+          isValid: fullMatching.isFullyMatched && generated.errors.length === 0,
           differences: toUpdate,
           matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+          errors: generated.errors,
         };
       } catch (err) {
         return {
           isValid: false,
           differences: [],
           matches: [],
+          errors: [],
         };
       }
     },
-    errors: parent => parent.errors,
   },
   LedgerBalanceUnbalancedEntity: {
     entity: (parent, _, { injector }) =>

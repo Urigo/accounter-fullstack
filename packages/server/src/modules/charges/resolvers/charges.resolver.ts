@@ -324,7 +324,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
           generatedledgerPromise,
         ]);
 
-        if (!generated || 'message' in generated || generated.balance?.isBalanced === false) {
+        if (
+          !generated ||
+          'message' in generated ||
+          generated.balance?.isBalanced === false ||
+          generated.errors?.length > 0
+        ) {
           return 'INVALID';
         }
 

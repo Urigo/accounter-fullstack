@@ -232,7 +232,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     });
 
-    Promise.all([
+    await Promise.all([
       ...feeFinancialAccountLedgerEntriesPromises,
       ...mainFinancialAccountLedgerEntriesPromises,
     ]);

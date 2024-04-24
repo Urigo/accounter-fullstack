@@ -11,6 +11,7 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import type { currency } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY, INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { formatStringifyAmount } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
   getEntriesFromFeeTransaction,
@@ -48,14 +49,20 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
     const gotTransactions = !!charge.transactions_count;
 
-    const documentsTaxCategoryIdPromise = gotRelevantDocuments
-      ? charge.tax_category_id
-        ? Promise.resolve(charge.tax_category_id)
-        : injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByChargeIDsLoader.load(charge.id)
-            .then(res => res?.id)
-      : undefined;
+    const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
+      if (charge.tax_category_id) {
+        resolve(charge.tax_category_id);
+      }
+      if (!gotRelevantDocuments) {
+        resolve(undefined);
+      }
+      injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByChargeIDsLoader.load(charge.id)
+        .then(res => res?.id)
+        .then(resolve)
+        .catch(reject);
+    });
 
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
@@ -272,7 +279,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
     if (Math.abs(balanceSum) > 0.005) {
       errors.add(
-        `Failed to balance: ${balanceSum} diff; ${unbalancedEntities.join(', ')} are not balanced`,
+        `Failed to balance: ${formatStringifyAmount(balanceSum)} diff; ${unbalancedEntities.map(entity => entity.entityId).join(', ')} are not balanced`,
       );
     } else if (!isBalanced) {
       // check if business doesn't require documents
