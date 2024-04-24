@@ -77,6 +77,7 @@ export default gql`
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
     validate: LedgerValidation!
+    errors: [String!]!
   }
 
   " ledger validation info"

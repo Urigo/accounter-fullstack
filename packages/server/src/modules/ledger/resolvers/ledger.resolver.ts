@@ -235,6 +235,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
     },
+    errors: parent => parent.errors,
   },
   LedgerBalanceUnbalancedEntity: {
     entity: (parent, _, { injector }) =>

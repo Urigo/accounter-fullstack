@@ -60,6 +60,7 @@ export interface LedgerRecordsProto {
   records: IGetLedgerRecordsByChargesIdsResult[];
   charge: IGetChargesByIdsResult;
   balance?: LedgerBalanceInfoType;
+  errors: string[];
 }
 
 export type StrictLedgerProto = Omit<LedgerProto, 'debitAccountID1' | 'creditAccountID1'> & {
