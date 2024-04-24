@@ -123,13 +123,13 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           // run validations
           if (!dividendRecord) {
             throw new LedgerError(
-              `Transaction ID="${preValidatedTransaction.id}" is missing matching dividend record`,
+              `Transaction reference "${preValidatedTransaction.source_reference}" is missing matching dividend record`,
             );
           }
           const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
           if (Number(transaction.amount) >= 0) {
             throw new LedgerError(
-              `Dividend transaction amount cannot be positive (ID: ${transaction.id})`,
+              `Dividend transaction amount cannot be positive (reference: ${transaction.source_reference})`,
             );
           }
           if (Number(dividendRecord.amount) <= 0) {
@@ -140,7 +140,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
             transaction.debit_date.getTime() !== dividendRecord.date.getTime()
           ) {
             throw new LedgerError(
-              `Transaction ID="${transaction.id}" is not matching dividend record ID="${dividendRecord.id}"`,
+              `Transaction reference "${transaction.source_reference}" is not matching dividend record ID="${dividendRecord.id}"`,
             );
           }
 
@@ -198,7 +198,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
               allowedUnbalancedBusinesses.add(transaction.business_id);
             } else {
               throw new LedgerError(
-                `Transaction ID="${transaction.id}" and dividend record ID="${dividendRecord.id}" amounts mismatch`,
+                `Transaction reference "${transaction.source_reference}" and dividend record ID="${dividendRecord.id}" amounts mismatch`,
               );
             }
           }

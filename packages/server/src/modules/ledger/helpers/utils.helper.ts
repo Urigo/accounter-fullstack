@@ -15,7 +15,7 @@ import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export class LedgerError extends Error {
   constructor(message: string) {
-    super(`Ledger error: ${message}`);
+    super(message);
   }
 }
 
@@ -69,14 +69,14 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
   const currency = formatCurrency(transaction.currency);
   if (!transaction.debit_date) {
     throw new LedgerError(
-      `Transaction reference="${transaction.source_reference}" is missing debit date for currency ${currency}`,
+      `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${currency}`,
     );
   }
   const valueDate = transaction.debit_timestamp ?? transaction.debit_date;
 
   if (!transaction.business_id) {
     throw new LedgerError(
-      `Transaction reference="${transaction.source_reference}" is missing business_id`,
+      `Transaction reference "${transaction.source_reference}" is missing business_id`,
     );
   }
 
@@ -100,12 +100,14 @@ export function validateTransactionRequiredVariables(
 ): ValidateTransaction {
   if (!transaction.debit_date) {
     throw new LedgerError(
-      `Transaction ID="${transaction.id}" is missing debit date for currency ${transaction.currency}`,
+      `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${transaction.currency}`,
     );
   }
 
   if (!transaction.business_id) {
-    throw new LedgerError(`Transaction ID="${transaction.id}" is missing business_id`);
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" is missing business_id`,
+    );
   }
 
   const debit_timestamp = transaction.debit_timestamp ?? transaction.debit_date;
@@ -284,7 +286,7 @@ export async function getFinancialAccountTaxCategoryId(
 ): Promise<string> {
   if (useSourceReference && !transaction.source_reference) {
     throw new LedgerError(
-      `Transaction reference="${transaction.source_reference}" is missing source reference, which is required for fetching the financial account`,
+      `Transaction reference "${transaction.source_reference}" is missing source reference, which is required for fetching the financial account`,
     );
   }
   const account = await (useSourceReference
@@ -296,7 +298,7 @@ export async function getFinancialAccountTaxCategoryId(
         .getFinancialAccountByAccountIDLoader.load(transaction.account_id));
   if (!account) {
     throw new LedgerError(
-      `Transaction reference="${transaction.source_reference}" is missing account`,
+      `Transaction reference "${transaction.source_reference}" is missing account`,
     );
   }
   const taxCategoryName = getTaxCategoryNameByAccountCurrency(

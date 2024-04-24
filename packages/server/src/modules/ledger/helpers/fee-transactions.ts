@@ -36,7 +36,7 @@ export function isSupplementalFeeTransaction(
   }
   if (!transaction.business_id) {
     throw new LedgerError(
-      `Transaction reference="${transaction.source_reference}" is missing business_id, which is required to figure if fee is supplemental`,
+      `Transaction reference "${transaction.source_reference}" is missing business_id, which is required to figure if fee is supplemental`,
     );
   }
 

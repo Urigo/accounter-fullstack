@@ -58,8 +58,18 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       errors.add(`Internal transfer Charge must include two main transactions`);
     }
 
-    if (!isTransactionsOppositeSign(mainTransactions)) {
-      errors.add(`Internal transfer Charge must include two main transactions with opposite sign`);
+    try {
+      if (!isTransactionsOppositeSign(mainTransactions)) {
+        errors.add(
+          `Internal transfer Charge must include two main transactions with opposite sign`,
+        );
+      }
+    } catch (e) {
+      if (e instanceof LedgerError) {
+        errors.add(e.message);
+      } else {
+        throw e;
+      }
     }
 
     // create a ledger record for main transactions

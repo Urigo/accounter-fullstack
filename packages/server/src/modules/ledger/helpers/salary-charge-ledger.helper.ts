@@ -168,7 +168,7 @@ export function generateEntriesFromSalaryRecords(
     const pensionAccount = salaryRecord.pension_fund_id;
     if (totalPension > 0) {
       if (!pensionAccount) {
-        throw new LedgerError(`Missing pension account for ${chargeId}`);
+        throw new LedgerError(`Missing pension account for charge ID=${chargeId}`);
       }
       amountPerBusiness[pensionAccount] ??= 0;
       amountPerBusiness[pensionAccount] += totalPension;
@@ -183,7 +183,7 @@ export function generateEntriesFromSalaryRecords(
     const trainingFundAccount = salaryRecord.training_fund_id;
     if (totalTrainingFund > 0) {
       if (!trainingFundAccount) {
-        throw new LedgerError(`Missing training fund account for ${chargeId}`);
+        throw new LedgerError(`Missing training fund account for charge ID=${chargeId}`);
       }
       amountPerBusiness[trainingFundAccount] ??= 0;
       amountPerBusiness[trainingFundAccount] += totalTrainingFund;
@@ -199,7 +199,7 @@ export function generateEntriesFromSalaryRecords(
   }
 
   if (!month) {
-    throw new LedgerError(`No month found for salary charge ${chargeId}`);
+    throw new LedgerError(`No month found for salary charge ID=${chargeId}`);
   }
 
   // generate pension/training funds entries
