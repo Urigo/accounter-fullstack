@@ -54,6 +54,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           return {
             records: storageLedgerRecords,
             charge,
+            errors: generated.errors,
           };
         }
 
@@ -96,6 +97,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         return {
           records: toUpdate,
           charge,
+          errors: generated.errors,
         };
       } catch (e) {
         return {

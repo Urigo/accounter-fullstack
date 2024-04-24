@@ -32,9 +32,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   object
-> = async (charge, _, context) => {
+> = async (charge, _, { injector }) => {
   const chargeId = charge.id;
-  const { injector } = context;
 
   const errors: Set<string> = new Set();
 
@@ -176,7 +175,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // create a ledger record for fee transactions
       const feeTransactionsPromises = feeTransactions.map(async transaction => {
-        await getEntriesFromFeeTransaction(transaction, charge, context)
+        await getEntriesFromFeeTransaction(transaction, charge, injector)
           .then(ledgerEntries => {
             feeFinancialAccountLedgerEntries.push(...ledgerEntries);
             ledgerEntries.map(ledgerEntry => {
@@ -231,15 +230,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     // multiple currencies balance
     const foreignCurrencyCount = currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
     if (foreignCurrencyCount >= 2) {
-      const entries = multipleForeignCurrenciesBalanceEntries(
-        accountingLedgerEntries,
-        financialAccountLedgerEntries,
-        feeFinancialAccountLedgerEntries,
-        charge,
-      );
-      for (const ledgerEntry of entries) {
-        miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      try {
+        const entries = multipleForeignCurrenciesBalanceEntries(
+          accountingLedgerEntries,
+          financialAccountLedgerEntries,
+          feeFinancialAccountLedgerEntries,
+          charge,
+        );
+        for (const ledgerEntry of entries) {
+          miscLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        }
+      } catch (e) {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
       }
     }
 

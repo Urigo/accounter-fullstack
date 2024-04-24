@@ -1,3 +1,4 @@
+import { Injector } from 'graphql-modules';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
@@ -55,14 +56,13 @@ export function isSupplementalFeeTransaction(
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<Array<LedgerProto>> {
-  const { injector } = context;
   const ledgerEntries: Array<LedgerProto> = [];
 
   if (!transaction.is_fee) {
     throw new LedgerError(
-      `Who did a non-fee transaction marked as fee? (Transaction ID="${transaction.id}")`,
+      `Seems like did a non-fee transaction marked as fee (Transaction ID="${transaction.id}")`,
     );
   }
 

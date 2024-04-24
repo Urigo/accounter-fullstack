@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
 import {
@@ -14,6 +13,7 @@ import {
   ZKUFOT_INCOME_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
+import { LedgerError } from './utils.helper.js';
 
 function generateEntryRaw(
   accountId: string,
@@ -71,7 +71,7 @@ export function generateEntriesFromSalaryRecords(
   const chargeId = charge.id;
 
   if (!salaryRecords.length) {
-    throw new GraphQLError(`No salary records found for charge ${chargeId}`);
+    throw new LedgerError(`No salary records found for charge ${chargeId}`);
   }
 
   const entries: LedgerProto[] = [];
@@ -110,7 +110,7 @@ export function generateEntriesFromSalaryRecords(
   for (const salaryRecord of salaryRecords) {
     // record validations
     if (!salaryRecord.base_salary) {
-      throw new GraphQLError(
+      throw new LedgerError(
         `Base salary record for ${salaryRecord.month}, employee ID=${salaryRecord.employee_id}  is missing amount`,
       );
     }
@@ -168,7 +168,7 @@ export function generateEntriesFromSalaryRecords(
     const pensionAccount = salaryRecord.pension_fund_id;
     if (totalPension > 0) {
       if (!pensionAccount) {
-        throw new GraphQLError(`Missing pension account for ${chargeId}`);
+        throw new LedgerError(`Missing pension account for ${chargeId}`);
       }
       amountPerBusiness[pensionAccount] ??= 0;
       amountPerBusiness[pensionAccount] += totalPension;
@@ -183,7 +183,7 @@ export function generateEntriesFromSalaryRecords(
     const trainingFundAccount = salaryRecord.training_fund_id;
     if (totalTrainingFund > 0) {
       if (!trainingFundAccount) {
-        throw new GraphQLError(`Missing training fund account for ${chargeId}`);
+        throw new LedgerError(`Missing training fund account for ${chargeId}`);
       }
       amountPerBusiness[trainingFundAccount] ??= 0;
       amountPerBusiness[trainingFundAccount] += totalTrainingFund;
@@ -199,7 +199,7 @@ export function generateEntriesFromSalaryRecords(
   }
 
   if (!month) {
-    throw new GraphQLError(`No month found for salary charge ${chargeId}`);
+    throw new LedgerError(`No month found for salary charge ${chargeId}`);
   }
 
   // generate pension/training funds entries

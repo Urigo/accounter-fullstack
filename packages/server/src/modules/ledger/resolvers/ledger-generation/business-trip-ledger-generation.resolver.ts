@@ -1,11 +1,10 @@
-import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, FEE_TAX_CATEGORY_ID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -15,16 +14,16 @@ import {
 } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
-  isSupplementalFeeTransaction,
+  getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
 import {
   generatePartialLedgerEntry,
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
+  LedgerError,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
-  validateTransactionBasicVariables,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
 
@@ -36,8 +35,10 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 > = async (charge, _, { injector }) => {
   const chargeId = charge.id;
 
+  const errors: Set<string> = new Set();
+
   if (!charge.tax_category_id) {
-    throw new GraphQLError(`Business trip charge ID="${charge.id}" is missing tax category`);
+    errors.add(`Business trip is missing tax category`);
   }
   const tripTaxCategory = charge.tax_category_id;
 
@@ -71,112 +72,64 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // for each transaction, create a ledger record
     const mainTransactionsPromises = mainTransactions.map(async preValidatedTransaction => {
-      const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
+      try {
+        const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
 
-      // get tax category
-      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
+        // get tax category
+        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
-      // preparations for core ledger entries
-      let exchangeRate: number | undefined = undefined;
-      if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-        // get exchange rate for currency
-        exchangeRate = await injector
-          .get(ExchangeProvider)
-          .getExchangeRates(
-            transaction.currency,
-            DEFAULT_LOCAL_CURRENCY,
-            transaction.debit_timestamp,
-          );
+        // preparations for core ledger entries
+        let exchangeRate: number | undefined = undefined;
+        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          // get exchange rate for currency
+          exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(
+              transaction.currency,
+              DEFAULT_LOCAL_CURRENCY,
+              transaction.debit_timestamp,
+            );
+        }
+
+        const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
+        const ledgerEntry: StrictLedgerProto = {
+          ...partialEntry,
+          creditAccountID1: partialEntry.isCreditorCounterparty
+            ? transaction.business_id
+            : accountTaxCategoryId,
+          debitAccountID1: partialEntry.isCreditorCounterparty
+            ? accountTaxCategoryId
+            : transaction.business_id,
+        };
+
+        financialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      } catch (e) {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
       }
-
-      const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
-      const ledgerEntry: StrictLedgerProto = {
-        ...partialEntry,
-        creditAccountID1: partialEntry.isCreditorCounterparty
-          ? transaction.business_id
-          : accountTaxCategoryId,
-        debitAccountID1: partialEntry.isCreditorCounterparty
-          ? accountTaxCategoryId
-          : transaction.business_id,
-      };
-
-      financialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     });
 
     // create a ledger record for fee transactions
-    const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      if (!transaction.is_fee) {
-        throw new GraphQLError(
-          `Who did a non-fee transaction marked as fee? (Transaction ID="${transaction.id}")`,
-        );
-      }
-
-      const isSupplementalFee = isSupplementalFeeTransaction(transaction);
-      const { currency, valueDate, transactionBusinessId } =
-        validateTransactionBasicVariables(transaction);
-
-      let amount = Number(transaction.amount);
-      let foreignAmount: number | undefined = undefined;
-
-      if (currency !== DEFAULT_LOCAL_CURRENCY) {
-        // get exchange rate for currency
-        const exchangeRate = await injector
-          .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
-
-        foreignAmount = amount;
-        // calculate amounts in ILS
-        amount = exchangeRate * amount;
-      }
-
-      const isCreditorCounterparty = amount > 0;
-
-      let mainAccount = transactionBusinessId;
-
-      const partialLedgerEntry: Omit<StrictLedgerProto, 'creditAccountID1' | 'debitAccountID1'> = {
-        id: transaction.id,
-        invoiceDate: transaction.event_date,
-        valueDate,
-        currency,
-        creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-        localCurrencyCreditAmount1: Math.abs(amount),
-        debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-        localCurrencyDebitAmount1: Math.abs(amount),
-        description: transaction.source_description ?? undefined,
-        reference1: transaction.source_id,
-        isCreditorCounterparty: isSupplementalFee
-          ? isCreditorCounterparty
-          : !isCreditorCounterparty,
-        ownerId: charge.owner_id,
-        currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-        chargeId: transaction.charge_id,
-      };
-
-      if (isSupplementalFee) {
-        mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction, currency);
-      } else {
-        const mainBusiness = charge.business_id ?? undefined;
-
-        const ledgerEntry: LedgerProto = {
-          ...partialLedgerEntry,
-          creditAccountID1: isCreditorCounterparty ? mainAccount : mainBusiness,
-          debitAccountID1: isCreditorCounterparty ? mainBusiness : mainAccount,
-        };
-
-        feeFinancialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-      }
-
-      const ledgerEntry: StrictLedgerProto = {
-        ...partialLedgerEntry,
-        creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : mainAccount,
-        debitAccountID1: isCreditorCounterparty ? mainAccount : FEE_TAX_CATEGORY_ID,
-      };
-
-      feeFinancialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-    });
+    const feeTransactionsPromises = feeTransactions.map(async transaction =>
+      getEntriesFromFeeTransaction(transaction, charge, injector)
+        .then(entries => {
+          entries.map(entry => {
+            feeFinancialAccountLedgerEntries.push(entry);
+            updateLedgerBalanceByEntry(entry, ledgerBalance);
+          });
+        })
+        .catch(e => {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        }),
+    );
 
     entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
     await Promise.all(entriesPromises);
@@ -185,15 +138,20 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     entriesPromises = [];
     const businessTripTransactionsPromises = businessTripTransactions.map(
       async businessTripTransaction => {
+        if (!tripTaxCategory) {
+          return;
+        }
+
         const isTransactionBased = !!businessTripTransaction.transaction_id;
         if (isTransactionBased) {
           const matchingEntry = financialAccountLedgerEntries.find(
             entry => entry.id === businessTripTransaction.transaction_id,
           );
           if (!matchingEntry) {
-            throw new GraphQLError(
+            errors.add(
               `Flight transaction ID="${businessTripTransaction.transaction_id}" is missing from transactions`,
             );
+            return;
           }
 
           const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
@@ -217,9 +175,10 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             !businessTripTransaction.amount ||
             !businessTripTransaction.currency
           ) {
-            throw new GraphQLError(
+            errors.add(
               `Business trip flight transaction ID="${businessTripTransaction.id}" is missing required fields`,
             );
+            return;
           }
 
           // preparations for core ledger entries
@@ -293,6 +252,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       records: ledgerProtoToRecordsConverter(records),
       charge,
       balance: ledgerBalanceInfo,
+      errors: Array.from(errors),
     };
   } catch (e) {
     return {
