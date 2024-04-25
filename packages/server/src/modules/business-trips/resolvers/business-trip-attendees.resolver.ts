@@ -1,5 +1,4 @@
-import { format } from 'date-fns';
-import type { TimelessDateString } from '@shared/types';
+import { optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
@@ -42,12 +41,8 @@ export const businessTripAttendeesResolvers: BusinessTripsModule.Resolvers = {
     name: dbBusinessTripAttendee => dbBusinessTripAttendee.name,
     business: dbBusinessTripAttendee => dbBusinessTripAttendee,
     arrivalDate: dbBusinessTripAttendee =>
-      dbBusinessTripAttendee.arrival
-        ? (format(dbBusinessTripAttendee.arrival, 'yyyy-MM-dd') as TimelessDateString)
-        : null,
+      optionalDateToTimelessDateString(dbBusinessTripAttendee.arrival),
     departureDate: dbBusinessTripAttendee =>
-      dbBusinessTripAttendee.departure
-        ? (format(dbBusinessTripAttendee.departure, 'yyyy-MM-dd') as TimelessDateString)
-        : null,
+      optionalDateToTimelessDateString(dbBusinessTripAttendee.departure),
   },
 };

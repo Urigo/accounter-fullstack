@@ -1,7 +1,5 @@
-import { format } from 'date-fns';
 import { DocumentType } from '@shared/enums';
-import { formatFinancialAmount } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
+import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { DocumentsModule } from '../types.js';
 
@@ -41,8 +39,7 @@ export const commonFinancialDocumentsFields:
   | DocumentsModule.InvoiceReceiptResolvers
   | DocumentsModule.ProformaResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
-  date: documentRoot =>
-    documentRoot.date ? (format(documentRoot.date, 'yyyy-MM-dd') as TimelessDateString) : null,
+  date: documentRoot => optionalDateToTimelessDateString(documentRoot.date),
   amount: documentRoot =>
     formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>

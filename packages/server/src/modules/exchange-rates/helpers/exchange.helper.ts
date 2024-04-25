@@ -1,7 +1,7 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { currency, IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField } from '@shared/types';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
@@ -79,10 +79,10 @@ export function getClosestRateForDate(
     return (b.exchange_date?.getTime() ?? 0) - (a.exchange_date?.getTime() ?? 0);
   });
 
-  const stringifiedDate = format(new Date(date), 'yyyy-MM-dd');
+  const stringifiedDate = dateToTimelessDateString(new Date(date));
 
   const exchageRate = sortedRates.find(
-    rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate,
+    rate => dateToTimelessDateString(rate.exchange_date!) <= stringifiedDate,
   );
 
   if (!exchageRate) {

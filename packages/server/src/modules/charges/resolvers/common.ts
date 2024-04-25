@@ -1,7 +1,6 @@
-import { format } from 'date-fns';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { ChargeResolvers } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
+import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
@@ -37,7 +36,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   metadata: DbCharge => DbCharge,
   yearsOfRelevance: DbCharge =>
     DbCharge.years_of_relevance
-      ? DbCharge.years_of_relevance.map(date => format(date, 'yyyy-MM-dd'))
+      ? DbCharge.years_of_relevance.map(date => dateToTimelessDateString(date))
       : null,
 };
 

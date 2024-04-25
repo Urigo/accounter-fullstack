@@ -1,8 +1,7 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import type { TimelessDateString } from '@shared/types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
 import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
@@ -95,8 +94,8 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         return null;
       }
       return {
-        start: format(dbBusinessTrip.from_date, 'yyyy-MM-dd') as TimelessDateString,
-        end: format(dbBusinessTrip.to_date, 'yyyy-MM-dd') as TimelessDateString,
+        start: dateToTimelessDateString(dbBusinessTrip.from_date),
+        end: dateToTimelessDateString(dbBusinessTrip.to_date),
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,

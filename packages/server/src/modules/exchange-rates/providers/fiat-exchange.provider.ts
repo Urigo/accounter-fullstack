@@ -1,9 +1,9 @@
 import DataLoader from 'dataloader';
-import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { sql } from '@pgtyped/runtime';
+import { dateToTimelessDateString } from '@shared/helpers';
 import type {
   IGetExchangeRatesByDateQuery,
   IGetExchangeRatesByDatesParams,
@@ -39,7 +39,7 @@ export class FiatExchangeProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public async getExchangeRates(date: Date) {
-    const formattedDate = format(date, 'yyyy-MM-dd');
+    const formattedDate = dateToTimelessDateString(date);
     try {
       const result = await getExchangeRatesByDate.run({ date: formattedDate }, this.dbProvider);
       return result[0];
@@ -53,8 +53,8 @@ export class FiatExchangeProvider {
   }
 
   private async batchExchangeRatesByDates(dates: readonly Date[]) {
-    const fromDate = format(new Date(Math.min(...dates.map(d => d.getTime()))), 'yyyy-MM-dd');
-    const toDate = format(new Date(Math.max(...dates.map(d => d.getTime()))), 'yyyy-MM-dd');
+    const fromDate = dateToTimelessDateString(new Date(Math.min(...dates.map(d => d.getTime()))));
+    const toDate = dateToTimelessDateString(new Date(Math.max(...dates.map(d => d.getTime()))));
     const rates = await getExchangeRatesByDates.run(
       {
         fromDate,
@@ -63,9 +63,9 @@ export class FiatExchangeProvider {
       this.dbProvider,
     );
     return dates.map(date => {
-      const stringifiedDate = format(date, 'yyyy-MM-dd');
+      const stringifiedDate = dateToTimelessDateString(date);
       return rates
-        .filter(rate => format(rate.exchange_date!, 'yyyy-MM-dd') <= stringifiedDate)
+        .filter(rate => dateToTimelessDateString(rate.exchange_date!) <= stringifiedDate)
         .reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) =>
           (prev.exchange_date?.getTime() ?? 0) > (curr.exchange_date?.getTime() ?? 0) ? prev : curr,
         );

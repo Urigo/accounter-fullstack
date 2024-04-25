@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
@@ -9,7 +8,7 @@ import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
-import { formatCurrency } from '@shared/helpers';
+import { formatCurrency, optionalDateToTimelessDateString } from '@shared/helpers';
 import { normalizeDocumentType } from '../helpers/green-invoice.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type {
@@ -223,8 +222,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               doc.vat_amount === item.vat &&
               doc.total_amount === item.amount &&
               doc.serial_number === item.number &&
-              doc.date &&
-              format(doc.date, 'yyyy-MM-dd') === item.documentDate,
+              optionalDateToTimelessDateString(doc.date) === item.documentDate,
           ),
       );
       const addedDocs: IInsertDocumentsResult[] = [];
