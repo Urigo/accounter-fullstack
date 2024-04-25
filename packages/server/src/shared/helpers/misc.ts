@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import type { TimelessDateString } from '@shared/types';
 
 function parseIntRound(v: number) {
@@ -181,4 +182,15 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
     }
   }
   return null;
+}
+
+export function dateToTimelessDateString(date: Date): TimelessDateString {
+  return format(date, 'yyyy-MM-dd') as TimelessDateString;
+}
+
+export function optionalDateToTimelessDateString(date?: Date | null): TimelessDateString | null {
+  if (!date) {
+    return null;
+  }
+  return format(date, 'yyyy-MM-dd') as TimelessDateString;
 }

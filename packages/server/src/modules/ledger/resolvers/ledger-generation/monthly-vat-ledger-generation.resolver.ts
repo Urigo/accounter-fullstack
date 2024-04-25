@@ -13,8 +13,8 @@ import {
   VAT_BUSINESS_ID,
 } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import { getMonthFromDescription } from '@shared/helpers';
-import type { LedgerProto, TimelessDateString } from '@shared/types';
+import { dateToTimelessDateString, getMonthFromDescription } from '@shared/helpers';
+import type { LedgerProto } from '@shared/types';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
@@ -55,8 +55,8 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
     const ledgerDate = new Date(year, month, 0);
-    const fromDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd') as TimelessDateString;
-    const toDate = format(ledgerDate, 'yyyy-MM-dd') as TimelessDateString;
+    const fromDate = dateToTimelessDateString(new Date(year, month - 1, 1));
+    const toDate = dateToTimelessDateString(ledgerDate);
 
     // get VAT relevant records
     const vatRecordsPromise = getVatRecords(

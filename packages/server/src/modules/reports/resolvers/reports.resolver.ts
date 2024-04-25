@@ -2,8 +2,12 @@ import { format } from 'date-fns';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '@shared/enums';
-import { formatFinancialAmount, formatFinancialIntAmount } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
+import {
+  dateToTimelessDateString,
+  formatFinancialAmount,
+  formatFinancialIntAmount,
+  optionalDateToTimelessDateString,
+} from '@shared/helpers';
 import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
 import { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
@@ -48,9 +52,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
             .getFinancialEntityByIdLoader.load(raw.businessId)
             .then(res => res ?? null)
         : null,
-    chargeDate: raw => format(raw.chargeDate, 'yyyy-MM-dd') as TimelessDateString,
-    documentDate: raw =>
-      raw.documentDate ? (format(raw.documentDate, 'yyyy-MM-dd') as TimelessDateString) : null,
+    chargeDate: raw => dateToTimelessDateString(raw.chargeDate),
+    documentDate: raw => optionalDateToTimelessDateString(raw.documentDate),
     documentSerial: raw => raw.documentSerial,
     image: raw => raw.documentUrl,
     localAmount: raw =>

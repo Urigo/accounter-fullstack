@@ -1,10 +1,8 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
@@ -40,12 +38,8 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
           }
           return res;
         }),
-    date: DbTransaction =>
-      DbTransaction.date ? (format(DbTransaction.date, 'yyyy-MM-dd') as TimelessDateString) : null,
-    valueDate: DbTransaction =>
-      DbTransaction.value_date
-        ? (format(DbTransaction.value_date, 'yyyy-MM-dd') as TimelessDateString)
-        : null,
+    date: DbTransaction => optionalDateToTimelessDateString(DbTransaction.date),
+    valueDate: DbTransaction => optionalDateToTimelessDateString(DbTransaction.value_date),
     amount: DbTransaction =>
       DbTransaction.amount && DbTransaction.currency
         ? formatFinancialAmount(DbTransaction.amount, DbTransaction.currency)

@@ -1,6 +1,6 @@
-import { format } from 'date-fns';
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
 import { TIMELESS_DATE_REGEX } from '@shared/constants';
+import { dateToTimelessDateString } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
 
 function validateTimelessDateFormat(raw: string) {
@@ -19,7 +19,7 @@ export const TimelessDateScalar = new GraphQLScalarType({
       return validateTimelessDateFormat(value);
     }
     if (value instanceof Date) {
-      return format(value, 'yyyy-MM-dd') as TimelessDateString;
+      return dateToTimelessDateString(value);
     }
     throw new GraphQLError(`Expected TimelessDate to be yyyy-mm-dd string, but got: "${value}"`);
   },
@@ -29,7 +29,7 @@ export const TimelessDateScalar = new GraphQLScalarType({
       return validateTimelessDateFormat(value);
     }
     if (value instanceof Date) {
-      return format(value, 'yyyy-MM-dd') as TimelessDateString;
+      return dateToTimelessDateString(value);
     }
     throw new GraphQLError(`Expected TimelessDate to be yyyy-mm-dd string, but got: "${value}"`);
   },

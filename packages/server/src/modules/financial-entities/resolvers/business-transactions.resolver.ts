@@ -1,15 +1,10 @@
-import { format } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
-import type {
-  BusinessTransactionProto,
-  RawBusinessTransactionsSum,
-  TimelessDateString,
-} from '@shared/types';
+import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import type { BusinessTransactionProto, RawBusinessTransactionsSum } from '@shared/types';
 import {
   handleBusinessLedgerRecord,
   handleBusinessTransaction,
@@ -60,10 +55,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const ledger of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && format(ledger.invoice_date, 'yyyy-MM-dd') < fromDate) {
+          if (!!fromDate && dateToTimelessDateString(ledger.invoice_date) < fromDate) {
             continue;
           }
-          if (!!toDate && format(ledger.invoice_date, 'yyyy-MM-dd') > toDate) {
+          if (!!toDate && dateToTimelessDateString(ledger.invoice_date) > toDate) {
             continue;
           }
 
@@ -169,10 +164,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const record of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && format(record.invoice_date, 'yyyy-MM-dd') < fromDate) {
+          if (!!fromDate && dateToTimelessDateString(record.invoice_date) < fromDate) {
             continue;
           }
-          if (!!toDate && format(record.invoice_date, 'yyyy-MM-dd') > toDate) {
+          if (!!toDate && dateToTimelessDateString(record.invoice_date) > toDate) {
             continue;
           }
 
@@ -368,7 +363,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         ? formatFinancialAmount(parent.foreignAmount * (parent.isCredit ? 1 : -1), Currency.Usd)
         : null,
 
-    invoiceDate: parent => format(parent.date!, 'yyyy-MM-dd') as TimelessDateString,
+    invoiceDate: parent => dateToTimelessDateString(parent.date!),
     reference1: parent => parent.reference1 ?? null,
     reference2: _ => null,
     details: parent => parent.details ?? null,

@@ -1,7 +1,5 @@
-import { format } from 'date-fns';
 import { TransactionDirection } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
@@ -14,7 +12,7 @@ export const commonTransactionFields:
   id: DbTransaction => DbTransaction.id,
   referenceId: DbTransaction => DbTransaction.source_id,
   referenceKey: DbTransaction => DbTransaction.source_reference,
-  eventDate: DbTransaction => format(DbTransaction.event_date, 'yyyy-MM-dd') as TimelessDateString,
+  eventDate: DbTransaction => dateToTimelessDateString(DbTransaction.event_date),
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
   direction: DbTransaction =>
     parseFloat(DbTransaction.amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
