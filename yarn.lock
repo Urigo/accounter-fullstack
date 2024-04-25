@@ -3229,10 +3229,10 @@
   dependencies:
     "@tanstack/query-core" "5.32.0"
 
-"@theguild/eslint-config@0.11.7":
-  version "0.11.7"
-  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.11.7.tgz#6fc76b471f3176c9fa6e26617ae281ced6a5054d"
-  integrity sha512-sO++09FXbamdYph7hFmjlmQMckdZJyQgQ36XPck7RverPnRj9Kg6JjhLJ3tUeqM9yDuyqa0AUDk/fkEK1DUW9A==
+"@theguild/eslint-config@0.11.8":
+  version "0.11.8"
+  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.11.8.tgz#af19bd45fdc03c969a6fcbce2078364d4ab33ae9"
+  integrity sha512-j64LMYyuSQOsxv+zLtJe6hdLSF1CtkZCp/UngXLLiot9W6IIFBj35rWqQdY11ie84nyCCxkvwys5GJPflzPOFw==
   dependencies:
     "@rushstack/eslint-patch" "^1.6.1"
     "@typescript-eslint/eslint-plugin" "^7.0.0"
