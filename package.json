@@ -58,7 +58,7 @@
     "@graphql-inspector/cli": "4.0.3",
     "@theguild/eslint-config": "0.11.8",
     "@theguild/prettier-config": "2.0.6",
-    "@types/node": "20.12.7",
+    "@types/node": "20.12.8",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "8.2.2",
     "eslint": "8.57.0",
@@ -70,7 +70,7 @@
     "ts-node": "10.9.2",
     "typescript": "5.4.5",
     "vite-tsconfig-paths": "4.3.2",
-    "vitest": "1.5.2"
+    "vitest": "1.5.3"
   },
   "resolutions": {
     "graphql": "16.8.1"
