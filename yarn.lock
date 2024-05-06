@@ -84,7 +84,7 @@
     json5 "^2.2.2"
     semver "^6.3.1"
 
-"@babel/core@^7.14.0", "@babel/core@^7.22.9", "@babel/core@^7.23.5", "@babel/core@^7.24.0":
+"@babel/core@^7.14.0", "@babel/core@^7.23.5", "@babel/core@^7.24.0":
   version "7.24.5"
   resolved "https://registry.yarnpkg.com/@babel/core/-/core-7.24.5.tgz#15ab5b98e101972d171aeef92ac70d8d6718f06a"
   integrity sha512-tVQRucExLQ02Boi4vdPp49svNGcfL2GhdTCT9aldhXgCJVAI21EtRfBettiuLUwce/7r6bFdgs6JFkcdTiFttA==
@@ -2185,7 +2185,7 @@
     "@graphql-tools/utils" "^9.2.1"
     tslib "^2.4.0"
 
-"@graphql-tools/graphql-tag-pluck@8.0.1":
+"@graphql-tools/graphql-tag-pluck@8.0.1", "@graphql-tools/graphql-tag-pluck@^8.0.0":
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.0.1.tgz#480d804a0fd7576f5ee06460528f1ee2b426f50e"
   integrity sha512-4sfBJSoXxVB4rRCCp2GTFhAYsUJgAPSKxSV+E3Voc600mK52JO+KsHCCTnPgCeyJFMNR9l94J6+tqxVKmlqKvw==
@@ -2195,19 +2195,6 @@
     "@babel/traverse" "^7.16.8"
     "@babel/types" "^7.16.8"
     "@graphql-tools/utils" "^10.0.0"
-    tslib "^2.4.0"
-
-"@graphql-tools/graphql-tag-pluck@^8.0.0":
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.3.0.tgz#11bb8c627253137b39b34fb765cd6ebe506388b9"
-  integrity sha512-gNqukC+s7iHC7vQZmx1SEJQmLnOguBq+aqE2zV2+o1hxkExvKqyFli1SY/9gmukFIKpKutCIj+8yLOM+jARutw==
-  dependencies:
-    "@babel/core" "^7.22.9"
-    "@babel/parser" "^7.16.8"
-    "@babel/plugin-syntax-import-assertions" "^7.20.0"
-    "@babel/traverse" "^7.16.8"
-    "@babel/types" "^7.16.8"
-    "@graphql-tools/utils" "^10.0.13"
     tslib "^2.4.0"
 
 "@graphql-tools/import@6.7.18":
@@ -3499,10 +3486,19 @@
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.2.tgz#5950e50960793055845e956c427fc2b0d70c5239"
   integrity sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==
 
-"@types/pg@8.11.5", "@types/pg@^8.10.7":
+"@types/pg@8.11.5":
   version "8.11.5"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.11.5.tgz#a1ffb4dc4a46a83bda096cb298051a5b171de167"
   integrity sha512-2xMjVviMxneZHDHX5p5S6tsRRs7TpDHeeK7kTTMe/kAC/mRRNjWHjZg0rkiY+e17jXSZV3zJYDxXV8Cy72/Vuw==
+  dependencies:
+    "@types/node" "*"
+    pg-protocol "*"
+    pg-types "^4.0.1"
+
+"@types/pg@^8.11.6":
+  version "8.11.6"
+  resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.11.6.tgz#a2d0fb0a14b53951a17df5197401569fb9c0c54b"
+  integrity sha512-/2WmmBXHLsfRqzfHW7BNZ8SbYzE8OSk7i3WjFYvfgRHj7S1xj+16Je5fUKv3lVdVzk/zn9TXOqf+avFCFIE0yQ==
   dependencies:
     "@types/node" "*"
     pg-protocol "*"
@@ -9939,12 +9935,12 @@ pg-promise@11.6.0:
     pg-minify "1.6.3"
     spex "3.3.0"
 
-pg-protocol@*, pg-protocol@^1.6.0, pg-protocol@^1.6.1:
+pg-protocol@*, pg-protocol@^1.6.1:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.6.1.tgz#21333e6d83b01faaebfe7a33a7ad6bfd9ed38cb3"
   integrity sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==
 
-pg-query-stream@^4.5.3:
+pg-query-stream@^4.5.5:
   version "4.5.5"
   resolved "https://registry.yarnpkg.com/pg-query-stream/-/pg-query-stream-4.5.5.tgz#ffbd849e02ebfcd041498d8df53c38914072aee8"
   integrity sha512-mBGxVdiR9O6SdkOcXBoZuxtHUQ0nSFIWcFauGMUteko+9rZcu97vE15JX/w8pdijQ+diLbiw8ijpV/V+VCUUtA==
@@ -9962,7 +9958,7 @@ pg-types@^2.1.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg-types@^4.0.1:
+pg-types@^4.0.1, pg-types@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/pg-types/-/pg-types-4.0.2.tgz#399209a57c326f162461faa870145bb0f918b76d"
   integrity sha512-cRL3JpS3lKMGsKaWndugWQoLOCoP+Cic8oseVcbr0qhPzYD5DWXK+RZ9LY9wxRf7RQia4SCwQlXk0q6FCPrVng==
@@ -9975,7 +9971,7 @@ pg-types@^4.0.1:
     postgres-interval "^3.0.0"
     postgres-range "^1.1.1"
 
-pg@8.11.5, pg@^8.11.3:
+pg@8.11.5, pg@^8.11.5:
   version "8.11.5"
   resolved "https://registry.yarnpkg.com/pg/-/pg-8.11.5.tgz#e722b0a5f1ed92931c31758ebec3ddf878dd4128"
   integrity sha512-jqgNHSKL5cbDjFlHyYsCXmQDrfIX/3RsNwYqpd4N0Kt8niLuNoRNH+aazv6cOd43gPh9Y4DjQCtb+X0MH0Hvnw==
@@ -11173,23 +11169,23 @@ slice-ansi@^7.0.0:
     ansi-styles "^6.2.1"
     is-fullwidth-code-point "^5.0.0"
 
-slonik@38.0.0:
-  version "38.0.0"
-  resolved "https://registry.yarnpkg.com/slonik/-/slonik-38.0.0.tgz#f065ae61e5612a1ad04d4875bc89713439ccb060"
-  integrity sha512-L3b05upcVO1VVdx3G2hFjlbyiTNM9StOK+5Zto0wVnVBvW3Jsk2v3vpybCiG2GWfvu4wiCyWubwzHa2WnguRuQ==
+slonik@41.2.1:
+  version "41.2.1"
+  resolved "https://registry.yarnpkg.com/slonik/-/slonik-41.2.1.tgz#1dcaff8efd92d1c95e2b9379379c4dd2166eabd9"
+  integrity sha512-CPj2AGPykYAJjxjMJZpjq6Ppl5QOIcec5S7V8tWTzV9DKtI1PH2n+5qWPFyfHBWIJfryUfwt9uXhnG0IyuwVWA==
   dependencies:
-    "@types/pg" "^8.10.7"
+    "@types/pg" "^8.11.6"
     get-stack-trace "^3.1.1"
     iso8601-duration "^1.3.0"
-    pg "^8.11.3"
-    pg-protocol "^1.6.0"
-    pg-query-stream "^4.5.3"
-    pg-types "^4.0.1"
+    pg "^8.11.5"
+    pg-query-stream "^4.5.5"
+    pg-types "^4.0.2"
     postgres-array "^3.0.2"
     postgres-interval "^4.0.2"
     roarr "^7.21.1"
     safe-stable-stringify "^2.4.3"
     serialize-error "^8.0.0"
+    strict-event-emitter-types "^2.0.0"
 
 smart-buffer@^4.2.0:
   version "4.2.0"
@@ -11394,6 +11390,11 @@ streamx@^2.15.0, streamx@^2.16.1:
     queue-tick "^1.0.1"
   optionalDependencies:
     bare-events "^2.2.0"
+
+strict-event-emitter-types@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/strict-event-emitter-types/-/strict-event-emitter-types-2.0.0.tgz#05e15549cb4da1694478a53543e4e2f4abcf277f"
+  integrity sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==
 
 string-argv@0.3.2:
   version "0.3.2"
