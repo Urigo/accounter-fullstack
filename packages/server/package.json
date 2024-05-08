@@ -22,7 +22,7 @@
     "@envelop/generic-auth": "7.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
-    "@graphql-yoga/plugin-defer-stream": "3.3.0",
+    "@graphql-yoga/plugin-defer-stream": "3.3.1",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@whatwg-node/fetch": "0.9.17",
