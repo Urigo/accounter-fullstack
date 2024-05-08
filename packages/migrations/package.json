@@ -12,14 +12,14 @@
     "migration:run": "yarn db:migrator up"
   },
   "devDependencies": {
-    "@types/node": "20.12.8",
-    "@types/pg": "8.11.5",
+    "@types/node": "20.12.10",
+    "@types/pg": "8.11.6",
     "dotenv": "16.4.5",
     "got": "14.2.1",
     "pg-promise": "11.6.0",
     "slonik": "38.0.0",
     "tslib": "2.6.2",
     "typescript": "5.4.5",
-    "zod": "3.23.6"
+    "zod": "3.23.7"
   }
 }
