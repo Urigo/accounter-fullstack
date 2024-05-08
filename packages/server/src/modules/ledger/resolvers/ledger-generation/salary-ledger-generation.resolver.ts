@@ -54,6 +54,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     let entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
+    const foreignCurrencySalaryBusinesses = new Set<string>();
 
     // generate ledger from salary records
     let transactionDate = charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
@@ -95,11 +96,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         transactionDate,
       );
 
-      const salaryEntriesPromises = entries.map(async ledgerEntry => {
+      entries.map(ledgerEntry => {
         accountingLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
       });
-      entriesPromises.push(...salaryEntriesPromises);
 
       // generate monthly expenses ledger entries
       const monthlyEntriesPromises = monthlyEntriesProto
@@ -202,6 +202,25 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
         financialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+
+        // on foreign currency salary, update matching accounting ledger entry
+        if (ledgerEntry.currency !== DEFAULT_LOCAL_CURRENCY) {
+          const matchingEntry = accountingLedgerEntries.find(accountingEntry => {
+            return (
+              transaction.business_id ===
+              (accountingEntry.isCreditorCounterparty
+                ? accountingEntry.debitAccountID1
+                : accountingEntry.creditAccountID1)
+            );
+          });
+          if (matchingEntry && matchingEntry.currency !== ledgerEntry.currency) {
+            matchingEntry.currency = ledgerEntry.currency;
+            matchingEntry.currencyRate = ledgerEntry.currencyRate;
+            matchingEntry.creditAmount1 = ledgerEntry.creditAmount1;
+            matchingEntry.debitAmount1 = ledgerEntry.debitAmount1;
+            foreignCurrencySalaryBusinesses.add(transaction.business_id);
+          }
+        }
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -242,7 +261,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       }
 
       const currencyDiff = entry.currency !== matchingTransaction.currency;
-      if (!currencyDiff) {
+      if (!currencyDiff && !foreignCurrencySalaryBusinesses.has(businessId)) {
         continue;
       }
 
