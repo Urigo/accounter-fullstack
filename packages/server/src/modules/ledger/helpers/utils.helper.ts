@@ -154,38 +154,93 @@ export function generatePartialLedgerEntry(
   };
 }
 
+function entrySingleAccountBalancer(
+  ledgerBalance: Map<
+    string,
+    {
+      amount: number;
+      entityId: string;
+      foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
+    }
+  >,
+  entry: LedgerProto,
+  isCredit: boolean,
+  ledgerEntityNumber: 1 | 2,
+) {
+  const entityId = isCredit
+    ? ledgerEntityNumber === 1
+      ? entry.creditAccountID1
+      : entry.creditAccountID2
+    : ledgerEntityNumber === 1
+      ? entry.debitAccountID1
+      : entry.debitAccountID2;
+
+  if (!entityId) {
+    return;
+  }
+
+  const current = ledgerBalance.get(entityId);
+
+  const factor = isCredit ? 1 : -1;
+  const currency = entry.currency;
+  const amount =
+    ((isCredit
+      ? ledgerEntityNumber === 1
+        ? entry.creditAmount1
+        : entry.creditAmount2
+      : ledgerEntityNumber === 1
+        ? entry.debitAmount1
+        : entry.debitAmount2) ?? 0) * factor;
+  const localAmount =
+    ((isCredit
+      ? ledgerEntityNumber === 1
+        ? entry.localCurrencyCreditAmount1
+        : entry.localCurrencyCreditAmount2
+      : ledgerEntityNumber === 1
+        ? entry.localCurrencyDebitAmount1
+        : entry.localCurrencyDebitAmount2) ?? 0) * factor;
+  if (current) {
+    current.amount += localAmount;
+    current.foreignAmounts ||= {};
+    current.foreignAmounts[currency] =
+      amount && currency !== DEFAULT_LOCAL_CURRENCY
+        ? {
+            foreign: (current.foreignAmounts[currency]?.foreign ?? 0) + amount,
+            local: (current.foreignAmounts[currency]?.local ?? 0) + localAmount,
+          }
+        : current.foreignAmounts[currency];
+  } else {
+    ledgerBalance.set(entityId, {
+      amount: localAmount,
+      entityId,
+      foreignAmounts:
+        amount && currency !== DEFAULT_LOCAL_CURRENCY
+          ? {
+              [currency]: {
+                foreign: amount,
+                local: localAmount,
+              },
+            }
+          : {},
+    });
+  }
+}
+
 export function updateLedgerBalanceByEntry(
   entry: LedgerProto,
-  ledgerBalance: Map<string, { amount: number; entityId: string }>,
+  ledgerBalance: Map<
+    string,
+    {
+      amount: number;
+      entityId: string;
+      foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
+    }
+  >,
 ): void {
-  if (entry.creditAccountID1) {
-    const name = entry.creditAccountID1;
-    ledgerBalance.set(name, {
-      amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount1 ?? 0),
-      entityId: entry.creditAccountID1,
-    });
-  }
-  if (entry.debitAccountID1) {
-    const name = entry.debitAccountID1;
-    ledgerBalance.set(name, {
-      amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount1 ?? 0),
-      entityId: entry.debitAccountID1,
-    });
-  }
-  if (entry.creditAccountID2) {
-    const name = entry.creditAccountID2;
-    ledgerBalance.set(name, {
-      amount: (ledgerBalance.get(name)?.amount ?? 0) + (entry.localCurrencyCreditAmount2 ?? 0),
-      entityId: entry.creditAccountID2,
-    });
-  }
-  if (entry.debitAccountID2) {
-    const name = entry.debitAccountID2;
-    ledgerBalance.set(name, {
-      amount: (ledgerBalance.get(name)?.amount ?? 0) - (entry.localCurrencyDebitAmount2 ?? 0),
-      entityId: entry.debitAccountID2,
-    });
-  }
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 1);
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 2);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 1);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 2);
 
   return;
 }
@@ -317,84 +372,40 @@ export async function getFinancialAccountTaxCategoryId(
 }
 
 export function multipleForeignCurrenciesBalanceEntries(
-  accountingEntries: LedgerProto[],
-  financialAccountEntries: LedgerProto[],
-  otherEntries: LedgerProto[],
+  documentEntry: LedgerProto,
+  transactionEntry: LedgerProto,
   charge: IGetChargesByIdsResult,
+  foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
 ): LedgerProto[] {
-  const entries = [...accountingEntries, ...financialAccountEntries, ...otherEntries];
-
   const ledgerEntries: LedgerProto[] = [];
 
-  if (charge.business_id) {
-    const mainBusiness: string = charge.business_id;
+  if (charge.business_id && Object.keys(foreignAmounts).length > 0) {
+    const mainBusiness = charge.business_id;
 
-    const currenciesBalanceMap = new Map<Currency, { local: number; foreign: number }>();
-
-    for (const entry of entries) {
-      if (entry.currency === DEFAULT_LOCAL_CURRENCY) {
-        continue;
+    // get the main foreign currency + diff in local currency
+    let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
+    let localDiff = 0;
+    for (const [currency, { local }] of Object.entries(foreignAmounts)) {
+      if (mainForeignCurrency) {
+        if (mainForeignCurrency.amount < local) {
+          mainForeignCurrency = { amount: local, currency: currency as Currency };
+        }
+      } else {
+        mainForeignCurrency = { amount: local, currency: currency as Currency };
       }
-      if (entry.debitAccountID1 === mainBusiness) {
-        const { currency, localCurrencyDebitAmount1, debitAmount1 } = entry;
-        currenciesBalanceMap.set(currency, {
-          local:
-            (currenciesBalanceMap.get(currency)?.local ?? 0) - (localCurrencyDebitAmount1 ?? 0),
-          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) - (debitAmount1 ?? 0),
-        });
-      }
-      if (entry.creditAccountID1 === mainBusiness) {
-        const { currency, localCurrencyCreditAmount1, creditAmount1 } = entry;
-
-        currenciesBalanceMap.set(currency, {
-          local:
-            (currenciesBalanceMap.get(currency)?.local ?? 0) + (localCurrencyCreditAmount1 ?? 0),
-          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) + (creditAmount1 ?? 0),
-        });
-      }
-      if (entry.debitAccountID2 && !entry.isCreditorCounterparty) {
-        const { currency, localCurrencyDebitAmount2, debitAmount2 } = entry;
-
-        currenciesBalanceMap.set(currency, {
-          local:
-            (currenciesBalanceMap.get(currency)?.local ?? 0) - (localCurrencyDebitAmount2 ?? 0),
-          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) - (debitAmount2 ?? 0),
-        });
-      }
-      if (entry.creditAccountID2 === mainBusiness) {
-        const { currency, localCurrencyCreditAmount2, creditAmount2 } = entry;
-
-        currenciesBalanceMap.set(currency, {
-          local:
-            (currenciesBalanceMap.get(currency)?.local ?? 0) + (localCurrencyCreditAmount2 ?? 0),
-          foreign: (currenciesBalanceMap.get(currency)?.foreign ?? 0) + (creditAmount2 ?? 0),
-        });
-      }
+      localDiff += local;
     }
 
-    const transactionEntry = financialAccountEntries.find(entry =>
-      [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-    );
-    const documentEntry = accountingEntries.find(entry =>
-      [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-    );
-    if (!transactionEntry || !documentEntry) {
-      throw new LedgerError(
-        `Failed to locate transaction or document entry for business ID="${mainBusiness}"`,
-      );
-    }
-
-    let localAmount = 0;
-    for (const [currency, { local, foreign }] of currenciesBalanceMap) {
-      if (currency === DEFAULT_LOCAL_CURRENCY) {
-        continue;
-      }
+    for (const [currency, { local, foreign }] of Object.entries(foreignAmounts)) {
       if (Math.abs(foreign) < 0.005) {
         continue;
       }
-      if (localAmount === 0) {
-        localAmount = local;
+
+      let localToUse = local;
+      if (mainForeignCurrency?.currency === currency) {
+        localToUse -= localDiff;
       }
+
       const isCreditorCounterparty = foreign < 0;
       const ledgerEntry: LedgerProto = {
         id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
@@ -405,15 +416,15 @@ export function multipleForeignCurrenciesBalanceEntries(
           : {
               debitAccountID1: mainBusiness,
             }),
-        localCurrencyCreditAmount1: Math.abs(localAmount),
-        localCurrencyDebitAmount1: Math.abs(localAmount),
+        localCurrencyCreditAmount1: Math.abs(localToUse),
+        localCurrencyDebitAmount1: Math.abs(localToUse),
         creditAmount1: Math.abs(foreign),
         debitAmount1: Math.abs(foreign),
         description: 'Foreign currency balance',
         isCreditorCounterparty,
         invoiceDate: documentEntry.invoiceDate,
         valueDate: transactionEntry.valueDate,
-        currency,
+        currency: currency as Currency,
         ownerId: transactionEntry.ownerId,
         chargeId: charge.id,
       };

@@ -10,7 +10,13 @@ import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY, INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
-import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import type {
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
 import { formatStringifyAmount } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
@@ -40,7 +46,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+    const ledgerBalance = new Map<
+      string,
+      {
+        amount: number;
+        entityId: string;
+        foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
+      }
+    >();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
@@ -235,14 +248,28 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
 
     // multiple currencies balance
-    const foreignCurrencyCount = currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
-    if (foreignCurrencyCount >= 2) {
+
+    const mainBusiness = charge.business_id;
+    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    if (mainBusiness && Object.keys(businessBalance?.foreignAmounts ?? {}).length > 1) {
+      const transactionEntry = financialAccountLedgerEntries.find(entry =>
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+      );
+      const documentEntry = accountingLedgerEntries.find(entry =>
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+      );
+
+      if (!transactionEntry || !documentEntry) {
+        throw new LedgerError(
+          `Failed to locate transaction or document entry for business ID="${mainBusiness}"`,
+        );
+      }
       try {
         const entries = multipleForeignCurrenciesBalanceEntries(
-          accountingLedgerEntries,
-          financialAccountLedgerEntries,
-          feeFinancialAccountLedgerEntries,
+          documentEntry,
+          transactionEntry,
           charge,
+          businessBalance!.foreignAmounts!,
         );
         for (const ledgerEntry of entries) {
           miscLedgerEntries.push(ledgerEntry);
@@ -301,6 +328,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // check if exchange rate record is needed
       const hasMultipleDates = dates.size > 1;
+      const foreignCurrencyCount =
+        currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
 
       const mightRequireExchangeRateRecord =
         (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
