@@ -28,7 +28,7 @@
     "uuid": "9.0.1"
   },
   "devDependencies": {
-    "@types/lodash": "4.17.0",
+    "@types/lodash": "4.17.1",
     "@types/pg": "8.11.5",
     "@types/pixl-xml": "1.0.5",
     "@types/uuid": "9.0.8",
