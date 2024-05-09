@@ -3222,10 +3222,10 @@
   dependencies:
     "@tanstack/query-core" "5.35.1"
 
-"@theguild/eslint-config@0.11.8":
-  version "0.11.8"
-  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.11.8.tgz#af19bd45fdc03c969a6fcbce2078364d4ab33ae9"
-  integrity sha512-j64LMYyuSQOsxv+zLtJe6hdLSF1CtkZCp/UngXLLiot9W6IIFBj35rWqQdY11ie84nyCCxkvwys5GJPflzPOFw==
+"@theguild/eslint-config@0.11.9":
+  version "0.11.9"
+  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.11.9.tgz#ccd11c7782f0b5576a26790ea766484a42139e39"
+  integrity sha512-UUYYzYelCGS5WMPD6LlL8YKFH8bQM+1AIEDiybYNkIexVoMfqDjUEI4FXzmWXPlCtNoJelQ3O9/Wt/EDY13KgA==
   dependencies:
     "@rushstack/eslint-patch" "^1.6.1"
     "@typescript-eslint/eslint-plugin" "^7.0.0"
@@ -3240,7 +3240,7 @@
     eslint-plugin-promise "^6.1.1"
     eslint-plugin-react "^7.33.2"
     eslint-plugin-react-hooks "^4.6.0"
-    eslint-plugin-sonarjs "^0.25.0"
+    eslint-plugin-sonarjs "^1.0.0"
     eslint-plugin-unicorn "^52.0.0"
     eslint-plugin-yml "^1.11.0"
 
@@ -6075,10 +6075,10 @@ eslint-plugin-react@^7.33.2:
     semver "^6.3.1"
     string.prototype.matchall "^4.0.10"
 
-eslint-plugin-sonarjs@^0.25.0:
-  version "0.25.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-sonarjs/-/eslint-plugin-sonarjs-0.25.1.tgz#0619798dbc27b04fd0a8e6d0fb6adf7fa2cb5041"
-  integrity sha512-5IOKvj/GMBNqjxBdItfotfRHo7w48496GOu1hxdeXuD0mB1JBlDCViiLHETDTfA8pDAVSBimBEQoetRXYceQEw==
+eslint-plugin-sonarjs@^1.0.0:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-sonarjs/-/eslint-plugin-sonarjs-1.0.3.tgz#423de6f9244c886633ff36183c6fbc9fb1ed867d"
+  integrity sha512-6s41HLPYPyDrp+5+7Db5yFYbod6h9pC7yx+xfcNwHRcLe1EZwbbQT/tdOAkR7ekVUkNGEvN3GmYakIoQUX7dEg==
 
 eslint-plugin-unicorn@^52.0.0:
   version "52.0.0"
