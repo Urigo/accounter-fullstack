@@ -23,6 +23,7 @@ export const EXCHANGE_RATE_TAX_CATEGORY_ID = 'a8a80cf2-fca5-4fa6-a944-cfcc0a59a9
 export const INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID = '424b7209-1d14-4fb0-96eb-b487ad4f6f91';
 export const FEE_TAX_CATEGORY_ID = 'd840ff4d-5713-4e22-b1dd-9c700ff7e8b0';
 export const BALANCE_CANCELLATION_TAX_CATEGORY_ID = 'fe4b3698-ee5a-4764-a1dc-0c133239fa2b';
+export const DEFAULT_TAX_CATEGORY = '0a593022-5d9c-4529-b154-fedefde05bb7';
 
 // cross year tax categories
 export const EXPENSES_TO_PAY_TAX_CATEGORY = '4c8f76c5-9eaa-49fa-945e-0652c0f80c20';
