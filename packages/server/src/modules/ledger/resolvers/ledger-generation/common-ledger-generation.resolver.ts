@@ -9,7 +9,11 @@ import {
 import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  DEFAULT_TAX_CATEGORY,
+  INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID,
+} from '@shared/constants';
 import type {
   Currency,
   Maybe,
@@ -69,11 +73,18 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       if (!gotRelevantDocuments) {
         resolve(undefined);
       }
-      injector
+      return injector
         .get(TaxCategoriesProvider)
         .taxCategoryByChargeIDsLoader.load(charge.id)
         .then(res => res?.id)
-        .then(resolve)
+        .then(res => {
+          if (res) {
+            resolve(res);
+          } else {
+            errors.add('Tax category not found');
+            resolve(DEFAULT_TAX_CATEGORY);
+          }
+        })
         .catch(reject);
     });
 
@@ -113,9 +124,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
 
     // generate ledger from documents
-    if (!documentsTaxCategoryId) {
-      errors.add('Tax category not found');
-    } else if (gotRelevantDocuments) {
+    if (gotRelevantDocuments) {
       // Get all relevant documents for charge
       const relevantDocuments = documents.filter(d =>
         ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
