@@ -202,13 +202,12 @@ function entrySingleAccountBalancer(
   if (current) {
     current.amount += localAmount;
     current.foreignAmounts ||= {};
-    current.foreignAmounts[currency] =
-      amount && currency !== DEFAULT_LOCAL_CURRENCY
-        ? {
-            foreign: (current.foreignAmounts[currency]?.foreign ?? 0) + amount,
-            local: (current.foreignAmounts[currency]?.local ?? 0) + localAmount,
-          }
-        : current.foreignAmounts[currency];
+    if (amount && currency !== DEFAULT_LOCAL_CURRENCY) {
+      current.foreignAmounts[currency] = {
+        foreign: (current.foreignAmounts[currency]?.foreign ?? 0) + amount,
+        local: (current.foreignAmounts[currency]?.local ?? 0) + localAmount,
+      };
+    }
   } else {
     ledgerBalance.set(entityId, {
       amount: localAmount,
