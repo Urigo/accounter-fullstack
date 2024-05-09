@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Switch } from '@mantine/core';
 import { AllChargesAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
@@ -21,6 +21,12 @@ export function AccountantApproval({ data, onChange }: Props): ReactElement {
   const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
   const [checked, setChecked] = useState(charge.accountantApproval);
   const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
+
+  useEffect(() => {
+    if (checked == null && charge.accountantApproval != null) {
+      setChecked(charge.accountantApproval);
+    }
+  }, [checked, charge.accountantApproval]);
 
   function onToggle(approved: boolean): void {
     setChecked(approved);
