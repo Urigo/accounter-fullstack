@@ -22,6 +22,7 @@ export const commonTransactionFields:
   createdAt: DbTransaction => DbTransaction.created_at,
   updatedAt: DbTransaction => DbTransaction.updated_at,
   isFee: DbTransaction => DbTransaction.is_fee,
+  chargeId: DbTransaction => DbTransaction.charge_id,
 };
 
 export const commonChargeFields: TransactionsModule.ChargeResolvers = {
