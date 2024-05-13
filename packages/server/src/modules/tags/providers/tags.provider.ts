@@ -62,8 +62,10 @@ export class TagsProvider {
     const tags = Object.fromEntries(
       tagsArray.map(tag => [
         tag.charge_id,
-        ((tag.tags as unknown as string)?.replace(/[{}]/g, '').split(',') as Array<tags_enum>) ??
-          [],
+        ((tag.tags as unknown as string)
+          ?.replace(/[{}]/g, '')
+          .replace(/"/g, '')
+          .split(',') as Array<tags_enum>) ?? [],
       ]),
     );
     return chargeIDs.map(id => tags[id] ?? []);
