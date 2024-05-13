@@ -206,15 +206,15 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const data = await injector.get(GreenInvoiceProvider).searchDocuments({
         input: { pageSize: 100, sort: 'creationDate' },
       });
-      if (!data.searchDocuments?.items) {
+      if (!data?.items) {
         throw new GraphQLError('Failed to fetch documents');
       }
-      if (data.searchDocuments.items.length === 0) {
+      if (data.items.length === 0) {
         return [];
       }
 
       const documents = await injector.get(DocumentsProvider).getAllDocuments();
-      const newDocuments = data.searchDocuments.items.filter(
+      const newDocuments = data.items.filter(
         item =>
           item &&
           !documents.some(

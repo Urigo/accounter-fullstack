@@ -2,7 +2,7 @@ sources:
   - name: GreenInvoice
     handler:
       jsonSchema:
-        endpoint: 'https://api.greeninvoice.co.il/api/v1'
+        endpoint: 'https://apigw.greeninvoice.co.il'
         operationHeaders:
           Authorization: Bearer {context.authToken}
           Content-Type: application/json
@@ -45,6 +45,13 @@ sources:
             requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsRequest
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsResponse
 
+          - type: Query
+            field: getFileUploadUrl
+            path: /file-upload/v1/url
+            method: GET
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlResponse
+
           - type: Mutation
             field: addExpenseDraftByFile
             path: /expenses/file
@@ -58,6 +65,25 @@ sources:
               400:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
               404:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+              405:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+
+          - type: Mutation
+            field: addExpenseDraftByFileNew
+            path: /file-upload/v1/url
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileNewRequest
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
+              201:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
+              400:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+              404:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+              405:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
           - type: Query

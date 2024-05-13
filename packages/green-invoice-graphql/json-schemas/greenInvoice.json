@@ -25,6 +25,17 @@
         }
       }
     },
+    "addExpenseDraftByFilNewRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The file, in Base64, allowed types: GIF, PNG, JPG, SVG, PDF"
+        }
+      }
+    },
     "addExpenseDraftByFileResponse": {
       "$ref": "#/definitions/GetExpenseDraft"
     },
@@ -429,6 +440,63 @@
         }
       },
       "required": ["total", "page", "pageSize", "pages", "items"]
+    },
+    "getFileUploadUrlRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "type": "string",
+          "description": "Example: 'expense'."
+        },
+        "data": {
+          "type": "object",
+          "description": "source is mandatory. id & state should only exist for updating an existing expense",
+          "properties": {
+            "source": {
+              "type": "string",
+              "example": "5"
+            },
+            "id": {
+              "type": "string",
+              "example": "expenseId"
+            },
+            "state": {
+              "type": "string",
+              "example": "expense"
+            }
+          },
+          "required": ["source"]
+        }
+      },
+      "required": []
+    },
+    "getFileUploadUrlResponse": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "File Upload URL"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "otherField": {
+              "type": "string"
+            },
+            "bucket": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "Policy": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["url", "fields"]
     },
     "AccountingClassification": {
       "type": "object",

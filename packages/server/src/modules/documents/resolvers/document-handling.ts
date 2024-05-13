@@ -25,35 +25,30 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
   { injector },
 ) => {
   try {
-    const base64string = await toBase64(file).catch(err => {
-      throw new Error(`Failed to convert file to base64: ${err.message}`);
-    });
+    const uploadToCloudinary = async () => {
+      const base64string = await toBase64(file).catch(err => {
+        throw new Error(`Failed to convert file to base64: ${err.message}`);
+      });
 
-    const cloudinaryPromise = injector
-      .get(CloudinaryProvider)
-      .uploadInvoiceToCloudinary(base64string);
-    const greenInvoicePromise = injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
-      input: { file: base64string },
-    });
+      return injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(base64string);
+    };
+
+    const uploadToGreenInvoice = injector.get(GreenInvoiceProvider).addExpenseDraftByFile(file);
 
     const [{ fileUrl, imageUrl }, data] = await Promise.all([
-      cloudinaryPromise,
-      greenInvoicePromise,
+      uploadToCloudinary(),
+      uploadToGreenInvoice,
     ]);
 
-    if (!data.addExpenseDraftByFile) {
+    if (!data) {
       throw new Error('No data returned from Green Invoice');
     }
 
-    if (
-      'errorMessage' in data.addExpenseDraftByFile ||
-      'errorCode_' in data.addExpenseDraftByFile
-    ) {
-      // TODO: return this after fixing Green Invoice file upload
-      // throw new Error(`Green Invoice Error: ${data.addExpenseDraftByFile.errorMessage}`);
+    if ('errorMessage' in data || 'errorCode_' in data) {
+      throw new Error(`Green Invoice Error: ${data.errorMessage}`);
     }
 
-    const draft = data.addExpenseDraftByFile as GetExpenseDraft;
+    const draft = data as GetExpenseDraft;
 
     const newDocument: IInsertDocumentsParams['document'][number] = {
       image: imageUrl ?? null,
