@@ -4,6 +4,10 @@ import pg from 'pg';
 
 const { camelCase } = lodash;
 
+function reverse(s: string) {
+  return s.split('').reverse().join('');
+}
+
 export type AccountTypes =
   | 'ils'
   | 'usd'
@@ -74,6 +78,8 @@ export async function saveTransactionsToDB(
         'urlAddressNiar',
         'displayCreditAccountDetails',
         'displayRTGSIncomingTrsDetails',
+        'formattedEventAmount',
+        'formattedCurrentBalance',
       ];
     } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
       // TODO: Save the mandatory values to DB accourding to schema
@@ -100,6 +106,8 @@ export async function saveTransactionsToDB(
     );
 
     const additionalColumnsToExcludeFromTransactionComparison = [];
+    additionalColumnsToExcludeFromTransactionComparison.push('formattedEventAmount');
+    additionalColumnsToExcludeFromTransactionComparison.push('formattedCurrentBalance');
     additionalColumnsToExcludeFromTransactionComparison.push('cardIndex'); // If you get a new creditcard, all indexes will change and you could get duplicates
     additionalColumnsToExcludeFromTransactionComparison.push('kodMatbeaMekori');
     if (oldContraAccountFieldNameLableAPI) {
@@ -154,8 +162,16 @@ export async function saveTransactionsToDB(
         }
 
         try {
+          let sign = '+';
+          if (transaction.eventActivityTypeCode == 2) {
+            sign = '-';
+          }
           if (transaction.transactionType == 'TODAY') {
-            console.log('Today transaction - ', transaction);
+            console.log(`Today transaction - 
+              ${reverse(transaction.activityDescription)},
+              ${accountType}${sign}${transaction.eventAmount.toLocaleString()},
+              ${transaction.accountNumber}
+            `);
           } else if (
             accountType == 'ils' &&
             moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
@@ -181,7 +197,7 @@ export async function saveTransactionsToDB(
             const res = await pool.query(text, values);
             if (res.rows[0].event_amount) {
               console.log(
-                `success in insert to ${accountType} - ${transaction.accountNumber} - ${res.rows[0].activity_description} - ${res.rows[0].event_amount} - ${res.rows[0].event_date}`,
+                `success in insert to ${accountType} - ${transaction.accountNumber} - ${reverse(res.rows[0].activity_description)} - ${sign}${res.rows[0].event_amount.toLocaleString()} - ${res.rows[0].event_date}`,
               );
             } else if (res.rows[0].original_amount) {
               console.log(
@@ -189,8 +205,14 @@ export async function saveTransactionsToDB(
                 res.rows[0].original_amount,
               );
             } else if (res.rows[0].card) {
+              let supplierName = res.rows[0].supplier_name;
+              if (supplierName) {
+                supplierName = reverse(res.rows[0].supplier_name);
+              } else {
+                supplierName = res.rows[0].supplier_name_outbound
+              }
               console.log(
-                `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${res.rows[0].supplier_name} - ${res.rows[0].supplier_name_outbound} - ${res.rows[0].full_purchase_date_outbound}`,
+                `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${supplierName} - ${res.rows[0].full_purchase_date_outbound}`,
                 res.rows[0].full_purchase_date,
               );
             } else if (res.rows[0].source) {
