@@ -68,7 +68,6 @@ export class GreenInvoiceProvider {
         method: 'POST',
         body: form,
       }).then(async res => {
-        console.log(res);
         if ([200, 201].includes(res.status)) {
           return res.json();
         }
