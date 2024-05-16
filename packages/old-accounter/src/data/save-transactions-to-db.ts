@@ -209,7 +209,7 @@ export async function saveTransactionsToDB(
               if (supplierName) {
                 supplierName = reverse(res.rows[0].supplier_name);
               } else {
-                supplierName = res.rows[0].supplier_name_outbound
+                supplierName = res.rows[0].supplier_name_outbound;
               }
               console.log(
                 `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${supplierName} - ${res.rows[0].full_purchase_date_outbound}`,
