@@ -65,7 +65,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
           setMatchDocuments={setMatchDocuments}
           setUploadDocument={setUploadDocument}
           data={data?.chargesByIDs}
-          isAllOpened={false}
+          isAllOpened
         />
       )}
       {editChargeId && (
