@@ -45,7 +45,7 @@
     "@types/pg": "8.11.6",
     "nodemon": "3.1.0",
     "pino-pretty": "11.0.0",
-    "tsc-alias": "1.8.9"
+    "tsc-alias": "1.8.10"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
