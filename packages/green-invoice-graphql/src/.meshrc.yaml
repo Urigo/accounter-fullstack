@@ -49,7 +49,23 @@ sources:
             field: getFileUploadUrl
             path: /file-upload/v1/url
             method: GET
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlRequest
+            argTypeMap:
+              context:
+                type: string
+              data:
+                type: object
+                properties:
+                  source:
+                    type: integer
+                  id:
+                    type: string
+                  state:
+                    type: string
+                required:
+                  - source
+            queryParamArgMap:
+              context: context
+              data: data
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlResponse
 
           - type: Mutation

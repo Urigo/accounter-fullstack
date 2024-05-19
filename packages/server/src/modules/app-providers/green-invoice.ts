@@ -40,15 +40,22 @@ export class GreenInvoiceProvider {
 
   public async addExpenseDraftByFile(file: File | Blob) {
     try {
-      const sdk = await this.getSDK();
-      const { getFileUploadUrl: fileUploadParams } = await sdk.getFileUploadUrl_query({
-        input: {
-          context: 'expense',
-          data: {
-            source: '5',
+      // const sdk = await this.getSDK();
+      // const { getFileUploadUrl: fileUploadParams } = await sdk.getFileUploadUrl_query({
+      //   context: 'expense',
+      //   data: { source: 5 },
+      // });
+
+      await this.getSDK();
+      const fileUploadParams = await fetch(
+        'https://apigw.greeninvoice.co.il/file-upload/v1/url?context=expense&data=%7B%22source%22%3A%205%7D', // TODO: replace with SDK once query params encoding issue is solved
+        {
+          method: 'GET',
+          headers: {
+            authorization: `Bearer ${this.authToken}`,
           },
         },
-      });
+      ).then(res => res.json());
 
       if (!fileUploadParams) {
         throw new Error('No file upload params returned');
@@ -57,16 +64,18 @@ export class GreenInvoiceProvider {
       const form = new FormData();
       for (const [field, value] of Object.entries(fileUploadParams.fields)) {
         if (value) {
-          form.append(field, value);
+          form.append(field, value as string);
         }
       }
-      form.append('file', file);
 
-      console.log(fileUploadParams.url);
+      form.append('file', file);
 
       const expenseDraft = await fetch(fileUploadParams.url, {
         method: 'POST',
         body: form,
+        headers: {
+          // 'Content-Type': 'multipart/form-data', // Adding this header seems to break the request, resulting in 400 malformed request
+        },
       }).then(async res => {
         if ([200, 201].includes(res.status)) {
           return res.json();

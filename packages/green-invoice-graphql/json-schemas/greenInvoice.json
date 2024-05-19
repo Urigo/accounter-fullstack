@@ -25,14 +25,15 @@
         }
       }
     },
-    "addExpenseDraftByFilNewRequest": {
+    "addExpenseDraftByFileNewRequest": {
       "type": "object",
       "additionalProperties": false,
       "required": [],
       "properties": {
         "file": {
           "type": "string",
-          "description": "The file, in Base64, allowed types: GIF, PNG, JPG, SVG, PDF"
+          "format": "binary",
+          "description": "The file, as binary, allowed types: GIF, PNG, JPG, SVG, PDF"
         }
       }
     },
@@ -440,36 +441,6 @@
         }
       },
       "required": ["total", "page", "pageSize", "pages", "items"]
-    },
-    "getFileUploadUrlRequest": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "context": {
-          "type": "string",
-          "description": "Example: 'expense'."
-        },
-        "data": {
-          "type": "object",
-          "description": "source is mandatory. id & state should only exist for updating an existing expense",
-          "properties": {
-            "source": {
-              "type": "string",
-              "example": "5"
-            },
-            "id": {
-              "type": "string",
-              "example": "expenseId"
-            },
-            "state": {
-              "type": "string",
-              "example": "expense"
-            }
-          },
-          "required": ["source"]
-        }
-      },
-      "required": []
     },
     "getFileUploadUrlResponse": {
       "type": "object",
