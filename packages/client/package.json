@@ -20,7 +20,7 @@
     "@mantine/notifications": "6.0.21",
     "@tanstack/react-query": "5.37.1",
     "@urql/exchange-auth": "2.2.0",
-    "chart.js": "4.4.2",
+    "chart.js": "4.4.3",
     "clsx": "2.1.1",
     "date-fns": "3.6.0",
     "dayjs": "1.11.11",
