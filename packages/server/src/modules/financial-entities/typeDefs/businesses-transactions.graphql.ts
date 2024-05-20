@@ -15,8 +15,15 @@ export default gql`
   input BusinessTransactionsFilter {
     businessIDs: [UUID!]
     ownerIds: [UUID!]
+    type: FinancialEntityType
     fromDate: TimelessDate
     toDate: TimelessDate
+  }
+
+  " represent financial entity type "
+  enum FinancialEntityType {
+    BUSINESS
+    TAX_CATEGORY
   }
 
   " result type for businessTransactionsSumFromLedgerRecords "
