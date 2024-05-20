@@ -93,7 +93,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       const { entries, monthlyEntriesProto, month } = generateEntriesFromSalaryRecords(
         salaryRecords,
         charge,
-        transactionDate,
       );
 
       entries.map(ledgerEntry => {
