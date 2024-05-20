@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 import { Check, X } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Select, Text, TextInput, ThemeIcon } from '@mantine/core';
+import { NavLink, Select, Text, TextInput, ThemeIcon } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessTripAttendeesDocument,
@@ -33,6 +33,7 @@ import { CurrencyInput } from '../../index.js';
       payedByEmployee
       transaction {
         id
+        chargeId
       }
   }
 `;
@@ -203,23 +204,37 @@ export const CoreTransactionRow = ({
                 />
               )}
             />
-          ) : businessTripTransaction.payedByEmployee ? (
-            <>
-              <ThemeIcon variant="default" radius="lg">
-                <Check />
-              </ThemeIcon>
-              <Text c={businessTripTransaction.employee?.name ? undefined : 'red'}>
-                {businessTripTransaction.employee?.name ?? 'Missing'}
-              </Text>
-            </>
           ) : (
-            <>
-              <ThemeIcon variant="default" radius="lg">
-                <X />
-              </ThemeIcon>
-              Transaction Link (TBD)
-              {businessTripTransaction.transaction?.id}
-            </>
+            <div className="flex flex-row gap-2 items-center">
+              {businessTripTransaction.payedByEmployee ? (
+                <>
+                  <ThemeIcon variant="default" radius="lg">
+                    <Check />
+                  </ThemeIcon>
+                  <Text c={businessTripTransaction.employee?.name ? undefined : 'red'}>
+                    {businessTripTransaction.employee?.name ?? 'Missing'}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <ThemeIcon variant="default" radius="lg">
+                    <X />
+                  </ThemeIcon>
+                  <NavLink
+                    label="To Charge"
+                    className="[&>*>.mantine-NavLink-label]:font-semibold"
+                    onClick={event => {
+                      event.stopPropagation();
+                      window.open(
+                        `/charges/${businessTripTransaction.transaction?.chargeId}`,
+                        '_blank',
+                        'noreferrer',
+                      );
+                    }}
+                  />
+                </>
+              )}
+            </div>
           )}
         </div>
       </td>

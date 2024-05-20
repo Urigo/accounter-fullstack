@@ -95,8 +95,13 @@ export type ValidateTransaction = Omit<
   'currency'
 > & { currency: Currency };
 
+type ValidationOptions = {
+  skipBusinessId?: boolean;
+};
+
 export function validateTransactionRequiredVariables(
   transaction: IGetTransactionsByChargeIdsResult,
+  valiadtionOptions: ValidationOptions = {},
 ): ValidateTransaction {
   if (!transaction.debit_date) {
     throw new LedgerError(
@@ -104,7 +109,7 @@ export function validateTransactionRequiredVariables(
     );
   }
 
-  if (!transaction.business_id) {
+  if (!transaction.business_id && !valiadtionOptions.skipBusinessId) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" is missing business_id`,
     );

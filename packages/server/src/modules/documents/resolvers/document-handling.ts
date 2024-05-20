@@ -29,13 +29,17 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       throw new Error(`Failed to convert file to base64: ${err.message}`);
     });
 
-    const { fileUrl, imageUrl } = await injector
+    const cloudinaryPromise = injector
       .get(CloudinaryProvider)
       .uploadInvoiceToCloudinary(base64string);
-
-    const data = await injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
+    const greenInvoicePromise = injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
       input: { file: base64string },
     });
+
+    const [{ fileUrl, imageUrl }, data] = await Promise.all([
+      cloudinaryPromise,
+      greenInvoicePromise,
+    ]);
 
     if (!data.addExpenseDraftByFile) {
       throw new Error('No data returned from Green Invoice');

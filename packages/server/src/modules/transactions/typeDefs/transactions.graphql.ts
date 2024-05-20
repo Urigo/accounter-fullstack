@@ -75,6 +75,8 @@ export default gql`
     updatedAt: Date!
     " is this transaction a fee? "
     isFee: Boolean
+    " containing charge ID "
+    chargeId: UUID!
   }
 
   " The direction of the transaction "
@@ -97,6 +99,7 @@ export default gql`
     createdAt: Date!
     updatedAt: Date!
     isFee: Boolean
+    chargeId: UUID!
   }
 
   " העברה "
@@ -113,6 +116,7 @@ export default gql`
     createdAt: Date!
     updatedAt: Date!
     isFee: Boolean
+    chargeId: UUID!
   }
 
   " עמלה "
@@ -129,6 +133,7 @@ export default gql`
     createdAt: Date!
     updatedAt: Date!
     isFee: Boolean
+    chargeId: UUID!
   }
 
   " המרה "
@@ -150,6 +155,7 @@ export default gql`
     createdAt: Date!
     updatedAt: Date!
     isFee: Boolean
+    chargeId: UUID!
   }
 
   " Type pf conversion transaction "
