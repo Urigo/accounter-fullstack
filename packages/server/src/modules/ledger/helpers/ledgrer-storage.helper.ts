@@ -126,7 +126,7 @@ function isExactMatch(
     }
 
     if (dateKeys.includes(key)) {
-      const newDate = newRecord[key] ? startOfDay(new Date(storageRecord[key] as Date)) : undefined;
+      const newDate = newRecord[key] ? startOfDay(new Date(newRecord[key] as Date)) : undefined;
       return (storageRecord[key] as Date)?.getTime() === newDate?.getTime();
     }
 

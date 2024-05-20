@@ -1,3 +1,4 @@
+import { lastDayOfMonth } from 'date-fns';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
 import {
@@ -62,7 +63,6 @@ type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boo
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
-  transactionDate: Date,
 ): {
   entries: LedgerProto[];
   monthlyEntriesProto: MonthlyLedgerProto[];
@@ -82,13 +82,12 @@ export function generateEntriesFromSalaryRecords(
     amount: number,
     month: string,
     isCreditor = true,
-    date?: Date,
   ) {
     return generateEntryRaw(
       accountId,
       amount,
       month,
-      date ?? transactionDate,
+      lastDayOfMonth(new Date(`${month}-01`)),
       charge.owner_id,
       isCreditor,
       chargeId,
@@ -132,19 +131,8 @@ export function generateEntriesFromSalaryRecords(
       Number(salaryRecord.tax_amount ?? '0') -
       Number(salaryRecord.pension_employee_amount ?? '0') -
       Number(salaryRecord.training_fund_employee_amount ?? '0');
-
-    // generate salary entry
-    const salaryDate = new Date(transactionDate);
-    salaryDate.setDate(salaryDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
     entries.push(
-      generateEntry(
-        charge.id,
-        salaryRecord.employee_id,
-        directPayment,
-        salaryRecord.month,
-        undefined,
-        salaryDate,
-      ),
+      generateEntry(charge.id, salaryRecord.employee_id, directPayment, salaryRecord.month),
     );
 
     // salary expenses handling
