@@ -81,7 +81,7 @@ export const AllCharges = (): ReactElement => {
     variables: {
       filters: filter,
       page: activePage,
-      limit: 1000,
+      limit: 100,
     },
   });
 
