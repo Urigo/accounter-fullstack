@@ -2,6 +2,11 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    chargesWithLedgerChanges(filters: ChargeFilter, limit: Int): [ChargesWithLedgerChangesResult!]!
+      @auth(role: ACCOUNTANT)
+  }
+
   extend type Mutation {
     regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords! @auth(role: ACCOUNTANT)
   }
@@ -89,4 +94,10 @@ export default gql`
 
   " result type for ledger records "
   union GeneratedLedgerRecords = Ledger | CommonError
+
+  " result type for charges with ledger changes "
+  type ChargesWithLedgerChangesResult {
+    progress: Float!
+    charge: Charge
+  }
 `;

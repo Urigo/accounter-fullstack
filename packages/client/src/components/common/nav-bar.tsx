@@ -31,6 +31,13 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
           <li>
             <NavLink
               className="text-gray-700 rounded"
+              label="Ledger Validation"
+              onClick={(): void => navigate('/charges-ledger-validation')}
+            />
+          </li>
+          <li>
+            <NavLink
+              className="text-gray-700 rounded"
               label="Documents"
               onClick={(): void => navigate('/documents')}
             />

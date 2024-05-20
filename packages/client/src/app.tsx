@@ -7,6 +7,7 @@ import { BusinessTransactionsSingle } from './components/business-transactions/b
 import { BusinessTrips } from './components/business-trips';
 import { BusinessTrip } from './components/business-trips/business-trip';
 import { Businesses } from './components/businesses';
+import { ChargesLedgerValidation } from './components/charges-ledger-validation';
 import { ChartPage } from './components/charts';
 import { Footer } from './components/common';
 import { NavBar } from './components/common/menu';
@@ -27,6 +28,7 @@ export function App(): ReactElement {
         <Route path="/" element={<AllCharges />} />
         <Route path="all-charges" element={<AllCharges />} /> {/* deprecated */}
         <Route path="charges" element={<AllCharges />} />
+        <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
         <Route path="charges/:chargeId" element={<Charge />} />
         <Route path="businesses" element={<Businesses />} />
         <Route path="business-trips" element={<BusinessTrips />} />
