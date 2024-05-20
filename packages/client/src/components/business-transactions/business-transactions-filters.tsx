@@ -3,7 +3,7 @@ import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Indicator, MultiSelect } from '@mantine/core';
+import { ActionIcon, Indicator, MultiSelect, Select } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
@@ -146,6 +146,24 @@ function BusinessTransactionsFilterForm({
               }
               error={fieldState.error?.message}
               label="To Date"
+            />
+          )}
+        />
+        <Controller
+          name="type"
+          control={control}
+          defaultValue={null}
+          render={({ field, fieldState }): ReactElement => (
+            <Select
+              {...field}
+              onChange={value => field.onChange(value === 'NULL' ? null : value)}
+              data={[
+                { value: 'NULL', label: 'All' },
+                { value: 'BUSINESS', label: 'Business' },
+                { value: 'TAX_CATEGORY', label: 'Tax Category' },
+              ]}
+              error={fieldState.error?.message}
+              label="Type"
             />
           )}
         />

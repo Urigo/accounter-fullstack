@@ -24,16 +24,27 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Query: {
     businessTransactionsSumFromLedgerRecords: async (_, { filters }, context, _info) => {
       const injector = context.injector;
-      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
+      const { ownerIds, businessIDs, fromDate, toDate, type } = filters || {};
 
-      const financialEntities = await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []);
+      const shouldFetchAllFinancialEntities = !businessIDs?.length && !!type;
+      const financialEntities = await (shouldFetchAllFinancialEntities
+        ? injector.get(FinancialEntitiesProvider).getAllFinancialEntities()
+        : injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []));
 
-      const isFilteredByFinancialEntities = !!businessIDs?.length;
+      const isFilteredByFinancialEntities = !!businessIDs?.length || type;
 
       const financialEntitiesIDs = financialEntities
-        ?.filter(fe => fe && 'id' in fe)
+        ?.filter(fe => {
+          if (!fe || !('id' in fe)) {
+            return false;
+          }
+          if (type) {
+            return type.toLocaleLowerCase() === fe.type;
+          }
+          return true;
+        })
         .map(fe => (fe as IGetFinancialEntitiesByIdsResult).id);
 
       try {
@@ -133,16 +144,27 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     },
     businessTransactionsFromLedgerRecords: async (_, { filters }, context, _info) => {
       const injector = context.injector;
-      const { ownerIds, businessIDs, fromDate, toDate } = filters || {};
+      const { ownerIds, businessIDs, fromDate, toDate, type } = filters || {};
+
+      const shouldFetchAllFinancialEntities = !businessIDs?.length && !!type;
+      const financialEntities = await (shouldFetchAllFinancialEntities
+        ? injector.get(FinancialEntitiesProvider).getAllFinancialEntities()
+        : injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []));
 
       const isFilteredByFinancialEntities = !!filters?.businessIDs?.length;
 
-      const financialEntities = await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []);
-
       const financialEntitiesIDs = financialEntities
-        ?.filter(business => business && 'id' in business)
+        ?.filter(fe => {
+          if (!fe || !('id' in fe)) {
+            return false;
+          }
+          if (type) {
+            return type.toLocaleLowerCase() === fe.type;
+          }
+          return true;
+        })
         .map(business => (business as IGetBusinessesByIdsResult).id);
 
       try {
