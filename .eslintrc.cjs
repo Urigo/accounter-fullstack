@@ -44,6 +44,7 @@ module.exports = {
                 'BusinessTripSummaryRow',
                 'ChargeMetadata',
                 'ChargeSuggestions',
+                'ChargesWithLedgerChangesResult',
                 'CommonError',
                 'ConversionRate',
                 'DateRange',
