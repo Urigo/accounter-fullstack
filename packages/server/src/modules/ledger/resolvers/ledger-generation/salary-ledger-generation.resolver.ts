@@ -90,9 +90,12 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     // generate ledger from salary records
     try {
+      const transactionInitiationDate = new Date(transactionDate);
+      transactionInitiationDate.setDate(transactionInitiationDate.getDate() - 2); // adjusted date to match exchange rate of transaction initiation date
       const { entries, monthlyEntriesProto, month } = generateEntriesFromSalaryRecords(
         salaryRecords,
         charge,
+        transactionInitiationDate,
       );
 
       entries.map(ledgerEntry => {

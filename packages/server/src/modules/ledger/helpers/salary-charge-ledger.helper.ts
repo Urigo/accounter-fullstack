@@ -20,6 +20,7 @@ function generateEntryRaw(
   accountId: string,
   amount: number,
   month: string,
+  salaryDate: Date,
   transactionDate: Date,
   ownerId: string,
   isCreditor: boolean,
@@ -27,7 +28,7 @@ function generateEntryRaw(
 ): LedgerProto {
   return {
     id: `${accountId}|${month}`,
-    invoiceDate: transactionDate,
+    invoiceDate: salaryDate,
     valueDate: transactionDate,
     currency: DEFAULT_LOCAL_CURRENCY,
     ...(isCreditor ? { creditAccountID1: accountId } : { debitAccountID1: accountId }),
@@ -63,6 +64,7 @@ type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boo
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
+  transactionDate: Date,
 ): {
   entries: LedgerProto[];
   monthlyEntriesProto: MonthlyLedgerProto[];
@@ -82,12 +84,15 @@ export function generateEntriesFromSalaryRecords(
     amount: number,
     month: string,
     isCreditor = true,
+    useSalaryMonthForValueDate = false,
   ) {
+    const salaryDate = lastDayOfMonth(new Date(`${month}-01`));
     return generateEntryRaw(
       accountId,
       amount,
       month,
-      lastDayOfMonth(new Date(`${month}-01`)),
+      salaryDate,
+      useSalaryMonthForValueDate ? salaryDate : transactionDate,
       charge.owner_id,
       isCreditor,
       chargeId,
@@ -193,14 +198,16 @@ export function generateEntriesFromSalaryRecords(
   // generate pension/training funds entries
   for (const [businessId, amount] of Object.entries(amountPerBusiness)) {
     if (amount) {
-      entries.push(generateEntry(charge.id, businessId, amount, month));
+      entries.push(generateEntry(charge.id, businessId, amount, month, undefined, true));
     }
   }
 
   // generate tax entries
   for (const [month, amount] of Object.entries(taxAmountPerMonth)) {
     if (amount > 0) {
-      entries.push(generateEntry(charge.id, TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
+      entries.push(
+        generateEntry(charge.id, TAX_DEDUCTIONS_BUSINESS_ID, amount, month, undefined, true),
+      );
     }
   }
 
