@@ -1,4 +1,7 @@
-import { GetExpenseDraft } from '@accounter/green-invoice-graphql';
+import type {
+  addExpenseDraftByFile_mutationMutation,
+  GetExpenseDraft,
+} from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { Currency } from '@shared/enums';
@@ -32,9 +35,16 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
     const cloudinaryPromise = injector
       .get(CloudinaryProvider)
       .uploadInvoiceToCloudinary(base64string);
-    const greenInvoicePromise = injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
-      input: { file: base64string },
-    });
+    const greenInvoicePromise = injector
+      .get(GreenInvoiceProvider)
+      .addExpenseDraftByFile({
+        input: { file: base64string },
+      })
+      .catch(e => {
+        // TODO: remove this after fixing Green Invoice file upload
+        console.error(`Green Invoice Error:\n${e}`);
+        return { addExpenseDraftByFile: {} } as addExpenseDraftByFile_mutationMutation;
+      });
 
     const [{ fileUrl, imageUrl }, data] = await Promise.all([
       cloudinaryPromise,
