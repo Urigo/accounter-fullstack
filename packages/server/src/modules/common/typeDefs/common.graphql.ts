@@ -17,6 +17,9 @@ export default gql`
   " Defer directive "
   directive @defer on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+  " Stream directive "
+  directive @stream on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
   " Role based authorization"
   enum Role {
     ADMIN
