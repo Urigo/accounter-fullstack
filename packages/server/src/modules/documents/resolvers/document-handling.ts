@@ -35,16 +35,9 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
     const cloudinaryPromise = injector
       .get(CloudinaryProvider)
       .uploadInvoiceToCloudinary(base64string);
-    const greenInvoicePromise = injector
-      .get(GreenInvoiceProvider)
-      .addExpenseDraftByFile({
-        input: { file: base64string },
-      })
-      .catch(e => {
-        // TODO: remove this after fixing Green Invoice file upload
-        console.error(`Green Invoice Error:\n${e}`);
-        return { addExpenseDraftByFile: {} } as addExpenseDraftByFile_mutationMutation;
-      });
+    const greenInvoicePromise = injector.get(GreenInvoiceProvider).addExpenseDraftByFile({
+      input: { file: base64string },
+    });
 
     const [{ fileUrl, imageUrl }, data] = await Promise.all([
       cloudinaryPromise,
@@ -59,7 +52,8 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       'errorMessage' in data.addExpenseDraftByFile ||
       'errorCode_' in data.addExpenseDraftByFile
     ) {
-      throw new Error(`Green Invoice Error: ${data.addExpenseDraftByFile.errorMessage}`);
+      // TODO: return this after fixing Green Invoice file upload
+      // throw new Error(`Green Invoice Error: ${data.addExpenseDraftByFile.errorMessage}`);
     }
 
     const draft = data.addExpenseDraftByFile as GetExpenseDraft;
