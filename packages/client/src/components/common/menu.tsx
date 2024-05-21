@@ -13,6 +13,10 @@ const links: Link[] = [
     to: '/charges',
   },
   {
+    label: 'Ledger Validation',
+    to: '/charges-ledger-validation',
+  },
+  {
     label: 'Documents',
     to: '/documents',
   },

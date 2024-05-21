@@ -1,9 +1,10 @@
 import { GraphQLError } from 'graphql';
+import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
-import { Resolvers } from '@shared/gql-types';
+import { ChargeSortByField, Resolvers, ResolversTypes } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
   ledgerGenerationByCharge,
@@ -25,6 +26,107 @@ import type {
 import { commonChargeLedgerResolver } from './common.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
+  Query: {
+    chargesWithLedgerChanges: (_, { filters, limit }, context, info) =>
+      new Repeater<ResolversTypes['ChargesWithLedgerChangesResult']>(async (push, stop) => {
+        const { injector } = context;
+
+        // handle sort column
+        let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
+        switch (filters?.sortBy?.field) {
+          case ChargeSortByField.Amount:
+            sortColumn = 'event_amount';
+            break;
+          case ChargeSortByField.AbsAmount:
+            sortColumn = 'abs_event_amount';
+            break;
+          case ChargeSortByField.Date:
+            sortColumn = 'event_date';
+            break;
+        }
+
+        const charges = await injector
+          .get(ChargesProvider)
+          .getChargesByFilters({
+            ownerIds: filters?.byOwners,
+            fromDate: filters?.fromDate,
+            toDate: filters?.toDate,
+            fromAnyDate: filters?.fromAnyDate,
+            toAnyDate: filters?.toAnyDate,
+            sortColumn,
+            asc: filters?.sortBy?.asc !== false,
+            chargeType: filters?.chargesType,
+            businessIds: filters?.byBusinesses,
+            withoutInvoice: filters?.withoutInvoice,
+            withoutDocuments: filters?.withoutDocuments,
+            withoutLedger: filters?.withoutLedger,
+            tags: filters?.byTags,
+            accountantApproval: filters?.accountantApproval,
+          })
+          .catch(e => {
+            throw new Error(e.message);
+          });
+
+        const limitedCharges = limit ? charges.slice(0, limit) : charges;
+
+        push({ progress: 20 });
+        let handledCharges: number = 0;
+
+        function calculateProgress() {
+          return ((handledCharges * 100) / limitedCharges.length) * 0.8 + 20;
+        }
+
+        await Promise.all(
+          limitedCharges.map(async charge => {
+            try {
+              const generatedRecordsPromise = ledgerGenerationByCharge(charge)(
+                charge,
+                {},
+                context,
+                info,
+              );
+              const storageRecordsPromise = injector
+                .get(LedgerProvider)
+                .getLedgerRecordsByChargesIdLoader.load(charge.id);
+
+              const [generatedRecords, storageRecords] = await Promise.all([
+                generatedRecordsPromise,
+                storageRecordsPromise,
+              ]);
+
+              if (!generatedRecords || 'message' in generatedRecords) {
+                handledCharges++;
+                push({ progress: calculateProgress(), charge });
+                return;
+              }
+
+              const newRecords = generatedRecords.records as IGetLedgerRecordsByChargesIdsResult[];
+
+              const fullMatching = ledgerRecordsGenerationFullMatchComparison(
+                storageRecords,
+                newRecords,
+              );
+
+              if (fullMatching.isFullyMatched) {
+                handledCharges++;
+                if (handledCharges % 50 === 0 || handledCharges === limitedCharges.length) {
+                  push({ progress: calculateProgress() });
+                }
+                return;
+              }
+
+              handledCharges++;
+              push({ progress: calculateProgress(), charge });
+            } catch (err) {
+              handledCharges++;
+              push({ progress: calculateProgress(), charge });
+            }
+          }),
+        );
+        push({ progress: 100 });
+        stop();
+      }) as unknown as Promise<readonly ResolversTypes['ChargesWithLedgerChangesResult'][]>,
+  },
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
