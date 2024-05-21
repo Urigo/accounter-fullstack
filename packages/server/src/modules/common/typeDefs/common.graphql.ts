@@ -18,7 +18,7 @@ export default gql`
   directive @defer on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
   " Stream directive "
-  directive @stream on FRAGMENT_SPREAD | INLINE_FRAGMENT
+  directive @stream on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
   " Role based authorization"
   enum Role {
