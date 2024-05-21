@@ -47,7 +47,7 @@
   "scripts": {
     "build": "bob build",
     "dev": "node --import ../../scripts/register-esm.js ./index.ts",
-    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && NODE_OPTIONS=\"--import ../../scripts/register-esm.js\" mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
+    "mesh:generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && yarn node ../../scripts/mesh-artifacts-rename.mjs",
     "prebuild": "yarn mesh:generate",
     "prepublish": "yarn build",
     "start": "node ./dist",
@@ -67,7 +67,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.90.6",
+    "@graphql-mesh/cli": "0.90.7-alpha-20240521104317-b90e8746a76e5576de7155e8412ea5f629c18546",
     "dotenv": "16.4.5"
   },
   "publishConfig": {
