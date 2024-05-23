@@ -1730,10 +1730,10 @@
   dependencies:
     localforage "1.10.0"
 
-"@graphql-mesh/cli@0.90.6":
-  version "0.90.6"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.90.6.tgz#6e340de72498f00332d0967b61988144cd7c43cf"
-  integrity sha512-ltgUtbj4551PMAMWekpUQP9FIMMxBA5CITwPwBKwqstNRtD3k249ZLfIuRJMdQKPQI4lZfgYy+DGrua7mNulwA==
+"@graphql-mesh/cli@0.90.7-alpha-20240521104317-b90e8746a76e5576de7155e8412ea5f629c18546":
+  version "0.90.7-alpha-20240521104317-b90e8746a76e5576de7155e8412ea5f629c18546"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.90.7-alpha-20240521104317-b90e8746a76e5576de7155e8412ea5f629c18546.tgz#b115c1208ad9c00d048aaa11b1b0db84d1e1ad75"
+  integrity sha512-zwmOjwJJLe6xXX+YaOz2SaC59zdy8sXwNHgTme2IEF2FJ6vySVQY42UOzcfi3u/3e2utRXxuxxnb4Q4u/s5qPg==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
@@ -1765,7 +1765,7 @@
     tsconfig-paths "^4.2.0"
     tslib "^2.4.0"
     typescript "^5.4.2"
-    uWebSockets.js "github:uNetworking/uWebSockets.js#semver:^20"
+    uWebSockets.js "uNetworking/uWebSockets.js#semver:^20"
     yargs "^17.7.1"
   optionalDependencies:
     node-libcurl "^4.0.0"
@@ -12095,9 +12095,8 @@ typescript@5.4.5, typescript@^5.4.2:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.4.5.tgz#42ccef2c571fdbd0f6718b1d1f5e6e5ef006f611"
   integrity sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==
 
-"uWebSockets.js@github:uNetworking/uWebSockets.js#semver:^20":
+"uWebSockets.js@uNetworking/uWebSockets.js#semver:^20":
   version "20.43.0"
-  uid "1977b5039938ad863d42fc4958d48c17e5a1fa06"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/1977b5039938ad863d42fc4958d48c17e5a1fa06"
 
 ua-parser-js@^1.0.35:
