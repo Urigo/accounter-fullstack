@@ -126,11 +126,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         amount = exchangeRate * amount;
       }
 
-      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-        injector,
-        transaction,
-        currency,
-      );
+      const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
       const isCreditorCounterparty = amount > 0;
 

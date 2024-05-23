@@ -3,6 +3,7 @@ import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
@@ -167,7 +168,18 @@ export async function ledgerEntryFromMainTransaction(
     businessId &&
     INTERNAL_WALLETS_IDS.includes(businessId)
   ) {
-    mainAccountId = await getFinancialAccountTaxCategoryId(injector, transaction, currency, true);
+    const account = await injector
+      .get(FinancialAccountsProvider)
+      .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
+    if (!account) {
+      throw new LedgerError(
+        `Transaction reference "${transaction.source_reference}" is missing account`,
+      );
+    }
+    mainAccountId = await getFinancialAccountTaxCategoryId(injector, {
+      ...transaction,
+      account_id: account.id,
+    });
   }
 
   let amount = Number(transaction.amount);
@@ -184,11 +196,7 @@ export async function ledgerEntryFromMainTransaction(
     amount = exchangeRate * amount;
   }
 
-  const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-    injector,
-    transaction,
-    currency,
-  );
+  const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
   const isCreditorCounterparty = amount > 0;
 

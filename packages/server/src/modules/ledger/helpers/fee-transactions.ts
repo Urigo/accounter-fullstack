@@ -106,7 +106,7 @@ export async function getEntriesFromFeeTransaction(
   };
 
   if (isSupplementalFee) {
-    mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction, currency);
+    mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction);
   } else {
     const mainBusiness = charge.business_id ?? undefined;
 

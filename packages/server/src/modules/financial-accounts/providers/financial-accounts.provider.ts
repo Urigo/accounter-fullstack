@@ -6,10 +6,10 @@ import type {
   IGetAllFinancialAccountsQuery,
   IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
-  IGetFinancialAccountsByFinancialEntityIdsQuery,
+  IGetFinancialAccountsByOwnerIdsQuery,
 } from '../types.js';
 
-const getFinancialAccountsByFinancialEntityIds = sql<IGetFinancialAccountsByFinancialEntityIdsQuery>`
+const getFinancialAccountsByOwnerIds = sql<IGetFinancialAccountsByOwnerIdsQuery>`
     SELECT *
     FROM accounter_schema.financial_accounts
     WHERE owner IN $$ownerIds;`;
@@ -35,8 +35,8 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
 export class FinancialAccountsProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  private async batchFinancialAccountsByFinancialEntityIds(ownerIds: readonly string[]) {
-    const accounts = await getFinancialAccountsByFinancialEntityIds.run(
+  private async batchFinancialAccountsByOwnerIds(ownerIds: readonly string[]) {
+    const accounts = await getFinancialAccountsByOwnerIds.run(
       {
         ownerIds,
       },
@@ -45,8 +45,8 @@ export class FinancialAccountsProvider {
     return ownerIds.map(ownerId => accounts.filter(charge => charge.owner === ownerId));
   }
 
-  public getFinancialAccountsByFinancialEntityIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialAccountsByFinancialEntityIds(keys),
+  public getFinancialAccountsByOwnerIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchFinancialAccountsByOwnerIds(keys),
     { cache: false },
   );
 

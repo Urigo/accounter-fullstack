@@ -12,6 +12,7 @@ import migration_2024_04_10T15_04_24_business_trips_attendees_dates from './acti
 import migration_2024_05_15T10_23_55_creditcard_trigger_better_filtering from './actions/2024-05-15T10-23-55.creditcard-trigger-better-filtering.js';
 import migration_2024_05_15T21_55_55_creditcard_trigger_better_filtering2 from './actions/2024-05-15T21-55-55.creditcard-trigger-better-filtering2.js';
 import migration_2024_05_19T13_36_34_fix_updated_at_triggers from './actions/2024-05-19T13-36-34.fix-updated-at-triggers.js';
+import migration_2024_05_21T19_06_42_refactor_financial_accounts from './actions/2024-05-21T19-06-42.refactor-financial-accounts.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -31,5 +32,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_05_15T10_23_55_creditcard_trigger_better_filtering,
       migration_2024_05_15T21_55_55_creditcard_trigger_better_filtering2,
       migration_2024_05_19T13_36_34_fix_updated_at_triggers,
+      migration_2024_05_21T19_06_42_refactor_financial_accounts,
     ],
   });

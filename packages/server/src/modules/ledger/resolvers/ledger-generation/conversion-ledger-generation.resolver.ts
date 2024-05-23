@@ -88,11 +88,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           amount = exchangeRate * amount;
         }
 
-        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-          injector,
-          transaction,
-          currency,
-        );
+        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
 
         const isCreditorCounterparty = amount > 0;
 
@@ -178,7 +174,6 @@ export const generateLedgerRecordsForConversion: ResolverFn<
             const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
               injector,
               transaction,
-              currency,
             );
 
             feeFinancialAccountLedgerEntries.push({

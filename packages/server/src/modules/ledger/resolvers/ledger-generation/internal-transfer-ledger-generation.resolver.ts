@@ -94,7 +94,6 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
           injector,
           transaction,
-          currency,
         );
 
         const isCreditorCounterparty = amount > 0;
@@ -170,7 +169,6 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
             injector,
             transaction,
-            currency,
           );
 
           const ledgerEntry: StrictLedgerProto = {
