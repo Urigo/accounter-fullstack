@@ -2,11 +2,13 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { Currency } from '@shared/gql-types';
 import type {
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
+  IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
   IGetTaxCategoryByIDsQuery,
   IGetTaxCategoryByNamesQuery,
   IInsertBusinessTaxCategoryParams,
@@ -26,6 +28,16 @@ LEFT JOIN accounter_schema.business_tax_category_match tcm
   ON tcm.tax_category_id = tc.id
 WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
+
+const getTaxCategoryByFinancialAccountIdsAndCurrencies = sql<IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery>`
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, tc.hashavshevet_name, fatc.financial_account_id, fatc.currency
+FROM accounter_schema.financial_accounts_tax_categories fatc
+LEFT JOIN accounter_schema.tax_categories tc
+  ON fatc.tax_category_id = tc.id
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fatc.tax_category_id = fe.id
+WHERE fatc.currency IN $$Currencies
+AND fatc.financial_account_id IN $$FinancialAccountIds;`;
 
 const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
 SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, tc.hashavshevet_name, c.business_id, c.owner_id, c.id as charge_id
@@ -110,9 +122,38 @@ export class TaxCategoriesProvider {
     );
   }
 
+  private async batchTaxCategoryByFinancialAccountIdsAndCurrencies(
+    entries: readonly { financialAccountId: string; currency: Currency }[],
+  ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
+    const FinancialAccountIdsSet = new Set<string | null>(entries.map(e => e.financialAccountId));
+    const CurrenciesSet = new Set<Currency | null>(entries.map(e => e.currency));
+
+    const taxCategories = await getTaxCategoryByFinancialAccountIdsAndCurrencies.run(
+      {
+        FinancialAccountIds:
+          FinancialAccountIdsSet.size === 0 ? [null] : Array.from(FinancialAccountIdsSet),
+        Currencies: CurrenciesSet.size === 0 ? [null] : Array.from(CurrenciesSet),
+      },
+      this.dbProvider,
+    );
+    return entries.map(({ financialAccountId, currency }) =>
+      taxCategories.find(
+        tc => tc.financial_account_id === financialAccountId && tc.currency === currency,
+      ),
+    );
+  }
+
   public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
     (keys: readonly { businessId: string; ownerId: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
+    {
+      cache: false,
+    },
+  );
+
+  public taxCategoryByFinancialAccountIdsAndCurrenciesLoader = new DataLoader(
+    (keys: readonly { financialAccountId: string; currency: Currency }[]) =>
+      this.batchTaxCategoryByFinancialAccountIdsAndCurrencies(keys),
     {
       cache: false,
     },

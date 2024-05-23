@@ -1,7 +1,5 @@
 import { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import type { IGetFinancialAccountsByAccountIDsResult } from '@modules/financial-accounts/types';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
@@ -29,40 +27,6 @@ export function isTransactionsOppositeSign([first, second]: IGetTransactionsByCh
     throw new LedgerError('Transaction amount is not a number');
   }
   return Number(first.amount) > 0 !== Number(second.amount) > 0;
-}
-
-export function getTaxCategoryNameByAccountCurrency(
-  account: IGetFinancialAccountsByAccountIDsResult,
-  currency: Currency,
-): string {
-  let taxCategoryName = account.hashavshevet_account_ils;
-  switch (currency) {
-    case Currency.Ils:
-      taxCategoryName = account.hashavshevet_account_ils;
-      break;
-    case Currency.Usd:
-      taxCategoryName = account.hashavshevet_account_usd;
-      break;
-    case Currency.Eur:
-      taxCategoryName = account.hashavshevet_account_eur;
-      break;
-    case Currency.Gbp:
-      taxCategoryName = account.hashavshevet_account_gbp;
-      break;
-    case Currency.Usdc:
-    case Currency.Grt:
-    case Currency.Eth:
-      taxCategoryName = account.hashavshevet_account_ils;
-      break;
-    default:
-      console.error(`Unknown currency for account's tax category: ${currency}`);
-  }
-  if (!taxCategoryName) {
-    throw new LedgerError(
-      `Account number "${account.account_number}" is missing tax category name`,
-    );
-  }
-  return taxCategoryName;
 }
 
 export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
@@ -340,36 +304,18 @@ export function ledgerProtoToRecordsConverter(
 export async function getFinancialAccountTaxCategoryId(
   injector: Injector,
   transaction: IGetTransactionsByChargeIdsResult,
-  currency?: Currency,
-  useSourceReference?: boolean,
 ): Promise<string> {
-  if (useSourceReference && !transaction.source_reference) {
-    throw new LedgerError(
-      `Transaction reference "${transaction.source_reference}" is missing source reference, which is required for fetching the financial account`,
-    );
-  }
-  const account = await (useSourceReference
-    ? injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference!)
-    : injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id));
-  if (!account) {
-    throw new LedgerError(
-      `Transaction reference "${transaction.source_reference}" is missing account`,
-    );
-  }
-  const taxCategoryName = getTaxCategoryNameByAccountCurrency(
-    account,
-    currency || (transaction.currency as Currency),
-  );
   const taxCategory = await injector
     .get(TaxCategoriesProvider)
-    .taxCategoryByNamesLoader.load(taxCategoryName);
+    .taxCategoryByFinancialAccountIdsAndCurrenciesLoader.load({
+      financialAccountId: transaction.account_id,
+      currency: transaction.currency as Currency,
+    });
 
   if (!taxCategory) {
-    throw new LedgerError(`Account number "${account.account_number}" is missing tax category`);
+    throw new LedgerError(
+      `Account id "${transaction.account_id}", with currency ${transaction.currency} is missing tax category`,
+    );
   }
 
   return taxCategory.id;

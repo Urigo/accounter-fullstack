@@ -46,7 +46,7 @@ const config: CodegenConfig = {
         mappers: {
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
-            '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult',
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           Business: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           BusinessTransaction: '@shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
@@ -55,7 +55,7 @@ const config: CodegenConfig = {
             '@modules/business-trips/types.js#IGetBusinessTripsAttendeesByBusinessTripIdsResult',
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CardFinancialAccount:
-            '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult',
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
@@ -63,7 +63,7 @@ const config: CodegenConfig = {
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
-            '@modules/financial-accounts/types.js#IGetFinancialAccountsByFinancialEntityIdsResult',
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           DividendCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
           ExchangeRates: 'TimelessDateString',

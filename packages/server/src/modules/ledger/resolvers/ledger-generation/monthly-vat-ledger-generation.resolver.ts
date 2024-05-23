@@ -141,7 +141,6 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
           const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
             injector,
             transaction,
-            DEFAULT_LOCAL_CURRENCY,
           );
 
           const ledgerEntry: LedgerProto = {

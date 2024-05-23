@@ -271,7 +271,7 @@ export async function createAndConnectStore(options: { connectionString: string;
       `,
         [
           ledgerId,
-          `${accountPrefix}${assetName}`,
+          accountPrefix,
           record.type,
           assetName,
           record.amount,

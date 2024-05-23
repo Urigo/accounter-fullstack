@@ -11,7 +11,7 @@ const logger = diary('main');
 
 async function main() {
   logger.info(`🚀 Kraken Accounter Scrapper started`);
-  const accountPrefix = ensureEnv('ACCOUNT_PREFIX', 'kraken_');
+  const accountPrefix = ensureEnv('ACCOUNT_PREFIX', 'kraken');
   const kraken = createKraken({
     apiKey: ensureEnv('KRAKEN_API_KEY'),
     apiSecret: ensureEnv('KRAKEN_API_SECRET'),

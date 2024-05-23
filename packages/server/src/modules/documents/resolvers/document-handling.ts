@@ -1,7 +1,4 @@
-import type {
-  addExpenseDraftByFile_mutationMutation,
-  GetExpenseDraft,
-} from '@accounter/green-invoice-graphql';
+import type { GetExpenseDraft } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { Currency } from '@shared/enums';

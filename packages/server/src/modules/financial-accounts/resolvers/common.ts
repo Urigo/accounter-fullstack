@@ -31,7 +31,7 @@ export const commonFinancialEntityFields:
   accounts: async (DbBusiness, _, { injector }) => {
     const accounts = await injector
       .get(FinancialAccountsProvider)
-      .getFinancialAccountsByFinancialEntityIdLoader.load(DbBusiness.id);
+      .getFinancialAccountsByOwnerIdLoader.load(DbBusiness.id);
     return accounts;
   },
 };
