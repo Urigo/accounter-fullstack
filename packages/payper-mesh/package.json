@@ -67,7 +67,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.90.5",
+    "@graphql-mesh/cli": "0.90.6",
     "dotenv": "16.4.5"
   },
   "publishConfig": {
