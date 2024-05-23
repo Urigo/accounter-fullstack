@@ -56,19 +56,19 @@
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
-    "@graphql-mesh/config": "0.100.5",
+    "@graphql-mesh/config": "0.100.6",
     "@graphql-mesh/cross-helpers": "0.4.2",
-    "@graphql-mesh/http": "0.99.5",
-    "@graphql-mesh/json-schema": "0.100.7",
-    "@graphql-mesh/runtime": "0.99.5",
-    "@graphql-mesh/store": "0.98.4",
-    "@graphql-mesh/types": "0.98.4",
-    "@graphql-mesh/utils": "0.98.4",
+    "@graphql-mesh/http": "0.99.6",
+    "@graphql-mesh/json-schema": "0.100.8",
+    "@graphql-mesh/runtime": "0.99.6",
+    "@graphql-mesh/store": "0.98.5",
+    "@graphql-mesh/types": "0.98.5",
+    "@graphql-mesh/utils": "0.98.5",
     "graphql": "16.8.1",
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.90.7-alpha-20240521104317-b90e8746a76e5576de7155e8412ea5f629c18546",
+    "@graphql-mesh/cli": "0.90.7",
     "@types/mime-types": "^2.1.1",
     "dotenv": "16.4.5",
     "mime-types": "2.1.35"
