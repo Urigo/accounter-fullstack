@@ -135,10 +135,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           if (Number(dividendRecord.amount) <= 0) {
             throw new LedgerError(`Dividend amount is not positive (ID: ${dividendRecord.id})`);
           }
-          if (
-            charge.owner_id !== dividendRecord.owner_id ||
-            transaction.debit_date.getTime() !== dividendRecord.date.getTime()
-          ) {
+          if (charge.owner_id !== dividendRecord.owner_id) {
             throw new LedgerError(
               `Transaction reference "${transaction.source_reference}" is not matching dividend record ID="${dividendRecord.id}"`,
             );
@@ -176,11 +173,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
             // get exchange rate for currency
             exchangeRate = await injector
               .get(ExchangeProvider)
-              .getExchangeRates(
-                transaction.currency,
-                DEFAULT_LOCAL_CURRENCY,
-                transaction.debit_timestamp,
-              );
+              .getExchangeRates(transaction.currency, DEFAULT_LOCAL_CURRENCY, dividendRecord.date);
           }
 
           const partialEntry = generatePartialLedgerEntry(
