@@ -1730,10 +1730,10 @@
   dependencies:
     localforage "1.10.0"
 
-"@graphql-mesh/cli@0.90.7":
-  version "0.90.7"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.90.7.tgz#6ec02a88a98dde3d4a1d63835571ac8124759899"
-  integrity sha512-weggi0zHIs97bH75WfG8w2X0AA1zTJ+zYzFxTRjgYBr/yMO22i/5LQxPt66BkvfWmB4PYrl/B/GOrOKz13fGuw==
+"@graphql-mesh/cli@0.90.8":
+  version "0.90.8"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.90.8.tgz#9e022d6b274142ad311971d75af76b3b56daa9f6"
+  integrity sha512-Pu4GfRj4fPO/aosF0krDt6IeHKfEKw/unALj0D35hmIgPsSNOnEIf5bEOIxDPXAbCrjZ0yc0CezBILp27D3NMA==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
