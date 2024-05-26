@@ -16,7 +16,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "ajv": "8.13.0",
+    "ajv": "8.14.0",
     "ajv-formats": "3.0.1",
     "inquirer": "9.2.22",
     "node-fetch": "3.3.2",
