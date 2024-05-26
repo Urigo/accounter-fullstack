@@ -41,8 +41,8 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
-      - name: Generate codegen
-        run: yarn codegen
+      - name: Generate GraphQL
+        run: yarn generate:graphql
 
       - name: Build Client
         working-directory: packages/client

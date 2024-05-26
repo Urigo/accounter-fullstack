@@ -5,13 +5,23 @@
       "name": "app:dev",
       "description": "Run App",
       "open": true,
-      "command": "yarn client:dev"
+      "command": "yarn client:dev",
+      "icon": "device-desktop"
     },
     {
       "name": "server:dev",
       "description": "Run server",
       "open": true,
-      "command": "yarn server:dev"
+      "focus": true,
+      "command": "yarn server:dev",
+      "icon": "server"
+    },
+    {
+      "name": "listener",
+      "description": "Generate and watch",
+      "open": true,
+      "command": "yarn generate:watch",
+      "icon": "search"
     }
   ]
 }

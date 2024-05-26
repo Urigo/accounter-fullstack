@@ -66,7 +66,7 @@ runs:
     - name: Generate GraphQL Types
       if: ${{ inputs.codegen == 'true' }}
       shell: bash
-      run: yarn codegen
+      run: yarn generate:graphql
 
     - name: Generate Postgres Types
       if: ${{ inputs.pgTyped == 'true' && inputs.localDB == 'true' }}
