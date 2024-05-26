@@ -225,7 +225,7 @@ export async function createAndConnectStore(options: { connectionString: string;
       `,
         [
           tradeId,
-          `${accountPrefix}${record.pair!}`,
+          `${accountPrefix}_${record.pair!}`,
           record.pair,
           record.time,
           record.type,
@@ -238,7 +238,11 @@ export async function createAndConnectStore(options: { connectionString: string;
         ],
       );
     },
-    async createLedgerRecord(accountPrefix: string, ledgerId: string, record: KrakenLedgerRecord) {
+    async createLedgerRecord(
+      accountNickname: string,
+      ledgerId: string,
+      record: KrakenLedgerRecord,
+    ) {
       logger.info(`Creating database ledger record for ${ledgerId}...`);
       const assetName = record.asset!.replace('ZUSD', 'USD');
 
@@ -271,7 +275,7 @@ export async function createAndConnectStore(options: { connectionString: string;
       `,
         [
           ledgerId,
-          accountPrefix,
+          accountNickname,
           record.type,
           assetName,
           record.amount,
