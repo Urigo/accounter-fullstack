@@ -127,13 +127,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     if (gotRelevantDocuments) {
       // Get all relevant documents for charge
       const relevantDocuments = documents.filter(d =>
-        ['INVOICE', 'INVOICE_RECEIPT'].includes(d.type),
+        ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(d.type),
       );
-
-      // if found invoices, looke for & add credit invoices
-      if (relevantDocuments.length >= 1) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'CREDIT_INVOICE'));
-      }
 
       // if no relevant documents found and business can settle with receipts, look for receipts
       if (!relevantDocuments.length && charge.can_settle_with_receipt) {
