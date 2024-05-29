@@ -256,6 +256,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,
+      errors,
       allowedUnbalancedBusinesses,
     );
 

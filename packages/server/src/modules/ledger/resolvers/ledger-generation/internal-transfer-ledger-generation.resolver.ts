@@ -253,7 +253,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     }
 
-    const { balanceSum } = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const { balanceSum } = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
     const miscLedgerEntries: LedgerProto[] = [];
 
     if (!originEntry || !destinationEntry) {
@@ -289,7 +289,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,

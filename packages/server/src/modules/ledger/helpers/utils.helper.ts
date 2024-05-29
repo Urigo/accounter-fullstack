@@ -216,6 +216,7 @@ export function updateLedgerBalanceByEntry(
 export async function getLedgerBalanceInfo(
   injector: Injector,
   ledgerBalance: Map<string, { amount: number; entityId: string }>,
+  errors: Set<string>,
   allowedUnbalancedBusinesses: Set<string> = new Set(),
   financialEntities?: Array<IGetFinancialEntitiesByIdsResult>,
 ): Promise<
@@ -249,6 +250,14 @@ export async function getLedgerBalanceInfo(
       ) ?? true;
 
     if (isBusiness && !allowedUnbalancedBusinesses.has(entityId)) {
+      let businessIdentification = `ID="${entityId}"`;
+      if (financialEntities) {
+        const businessName = financialEntities.find(fe => fe.id === entityId)?.name;
+        if (businessName) {
+          businessIdentification = `"${businessName}"`;
+        }
+      }
+      errors.add(`Business ${businessIdentification} is unbalanced (By ${amount})`);
       isBalanced = false;
     }
     unbalancedEntities.push({
@@ -258,6 +267,7 @@ export async function getLedgerBalanceInfo(
     ledgerBalanceSum += amount;
   }
   if (Math.abs(ledgerBalanceSum) >= 0.005) {
+    errors.add(`Total ledger balance is ${ledgerBalanceSum}`);
     isBalanced = false;
   }
 
@@ -322,12 +332,18 @@ export async function getFinancialAccountTaxCategoryId(
 }
 
 export function multipleForeignCurrenciesBalanceEntries(
-  documentEntry: LedgerProto,
-  transactionEntry: LedgerProto,
+  documentEntries: LedgerProto[],
+  transactionEntries: LedgerProto[],
   charge: IGetChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
   balanceAgainstLocal?: boolean,
 ): LedgerProto[] {
+  if (!transactionEntries.length || !documentEntries.length) {
+    throw new LedgerError(
+      `Failed to locate transaction or document entries for charge "${charge.id}"`,
+    );
+  }
+
   const ledgerEntries: LedgerProto[] = [];
 
   if (charge.business_id && Object.keys(foreignAmounts).length > 0) {
@@ -353,6 +369,19 @@ export function multipleForeignCurrenciesBalanceEntries(
         foreign: 0,
       };
     }
+
+    const transactionEntry = transactionEntries.reduce((prev, curr) => {
+      if (!prev) {
+        return curr;
+      }
+      return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
+    });
+    const documentEntry = documentEntries.reduce((prev, curr) => {
+      if (!prev) {
+        return curr;
+      }
+      return prev.invoiceDate.getTime() < curr.invoiceDate.getTime() ? prev : curr;
+    });
 
     for (const [currency, { local, foreign }] of Object.entries(foreignAmounts)) {
       let localToUse = local;

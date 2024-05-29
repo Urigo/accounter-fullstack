@@ -243,7 +243,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
     return {
       records: ledgerProtoToRecordsConverter(records),
       charge,

@@ -299,7 +299,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,

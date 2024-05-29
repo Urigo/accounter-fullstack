@@ -481,6 +481,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,
+      errors,
       allowedUnbalancedBusinesses,
     );
 
