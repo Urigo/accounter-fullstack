@@ -294,7 +294,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       return getLedgerBalanceInfo(
         injector,
         ledgerBalance,
-        new Set(),
+        undefined,
         allowedUnbalancedBusinesses,
         financialEntities,
       );

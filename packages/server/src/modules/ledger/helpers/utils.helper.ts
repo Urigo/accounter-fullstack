@@ -216,7 +216,7 @@ export function updateLedgerBalanceByEntry(
 export async function getLedgerBalanceInfo(
   injector: Injector,
   ledgerBalance: Map<string, { amount: number; entityId: string }>,
-  errors: Set<string>,
+  errors: Set<string> = new Set(),
   allowedUnbalancedBusinesses: Set<string> = new Set(),
   financialEntities?: Array<IGetFinancialEntitiesByIdsResult>,
 ): Promise<

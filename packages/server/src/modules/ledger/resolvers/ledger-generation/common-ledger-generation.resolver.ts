@@ -290,7 +290,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // Add ledger completion entries
     const { balanceSum, isBalanced, unbalancedEntities, financialEntities } =
-      await getLedgerBalanceInfo(injector, ledgerBalance, errors, allowedUnbalancedBusinesses);
+      await getLedgerBalanceInfo(injector, ledgerBalance, undefined, allowedUnbalancedBusinesses);
     if (errors.size) {
       const records = [
         ...financialAccountLedgerEntries,
