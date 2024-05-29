@@ -21,6 +21,7 @@ import { writeToClipboard } from '../../../helpers';
       }
       property
       conversion
+      isInvoicePaymentDifferentCurrency
       userDescription
       taxCategory {
         id

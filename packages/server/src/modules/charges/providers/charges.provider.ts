@@ -103,6 +103,10 @@ const updateCharge = sql<IUpdateChargeQuery>`
     $isProperty,
     is_property
   ),
+  invoice_payment_currency_diff = COALESCE(
+    $isInvoicePaymentDifferentCurrency,
+    invoice_payment_currency_diff
+  ),
   accountant_reviewed = COALESCE(
     $accountantReviewed,
     accountant_reviewed
