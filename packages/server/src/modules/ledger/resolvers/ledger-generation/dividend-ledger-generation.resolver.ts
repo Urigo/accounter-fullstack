@@ -37,8 +37,10 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     // generate ledger from transactions
-    const paymentsLedgerEntries: LedgerProto[] = [];
+    const coreLedgerEntries: LedgerProto[] = [];
     const withholdingTaxLedgerEntries: LedgerProto[] = [];
+    const paymentLedgerEntries: LedgerProto[] = [];
+    const miscLedgerEntries: LedgerProto[] = [];
     let mainAccountId: string | undefined = undefined;
 
     // Get all transactions
@@ -109,174 +111,113 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       ...withholdingTaxTransactionsPromises,
     ]);
 
-    const totalDividendSumMap = new Map<number, number>();
     const allowedUnbalancedBusinesses = new Set<string>();
 
     // create a ledger record for dividend payments
-    const paymentsLedgerEntriesPromises = paymentsTransactions.map(
-      async preValidatedTransaction => {
-        try {
-          const dividendRecord = dividendRecords.find(
-            record => record.transaction_id === preValidatedTransaction.id,
+    const coreLedgerEntriesPromises = paymentsTransactions.map(async preValidatedTransaction => {
+      try {
+        const dividendRecord = dividendRecords.find(
+          record => record.transaction_id === preValidatedTransaction.id,
+        );
+
+        // run validations
+        if (!dividendRecord) {
+          throw new LedgerError(
+            `Transaction reference "${preValidatedTransaction.source_reference}" is missing matching dividend record`,
           );
-
-          // run validations
-          if (!dividendRecord) {
-            throw new LedgerError(
-              `Transaction reference "${preValidatedTransaction.source_reference}" is missing matching dividend record`,
-            );
-          }
-          const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
-          if (Number(transaction.amount) >= 0) {
-            throw new LedgerError(
-              `Dividend transaction amount cannot be positive (reference: ${transaction.source_reference})`,
-            );
-          }
-          if (Number(dividendRecord.amount) <= 0) {
-            throw new LedgerError(`Dividend amount is not positive (ID: ${dividendRecord.id})`);
-          }
-          if (charge.owner_id !== dividendRecord.owner_id) {
-            throw new LedgerError(
-              `Transaction reference "${transaction.source_reference}" is not matching dividend record ID="${dividendRecord.id}"`,
-            );
-          }
-
-          const withholdingTaxPercentage = dividendRecord.withholding_tax_percentage_override
-            ? Number(dividendRecord.withholding_tax_percentage_override)
-            : DIVIDEND_WITHHOLDING_TAX_PERCENTAGE;
-
-          // generate closing ledger entry out of the dividend record
-          const dividendRecordAbsAmount = Math.abs(Number(dividendRecord.amount));
-          const closingEntry: LedgerProto = {
-            id: dividendRecord.id,
-            invoiceDate: dividendRecord.date,
-            valueDate: dividendRecord.date,
-            currency: DEFAULT_LOCAL_CURRENCY,
-            isCreditorCounterparty: true,
-            ownerId: dividendRecord.owner_id,
-            creditAccountID1: dividendRecord.business_id,
-            localCurrencyCreditAmount1: dividendRecordAbsAmount,
-            localCurrencyDebitAmount1: dividendRecordAbsAmount,
-            chargeId,
-          };
-
-          paymentsLedgerEntries.push(closingEntry);
-          updateLedgerBalanceByEntry(closingEntry, ledgerBalance);
-          totalDividendSumMap.set(
-            dividendRecord.date.getTime(),
-            (totalDividendSumMap.get(dividendRecord.date.getTime()) ?? 0) + dividendRecordAbsAmount,
+        }
+        const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
+        if (Number(transaction.amount) >= 0) {
+          throw new LedgerError(
+            `Dividend transaction amount cannot be positive (reference: ${transaction.source_reference})`,
           );
-
-          // preparations for core ledger entries
-          let exchangeRate: number | undefined = undefined;
-          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-            // get exchange rate for currency
-            exchangeRate = await injector
-              .get(ExchangeProvider)
-              .getExchangeRates(transaction.currency, DEFAULT_LOCAL_CURRENCY, dividendRecord.date);
-          }
-
-          const partialEntry = generatePartialLedgerEntry(
-            transaction,
-            charge.owner_id,
-            exchangeRate,
+        }
+        if (Number(dividendRecord.amount) <= 0) {
+          throw new LedgerError(`Dividend amount is not positive (ID: ${dividendRecord.id})`);
+        }
+        if (charge.owner_id !== dividendRecord.owner_id) {
+          throw new LedgerError(
+            `Transaction reference "${transaction.source_reference}" is not matching dividend record ID="${dividendRecord.id}"`,
           );
+        }
 
-          const isForeignCurrency = partialEntry.currency !== DEFAULT_LOCAL_CURRENCY;
-          const amountDiff =
-            partialEntry.localCurrencyCreditAmount1 -
-            Number(dividendRecord.amount) * (1 - withholdingTaxPercentage);
-          if (Math.abs(amountDiff) > 0.005) {
-            if (isForeignCurrency) {
-              allowedUnbalancedBusinesses.add(transaction.business_id);
-            } else {
-              throw new LedgerError(
-                `Transaction reference "${transaction.source_reference}" and dividend record ID="${dividendRecord.id}" amounts mismatch`,
-              );
-            }
-          }
+        const withholdingTaxPercentage = dividendRecord.withholding_tax_percentage_override
+          ? Number(dividendRecord.withholding_tax_percentage_override)
+          : DIVIDEND_WITHHOLDING_TAX_PERCENTAGE;
+        const dividendRecordAbsAmount = Math.abs(Number(dividendRecord.amount));
 
-          // generate core ledger entries
-          let foreignAccountTaxCategoryId: string | undefined = undefined;
+        // preparations for core ledger entries
+        let exchangeRate: number | undefined = undefined;
+        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          // get exchange rate for currency
+          exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(transaction.currency, DEFAULT_LOCAL_CURRENCY, dividendRecord.date);
+        }
+
+        const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
+
+        const isForeignCurrency = partialEntry.currency !== DEFAULT_LOCAL_CURRENCY;
+        const amountDiff =
+          partialEntry.localCurrencyCreditAmount1 -
+          Number(dividendRecord.amount) * (1 - withholdingTaxPercentage);
+        if (Math.abs(amountDiff) > 0.005) {
           if (isForeignCurrency) {
-            foreignAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-              injector,
-              transaction,
+            allowedUnbalancedBusinesses.add(transaction.business_id);
+          } else {
+            throw new LedgerError(
+              `Transaction reference "${transaction.source_reference}" and dividend record ID="${dividendRecord.id}" amounts mismatch`,
             );
-
-            const coreLedgerEntry: LedgerProto = {
-              id: dividendRecord.id,
-              invoiceDate: dividendRecord.date,
-              valueDate: dividendRecord.date,
-              currency: DEFAULT_LOCAL_CURRENCY,
-              description: 'נ20',
-              isCreditorCounterparty: false,
-              ownerId: dividendRecord.owner_id,
-              debitAccountID1: dividendRecord.business_id,
-              localCurrencyDebitAmount1: dividendRecordAbsAmount,
-              creditAccountID1: mainAccountId,
-              localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-              creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
-              localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
-              chargeId,
-            };
-
-            paymentsLedgerEntries.push(coreLedgerEntry);
-            updateLedgerBalanceByEntry(coreLedgerEntry, ledgerBalance);
-
-            // create conversion ledger entries
-            const conversionEntry1: LedgerProto = {
-              ...partialEntry,
-              isCreditorCounterparty: false,
-              creditAccountID1: foreignAccountTaxCategoryId,
-              debitAccountID1: transaction.business_id,
-            };
-
-            paymentsLedgerEntries.push(conversionEntry1);
-            updateLedgerBalanceByEntry(conversionEntry1, ledgerBalance);
-
-            const conversionEntry2: LedgerProto = {
-              id: dividendRecord.id,
-              invoiceDate: dividendRecord.date,
-              valueDate: dividendRecord.date,
-              description: 'Conversion entry',
-              isCreditorCounterparty: true,
-              ownerId: dividendRecord.owner_id,
-              currency: DEFAULT_LOCAL_CURRENCY,
-              creditAccountID1: dividendRecord.business_id,
-              localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-              debitAccountID1: mainAccountId,
-              localCurrencyDebitAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-              chargeId,
-            };
-
-            paymentsLedgerEntries.push(conversionEntry2);
-            updateLedgerBalanceByEntry(conversionEntry2, ledgerBalance);
-          } else {
-            const coreLedgerEntry: LedgerProto = {
-              ...partialEntry,
-              isCreditorCounterparty: false,
-              description: 'נ20',
-              debitAccountID1: transaction.business_id,
-              localCurrencyDebitAmount1: dividendRecordAbsAmount,
-              creditAccountID1: mainAccountId,
-              localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-              creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
-              localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
-            };
-
-            paymentsLedgerEntries.push(coreLedgerEntry);
-            updateLedgerBalanceByEntry(coreLedgerEntry, ledgerBalance);
-          }
-        } catch (e) {
-          if (e instanceof LedgerError) {
-            errors.add(e.message);
-          } else {
-            throw e;
           }
         }
-      },
-    );
+
+        // generate core ledger entries
+        const coreLedgerEntry: LedgerProto = {
+          ...(isForeignCurrency
+            ? {
+                id: dividendRecord.id,
+                invoiceDate: dividendRecord.date,
+                valueDate: dividendRecord.date,
+                currency: DEFAULT_LOCAL_CURRENCY,
+                ownerId: dividendRecord.owner_id,
+                chargeId,
+              }
+            : partialEntry),
+          isCreditorCounterparty: false,
+          description: 'Main dividend record',
+          debitAccountID1: DIVIDEND_TAX_CATEGORY_ID,
+          localCurrencyDebitAmount1: dividendRecordAbsAmount,
+          creditAccountID1: dividendRecord.business_id,
+          localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
+          creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
+          localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
+        };
+
+        coreLedgerEntries.push(coreLedgerEntry);
+        updateLedgerBalanceByEntry(coreLedgerEntry, ledgerBalance);
+
+        let foreignAccountTaxCategoryId: string | undefined = undefined;
+
+        // create payment ledger entries
+        foreignAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
+
+        const paymentEntry: LedgerProto = {
+          ...partialEntry,
+          isCreditorCounterparty: false,
+          creditAccountID1: foreignAccountTaxCategoryId,
+          debitAccountID1: dividendRecord.business_id,
+        };
+
+        paymentLedgerEntries.push(paymentEntry);
+        updateLedgerBalanceByEntry(paymentEntry, ledgerBalance);
+      } catch (e) {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
+      }
+    });
 
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
@@ -297,26 +238,47 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         });
     });
 
-    const entriesPromises = [...feeTransactionsPromises, ...paymentsLedgerEntriesPromises];
+    const entriesPromises = [...feeTransactionsPromises, ...coreLedgerEntriesPromises];
     await Promise.all(entriesPromises);
 
-    // create ledger entry for summary dividend tax category
-    for (const [date, sum] of totalDividendSumMap.entries()) {
-      const ledgerEntry: LedgerProto = {
-        id: chargeId,
-        invoiceDate: new Date(date),
-        valueDate: new Date(date),
-        isCreditorCounterparty: false,
-        ownerId: charge.owner_id,
-        currency: DEFAULT_LOCAL_CURRENCY,
-        localCurrencyCreditAmount1: sum,
-        debitAccountID1: DIVIDEND_TAX_CATEGORY_ID,
-        localCurrencyDebitAmount1: sum,
-        chargeId,
-      };
+    // create foreign currency balance ledger
+    for (const entry of paymentLedgerEntries) {
+      if (entry.currency !== DEFAULT_LOCAL_CURRENCY) {
+        const currencyBalanceEntry1: LedgerProto = {
+          id: entry.id + `|${entry.currency}-balance`, // NOTE: this field is dummy
+          creditAccountID1: entry.debitAccountID1,
+          localCurrencyCreditAmount1: entry.localCurrencyCreditAmount1,
+          localCurrencyDebitAmount1: entry.localCurrencyCreditAmount1,
+          creditAmount1: entry.creditAmount1,
+          description: `Foreign currency balance (${entry.currency})`,
+          isCreditorCounterparty: true,
+          invoiceDate: entry.invoiceDate,
+          valueDate: entry.valueDate,
+          currency: entry.currency,
+          ownerId: entry.ownerId,
+          chargeId: charge.id,
+        };
 
-      paymentsLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        miscLedgerEntries.push(currencyBalanceEntry1);
+        updateLedgerBalanceByEntry(currencyBalanceEntry1, ledgerBalance);
+
+        const currencyBalanceEntry2: LedgerProto = {
+          id: entry.id + `|${DEFAULT_LOCAL_CURRENCY}-balance`, // NOTE: this field is dummy
+          debitAccountID1: entry.debitAccountID1,
+          localCurrencyCreditAmount1: entry.localCurrencyCreditAmount1,
+          localCurrencyDebitAmount1: entry.localCurrencyCreditAmount1,
+          description: `Foreign currency balance (${DEFAULT_LOCAL_CURRENCY})`,
+          isCreditorCounterparty: false,
+          invoiceDate: entry.invoiceDate,
+          valueDate: entry.valueDate,
+          currency: DEFAULT_LOCAL_CURRENCY,
+          ownerId: entry.ownerId,
+          chargeId: charge.id,
+        };
+
+        miscLedgerEntries.push(currencyBalanceEntry2);
+        updateLedgerBalanceByEntry(currencyBalanceEntry2, ledgerBalance);
+      }
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
@@ -328,8 +290,10 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
     const records = [
       ...withholdingTaxLedgerEntries,
-      ...paymentsLedgerEntries,
+      ...coreLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
+      ...paymentLedgerEntries,
+      ...miscLedgerEntries,
     ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
