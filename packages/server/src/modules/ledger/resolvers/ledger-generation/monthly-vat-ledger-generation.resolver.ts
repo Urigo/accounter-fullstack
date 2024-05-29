@@ -99,16 +99,6 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         expenses as RawVatReportRecord[],
       );
 
-      // validate ledger records are balanced
-      ledgerBalance.set(outputsVatTaxCategory.id, {
-        amount: incomeVat,
-        entityId: outputsVatTaxCategory.id,
-      });
-      ledgerBalance.set(inputsVatTaxCategory.id, {
-        amount: expensesVat * -1,
-        entityId: inputsVatTaxCategory.id,
-      });
-
       // for each transaction, create a ledger record
       const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
         try {
