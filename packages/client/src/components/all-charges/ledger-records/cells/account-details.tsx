@@ -186,7 +186,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
   return (
     <td>
       <div className="flex flex-col">
-        {creditAccount && (
+        {(creditAccount || isAccountDiff) && (
           <>
             <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
               <NavLink
