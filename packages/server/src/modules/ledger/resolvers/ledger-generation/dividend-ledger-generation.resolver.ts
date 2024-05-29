@@ -322,6 +322,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,
+      errors,
       allowedUnbalancedBusinesses,
     );
 

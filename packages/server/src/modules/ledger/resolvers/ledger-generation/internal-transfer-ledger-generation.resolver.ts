@@ -289,7 +289,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,

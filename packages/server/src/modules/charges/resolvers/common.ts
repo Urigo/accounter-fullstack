@@ -28,6 +28,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   property: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.is_conversion,
   salary: DbCharge => DbCharge.is_salary,
+  isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
   userDescription: DbCharge => DbCharge.user_description,
   minEventDate: DbCharge => DbCharge.transactions_min_event_date,
   minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,

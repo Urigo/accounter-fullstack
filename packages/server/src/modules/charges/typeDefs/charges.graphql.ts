@@ -34,6 +34,8 @@ export default gql`
     conversion: Boolean
     " is salary "
     salary: Boolean
+    " is invoice currency different from the payment currency"
+    isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
     userDescription: String
     " minimal event date from linked transactions "
@@ -57,6 +59,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -74,6 +77,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -91,6 +95,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -108,6 +113,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -125,6 +131,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -142,6 +149,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -159,6 +167,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -176,6 +185,7 @@ export default gql`
     property: Boolean
     conversion: Boolean
     salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: Date
     minDebitDate: Date
@@ -248,6 +258,7 @@ export default gql`
     # invoice: Invoice
     isProperty: Boolean
     isConversion: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
     userDescription: String
     defaultTaxCategoryID: UUID

@@ -269,6 +269,18 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
               <Switch {...field} checked={value === true} label="Is Conversion" />
             )}
           />
+          <Controller
+            name="isInvoicePaymentDifferentCurrency"
+            control={chargeControl}
+            defaultValue={charge.isInvoicePaymentDifferentCurrency}
+            render={({ field: { value, ...field } }): ReactElement => (
+              <Switch
+                {...field}
+                checked={value === true}
+                label="Is Invoice-Payment currency difference"
+              />
+            )}
+          />
           <YearPickerInput
             label="Years of relevance"
             type="multiple"

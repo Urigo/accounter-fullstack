@@ -235,7 +235,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       });
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [...financialAccountLedgerEntries, ...accountingLedgerEntries];
     await storeInitialGeneratedRecords(charge, records, injector);

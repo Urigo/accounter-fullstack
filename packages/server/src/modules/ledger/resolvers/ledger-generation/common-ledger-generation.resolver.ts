@@ -255,25 +255,25 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const mainBusiness = charge.business_id;
     const businessBalance = ledgerBalance.get(mainBusiness ?? '');
-    if (mainBusiness && Object.keys(businessBalance?.foreignAmounts ?? {}).length > 1) {
-      const transactionEntry = financialAccountLedgerEntries.find(entry =>
+    if (
+      mainBusiness &&
+      Object.keys(businessBalance?.foreignAmounts ?? {}).length >
+        (charge.invoice_payment_currency_diff ? 0 : 1)
+    ) {
+      const transactionEntries = financialAccountLedgerEntries.filter(entry =>
         [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
       );
-      const documentEntry = accountingLedgerEntries.find(entry =>
+      const documentEntries = accountingLedgerEntries.filter(entry =>
         [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
       );
 
-      if (!transactionEntry || !documentEntry) {
-        throw new LedgerError(
-          `Failed to locate transaction or document entry for business ID="${mainBusiness}"`,
-        );
-      }
       try {
         const entries = multipleForeignCurrenciesBalanceEntries(
-          documentEntry,
-          transactionEntry,
+          documentEntries,
+          transactionEntries,
           charge,
           businessBalance!.foreignAmounts!,
+          charge.invoice_payment_currency_diff ?? false,
         );
         for (const ledgerEntry of entries) {
           miscLedgerEntries.push(ledgerEntry);
@@ -290,7 +290,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // Add ledger completion entries
     const { balanceSum, isBalanced, unbalancedEntities, financialEntities } =
-      await getLedgerBalanceInfo(injector, ledgerBalance, allowedUnbalancedBusinesses);
+      await getLedgerBalanceInfo(injector, ledgerBalance, undefined, allowedUnbalancedBusinesses);
     if (errors.size) {
       const records = [
         ...financialAccountLedgerEntries,
@@ -336,7 +336,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
 
       const mightRequireExchangeRateRecord =
-        (hasMultipleDates && foreignCurrencyCount) || foreignCurrencyCount >= 2;
+        (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
       const unbalancedBusinesses = unbalancedEntities.filter(({ entityId }) =>
         financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
       );
@@ -414,6 +414,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,
+      errors,
       allowedUnbalancedBusinesses,
     );
     return {

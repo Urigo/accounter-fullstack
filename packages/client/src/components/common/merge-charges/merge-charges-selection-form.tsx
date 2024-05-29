@@ -29,6 +29,7 @@ import { useMergeCharges } from '../../../hooks/use-merge-charges';
       }
       conversion
       property
+      isInvoicePaymentDifferentCurrency
       userDescription
     }
   }
@@ -61,6 +62,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedConversion, setSelectedConversion] = useState<
+    { id: string; value: boolean } | undefined
+  >(undefined);
+  const [selectedCurrencyDiff, setSelectedCurrencyDiff] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedTags, setSelectedTags] = useState<{ id: string; value: string } | undefined>(
@@ -128,6 +132,16 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
           .map(tag => ({ name: tag })),
       };
     }
+    if (
+      selectedCurrencyDiff &&
+      selectedCurrencyDiff.value !== mainCharge.isInvoicePaymentDifferentCurrency
+    ) {
+      fields ??= {};
+      fields = {
+        ...fields,
+        isInvoicePaymentDifferentCurrency: selectedCurrencyDiff.value,
+      };
+    }
     await mergeCharges({
       baseChargeID: mainCharge.id,
       chargeIdsToMerge: distinctChargeIDs.filter(id => id !== mainCharge.id),
@@ -143,8 +157,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedOwner,
     selectedConversion,
     selectedProperty,
+    selectedCurrencyDiff,
     selectedTags,
     onDone,
+    resetMerge,
   ]);
 
   return (
@@ -185,6 +201,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedProperty({
                           id: charge.id,
                           value: charge.property ?? false,
+                        });
+                        setSelectedCurrencyDiff({
+                          id: charge.id,
+                          value: charge.isInvoicePaymentDifferentCurrency ?? false,
                         });
                         setSelectedConversion({
                           id: charge.id,
@@ -306,6 +326,39 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.conversion ? (
+                        <SquareCheck size={20} color="green" />
+                      ) : (
+                        <SquareX size={20} color="red" />
+                      )}
+                    </div>
+                  </button>
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <th>Invoice-Payment Currency Difference</th>
+              {charges.map(charge => (
+                <td key={charge.id}>
+                  <button
+                    className="w-full px-2"
+                    disabled={
+                      charge.isInvoicePaymentDifferentCurrency == null ||
+                      charge.isInvoicePaymentDifferentCurrency === selectedCurrencyDiff?.value
+                    }
+                    onClick={(): void => {
+                      setSelectedProperty({
+                        id: charge.id,
+                        value: charge.isInvoicePaymentDifferentCurrency ?? false,
+                      });
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center px-2 py-2 border-x-2"
+                      style={
+                        selectedCurrencyDiff?.id === charge.id ? { background: '#228be633' } : {}
+                      }
+                    >
+                      {charge.isInvoicePaymentDifferentCurrency ? (
                         <SquareCheck size={20} color="green" />
                       ) : (
                         <SquareX size={20} color="red" />
