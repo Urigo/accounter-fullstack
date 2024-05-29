@@ -326,6 +326,7 @@ export function multipleForeignCurrenciesBalanceEntries(
   transactionEntry: LedgerProto,
   charge: IGetChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
+  balanceAgainstLocal?: boolean,
 ): LedgerProto[] {
   const ledgerEntries: LedgerProto[] = [];
 
@@ -346,17 +347,31 @@ export function multipleForeignCurrenciesBalanceEntries(
       localDiff += local;
     }
 
+    if (balanceAgainstLocal && !foreignAmounts.ILS) {
+      foreignAmounts.ILS = {
+        local: -localDiff,
+        foreign: 0,
+      };
+    }
+
     for (const [currency, { local, foreign }] of Object.entries(foreignAmounts)) {
-      if (Math.abs(foreign) < 0.005) {
-        continue;
-      }
-
       let localToUse = local;
-      if (mainForeignCurrency?.currency === currency) {
-        localToUse -= localDiff;
+
+      if (!balanceAgainstLocal) {
+        if (Math.abs(foreign) < 0.005) {
+          continue;
+        }
+
+        if (mainForeignCurrency?.currency === currency) {
+          localToUse -= localDiff;
+        }
       }
 
-      const isCreditorCounterparty = foreign < 0;
+      const isLocalCurrencyAndShouldBeBalanced =
+        balanceAgainstLocal && mainForeignCurrency && DEFAULT_LOCAL_CURRENCY === currency;
+      const isCreditorCounterparty = isLocalCurrencyAndShouldBeBalanced
+        ? mainForeignCurrency!.amount > 0
+        : foreign < 0;
       const ledgerEntry: LedgerProto = {
         id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
         ...(isCreditorCounterparty
@@ -368,8 +383,12 @@ export function multipleForeignCurrenciesBalanceEntries(
             }),
         localCurrencyCreditAmount1: Math.abs(localToUse),
         localCurrencyDebitAmount1: Math.abs(localToUse),
-        creditAmount1: Math.abs(foreign),
-        debitAmount1: Math.abs(foreign),
+        ...(balanceAgainstLocal && !foreign
+          ? {}
+          : {
+              creditAmount1: Math.abs(foreign),
+              debitAmount1: Math.abs(foreign),
+            }),
         description: 'Foreign currency balance',
         isCreditorCounterparty,
         invoiceDate: documentEntry.invoiceDate,
