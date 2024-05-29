@@ -166,10 +166,8 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <td>{row.business.name}</td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
-                  {row.amount.raw && row.amount.raw !== 0 ? (
+                  {row.amount && row.amount.raw !== 0 && (
                     <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>{row.amount.formatted}</Mark>
-                  ) : (
-                    row.amount.formatted
                   )}
                 </td>
                 <td>
@@ -184,17 +182,14 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isEur && (
                   <>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      {row.eurAmount?.raw && row.eurAmount.raw !== 0 ? (
+                      {!!row.eurAmount && row.eurAmount.raw !== 0 && (
                         <Mark color={row.eurAmount.raw > 0 ? 'green' : 'red'}>
                           {row.eurAmount.formatted}
                         </Mark>
-                      ) : (
-                        row.eurAmount?.formatted
                       )}
                     </td>
                     <td>
-                      {row.eurAmount?.raw !== 0 &&
-                        row.eurBalance !== 0 &&
+                      {(row.eurAmount?.raw ?? 0) !== 0 &&
                         (row.eurBalance === 0 ? (
                           `${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`
                         ) : (
@@ -208,12 +203,10 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isUsd && (
                   <>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      {row.usdAmount?.raw && row.usdAmount.raw !== 0 ? (
+                      {!!row.usdAmount && (row.usdAmount?.raw ?? 0) !== 0 && (
                         <Mark color={row.usdAmount.raw > 0 ? 'green' : 'red'}>
                           {row.usdAmount.formatted}
                         </Mark>
-                      ) : (
-                        row.usdAmount?.formatted
                       )}
                     </td>
                     <td>
@@ -231,17 +224,14 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isGbp && (
                   <>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      {row.gbpAmount?.raw && row.gbpAmount.raw !== 0 ? (
+                      {!!row.gbpAmount && row.gbpAmount.raw !== 0 && (
                         <Mark color={row.gbpAmount.raw > 0 ? 'green' : 'red'}>
                           {row.gbpAmount.formatted}
                         </Mark>
-                      ) : (
-                        row.gbpAmount?.formatted
                       )}
                     </td>
                     <td>
                       {row.gbpAmount?.raw !== 0 &&
-                        row.gbpBalance !== 0 &&
                         (row.gbpBalance === 0 ? (
                           `${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`
                         ) : (
