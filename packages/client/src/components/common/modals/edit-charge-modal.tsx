@@ -30,9 +30,11 @@ import { writeToClipboard } from '../../../helpers';
       tags {
         name
       }
-      businessTrip {
-        id
-        name
+      ... on BusinessTripCharge {
+        businessTrip {
+          id
+          name
+        }
       }
       yearsOfRelevance
     }

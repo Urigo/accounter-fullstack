@@ -11,7 +11,7 @@ import { BusinessTripTransactionsProvider } from '../providers/business-trips-tr
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 import { businessTripSummary } from './business-trip-summary.resolver.js';
-import { commonBusinessTransactionFields, commonChargeFields } from './common.js';
+import { commonBusinessTransactionFields } from './common.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Query: {
@@ -187,28 +187,20 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     ...commonBusinessTransactionFields,
     expenseType: dbTransaction => dbTransaction.expense_type,
   },
-  CommonCharge: {
-    ...commonChargeFields,
-  },
-  ConversionCharge: {
-    ...commonChargeFields,
-  },
-  SalaryCharge: {
-    ...commonChargeFields,
-  },
-  InternalTransferCharge: {
-    ...commonChargeFields,
-  },
-  DividendCharge: {
-    ...commonChargeFields,
-  },
   BusinessTripCharge: {
-    ...commonChargeFields,
-  },
-  MonthlyVatCharge: {
-    ...commonChargeFields,
-  },
-  BankDepositCharge: {
-    ...commonChargeFields,
+    businessTrip: (dbCharge, _, { injector }) => {
+      if (!dbCharge.business_trip_id) {
+        return null;
+      }
+      try {
+        return injector
+          .get(BusinessTripsProvider)
+          .getBusinessTripsByIdLoader.load(dbCharge.business_trip_id)
+          .then(businessTrip => businessTrip ?? null);
+      } catch (e) {
+        console.error(`Error finding business trip for charge id ${dbCharge.id}:`, e);
+        throw new GraphQLError(`Error finding business trip for charge id ${dbCharge.id}`);
+      }
+    },
   },
 };
