@@ -4,7 +4,10 @@
     "composite": true,
     "jsx": "react-jsx",
     "noUnusedParameters": true,
-
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "useDefineForClassFields": true,
     "esModuleInterop": false,
