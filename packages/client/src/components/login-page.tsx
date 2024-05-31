@@ -1,100 +1,101 @@
-import { ChangeEvent, FormEvent, ReactElement, useEffect, useState } from 'react';
-import { useLocation, useNavigate, type Location } from 'react-router-dom';
-import { Button, Card, Loader, PasswordInput, TextInput } from '@mantine/core';
+import { ReactElement, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { userService } from '../services/user-service';
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 
-type StateProps = {
-  message?: string;
-};
+const formSchema = z.object({
+  username: z.string().min(2).max(50),
+  password: z.string().min(6).max(50),
+})
+
 
 export const LoginPage = (): ReactElement => {
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  })
+
+
   useEffect(() => {
     userService.logout();
   }, []);
 
-  const location: Location<StateProps> = useLocation();
-  const { message = '' } = location.state ?? {};
-
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(message);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  function handleChange(e: ChangeEvent<HTMLInputElement>): void {
-    const { name, value } = e.target;
-    switch (name) {
-      case 'username':
-        setUsername(value);
-        break;
-      case 'password':
-        setPassword(value);
-        break;
-    }
-  }
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>): void {
-    e.preventDefault();
-
-    setSubmitted(true);
-
-    // stop here if form is invalid
-    if (!(username && password)) {
-      setError(error);
-      return;
-    }
-
-    setLoading(true);
-    userService.login(username, password).then(
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    userService.login(values.username, values.password).then(
       _user => {
         navigate('/');
       },
       error => {
-        setError(error);
-        setLoading(false);
+        form.setError('password', {
+          type: 'manual',
+          message: error.message,
+        });
       },
     );
   }
 
+
+
   return (
-    <div className="flex flex-row justify-center">
-      <form name="login" onSubmit={handleSubmit} className="p-8 max-w-96">
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <TextInput
-            size="sm"
-            name="username"
-            value={username}
-            onChange={handleChange}
-            label="Username"
-            placeholder="username"
-            error={submitted && !username ? 'Username is required' : undefined}
-          />
-
-          <PasswordInput
-            name="password"
-            value={password}
-            onChange={handleChange}
-            label="Password"
-            placeholder="password"
-            error={submitted && !password ? 'Password is required' : undefined}
-          />
-
-          <Button
-            variant="outline"
-            color="blue"
-            fullWidth
-            mt="md"
-            radius="md"
-            type="submit"
-            rightIcon={loading ? <Loader /> : undefined}
-          >
-            Login
-          </Button>
-
-          {error && <div className="alert alert-danger">{error}</div>}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 flex flex-row justify-center h-full items-center m-10">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl">Login</CardTitle>
+            <CardDescription>
+              Enter your email below to login to your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-2">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type='submit' className="w-full">Sign in</Button>
+          </CardFooter>
         </Card>
       </form>
-    </div>
+    </Form>
   );
 };

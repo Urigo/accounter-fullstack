@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/react": "11.11.4",
     "@emotion/server": "11.11.0",
+    "@hookform/resolvers": "^3.4.2",
     "@mantine/carousel": "6.0.21",
     "@mantine/core": "6.0.21",
     "@mantine/dates": "6.0.21",
@@ -43,7 +44,8 @@
     "tailwind-merge": "2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "urql": "4.1.0",
-    "vaul": "^0.9.1"
+    "vaul": "^0.9.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/chart.js": "2.9.41",
