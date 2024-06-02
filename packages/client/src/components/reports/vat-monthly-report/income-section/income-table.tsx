@@ -14,7 +14,7 @@ import { IncomeRow } from './income-row.js';
         raw
       }
     }
-}
+  }
 `;
 
 interface Props {

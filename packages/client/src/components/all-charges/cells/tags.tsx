@@ -11,21 +11,21 @@ import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
     __typename
     id
     tags {
-        name
+      name
     }
     ... on Charge @defer {
-        validationData {
-          ...on ValidationData {
-            missingInfo
+      validationData {
+        ... on ValidationData {
+          missingInfo
+        }
+      }
+      missingInfoSuggestions {
+        ... on ChargeSuggestions {
+          tags {
+            name
           }
         }
-        missingInfoSuggestions {
-          ...on ChargeSuggestions {
-            tags {
-              name
-            }
-          }
-        }
+      }
     }
   }
 `;

@@ -7,8 +7,8 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
   fragment AllChargesAmountFields on Charge {
     id
     totalAmount {
-        raw
-        formatted
+      raw
+      formatted
     }
   }
 `;

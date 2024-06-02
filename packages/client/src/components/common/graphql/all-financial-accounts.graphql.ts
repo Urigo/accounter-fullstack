@@ -2,7 +2,7 @@
 /* GraphQL */ `
   query AllFinancialAccounts {
     allFinancialAccounts {
-        __typename
+      __typename
       id
       ... on BankFinancialAccount {
         name

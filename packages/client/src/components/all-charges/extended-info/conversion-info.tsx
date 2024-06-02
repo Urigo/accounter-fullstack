@@ -20,7 +20,7 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
         to
         rate
       }
-      }
+    }
   }
 `;
 

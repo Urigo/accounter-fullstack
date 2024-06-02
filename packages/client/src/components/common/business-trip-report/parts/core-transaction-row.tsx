@@ -18,23 +18,23 @@ import { CurrencyInput } from '../../index.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessTripReportCoreTransactionRowFields on BusinessTripTransaction {
+    id
+    date
+    valueDate
+    amount {
+      formatted
+      raw
+      currency
+    }
+    employee {
       id
-      date
-      valueDate
-      amount {
-        formatted
-        raw
-        currency
-      }
-      employee {
-        id
-        name
-      }
-      payedByEmployee
-      transaction {
-        id
-        chargeId
-      }
+      name
+    }
+    payedByEmployee
+    transaction {
+      id
+      chargeId
+    }
   }
 `;
 

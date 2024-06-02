@@ -71,7 +71,6 @@ import { getBusinessHref } from '../../helpers.js';
           name
         }
       }
-
     }
     ... on Proforma {
       creditor {

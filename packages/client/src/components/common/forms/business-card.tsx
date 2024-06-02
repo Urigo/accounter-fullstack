@@ -32,8 +32,8 @@ import { SimpleGrid, TextInput } from '../index.js';
         name
         phoneNumber
         sortCode {
-            id
-            name
+          id
+          name
         }
         taxCategory {
           id

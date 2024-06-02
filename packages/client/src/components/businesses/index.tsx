@@ -18,9 +18,8 @@ import { BusinessesFilters } from './businesses-filters.js';
         id
         name
         ... on LtdFinancialEntity {
-            ...AllBusinessesRowFields
+          ...AllBusinessesRowFields
         }
-
       }
       pageInfo {
         totalPages
