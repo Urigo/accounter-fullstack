@@ -229,7 +229,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       await Promise.all(
         newDocuments.map(async greenInvoiceDoc => {
-          if (!greenInvoiceDoc || greenInvoiceDoc.type === 300) {
+          if (!greenInvoiceDoc || Number(greenInvoiceDoc.type) === 300) {
             // ignore if no doc or חשבונית עסקה
             return;
           }

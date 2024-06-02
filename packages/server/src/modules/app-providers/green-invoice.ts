@@ -40,22 +40,21 @@ export class GreenInvoiceProvider {
 
   public async addExpenseDraftByFile(file: File | Blob) {
     try {
-      // const sdk = await this.getSDK();
-      // const { getFileUploadUrl: fileUploadParams } = await sdk.getFileUploadUrl_query({
-      //   context: 'expense',
-      //   data: { source: 5 },
-      // });
-
-      await this.getSDK();
-      const fileUploadParams = await fetch(
-        'https://apigw.greeninvoice.co.il/file-upload/v1/url?context=expense&data=%7B%22source%22%3A%205%7D', // TODO: replace with SDK once query params encoding issue is solved
+      // convert what-wg file to nodejs file
+      const newFile = new File(
+        [Buffer.from(await file.arrayBuffer())],
+        'name' in file ? file.name : 'new-file',
         {
-          method: 'GET',
-          headers: {
-            authorization: `Bearer ${this.authToken}`,
-          },
+          type: file.type,
         },
-      ).then(res => res.json());
+      );
+
+      // get file upload url + params
+      const sdk = await this.getSDK();
+      const { getFileUploadUrl: fileUploadParams } = await sdk.getFileUploadUrl_query({
+        context: 'expense',
+        data: { source: 5 },
+      });
 
       if (!fileUploadParams) {
         throw new Error('No file upload params returned');
@@ -64,29 +63,29 @@ export class GreenInvoiceProvider {
       const form = new FormData();
       for (const [field, value] of Object.entries(fileUploadParams.fields)) {
         if (value) {
-          form.append(field, value as string);
+          // replace field names underscores with dashes (originally dashes, Mesh converted to underscores to match GraphQL spec)
+          form.append(field.replaceAll('_', '-'), value as string);
         }
       }
+      form.append('file', newFile, newFile.name);
 
-      form.append('file', file);
-
+      // upload the file
       const expenseDraft = await fetch(fileUploadParams.url, {
         method: 'POST',
         body: form,
-        headers: {
-          // 'Content-Type': 'multipart/form-data', // Adding this header seems to break the request, resulting in 400 malformed request
-        },
       }).then(async res => {
-        if ([200, 201].includes(res.status)) {
-          return res.json();
+        if (![200, 201, 204].includes(res.status)) {
+          console.error(res);
+          console.error(await res.text());
+          throw new Error('Failed to upload file');
         }
-
-        console.error(res);
-        console.error(await res.text());
-        throw new Error('Failed to upload file');
+        return;
       });
 
-      return expenseDraft;
+      // TODO: use webhook to get the result
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return expenseDraft as any;
     } catch (e) {
       console.error(e);
       throw new Error(`Green Invoice error: ${(e as Error).message}`);

@@ -1,4 +1,3 @@
-import type { GetExpenseDraft } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { Currency } from '@shared/enums';
@@ -30,7 +29,12 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
         throw new Error(`Failed to convert file to base64: ${err.message}`);
       });
 
-      return injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(base64string);
+      // TODO: revert this change after experimentation is over
+      // return injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(base64string);
+      return Promise.resolve({
+        fileUrl: '',
+        imageUrl: '',
+      });
     };
 
     const uploadToGreenInvoice = injector.get(GreenInvoiceProvider).addExpenseDraftByFile(file);
@@ -48,7 +52,17 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       throw new Error(`Green Invoice Error: ${data.errorMessage}`);
     }
 
-    const draft = data as GetExpenseDraft;
+    // TODO: get new result type from Green Invoice
+    const draft = data as {
+      expense?: {
+        documentType: number;
+        number: string;
+        date: Date;
+        amount: number;
+        currency: string;
+        vat: number;
+      };
+    };
 
     const newDocument: IInsertDocumentsParams['document'][number] = {
       image: imageUrl ?? null,
