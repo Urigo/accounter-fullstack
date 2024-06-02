@@ -27,7 +27,8 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
     taxReducedLocalAmount {
       formatted
     }
-  }`;
+  }
+`;
 
 interface Props {
   data: FragmentType<typeof VatReportIncomeRowFieldsFragmentDoc>;

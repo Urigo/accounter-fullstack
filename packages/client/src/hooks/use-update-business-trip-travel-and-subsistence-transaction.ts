@@ -8,7 +8,9 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateBusinessTripTravelAndSubsistenceTransaction($fields: UpdateBusinessTripTravelAndSubsistenceTransactionInput!) {
+  mutation UpdateBusinessTripTravelAndSubsistenceTransaction(
+    $fields: UpdateBusinessTripTravelAndSubsistenceTransactionInput!
+  ) {
     updateBusinessTripTravelAndSubsistenceTransaction(fields: $fields)
   }
 `;

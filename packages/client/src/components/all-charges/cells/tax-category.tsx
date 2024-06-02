@@ -9,8 +9,8 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
     __typename
     id
     taxCategory {
-        id
-        name
+      id
+      name
     }
     ... on Charge @defer {
       validationData {

@@ -8,9 +8,9 @@ import { AllChargesRow } from './all-charges-row.js';
 /* GraphQL */ `
   fragment AllChargesTableFields on Charge {
     id
-      owner {
-        ... on Business @defer {
-          id
+    owner {
+      ... on Business @defer {
+        id
       }
     }
     ...AllChargesRowFields

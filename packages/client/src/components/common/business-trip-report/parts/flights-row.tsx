@@ -15,12 +15,12 @@ import { CoreTransactionRow } from './core-transaction-row.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
-      id
-      payedByEmployee
-      ...BusinessTripReportCoreTransactionRowFields
-      origin
-      destination
-      class
+    id
+    payedByEmployee
+    ...BusinessTripReportCoreTransactionRowFields
+    origin
+    destination
+    class
   }
 `;
 

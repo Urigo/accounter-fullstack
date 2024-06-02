@@ -9,7 +9,8 @@ import { useToggleChargeAccountantApproval } from '../../../../hooks/use-toggle-
   fragment VatReportAccountantApprovalFields on VatReportRecord {
     chargeId
     chargeAccountantReviewed
-  }`;
+  }
+`;
 
 interface Props {
   data: FragmentType<typeof VatReportAccountantApprovalFieldsFragmentDoc>;

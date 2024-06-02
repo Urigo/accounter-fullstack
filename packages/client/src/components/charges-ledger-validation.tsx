@@ -25,11 +25,11 @@ import {
 /* GraphQL */ `
   query ChargesLedgerValidation($limit: Int, $filters: ChargeFilter) {
     chargesWithLedgerChanges(limit: $limit, filters: $filters) @stream {
-        progress
-        charge {
-            id
-            ...AllChargesTableFields
-        }
+      progress
+      charge {
+        id
+        ...AllChargesTableFields
+      }
     }
   }
 `;

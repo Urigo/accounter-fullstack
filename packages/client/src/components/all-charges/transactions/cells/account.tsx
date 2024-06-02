@@ -7,10 +7,10 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
   fragment TransactionsTableAccountFields on Transaction {
     id
     account {
-        id
-        __typename
-        name
-        type
+      id
+      __typename
+      name
+      type
     }
   }
 `;

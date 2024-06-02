@@ -39,13 +39,14 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
     }
     roundedLocalVatAfterDeduction {
       formatted
-    #   raw
+      #   raw
     }
     taxReducedLocalAmount {
       formatted
-    #   raw
+      #   raw
     }
-  }`;
+  }
+`;
 
 interface Props {
   data: FragmentType<typeof VatReportExpensesRowFieldsFragmentDoc>;

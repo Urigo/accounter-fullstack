@@ -9,15 +9,15 @@ import { ExpensesRow } from './expenses-row.js';
 /* GraphQL */ `
   fragment VatReportExpensesFields on VatReportResult {
     expenses {
-        ...VatReportExpensesRowFields
-        roundedLocalVatAfterDeduction {
-          raw
-        }
-        taxReducedLocalAmount {
-          raw
-        }
+      ...VatReportExpensesRowFields
+      roundedLocalVatAfterDeduction {
+        raw
       }
-}
+      taxReducedLocalAmount {
+        raw
+      }
+    }
+  }
 `;
 
 interface Props {

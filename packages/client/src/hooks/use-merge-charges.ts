@@ -8,8 +8,16 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation MergeCharges($baseChargeID: UUID!, $chargeIdsToMerge: [UUID!]!, $fields: UpdateChargeInput) {
-    mergeCharges(baseChargeID: $baseChargeID, chargeIdsToMerge: $chargeIdsToMerge, fields: $fields) {
+  mutation MergeCharges(
+    $baseChargeID: UUID!
+    $chargeIdsToMerge: [UUID!]!
+    $fields: UpdateChargeInput
+  ) {
+    mergeCharges(
+      baseChargeID: $baseChargeID
+      chargeIdsToMerge: $chargeIdsToMerge
+      fields: $fields
+    ) {
       __typename
       ... on MergeChargeSuccessfulResult {
         charge {

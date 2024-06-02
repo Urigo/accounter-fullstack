@@ -8,10 +8,10 @@ import { DocumentsTableRow } from './documents-table-row.js';
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
-      additionalDocuments {
-        id
-        ...TableDocumentsRowFields
-      }
+    additionalDocuments {
+      id
+      ...TableDocumentsRowFields
+    }
   }
 `;
 

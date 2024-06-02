@@ -14,13 +14,17 @@ import { SalariesTable } from './salaries-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query SalaryScreenRecords($fromDate: TimelessDate!, $toDate: TimelessDate!, $employeeIDs: [UUID!]) {
+  query SalaryScreenRecords(
+    $fromDate: TimelessDate!
+    $toDate: TimelessDate!
+    $employeeIDs: [UUID!]
+  ) {
     salaryRecordsByDates(fromDate: $fromDate, toDate: $toDate, employeeIDs: $employeeIDs) {
-        month
-        employee {
-            id
-        }
-        ...SalariesTableFields
+      month
+      employee {
+        id
+      }
+      ...SalariesTableFields
     }
   }
 `;

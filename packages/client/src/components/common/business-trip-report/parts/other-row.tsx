@@ -14,11 +14,11 @@ import { CoreTransactionRow } from './core-transaction-row.jsx';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
-      id
-      ...BusinessTripReportCoreTransactionRowFields
-      payedByEmployee
-      expenseType
-      deductibleExpense
+    id
+    ...BusinessTripReportCoreTransactionRowFields
+    payedByEmployee
+    expenseType
+    deductibleExpense
   }
 `;
 
