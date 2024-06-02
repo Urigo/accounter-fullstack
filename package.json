@@ -75,6 +75,8 @@
     "vitest": "1.6.0"
   },
   "resolutions": {
+    "@graphql-mesh/transport-rest": "0.2.7-alpha-20240530171018-322ff4a7144b3307c6c110f797b91c488c1fb81e",
+    "@omnigraph/json-schema": "0.100.10-alpha-20240530171018-322ff4a7144b3307c6c110f797b91c488c1fb81e",
     "graphql": "16.8.2"
   },
   "bob": false,

@@ -59,7 +59,7 @@
     "@graphql-mesh/config": "0.100.8",
     "@graphql-mesh/cross-helpers": "0.4.3",
     "@graphql-mesh/http": "0.99.8",
-    "@graphql-mesh/json-schema": "0.100.11",
+    "@graphql-mesh/json-schema": "0.100.10-alpha-20240530171018-322ff4a7144b3307c6c110f797b91c488c1fb81e",
     "@graphql-mesh/runtime": "0.99.8",
     "@graphql-mesh/store": "0.98.7",
     "@graphql-mesh/types": "0.98.7",

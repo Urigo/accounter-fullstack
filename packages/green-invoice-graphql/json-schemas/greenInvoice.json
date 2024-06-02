@@ -25,18 +25,6 @@
         }
       }
     },
-    "addExpenseDraftByFileNewRequest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [],
-      "properties": {
-        "file": {
-          "type": "string",
-          "format": "binary",
-          "description": "The file, as binary, allowed types: GIF, PNG, JPG, SVG, PDF"
-        }
-      }
-    },
     "addExpenseDraftByFileResponse": {
       "$ref": "#/definitions/GetExpenseDraft"
     },
