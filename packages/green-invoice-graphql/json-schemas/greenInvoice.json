@@ -451,6 +451,36 @@
             },
             "Policy": {
               "type": "string"
+            },
+            "x-amz-meta-account-id": {
+              "type": "string"
+            },
+            "x-amz-meta-user-id": {
+              "type": "string"
+            },
+            "x-amz-meta-business-id": {
+              "type": "string"
+            },
+            "x-amz-meta-file-context": {
+              "type": "string"
+            },
+            "x-amz-meta-file-data": {
+              "type": "string"
+            },
+            "X-Amz-Algorithm": {
+              "type": "string"
+            },
+            "X-Amz-Credential": {
+              "type": "string"
+            },
+            "X-Amz-Date": {
+              "type": "string"
+            },
+            "X-Amz-Security-Token": {
+              "type": "string"
+            },
+            "X-Amz-Signature": {
+              "type": "string"
             }
           }
         }
