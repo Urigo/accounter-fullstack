@@ -29,40 +29,7 @@ export default gql`
     tripPurpose: String
   }
 
-  extend interface Charge {
-    " should be later in busines trip module? "
-    businessTrip: BusinessTrip
-  }
-
-  extend type CommonCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type ConversionCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type SalaryCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type InternalTransferCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type DividendCharge {
-    businessTrip: BusinessTrip
-  }
-
   extend type BusinessTripCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type MonthlyVatCharge {
-    businessTrip: BusinessTrip
-  }
-
-  extend type BankDepositCharge {
     businessTrip: BusinessTrip
   }
 

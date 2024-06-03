@@ -236,7 +236,7 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
           <Controller
             name="businessTripID"
             control={chargeControl}
-            defaultValue={charge.businessTrip?.id}
+            defaultValue={'businessTrip' in charge ? charge.businessTrip?.id : undefined}
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}

@@ -7,9 +7,11 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
 /* GraphQL */ `
   fragment AllChargesBusinessTripFields on Charge {
     id
-    businessTrip {
-      id
-      name
+    ... on BusinessTripCharge {
+      businessTrip {
+        id
+        name
+      }
     }
   }
 `;
@@ -19,18 +21,22 @@ type Props = {
 };
 
 export const BusinessTrip = ({ data }: Props): ReactElement => {
-  const { businessTrip } = getFragmentData(AllChargesBusinessTripFieldsFragmentDoc, data);
+  const charge = getFragmentData(AllChargesBusinessTripFieldsFragmentDoc, data);
+
+  if (!('businessTrip' in charge)) {
+    return <td />;
+  }
 
   return (
     <td>
       <a
-        href={`/business-trips/${businessTrip?.id}`}
+        href={`/business-trips/${charge.businessTrip?.id}`}
         target="_blank"
         rel="noreferrer"
         onClick={event => event.stopPropagation()}
       >
         <NavLink
-          label={businessTrip?.name}
+          label={charge.businessTrip?.name}
           className="[&>*>.mantine-NavLink-label]:font-semibold"
         />
       </a>
