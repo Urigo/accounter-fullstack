@@ -8,5 +8,7 @@
     }
   ],
   "editor.formatOnSave": true,
-  "cSpell.words": ["Hashavshevet", "mantine"]
+  "cSpell.words": ["Hashavshevet", "mantine"],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
