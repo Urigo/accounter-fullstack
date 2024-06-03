@@ -1,3 +1,4 @@
+import { lastDayOfMonth } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -56,13 +57,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     const accountingLedgerEntries: LedgerProto[] = [];
     const foreignCurrencySalaryBusinesses = new Set<string>();
 
-    // generate ledger from salary records
-    let transactionDate = charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
-    if (!transactionDate) {
-      errors.add(`Charge ID="${chargeId}" is missing transaction date`);
-      transactionDate = new Date();
-    }
-
     // Get relevant data for generation
     const salaryRecordsPromise = injector
       .get(SalariesProvider)
@@ -113,8 +107,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
           const ledgerEntry: LedgerProto = {
             id: taxCategoryId,
-            invoiceDate: transactionDate,
-            valueDate: transactionDate,
+            invoiceDate: lastDayOfMonth(new Date(`${month}-01`)),
+            valueDate: lastDayOfMonth(new Date(`${month}-01`)),
             currency: DEFAULT_LOCAL_CURRENCY,
             ...(isCredit
               ? { creditAccountID1: taxCategoryId }
