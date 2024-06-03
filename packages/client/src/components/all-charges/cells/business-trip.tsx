@@ -7,7 +7,7 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
 /* GraphQL */ `
   fragment AllChargesBusinessTripFields on Charge {
     id
-    ...on BusinessTripCharge {
+    ... on BusinessTripCharge {
       businessTrip {
         id
         name
