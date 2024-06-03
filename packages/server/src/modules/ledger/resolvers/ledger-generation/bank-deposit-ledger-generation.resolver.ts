@@ -8,7 +8,10 @@ import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.j
 import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
-import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import {
+  convertLedgerRecordToProto,
+  storeInitialGeneratedRecords,
+} from '../../helpers/ledgrer-storage.helper.js';
 import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
@@ -161,7 +164,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
     const miscLedgerEntriesPromise = async () => {
       // handle exchange rates
-      if (isWithdrawal && mainTransaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+      if (isWithdrawal) {
         const mainLedgerEntry = financialAccountLedgerEntries[0];
         if (!mainLedgerEntry) {
           throw new LedgerError('Main ledger entry not found');
@@ -200,29 +203,39 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           throw new LedgerError('Deposit ledger record has invalid local amount');
         }
 
-        const rawAmount =
-          Number(depositLedgerRecord.credit_local_amount1) -
-          mainLedgerEntry.localCurrencyCreditAmount1;
-        const amount = Math.abs(rawAmount);
-        const isCreditorCounterparty = rawAmount > 0;
-        const mainAccountId = mainLedgerEntry.creditAccountID1;
+        if (depositLedgerRecord.debit_entity1) {
+          updateLedgerBalanceByEntry(
+            convertLedgerRecordToProto(depositLedgerRecord),
+            ledgerBalance,
+          );
+        }
+        if (mainTransaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          const rawAmount =
+            Number(depositLedgerRecord.credit_local_amount1) -
+            mainLedgerEntry.localCurrencyCreditAmount1;
+          const amount = Math.abs(rawAmount);
+          const isCreditorCounterparty = rawAmount > 0;
+          const mainAccountId = mainLedgerEntry.creditAccountID1;
 
-        const exchangeLedgerEntry: StrictLedgerProto = {
-          id: mainTransaction.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? mainAccountId : EXCHANGE_RATE_TAX_CATEGORY_ID,
-          localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : mainAccountId,
-          localCurrencyDebitAmount1: amount,
-          description: 'Exchange ledger record',
-          isCreditorCounterparty,
-          invoiceDate: depositLedgerRecord.invoice_date,
-          valueDate: mainLedgerEntry.valueDate,
-          currency: mainLedgerEntry.currency, // NOTE: this field is dummy
-          ownerId: mainLedgerEntry.ownerId,
-          chargeId,
-        };
-        miscLedgerEntries.push(exchangeLedgerEntry);
-        updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance);
+          const exchangeLedgerEntry: StrictLedgerProto = {
+            id: mainTransaction.id + '|fee', // NOTE: this field is dummy
+            creditAccountID1: isCreditorCounterparty
+              ? mainAccountId
+              : EXCHANGE_RATE_TAX_CATEGORY_ID,
+            localCurrencyCreditAmount1: amount,
+            debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : mainAccountId,
+            localCurrencyDebitAmount1: amount,
+            description: 'Exchange ledger record',
+            isCreditorCounterparty,
+            invoiceDate: depositLedgerRecord.invoice_date,
+            valueDate: mainLedgerEntry.valueDate,
+            currency: mainLedgerEntry.currency, // NOTE: this field is dummy
+            ownerId: mainLedgerEntry.ownerId,
+            chargeId,
+          };
+          miscLedgerEntries.push(exchangeLedgerEntry);
+          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance);
+        }
       }
 
       return;
@@ -243,7 +256,17 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     ];
     await storeInitialGeneratedRecords(charge, records, injector);
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
+    const allowedUnbalancedBusinesses = new Set<string>();
+    const mainLedgerEntry = financialAccountLedgerEntries[0];
+    if (!mainLedgerEntry.isCreditorCounterparty) {
+      allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
+    }
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(
+      injector,
+      ledgerBalance,
+      errors,
+      allowedUnbalancedBusinesses,
+    );
     return {
       records: ledgerProtoToRecordsConverter(records),
       charge,
