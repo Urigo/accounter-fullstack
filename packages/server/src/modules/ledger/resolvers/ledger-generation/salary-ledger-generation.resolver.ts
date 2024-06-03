@@ -1,3 +1,4 @@
+import { lastDayOfMonth } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -113,8 +114,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
           const ledgerEntry: LedgerProto = {
             id: taxCategoryId,
-            invoiceDate: transactionDate,
-            valueDate: transactionDate,
+            invoiceDate: lastDayOfMonth(new Date(`${month}-01`)),
+            valueDate: lastDayOfMonth(new Date(`${month}-01`)),
             currency: DEFAULT_LOCAL_CURRENCY,
             ...(isCredit
               ? { creditAccountID1: taxCategoryId }
