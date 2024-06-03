@@ -57,13 +57,6 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     const accountingLedgerEntries: LedgerProto[] = [];
     const foreignCurrencySalaryBusinesses = new Set<string>();
 
-    // generate ledger from salary records
-    let transactionDate = charge.transactions_min_debit_date ?? charge.transactions_min_event_date;
-    if (!transactionDate) {
-      errors.add(`Charge ID="${chargeId}" is missing transaction date`);
-      transactionDate = new Date();
-    }
-
     // Get relevant data for generation
     const salaryRecordsPromise = injector
       .get(SalariesProvider)
