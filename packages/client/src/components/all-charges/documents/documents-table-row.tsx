@@ -1,41 +1,68 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
-import {
-  DocumentTableRowDocument,
-  TableDocumentsRowFieldsFragment,
-  TableDocumentsRowFieldsFragmentDoc,
-} from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment, ResultOf } from '../../../graphql.js';
 import { EditMiniButton } from '../../common/index.js';
-import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells/index.js';
+import {
+  Amount,
+  Creditor,
+  DateCell,
+  Debtor,
+  DocumentFilesFieldsFragmentDoc,
+  DocumentsDateFieldsFragmentDoc,
+  DocumentSerialFieldsFragmentDoc,
+  DocumentsTableAmountFieldsFragmentDoc,
+  DocumentsTableCreditorFieldsFragmentDoc,
+  DocumentsTableDebtorFieldsFragmentDoc,
+  DocumentsTableVatFieldsFragmentDoc,
+  DocumentTypeFieldsFragmentDoc,
+  Files,
+  Serial,
+  TypeCell,
+  Vat,
+} from './cells/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment TableDocumentsRowFields on Document {
-    id
-    ...DocumentsTableAmountFields
-    ...DocumentsDateFields
-    ...DocumentsTableVatFields
-    ...DocumentTypeFields
-    ...DocumentSerialFields
-    ...DocumentsTableCreditorFields
-    ...DocumentsTableDebtorFields
-    ...DocumentFilesFields
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query DocumentTableRow($documentId: UUID!) {
-    documentById(documentId: $documentId) {
+export const TableDocumentsRowFieldsFragmentDoc = graphql(
+  `
+    fragment TableDocumentsRowFields on Document {
       id
-      ...TableDocumentsRowFields
+      ...DocumentsTableAmountFields
+      ...DocumentsDateFields
+      ...DocumentsTableVatFields
+      ...DocumentTypeFields
+      ...DocumentSerialFields
+      ...DocumentsTableCreditorFields
+      ...DocumentsTableDebtorFields
+      ...DocumentFilesFields
     }
-  }
-`;
+  `,
+  [
+    DocumentsTableAmountFieldsFragmentDoc,
+    DocumentsDateFieldsFragmentDoc,
+    DocumentsTableVatFieldsFragmentDoc,
+    DocumentTypeFieldsFragmentDoc,
+    DocumentSerialFieldsFragmentDoc,
+    DocumentsTableCreditorFieldsFragmentDoc,
+    DocumentsTableDebtorFieldsFragmentDoc,
+    DocumentFilesFieldsFragmentDoc,
+  ],
+);
+
+type TableDocumentsRowFieldsFragment = ResultOf<typeof TableDocumentsRowFieldsFragmentDoc>;
+
+export const DocumentTableRowDocument = graphql(
+  `
+    query DocumentTableRow($documentId: UUID!) {
+      documentById(documentId: $documentId) {
+        id
+        ...TableDocumentsRowFields
+      }
+    }
+  `,
+  [TableDocumentsRowFieldsFragmentDoc],
+);
 
 type Props = {
-  documentData: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>;
+  documentData: FragmentOf<typeof TableDocumentsRowFieldsFragmentDoc>;
   editDocument: () => void;
   onChange?: () => void;
 };
@@ -46,7 +73,7 @@ export const DocumentsTableRow = ({
   onChange,
 }: Props): ReactElement => {
   const [document, setDocument] = useState<TableDocumentsRowFieldsFragment>(
-    getFragmentData(TableDocumentsRowFieldsFragmentDoc, documentData),
+    readFragment(TableDocumentsRowFieldsFragmentDoc, documentData),
   );
 
   const [{ data: newData }, fetchDocument] = useQuery({
@@ -68,12 +95,12 @@ export const DocumentsTableRow = ({
   useEffect(() => {
     const updatedDocument = newData?.documentById;
     if (updatedDocument) {
-      setDocument(getFragmentData(TableDocumentsRowFieldsFragmentDoc, updatedDocument));
+      setDocument(readFragment(TableDocumentsRowFieldsFragmentDoc, updatedDocument));
     }
   }, [newData]);
 
   useEffect(() => {
-    setDocument(getFragmentData(TableDocumentsRowFieldsFragmentDoc, documentData));
+    setDocument(readFragment(TableDocumentsRowFieldsFragmentDoc, documentData));
   }, [documentData]);
 
   return (

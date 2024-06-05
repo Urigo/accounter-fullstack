@@ -1,19 +1,17 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  FetchIncomeDocumentsDocument,
-  FetchIncomeDocumentsMutation,
-  FetchIncomeDocumentsMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const FetchIncomeDocumentsDocument = graphql(`
   mutation FetchIncomeDocuments($ownerId: UUID!) {
     fetchIncomeDocuments(ownerId: $ownerId) {
       id
     }
   }
-`;
+`);
+
+type FetchIncomeDocumentsMutationVariables = VariablesOf<typeof FetchIncomeDocumentsDocument>;
+type FetchIncomeDocumentsMutation = ResultOf<typeof FetchIncomeDocumentsDocument>;
 
 type FetchIncomeDocuments = FetchIncomeDocumentsMutation['fetchIncomeDocuments'];
 

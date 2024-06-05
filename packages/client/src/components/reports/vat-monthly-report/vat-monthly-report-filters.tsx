@@ -1,4 +1,5 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
+import { AllFinancialEntitiesDocument } from '../../common/graphql/all-financial-entities.graphql.js';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -7,16 +8,12 @@ import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
 import { MonthPicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import {
-  AllFinancialEntitiesDocument,
-  ChargeFilterType,
-  VatReportFilter,
-} from '../../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../all-charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
+import type { VatReportFilter } from './index.js';
 
 interface VatMonthlyReportFilterFormProps {
   filter: VatReportFilter;
@@ -97,7 +94,7 @@ function VatMonthlyReportFilterForm({
             <Select
               {...field}
               data={chargesTypeFilterOptions}
-              value={field.value ?? ChargeFilterType.All}
+              value={field.value ?? 'ALL'}
               label="Charge Type"
               placeholder="Filter income/expense"
               maxDropdownHeight={160}
@@ -153,12 +150,12 @@ export function VatMonthlyReportFilter({
 
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
-      financialEntityId: userContext?.ownerId,
+      financialEntityId: userContext?.ownerId ?? '',
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
       toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
     };
     // looks for actual changes before triggering update
-    if (!equal(newFilter, filter)) {
+    if (newFilter && !equal(newFilter, filter)) {
       setFilter(newFilter);
     }
   }

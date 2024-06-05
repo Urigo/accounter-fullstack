@@ -1,13 +1,11 @@
 import { ReactElement } from 'react';
-import { TableSalariesFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TableSalariesFieldsFragmentDoc = graphql(`
   fragment TableSalariesFields on Charge {
     id
     __typename
-    ... on SalaryCharge {
+    ... on SalaryCharge @defer {
       salaryRecords {
         directAmount {
           formatted
@@ -57,15 +55,15 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  salaryRecordsProps: FragmentType<typeof TableSalariesFieldsFragmentDoc>;
+  salaryRecordsProps: FragmentOf<typeof TableSalariesFieldsFragmentDoc>;
 };
 
 export const SalariesTable = ({ salaryRecordsProps }: Props): ReactElement => {
-  const charge = getFragmentData(TableSalariesFieldsFragmentDoc, salaryRecordsProps);
-  if (charge.__typename !== 'SalaryCharge') {
+  const charge = readFragment(TableSalariesFieldsFragmentDoc, salaryRecordsProps);
+  if (charge.__typename !== 'SalaryCharge' || !('salaryRecords' in charge)) {
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <></>;
   }

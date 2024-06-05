@@ -1,12 +1,10 @@
 import { ReactElement, useState } from 'react';
 import { Carousel } from '@mantine/carousel';
 import { Badge, Image } from '@mantine/core';
-import { DocumentsGalleryFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { EditDocumentModal } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsGalleryFieldsFragmentDoc = graphql(`
   fragment DocumentsGalleryFields on Charge {
     id
     additionalDocuments {
@@ -29,15 +27,15 @@ import { EditDocumentModal } from '../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  chargeProps: FragmentType<typeof DocumentsGalleryFieldsFragmentDoc>;
+  chargeProps: FragmentOf<typeof DocumentsGalleryFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const DocumentsGallery = ({ chargeProps, onChange }: Props): ReactElement => {
-  const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
+  const { additionalDocuments } = readFragment(DocumentsGalleryFieldsFragmentDoc, chargeProps);
   const [openModal, setOpenModal] = useState<string | undefined>(undefined);
 
   return (

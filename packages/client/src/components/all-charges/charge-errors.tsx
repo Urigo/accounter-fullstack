@@ -1,10 +1,8 @@
 import { ReactElement } from 'react';
 import { List, Paper, Text } from '@mantine/core';
-import { AllChargesErrorsFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesErrorsFieldsFragmentDoc = graphql(`
   fragment AllChargesErrorsFields on Charge {
     id
     ... on Charge @defer {
@@ -19,16 +17,20 @@ import { FragmentType, getFragmentData } from '../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 interface Props {
-  data?: FragmentType<typeof AllChargesErrorsFieldsFragmentDoc>;
+  data?: FragmentOf<typeof AllChargesErrorsFieldsFragmentDoc>;
 }
 
 export const ChargeErrors = ({ data }: Props): ReactElement | null => {
-  const charge = getFragmentData(AllChargesErrorsFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesErrorsFieldsFragmentDoc, data);
 
-  return charge?.errorsLedger?.validate?.errors?.length ? (
+  return charge &&
+    'errorsLedger' in charge &&
+    'validate' in charge.errorsLedger &&
+    'errors' in charge.ledger.validate &&
+    charge.ledger.validate.errors.length ? (
     <Paper shadow="xs" p="md">
       <Text c="red">Errors:</Text>
       <List size="sm" withPadding>

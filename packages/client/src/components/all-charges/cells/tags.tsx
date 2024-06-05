@@ -1,12 +1,10 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { Indicator } from '@mantine/core';
-import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesTagsFieldsFragmentDoc = graphql(`
   fragment AllChargesTagsFields on Charge {
     __typename
     id
@@ -28,25 +26,24 @@ import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesTagsFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesTagsFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const Tags = ({ data, onChange }: Props): ReactElement => {
-  const {
-    tags: originalTags,
-    id: chargeId,
-    validationData,
-    missingInfoSuggestions,
-  } = getFragmentData(AllChargesTagsFieldsFragmentDoc, data);
+  const result = readFragment(AllChargesTagsFieldsFragmentDoc, data);
+  const { tags: originalTags, id: chargeId } = result;
+  const validationData = 'validationData' in result ? result.validationData : undefined;
+  const missingInfoSuggestions =
+    'missingInfoSuggestions' in result ? result.missingInfoSuggestions : undefined;
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<{ name: string }[]>(originalTags ?? []);
 
   const isError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.Tags),
+    () => validationData?.missingInfo?.includes('TAGS'),
     [validationData?.missingInfo],
   );
   const hasAlternative = useMemo(

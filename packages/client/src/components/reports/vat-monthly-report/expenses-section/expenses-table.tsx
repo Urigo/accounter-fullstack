@@ -1,27 +1,28 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Table } from '@mantine/core';
-import { VatReportExpensesFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { ExpensesRow } from './expenses-row.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
+import { ExpensesRow, VatReportExpensesRowFieldsFragmentDoc } from './expenses-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment VatReportExpensesFields on VatReportResult {
-    expenses {
-      ...VatReportExpensesRowFields
-      roundedLocalVatAfterDeduction {
-        raw
-      }
-      taxReducedLocalAmount {
-        raw
+export const VatReportExpensesFieldsFragmentDoc = graphql(
+  `
+    fragment VatReportExpensesFields on VatReportResult {
+      expenses {
+        ...VatReportExpensesRowFields
+        roundedLocalVatAfterDeduction {
+          raw
+        }
+        taxReducedLocalAmount {
+          raw
+        }
       }
     }
-  }
-`;
+  `,
+  [VatReportExpensesRowFieldsFragmentDoc],
+);
 
 interface Props {
-  data?: FragmentType<typeof VatReportExpensesFieldsFragmentDoc>;
+  data?: FragmentOf<typeof VatReportExpensesFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: string[];
 }
@@ -31,7 +32,7 @@ export const ExpensesTable = ({
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
-  const { expenses } = getFragmentData(VatReportExpensesFieldsFragmentDoc, data) ?? {
+  const { expenses } = readFragment(VatReportExpensesFieldsFragmentDoc, data) ?? {
     expenses: [],
   };
   const [isOpened, setIsOpened] = useState(true);

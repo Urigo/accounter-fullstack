@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  MergeChargesDocument,
-  MergeChargesMutation,
-  MergeChargesMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const MergeChargesDocument = graphql(`
   mutation MergeCharges(
     $baseChargeID: UUID!
     $chargeIdsToMerge: [UUID!]!
@@ -29,7 +24,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type MergeChargesMutationVariables = VariablesOf<typeof MergeChargesDocument>;
+type MergeChargesMutation = ResultOf<typeof MergeChargesDocument>;
 
 type Charge = Extract<
   MergeChargesMutation['mergeCharges'],

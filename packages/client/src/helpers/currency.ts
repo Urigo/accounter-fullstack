@@ -1,4 +1,6 @@
-import { Currency } from '../gql/graphql.js';
+import type { introspection } from '../graphql-env.js';
+
+export type Currency = introspection['types']['Currency']['enumValues'];
 
 export const formatCurrency = new Intl.NumberFormat('en-US', {
   style: 'currency',

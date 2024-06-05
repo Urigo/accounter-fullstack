@@ -1,22 +1,26 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { VatReportBusinessTripsFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AllChargesTable } from '../../all-charges/all-charges-table.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
+import {
+  AllChargesTable,
+  AllChargesTableFieldsFragmentDoc,
+} from '../../all-charges/all-charges-table.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment VatReportBusinessTripsFields on VatReportResult {
-    businessTrips {
-      id
-      ...AllChargesTableFields
+export const VatReportBusinessTripsFieldsFragmentDoc = graphql(
+  `
+    fragment VatReportBusinessTripsFields on VatReportResult {
+      businessTrips {
+        id
+        ...AllChargesTableFields
+      }
     }
-  }
-`;
+  `,
+  [AllChargesTableFieldsFragmentDoc],
+);
 
 interface Props {
-  data?: FragmentType<typeof VatReportBusinessTripsFieldsFragmentDoc>;
+  data?: FragmentOf<typeof VatReportBusinessTripsFieldsFragmentDoc>;
   setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   setInsertDocument: React.Dispatch<
     React.SetStateAction<{ id: string; onChange: () => void } | undefined>
@@ -40,7 +44,7 @@ export const BusinessTripsTable = ({
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
-  const chargesData = getFragmentData(VatReportBusinessTripsFieldsFragmentDoc, data);
+  const chargesData = readFragment(VatReportBusinessTripsFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
 
   return (

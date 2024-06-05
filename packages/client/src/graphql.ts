@@ -1,19 +1,12 @@
 import { initGraphQLTada } from 'gql.tada';
 import type { introspection } from './graphql-env.d.js';
-import { TimelessDateString } from './helpers/dates.js';
 
 export const graphql = initGraphQLTada<{
   introspection: introspection;
   scalars: {
-    ID: string;
-    String: string;
-    Boolean: boolean;
-    Int: number;
-    Float: number;
-
     Date: Date;
     FileScalar: File | Blob;
-    TimelessDate: TimelessDateString;
+    TimelessDate: string;
     URL: string;
     UUID: string;
   };

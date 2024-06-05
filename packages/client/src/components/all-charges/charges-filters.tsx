@@ -1,4 +1,5 @@
 import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { AllFinancialEntitiesDocument } from '../common/graphql/all-financial-entities.graphql.js';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -13,16 +14,12 @@ import {
   Switch,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  AllFinancialEntitiesDocument,
-  AllTagsDocument,
-  ChargeFilter,
-  ChargeFilterType,
-  ChargeSortByField,
-} from '../../gql/graphql.js';
+import { introspection } from '../../graphql-env.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { PopUpModal, TextInput } from '../common/index.js';
+import { AllTagsDocument } from '../tags/index.js';
+import { ChargeFilter } from './index.js';
 
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
@@ -30,25 +27,28 @@ interface ChargesFiltersFormProps {
   closeModal: () => void;
 }
 
+export type ChargeFilterType = introspection['types']['ChargeFilterType']['enumValues'];
+export type ChargeSortByField = introspection['types']['ChargeSortByField']['enumValues'];
+
 const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
   {
-    value: ChargeSortByField.AbsAmount,
+    value: 'ABS_AMOUNT',
     label: 'Abs Amount',
   },
   {
-    value: ChargeSortByField.Amount,
+    value: 'AMOUNT',
     label: 'Amount',
   },
   {
-    value: ChargeSortByField.Date,
+    value: 'DATE',
     label: 'Date',
   },
 ];
 
 export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilterType }> = [
-  { label: 'All', value: ChargeFilterType.All },
-  { label: 'Income', value: ChargeFilterType.Income },
-  { label: 'Expense', value: ChargeFilterType.Expense },
+  { label: 'All', value: 'ALL' },
+  { label: 'Income', value: 'INCOME' },
+  { label: 'Expense', value: 'EXPENSE' },
 ];
 
 function ChargesFiltersForm({
@@ -247,7 +247,7 @@ function ChargesFiltersForm({
               <Select
                 {...field}
                 data={chargesTypeFilterOptions}
-                value={field.value ?? ChargeFilterType.All}
+                value={field.value ?? 'ALL'}
                 disabled={feFetching}
                 label="Charge Type"
                 placeholder="Filter income/expense"
@@ -259,7 +259,7 @@ function ChargesFiltersForm({
           <Controller
             name="sortBy.field"
             control={control}
-            defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
+            defaultValue={filter.sortBy?.field ?? 'DATE'}
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}

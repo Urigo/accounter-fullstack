@@ -1,23 +1,21 @@
 import { ReactElement, useState } from 'react';
 import { Switch } from '@mantine/core';
-import { VatReportAccountantApprovalFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { useToggleChargeAccountantApproval } from '../../../../hooks/use-toggle-charge-accountant-approval.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const VatReportAccountantApprovalFieldsFragmentDoc = graphql(`
   fragment VatReportAccountantApprovalFields on VatReportRecord {
     chargeId
     chargeAccountantReviewed
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof VatReportAccountantApprovalFieldsFragmentDoc>;
+  data: FragmentOf<typeof VatReportAccountantApprovalFieldsFragmentDoc>;
 }
 
 export function AccountantApproval({ data }: Props): ReactElement {
-  const { chargeId, chargeAccountantReviewed } = getFragmentData(
+  const { chargeId, chargeAccountantReviewed } = readFragment(
     VatReportAccountantApprovalFieldsFragmentDoc,
     data,
   );

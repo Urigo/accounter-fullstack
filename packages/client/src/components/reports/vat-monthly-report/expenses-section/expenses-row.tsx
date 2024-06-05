@@ -1,55 +1,59 @@
 import { ReactElement, useState } from 'react';
 import { Paper } from '@mantine/core';
-import { VatReportExpensesRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { ChargeExtendedInfo } from '../../../all-charges/charge-extended-info.js';
 import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';
-import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import {
+  AccountantApproval,
+  VatReportAccountantApprovalFieldsFragmentDoc,
+} from '../cells/accountant-approval.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment VatReportExpensesRowFields on VatReportRecord {
-    ...VatReportAccountantApprovalFields
-    business {
-      id
-      name
-    }
-    vatNumber
-    image
-    documentSerial
-    documentDate
-    chargeDate
-    chargeId
-    # chargeAccountantReviewed
-    amount {
-      formatted
-    }
-    localAmount {
-      formatted
-    }
-    vat {
-      formatted
-    }
-    vatAfterDeduction {
-      formatted
-    }
-    localVatAfterDeduction {
-      formatted
-    }
-    roundedLocalVatAfterDeduction {
-      formatted
+export const VatReportExpensesRowFieldsFragmentDoc = graphql(
+  `
+    fragment VatReportExpensesRowFields on VatReportRecord {
+      ...VatReportAccountantApprovalFields
+      business {
+        id
+        name
+      }
+      vatNumber
+      image
+      documentSerial
+      documentDate
+      chargeDate
+      chargeId
+      # chargeAccountantReviewed
+      amount {
+        formatted
+      }
+      localAmount {
+        formatted
+      }
+      vat {
+        formatted
+      }
+      vatAfterDeduction {
+        formatted
+      }
+      localVatAfterDeduction {
+        formatted
+      }
+      roundedLocalVatAfterDeduction {
+        formatted
+        #   raw
+      }
+      # taxReducedLocalAmount {
+      #   formatted
       #   raw
+      # }
     }
-    taxReducedLocalAmount {
-      formatted
-      #   raw
-    }
-  }
-`;
+  `,
+  [VatReportAccountantApprovalFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof VatReportExpensesRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof VatReportExpensesRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: string[];
   cumulativeVat: number;
@@ -64,7 +68,7 @@ export const ExpensesRow = ({
   cumulativeAmount,
 }: Props): ReactElement => {
   const [opened, setOpened] = useState(false);
-  const expenseItem = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, data);
+  const expenseItem = readFragment(VatReportExpensesRowFieldsFragmentDoc, data);
 
   return (
     <>

@@ -1,22 +1,20 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { TransactionsTableDebitDateFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TransactionsTableDebitDateFieldsFragmentDoc = graphql(`
   fragment TransactionsTableDebitDateFields on Transaction {
     id
     effectiveDate
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof TransactionsTableDebitDateFieldsFragmentDoc>;
+  data: FragmentOf<typeof TransactionsTableDebitDateFieldsFragmentDoc>;
 };
 
 export const DebitDate = ({ data }: Props): ReactElement => {
-  const transaction = getFragmentData(TransactionsTableDebitDateFieldsFragmentDoc, data);
+  const transaction = readFragment(TransactionsTableDebitDateFieldsFragmentDoc, data);
   const effectiveDate = 'effectiveDate' in transaction ? transaction.effectiveDate : undefined;
 
   return (

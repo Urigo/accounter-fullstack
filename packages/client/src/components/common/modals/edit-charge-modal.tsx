@@ -3,21 +3,18 @@ import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader } from '@mantine/core';
 import { EditCharge, PopUpDrawer } from '..';
-import { EditChargeDocument } from '../../../gql/graphql.js';
+import { graphql, ResultOf } from '../../../graphql.js';
 import { writeToClipboard } from '../../../helpers';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditChargeDocument = graphql(`
   query EditCharge($chargeIDs: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
       id
       counterparty {
         id
-        name
       }
       owner {
         id
-        name
       }
       property
       conversion
@@ -25,21 +22,18 @@ import { writeToClipboard } from '../../../helpers';
       userDescription
       taxCategory {
         id
-        name
-      }
-      tags {
-        name
       }
       ... on BusinessTripCharge {
         businessTrip {
           id
-          name
         }
       }
       yearsOfRelevance
     }
   }
-`;
+`);
+
+export type EditChargeQuery = ResultOf<typeof EditChargeDocument>;
 
 interface Props {
   chargeId?: string;

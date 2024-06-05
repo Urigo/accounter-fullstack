@@ -1,2 +1,2 @@
-export { AccountDetails } from './account-details.js';
-export { GeneralDate } from './general-date.js';
+export * from './account-details.js';
+export * from './general-date.js';

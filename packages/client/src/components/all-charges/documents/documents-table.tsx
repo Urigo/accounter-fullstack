@@ -1,27 +1,28 @@
 import { ReactElement, useState } from 'react';
-import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { EditDocumentModal } from '../../common/index.js';
-import { DocumentsTableRow } from './documents-table-row.js';
+import { DocumentsTableRow, TableDocumentsRowFieldsFragmentDoc } from './documents-table-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment TableDocumentsFields on Charge {
-    id
-    additionalDocuments {
+export const TableDocumentsFieldsFragmentDoc = graphql(
+  `
+    fragment TableDocumentsFields on Charge {
       id
-      ...TableDocumentsRowFields
+      additionalDocuments {
+        id
+        ...TableDocumentsRowFields
+      }
     }
-  }
-`;
+  `,
+  [TableDocumentsRowFieldsFragmentDoc],
+);
 
 type Props = {
-  documentsProps: FragmentType<typeof TableDocumentsFieldsFragmentDoc>;
+  documentsProps: FragmentOf<typeof TableDocumentsFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElement => {
-  const { additionalDocuments: documents } = getFragmentData(
+  const { additionalDocuments: documents } = readFragment(
     TableDocumentsFieldsFragmentDoc,
     documentsProps,
   );

@@ -1,16 +1,16 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  ToggleChargeAccountantApprovalDocument,
-  ToggleChargeAccountantApprovalMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const ToggleChargeAccountantApprovalDocument = graphql(`
   mutation ToggleChargeAccountantApproval($chargeId: UUID!, $approved: Boolean!) {
     toggleChargeAccountantApproval(chargeId: $chargeId, approved: $approved)
   }
-`;
+`);
+
+type ToggleChargeAccountantApprovalMutationVariables = VariablesOf<
+  typeof ToggleChargeAccountantApprovalDocument
+>;
 
 type UseToggleChargeAccountantApproval = {
   fetching: boolean;

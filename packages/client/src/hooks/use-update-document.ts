@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateDocumentDocument,
-  UpdateDocumentMutation,
-  UpdateDocumentMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateDocumentDocument = graphql(`
   mutation UpdateDocument($documentId: UUID!, $fields: UpdateDocumentFieldsInput!) {
     updateDocument(documentId: $documentId, fields: $fields) {
       __typename
@@ -21,7 +16,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type UpdateDocumentMutationVariables = VariablesOf<typeof UpdateDocumentDocument>;
+type UpdateDocumentMutation = ResultOf<typeof UpdateDocumentDocument>;
 
 type UpdateDocumentSuccessfulResult = Extract<
   UpdateDocumentMutation['updateDocument'],

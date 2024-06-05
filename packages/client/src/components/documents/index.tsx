@@ -2,12 +2,11 @@ import { ReactElement, useContext, useState } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
-import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql.js';
+import { graphql, ResultOf } from '../../graphql.js';
 import { FiltersContext } from '../../providers/filters-context';
 import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsDocument = graphql(`
   query Documents {
     documents {
       id
@@ -179,7 +178,9 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
       }
     }
   }
-`;
+`);
+
+type DocumentsQuery = ResultOf<typeof DocumentsDocument>;
 
 export const DocumentsReport = (): ReactElement => {
   const [{ data, fetching }] = useQuery({ query: DocumentsDocument });

@@ -1,13 +1,12 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
+import { ChargeFilter } from '../../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TransactionsTableEntityFieldsFragmentDoc = graphql(`
   fragment TransactionsTableEntityFields on Transaction {
     id
     counterparty {
@@ -22,10 +21,10 @@ import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
+  data: FragmentOf<typeof TransactionsTableEntityFieldsFragmentDoc>;
   enableEdit?: boolean;
   onChange?: () => void;
 };
@@ -37,7 +36,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     missingInfoSuggestions,
     id: transactionId,
     sourceDescription,
-  } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
+  } = readFragment(TransactionsTableEntityFieldsFragmentDoc, data);
 
   const hasAlternative = !!missingInfoSuggestions?.business && enableEdit;
   const alternativeName = hasAlternative ? missingInfoSuggestions?.business?.name : 'Missing';

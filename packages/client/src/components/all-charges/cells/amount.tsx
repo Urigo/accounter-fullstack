@@ -1,10 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Indicator } from '@mantine/core';
-import { AllChargesAmountFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesAmountFieldsFragmentDoc = graphql(`
   fragment AllChargesAmountFields on Charge {
     __typename
     id
@@ -16,14 +14,14 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       validCreditCardAmount
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesAmountFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesAmountFieldsFragmentDoc>;
 };
 
 export const Amount = ({ data }: Props): ReactElement => {
-  const charge = getFragmentData(AllChargesAmountFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesAmountFieldsFragmentDoc, data);
   const [isValid, setIsValid] = useState(true);
   const [isValidating, setIsValidating] = useState(true);
 

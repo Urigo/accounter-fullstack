@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateChargeDocument,
-  UpdateChargeMutation,
-  UpdateChargeMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateChargeDocument = graphql(`
   mutation UpdateCharge($chargeId: UUID!, $fields: UpdateChargeInput!) {
     updateCharge(chargeId: $chargeId, fields: $fields) {
       __typename
@@ -21,7 +16,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type UpdateChargeMutationVariables = VariablesOf<typeof UpdateChargeDocument>;
+type UpdateChargeMutation = ResultOf<typeof UpdateChargeDocument>;
 
 type Charge = Extract<
   UpdateChargeMutation['updateCharge'],

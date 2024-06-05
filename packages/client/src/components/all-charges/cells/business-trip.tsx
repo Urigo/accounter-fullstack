@@ -1,10 +1,8 @@
 import { ReactElement } from 'react';
 import { NavLink } from '@mantine/core';
-import { AllChargesBusinessTripFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesBusinessTripFieldsFragmentDoc = graphql(`
   fragment AllChargesBusinessTripFields on Charge {
     id
     ... on BusinessTripCharge {
@@ -14,14 +12,14 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesBusinessTripFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesBusinessTripFieldsFragmentDoc>;
 };
 
 export const BusinessTrip = ({ data }: Props): ReactElement => {
-  const charge = getFragmentData(AllChargesBusinessTripFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesBusinessTripFieldsFragmentDoc, data);
 
   if (!('businessTrip' in charge)) {
     return <td />;

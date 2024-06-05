@@ -1,23 +1,21 @@
 import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
-import { DocumentType, DocumentTypeFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentTypeFieldsFragmentDoc = graphql(`
   fragment DocumentTypeFields on Document {
     id
     documentType
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof DocumentTypeFieldsFragmentDoc>;
+  data: FragmentOf<typeof DocumentTypeFieldsFragmentDoc>;
 };
 
 export const TypeCell = ({ data }: Props): ReactElement => {
-  const { documentType } = getFragmentData(DocumentTypeFieldsFragmentDoc, data);
-  const isError = !documentType || documentType === DocumentType.Unprocessed;
+  const { documentType } = readFragment(DocumentTypeFieldsFragmentDoc, data);
+  const isError = !documentType || documentType === 'UNPROCESSED';
   const cellText = documentType ?? 'Missing';
 
   return (

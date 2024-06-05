@@ -1,14 +1,12 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
-import { DocumentsTableCreditorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { ConfirmMiniButton } from '../../../common/index.js';
 import { getBusinessHref } from '../../helpers.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsTableCreditorFieldsFragmentDoc = graphql(`
   fragment DocumentsTableCreditorFields on Document {
     id
     documentType
@@ -113,20 +111,20 @@ import { getBusinessHref } from '../../helpers.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof DocumentsTableCreditorFieldsFragmentDoc>;
+  data: FragmentOf<typeof DocumentsTableCreditorFieldsFragmentDoc>;
   refetchDocument: () => void;
 };
 
 export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
   const { get } = useUrlQuery();
-  const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
+  const document = readFragment(DocumentsTableCreditorFieldsFragmentDoc, data);
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
   const isError =
-    !dbCreditor?.id || [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
+    !dbCreditor?.id || (document.documentType && ['UNPROCESSED'].includes(document.documentType));
 
   const encodedFilters = get('chargesFilters');
 
@@ -192,12 +190,12 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {!isError && (
+            {!isError && id && (
               <a href={getHref(id)} target="_blank" rel="noreferrer">
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
             )}
-            {isError && <p className="bg-yellow-400">{name}</p>}
+            {(isError || !id) && <p className="bg-yellow-400">{name}</p>}
           </Indicator>
         </div>
         {hasAlternative && (

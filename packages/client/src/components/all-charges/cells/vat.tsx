@@ -1,14 +1,8 @@
 import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
-import {
-  AllChargesVatFieldsFragmentDoc,
-  Currency,
-  MissingChargeInfo,
-} from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesVatFieldsFragmentDoc = graphql(`
   fragment AllChargesVatFields on Charge {
     __typename
     id
@@ -26,24 +20,24 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesVatFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesVatFieldsFragmentDoc>;
 };
 
 export const Vat = ({ data }: Props): ReactElement => {
-  const { vat, totalAmount, validationData, __typename } = getFragmentData(
-    AllChargesVatFieldsFragmentDoc,
-    data,
-  );
+  const result = readFragment(AllChargesVatFieldsFragmentDoc, data);
+
+  const { vat, totalAmount, __typename } = result;
+  const validationData = 'validationData' in result ? result.validationData : null;
 
   const isError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.Vat),
+    () => validationData?.missingInfo?.includes('VAT'),
     [validationData?.missingInfo],
   );
   const isLocalCurrencyButNoVat = useMemo(
-    () => !vat && totalAmount?.currency === Currency.Ils,
+    () => !vat && totalAmount?.currency === 'ILS',
     [vat, totalAmount?.currency],
   );
   const vatIsNegativeToAmount = useMemo(

@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateBusinessDocument,
-  UpdateBusinessMutation,
-  UpdateBusinessMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateBusinessDocument = graphql(`
   mutation UpdateBusiness($businessId: UUID!, $ownerId: UUID!, $fields: UpdateBusinessInput!) {
     updateBusiness(businessId: $businessId, ownerId: $ownerId, fields: $fields) {
       __typename
@@ -20,7 +15,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type UpdateBusinessMutationVariables = VariablesOf<typeof UpdateBusinessDocument>;
+type UpdateBusinessMutation = ResultOf<typeof UpdateBusinessDocument>;
 
 type Business = Extract<
   UpdateBusinessMutation['updateBusiness'],

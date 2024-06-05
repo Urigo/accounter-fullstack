@@ -1,13 +1,14 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import { AddTagDocument, AddTagMutationVariables } from '../gql/graphql.js';
+import { graphql, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AddTagDocument = graphql(`
   mutation AddTag($tag: String!) {
     addTag(name: $tag)
   }
-`;
+`);
+
+type AddTagMutationVariables = VariablesOf<typeof AddTagDocument>;
 
 type UseAddTag = {
   fetching: boolean;

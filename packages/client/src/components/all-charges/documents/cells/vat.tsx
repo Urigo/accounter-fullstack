@@ -1,10 +1,8 @@
 import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
-import { DocumentsTableVatFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsTableVatFieldsFragmentDoc = graphql(`
   fragment DocumentsTableVatFields on Document {
     id
     ... on Invoice {
@@ -43,14 +41,14 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof DocumentsTableVatFieldsFragmentDoc>;
+  data: FragmentOf<typeof DocumentsTableVatFieldsFragmentDoc>;
 };
 
 export const Vat = ({ data }: Props): ReactElement => {
-  const document = getFragmentData(DocumentsTableVatFieldsFragmentDoc, data);
+  const document = readFragment(DocumentsTableVatFieldsFragmentDoc, data);
   const vat = 'vat' in document ? document.vat : undefined;
 
   return (

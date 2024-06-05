@@ -1,28 +1,23 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { LedgerRecordsGeneralDateFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const LedgerRecordsGeneralDateFieldsFragmentDoc = graphql(`
   fragment LedgerRecordsGeneralDateFields on LedgerRecord {
     id
     invoiceDate
     valueDate
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc>;
-  diff?: FragmentType<typeof LedgerRecordsGeneralDateFieldsFragmentDoc> | null;
+  data: FragmentOf<typeof LedgerRecordsGeneralDateFieldsFragmentDoc>;
+  diff?: FragmentOf<typeof LedgerRecordsGeneralDateFieldsFragmentDoc> | null;
   type: 1 | 2;
 };
 
 export const GeneralDate = ({ data, diff, type }: Props): ReactElement => {
-  const { invoiceDate, valueDate } = getFragmentData(
-    LedgerRecordsGeneralDateFieldsFragmentDoc,
-    data,
-  );
+  const { invoiceDate, valueDate } = readFragment(LedgerRecordsGeneralDateFieldsFragmentDoc, data);
 
   const showDate = type === 1 ? invoiceDate : valueDate;
 
@@ -30,7 +25,7 @@ export const GeneralDate = ({ data, diff, type }: Props): ReactElement => {
 
   // calculate diff date
   const { invoiceDate: diffInvoiceDate, valueDate: diffValueDate } =
-    getFragmentData(LedgerRecordsGeneralDateFieldsFragmentDoc, diff) ?? {};
+    readFragment(LedgerRecordsGeneralDateFieldsFragmentDoc, diff) ?? {};
   const diffShowDate = type === 1 ? diffInvoiceDate : diffValueDate;
   const diffFormattedDate = diffShowDate ? format(new Date(diffShowDate), 'dd/MM/yy') : undefined;
 

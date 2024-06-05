@@ -1,24 +1,30 @@
 import { ReactElement } from 'react';
 import { Badge } from '@mantine/core';
-import { TableLedgerRecordsRowFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AccountDetails, GeneralDate } from './cells/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
+import {
+  AccountDetails,
+  GeneralDate,
+  LedgerRecordsAccountDetailsFieldsFragmentDoc,
+  LedgerRecordsGeneralDateFieldsFragmentDoc,
+} from './cells/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment TableLedgerRecordsRowFields on LedgerRecord {
-    id
-    ...LedgerRecordsAccountDetailsFields
-    ...LedgerRecordsGeneralDateFields
-    description
-    reference1
-  }
-`;
+export const TableLedgerRecordsRowFieldsFragmentDoc = graphql(
+  `
+    fragment TableLedgerRecordsRowFields on LedgerRecord {
+      id
+      ...LedgerRecordsAccountDetailsFields
+      ...LedgerRecordsGeneralDateFields
+      description
+      reference1
+    }
+  `,
+  [LedgerRecordsAccountDetailsFieldsFragmentDoc, LedgerRecordsGeneralDateFieldsFragmentDoc],
+);
 
 type Props = {
-  ledgerRecordProps: FragmentType<typeof TableLedgerRecordsRowFieldsFragmentDoc>;
+  ledgerRecordProps: FragmentOf<typeof TableLedgerRecordsRowFieldsFragmentDoc>;
   matchingStatus?: 'New' | 'Diff' | 'Deleted';
-  diffs?: FragmentType<typeof TableLedgerRecordsRowFieldsFragmentDoc>;
+  diffs?: FragmentOf<typeof TableLedgerRecordsRowFieldsFragmentDoc>;
 };
 
 export const LedgerRecordRow = ({
@@ -26,8 +32,8 @@ export const LedgerRecordRow = ({
   diffs,
   matchingStatus,
 }: Props): ReactElement => {
-  const record = getFragmentData(TableLedgerRecordsRowFieldsFragmentDoc, ledgerRecordProps);
-  const diffsRecord = getFragmentData(TableLedgerRecordsRowFieldsFragmentDoc, diffs);
+  const record = readFragment(TableLedgerRecordsRowFieldsFragmentDoc, ledgerRecordProps);
+  const diffsRecord = readFragment(TableLedgerRecordsRowFieldsFragmentDoc, diffs);
 
   if (matchingStatus === 'Diff' && !diffsRecord) {
     matchingStatus = 'Deleted';
