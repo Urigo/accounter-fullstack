@@ -1,6 +1,7 @@
 import { Injector } from 'graphql-modules';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { GENERAL_FEE_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
@@ -14,10 +15,11 @@ export const validateCharge = async (
 
   const chargeType = getChargeType(charge);
 
+  const isGeneralFees = charge.tax_category_id === GENERAL_FEE_TAX_CATEGORY_ID;
+
   // check for consistent counterparty business
-  const businessNotRequired = [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary].includes(
-    chargeType,
-  );
+  const businessNotRequired =
+    [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary].includes(chargeType) || isGeneralFees;
   const business =
     charge.business_id && !businessNotRequired
       ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
@@ -41,7 +43,8 @@ export const validateCharge = async (
       ChargeTypeEnum.Dividend,
       ChargeTypeEnum.Conversion,
       ChargeTypeEnum.MonthlyVat,
-    ].includes(chargeType);
+    ].includes(chargeType) ||
+    isGeneralFees;
   const documentsAreFine =
     (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt)) || documentsNotRequired;
   if (!documentsAreFine) {
@@ -73,6 +76,7 @@ export const validateCharge = async (
   const isVATlessBusiness = business && (business.country !== 'Israel' || business.exempt_dealer);
   const vatIsFine =
     documentsNotRequired ||
+    isGeneralFees ||
     (charge.documents_vat_amount != null &&
       (isVATlessBusiness || charge.documents_vat_amount !== 0));
   if (!vatIsFine) {

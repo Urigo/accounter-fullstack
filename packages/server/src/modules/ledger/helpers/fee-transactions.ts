@@ -5,6 +5,7 @@ import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/ty
 import {
   DEFAULT_LOCAL_CURRENCY,
   FEE_TAX_CATEGORY_ID,
+  GENERAL_FEE_TAX_CATEGORY_ID,
   INTERNAL_WALLETS_IDS,
   SWIFT_BUSINESS_ID,
 } from '@shared/constants';
@@ -119,10 +120,15 @@ export async function getEntriesFromFeeTransaction(
     ledgerEntries.push(ledgerEntry);
   }
 
+  const feeTaxCategory =
+    charge.tax_category_id === GENERAL_FEE_TAX_CATEGORY_ID
+      ? GENERAL_FEE_TAX_CATEGORY_ID
+      : FEE_TAX_CATEGORY_ID;
+
   const ledgerEntry: LedgerProto = {
     ...partialLedgerEntry,
-    creditAccountID1: isCreditorCounterparty ? FEE_TAX_CATEGORY_ID : mainAccount,
-    debitAccountID1: isCreditorCounterparty ? mainAccount : FEE_TAX_CATEGORY_ID,
+    creditAccountID1: isCreditorCounterparty ? feeTaxCategory : mainAccount,
+    debitAccountID1: isCreditorCounterparty ? mainAccount : feeTaxCategory,
   };
 
   ledgerEntries.push(ledgerEntry);
