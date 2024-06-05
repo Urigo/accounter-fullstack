@@ -5,29 +5,30 @@ export default gql`
   extend type Mutation {
     updateBusinessTripTransactionCategory(
       fields: UpdateBusinessTripTransactionCategoryInput!
-    ): UUID! @auth(role: ADMIN)
+    ): UUID! @auth(role: ACCOUNTANT)
     updateBusinessTripFlightsTransaction(fields: UpdateBusinessTripFlightsTransactionInput!): UUID!
-      @auth(role: ADMIN)
+      @auth(role: ACCOUNTANT)
     updateBusinessTripAccommodationsTransaction(
       fields: UpdateBusinessTripAccommodationsTransactionInput!
-    ): UUID! @auth(role: ADMIN)
+    ): UUID! @auth(role: ACCOUNTANT)
     updateBusinessTripOtherTransaction(fields: UpdateBusinessTripOtherTransactionInput!): UUID!
-      @auth(role: ADMIN)
+      @auth(role: ACCOUNTANT)
     updateBusinessTripTravelAndSubsistenceTransaction(
       fields: UpdateBusinessTripTravelAndSubsistenceTransactionInput!
-    ): UUID! @auth(role: ADMIN)
-    deleteBusinessTripTransaction(businessTripTransactionId: UUID!): Boolean! @auth(role: ADMIN)
+    ): UUID! @auth(role: ACCOUNTANT)
+    deleteBusinessTripTransaction(businessTripTransactionId: UUID!): Boolean!
+      @auth(role: ACCOUNTANT)
 
     addBusinessTripFlightsTransaction(fields: AddBusinessTripFlightsTransactionInput!): UUID!
-      @auth(role: ADMIN)
+      @auth(role: ACCOUNTANT)
     addBusinessTripAccommodationsTransaction(
       fields: AddBusinessTripAccommodationsTransactionInput!
-    ): UUID! @auth(role: ADMIN)
+    ): UUID! @auth(role: ACCOUNTANT)
     addBusinessTripOtherTransaction(fields: AddBusinessTripOtherTransactionInput!): UUID!
-      @auth(role: ADMIN)
+      @auth(role: ACCOUNTANT)
     addBusinessTripTravelAndSubsistenceTransaction(
       fields: AddBusinessTripTravelAndSubsistenceTransactionInput!
-    ): UUID! @auth(role: ADMIN)
+    ): UUID! @auth(role: ACCOUNTANT)
   }
 
   " the input for updating a business trip transaction category "

@@ -8,9 +8,9 @@ export default gql`
   }
 
   extend type Mutation {
-    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge @auth(role: ADMIN)
-    insertBusinessTrip(fields: InsertBusinessTripInput!): UUID! @auth(role: ADMIN)
-    updateBusinessTrip(fields: BusinessTripUpdateInput!): UUID! @auth(role: ADMIN)
+    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge @auth(role: ACCOUNTANT)
+    insertBusinessTrip(fields: InsertBusinessTripInput!): UUID! @auth(role: ACCOUNTANT)
+    updateBusinessTrip(fields: BusinessTripUpdateInput!): UUID! @auth(role: ACCOUNTANT)
   }
 
   " the input for creating a business trip "
