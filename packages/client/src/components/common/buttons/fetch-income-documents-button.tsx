@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { FileDownload } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -7,6 +7,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
+import { UserContext } from '../../../providers/user-provider.js';
 
 export function FetchIncomeDocumentsButton(): ReactElement {
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +30,7 @@ type ModalProps = {
 };
 
 export function ModalContent({ opened, close, setIsLoading }: ModalProps): ReactElement {
+  const { userContext } = useContext(UserContext);
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -37,7 +39,7 @@ export function ModalContent({ opened, close, setIsLoading }: ModalProps): React
   });
 
   const { control, handleSubmit } = useForm<{ ownerId: string }>({
-    defaultValues: { ownerId: '6a20aa69-57ff-446e-8d6a-1e96d095e988' },
+    defaultValues: { ownerId: userContext?.ownerId },
   });
 
   // On every new data fetch, reorder results by name

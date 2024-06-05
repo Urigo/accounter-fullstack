@@ -20,6 +20,11 @@ export default gql`
 
   extend type Mutation {
     insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ADMIN)
+    splitDocument(
+      documentId: UUID!
+      splitAmount: Float!
+      underSameCharge: Boolean
+    ): SplitDocumentResult! @auth(role: ADMIN)
     updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
       @auth(role: ACCOUNTANT)
     deleteDocument(documentId: UUID!): Boolean! @auth(role: ADMIN)
@@ -189,6 +194,14 @@ export default gql`
   " result type for insertDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type InsertDocumentSuccessfulResult {
     document: Document
+  }
+
+  " result type for splitDocument "
+  union SplitDocumentResult = SplitDocumentSuccessfulResult | CommonError
+
+  " result type for splitDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type SplitDocumentSuccessfulResult {
+    documents: [Document!]!
   }
 
   " result type for uploadDocument "
