@@ -21,7 +21,7 @@
     "inquirer": "9.2.23",
     "node-fetch": "3.3.2",
     "puppeteer": "22.10.0",
-    "uuid": "9.0.1"
+    "uuid": "10.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.7",
