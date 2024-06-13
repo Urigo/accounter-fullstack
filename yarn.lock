@@ -7,10 +7,18 @@
   resolved "https://registry.yarnpkg.com/@0no-co/graphql.web/-/graphql.web-1.0.7.tgz#c7a762c887b3482a79ffa68f63de5e96059a62e4"
   integrity sha512-E3Qku4mTzdrlwVWGPxklDnME5ANrEGetvYw4i2GCRlppWXXE4QD66j7pwb8HelZwS6LnqEChhrSOGCXpbiu6MQ==
 
-"@0no-co/graphqlsp@1.12.5", "@0no-co/graphqlsp@^1.12.1":
+"@0no-co/graphqlsp@1.12.5":
   version "1.12.5"
   resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.12.5.tgz#6760e23bb6760c1795d9a7b132026b78d0aeb73d"
   integrity sha512-YS9s8sf3XLaVdBt33u1mbUdfUSLiarQW1SFd3ITh2CLWz1nVnVTN0oCrpepuFHUJ7rt+b6Gk14sgjP4ONdeZfQ==
+  dependencies:
+    "@gql.tada/internal" "^1.0.0"
+    graphql "^15.5.0 || ^16.0.0 || ^17.0.0"
+
+"@0no-co/graphqlsp@^1.12.8":
+  version "1.12.8"
+  resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.12.8.tgz#819b3fe4725cedd4eaf063011961d803a9d04797"
+  integrity sha512-arW3ZzifyKIJhehoAlsP069AX73EN6q358bOCf+8z00PmfPR2DSxq7uGGSj0oFNe3vEDtGYl88HmFEWQ+0+dwQ==
   dependencies:
     "@gql.tada/internal" "^1.0.0"
     graphql "^15.5.0 || ^16.0.0 || ^17.0.0"
@@ -1143,26 +1151,19 @@
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.2.tgz#d8bae93ac8b815b2bd7a98078cf91e2724ef11e5"
   integrity sha512-J4yDIIthosAsRZ5CPYP/jQvUAQtlZTTD/4suA08/FEnlxqW3sKS9iAhgsa9VYLZ6vDHn/ixJgIqRQPotoBjxIw==
 
-"@gql.tada/cli-utils@1.3.9":
-  version "1.3.9"
-  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-1.3.9.tgz#3563cf18d25bca4e4a04f69c7b41623ba0821ed0"
-  integrity sha512-oRb7SG/+csx9CiypSJTI21KaLfulOUnhX1vxg4FXi2snub9XShkGR2XnnlJVTAOZXY9Vcxti1NutAElxdDkycA==
+"@gql.tada/cli-utils@1.3.10":
+  version "1.3.10"
+  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-1.3.10.tgz#f7352d16e8762bbde8654a60ee55475c94c073ab"
+  integrity sha512-wmKW/4UuDR9rkgpXnzP2skftNO4Kc/LNkFImKXe0waus+ipvJLaV3dwQ1CghKQ1THzWl2KLp/yJ80BdFWA+HzA==
   dependencies:
-    "@0no-co/graphqlsp" "^1.12.1"
-    "@gql.tada/internal" "1.0.0"
+    "@0no-co/graphqlsp" "^1.12.8"
+    "@gql.tada/internal" "1.0.1"
     "@vue/compiler-dom" "^3.4.23"
     "@vue/language-core" "^2.0.17"
     graphql "^15.5.0 || ^16.0.0 || ^17.0.0"
     svelte2tsx "^0.7.6"
 
-"@gql.tada/internal@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@gql.tada/internal/-/internal-1.0.0.tgz#90d84a0ffcfa700dd769033b880422d28fa6c8e2"
-  integrity sha512-B55aIYyZn5ewdgMqoJciPAwF5DKYX6HBabTU+ap/dpNH3EgJrLomc8Y8w+MCxCyOx+dXL9OduT6eWnVr7J7Eyg==
-  dependencies:
-    "@0no-co/graphql.web" "^1.0.5"
-
-"@gql.tada/internal@^1.0.0":
+"@gql.tada/internal@1.0.1", "@gql.tada/internal@^1.0.0":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@gql.tada/internal/-/internal-1.0.1.tgz#b5ab61261a6b54227ba93abf2022cf38fac63917"
   integrity sha512-VglE9pEUqCD7YwytLehI1RiEpxJsEkO+8onrMI8DEFTcrn+Irv2tQfPUHBC0LjtY5sFgoodCSLIcnxyZOKggYA==
@@ -6866,14 +6867,14 @@ got@14.4.1:
     responselike "^3.0.0"
     type-fest "^4.19.0"
 
-gql.tada@1.7.5:
-  version "1.7.5"
-  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.7.5.tgz#b03e7ccabf99458d828d82373a96e94cd19d6f28"
-  integrity sha512-GepPTee+FWSVVZQ7GiJHzsGNo7gOb59kcn4mUPYLlkbpeJfOUwpuoB05ZNaXG0W4qZVPd1I7R2UgMHBjY1lGlQ==
+gql.tada@1.7.6:
+  version "1.7.6"
+  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.7.6.tgz#4a073a718f3be920f7d923755079aa5ed8ee39f8"
+  integrity sha512-wuFq2qmWFFQETV1qz2rWqIJ65qlLxxpiuMEDOB7zqmWnKGHYQ2k/bttyDGOKwroK2cgPZ8TGhzzaUQj9MZmwxw==
   dependencies:
     "@0no-co/graphql.web" "^1.0.5"
-    "@gql.tada/cli-utils" "1.3.9"
-    "@gql.tada/internal" "1.0.0"
+    "@gql.tada/cli-utils" "1.3.10"
+    "@gql.tada/internal" "1.0.1"
 
 graceful-fs@^4.1.2, graceful-fs@^4.1.5, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.4, graceful-fs@^4.2.6:
   version "4.2.11"
