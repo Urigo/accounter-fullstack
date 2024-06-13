@@ -56,7 +56,7 @@
     "test": "node dist/dev-tests/e2e.js"
   },
   "dependencies": {
-    "ajv": "8.14.0",
+    "ajv": "8.16.0",
     "puppeteer": "22.10.0"
   },
   "devDependencies": {
