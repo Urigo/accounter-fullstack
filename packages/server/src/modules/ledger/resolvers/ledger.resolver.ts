@@ -180,9 +180,19 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           ],
         );
 
-        const updatePromises = recordsToUpdate.map(record =>
-          injector.get(LedgerProvider).updateLedgerRecord(convertLedgerRecordToInput(record)),
-        );
+        const updatePromise = injector
+          .get(LedgerProvider)
+          .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
+          .then(() =>
+            injector.get(LedgerProvider).insertLedgerRecords({
+              ledgerRecords: recordsToUpdate
+                .map(record => convertLedgerRecordToInput(record))
+                .map(record => {
+                  record.chargeId = chargeId;
+                  return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
+                }),
+            }),
+          );
         const insertPromise =
           newRecords.length > 0
             ? injector.get(LedgerProvider).insertLedgerRecords({
@@ -194,7 +204,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         const removePromises = toRemove.map(record =>
           injector.get(LedgerProvider).deleteLedgerRecordsByIdLoader.load(record.id),
         );
-        await Promise.all([...updatePromises, insertPromise, removePromises]);
+        await Promise.all([updatePromise, insertPromise, removePromises]);
 
         return {
           records: toUpdate,
