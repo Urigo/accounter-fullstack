@@ -45,13 +45,7 @@ export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
 export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 export const BATCHED_EMPLOYEE_BUSINESS_ID = 'd60321ef-9b91-4907-8bd2-9cfd87c83c0a'; // Batched Employee
 export const BATCHED_PENSION_BUSINESS_ID = '95815c30-0ed1-4ac1-8367-e63829345070'; // Batched pension
-export const PENSION_BUSINESS_IDS = [
-  BATCHED_PENSION_BUSINESS_ID, // Pension Group
-  'af386033-a577-4c9a-880a-d49acd15141d', // מנורה פנסיה
-  'fc2ea992-a2be-4f8a-a639-542a81276beb', // מגדל פנסיה
-  '6606735b-49ce-4f6f-8d8e-3416fe27528f', // הלמן פנסיה
-  '340c3552-0a15-4e22-ba03-19ae9322859c', // איילון פנסיה
-];
+
 export const TAX_DEDUCTIONS_BUSINESS_ID = 'f1ade516-4999-4919-9d94-6b013221536d'; // מהני
 export const SOCIAL_SECURITY_BUSINESS_ID = '6d4b01dd-5a5e-4a43-8e40-e9dadfcc10fa'; // בלני
 export const SALARY_BATCHED_BUSINESSES = [
