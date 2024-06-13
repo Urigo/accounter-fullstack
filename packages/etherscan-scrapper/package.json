@@ -17,7 +17,7 @@
     "pg-promise": "11.8.0"
   },
   "devDependencies": {
-    "@types/node": "20.14.1",
+    "@types/node": "20.14.2",
     "tsup": "8.1.0",
     "typescript": "5.4.5"
   },
