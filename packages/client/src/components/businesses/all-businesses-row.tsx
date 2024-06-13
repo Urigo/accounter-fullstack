@@ -1,24 +1,20 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Paper } from '@mantine/core';
-import {
-  AllBusinessesForScreenQuery,
-  AllBusinessesRowFieldsFragment,
-  AllBusinessesRowFieldsFragmentDoc,
-} from '../../gql/graphql.js';
+import { AllBusinessesForScreenQuery, AllBusinessesRowFieldsFragment } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
+import { graphql } from '../../graphql.js';
 import { BusinessCard } from '../common/index.js';
 import { HebrewName } from './cells/hebrew-name.js';
 import { Name } from './cells/name.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllBusinessesRowFieldsFragmentDoc = graphql(`
   fragment AllBusinessesRowFields on LtdFinancialEntity {
     id
     ...AllBusinessesNameFields
     ...AllBusinessesHebrewNameFields
   }
-`;
+`);
 
 interface Props {
   data: Extract<
@@ -31,7 +27,7 @@ interface Props {
 export const AllBusinessesRow = ({ data, isAllOpened }: Props): ReactElement => {
   const [opened, setOpened] = useState(false);
   const [business, setBusiness] = useState<AllBusinessesRowFieldsFragment>(
-    getFragmentData(AllBusinessesRowFieldsFragmentDoc, data),
+    readFragment(AllBusinessesRowFieldsFragmentDoc, data),
   );
 
   return (

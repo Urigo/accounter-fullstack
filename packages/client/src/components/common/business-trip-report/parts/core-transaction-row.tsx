@@ -7,16 +7,14 @@ import { NavLink, Select, Text, TextInput, ThemeIcon } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessTripAttendeesDocument,
-  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
   Currency,
   UpdateBusinessTripFlightsTransactionInput,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { CurrencyInput } from '../../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportCoreTransactionRowFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportCoreTransactionRowFields on BusinessTripTransaction {
     id
     date
@@ -36,10 +34,10 @@ import { CurrencyInput } from '../../index.js';
       chargeId
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportCoreTransactionRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportCoreTransactionRowFieldsFragmentDoc>;
   isEditMode: boolean;
   control: Control<UpdateBusinessTripFlightsTransactionInput, unknown>;
   businessTripId: string;
@@ -51,7 +49,7 @@ export const CoreTransactionRow = ({
   control,
   businessTripId,
 }: Props): ReactElement => {
-  const businessTripTransaction = getFragmentData(
+  const businessTripTransaction = readFragment(
     BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
     data,
   );

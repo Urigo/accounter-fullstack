@@ -1,20 +1,23 @@
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 import { Table } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
-import { graphql } from '../../graphql.js';
-import { AllChargesRow } from './all-charges-row.js';
+import { FragmentOf, graphql, readFragment, ResultOf } from '../../graphql.js';
+import { AllChargesRow, AllChargesRowFieldsFragmentDoc } from './all-charges-row.js';
 
-export const AllChargesTableFieldsFragmentDoc = graphql(`
-  fragment AllChargesTableFields on Charge {
-    id
-    owner {
-      ... on Business @defer {
-        id
+export const AllChargesTableFieldsFragmentDoc = graphql(
+  `
+    fragment AllChargesTableFields on Charge {
+      id
+      owner {
+        ... on Business @defer {
+          id
+        }
       }
+      ...AllChargesRowFields
     }
-    ...AllChargesRowFields
-  }
-`);
+  `,
+  [AllChargesRowFieldsFragmentDoc],
+);
+export type AllChargesTableFieldsFragment = ResultOf<typeof AllChargesTableFieldsFragmentDoc>;
 
 interface Props {
   setEditChargeId: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
@@ -31,7 +34,7 @@ interface Props {
   setUploadDocument: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   toggleMergeCharge?: (chargeId: string, onChange: () => void) => void;
   mergeSelectedCharges?: Set<string>;
-  data?: FragmentType<typeof AllChargesTableFieldsFragmentDoc>[];
+  data?: FragmentOf<typeof AllChargesTableFieldsFragmentDoc>[];
   isAllOpened: boolean;
 }
 
@@ -45,8 +48,7 @@ export const AllChargesTable = ({
   data,
   isAllOpened,
 }: Props): ReactElement => {
-  const charges =
-    data?.map(charge => getFragmentData(AllChargesTableFieldsFragmentDoc, charge)) ?? [];
+  const charges = data?.map(charge => readFragment(AllChargesTableFieldsFragmentDoc, charge)) ?? [];
 
   return (
     <Table striped highlightOnHover>

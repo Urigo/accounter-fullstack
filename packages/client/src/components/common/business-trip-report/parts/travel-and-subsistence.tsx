@@ -1,13 +1,11 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { AddTravelAndSubsistenceTransaction } from '../buttons/add-travel-and-subsistence-transaction.jsx';
 import { CoreTransactionHeader } from './core-transaction-row.js';
 import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportTravelAndSubsistenceFields on BusinessTrip {
     id
     travelAndSubsistenceTransactions {
@@ -16,15 +14,15 @@ import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.jsx';
       ...BusinessTripReportTravelAndSubsistenceRowFields
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const TravelAndSubsistence = ({ data, onChange }: Props): ReactElement => {
-  const { travelAndSubsistenceTransactions, id } = getFragmentData(
+  const { travelAndSubsistenceTransactions, id } = readFragment(
     BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc,
     data,
   );

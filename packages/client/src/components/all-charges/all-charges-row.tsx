@@ -1,7 +1,12 @@
 import { ReactElement, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Paper } from '@mantine/core';
+import { isFragmentReady } from '../../gql/index.js';
+import { graphql, readFragment, ResultOf } from '../../graphql.js';
+import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
+import type { AllChargesTableFieldsFragment } from './all-charges-table.js';
 import {
+  AccountantApproval,
   AllChargesAccountantApprovalFieldsFragmentDoc,
   AllChargesAmountFieldsFragmentDoc,
   AllChargesBusinessTripFieldsFragmentDoc,
@@ -9,19 +14,10 @@ import {
   AllChargesDescriptionFieldsFragmentDoc,
   AllChargesEntityFieldsFragmentDoc,
   AllChargesMoreInfoFieldsFragmentDoc,
-  AllChargesRowFieldsFragment,
-  AllChargesRowFieldsFragmentDoc,
-  AllChargesTableFieldsFragment,
   AllChargesTagsFieldsFragmentDoc,
   AllChargesTaxCategoryFieldsFragmentDoc,
   AllChargesTypeFieldsFragmentDoc,
   AllChargesVatFieldsFragmentDoc,
-  ChargeForRowDocument,
-} from '../../gql/graphql.js';
-import { getFragmentData, isFragmentReady } from '../../gql/index.js';
-import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
-import {
-  AccountantApproval,
   Amount,
   BusinessTrip,
   Counterparty,
@@ -35,39 +31,55 @@ import {
 } from './cells/index.js';
 import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment AllChargesRowFields on Charge {
-    id
-    metadata {
-      ... on ChargeMetadata @defer {
+export const AllChargesRowFieldsFragmentDoc = graphql(
+  `
+    fragment AllChargesRowFields on Charge {
+      id
+      metadata {
         transactionsCount
         documentsCount
       }
+      ...AllChargesAccountantApprovalFields @defer
+      ...AllChargesAmountFields @defer
+      ...AllChargesBusinessTripFields @defer
+      ...AllChargesDateFields @defer
+      ...AllChargesDescriptionFields @defer
+      ...AllChargesEntityFields @defer
+      ...AllChargesMoreInfoFields @defer
+      ...AllChargesTagsFields @defer
+      ...AllChargesTaxCategoryFields @defer
+      ...AllChargesTypeFields @defer
+      ...AllChargesVatFields @defer
     }
-    ...AllChargesAccountantApprovalFields @defer
-    ...AllChargesAmountFields @defer
-    ...AllChargesBusinessTripFields @defer
-    ...AllChargesDateFields @defer
-    ...AllChargesDescriptionFields @defer
-    ...AllChargesEntityFields @defer
-    ...AllChargesMoreInfoFields @defer
-    ...AllChargesTagsFields @defer
-    ...AllChargesTaxCategoryFields @defer
-    ...AllChargesTypeFields @defer
-    ...AllChargesVatFields @defer
-  }
-`;
+  `,
+  [
+    AllChargesAccountantApprovalFieldsFragmentDoc,
+    AllChargesAmountFieldsFragmentDoc,
+    AllChargesBusinessTripFieldsFragmentDoc,
+    AllChargesDateFieldsFragmentDoc,
+    AllChargesDescriptionFieldsFragmentDoc,
+    AllChargesEntityFieldsFragmentDoc,
+    AllChargesMoreInfoFieldsFragmentDoc,
+    AllChargesTagsFieldsFragmentDoc,
+    AllChargesTaxCategoryFieldsFragmentDoc,
+    AllChargesTypeFieldsFragmentDoc,
+    AllChargesVatFieldsFragmentDoc,
+  ],
+);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ChargeForRow($chargeIDs: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIDs) {
-      id
-      ...AllChargesRowFields
+type AllChargesRowFieldsFragment = ResultOf<typeof AllChargesRowFieldsFragmentDoc>;
+
+export const ChargeForRowDocument = graphql(
+  `
+    query ChargeForRow($chargeIDs: [UUID!]!) {
+      chargesByIDs(chargeIDs: $chargeIDs) {
+        id
+        ...AllChargesRowFields
+      }
     }
-  }
-`;
+  `,
+  [AllChargesRowFieldsFragmentDoc],
+);
 
 interface Props {
   setEditCharge: (onChange: () => void) => void;
@@ -92,7 +104,7 @@ export const AllChargesRow = ({
 }: Props): ReactElement => {
   const [opened, setOpened] = useState(false);
   const [charge, setCharge] = useState<AllChargesRowFieldsFragment>(
-    getFragmentData(AllChargesRowFieldsFragmentDoc, data),
+    readFragment(AllChargesRowFieldsFragmentDoc, data),
   );
 
   const [{ data: newData }, fetchCharge] = useQuery({
@@ -108,12 +120,12 @@ export const AllChargesRow = ({
   useEffect(() => {
     const updatedCharge = newData?.chargesByIDs?.[0];
     if (updatedCharge) {
-      setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, updatedCharge));
+      setCharge(readFragment(AllChargesRowFieldsFragmentDoc, updatedCharge));
     }
   }, [newData]);
 
   useEffect(() => {
-    setCharge(getFragmentData(AllChargesRowFieldsFragmentDoc, data));
+    setCharge(readFragment(AllChargesRowFieldsFragmentDoc, data));
   }, [data]);
 
   useEffect(() => {

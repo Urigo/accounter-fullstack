@@ -1,13 +1,11 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportAccommodationsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { AddAccommodationTransaction } from '../buttons/add-accommodation-transaction.jsx';
 import { AccommodationsRow } from './accommodations-row.js';
 import { CoreTransactionHeader } from './core-transaction-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportAccommodationsFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportAccommodationsFields on BusinessTrip {
     id
     accommodationTransactions {
@@ -16,15 +14,15 @@ import { CoreTransactionHeader } from './core-transaction-row.js';
       ...BusinessTripReportAccommodationsRowFields
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportAccommodationsFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportAccommodationsFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const Accommodations = ({ data, onChange }: Props): ReactElement => {
-  const { accommodationTransactions, id } = getFragmentData(
+  const { accommodationTransactions, id } = readFragment(
     BusinessTripReportAccommodationsFieldsFragmentDoc,
     data,
   );

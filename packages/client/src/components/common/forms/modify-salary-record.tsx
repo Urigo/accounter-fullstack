@@ -11,9 +11,9 @@ import {
   AllFinancialEntitiesDocument,
   AllPensionFundsDocument,
   AllTrainingFundsDocument,
-  SalaryRecordInput,
 } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TimelessDateString, UUID_REGEX } from '../../../helpers';
+import { SalaryRecordInput } from '../../../hooks/use-update-or-insert-salary-records';
 import { UserContext } from '../../../providers/user-provider.js';
 
 type Props = {

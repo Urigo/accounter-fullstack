@@ -2,10 +2,10 @@ import { ReactElement, useCallback, useState } from 'react';
 import { useMutation } from 'urql';
 import { FileInput, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
+import { CommonError } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UploadDocumentDocument = graphql(`
   mutation UploadDocument($file: FileScalar!, $chargeId: UUID) {
     uploadDocument(file: $file, chargeId: $chargeId) {
       __typename
@@ -19,7 +19,7 @@ import { CommonError, UploadDocumentDocument } from '../../../gql/graphql.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
   chargeId: string;

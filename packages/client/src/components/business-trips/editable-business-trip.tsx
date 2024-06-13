@@ -2,12 +2,8 @@ import { ReactElement, useEffect, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Card } from '@mantine/core';
-import {
-  EditableBusinessTripDocument,
-  EditableBusinessTripFragmentDoc,
-  type EditableBusinessTripFragment,
-} from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import type { EditableBusinessTripFragment } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { Accommodations } from '../common/business-trip-report/parts/accommodations.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
 import { Flights } from '../common/business-trip-report/parts/flights.js';
@@ -17,8 +13,7 @@ import { Summary } from '../common/business-trip-report/parts/summary.js';
 import { TravelAndSubsistence } from '../common/business-trip-report/parts/travel-and-subsistence.js';
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditableBusinessTripFragmentDoc = graphql(`
   fragment EditableBusinessTrip on BusinessTrip {
     id
     ...BusinessTripReportHeaderFields
@@ -35,26 +30,25 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
       }
     }
   }
-`;
+`);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditableBusinessTripDocument = graphql(`
   query EditableBusinessTrip($businessTripId: UUID!) {
     businessTrip(id: $businessTripId) {
       id
       ...EditableBusinessTrip
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof EditableBusinessTripFragmentDoc>;
+  data: FragmentOf<typeof EditableBusinessTripFragmentDoc>;
   isExtended?: boolean;
 }
 
 export function EditableBusinessTrip({ data, isExtended = false }: Props): ReactElement {
   const [trip, setTrip] = useState<EditableBusinessTripFragment>(
-    getFragmentData(EditableBusinessTripFragmentDoc, data),
+    readFragment(EditableBusinessTripFragmentDoc, data),
   );
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [{ data: updatedTripDate }, fetchUpdatedBusinessTrip] = useQuery({
@@ -77,7 +71,7 @@ export function EditableBusinessTrip({ data, isExtended = false }: Props): React
 
   useEffect(() => {
     if (updatedTripDate?.businessTrip) {
-      setTrip(getFragmentData(EditableBusinessTripFragmentDoc, updatedTripDate.businessTrip));
+      setTrip(readFragment(EditableBusinessTripFragmentDoc, updatedTripDate.businessTrip));
     }
   }, [updatedTripDate?.businessTrip]);
 

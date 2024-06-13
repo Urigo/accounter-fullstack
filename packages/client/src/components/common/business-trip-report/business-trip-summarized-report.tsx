@@ -1,24 +1,22 @@
 import { ReactElement } from 'react';
-import { BusinessTripReportFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { ReportHeader } from './parts/report-header.js';
 import { Summary } from './parts/summary.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportFields on BusinessTrip {
     id
     ...BusinessTripReportHeaderFields
     ...BusinessTripReportSummaryFields
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof BusinessTripReportFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportFieldsFragmentDoc>;
 };
 
 export const BusinessTripSummarizedReport = ({ data }: Props): ReactElement => {
-  const reportData = getFragmentData(BusinessTripReportFieldsFragmentDoc, data);
+  const reportData = readFragment(BusinessTripReportFieldsFragmentDoc, data);
 
   return (
     <>

@@ -3,12 +3,12 @@ import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { ModifySalaryRecord, PopUpDrawer } from '..';
-import { EditSalaryRecordDocument, SalaryRecordInput } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { TimelessDateString } from '../../../helpers';
+import type { SalaryRecordInput } from '../../../hooks/use-update-or-insert-salary-records';
 import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditSalaryRecordDocument = graphql(`
   query EditSalaryRecord($month: TimelessDate!, $employeeIDs: [UUID!]!) {
     salaryRecordsByDates(fromDate: $month, toDate: $month, employeeIDs: $employeeIDs) {
       month
@@ -23,15 +23,12 @@ import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.j
       }
       employee {
         id
-        name
       }
       employer {
         id
-        name
       }
       pensionFund {
         id
-        name
       }
       pensionEmployeeAmount {
         raw
@@ -47,7 +44,6 @@ import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.j
       compensationsPercentage
       trainingFund {
         id
-        name
       }
       trainingFundEmployeeAmount {
         raw
@@ -97,7 +93,7 @@ import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.j
       }
     }
   }
-`;
+`);
 
 interface Props {
   recordVariables?: {
@@ -150,7 +146,7 @@ export const EditSalaryRecordModalContent = ({
     return <></>;
   }
 
-  const defaultValues = {
+  const defaultValues: SalaryRecordInput = {
     addedVacationDays: salaryRecord?.vacationDays?.added,
     baseSalary: salaryRecord?.baseAmount?.raw,
     bonus: salaryRecord?.bonus?.raw,

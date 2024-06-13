@@ -2,33 +2,29 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, TextInput, Tooltip } from '@mantine/core';
-import {
-  BusinessTripAttendeeUpdateInput,
-  BusinessTripReportAttendeeRowFieldsFragmentDoc,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { BusinessTripAttendeeUpdateInput } from '../../../../gql/graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportAttendeeRowFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportAttendeeRowFields on BusinessTripAttendee {
     id
     name
     arrivalDate
     departureDate
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportAttendeeRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportAttendeeRowFieldsFragmentDoc>;
   businessTripId: string;
   onChange: () => void;
 }
 
 export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const attendee = getFragmentData(BusinessTripReportAttendeeRowFieldsFragmentDoc, data);
+  const attendee = readFragment(BusinessTripReportAttendeeRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { control, handleSubmit } = useForm<BusinessTripAttendeeUpdateInput>({

@@ -1,25 +1,24 @@
 import { ReactElement } from 'react';
 import { ChargeTableTransactionsFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../graphql.js';
 import { TransactionsTable } from '../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TableTransactionsFieldsFragmentDoc = graphql(`
   fragment ChargeTableTransactionsFields on Charge {
     id
     transactions {
       ...TransactionForTransactionsTableFields
     }
   }
-`;
+`);
 
 type Props = {
-  transactionsProps: FragmentType<typeof ChargeTableTransactionsFieldsFragmentDoc>;
+  transactionsProps: FragmentOf<typeof ChargeTableTransactionsFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const ChargeTransactionsTable = ({ transactionsProps, onChange }: Props): ReactElement => {
-  const { transactions } = getFragmentData(
+  const { transactions } = readFragment(
     ChargeTableTransactionsFieldsFragmentDoc,
     transactionsProps,
   );

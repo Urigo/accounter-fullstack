@@ -14,7 +14,7 @@ import {
   Switch,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { introspection } from '../../graphql-env.js';
+import type { introspection } from '../../graphql-env.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { PopUpModal, TextInput } from '../common/index.js';

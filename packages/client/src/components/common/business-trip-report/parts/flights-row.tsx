@@ -2,18 +2,13 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Select, Text, TextInput, Tooltip } from '@mantine/core';
-import {
-  BusinessTripReportFlightsRowFieldsFragmentDoc,
-  FlightClass,
-  UpdateBusinessTripFlightsTransactionInput,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FlightClass, UpdateBusinessTripFlightsTransactionInput } from '../../../../gql/graphql.js';
+import { graphql } from '../../../../graphql.js';
 import { useUpdateBusinessTripFlightsTransaction } from '../../../../hooks/use-update-business-trip-flights-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
 import { CoreTransactionRow } from './core-transaction-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportFlightsRowFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
     id
     payedByEmployee
@@ -22,7 +17,7 @@ import { CoreTransactionRow } from './core-transaction-row.js';
     destination
     class
   }
-`;
+`);
 
 const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
   value,
@@ -30,13 +25,13 @@ const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
 }));
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportFlightsRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportFlightsRowFieldsFragmentDoc>;
   businessTripId: string;
   onChange: () => void;
 }
 
 export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const flightTransaction = getFragmentData(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
+  const flightTransaction = readFragment(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { control, handleSubmit } = useForm<UpdateBusinessTripFlightsTransactionInput>({

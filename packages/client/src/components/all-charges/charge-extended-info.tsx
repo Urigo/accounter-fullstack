@@ -3,66 +3,78 @@ import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icon
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  AllChargesErrorsFieldsFragmentDoc,
-  ChargeTableTransactionsFieldsFragmentDoc,
-  ConversionChargeInfoFragmentDoc,
-  CreditcardBankChargeInfoFragmentDoc,
-  DocumentsGalleryFieldsFragmentDoc,
-  FetchChargeDocument,
-  TableDocumentsFieldsFragmentDoc,
-  TableLedgerRecordsFieldsFragmentDoc,
-  TableSalariesFieldsFragmentDoc,
-} from '../../gql/graphql.js';
-import { FragmentType, isFragmentReady } from '../../gql/index.js';
+import { isFragmentReady } from '../../gql/index.js';
+import { FragmentOf, graphql } from '../../graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import {
+  BusinessTripReportFieldsFragmentDoc,
   BusinessTripSummarizedReport,
   ConfirmationModal,
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
-import { ChargeErrors } from './charge-errors.js';
-import { ChargeTransactionsTable } from './charge-transactions-table.js';
-import { DocumentsGallery } from './documents/documents-gallery.js';
-import { DocumentsTable } from './documents/documents-table.js';
-import { ConversionInfo } from './extended-info/conversion-info.js';
-import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
-import { SalariesTable } from './extended-info/salaries-info.js';
-import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
+import { AllChargesErrorsFieldsFragmentDoc, ChargeErrors } from './charge-errors.js';
+import {
+  ChargeTransactionsTable,
+  TableTransactionsFieldsFragmentDoc,
+} from './charge-transactions-table.js';
+import {
+  DocumentsGallery,
+  DocumentsGalleryFieldsFragmentDoc,
+} from './documents/documents-gallery.js';
+import { DocumentsTable, TableDocumentsFieldsFragmentDoc } from './documents/documents-table.js';
+import {
+  ConversionChargeInfoFragmentDoc,
+  ConversionInfo,
+} from './extended-info/conversion-info.js';
+import { SalariesTable, TableSalariesFieldsFragmentDoc } from './extended-info/salaries-info.js';
+import {
+  LedgerRecordTable,
+  TableLedgerRecordsFieldsFragmentDoc,
+} from './ledger-records/ledger-record-table.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query FetchCharge($chargeIDs: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIDs) {
-      __typename
-      id
-      metadata {
-        transactionsCount
-        documentsCount
-        ledgerCount
-      }
-      tags {
-        name
-      }
-      ...DocumentsGalleryFields @defer
-      ...TableDocumentsFields @defer
-      ...TableLedgerRecordsFields @defer
-      ...ChargeTableTransactionsFields @defer
-      ...ConversionChargeInfo @defer
-      ...CreditcardBankChargeInfo @defer
-      ...TableSalariesFields @defer
-      ... on BusinessTripCharge {
-        businessTrip {
-          id
-          ... on BusinessTrip @defer {
+export const FetchChargeDocument = graphql(
+  `
+    query FetchCharge($chargeIDs: [UUID!]!) {
+      chargesByIDs(chargeIDs: $chargeIDs) {
+        __typename
+        id
+        metadata {
+          transactionsCount
+          documentsCount
+          ledgerCount
+        }
+        tags {
+          name
+        }
+        ...DocumentsGalleryFields @defer
+        ...TableDocumentsFields @defer
+        ...TableLedgerRecordsFields @defer
+        ...ChargeTableTransactionsFields @deferr
+        ...ConversionChargeInfo @defer
+        ...CreditcardBankChargeInfo @defer
+        ...TableSalariesFields @defer
+        ... on BusinessTripCharge {
+          businessTrip {
+            id
+            ... on BusinessTrip @defer {
             ...BusinessTripReportFields
           }
         }
+        ...AllChargesErrorsFields
       }
-      ...AllChargesErrorsFields @defer
     }
-  }
-`;
+  `,
+  [
+    DocumentsGalleryFieldsFragmentDoc,
+    TableDocumentsFieldsFragmentDoc,
+    TableLedgerRecordsFieldsFragmentDoc,
+    TableTransactionsFieldsFragmentDoc,
+    ConversionChargeInfoFragmentDoc,
+    TableSalariesFieldsFragmentDoc,
+    BusinessTripReportFieldsFragmentDoc,
+    AllChargesErrorsFieldsFragmentDoc,
+  ],
+);
 
 interface Props {
   chargeID: string;
@@ -118,12 +130,6 @@ export function ChargeExtendedInfo({
       setAccordionItems(current => [...current, item]);
     }
   }
-
-  const galleryIsReady = isFragmentReady(
-    FetchChargeDocument,
-    DocumentsGalleryFieldsFragmentDoc,
-    charge,
-  );
 
   const docsAreReady = isFragmentReady(
     FetchChargeDocument,
@@ -192,7 +198,7 @@ export function ChargeExtendedInfo({
                 <Accordion.Panel>
                   {conversionIsReady && (
                     <ConversionInfo
-                      chargeProps={charge as FragmentType<typeof ConversionChargeInfoFragmentDoc>}
+                      chargeProps={charge as FragmentOf<typeof ConversionChargeInfoFragmentDoc>}
                     />
                   )}
                 </Accordion.Panel>
@@ -227,7 +233,6 @@ export function ChargeExtendedInfo({
                           toggle();
                         }}
                         variant="outline"
-                        loading={!galleryIsReady}
                       >
                         <Photo size={20} />
                       </ActionIcon>

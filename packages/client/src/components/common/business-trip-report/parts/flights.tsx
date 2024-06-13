@@ -1,13 +1,11 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportFlightsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { AddFlightTransaction } from '../buttons/add-flight-transaction.js';
 import { CoreTransactionHeader } from './core-transaction-row.js';
 import { FlightsRow } from './flights-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportFlightsFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportFlightsFields on BusinessTrip {
     id
     flightTransactions {
@@ -16,18 +14,15 @@ import { FlightsRow } from './flights-row.js';
       ...BusinessTripReportFlightsRowFields
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportFlightsFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportFlightsFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const Flights = ({ data, onChange }: Props): ReactElement => {
-  const { flightTransactions, id } = getFragmentData(
-    BusinessTripReportFlightsFieldsFragmentDoc,
-    data,
-  );
+  const { flightTransactions, id } = readFragment(BusinessTripReportFlightsFieldsFragmentDoc, data);
 
   if (!flightTransactions?.length) {
     return <AddFlightTransaction businessTripId={id} onAdd={onChange} />;

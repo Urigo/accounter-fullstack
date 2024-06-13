@@ -1,11 +1,10 @@
 import { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { AccounterLoader } from '..';
-import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { SelectionHandler } from './selection-handler';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsToChargeMatcherDocument = graphql(`
   query DocumentsToChargeMatcher($chargeIds: [UUID!]!, $filters: DocumentsFilters!) {
     documentsByFilters(filters: $filters) {
       id
@@ -23,7 +22,7 @@ import { SelectionHandler } from './selection-handler';
       ...ChargeToMatchDocumentsFields
     }
   }
-`;
+`);
 
 interface Props {
   chargeId: string;

@@ -8,17 +8,16 @@ import {
   AllBusinessesRowFieldsFragment,
   AllSortCodesDocument,
   AllTaxCategoriesDocument,
-  FetchBusinessDocument,
   FetchBusinessQuery,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { MakeBoolean, relevantDataPicker, writeToClipboard } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { SimpleGrid, TextInput } from '../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const FetchBusinessDocument = graphql(`
   query FetchBusiness($id: UUID!) {
     business(id: $id) {
       __typename
@@ -43,7 +42,7 @@ import { SimpleGrid, TextInput } from '../index.js';
       }
     }
   }
-`;
+`);
 
 interface Props {
   businessID: string;

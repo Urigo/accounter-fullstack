@@ -1,7 +1,6 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripUncategorizedTransactionsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import {
   Account,
   Amount,
@@ -13,8 +12,7 @@ import {
 } from '../../transactions-table/cells/index.js';
 import { SelectTransactionCategory } from '../buttons/select-transaction-category.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripUncategorizedTransactionsFieldsFragmentDoc = graphql(`
   fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
     id
     uncategorizedTransactions {
@@ -29,15 +27,15 @@ import { SelectTransactionCategory } from '../buttons/select-transaction-categor
       ...TransactionsTableEntityFields
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const UncategorizedTransactions = ({ data, onChange }: Props): ReactElement => {
-  const { uncategorizedTransactions, id } = getFragmentData(
+  const { uncategorizedTransactions, id } = readFragment(
     BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
     data,
   );

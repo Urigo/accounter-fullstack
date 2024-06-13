@@ -1,11 +1,10 @@
 import { ReactElement } from 'react';
 import { Grid, List, Paper, Table, Text } from '@mantine/core';
-import { BusinessTripReportSummaryFieldsFragmentDoc, Currency } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { Currency } from '../../../../gql/graphql.js';
+import { graphql } from '../../../../graphql.js';
 import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportSummaryFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportSummaryFields on BusinessTrip {
     id
     ... on BusinessTrip @defer {
@@ -38,10 +37,10 @@ import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
       }
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportSummaryFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportSummaryFieldsFragmentDoc>;
 }
 
 function normalizeSnakeCase(raw: string): string {
@@ -53,7 +52,7 @@ function upperFirst(raw: string): string {
 }
 
 export const Summary = ({ data }: Props): ReactElement => {
-  const { summary } = getFragmentData(BusinessTripReportSummaryFieldsFragmentDoc, data);
+  const { summary } = readFragment(BusinessTripReportSummaryFieldsFragmentDoc, data);
 
   if (!summary) {
     return <Text>Loading...</Text>;

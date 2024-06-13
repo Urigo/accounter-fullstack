@@ -20,6 +20,7 @@ export const UpdateChargeDocument = graphql(`
 
 type UpdateChargeMutationVariables = VariablesOf<typeof UpdateChargeDocument>;
 type UpdateChargeMutation = ResultOf<typeof UpdateChargeDocument>;
+export type UpdateChargeInput = UpdateChargeMutationVariables['fields'];
 
 type Charge = Extract<
   UpdateChargeMutation['updateCharge'],

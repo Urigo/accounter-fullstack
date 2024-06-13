@@ -1,11 +1,9 @@
 import { ReactElement } from 'react';
 import { differenceInDays, format } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
-import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportHeaderFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportHeaderFields on BusinessTrip {
     id
     name
@@ -16,14 +14,14 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
     purpose
     destination
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportHeaderFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportHeaderFieldsFragmentDoc>;
 }
 
 export const ReportHeader = ({ data }: Props): ReactElement => {
-  const { name, dates, purpose, destination } = getFragmentData(
+  const { name, dates, purpose, destination } = readFragment(
     BusinessTripReportHeaderFieldsFragmentDoc,
     data,
   );

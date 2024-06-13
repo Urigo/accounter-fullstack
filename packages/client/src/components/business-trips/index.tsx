@@ -3,12 +3,11 @@ import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql/fragment-masking.js';
-import { BusinessTripsScreenDocument, BusinessTripWrapperFragmentDoc } from '../../gql/graphql.js';
+import { graphql } from '../../gql/index.js';
 import { AccounterLoader, InsertBusinessTripModal } from '../common';
 import { EditableBusinessTrip } from './editable-business-trip.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripsScreenDocument = graphql(`
   query BusinessTripsScreen {
     allBusinessTrips {
       id
@@ -19,7 +18,7 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
       ...BusinessTripWrapper
     }
   }
-`;
+`);
 
 export const BusinessTrips = (): ReactElement => {
   const [{ data, fetching }] = useQuery({
@@ -63,8 +62,7 @@ export const BusinessTrips = (): ReactElement => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripWrapperFragmentDoc = graphql(`
   fragment BusinessTripWrapper on BusinessTrip {
     id
     name
@@ -80,15 +78,15 @@ export const BusinessTrips = (): ReactElement => {
     }
     ...EditableBusinessTrip
   }
-`;
+`);
 
 type BusinessTripWrapperProps = {
-  data: FragmentType<typeof BusinessTripWrapperFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripWrapperFragmentDoc>;
   isFetching?: boolean;
 };
 
 const BusinessTripWrapper = ({ data, isFetching }: BusinessTripWrapperProps): ReactElement => {
-  const trip = getFragmentData(BusinessTripWrapperFragmentDoc, data);
+  const trip = readFragment(BusinessTripWrapperFragmentDoc, data);
 
   const indicatorUp = useMemo(() => {
     return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);

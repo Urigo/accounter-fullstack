@@ -5,16 +5,19 @@ import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
   AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
   AllTaxCategoriesDocument,
-  EditChargeQuery,
-  UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { EMPTY_UUID, MakeBoolean, relevantDataPicker, TimelessDateString } from '../../../helpers';
-import { useUpdateCharge } from '../../../hooks/use-update-charge';
+import {
+  EMPTY_UUID,
+  MakeBoolean,
+  relevantDataPicker,
+  TimelessDateString,
+} from '../../../helpers/index.js';
+import { UpdateChargeInput, useUpdateCharge } from '../../../hooks/use-update-charge.js';
+import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '../index.js';
 
 type Props = {
   charge: EditChargeQuery['chargesByIDs'][number];

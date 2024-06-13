@@ -2,27 +2,23 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Text, TextInput, Tooltip } from '@mantine/core';
-import {
-  BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc,
-  UpdateBusinessTripTravelAndSubsistenceTransactionInput,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { UpdateBusinessTripTravelAndSubsistenceTransactionInput } from '../../../../gql/graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateBusinessTripTravelAndSubsistenceTransaction } from '../../../../hooks/use-update-business-trip-travel-and-subsistence-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
 import { CoreTransactionRow } from './core-transaction-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportTravelAndSubsistenceRowFields on BusinessTripTravelAndSubsistenceTransaction {
     id
     ...BusinessTripReportCoreTransactionRowFields
     payedByEmployee
     expenseType
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc>;
   businessTripId: string;
   onChange: () => void;
 }
@@ -32,7 +28,7 @@ export const TravelAndSubsistenceRow = ({
   businessTripId,
   onChange,
 }: Props): ReactElement => {
-  const travelAndSubsistenceTransaction = getFragmentData(
+  const travelAndSubsistenceTransaction = readFragment(
     BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc,
     data,
   );

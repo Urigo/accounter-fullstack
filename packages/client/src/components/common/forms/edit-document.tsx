@@ -3,13 +3,13 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Drawer, Image, Loader } from '@mantine/core';
 import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '..';
-import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
+import { UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
 import { useUpdateDocument } from '../../../hooks/use-update-document';
 import { ModifyDocumentFields } from './modify-document-fields';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditDocumentDocument = graphql(`
   query EditDocument($documentId: UUID!) {
     documentById(documentId: $documentId) {
       id
@@ -119,7 +119,7 @@ import { ModifyDocumentFields } from './modify-document-fields';
       }
     }
   }
-`;
+`);
 
 interface Props {
   documentId: string;
