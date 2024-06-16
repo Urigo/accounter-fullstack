@@ -199,12 +199,19 @@ export async function hapoalim(
           }
         }
 
+        if (!data) {
+          console.log(`No ILS data found for account ${fullAccountNumber}`)
+          return {
+            data,
+            isValid: true,
+          }
+        }
         const validation = await validateSchema(ILSCheckingTransactionsDataSchemaFile, data);
         return {
           data,
           ...validation,
         };
-      }
+      } 
 
       return { data: await getIlsTransactionsFunction };
     },
@@ -334,6 +341,13 @@ export async function hapoalim(
       const getDepositsFunction = fetchGetWithinPage<HapoalimDepositsSchema>(page, depositsUrl);
       if (options?.validateSchema) {
         const data = await getDepositsFunction;
+        if (!data) {
+          console.log(`No deposits data found for account ${fullAccountNumber}`)
+          return {
+            data,
+            isValid: true,
+          }
+        }
         const validation = await validateSchema(depositsSchema, data);
         return {
           data,
