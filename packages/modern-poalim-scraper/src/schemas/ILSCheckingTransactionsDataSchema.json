@@ -37,31 +37,54 @@
         "messages": {
           "type": "array",
           "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "messageCode",
-              "messageDescription",
-              "messagePurposeCategoryCode",
-              "severity"
-            ],
-            "properties": {
-              "messageCode": {
-                "type": "number",
-                "enum": [11040, 1260003]
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "messageCode",
+                  "messageDescription",
+                  "messagePurposeCategoryCode",
+                  "severity"
+                ],
+                "properties": {
+                  "messageCode": {
+                    "type": "number",
+                    "enum": [11040, 1260003]
+                  },
+                  "messageDescription": {
+                    "type": "string"
+                  },
+                  "messagePurposeCategoryCode": {
+                    "type": "string",
+                    "enum": ["1"]
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["I"]
+                  }
+                }
               },
-              "messageDescription": {
-                "type": "string"
-              },
-              "messagePurposeCategoryCode": {
-                "type": "string",
-                "enum": ["1"]
-              },
-              "severity": {
-                "type": "string",
-                "enum": ["I"]
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["messageCode", "messageDescription", "severity"],
+                "properties": {
+                  "messageCode": {
+                    "type": "number",
+                    "enum": [51]
+                  },
+                  "messageDescription": {
+                    "type": "string",
+                    "enum": [""]
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["I"]
+                  }
+                }
               }
-            }
+            ]
           }
         }
       }

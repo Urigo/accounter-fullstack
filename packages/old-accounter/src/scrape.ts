@@ -62,7 +62,9 @@ async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool:
   if (
     ILSTransactions.data.retrievalTransactionData.accountNumber != 410915 &&
     ILSTransactions.data.retrievalTransactionData.accountNumber != 61066 &&
-    ILSTransactions.data.retrievalTransactionData.accountNumber != 466803
+    ILSTransactions.data.retrievalTransactionData.accountNumber != 466803 &&
+    ILSTransactions.data.retrievalTransactionData.accountNumber != 362396 &&
+    ILSTransactions.data.retrievalTransactionData.accountNumber != 667871
   ) {
     console.error(`UNKNOWN ACCOUNT 
       ${ILSTransactions.data.retrievalTransactionData.bankNumber}
@@ -107,8 +109,9 @@ async function getForeignTransactionsfromBankAndSave(
   newScraperIstance: any,
   account: any,
   pool: pg.Pool,
+  isBusiness?: boolean,
 ) {
-  const foreignTransactions = await newScraperIstance.getForeignTransactions(account);
+  const foreignTransactions = await newScraperIstance.getForeignTransactions(account, isBusiness);
   console.log(
     `finished getting foreignTransactions ${account.accountNumber}`,
     foreignTransactions.isValid,
@@ -138,22 +141,26 @@ async function getForeignTransactionsfromBankAndSave(
           console.error('New account currency - ', foreignAccountsArray.currencyCode);
           break;
       }
-      if (accountCurrency) {
+      if (accountCurrency && foreignAccountsArray.transactions.length) {
+        const bankNumber = foreignAccountsArray.bankNumber ?? account.bankNumber;
+        const branchNumber = foreignAccountsArray.branchNumber ?? account.branchNumber;
+        const accountNumber = foreignAccountsArray.accountNumber ?? account.accountNumber;
+
         console.log(
-          `Saving Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
+          `Saving Foreign for ${bankNumber}:${branchNumber}:${accountNumber} currency ${accountCurrency}`,
         );
         await saveTransactionsToDB(
           foreignAccountsArray.transactions,
           accountCurrency,
           {
-            accountNumber: foreignAccountsArray.accountNumber,
-            branchNumber: foreignAccountsArray.branchNumber,
-            bankNumber: foreignAccountsArray.bankNumber,
+            accountNumber: accountNumber,
+            branchNumber: branchNumber,
+            bankNumber: bankNumber,
           },
           pool,
         );
         console.log(
-          `Saved Foreign for ${foreignAccountsArray.bankNumber}:${foreignAccountsArray.branchNumber}:${foreignAccountsArray.accountNumber} currency ${accountCurrency}`,
+          `Saved Foreign for ${bankNumber}:${branchNumber}:${accountNumber} currency ${accountCurrency}`,
         );
       }
     }),
@@ -163,6 +170,9 @@ async function getForeignTransactionsfromBankAndSave(
 async function getBankData(pool: pg.Pool, scraper: any) {
   console.log('start getBankData');
   console.log('Bank Login');
+
+  const isBusiness = process.env.IS_BUSINESS_ACCOUNT === 'false' ? false : true;
+
   const newPoalimInstance = await scraper.hapoalim(
     {
       userCode: process.env.USER_CODE,
@@ -170,7 +180,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
     },
     {
       validateSchema: true,
-      isBusiness: true,
+      isBusiness,
     },
   );
   console.log('getting accounts');
@@ -323,7 +333,7 @@ async function getBankData(pool: pg.Pool, scraper: any) {
       console.log(`Getting ILS, Foreign and deposits for ${account.accountNumber}`);
       const results = await Promise.allSettled([
         getILSfromBankAndSave(newPoalimInstance, account, pool),
-        getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool),
+        getForeignTransactionsfromBankAndSave(newPoalimInstance, account, pool, isBusiness),
         getDepositsAndSave(newPoalimInstance, account, pool),
         // getForeignDepositsAndSave(newPoalimInstance, account, pool),
         getForeignSwiftTransactionsfromBankAndSave(newPoalimInstance, account, pool),
@@ -341,6 +351,12 @@ async function getBankData(pool: pg.Pool, scraper: any) {
 async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   console.log('getting deposits');
   const deposits = await newScraperIstance.getDeposits(account);
+
+  if (!deposits.data) {
+    console.log(`No deposits data for ${account.accountNumber}`);
+    return;
+  }
+
   console.log(`finished getting deposits ${account.accountNumber}`, deposits.isValid);
   if (!deposits.isValid) {
     console.log(
@@ -352,7 +368,9 @@ async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg
   if (
     account.accountNumber != 410915 &&
     account.accountNumber != 61066 &&
-    account.accountNumber != 466803
+    account.accountNumber != 466803 &&
+    account.accountNumber != 362396 &&
+    account.accountNumber != 667871
   ) {
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
   } else {
@@ -409,7 +427,9 @@ async function getForeignDepositsAndSave(newScraperIstance: any, account: any, p
   if (
     account.accountNumber != 410915 &&
     account.accountNumber != 61066 &&
-    account.accountNumber != 466803
+    account.accountNumber != 466803 &&
+    account.accountNumber != 362396 &&
+    account.accountNumber != 667871
   ) {
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
   } else {
@@ -475,7 +495,19 @@ async function getCreditCardTransactionsAndSave(
   }
   const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
-  const wantedCreditCards = ['1082', '2733', '9217', '6264', '1074', '17 *', '5972', '6317'];
+  const wantedCreditCards = [
+    '1082',
+    '2733',
+    '9217',
+    '6264',
+    '1074',
+    '17 *',
+    '5972',
+    '6317',
+    '6466',
+    '9270',
+    '5084',
+  ];
   const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
     wantedCreditCards.includes(transaction.card),
   );
@@ -1084,10 +1116,12 @@ async function getForeignSwiftTransactionsfromBankAndSave(
 
 (async () => {
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    host: process.env.POSTGRES_HOST,
+    port: Number(process.env.POSTGRES_PORT),
+    database: process.env.POSTGRES_DB,
+    ssl: process.env.POSTGRES_SSL ? { rejectUnauthorized: false } : false,
   });
 
   console.log('Init scraper');

@@ -9,25 +9,44 @@
           "type": "array",
           "items": {
             "type": "object",
-            "properties": {
-              "messageDescription": {
-                "type": "string"
+            "oneOf": [
+              {
+                "properties": {
+                  "messageDescription": {
+                    "type": "string"
+                  },
+                  "messageCode": {
+                    "type": "number"
+                  },
+                  "severity": {
+                    "type": "string"
+                  },
+                  "messagePurposeCategoryCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "messageDescription",
+                  "messageCode",
+                  "severity",
+                  "messagePurposeCategoryCode"
+                ]
               },
-              "messageCode": {
-                "type": "number"
-              },
-              "severity": {
-                "type": "string"
-              },
-              "messagePurposeCategoryCode": {
-                "type": "string"
+              {
+                "properties": {
+                  "messageDescription": {
+                    "type": "string",
+                    "enum": ["לתשומת לבך: לא נמצאו זיכויי סוויפט בטווח התאריכים המוצג."]
+                  },
+                  "messageCode": {
+                    "type": "number"
+                  },
+                  "severity": {
+                    "type": "string"
+                  }
+                },
+                "required": ["messageDescription", "messageCode", "severity"]
               }
-            },
-            "required": [
-              "messageDescription",
-              "messageCode",
-              "severity",
-              "messagePurposeCategoryCode"
             ]
           }
         },
@@ -46,7 +65,7 @@
       "type": "number"
     },
     "formattedMinInputDate": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "swiftsList": {
       "type": "array",
