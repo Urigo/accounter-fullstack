@@ -212,6 +212,8 @@ export class LedgerProvider {
   }
 
   public async insertLedgerRecords(params: IInsertLedgerRecordsParams) {
+    if (params.ledgerRecords.length === 0) return [];
+
     params.ledgerRecords.map(validateLedgerRecordParams);
     return insertLedgerRecords.run(params, this.dbProvider);
   }

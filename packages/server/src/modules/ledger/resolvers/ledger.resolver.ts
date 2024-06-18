@@ -188,6 +188,10 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         const updatePromise = injector
           .get(LedgerProvider)
           .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
+          .catch(e => {
+            console.error(e.message);
+            throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
+          })
           .then(() =>
             injector.get(LedgerProvider).insertLedgerRecords({
               ledgerRecords: recordsToUpdate
@@ -197,17 +201,35 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                   return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
                 }),
             }),
-          );
+          )
+          .catch(e => {
+            console.error(e.message);
+            throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
+          });
         const insertPromise =
           newRecords.length > 0
-            ? injector.get(LedgerProvider).insertLedgerRecords({
-                ledgerRecords: newRecords.map(
-                  convertLedgerRecordToInput,
-                ) as IInsertLedgerRecordsParams['ledgerRecords'],
-              })
+            ? injector
+                .get(LedgerProvider)
+                .insertLedgerRecords({
+                  ledgerRecords: newRecords.map(
+                    convertLedgerRecordToInput,
+                  ) as IInsertLedgerRecordsParams['ledgerRecords'],
+                })
+                .catch(e => {
+                  console.error(e.message);
+                  throw new Error(
+                    `Failed to insert new ledger records for charge ID="${chargeId}"`,
+                  );
+                })
             : Promise.resolve();
         const removePromises = toRemove.map(record =>
-          injector.get(LedgerProvider).deleteLedgerRecordsByIdLoader.load(record.id),
+          injector
+            .get(LedgerProvider)
+            .deleteLedgerRecordsByIdLoader.load(record.id)
+            .catch(e => {
+              console.error(e.message);
+              throw new Error(`Failed to delete ledger records for charge ID="${chargeId}"`);
+            }),
         );
         await Promise.all([updatePromise, insertPromise, removePromises]);
 
