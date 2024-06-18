@@ -44,6 +44,10 @@ export default gql`
     accountantApproval: Boolean!
   }
 
+  extend type CreditcardBankCharge {
+    accountantApproval: Boolean!
+  }
+
   extend input UpdateChargeInput {
     accountantApproval: Boolean
   }

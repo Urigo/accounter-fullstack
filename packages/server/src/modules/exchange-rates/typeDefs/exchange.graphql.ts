@@ -60,6 +60,10 @@ export default gql`
     exchangeRates: ExchangeRates
   }
 
+  extend type CreditcardBankCharge {
+    exchangeRates: ExchangeRates
+  }
+
   extend interface Transaction {
     debitExchangeRates: ExchangeRates
     eventExchangeRates: ExchangeRates

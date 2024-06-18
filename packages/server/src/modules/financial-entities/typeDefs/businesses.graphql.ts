@@ -128,4 +128,8 @@ export default gql`
   extend type BankDepositCharge {
     owner: Business!
   }
+
+  extend type CreditcardBankCharge {
+    owner: Business!
+  }
 `;

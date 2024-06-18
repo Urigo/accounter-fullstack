@@ -26,10 +26,11 @@ import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
 
 type Props = {
   data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
+  enableEdit?: boolean;
   onChange?: () => void;
 };
 
-export function Counterparty({ data, onChange }: Props): ReactElement {
+export function Counterparty({ data, onChange, enableEdit }: Props): ReactElement {
   const { get } = useUrlQuery();
   const {
     counterparty,
@@ -38,7 +39,7 @@ export function Counterparty({ data, onChange }: Props): ReactElement {
     sourceDescription,
   } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
-  const hasAlternative = !!missingInfoSuggestions?.business;
+  const hasAlternative = !!missingInfoSuggestions?.business && enableEdit;
   const alternativeName = hasAlternative ? missingInfoSuggestions?.business?.name : 'Missing';
   const alternativeId = hasAlternative ? missingInfoSuggestions?.business?.id : null;
 

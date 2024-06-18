@@ -5,13 +5,14 @@ import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } f
 import { useDisclosure } from '@mantine/hooks';
 import {
   AllChargesErrorsFieldsFragmentDoc,
+  ChargeTableTransactionsFieldsFragmentDoc,
   ConversionChargeInfoFragmentDoc,
+  CreditcardBankChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
   FetchChargeDocument,
   TableDocumentsFieldsFragmentDoc,
   TableLedgerRecordsFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
-  TableTransactionsFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
@@ -21,12 +22,13 @@ import {
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
 import { ChargeErrors } from './charge-errors.js';
+import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
+import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
-import { TransactionsTable } from './transactions/transactions-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -45,8 +47,9 @@ import { TransactionsTable } from './transactions/transactions-table.js';
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
       ...TableLedgerRecordsFields @defer
-      ...TableTransactionsFields @defer
+      ...ChargeTableTransactionsFields @defer
       ...ConversionChargeInfo @defer
+      ...CreditcardBankChargeInfo @defer
       ...TableSalariesFields @defer
       ... on BusinessTripCharge {
         businessTrip {
@@ -136,7 +139,7 @@ export function ChargeExtendedInfo({
 
   const transactionsAreReady = isFragmentReady(
     FetchChargeDocument,
-    TableTransactionsFieldsFragmentDoc,
+    ChargeTableTransactionsFieldsFragmentDoc,
     charge,
   );
 
@@ -150,6 +153,10 @@ export function ChargeExtendedInfo({
   const salariesAreReady =
     charge?.__typename === 'SalaryCharge' &&
     isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
+
+  const creditcardTransactionsAreReady =
+    charge?.__typename === 'CreditcardBankCharge' &&
+    isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge);
 
   return (
     <div className="flex flex-col gap-5">
@@ -201,7 +208,7 @@ export function ChargeExtendedInfo({
               </Accordion.Control>
               <Accordion.Panel>
                 {transactionsAreReady && (
-                  <TransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
+                  <ChargeTransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
                 )}
               </Accordion.Panel>
             </Accordion.Item>
@@ -257,6 +264,19 @@ export function ChargeExtendedInfo({
                 </Accordion.Control>
                 <Accordion.Panel>
                   <BusinessTripSummarizedReport data={charge.businessTrip!} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {charge.__typename === 'CreditcardBankCharge' && (
+              <Accordion.Item value="creditcard">
+                <Accordion.Control onClick={() => toggleAccordionItem('creditcard')}>
+                  CreditCard Transactions
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {creditcardTransactionsAreReady && (
+                    <CreditcardTransactionsInfo chargeProps={charge} />
+                  )}
                 </Accordion.Panel>
               </Accordion.Item>
             )}

@@ -8,6 +8,14 @@ import { TransactionRequiredWrapper } from './providers/transactions.provider.js
 export * from './__generated__/transactions.types.js';
 export type * from './__generated__/fee-transactions.types.js';
 export type {
+  IGetCreditCardTransactionsByChargeIdsParams,
+  IGetCreditCardTransactionsByChargeIdsResult,
+  IGetCreditCardTransactionsByChargeIdsQuery,
+  IValidateCreditCardTransactionsAmountByChargeIdsParams,
+  IValidateCreditCardTransactionsAmountByChargeIdsResult,
+  IValidateCreditCardTransactionsAmountByChargeIdsQuery,
+} from './__generated__/creditcard-transactions.types.js';
+export type {
   IGetBankDepositTransactionsByIdsParams,
   IGetBankDepositTransactionsByIdsResult,
   IGetBankDepositTransactionsByIdsQuery,

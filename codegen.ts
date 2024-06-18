@@ -61,6 +61,7 @@ const config: CodegenConfig = {
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',

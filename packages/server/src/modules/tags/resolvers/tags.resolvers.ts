@@ -51,4 +51,5 @@ export const tagsResolvers: TagsModule.Resolvers = {
   BusinessTripCharge: commonTagsChargeFields,
   MonthlyVatCharge: commonTagsChargeFields,
   BankDepositCharge: commonTagsChargeFields,
+  CreditcardBankCharge: commonTagsChargeFields,
 };

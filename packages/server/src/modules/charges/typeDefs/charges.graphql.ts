@@ -194,6 +194,24 @@ export default gql`
     yearsOfRelevance: [String]
   }
 
+  " charge of creditcard over bank account "
+  type CreditcardBankCharge implements Charge {
+    id: UUID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+    yearsOfRelevance: [String]
+  }
+
   " input variables for charge filtering "
   input ChargeFilter {
     " Include only charges with main date occurred after this date "

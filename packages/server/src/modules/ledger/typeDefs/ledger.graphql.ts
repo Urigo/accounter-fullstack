@@ -65,6 +65,10 @@ export default gql`
     ledger: Ledger!
   }
 
+  extend type CreditcardBankCharge {
+    ledger: Ledger!
+  }
+
   " unbalanced entity over ledger records "
   type LedgerBalanceUnbalancedEntity {
     entity: FinancialEntity!
