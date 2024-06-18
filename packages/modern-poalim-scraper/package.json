@@ -20,12 +20,12 @@
     "ajv-formats": "3.0.1",
     "inquirer": "9.2.23",
     "node-fetch": "3.3.2",
-    "puppeteer": "22.11.0",
+    "puppeteer": "22.11.1",
     "uuid": "10.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.7",
-    "@types/node": "20.14.2",
+    "@types/node": "20.14.5",
     "@types/node-fetch": "3.0.3",
     "@types/uuid": "9.0.8",
     "concurrently": "8.2.2",
