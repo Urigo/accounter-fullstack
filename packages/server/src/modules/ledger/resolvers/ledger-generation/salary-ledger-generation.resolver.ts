@@ -39,11 +39,16 @@ export const generateLedgerRecordsForSalary: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
-  object
-> = async (charge, _args, context, _info) => {
+  { insertLedgerRecordsIfNotExists: boolean }
+> = async (charge, { insertLedgerRecordsIfNotExists }, context, _info) => {
   if (charge.business_array?.length === 1) {
     // for one business, use the default ledger generation
-    return generateLedgerRecordsForCommonCharge(charge, _args, context, _info);
+    return generateLedgerRecordsForCommonCharge(
+      charge,
+      { insertLedgerRecordsIfNotExists },
+      context,
+      _info,
+    );
   }
   const chargeId = charge.id;
   const { injector } = context;
@@ -486,7 +491,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
-    await storeInitialGeneratedRecords(charge, records, injector);
+
+    if (insertLedgerRecordsIfNotExists) {
+      await storeInitialGeneratedRecords(charge, records, injector);
+    }
 
     return {
       records: ledgerProtoToRecordsConverter(records),

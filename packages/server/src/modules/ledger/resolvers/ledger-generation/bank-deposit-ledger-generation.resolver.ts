@@ -25,8 +25,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
-  object
-> = async (charge, _, context) => {
+  { insertLedgerRecordsIfNotExists: boolean }
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   const chargeId = charge.id;
   const { injector } = context;
 
@@ -254,7 +254,9 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
-    await storeInitialGeneratedRecords(charge, records, injector);
+    if (insertLedgerRecordsIfNotExists) {
+      await storeInitialGeneratedRecords(charge, records, injector);
+    }
 
     const allowedUnbalancedBusinesses = new Set<string>();
     const mainLedgerEntry = financialAccountLedgerEntries[0];

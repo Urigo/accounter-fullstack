@@ -312,7 +312,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       try {
         const generatedledgerPromise = ledgerGenerationByCharge(DbCharge)(
           DbCharge,
-          {},
+          { insertLedgerRecordsIfNotExists: false },
           context,
           info,
         );

@@ -8,9 +8,9 @@ import { FragmentType, getFragmentData } from '../../gql/index.js';
   fragment AllChargesErrorsFields on Charge {
     id
     ... on Charge @defer {
-      ledger {
+      errorsLedger: ledger {
         ... on Ledger @defer {
-          validate {
+          validate(shouldInsertLedgerInNew: false) {
             ... on LedgerValidation @defer {
               errors
             }
@@ -28,11 +28,11 @@ interface Props {
 export const ChargeErrors = ({ data }: Props): ReactElement | null => {
   const charge = getFragmentData(AllChargesErrorsFieldsFragmentDoc, data);
 
-  return charge?.ledger?.validate?.errors?.length ? (
+  return charge?.errorsLedger?.validate?.errors?.length ? (
     <Paper shadow="xs" p="md">
       <Text c="red">Errors:</Text>
       <List size="sm" withPadding>
-        {charge.ledger.validate.errors.map((error, i) => (
+        {charge.errorsLedger.validate.errors.map((error, i) => (
           <List.Item key={i}>
             <Text c="red">{error}</Text>
           </List.Item>
