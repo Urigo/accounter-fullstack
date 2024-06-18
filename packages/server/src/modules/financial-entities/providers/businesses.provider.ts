@@ -8,6 +8,8 @@ import type {
   IGetBusinessesByChargeIdsQuery,
   IGetBusinessesByIdsQuery,
   IGetBusinessesByNamesQuery,
+  IInsertBusinessParams,
+  IInsertBusinessQuery,
   IUpdateBusinessParams,
   IUpdateBusinessQuery,
 } from '../types.js';
@@ -214,6 +216,11 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   RETURNING *;
 `;
 
+const insertBusiness = sql<IInsertBusinessQuery>`
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data)
+  VALUES($id, $hebrewName, $address, $email, $website, $phoneNumber, $governmentId, $exemptDealer, $suggestions)
+  RETURNING *;`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -281,5 +288,9 @@ export class BusinessesProvider {
 
   public updateBusiness(params: IUpdateBusinessParams) {
     return updateBusiness.run(params, this.dbProvider);
+  }
+
+  public insertBusiness(params: IInsertBusinessParams) {
+    return insertBusiness.run(params, this.dbProvider);
   }
 }

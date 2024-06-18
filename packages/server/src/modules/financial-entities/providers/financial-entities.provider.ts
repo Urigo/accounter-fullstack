@@ -6,9 +6,11 @@ import type {
   IGetAllFinancialEntitiesQuery,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
+  IInsertFinancialEntityParams,
+  IInsertFinancialEntityQuery,
   IUpdateFinancialEntityParams,
   IUpdateFinancialEntityQuery,
-} from '../__generated__/financial-entities.types.js';
+} from '../types.js';
 
 const getFinancialEntitiesByIds = sql<IGetFinancialEntitiesByIdsQuery>`
     SELECT *
@@ -47,6 +49,11 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
     id = $financialEntityId
   RETURNING *;
 `;
+
+const insertFinancialEntity = sql<IInsertFinancialEntityQuery>`
+  INSERT INTO accounter_schema.financial_entities (type, owner_id, name, sort_code)
+  VALUES($type, $ownerId, $name, $sortCode)
+  RETURNING *;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -96,5 +103,9 @@ export class FinancialEntitiesProvider {
 
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
     return updateFinancialEntity.run(params, this.dbProvider);
+  }
+
+  public insertFinancialEntity(params: IInsertFinancialEntityParams) {
+    return insertFinancialEntity.run(params, this.dbProvider);
   }
 }

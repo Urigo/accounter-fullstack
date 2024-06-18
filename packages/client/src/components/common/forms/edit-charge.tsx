@@ -252,7 +252,7 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
               />
             )}
           />
-          <TagsInput formManager={useFormManager} />
+          <TagsInput formManager={useFormManager} tagsPath="tags" />
           <Controller
             name="isProperty"
             control={chargeControl}

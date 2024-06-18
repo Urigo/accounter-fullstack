@@ -47,6 +47,8 @@ export default gql`
       ownerId: UUID!
       fields: UpdateBusinessInput!
     ): UpdateBusinessResponse! @auth(role: ACCOUNTANT)
+    insertNewBusiness(fields: InsertNewBusinessInput!): UpdateBusinessResponse!
+      @auth(role: ACCOUNTANT)
   }
 
   " result type for updateBusiness "
@@ -65,6 +67,29 @@ export default gql`
     governmentId: String
     taxCategory: UUID
     exemptDealer: Boolean
+  }
+
+  " input for insertNewBusiness "
+  input InsertNewBusinessInput {
+    name: String!
+    sortCode: Int
+
+    hebrewName: String
+    address: String
+    email: String
+    website: String
+    phoneNumber: String
+    governmentId: String
+    taxCategory: UUID
+    exemptDealer: Boolean
+    suggestions: SuggestionsInput
+  }
+
+  " input for business suggestions "
+  input SuggestionsInput {
+    phrases: [String!]!
+    tags: [TagInput!]!
+    description: String
   }
 
   extend interface Charge {

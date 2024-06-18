@@ -1,3 +1,4 @@
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
@@ -6,8 +7,11 @@ import { FinancialEntitiesProvider } from '../providers/financial-entities.provi
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
+  IInsertBusinessParams,
+  IInsertBusinessTaxCategoryResult,
   IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
+  Json,
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
 
@@ -116,6 +120,80 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         return {
           __typename: 'CommonError',
           message: `Failed to update business ID="${businessId}": ${(e as Error).message}`,
+        };
+      }
+    },
+    insertNewBusiness: async (_, { fields }, { injector }) => {
+      try {
+        const [financialEntity] = await injector
+          .get(FinancialEntitiesProvider)
+          .insertFinancialEntity({
+            ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+            name: fields.name,
+            sortCode: fields.sortCode,
+            type: 'business',
+          })
+          .catch((e: Error) => {
+            console.error(e);
+            return [];
+          });
+
+        if (!financialEntity) {
+          return {
+            __typename: 'CommonError',
+            message: `Failed to create core financial entity`,
+          };
+        }
+
+        const suggestions: IInsertBusinessParams['suggestions'] = fields.suggestions
+          ? ({
+              tags: fields.suggestions.tags?.map(tag => tag.name),
+              phrases: fields.suggestions.phrases?.map(phrase => phrase),
+              description: fields.suggestions.description ?? undefined,
+            } as Json)
+          : undefined;
+
+        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusiness({
+          id: financialEntity.id,
+          address: fields.address,
+          email: fields.email,
+          exemptDealer: fields.exemptDealer ?? false,
+          governmentId: fields.governmentId,
+          hebrewName: fields.hebrewName,
+          phoneNumber: fields.phoneNumber,
+          website: fields.website,
+          suggestions,
+        });
+
+        let taxCategoryPromise: Promise<IInsertBusinessTaxCategoryResult | void> =
+          Promise.resolve();
+        if (fields.taxCategory) {
+          const texCategoryParams: IUpdateBusinessTaxCategoryParams = {
+            businessId: financialEntity.id,
+            ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+            taxCategoryId: fields.taxCategory,
+          };
+          taxCategoryPromise = injector
+            .get(TaxCategoriesProvider)
+            .insertBusinessTaxCategory(texCategoryParams)
+            .then(res => res[0])
+            .catch((e: Error) => {
+              console.error(e);
+              throw new Error(`Update tax category error`);
+            });
+        }
+
+        const [[business], _taxCategory] = await Promise.all([
+          insertBusinessPromise,
+          taxCategoryPromise,
+        ]);
+
+        return { ...financialEntity, ...business };
+      } catch (e) {
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: `Failed to create business`,
         };
       }
     },
