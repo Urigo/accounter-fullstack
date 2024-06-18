@@ -30,8 +30,8 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
-  object
-> = async (charge, _, context, __) => {
+  { insertLedgerRecordsIfNotExists: boolean }
+> = async (charge, { insertLedgerRecordsIfNotExists }, context, __) => {
   const { injector } = context;
   const chargeId = charge.id;
 
@@ -228,7 +228,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [...financialAccountLedgerEntries, ...accountingLedgerEntries];
-    await storeInitialGeneratedRecords(charge, records, injector);
+
+    if (insertLedgerRecordsIfNotExists) {
+      await storeInitialGeneratedRecords(charge, records, injector);
+    }
 
     return {
       records: ledgerProtoToRecordsConverter(records),

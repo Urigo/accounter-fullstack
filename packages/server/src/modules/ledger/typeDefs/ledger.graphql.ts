@@ -81,7 +81,7 @@ export default gql`
   type Ledger {
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
-    validate: LedgerValidation!
+    validate(shouldInsertLedgerInNew: Boolean): LedgerValidation!
   }
 
   " ledger validation info"

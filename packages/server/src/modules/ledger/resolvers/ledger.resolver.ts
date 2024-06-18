@@ -81,7 +81,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             try {
               const generatedRecordsPromise = ledgerGenerationByCharge(charge)(
                 charge,
-                {},
+                { insertLedgerRecordsIfNotExists: false },
                 context,
                 info,
               );
@@ -135,7 +135,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
+        const generated = await ledgerGenerationByCharge(charge)(
+          charge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
         if (!generated || 'message' in generated) {
           const message = generated?.message ?? 'generation error';
           throw new Error(message);
@@ -309,9 +314,16 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         financialEntities,
       );
     },
-    validate: async ({ charge, records }, _, context, info) => {
+    validate: async ({ charge, records }, { shouldInsertLedgerInNew }, context, info) => {
+      const insertLedgerRecordsIfNotExists =
+        shouldInsertLedgerInNew == null ? true : shouldInsertLedgerInNew;
       try {
-        const generated = await ledgerGenerationByCharge(charge)(charge, {}, context, info);
+        const generated = await ledgerGenerationByCharge(charge)(
+          charge,
+          { insertLedgerRecordsIfNotExists },
+          context,
+          info,
+        );
         if (!generated || 'message' in generated) {
           return {
             isValid: false,

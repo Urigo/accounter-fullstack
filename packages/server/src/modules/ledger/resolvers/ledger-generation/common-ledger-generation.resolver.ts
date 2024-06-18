@@ -42,8 +42,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
-  object
-> = async (charge, _, { injector }) => {
+  { insertLedgerRecordsIfNotExists: boolean }
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -298,7 +298,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         ...accountingLedgerEntries,
         ...miscLedgerEntries,
       ];
-      if (records.length) {
+      if (records.length && insertLedgerRecordsIfNotExists) {
         await storeInitialGeneratedRecords(charge, records, injector);
       }
       return {
@@ -320,7 +320,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           .getBusinessByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
           const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
-          await storeInitialGeneratedRecords(charge, records, injector);
+
+          if (insertLedgerRecordsIfNotExists) {
+            await storeInitialGeneratedRecords(charge, records, injector);
+          }
+
           return {
             records: ledgerProtoToRecordsConverter(records),
             charge,
@@ -409,7 +413,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
-    await storeInitialGeneratedRecords(charge, records, injector);
+
+    if (insertLedgerRecordsIfNotExists) {
+      await storeInitialGeneratedRecords(charge, records, injector);
+    }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,

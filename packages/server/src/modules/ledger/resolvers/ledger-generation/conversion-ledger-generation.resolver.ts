@@ -30,8 +30,8 @@ export const generateLedgerRecordsForConversion: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   { injector: Injector },
-  object
-> = async (charge, _, { injector }) => {
+  { insertLedgerRecordsIfNotExists: boolean }
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -306,7 +306,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
-    await storeInitialGeneratedRecords(charge, records, injector);
+
+    if (insertLedgerRecordsIfNotExists) {
+      await storeInitialGeneratedRecords(charge, records, injector);
+    }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
