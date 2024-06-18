@@ -17,3 +17,4 @@ export * from './notification.js';
 export * from './simple-grid.js';
 export * from './footer.js';
 export * from './business-trip-report/business-trip-summarized-report.js';
+export * from './transactions-table/index.js';

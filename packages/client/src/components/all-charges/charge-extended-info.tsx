@@ -5,13 +5,13 @@ import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } f
 import { useDisclosure } from '@mantine/hooks';
 import {
   AllChargesErrorsFieldsFragmentDoc,
+  ChargeTableTransactionsFieldsFragmentDoc,
   ConversionChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
   FetchChargeDocument,
   TableDocumentsFieldsFragmentDoc,
   TableLedgerRecordsFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
-  TableTransactionsFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
@@ -21,12 +21,12 @@ import {
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
 import { ChargeErrors } from './charge-errors.js';
+import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
-import { TransactionsTable } from './transactions/transactions-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -45,7 +45,7 @@ import { TransactionsTable } from './transactions/transactions-table.js';
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
       ...TableLedgerRecordsFields @defer
-      ...TableTransactionsFields @defer
+      ...ChargeTableTransactionsFields @defer
       ...ConversionChargeInfo @defer
       ...TableSalariesFields @defer
       ... on BusinessTripCharge {
@@ -136,7 +136,7 @@ export function ChargeExtendedInfo({
 
   const transactionsAreReady = isFragmentReady(
     FetchChargeDocument,
-    TableTransactionsFieldsFragmentDoc,
+    ChargeTableTransactionsFieldsFragmentDoc,
     charge,
   );
 
@@ -201,7 +201,7 @@ export function ChargeExtendedInfo({
               </Accordion.Control>
               <Accordion.Panel>
                 {transactionsAreReady && (
-                  <TransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
+                  <ChargeTransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
                 )}
               </Accordion.Panel>
             </Accordion.Item>

@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
-import { TableTransactionsFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { EditMiniButton, EditTransactionModal } from '../../common/index.js';
+import { EditMiniButton, EditTransactionModal } from '../index.js';
 import {
   Account,
   Amount,
@@ -14,28 +14,32 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment TableTransactionsFields on Charge {
+  fragment TransactionForTransactionsTableFields on Transaction {
     id
-    transactions {
-      id
-      ...TransactionsTableEventDateFields
-      ...TransactionsTableDebitDateFields
-      ...TransactionsTableAmountFields
-      ...TransactionsTableAccountFields
-      ...TransactionsTableDescriptionFields
-      ...TransactionsTableSourceIDFields
-      ...TransactionsTableEntityFields
-    }
+    ...TransactionsTableEventDateFields
+    ...TransactionsTableDebitDateFields
+    ...TransactionsTableAmountFields
+    ...TransactionsTableAccountFields
+    ...TransactionsTableDescriptionFields
+    ...TransactionsTableSourceIDFields
+    ...TransactionsTableEntityFields
   }
 `;
 
 type Props = {
-  transactionsProps: FragmentType<typeof TableTransactionsFieldsFragmentDoc>;
-  onChange: () => void;
+  transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
+  onChange?: () => void;
 };
 
-export const TransactionsTable = ({ transactionsProps, onChange }: Props): ReactElement => {
-  const { transactions } = getFragmentData(TableTransactionsFieldsFragmentDoc, transactionsProps);
+export const TransactionsTable = ({
+  transactionsProps,
+  onChange = (): void => void 0,
+}: Props): ReactElement => {
+  console.log('transactionsProps', transactionsProps);
+  const transactions = transactionsProps.map(rawTransaction =>
+    getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
+  );
+  console.log('transactions', transactions);
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (
     <>
