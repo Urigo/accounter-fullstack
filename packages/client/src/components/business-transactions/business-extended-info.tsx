@@ -79,7 +79,9 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const transactions =
     data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
       ? []
-      : data?.businessTransactionsFromLedgerRecords.businessTransactions ?? [];
+      : data?.businessTransactionsFromLedgerRecords.businessTransactions.sort((a, b) =>
+          a.invoiceDate > b.invoiceDate ? 1 : -1,
+        ) ?? [];
 
   const extendedTransactions: Array<
     Extract<
