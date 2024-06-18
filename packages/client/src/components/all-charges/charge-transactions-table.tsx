@@ -23,5 +23,5 @@ export const ChargeTransactionsTable = ({ transactionsProps, onChange }: Props):
     ChargeTableTransactionsFieldsFragmentDoc,
     transactionsProps,
   );
-  return <TransactionsTable transactionsProps={transactions} onChange={onChange} />;
+  return <TransactionsTable transactionsProps={transactions} onChange={onChange} enableEdit />;
 };

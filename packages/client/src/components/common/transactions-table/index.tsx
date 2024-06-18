@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { EditMiniButton, EditTransactionModal } from '../index.js';
+import { ChargeNavigateButton, EditMiniButton, EditTransactionModal } from '../index.js';
 import {
   Account,
   Amount,
@@ -16,6 +16,7 @@ import {
 /* GraphQL */ `
   fragment TransactionForTransactionsTableFields on Transaction {
     id
+    chargeId
     ...TransactionsTableEventDateFields
     ...TransactionsTableDebitDateFields
     ...TransactionsTableAmountFields
@@ -28,18 +29,20 @@ import {
 
 type Props = {
   transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
+  enableEdit?: boolean;
+  enableChargeLink?: boolean;
   onChange?: () => void;
 };
 
 export const TransactionsTable = ({
   transactionsProps,
   onChange = (): void => void 0,
+  enableEdit,
+  enableChargeLink,
 }: Props): ReactElement => {
-  console.log('transactionsProps', transactionsProps);
   const transactions = transactionsProps.map(rawTransaction =>
     getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
   );
-  console.log('transactions', transactions);
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (
     <>
@@ -53,7 +56,10 @@ export const TransactionsTable = ({
             <th>Description</th>
             <th>Reference#</th>
             <th>Counterparty</th>
-            <th>Edit</th>
+            <th>
+              {enableEdit && !enableChargeLink && 'Edit'}
+              {enableChargeLink && !enableEdit && 'Charge'}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -65,19 +71,24 @@ export const TransactionsTable = ({
               <Account data={transaction} />
               <Description data={transaction} />
               <SourceID data={transaction} />
-              <Counterparty data={transaction} onChange={onChange} />
+              <Counterparty data={transaction} enableEdit={enableEdit} onChange={onChange} />
               <td>
-                <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
+                {enableEdit && (
+                  <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
+                )}
+                {enableChargeLink && <ChargeNavigateButton chargeId={transaction.chargeId} />}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <EditTransactionModal
-        transactionID={editTransactionId}
-        close={() => setEditTransactionId(undefined)}
-        onChange={onChange}
-      />
+      {enableEdit && (
+        <EditTransactionModal
+          transactionID={editTransactionId}
+          close={() => setEditTransactionId(undefined)}
+          onChange={onChange}
+        />
+      )}
     </>
   );
 };

@@ -29,7 +29,7 @@ export const CreditcardTransactionsInfo = ({ chargeProps }: Props): ReactElement
 
   return (
     charge.creditCardTransactions && (
-      <TransactionsTable transactionsProps={charge.creditCardTransactions} />
+      <TransactionsTable transactionsProps={charge.creditCardTransactions} enableChargeLink />
     )
   );
 };
