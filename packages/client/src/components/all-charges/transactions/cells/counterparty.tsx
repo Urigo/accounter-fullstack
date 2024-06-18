@@ -4,7 +4,7 @@ import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../..
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ConfirmMiniButton } from '../../../common/index.js';
+import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,6 +14,7 @@ import { ConfirmMiniButton } from '../../../common/index.js';
       name
       id
     }
+    sourceDescription
     missingInfoSuggestions {
       business {
         id
@@ -34,6 +35,7 @@ export function Counterparty({ data, onChange }: Props): ReactElement {
     counterparty,
     missingInfoSuggestions,
     id: transactionId,
+    sourceDescription,
   } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
   const hasAlternative = !!missingInfoSuggestions?.business;
@@ -102,6 +104,7 @@ export function Counterparty({ data, onChange }: Props): ReactElement {
             )}
           </>
         )}
+        {!id && sourceDescription !== '' && <InsertBusiness description={sourceDescription} />}
       </div>
     </td>
   );

@@ -42,7 +42,8 @@ export const ZKUFOT_INCOME_TAX_CATEGORY_ID = '52d4309c-f26f-4bbb-8413-971160067f
 export const DEFAULT_LOCAL_CURRENCY = Currency.Ils;
 export const DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY = Currency.Usd;
 
-export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+export const DEFAULT_FINANCIAL_ENTITY_ID =
+  process.env['DEFAULT_FINANCIAL_ENTITY_ID'] ?? '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 export const BATCHED_EMPLOYEE_BUSINESS_ID = 'd60321ef-9b91-4907-8bd2-9cfd87c83c0a'; // Batched Employee
 export const BATCHED_PENSION_BUSINESS_ID = '95815c30-0ed1-4ac1-8367-e63829345070'; // Batched pension
 

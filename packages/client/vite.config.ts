@@ -1,5 +1,10 @@
+import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+
+dotenv({
+  path: '../../.env',
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,5 +20,10 @@ export default defineConfig({
     commonjsOptions: {
       include: [/react-hook-form/, /node_modules/],
     },
+  },
+  define: {
+    'import.meta.env.DEFAULT_FINANCIAL_ENTITY_ID': JSON.stringify(
+      process.env.DEFAULT_FINANCIAL_ENTITY_ID,
+    ),
   },
 });

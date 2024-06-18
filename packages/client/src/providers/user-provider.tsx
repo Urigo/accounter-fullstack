@@ -11,7 +11,8 @@ export interface UserInfo extends User {
 }
 
 // TODO: replace with server request
-export const DEFAULT_FINANCIAL_ENTITY_ID = '6a20aa69-57ff-446e-8d6a-1e96d095e988';
+export const DEFAULT_FINANCIAL_ENTITY_ID =
+  import.meta.env.DEFAULT_FINANCIAL_ENTITY_ID ?? '6a20aa69-57ff-446e-8d6a-1e96d095e988';
 
 export const UserContext = createContext<ContextType>({
   userContext: null,
