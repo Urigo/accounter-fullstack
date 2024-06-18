@@ -43,6 +43,7 @@ export const validateCharge = async (
       ChargeTypeEnum.Dividend,
       ChargeTypeEnum.Conversion,
       ChargeTypeEnum.MonthlyVat,
+      ChargeTypeEnum.CreditcardBankCharge,
     ].includes(chargeType) ||
     isGeneralFees;
   const documentsAreFine =

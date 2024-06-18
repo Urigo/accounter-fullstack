@@ -1,6 +1,7 @@
 import { ReactElement, useMemo } from 'react';
 import {
   Coin,
+  CreditCard,
   Gift,
   PigMoney,
   Plane,
@@ -50,6 +51,8 @@ export const TypeCell = ({ data }: Props): ReactElement => {
         return { text: 'Monthly VAT', icon: <ReceiptTax /> };
       case 'BankDepositCharge':
         return { text: 'Bank Deposit', icon: <PigMoney /> };
+      case 'CreditcardBankCharge':
+        return { text: 'Credit Card Bank Charge', icon: <CreditCard /> };
       default:
         return { text: 'Unknown', icon: <Coin /> };
     }

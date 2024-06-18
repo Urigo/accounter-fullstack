@@ -7,6 +7,7 @@ import { DragFile, ListCapsule } from '../../common/index.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllChargesMoreInfoFields on Charge {
+    __typename
     id
     metadata {
       transactionsCount
@@ -42,6 +43,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
       case 'SalaryCharge':
       case 'MonthlyVatCharge':
       case 'BankDepositCharge':
+      case 'CreditcardBankCharge':
         return false;
       default:
         return true;

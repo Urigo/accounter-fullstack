@@ -354,6 +354,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
+  CreditcardBankCharge: commonChargeFields,
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
   },

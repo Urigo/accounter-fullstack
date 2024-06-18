@@ -47,6 +47,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type CreditcardBankCharge {
+    taxCategory: TaxCategory
+  }
+
   " Tax category entity used for ledger records "
   type TaxCategory implements FinancialEntity {
     id: UUID!

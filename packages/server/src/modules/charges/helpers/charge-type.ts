@@ -2,12 +2,13 @@ import {
   BANK_DEPOSIT_BUSINESS_ID,
   DIVIDEND_BUSINESS_IDS,
   INTERNAL_WALLETS_IDS,
+  ISRACARD_BUSINESS_ID,
   VAT_BUSINESS_ID,
 } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
 
-export function getChargeType(charge: IGetChargesByIdsResult) {
+export function getChargeType(charge: IGetChargesByIdsResult): ChargeTypeEnum {
   if (charge.is_conversion) {
     return ChargeTypeEnum.Conversion;
   }
@@ -40,6 +41,10 @@ export function getChargeType(charge: IGetChargesByIdsResult) {
 
   if (charge.business_id === VAT_BUSINESS_ID) {
     return ChargeTypeEnum.MonthlyVat;
+  }
+
+  if (charge.business_id && [ISRACARD_BUSINESS_ID].includes(charge.business_id)) {
+    return ChargeTypeEnum.CreditcardBankCharge;
   }
 
   return ChargeTypeEnum.Common;

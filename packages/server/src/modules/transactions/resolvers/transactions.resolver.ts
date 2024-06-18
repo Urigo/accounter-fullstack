@@ -183,6 +183,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
+  CreditcardBankCharge: commonChargeFields,
   ConversionTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.is_conversion ?? false,
     ...commonTransactionFields,

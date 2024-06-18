@@ -62,6 +62,7 @@ export const Vat = ({ data }: Props): ReactElement => {
       case 'SalaryCharge':
       case 'InternalTransferCharge':
       case 'BankDepositCharge':
+      case 'CreditcardBankCharge':
         return false;
       default:
         return true;

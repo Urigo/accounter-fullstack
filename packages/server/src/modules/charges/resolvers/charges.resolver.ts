@@ -6,7 +6,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { tags_enum } from '@modules/tags/types.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { ChargeSortByField } from '@shared/enums';
+import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharge } from '../helpers/delete-charge.helper.js';
@@ -235,35 +235,39 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
   },
   CommonCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'CommonCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'ConversionCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Conversion,
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'SalaryCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Salary,
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'InternalTransferCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.InternalTransfer,
     ...commonChargeFields,
   },
   DividendCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'DividendCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Dividend,
     ...commonChargeFields,
   },
   BusinessTripCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'BusinessTripCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.BusinessTrip,
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'MonthlyVatCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.MonthlyVat,
     ...commonChargeFields,
   },
   BankDepositCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === 'BankDepositCharge',
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.BankDeposit,
+    ...commonChargeFields,
+  },
+  CreditcardBankCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.CreditcardBankCharge,
     ...commonChargeFields,
   },
   Invoice: {

@@ -28,6 +28,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   BusinessTripCharge: commonTaxChargeFields,
   MonthlyVatCharge: commonTaxChargeFields,
   BankDepositCharge: commonTaxChargeFields,
+  CreditcardBankCharge: commonTaxChargeFields,
   LtdFinancialEntity: {
     taxCategory: async (parent, _, { injector }) => {
       const taxCategory = await injector
