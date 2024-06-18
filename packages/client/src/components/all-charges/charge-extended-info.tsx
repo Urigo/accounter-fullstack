@@ -7,6 +7,7 @@ import {
   AllChargesErrorsFieldsFragmentDoc,
   ChargeTableTransactionsFieldsFragmentDoc,
   ConversionChargeInfoFragmentDoc,
+  CreditcardBankChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
   FetchChargeDocument,
   TableDocumentsFieldsFragmentDoc,
@@ -25,6 +26,7 @@ import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
+import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
 
@@ -47,6 +49,7 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
       ...TableLedgerRecordsFields @defer
       ...ChargeTableTransactionsFields @defer
       ...ConversionChargeInfo @defer
+      ...CreditcardBankChargeInfo @defer
       ...TableSalariesFields @defer
       ... on BusinessTripCharge {
         businessTrip {
@@ -150,6 +153,10 @@ export function ChargeExtendedInfo({
   const salariesAreReady =
     charge?.__typename === 'SalaryCharge' &&
     isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
+
+  const creditcardTransactionsAreReady =
+    charge?.__typename === 'CreditcardBankCharge' &&
+    isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge);
 
   return (
     <div className="flex flex-col gap-5">
@@ -257,6 +264,19 @@ export function ChargeExtendedInfo({
                 </Accordion.Control>
                 <Accordion.Panel>
                   <BusinessTripSummarizedReport data={charge.businessTrip!} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {charge.__typename === 'CreditcardBankCharge' && (
+              <Accordion.Item value="creditcard">
+                <Accordion.Control onClick={() => toggleAccordionItem('creditcard')}>
+                  CreditCard Transactions
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {creditcardTransactionsAreReady && (
+                    <CreditcardTransactionsInfo chargeProps={charge} />
+                  )}
                 </Accordion.Panel>
               </Accordion.Item>
             )}
