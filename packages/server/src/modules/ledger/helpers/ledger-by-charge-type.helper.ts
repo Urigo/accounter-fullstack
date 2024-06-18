@@ -32,7 +32,6 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
     case 'BankDepositCharge':
       return generateLedgerRecordsForBankDeposit;
     case 'CreditcardBankCharge':
-      // TODO: implement
       return generateLedgerRecordsForCommonCharge;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
