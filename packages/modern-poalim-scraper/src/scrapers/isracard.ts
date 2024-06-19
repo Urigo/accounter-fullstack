@@ -53,7 +53,7 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: israc
     };
   }
 
-  return { data: await getTransactionsFunction };
+  return { data: await getTransactionsFunction, isValid: null };
 }
 
 const getMonthsList = (options: isracardOptions): Date[] => {
