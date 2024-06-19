@@ -16,6 +16,7 @@ import migration_2024_05_21T19_06_42_refactor_financial_accounts from './actions
 import migration_2024_05_27T16_21_23_better_handle_credit_invoices from './actions/2024-05-27T16-21-23.better-handle-credit-invoices.js';
 import migration_2024_05_28T15_33_03_add_currency_diff_flag_to_charges from './actions/2024-05-28T15-33-03.add-currency-diff-flag-to-charges.js';
 import migration_2024_06_14T10_42_35_onboarding_new_user_adjustments from './actions/2024-06-14T10-42-35.onboarding-new-user-adjustments.js';
+import migration_2024_06_19T17_41_45_drop_balance_cancellation_limitation from './actions/2024-06-19T17-41-45.drop-balance-cancellation-limitation.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -39,5 +40,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_05_27T16_21_23_better_handle_credit_invoices,
       migration_2024_05_28T15_33_03_add_currency_diff_flag_to_charges,
       migration_2024_06_14T10_42_35_onboarding_new_user_adjustments,
+      migration_2024_06_19T17_41_45_drop_balance_cancellation_limitation,
     ],
   });

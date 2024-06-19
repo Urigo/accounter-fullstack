@@ -1,7 +1,7 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2024-03-21T15-33-43.transactions-extension-tables.sql.sql',
+  name: '2024-03-21T15-33-43.transactions-extension-tables.sql',
   run: ({ sql }) => sql`
   -- create transaction fees table and migrate data from transactions
   create table accounter_schema.transactions_fees
