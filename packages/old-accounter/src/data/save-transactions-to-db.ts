@@ -1,7 +1,6 @@
 import lodash from 'lodash';
 import moment from 'moment';
 import pg from 'pg';
-import type { DecoratedTransaction } from '../scrape.js';
 
 const { camelCase } = lodash;
 
@@ -18,25 +17,14 @@ export type AccountTypes =
   | 'foreign_deposits'
   | 'isracard';
 
-type TransactionTypeSelector<T extends AccountTypes> = T extends 'isracard'
-  ? DecoratedTransaction
-  : any;
-
-export async function saveTransactionsToDB<
-  Type extends AccountTypes,
-  TransactionType extends TransactionTypeSelector<Type>,
->(
-  transactions: TransactionType[],
-  accountType: Type,
-  accountObject: {
-    accountNumber: number;
-    branchNumber: number;
-    bankNumber: number;
-  } | null,
+export async function saveTransactionsToDB(
+  transactions: any,
+  accountType: AccountTypes,
+  accountObject: any,
   pool: pg.Pool,
 ) {
   if (accountObject) {
-    transactions = transactions.map(transaction => ({
+    transactions = transactions.map((transaction: any) => ({
       ...transaction,
       ...accountObject,
     }));
@@ -49,12 +37,12 @@ export async function saveTransactionsToDB<
       transaction.card = '9217';
     }
     if (accountType == 'ils') {
-      normalizeBeneficiaryDetailsData<Type>(transaction);
+      normalizeBeneficiaryDetailsData(transaction);
       if (transaction.activityDescriptionIncludeValueDate == undefined) {
         transaction.activityDescriptionIncludeValueDate = null;
       }
     } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
-      normalizeForeignTransactionMetadata<Type>(transaction);
+      normalizeForeignTransactionMetadata(transaction);
       if (transaction.contraAccountFieldNameLable == 0) {
         console.log('old API!');
         transaction.contraAccountFieldNameLable = null;
@@ -69,7 +57,7 @@ export async function saveTransactionsToDB<
     if (accountType == 'isracard') {
       tableName = 'isracard_creditcard_transactions';
     }
-    const columnNamesResult = await pool.query<{ column_name: string; data_type: string }>(`
+    const columnNamesResult = await pool.query(`
       SELECT * 
       FROM information_schema.columns
       WHERE table_schema = 'accounter_schema'
@@ -110,14 +98,14 @@ export async function saveTransactionsToDB<
       optionalTransactionKeys = ['clientIpAddress', 'bcKey', 'chargingDate', 'requestNumber'];
     }
     optionalTransactionKeys = optionalTransactionKeys.concat(['id']);
-    findMissingTransactionKeys<Type>(
+    findMissingTransactionKeys(
       transaction,
       columnNamesResult,
       optionalTransactionKeys,
       accountType,
     );
 
-    const additionalColumnsToExcludeFromTransactionComparison: string[] = [];
+    const additionalColumnsToExcludeFromTransactionComparison = [];
     additionalColumnsToExcludeFromTransactionComparison.push('formattedEventAmount');
     additionalColumnsToExcludeFromTransactionComparison.push('formattedCurrentBalance');
     additionalColumnsToExcludeFromTransactionComparison.push('cardIndex'); // If you get a new creditcard, all indexes will change and you could get duplicates
@@ -133,7 +121,7 @@ export async function saveTransactionsToDB<
         'formattedValidityTime',
       );
     }
-    const whereClause = createWhereClause<Type>(
+    const whereClause = createWhereClause(
       transaction,
       columnNamesResult,
       `accounter_schema.` + tableName,
@@ -149,11 +137,11 @@ export async function saveTransactionsToDB<
       } else {
         console.log('not found');
 
-        let columnNames = columnNamesResult.rows.map(column => column.column_name);
+        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
         columnNames = columnNames.filter((columnName: string) => columnName != 'id');
         let text = `INSERT INTO accounter_schema.${tableName}
         (
-          ${columnNames.map(x => x).join(', ')},
+          ${columnNames.map((x: any) => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
         text = text
@@ -252,9 +240,7 @@ export async function saveTransactionsToDB<
   }
 }
 
-function normalizeBeneficiaryDetailsData<Type extends AccountTypes>(
-  transaction: TransactionTypeSelector<Type>,
-) {
+function normalizeBeneficiaryDetailsData(transaction: any) {
   if (
     typeof transaction.beneficiaryDetailsData !== 'undefined' &&
     transaction.beneficiaryDetailsData != null
@@ -281,14 +267,16 @@ function normalizeBeneficiaryDetailsData<Type extends AccountTypes>(
   }
 }
 
-function findMissingTransactionKeys<Type extends AccountTypes>(
-  transaction: TransactionTypeSelector<Type>,
-  columnNames: { rows: { column_name: string }[] },
+function findMissingTransactionKeys(
+  transaction: any,
+  columnNames: any,
   knownOptionals: string[],
   accountType: string,
 ) {
   const allKeys = Object.keys(transaction);
-  const fixedExistingKeys: string[] = columnNames.rows.map(column => camelCase(column.column_name));
+  const fixedExistingKeys: string[] = columnNames.rows.map((column: any) =>
+    camelCase(column.column_name),
+  );
 
   const InTransactionNotInDB = allKeys.filter(x => !fixedExistingKeys.includes(x));
   const inDBNotInTransaction = fixedExistingKeys.filter(x => !allKeys.includes(x));
@@ -304,9 +292,9 @@ function findMissingTransactionKeys<Type extends AccountTypes>(
   }
 }
 
-function createWhereClause<Type extends AccountTypes>(
-  transaction: TransactionTypeSelector<Type>,
-  checkingColumnNames: { rows: { column_name: string; data_type: string }[] },
+function createWhereClause(
+  transaction: any,
+  checkingColumnNames: any,
   tableName: string,
   extraColumnsToExcludeFromComparison: string[],
 ) {
@@ -399,9 +387,7 @@ function createWhereClause<Type extends AccountTypes>(
   return whereClause;
 }
 
-function normalizeForeignTransactionMetadata<Type extends AccountTypes>(
-  transaction: TransactionTypeSelector<Type>,
-) {
+function normalizeForeignTransactionMetadata(transaction: any) {
   if (typeof transaction.metadata !== 'undefined' && transaction.metadata != null) {
     if (
       typeof transaction.metadata.attributes !== 'undefined' &&
@@ -445,11 +431,8 @@ function normalizeForeignTransactionMetadata<Type extends AccountTypes>(
   }
 }
 
-function transactionValuesToArray<
-  Type extends AccountTypes,
-  TransactionType extends TransactionTypeSelector<Type>,
->(transaction: TransactionType, accountType: Type) {
-  let values: (string | null)[] = [];
+function transactionValuesToArray(transaction: any, accountType: AccountTypes) {
+  let values: string[] = [];
   if (accountType == 'ils') {
     values = [
       transaction.eventDate,
@@ -552,55 +535,54 @@ function transactionValuesToArray<
       transaction.accountNumber,
     ];
   } else if (accountType == 'isracard') {
-    const temp: DecoratedTransaction = transaction;
     values = [
-      temp.specificDate,
-      temp.cardIndex,
-      temp.dealsInbound,
-      temp.supplierId,
-      temp.supplierName,
-      temp.dealSumType,
-      temp.paymentSumSign,
-      temp.purchaseDate,
-      temp.fullPurchaseDate,
-      temp.moreInfo,
-      temp.horaatKeva,
-      temp.voucherNumber,
-      temp.voucherNumberRatz,
-      temp.solek,
-      temp.purchaseDateOutbound,
-      temp.fullPurchaseDateOutbound,
-      temp.currencyId,
-      temp.currentPaymentCurrency,
-      temp.city,
-      temp.supplierNameOutbound,
-      temp.fullSupplierNameOutbound,
-      temp.paymentDate,
-      temp.fullPaymentDate,
-      temp.isShowDealsOutbound,
-      temp.adendum,
-      temp.voucherNumberRatzOutbound,
-      temp.isShowLinkForSupplierDetails,
-      temp.dealSum,
-      temp.paymentSum,
-      temp.fullSupplierNameHeb,
-      temp.dealSumOutbound,
-      temp.paymentSumOutbound,
-      temp.isHoraatKeva,
-      temp.stage,
-      temp.returnCode,
-      temp.message,
-      temp.returnMessage,
-      temp.displayProperties,
-      temp.tablePageNum,
-      temp.isError,
-      temp.isCaptcha,
-      temp.isButton,
-      temp.siteName,
-      temp.clientIpAddress ?? null,
-      temp.card,
+      transaction.specificDate,
+      transaction.cardIndex,
+      transaction.dealsInbound,
+      transaction.supplierId,
+      transaction.supplierName,
+      transaction.dealSumType,
+      transaction.paymentSumSign,
+      transaction.purchaseDate,
+      transaction.fullPurchaseDate,
+      transaction.moreInfo,
+      transaction.horaatKeva,
+      transaction.voucherNumber,
+      transaction.voucherNumberRatz,
+      transaction.solek,
+      transaction.purchaseDateOutbound,
+      transaction.fullPurchaseDateOutbound,
+      transaction.currencyId,
+      transaction.currentPaymentCurrency,
+      transaction.city,
+      transaction.supplierNameOutbound,
+      transaction.fullSupplierNameOutbound,
+      transaction.paymentDate,
+      transaction.fullPaymentDate,
+      transaction.isShowDealsOutbound,
+      transaction.adendum,
+      transaction.voucherNumberRatzOutbound,
+      transaction.isShowLinkForSupplierDetails,
+      transaction.dealSum,
+      transaction.paymentSum,
+      transaction.fullSupplierNameHeb,
+      transaction.dealSumOutbound,
+      transaction.paymentSumOutbound,
+      transaction.isHoraatKeva,
+      transaction.stage,
+      transaction.returnCode,
+      transaction.message,
+      transaction.returnMessage,
+      transaction.displayProperties,
+      transaction.tablePageNum,
+      transaction.isError,
+      transaction.isCaptcha,
+      transaction.isButton,
+      transaction.siteName,
+      transaction.clientIpAddress,
+      transaction.card,
       null,
-      temp.kodMatbeaMekori ?? null,
+      transaction.kodMatbeaMekori,
     ];
   } else if (accountType == 'deposits') {
     values = [

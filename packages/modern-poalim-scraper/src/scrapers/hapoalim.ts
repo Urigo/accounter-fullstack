@@ -145,11 +145,7 @@ export async function hapoalim(
   // TODO: https://www.npmjs.com/package/node-fetch-cookies
 
   return {
-    getAccountsData: async (): Promise<{
-      data: AccountDataSchema | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    getAccountsData: async () => {
       const accountDataUrl = `${apiSiteUrl}/general/accounts`;
       const getAccountsFunction = fetchGetWithinPage<AccountDataSchema>(page, accountDataUrl);
       if (options?.validateSchema) {
@@ -161,17 +157,13 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getAccountsFunction, isValid: null };
+      return { data: await getAccountsFunction };
     },
     getILSTransactions: async (account: {
       bankNumber: number;
       branchNumber: number;
       accountNumber: number;
-    }): Promise<{
-      data: ILSCheckingTransactionsDataSchema | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    }) => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const ILSCheckingTransactionsUrl = `${apiSiteUrl}/current-account/transactions?accountId=${fullAccountNumber}&numItemsPerPage=200&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&sortCode=1`;
       const getIlsTransactionsFunction =
@@ -203,7 +195,7 @@ export async function hapoalim(
             }
           }
           if (!options?.validateSchema) {
-            return { data, isValid: null };
+            return { data };
           }
         }
 
@@ -221,7 +213,7 @@ export async function hapoalim(
         };
       } 
 
-      return { data: await getIlsTransactionsFunction, isValid: null };
+      return { data: await getIlsTransactionsFunction };
     },
     getForeignTransactions: async <T extends boolean>(
       account: {
@@ -230,11 +222,7 @@ export async function hapoalim(
         accountNumber: number;
       },
       isBusiness: T = true as T,
-    ): Promise<{
-      data: ForeignTransactionsBusinessSchema | ForeignTransactionsPersonalSchema | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    ) => {
       /**
        * The URL includes optional "type" query param.
        * Setting it to "business" changes the response type.
@@ -272,17 +260,13 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getForeignTransactionsFunction, isValid: null };
+      return { data: await getForeignTransactionsFunction };
     },
     getForeignSwiftTransactions: async (account: {
       bankNumber: number;
       branchNumber: number;
       accountNumber: number;
-    }): Promise<{
-      data: ForeignSwiftTransactions | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    }) => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const foreignSwiftTransactionsUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions?accountId=${fullAccountNumber}&endDate=${endDateString}&startDate=20190501`;
       const getForeignSwiftTransactionsFunction = fetchGetWithinPage<ForeignSwiftTransactions>(
@@ -309,7 +293,7 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getForeignSwiftTransactionsFunction, isValid: null };
+      return { data: await getForeignSwiftTransactionsFunction };
     },
     getForeignSwiftTransaction: async (
       account: {
@@ -318,11 +302,7 @@ export async function hapoalim(
         accountNumber: number;
       },
       transferCatenatedId: string,
-    ): Promise<{
-      data: ForeignSwiftTransaction | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    ) => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const foreignSwiftTransactionUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions/${transferCatenatedId}?accountId=${fullAccountNumber}&dataOriginCode=2&lang=he`;
       const getForeignSwiftTransactionFunction = fetchGetWithinPage<ForeignSwiftTransaction>(
@@ -349,17 +329,13 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getForeignSwiftTransactionFunction, isValid: null };
+      return { data: await getForeignSwiftTransactionFunction };
     },
     getDeposits: async (account: {
       bankNumber: number;
       branchNumber: number;
       accountNumber: number;
-    }): Promise<{
-      data: HapoalimDepositsSchema | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    }) => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const depositsUrl = `${apiSiteUrl}/deposits-and-savings/deposits?accountId=${fullAccountNumber}&view=details&lang=he`;
       const getDepositsFunction = fetchGetWithinPage<HapoalimDepositsSchema>(page, depositsUrl);
@@ -379,17 +355,13 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getDepositsFunction, isValid: null};
+      return { data: await getDepositsFunction };
     },
     getForeignDeposits: async (account: {
       bankNumber: number;
       branchNumber: number;
       accountNumber: number;
-    }): Promise<{
-      data: HapoalimForeignDepositsSchema | null;
-      isValid: boolean | null;
-      errors?: unknown;
-    }> => {
+    }) => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const depositsUrl = `${apiSiteUrl}/foreign-currency/revaluedDeposit?accountId=${fullAccountNumber}&lang=he`;
       const getDepositsFunction = fetchGetWithinPage<HapoalimForeignDepositsSchema>(
@@ -405,7 +377,7 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getDepositsFunction, isValid: null };
+      return { data: await getDepositsFunction };
     },
   };
 }

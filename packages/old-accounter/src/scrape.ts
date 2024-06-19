@@ -1,11 +1,10 @@
 import * as fs from 'fs';
+import { stringify } from 'querystring';
 import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import lodash from 'lodash';
 import pg from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
-import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/__generated__/isracardCardsTransactionsList.js';
-import type { isracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
 import { getCurrencyRates } from './data/currency.js';
 import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 
@@ -17,32 +16,21 @@ const { camelCase, upperFirst } = lodash;
 
 // TODO: Use Temporal with polyfill instead
 
-type IsraelTransaction = NonNullable<
-  IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][number]['txnIsrael']
->[number];
-type ForeignTransaction = NonNullable<
-  IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][number]['txnAbroad']
->[number];
-export type DecoratedTransaction = (IsraelTransaction | ForeignTransaction) & { card: string };
-
-function getTransactionsFromCards(
-  cardsTransactionsListBean: IsracardCardsTransactionsList['CardsTransactionsListBean'],
-): Array<DecoratedTransaction> {
-  const allData: Array<DecoratedTransaction> = [];
-  cardsTransactionsListBean.cardNumberList.forEach((cardInformation, index: number) => {
-    const transactionsGroups =
-      cardsTransactionsListBean[`Index${index}` as 'Index0'].CurrentCardTransactions;
-    if (transactionsGroups) {
-      transactionsGroups.forEach(txnGroup => {
+function getTransactionsFromCards(CardsTransactionsListBean: any) {
+  const allData: any = [];
+  CardsTransactionsListBean.cardNumberList.forEach((cardInformation: any, index: any) => {
+    const txnGroups = CardsTransactionsListBean[`Index${index}`].CurrentCardTransactions;
+    if (txnGroups) {
+      txnGroups.forEach((txnGroup: any) => {
         if (txnGroup.txnIsrael) {
-          const israelTransactions = txnGroup.txnIsrael.map(transaction => ({
+          const israelTransactions = txnGroup.txnIsrael.map((transaction: any) => ({
             ...transaction,
             card: cardInformation.slice(cardInformation.length - 4),
           }));
           allData.push(...israelTransactions);
         }
         if (txnGroup.txnAbroad) {
-          const abroadTransactions = txnGroup.txnAbroad.map(transaction => ({
+          const abroadTransactions = txnGroup.txnAbroad.map((transaction: any) => ({
             ...transaction,
             card: cardInformation.slice(cardInformation.length - 4),
           }));
@@ -56,20 +44,8 @@ function getTransactionsFromCards(
 }
 
 // TODO: Remove all any
-async function getILSfromBankAndSave(
-  newScraperIstance: PoalimScraper,
-  account: Parameters<PoalimScraper['getILSTransactions']>[0],
-  pool: pg.Pool,
-) {
+async function getILSfromBankAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   const ILSTransactions = await newScraperIstance.getILSTransactions(account);
-
-  if (!ILSTransactions.data) {
-    console.log(
-      `No ILS data for ${account.bankNumber}:${account.branchNumber}:${account.accountNumber}`,
-    );
-    return;
-  }
-
   console.log(
     `finished getting ILSTransactions ${ILSTransactions.data.retrievalTransactionData.bankNumber}:${ILSTransactions.data.retrievalTransactionData.branchNumber}:${ILSTransactions.data.retrievalTransactionData.accountNumber}`,
     ILSTransactions.isValid,
@@ -79,7 +55,7 @@ async function getILSfromBankAndSave(
       `newScraperIstance.getILSTransactions ${JSON.stringify(
         account.accountNumber,
       )} schema error: `,
-      'errors' in ILSTransactions ? ILSTransactions.errors : null,
+      ILSTransactions.errors,
     );
   }
 
@@ -130,8 +106,8 @@ async function getILSfromBankAndSave(
 }
 
 async function getForeignTransactionsfromBankAndSave(
-  newScraperIstance: PoalimScraper,
-  account: Parameters<PoalimScraper['getForeignTransactions']>[0],
+  newScraperIstance: any,
+  account: any,
   pool: pg.Pool,
   isBusiness?: boolean,
 ) {
@@ -143,17 +119,12 @@ async function getForeignTransactionsfromBankAndSave(
   if (!foreignTransactions.isValid) {
     console.log(
       `getForeignTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
-      'errors' in foreignTransactions ? foreignTransactions.errors : null,
+      foreignTransactions.errors,
     );
   }
 
-  if (!foreignTransactions.data) {
-    console.log(`No foreign data for ${account.accountNumber}`);
-    return;
-  }
-
   await Promise.all(
-    foreignTransactions.data.balancesAndLimitsDataList.map(async foreignAccountsArray => {
+    foreignTransactions.data.balancesAndLimitsDataList.map(async (foreignAccountsArray: any) => {
       let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
       switch (foreignAccountsArray.currencyCode) {
         case 19:
@@ -171,9 +142,9 @@ async function getForeignTransactionsfromBankAndSave(
           break;
       }
       if (accountCurrency && foreignAccountsArray.transactions.length) {
-        const bankNumber = (foreignAccountsArray as any).bankNumber ?? account.bankNumber;
-        const branchNumber = (foreignAccountsArray as any).branchNumber ?? account.branchNumber;
-        const accountNumber = (foreignAccountsArray as any).accountNumber ?? account.accountNumber;
+        const bankNumber = foreignAccountsArray.bankNumber ?? account.bankNumber;
+        const branchNumber = foreignAccountsArray.branchNumber ?? account.branchNumber;
+        const accountNumber = foreignAccountsArray.accountNumber ?? account.accountNumber;
 
         console.log(
           `Saving Foreign for ${bankNumber}:${branchNumber}:${accountNumber} currency ${accountCurrency}`,
@@ -196,47 +167,28 @@ async function getForeignTransactionsfromBankAndSave(
   );
 }
 
-async function getBankData(pool: pg.Pool, scraper: Scraper) {
+async function getBankData(pool: pg.Pool, scraper: any) {
   console.log('start getBankData');
   console.log('Bank Login');
 
-  if (!process.env.USER_CODE || !process.env.PASSWORD) {
-    console.error('Missing credentials for bank');
-    return;
-  }
-
-  const credentials = {
-    userCode: process.env.USER_CODE,
-    password: process.env.PASSWORD,
-  };
-
   const isBusiness = process.env.IS_BUSINESS_ACCOUNT === 'false' ? false : true;
 
-  const newPoalimInstance = await scraper.hapoalim(credentials, {
-    validateSchema: true,
-    isBusiness,
-  });
-
-  if (newPoalimInstance === 'Unknown Error') {
-    console.error('Unknown Error fetching Poalim');
-    return;
-  }
-
+  const newPoalimInstance = await scraper.hapoalim(
+    {
+      userCode: process.env.USER_CODE,
+      password: process.env.PASSWORD,
+    },
+    {
+      validateSchema: true,
+      isBusiness,
+    },
+  );
   console.log('getting accounts');
   const accounts = await newPoalimInstance.getAccountsData();
   console.log('finished getting accounts', accounts.isValid);
   if (!accounts.isValid) {
-    console.log(
-      `getAccountsData Poalim schema errors: `,
-      'errors' in accounts ? accounts.errors : null,
-    );
+    console.log(`getAccountsData Poalim schema errors: `, accounts.errors);
   }
-
-  if (!accounts.data) {
-    console.log(`No Poalim accounts data`);
-    return;
-  }
-
   const tableName = 'financial_accounts';
   for (const account of accounts.data) {
     let whereClause = `
@@ -244,7 +196,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
     WHERE 
     `;
 
-    const columnNamesResult = await pool.query<{ column_name: string; data_type: string }>(`
+    const columnNamesResult = await pool.query(`
       SELECT * 
       FROM information_schema.columns
       WHERE table_schema = 'accounter_schema'
@@ -267,7 +219,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
     }
 
     for (const dBcolumn of columnNamesResult.rows) {
-      const camelCaseColumnName = camelCase(dBcolumn.column_name) as keyof typeof account;
+      const camelCaseColumnName = camelCase(dBcolumn.column_name);
       if (!columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
         let actualCondition = '';
         const isNotNull =
@@ -281,7 +233,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
           dBcolumn.data_type == 'USER-DEFINED' ||
           dBcolumn.data_type == 'text'
         ) {
-          if (isNotNull && (camelCaseColumnName as string) != 'beneficiaryDetailsData') {
+          if (isNotNull && camelCaseColumnName != 'beneficiaryDetailsData') {
             actualCondition = `= $$` + account[camelCaseColumnName] + `$$`;
           }
         } else if (dBcolumn.data_type == 'date' || dBcolumn.data_type == 'bit') {
@@ -299,11 +251,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
         } else if (isNotNull && dBcolumn.data_type == 'json') {
           const firstKey = Object.keys(account[camelCaseColumnName])[0];
           actualCondition =
-            `->> '` +
-            firstKey +
-            `' = '` +
-            (account[camelCaseColumnName] as unknown as Record<string, unknown>)[firstKey] +
-            `'`;
+            `->> '` + firstKey + `' = '` + account[camelCaseColumnName][firstKey] + `'`;
           if (Object.keys(account[camelCaseColumnName]).length > 1) {
             // TODO: Log important checks
             console.log('more keys in json!', Object.keys(account[camelCaseColumnName]));
@@ -331,12 +279,12 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
       } else {
         console.log(`Account not found!! ${JSON.stringify(account)}`);
 
-        let columnNames = columnNamesResult.rows.map(column => column.column_name);
+        let columnNames = columnNamesResult.rows.map((column: any) => column.column_name);
 
         columnNames = columnNames.filter((columnName: string) => columnName != 'id');
         let text = `INSERT INTO accounter_schema.${tableName}
         (
-          ${columnNames.map(x => x).join(', ')},
+          ${columnNames.map((x: any) => x).join(', ')},
         )`;
         const lastIndexOfComma = text.lastIndexOf(',');
         text = text
@@ -381,7 +329,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
   }
 
   await Promise.all(
-    accounts.data.map(async account => {
+    accounts.data.map(async (account: any) => {
       console.log(`Getting ILS, Foreign and deposits for ${account.accountNumber}`);
       const results = await Promise.allSettled([
         getILSfromBankAndSave(newPoalimInstance, account, pool),
@@ -400,11 +348,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
   // console.log('closed');
 }
 
-async function getDepositsAndSave(
-  newScraperIstance: PoalimScraper,
-  account: Parameters<PoalimScraper['getDeposits']>[0],
-  pool: pg.Pool,
-) {
+async function getDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   console.log('getting deposits');
   const deposits = await newScraperIstance.getDeposits(account);
 
@@ -417,7 +361,7 @@ async function getDepositsAndSave(
   if (!deposits.isValid) {
     console.log(
       `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
-      'errors' in deposits ? deposits.errors : null,
+      deposits.errors,
     );
   }
 
@@ -434,25 +378,24 @@ async function getDepositsAndSave(
     if (deposits.data.list.length != 1) {
       console.log('WRONG NUMBER OF DEPOSITS', deposits.data.list);
     } else {
-      const messageslessDeposits: any = deposits.data.list[0];
-      delete messageslessDeposits.messages;
+      delete deposits.data.list[0].messages;
 
-      if (messageslessDeposits.data.length != 1) {
+      if (deposits.data.list[0].data.length != 1) {
         console.log('Deposit internal array arong', deposits.data);
       } else {
-        delete messageslessDeposits.data[0].metadata;
+        delete deposits.data.list[0].data[0].metadata;
 
-        const internalArrayKeys = Object.keys(messageslessDeposits.data[0]);
+        const internalArrayKeys = Object.keys(deposits.data.list[0].data[0]);
 
         for (const key of internalArrayKeys) {
           let pascalKey = camelCase(key);
           pascalKey = upperFirst(pascalKey);
-          messageslessDeposits[`data0${pascalKey}`] = messageslessDeposits.data[0][key];
+          deposits.data.list[0][`data0${pascalKey}`] = deposits.data.list[0].data[0][key];
         }
-        delete messageslessDeposits.data;
+        delete deposits.data.list[0].data;
 
         await saveTransactionsToDB(
-          [messageslessDeposits],
+          [deposits.data.list[0]],
           'deposits',
           {
             accountNumber: account.accountNumber,
@@ -467,13 +410,9 @@ async function getDepositsAndSave(
   }
 }
 
-async function getForeignDepositsAndSave(
-  newScraperIstance: PoalimScraper,
-  account: Parameters<PoalimScraper['getForeignDeposits']>[0],
-  pool: pg.Pool,
-) {
+async function getForeignDepositsAndSave(newScraperIstance: any, account: any, pool: pg.Pool) {
   console.log('getting Foreign deposits');
-  if (![466803, 362396, 667871].includes(account.accountNumber)) {
+  if (account.accountNumber != 466803) {
     return null;
   }
   const deposits = await newScraperIstance.getForeignDeposits(account);
@@ -481,7 +420,7 @@ async function getForeignDepositsAndSave(
   if (!deposits.isValid) {
     console.log(
       `getDeposits ${JSON.stringify(account.accountNumber)} schema errors: `,
-      'errors' in deposits ? deposits.errors : null,
+      deposits.errors,
     );
   }
 
@@ -493,9 +432,6 @@ async function getForeignDepositsAndSave(
     account.accountNumber != 667871
   ) {
     console.error('UNKNOWN ACCOUNT ', account.accountNumber);
-  } else if (!deposits.data) {
-    console.log(`No deposits data for ${account.accountNumber}`);
-    return;
   } else {
     console.log(`Saving Foreign deposits for ${account.accountNumber}`);
 
@@ -541,8 +477,8 @@ async function getForeignDepositsAndSave(
 async function getCreditCardTransactionsAndSave(
   month: Date,
   pool: pg.Pool,
-  newIsracardInstance: IsracardScraper,
-  id: string,
+  newIsracardInstance: any,
+  id: any,
 ) {
   console.log(`Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   const monthTransactions = await newIsracardInstance.getMonthTransactions(month);
@@ -550,19 +486,13 @@ async function getCreditCardTransactionsAndSave(
   if (!monthTransactions.isValid) {
     console.log(
       `newIsracardInstance.getMonthTransactions ${JSON.stringify(id)} schema error: `,
-      'errors' in monthTransactions ? monthTransactions.errors : null,
+      monthTransactions.errors,
     );
   }
   if (monthTransactions?.data?.Header?.Status != '1') {
     console.error(`Replace password for creditcard ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
-
-  if (!monthTransactions.data) {
-    console.log(`No data for isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
-    return;
-  }
-
   const allData = getTransactionsFromCards(monthTransactions.data.CardsTransactionsListBean);
 
   const wantedCreditCards = [
@@ -578,7 +508,7 @@ async function getCreditCardTransactionsAndSave(
     '9270',
     '5084',
   ];
-  const onlyWantedCreditCardsTransactions = allData.filter(transaction =>
+  const onlyWantedCreditCardsTransactions = allData.filter((transaction: any) =>
     wantedCreditCards.includes(transaction.card),
   );
 
@@ -589,22 +519,12 @@ async function getCreditCardTransactionsAndSave(
   }
 }
 
-async function getCreditCardData(
-  pool: pg.Pool,
-  scraper: Scraper,
-  credentials: Partial<isracardCredentials>,
-) {
+async function getCreditCardData(pool: pg.Pool, scraper: any, credentials: any) {
   console.log('start getCreditCardData');
-  if (!credentials.ID || !credentials.password || !credentials.card6Digits) {
-    console.error('Missing credentials for creditcard');
-    return;
-  }
-  const id = credentials.ID;
-
   console.log('Creditcard Login');
   const newIsracardInstance = await scraper.isracard(
     {
-      ID: id,
+      ID: credentials.ID,
       password: credentials.password,
       card6Digits: credentials.card6Digits,
     },
@@ -624,15 +544,20 @@ async function getCreditCardData(
 
   await Promise.allSettled(
     allMonthsToFetch.map(async currentMonthToFetch => {
-      await getCreditCardTransactionsAndSave(currentMonthToFetch, pool, newIsracardInstance, id);
+      await getCreditCardTransactionsAndSave(
+        currentMonthToFetch,
+        pool,
+        newIsracardInstance,
+        credentials.ID,
+      );
     }),
   );
   console.log(`after all creditcard months - ${credentials.ID}`);
 }
 
 async function getForeignSwiftTransactionsfromBankAndSave(
-  newScraperIstance: PoalimScraper,
-  account: Parameters<PoalimScraper['getForeignSwiftTransactions']>[0],
+  newScraperIstance: any,
+  account: any,
   pool: pg.Pool,
 ) {
   const foreignSwiftTransactions = await newScraperIstance.getForeignSwiftTransactions(account);
@@ -655,17 +580,14 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   if (!foreignSwiftTransactions.isValid) {
     console.log(
       `getForeignSwiftTransactions ${JSON.stringify(account.accountNumber)} schema error: `,
-      'errors' in foreignSwiftTransactions ? foreignSwiftTransactions.errors : null,
+      foreignSwiftTransactions.errors,
     );
-  } else if (!foreignSwiftTransactions.data) {
-    console.log(`No foreign data for ${account.accountNumber}`);
-    return;
   } else if (
     foreignSwiftTransactions.data.swiftsList &&
     foreignSwiftTransactions.data.swiftsList.length > 0
   ) {
     await Promise.all(
-      foreignSwiftTransactions.data.swiftsList.map(async foreignSwiftTransaction => {
+      foreignSwiftTransactions.data.swiftsList.map(async (foreignSwiftTransaction: any) => {
         // console.log(JSON.stringify(foreignSwiftTransaction));
         // console.log(foreignSwiftTransaction.transferCatenatedId);
         if (
@@ -698,13 +620,9 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                   `getForeignSwiftTransaction ${JSON.stringify(
                     foreignSwiftTransaction,
                   )} schema error: `,
-                  'errors' in foreignSwiftTransactionDetails
-                    ? foreignSwiftTransactionDetails.errors
-                    : null,
+                  foreignSwiftTransactionDetails.errors,
                 );
                 // console.log(JSON.stringify(foreignSwiftTransactionDetails));
-              } else if (!foreignSwiftTransactionDetails.data) {
-                console.log(`No foreign data for ${foreignSwiftTransaction.transferCatenatedId}`);
               } else {
                 console.log(`building ${foreignSwiftTransaction.transferCatenatedId}`);
                 console.log(
@@ -714,53 +632,53 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift33B = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':33B:',
+                    (element: any) => element.swiftTransferAttributeCode == ':33B:',
                   )
                 ) {
                   valueSwift33B = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':33B:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':33B:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let valueSwift53 = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':53B:',
+                    (element: any) => element.swiftTransferAttributeCode == ':53B:',
                   )
                 ) {
                   valueSwift53 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':53B:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':53B:',
+                  ).swiftTransferAttributeValue;
                 } else if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':53A:',
+                    (element: any) => element.swiftTransferAttributeCode == ':53A:',
                   )
                 ) {
                   valueSwift53 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':53A:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':53A:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let valueSwift54A = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':54A:',
+                    (element: any) => element.swiftTransferAttributeCode == ':54A:',
                   )
                 ) {
                   valueSwift54A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':54A:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':54A:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let valueSwift71A = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':71A:',
+                    (element: any) => element.swiftTransferAttributeCode == ':71A:',
                   )
                 ) {
                   valueSwift71A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':71A:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':71A:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let valueSwift501 = ' ';
@@ -770,74 +688,74 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift505 = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':50K:',
+                    (element: any) => element.swiftTransferAttributeCode == ':50K:',
                   )
                 ) {
                   valueSwift501 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':50K:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':50K:',
+                  ).swiftTransferAttributeValue;
 
                   valueSwift502 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50K:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
                       ) + 1
                     ].swiftTransferAttributeValue;
 
                   valueSwift503 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50K:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
                       ) + 2
                     ].swiftTransferAttributeValue;
 
                   valueSwift504 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50K:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
                       ) + 3
                     ].swiftTransferAttributeValue;
 
                   valueSwift505 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50K:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50K:',
                       ) + 4
                     ].swiftTransferAttributeValue;
                 } else if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':50F:',
+                    (element: any) => element.swiftTransferAttributeCode == ':50F:',
                   )
                 ) {
                   valueSwift501 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':50F:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':50F:',
+                  ).swiftTransferAttributeValue;
 
                   valueSwift502 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50F:',
                       ) + 1
                     ].swiftTransferAttributeValue;
 
                   valueSwift503 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50F:',
                       ) + 2
                     ].swiftTransferAttributeValue;
 
                   valueSwift504 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50F:',
                       ) + 3
                     ].swiftTransferAttributeValue;
 
                   valueSwift505 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':50F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':50F:',
                       ) + 4
                     ].swiftTransferAttributeValue;
                 }
@@ -849,31 +767,31 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift595 = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':59:',
+                    (element: any) => element.swiftTransferAttributeCode == ':59:',
                   )
                 ) {
                   valueSwift591 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':59:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':59:',
+                  ).swiftTransferAttributeValue;
 
                   valueSwift592 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59:',
                       ) + 1
                     ].swiftTransferAttributeValue;
 
                   if (
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59:',
                       ) + 2
                     ]
                   ) {
                     valueSwift593 =
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                         foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          element => element.swiftTransferAttributeCode == ':59:',
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
                         ) + 2
                       ].swiftTransferAttributeValue;
                   }
@@ -881,14 +799,14 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                   if (
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59:',
                       ) + 3
                     ]
                   ) {
                     valueSwift594 =
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                         foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          element => element.swiftTransferAttributeCode == ':59:',
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
                         ) + 3
                       ].swiftTransferAttributeValue;
                   }
@@ -896,51 +814,51 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                   if (
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59:',
                       ) + 4
                     ]
                   ) {
                     valueSwift595 =
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                         foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                          element => element.swiftTransferAttributeCode == ':59:',
+                          (element: any) => element.swiftTransferAttributeCode == ':59:',
                         ) + 4
                       ].swiftTransferAttributeValue;
                   }
                 } else if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':59F:',
+                    (element: any) => element.swiftTransferAttributeCode == ':59F:',
                   )
                 ) {
                   valueSwift591 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':59F:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':59F:',
+                  ).swiftTransferAttributeValue;
 
                   valueSwift592 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59F:',
                       ) + 1
                     ].swiftTransferAttributeValue;
 
                   valueSwift593 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59F:',
                       ) + 2
                     ].swiftTransferAttributeValue;
 
                   valueSwift594 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59F:',
                       ) + 3
                     ].swiftTransferAttributeValue;
 
                   valueSwift595 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':59F:',
+                        (element: any) => element.swiftTransferAttributeCode == ':59F:',
                       ) + 4
                     ].swiftTransferAttributeValue;
                 }
@@ -948,12 +866,12 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift52A = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':52A:',
+                    (element: any) => element.swiftTransferAttributeCode == ':52A:',
                   )
                 ) {
                   valueSwift52A = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':52A:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':52A:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let valueSwift52D1 = ' ';
@@ -961,25 +879,25 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift52D3 = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':52D:',
+                    (element: any) => element.swiftTransferAttributeCode == ':52D:',
                   )
                 ) {
                   valueSwift52D1 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                      element => element.swiftTransferAttributeCode == ':52D:',
-                    )!.swiftTransferAttributeValue;
+                      (element: any) => element.swiftTransferAttributeCode == ':52D:',
+                    ).swiftTransferAttributeValue;
 
                   valueSwift52D2 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':52D:',
+                        (element: any) => element.swiftTransferAttributeCode == ':52D:',
                       ) + 1
                     ].swiftTransferAttributeValue;
 
                   valueSwift52D3 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':52D:',
+                        (element: any) => element.swiftTransferAttributeCode == ':52D:',
                       ) + 2
                     ].swiftTransferAttributeValue;
                 }
@@ -989,17 +907,17 @@ async function getForeignSwiftTransactionsfromBankAndSave(
 
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':70:',
+                    (element: any) => element.swiftTransferAttributeCode == ':70:',
                   )
                 ) {
                   valueSwift701 = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':70:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':70:',
+                  ).swiftTransferAttributeValue;
 
                   valueSwift702 =
                     foreignSwiftTransactionDetails.data.swiftTransferDetailsList[
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.findIndex(
-                        element => element.swiftTransferAttributeCode == ':70:',
+                        (element: any) => element.swiftTransferAttributeCode == ':70:',
                       ) + 1
                     ].swiftTransferAttributeValue;
                 }
@@ -1007,12 +925,12 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 let valueSwift71F = ' ';
                 if (
                   foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':71F:',
+                    (element: any) => element.swiftTransferAttributeCode == ':71F:',
                   )
                 ) {
                   valueSwift71F = foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                    element => element.swiftTransferAttributeCode == ':71F:',
-                  )!.swiftTransferAttributeValue;
+                    (element: any) => element.swiftTransferAttributeCode == ':71F:',
+                  ).swiftTransferAttributeValue;
                 }
 
                 let query = `INSERT INTO accounter_schema.${tableName} (
@@ -1106,18 +1024,18 @@ async function getForeignSwiftTransactionsfromBankAndSave(
     
                     $$${
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        element => element.swiftTransferAttributeCode == ':20:',
-                      )?.swiftTransferAttributeValue
+                        (element: any) => element.swiftTransferAttributeCode == ':20:',
+                      ).swiftTransferAttributeValue
                     }$$,
                     $$${
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        element => element.swiftTransferAttributeCode == ':23B:',
-                      )?.swiftTransferAttributeValue
+                        (element: any) => element.swiftTransferAttributeCode == ':23B:',
+                      ).swiftTransferAttributeValue
                     }$$,
                     $$${
                       foreignSwiftTransactionDetails.data.swiftTransferDetailsList.find(
-                        element => element.swiftTransferAttributeCode == ':32A:',
-                      )?.swiftTransferAttributeValue
+                        (element: any) => element.swiftTransferAttributeCode == ':32A:',
+                      ).swiftTransferAttributeValue
                     }$$,
                     $$${valueSwift33B}$$,
     
@@ -1236,7 +1154,3 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   console.log('ending pool');
   pool.end();
 })();
-
-type Scraper = Awaited<ReturnType<typeof init>>;
-type IsracardScraper = Awaited<ReturnType<Scraper['isracard']>>;
-type PoalimScraper = Exclude<Awaited<ReturnType<Scraper['hapoalim']>>, 'Unknown Error'>;
