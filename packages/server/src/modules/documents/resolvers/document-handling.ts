@@ -29,50 +29,29 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
         throw new Error(`Failed to convert file to base64: ${err.message}`);
       });
 
-      // TODO: revert this change after experimentation is over
-      // return injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(base64string);
-      return Promise.resolve({
-        fileUrl: '',
-        imageUrl: '',
-      });
+      return injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(base64string);
     };
 
     const uploadToGreenInvoice = injector.get(GreenInvoiceProvider).addExpenseDraftByFile(file);
 
-    const [{ fileUrl, imageUrl }, data] = await Promise.all([
+    const [{ fileUrl, imageUrl }, draft] = await Promise.all([
       uploadToCloudinary(),
       uploadToGreenInvoice,
     ]);
 
-    if (!data) {
+    if (!draft) {
       throw new Error('No data returned from Green Invoice');
     }
-
-    if ('errorMessage' in data || 'errorCode_' in data) {
-      throw new Error(`Green Invoice Error: ${data.errorMessage}`);
-    }
-
-    // TODO: get new result type from Green Invoice
-    const draft = data as {
-      expense?: {
-        documentType: number;
-        number: string;
-        date: Date;
-        amount: number;
-        currency: string;
-        vat: number;
-      };
-    };
 
     const newDocument: IInsertDocumentsParams['document'][number] = {
       image: imageUrl ?? null,
       file: fileUrl ?? null,
-      documentType: normalizeDocumentType(draft.expense?.documentType),
-      serialNumber: draft.expense?.number ?? null,
-      date: draft.expense?.date ? new Date(draft.expense.date) : null,
-      amount: draft.expense?.amount ?? null,
-      currencyCode: isCurrency(draft.expense?.currency) ? draft.expense!.currency : null,
-      vat: draft.expense?.vat ?? null,
+      documentType: normalizeDocumentType(draft.expense.documentType),
+      serialNumber: draft.expense.number ?? null,
+      date: draft.expense.date ? new Date(draft.expense.date) : null,
+      amount: draft.expense.amount ?? null,
+      currencyCode: isCurrency(draft.expense.currency) ? draft.expense.currency : null,
+      vat: draft.expense.vat ?? null,
       chargeId: chargeId ?? null,
     };
     const res = await injector
