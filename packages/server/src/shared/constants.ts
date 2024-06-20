@@ -28,7 +28,9 @@ export const DEFAULT_TAX_CATEGORY = '0a593022-5d9c-4529-b154-fedefde05bb7';
 
 // cross year tax categories
 export const EXPENSES_TO_PAY_TAX_CATEGORY = '4c8f76c5-9eaa-49fa-945e-0652c0f80c20';
+export const EXPENSES_IN_ADVANCE_TAX_CATEGORY = 'b334bcd0-ccd5-440c-bf6d-9d05b9dc2e2e';
 export const INCOME_TO_COLLECT_TAX_CATEGORY = '7a0e9c28-949d-4b8a-a2fd-c775a3407d01';
+export const INCOME_IN_ADVANCE_TAX_CATEGORY = 'ce5f14bb-484b-46f5-ad1a-a6fadcdbea47';
 
 // salary tax categories
 export const ZKUFOT_EXPENSES_TAX_CATEGORY_ID = '01879041-461f-4b92-b0a6-3f868308c832';
