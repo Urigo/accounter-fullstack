@@ -1,5 +1,10 @@
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
-import { EXPENSES_TO_PAY_TAX_CATEGORY, INCOME_TO_COLLECT_TAX_CATEGORY } from '@shared/constants';
+import {
+  EXPENSES_IN_ADVANCE_TAX_CATEGORY,
+  EXPENSES_TO_PAY_TAX_CATEGORY,
+  INCOME_IN_ADVANCE_TAX_CATEGORY,
+  INCOME_TO_COLLECT_TAX_CATEGORY,
+} from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 
 function divideAmount(yearsCount: number, amount?: number): number | undefined {
@@ -53,11 +58,15 @@ export function handleCrossYearLedgerEntries(
         continue;
       }
 
-      const mediateTaxCategory = entry.isCreditorCounterparty
-        ? EXPENSES_TO_PAY_TAX_CATEGORY
-        : INCOME_TO_COLLECT_TAX_CATEGORY;
-
       const isYearOfRelevancePrior = entry.invoiceDate.getFullYear() > yearDate.getFullYear();
+      const mediateTaxCategory = entry.isCreditorCounterparty
+        ? isYearOfRelevancePrior
+          ? EXPENSES_TO_PAY_TAX_CATEGORY
+          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+        : isYearOfRelevancePrior
+          ? INCOME_TO_COLLECT_TAX_CATEGORY
+          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
         : { invoiceDate: new Date(yearDate.getFullYear(), 0, 1) };
@@ -69,7 +78,7 @@ export function handleCrossYearLedgerEntries(
           ...(entry.isCreditorCounterparty
             ? { creditAccountID1: mediateTaxCategory }
             : { debitAccountID1: mediateTaxCategory }),
-          ...(isYearOfRelevancePrior ? yearOfRelevanceDates : {}),
+          ...yearOfRelevanceDates,
         },
         {
           // second chronological entry
@@ -78,7 +87,6 @@ export function handleCrossYearLedgerEntries(
           ...(entry.isCreditorCounterparty
             ? { debitAccountID1: mediateTaxCategory }
             : { creditAccountID1: mediateTaxCategory }),
-          ...(isYearOfRelevancePrior ? {} : yearOfRelevanceDates),
         },
       );
     }
