@@ -1,6 +1,9 @@
 import { getMeshSDK, Sdk } from './mesh-artifacts/index.js';
 
-export const init = async (id: string, secret: string): Promise<{ sdk: Sdk }> => {
+export const init = async (
+  id: string,
+  secret: string,
+): Promise<{ sdk: Sdk; authToken: string }> => {
   const authParams = {
     id,
     secret,
@@ -15,7 +18,7 @@ export const init = async (id: string, secret: string): Promise<{ sdk: Sdk }> =>
 
   const sdk = await getMeshSDK({ authToken: greenInvoiceToken });
 
-  return { sdk };
+  return { sdk, authToken: greenInvoiceToken };
 };
 
 export * from './mesh-artifacts/index.js';

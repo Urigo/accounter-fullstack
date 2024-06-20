@@ -11,7 +11,10 @@ const config: CodegenConfig = {
   config: {
     scalars: {
       URL: 'URL | string',
-      FileScalar: 'File | Blob',
+      FileScalar: {
+        input: 'File | Blob',
+        output: 'string',
+      },
     },
   },
   generates: {
@@ -35,6 +38,10 @@ const config: CodegenConfig = {
         optionalResolveType: true,
         scalars: {
           TimelessDate: '@shared/types#TimelessDateString',
+          FileScalar: {
+            input: 'File | Blob',
+            output: 'string',
+          },
         },
         enumValues: {
           ChargeSortByField: '@shared/enums#ChargeSortByField',

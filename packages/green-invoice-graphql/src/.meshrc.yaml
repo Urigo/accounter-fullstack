@@ -59,6 +59,8 @@ sources:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
               404:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+              405:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
           - type: Query
             field: searchExpenseDrafts
@@ -73,6 +75,38 @@ sources:
               404:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
+  - name: GreenInvoiceNew
+    handler:
+      jsonSchema:
+        endpoint: 'https://apigw.greeninvoice.co.il'
+        operationHeaders:
+          Authorization: Bearer {context.authToken}
+          Content-Type: application/json
+        operations:
+          - type: Query
+            field: getFileUploadUrl
+            path: /file-upload/v1/url
+            method: GET
+            argTypeMap:
+              context:
+                type: string
+              data:
+                type: object
+                properties:
+                  source:
+                    type: integer
+                  id:
+                    type: string
+                  state:
+                    type: string
+                required:
+                  - source
+            queryStringOptions:
+              jsonStringify: true
+            queryParamArgMap:
+              context: context
+              data: data
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlResponse
 codegen:
   ignoreEnumValuesFromSchema: false
 

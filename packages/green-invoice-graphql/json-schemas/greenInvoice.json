@@ -181,11 +181,17 @@
     "searchExpenseDraftsResponse": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["page", "pageSize"],
+      "required": ["page", "pageSize", "total", "pages", "items", "aggregations"],
       "properties": {
         "total": {
           "type": "number",
           "description": "The total length of the items that were retrieved"
+        },
+        "from": {
+          "type": "number"
+        },
+        "to": {
+          "type": "number"
         },
         "page": {
           "type": "number",
@@ -199,6 +205,23 @@
           "type": "number",
           "description": "The amount of pages that exist"
         },
+        "aggregations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["totalAmount"],
+          "properties": {
+            "totalAmount": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
         "items": {
           "type": "array",
           "additionalItems": false,
@@ -207,36 +230,159 @@
             "type": "object",
             "additionalProperties": false,
             "description": "Partial Expense",
+            "required": [
+              "id",
+              "status",
+              "creationDate",
+              "lastUpdateDate",
+              "reportingPeriod",
+              "hasDefaultValues",
+              "url",
+              "thumbnail",
+              "expense"
+            ],
             "properties": {
-              "currency": {
-                "$ref": "#/definitions/Currency"
+              "id": {
+                "type": "string"
               },
-              "currencyRate": {
-                "type": "number",
-                "description": "Currency rate relative to ILS"
+              "status": {
+                "type": "number"
               },
-              "vat": {
-                "type": "number",
-                "description": "The amount of the vat"
+              "creationDate": {
+                "type": "number"
               },
-              "amount": {
-                "type": "number",
-                "description": "The total amount of the expense"
+              "lastUpdateDate": {
+                "type": "number"
               },
-              "description": {
-                "type": "string",
-                "description": "Description for the expense"
+              "reportingPeriod": {
+                "type": "string"
               },
-              "supplier": {
-                "$ref": "#/definitions/Supplier"
+              "hasDefaultValues": {
+                "type": "boolean"
               },
-              "fileHash": {
-                "type": "string",
-                "description": "File hash"
+              "url": {
+                "type": "string"
               },
-              "fileKey": {
-                "type": "string",
-                "description": "Key of the file location"
+              "thumbnail": {
+                "type": "string"
+              },
+              "expense": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "accountingClassification",
+                  "active",
+                  "addRecipient",
+                  "confirmFromEdit",
+                  "currency",
+                  "currencyRate",
+                  "description",
+                  "documentType",
+                  "fileHash",
+                  "fileKey",
+                  "labels",
+                  "reportingDate",
+                  "supplier",
+                  "tags",
+                  "texts",
+                  "vat"
+                ],
+                "properties": {
+                  "accountingClassification": {
+                    "$ref": "#/definitions/AccountingClassification"
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "description": "Is the expense active or not"
+                  },
+                  "addRecipient": {
+                    "type": "boolean",
+                    "description": "Should we save the supplier or not (by setting this to true you are required to add a supplier)"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "The total amount of the expense"
+                  },
+                  "confirmFromEdit": {
+                    "type": "boolean"
+                  },
+                  "currency": {
+                    "$ref": "#/definitions/Currency"
+                  },
+                  "currencyRate": {
+                    "type": "number",
+                    "description": "Currency rate relative to ILS"
+                  },
+                  "date": {
+                    "type": "string",
+                    "description": "Date of the expense"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description for the expense"
+                  },
+                  "documentType": {
+                    "type": "number",
+                    "description": "Document type",
+                    "enum": [20, 305, 320, 330, 400, 405]
+                  },
+                  "fileHash": {
+                    "type": "string",
+                    "description": "File hash"
+                  },
+                  "fileKey": {
+                    "type": "string",
+                    "description": "Key of the file location"
+                  },
+                  "labels": {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "number": {
+                    "type": ["string", "null"],
+                    "description": "Number of the expense"
+                  },
+                  "paymentType": {
+                    "description": "Payment method",
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": ["string", "number"],
+                        "enum": ["1", "2", "3", "4", "5", "10", "11", 1, 2, 3, 4, 5, 10, 11]
+                      }
+                    ]
+                  },
+                  "reportingDate": {
+                    "type": "string",
+                    "description": "Reporting date of the expense"
+                  },
+                  "supplier": {
+                    "$ref": "#/definitions/Supplier"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "texts": {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "vat": {
+                    "type": "number",
+                    "description": "The amount of the vat"
+                  }
+                }
               }
             }
           }
@@ -429,6 +575,63 @@
         }
       },
       "required": ["total", "page", "pageSize", "pages", "items"]
+    },
+    "getFileUploadUrlResponse": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "File Upload URL"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "otherField": {
+              "type": "string"
+            },
+            "bucket": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "Policy": {
+              "type": "string"
+            },
+            "x-amz-meta-account-id": {
+              "type": "string"
+            },
+            "x-amz-meta-user-id": {
+              "type": "string"
+            },
+            "x-amz-meta-business-id": {
+              "type": "string"
+            },
+            "x-amz-meta-file-context": {
+              "type": "string"
+            },
+            "x-amz-meta-file-data": {
+              "type": "string"
+            },
+            "X-Amz-Algorithm": {
+              "type": "string"
+            },
+            "X-Amz-Credential": {
+              "type": "string"
+            },
+            "X-Amz-Date": {
+              "type": "string"
+            },
+            "X-Amz-Security-Token": {
+              "type": "string"
+            },
+            "X-Amz-Signature": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["url", "fields"]
     },
     "AccountingClassification": {
       "type": "object",

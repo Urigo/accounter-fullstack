@@ -14,6 +14,14 @@ export function normalizeDocumentType(
   if (!rawType) {
     return DocumentType.Unprocessed;
   }
+
+  if (typeof rawType === 'string' && rawType.startsWith('_')) {
+    const int = parseInt(rawType.replace('_', ''));
+    if (Number.isInteger(int)) {
+      rawType = int;
+    }
+  }
+
   switch (rawType) {
     case 20:
       // חשבון / אישור תשלום
