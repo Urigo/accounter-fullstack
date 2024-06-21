@@ -60,7 +60,7 @@
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.11.9",
     "@theguild/prettier-config": "2.0.6",
-    "@types/node": "20.14.6",
+    "@types/node": "20.14.7",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "8.2.2",
     "eslint": "8.57.0",
@@ -75,8 +75,8 @@
     "vitest": "1.6.0"
   },
   "resolutions": {
-    "@graphql-mesh/transport-rest": "0.2.7-alpha-20240602174415-2f77f99bd10ec04faef9e942cf0bfd3340b80fca",
-    "@omnigraph/json-schema": "0.100.10-alpha-20240602174415-2f77f99bd10ec04faef9e942cf0bfd3340b80fca",
+    "@graphql-mesh/transport-rest": "0.2.8",
+    "@omnigraph/json-schema": "0.100.12",
     "graphql": "16.8.2"
   },
   "bob": false,
