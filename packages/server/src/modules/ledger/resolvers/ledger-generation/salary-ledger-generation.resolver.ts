@@ -276,7 +276,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         isCreditorCounterparty,
         invoiceDate: matchingTransaction.invoiceDate,
         valueDate: entry.valueDate,
-        currency: matchingTransaction.currency, // NOTE: this field is dummy
+        currency: DEFAULT_LOCAL_CURRENCY,
         ownerId: matchingTransaction.ownerId,
         chargeId,
       };
