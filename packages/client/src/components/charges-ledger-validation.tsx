@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Progress, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
 import {
   ChargeFilter,
   ChargesLedgerValidationDocument,
@@ -130,9 +130,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
 
   return (
     <>
-      {fetching ? (
-        <AccounterLoader />
-      ) : (
+      {fetching && <AccounterLoader />}
+      {!fetching && (
         <AllChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
@@ -145,6 +144,17 @@ export const ChargesLedgerValidation = (): ReactElement => {
           }
           isAllOpened={isAllOpened}
         />
+      )}
+      {!fetching && (
+        <div className="flex flex-row justify-center my-2">
+          {progress < 100 && <Loader />}
+          {progress === 100 &&
+            !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
+              <ThemeIcon radius="xl" size="xl" color="green">
+                <Check />
+              </ThemeIcon>
+            )}
+        </div>
       )}
       {editChargeId && (
         <EditChargeModal

@@ -381,7 +381,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             isCreditorCounterparty,
             invoiceDate: documentEntry.invoiceDate,
             valueDate: transactionEntry.valueDate,
-            currency: transactionEntry.currency, // NOTE: this field is dummy
+            currency: DEFAULT_LOCAL_CURRENCY,
             ownerId: transactionEntry.ownerId,
             chargeId,
           };

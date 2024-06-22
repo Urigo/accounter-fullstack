@@ -229,7 +229,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
             isCreditorCounterparty,
             invoiceDate: depositLedgerRecord.invoice_date,
             valueDate: mainLedgerEntry.valueDate,
-            currency: mainLedgerEntry.currency, // NOTE: this field is dummy
+            currency: DEFAULT_LOCAL_CURRENCY,
             ownerId: mainLedgerEntry.ownerId,
             chargeId,
           };

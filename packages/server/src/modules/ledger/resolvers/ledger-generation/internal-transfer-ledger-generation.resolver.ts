@@ -279,7 +279,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           isCreditorCounterparty,
           invoiceDate: originEntry.invoiceDate,
           valueDate: destinationEntry.valueDate,
-          currency: destinationEntry.currency, // NOTE: this field is dummy
+          currency: DEFAULT_LOCAL_CURRENCY,
           ownerId: destinationEntry.ownerId,
           chargeId,
         };
