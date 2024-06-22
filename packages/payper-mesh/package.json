@@ -63,7 +63,7 @@
     "@graphql-mesh/transform-rename": "0.98.8",
     "@graphql-mesh/types": "0.98.8",
     "@graphql-mesh/utils": "0.98.8",
-    "graphql": "16.8.2",
+    "graphql": "16.9.0",
     "path": "0.12.7"
   },
   "devDependencies": {

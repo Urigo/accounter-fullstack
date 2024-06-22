@@ -43,7 +43,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "graphql": "16.8.2",
+    "graphql": "16.9.0",
     "graphql-scalars": "1.23.0"
   },
   "devDependencies": {
@@ -77,7 +77,7 @@
   "resolutions": {
     "@graphql-mesh/transport-rest": "0.2.8",
     "@omnigraph/json-schema": "0.100.12",
-    "graphql": "16.8.2"
+    "graphql": "16.9.0"
   },
   "bob": false,
   "lint-staged": {
