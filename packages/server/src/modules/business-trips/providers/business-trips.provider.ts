@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 import type {
   BusinessTripProto,
+  IDeleteChargeBusinessTripQuery,
   IGetAllBusinessTripsQuery,
   IGetBusinessTripsByIdsQuery,
   IInsertBusinessTripParams,
@@ -37,6 +38,10 @@ const updateChargeBusinessTrip = sql<IUpdateChargeBusinessTripQuery>`
   DO 
     UPDATE SET business_trip_id = $businessTripId
   RETURNING *;`;
+
+const deleteChargeBusinessTrip = sql<IDeleteChargeBusinessTripQuery>`
+  DELETE FROM accounter_schema.business_trip_charges
+  WHERE charge_id = $chargeId;`;
 
 const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
   UPDATE accounter_schema.business_trips
@@ -112,7 +117,10 @@ export class BusinessTripsProvider {
   );
 
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
-    return updateChargeBusinessTrip.run({ chargeId, businessTripId }, this.dbProvider);
+    if (businessTripId) {
+      return updateChargeBusinessTrip.run({ chargeId, businessTripId }, this.dbProvider);
+    }
+    return deleteChargeBusinessTrip.run({ chargeId }, this.dbProvider);
   }
 
   public updateBusinessTrip(params: IUpdateBusinessTripParams) {
