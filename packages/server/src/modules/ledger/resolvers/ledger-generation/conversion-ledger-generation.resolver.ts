@@ -2,7 +2,11 @@ import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, FEE_TAX_CATEGORY_ID } from '@shared/constants';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+  FEE_TAX_CATEGORY_ID,
+} from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -266,18 +270,18 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           const isDebitConversion = conversionFee.localAmount >= 0;
 
           const ledgerEntry: LedgerProto = {
-            id: quoteEntry.id + '|fee', // NOTE: this field is dummy
-            creditAccountID1: isDebitConversion ? FEE_TAX_CATEGORY_ID : undefined,
+            id: quoteEntry.id + '|revaluation', // NOTE: this field is dummy
+            creditAccountID1: isDebitConversion ? EXCHANGE_REVALUATION_TAX_CATEGORY_ID : undefined,
             creditAmount1: conversionFee.foreignAmount
               ? Math.abs(conversionFee.foreignAmount)
               : undefined,
             localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
-            debitAccountID1: isDebitConversion ? undefined : FEE_TAX_CATEGORY_ID,
+            debitAccountID1: isDebitConversion ? undefined : EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
             debitAmount1: conversionFee.foreignAmount
               ? Math.abs(conversionFee.foreignAmount)
               : undefined,
             localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
-            description: 'Conversion fee',
+            description: 'Exchange Revaluation',
             isCreditorCounterparty: true,
             invoiceDate: quoteEntry.invoiceDate,
             valueDate: quoteEntry.valueDate,
