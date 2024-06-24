@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -33,10 +34,16 @@ export const mergeChargesExecutor = async (
         .get(TagsProvider)
         .clearAllChargeTags({ chargeId: id });
 
+      // clear business trips
+      const clearBusinessTripsPromise = injector
+        .get(BusinessTripsProvider)
+        .updateChargeBusinessTrip(id, null);
+
       return Promise.all([
         replaceDocumentsChargeIdPromise,
         replaceTransactionsChargeIdPromise,
         clearAllChargeTagsPromise,
+        clearBusinessTripsPromise,
       ]);
     });
 
