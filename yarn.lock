@@ -1754,10 +1754,10 @@
     "@graphql-tools/delegate" "^10.0.11"
     "@graphql-tools/utils" "^10.2.1"
 
-"@graphql-mesh/transport-rest@0.2.9", "@graphql-mesh/transport-rest@^0.2.9":
-  version "0.2.9"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/transport-rest/-/transport-rest-0.2.9.tgz#68fd7a3007f9ab3ef5c343480b1f2ee84e159929"
-  integrity sha512-DigeLs4+kHkMlb9BQtX3r+k/ELwNFwlRUZWOwRDzeWCio2gKCApBexeKOoMF1c4cqX+1kZDnS2bEEG0PTQZ3hw==
+"@graphql-mesh/transport-rest@0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1":
+  version "0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/transport-rest/-/transport-rest-0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1.tgz#d03f28c8e9b2c1050946b3c0c0a55ba532227662"
+  integrity sha512-W6Wa77mKiRLcHRqE9STk2JeEsjg6jqRdjOxs8hQrLMyLNu8AJsUrVU/K6Hywqv8ykRopVJB6+6HRyHIHmBtLKQ==
   dependencies:
     "@graphql-mesh/string-interpolation" "^0.5.4"
     dset "^3.1.3"
@@ -2685,14 +2685,14 @@
   resolved "https://registry.yarnpkg.com/@npmcli/name-from-folder/-/name-from-folder-2.0.0.tgz#c44d3a7c6d5c184bb6036f4d5995eee298945815"
   integrity sha512-pwK+BfEBZJbKdNYpHHRTNBwBoqrN/iIMO0AiGvYsp3Hoaq0WbgGSWQR6SCldZovoDpY3yje5lkFUe6gsDgJ2vg==
 
-"@omnigraph/json-schema@0.100.13":
-  version "0.100.13"
-  resolved "https://registry.yarnpkg.com/@omnigraph/json-schema/-/json-schema-0.100.13.tgz#c7747eeccc62af74a43d4f47ca0d36eeb0f32093"
-  integrity sha512-9VQ0Gcu6xKrVkxhP9V2S7qGH5hSwIQ95/86iSKx5Zx963lqulMW3z9QnfjGgmptGAcWGPzfDaQkJ0VppuGSjXA==
+"@omnigraph/json-schema@0.100.13", "@omnigraph/json-schema@0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1":
+  version "0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
+  resolved "https://registry.yarnpkg.com/@omnigraph/json-schema/-/json-schema-0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1.tgz#9fc6af1b3364bc531a9593034e3a414ed0296a6a"
+  integrity sha512-3fI9J3uvnfNeU0Dlh9estAdERuqnq/LBEa82UAkO3BiKZ/uTTJ1xc2eUCuAyN2w1xj15Hi0gLvQehOcXDUij4Q==
   dependencies:
     "@graphql-mesh/string-interpolation" "0.5.4"
     "@graphql-mesh/transport-common" "^0.2.8"
-    "@graphql-mesh/transport-rest" "^0.2.9"
+    "@graphql-mesh/transport-rest" "0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
     "@graphql-tools/delegate" "^10.0.11"
     "@json-schema-tools/meta-schema" "1.7.5"
     "@whatwg-node/fetch" "^0.9.0"
