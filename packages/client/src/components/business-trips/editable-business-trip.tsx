@@ -2,44 +2,68 @@ import { ReactElement, useEffect, useState } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Card } from '@mantine/core';
-import type { EditableBusinessTripFragment } from '../../gql/graphql.js';
-import { graphql } from '../../graphql.js';
-import { Accommodations } from '../common/business-trip-report/parts/accommodations.js';
-import { Attendees } from '../common/business-trip-report/parts/attendees.js';
-import { Flights } from '../common/business-trip-report/parts/flights.js';
-import { Other } from '../common/business-trip-report/parts/other.js';
-import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
-import { Summary } from '../common/business-trip-report/parts/summary.js';
-import { TravelAndSubsistence } from '../common/business-trip-report/parts/travel-and-subsistence.js';
-import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
+import { FragmentOf, graphql, readFragment, ResultOf } from '../../graphql.js';
+import {
+  Accommodations,
+  Attendees,
+  BusinessTripReportAccommodationsFieldsFragmentDoc,
+  BusinessTripReportAttendeesFieldsFragmentDoc,
+  BusinessTripReportFlightsFieldsFragmentDoc,
+  BusinessTripReportHeaderFieldsFragmentDoc,
+  BusinessTripReportOtherFieldsFragmentDoc,
+  BusinessTripReportSummaryFieldsFragmentDoc,
+  BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc,
+  BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
+  Flights,
+  Other,
+  ReportHeader,
+  Summary,
+  TravelAndSubsistence,
+  UncategorizedTransactions,
+} from '../common/business-trip-report/parts/index.js';
 
-export const EditableBusinessTripFragmentDoc = graphql(`
-  fragment EditableBusinessTrip on BusinessTrip {
-    id
-    ...BusinessTripReportHeaderFields
-    ...BusinessTripReportAttendeesFields
-    ...BusinessTripUncategorizedTransactionsFields
-    ...BusinessTripReportFlightsFields
-    ...BusinessTripReportAccommodationsFields
-    ...BusinessTripReportTravelAndSubsistenceFields
-    ...BusinessTripReportOtherFields
-    ...BusinessTripReportSummaryFields
-    ... on BusinessTrip {
-      uncategorizedTransactions {
-        id
+export const EditableBusinessTripFragmentDoc = graphql(
+  `
+    fragment EditableBusinessTrip on BusinessTrip {
+      id
+      ...BusinessTripReportHeaderFields
+      ...BusinessTripReportAttendeesFields
+      ...BusinessTripUncategorizedTransactionsFields
+      ...BusinessTripReportFlightsFields
+      ...BusinessTripReportAccommodationsFields
+      ...BusinessTripReportTravelAndSubsistenceFields
+      ...BusinessTripReportOtherFields
+      ...BusinessTripReportSummaryFields
+      ... on BusinessTrip {
+        uncategorizedTransactions {
+          id
+        }
       }
     }
-  }
-`);
+  `,
+  [
+    BusinessTripReportHeaderFieldsFragmentDoc,
+    BusinessTripReportAttendeesFieldsFragmentDoc,
+    BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
+    BusinessTripReportFlightsFieldsFragmentDoc,
+    BusinessTripReportAccommodationsFieldsFragmentDoc,
+    BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc,
+    BusinessTripReportOtherFieldsFragmentDoc,
+    BusinessTripReportSummaryFieldsFragmentDoc,
+  ],
+);
 
-export const EditableBusinessTripDocument = graphql(`
-  query EditableBusinessTrip($businessTripId: UUID!) {
-    businessTrip(id: $businessTripId) {
-      id
-      ...EditableBusinessTrip
+export const EditableBusinessTripDocument = graphql(
+  `
+    query EditableBusinessTrip($businessTripId: UUID!) {
+      businessTrip(id: $businessTripId) {
+        id
+        ...EditableBusinessTrip
+      }
     }
-  }
-`);
+  `,
+  [EditableBusinessTripFragmentDoc],
+);
 
 interface Props {
   data: FragmentOf<typeof EditableBusinessTripFragmentDoc>;
@@ -47,7 +71,7 @@ interface Props {
 }
 
 export function EditableBusinessTrip({ data, isExtended = false }: Props): ReactElement {
-  const [trip, setTrip] = useState<EditableBusinessTripFragment>(
+  const [trip, setTrip] = useState<ResultOf<typeof EditableBusinessTripFragmentDoc>>(
     readFragment(EditableBusinessTripFragmentDoc, data),
   );
   const [accordionItems, setAccordionItems] = useState<string[]>([]);

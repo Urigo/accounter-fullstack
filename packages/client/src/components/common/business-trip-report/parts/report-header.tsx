@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { differenceInDays, format } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
 export const BusinessTripReportHeaderFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportHeaderFields on BusinessTrip {

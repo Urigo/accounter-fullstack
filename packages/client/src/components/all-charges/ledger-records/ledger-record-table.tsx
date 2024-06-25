@@ -30,6 +30,15 @@ export const TableLedgerRecordsFieldsFragmentDoc = graphql(
   [TableLedgerRecordsRowFieldsFragmentDoc],
 );
 
+export function isTableLedgerRecordsFieldsFragmentReady(
+  data?: object | FragmentOf<typeof TableLedgerRecordsFieldsFragmentDoc>,
+): data is FragmentOf<typeof TableLedgerRecordsFieldsFragmentDoc> {
+  if (!!data && 'ledger' in data) {
+    return true;
+  }
+  return false;
+}
+
 type Props = {
   ledgerRecordsProps: FragmentOf<typeof TableLedgerRecordsFieldsFragmentDoc>;
 };

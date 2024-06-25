@@ -57,6 +57,15 @@ export const TableSalariesFieldsFragmentDoc = graphql(`
   }
 `);
 
+export function isTableSalariesFieldsFragmentReady(
+  data?: object | FragmentOf<typeof TableSalariesFieldsFragmentDoc>,
+): data is FragmentOf<typeof TableSalariesFieldsFragmentDoc> {
+  if (!!data && '__typename' in data && data.__typename === 'SalaryCharge') {
+    return true;
+  }
+  return false;
+}
+
 type Props = {
   salaryRecordsProps: FragmentOf<typeof TableSalariesFieldsFragmentDoc>;
 };

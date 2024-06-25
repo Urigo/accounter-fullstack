@@ -1,20 +1,23 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { AddOtherTransaction } from '../buttons/add-other-transaction.js';
 import { CoreTransactionHeader } from './core-transaction-row.js';
-import { OtherRow } from './other-row.js';
+import { BusinessTripReportOtherRowFieldsFragmentDoc, OtherRow } from './other-row.js';
 
-export const BusinessTripReportOtherFieldsFragmentDoc = graphql(`
-  fragment BusinessTripReportOtherFields on BusinessTrip {
-    id
-    otherTransactions {
+export const BusinessTripReportOtherFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportOtherFields on BusinessTrip {
       id
-      date
-      ...BusinessTripReportOtherRowFields
+      otherTransactions {
+        id
+        date
+        ...BusinessTripReportOtherRowFields
+      }
     }
-  }
-`);
+  `,
+  [BusinessTripReportOtherRowFieldsFragmentDoc],
+);
 
 interface Props {
   data: FragmentOf<typeof BusinessTripReportOtherFieldsFragmentDoc>;

@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import {
   Account,
   Amount,
@@ -9,25 +9,43 @@ import {
   Description,
   EventDate,
   SourceID,
+  TransactionsTableAccountFieldsFragmentDoc,
+  TransactionsTableAmountFieldsFragmentDoc,
+  TransactionsTableDebitDateFieldsFragmentDoc,
+  TransactionsTableDescriptionFieldsFragmentDoc,
+  TransactionsTableEntityFieldsFragmentDoc,
+  TransactionsTableEventDateFieldsFragmentDoc,
+  TransactionsTableSourceIdFieldsFragmentDoc,
 } from '../../transactions-table/cells/index.js';
 import { SelectTransactionCategory } from '../buttons/select-transaction-category.js';
 
-export const BusinessTripUncategorizedTransactionsFieldsFragmentDoc = graphql(`
-  fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
-    id
-    uncategorizedTransactions {
+export const BusinessTripUncategorizedTransactionsFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
       id
-      eventDate
-      ...TransactionsTableEventDateFields
-      ...TransactionsTableDebitDateFields
-      ...TransactionsTableAmountFields
-      ...TransactionsTableAccountFields
-      ...TransactionsTableDescriptionFields
-      ...TransactionsTableSourceIDFields
-      ...TransactionsTableEntityFields
+      uncategorizedTransactions {
+        id
+        eventDate
+        ...TransactionsTableEventDateFields
+        ...TransactionsTableDebitDateFields
+        ...TransactionsTableAmountFields
+        ...TransactionsTableAccountFields
+        ...TransactionsTableDescriptionFields
+        ...TransactionsTableSourceIDFields
+        ...TransactionsTableEntityFields
+      }
     }
-  }
-`);
+  `,
+  [
+    TransactionsTableEventDateFieldsFragmentDoc,
+    TransactionsTableDebitDateFieldsFragmentDoc,
+    TransactionsTableAmountFieldsFragmentDoc,
+    TransactionsTableAccountFieldsFragmentDoc,
+    TransactionsTableDescriptionFieldsFragmentDoc,
+    TransactionsTableSourceIdFieldsFragmentDoc,
+    TransactionsTableEntityFieldsFragmentDoc,
+  ],
+);
 
 interface Props {
   data: FragmentOf<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;

@@ -3,20 +3,26 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Switch, Text, TextInput, Tooltip } from '@mantine/core';
 import { UpdateBusinessTripOtherTransactionInput } from '../../../../gql/graphql.js';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateBusinessTripOtherTransaction } from '../../../../hooks/use-update-business-trip-other-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.jsx';
-import { CoreTransactionRow } from './core-transaction-row.jsx';
+import {
+  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  CoreTransactionRow,
+} from './core-transaction-row.jsx';
 
-export const BusinessTripReportOtherRowFieldsFragmentDoc = graphql(`
-  fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
-    id
-    ...BusinessTripReportCoreTransactionRowFields
-    payedByEmployee
-    expenseType
-    deductibleExpense
-  }
-`);
+export const BusinessTripReportOtherRowFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
+      id
+      ...BusinessTripReportCoreTransactionRowFields
+      payedByEmployee
+      expenseType
+      deductibleExpense
+    }
+  `,
+  [BusinessTripReportCoreTransactionRowFieldsFragmentDoc],
+);
 
 interface Props {
   data: FragmentOf<typeof BusinessTripReportOtherRowFieldsFragmentDoc>;

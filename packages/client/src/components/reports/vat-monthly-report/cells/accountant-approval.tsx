@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
 import { Switch } from '@mantine/core';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useToggleChargeAccountantApproval } from '../../../../hooks/use-toggle-charge-accountant-approval.js';
 
 export const VatReportAccountantApprovalFieldsFragmentDoc = graphql(`

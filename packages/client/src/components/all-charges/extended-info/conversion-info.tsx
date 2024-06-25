@@ -22,6 +22,15 @@ export const ConversionChargeInfoFragmentDoc = graphql(`
   }
 `);
 
+export function isConversionChargeInfoFragmentReady(
+  data?: object | FragmentOf<typeof ConversionChargeInfoFragmentDoc>,
+): data is FragmentOf<typeof ConversionChargeInfoFragmentDoc> {
+  if (!!data && '__typename' in data && data.__typename === 'ConversionCharge') {
+    return true;
+  }
+  return false;
+}
+
 type Props = {
   chargeProps: FragmentOf<typeof ConversionChargeInfoFragmentDoc>;
 };

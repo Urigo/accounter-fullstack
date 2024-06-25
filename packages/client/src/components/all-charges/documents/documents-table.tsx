@@ -16,6 +16,15 @@ export const TableDocumentsFieldsFragmentDoc = graphql(
   [TableDocumentsRowFieldsFragmentDoc],
 );
 
+export function isTableDocumentsFieldsFragmentReady(
+  data?: object | FragmentOf<typeof TableDocumentsFieldsFragmentDoc>,
+): data is FragmentOf<typeof TableDocumentsFieldsFragmentDoc> {
+  if (!!data && 'additionalDocuments' in data) {
+    return true;
+  }
+  return false;
+}
+
 type Props = {
   documentsProps: FragmentOf<typeof TableDocumentsFieldsFragmentDoc>;
   onChange: () => void;

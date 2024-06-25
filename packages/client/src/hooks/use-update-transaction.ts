@@ -1,6 +1,6 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import { graphql, VariablesOf } from '../graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
 export const UpdateTransactionDocument = graphql(`
   mutation UpdateTransaction($transactionId: UUID!, $fields: UpdateTransactionInput!) {

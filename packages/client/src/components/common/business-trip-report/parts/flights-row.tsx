@@ -3,21 +3,27 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Select, Text, TextInput, Tooltip } from '@mantine/core';
 import { FlightClass, UpdateBusinessTripFlightsTransactionInput } from '../../../../gql/graphql.js';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateBusinessTripFlightsTransaction } from '../../../../hooks/use-update-business-trip-flights-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
-import { CoreTransactionRow } from './core-transaction-row.js';
+import {
+  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  CoreTransactionRow,
+} from './core-transaction-row.js';
 
-export const BusinessTripReportFlightsRowFieldsFragmentDoc = graphql(`
-  fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
-    id
-    payedByEmployee
-    ...BusinessTripReportCoreTransactionRowFields
-    origin
-    destination
-    class
-  }
-`);
+export const BusinessTripReportFlightsRowFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
+      id
+      payedByEmployee
+      ...BusinessTripReportCoreTransactionRowFields
+      origin
+      destination
+      class
+    }
+  `,
+  [BusinessTripReportCoreTransactionRowFieldsFragmentDoc],
+);
 
 const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
   value,

@@ -14,22 +14,25 @@ import {
   MergeChargesButton,
   UploadDocumentModal,
 } from '../common';
-import { AllChargesTable } from './all-charges-table';
+import { AllChargesTable, AllChargesTableFieldsFragmentDoc } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 
-export const AllChargesDocument = graphql(`
-  query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
-    allCharges(page: $page, limit: $limit, filters: $filters) {
-      nodes {
-        id
-        ...AllChargesTableFields
-      }
-      pageInfo {
-        totalPages
+export const AllChargesDocument = graphql(
+  `
+    query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
+      allCharges(page: $page, limit: $limit, filters: $filters) {
+        nodes {
+          id
+          ...AllChargesTableFields
+        }
+        pageInfo {
+          totalPages
+        }
       }
     }
-  }
-`);
+  `,
+  [AllChargesTableFieldsFragmentDoc],
+);
 
 export type ChargeFilter = NonNullable<
   NonNullable<VariablesOf<typeof AllChargesDocument>['filters']>

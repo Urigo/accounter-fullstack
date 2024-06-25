@@ -1,20 +1,23 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
+import { AllEmployeesByEmployerDocument } from '../graphql/all-employees-by-owner.graphql.js';
+import { AllFinancialEntitiesDocument } from '../graphql/all-financial-entities.graphql.js';
+import { AllPensionFundsDocument } from '../graphql/all-pension-funds.graphql.js';
+import { AllTrainingFundsDocument } from '../graphql/all-training-funds.graphql.js';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { MonthPicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { CurrencyInput, SimpleGrid, TextInput } from '..';
 import {
-  AllEmployeesByEmployerDocument,
-  AllFinancialEntitiesDocument,
-  AllPensionFundsDocument,
-  AllTrainingFundsDocument,
-} from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker, TimelessDateString, UUID_REGEX } from '../../../helpers';
-import { SalaryRecordInput } from '../../../hooks/use-update-or-insert-salary-records';
+  MakeBoolean,
+  relevantDataPicker,
+  TimelessDateString,
+  UUID_REGEX,
+} from '../../../helpers/index.js';
+import { SalaryRecordInput } from '../../../hooks/use-update-or-insert-salary-records.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { CurrencyInput, SimpleGrid, TextInput } from '../index.js';
 
 type Props = {
   isNewInsert: boolean;
@@ -52,7 +55,7 @@ export const ModifySalaryRecord = ({
   const [{ data: employeesData, fetching: employeesFetching, error: employeesError }] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: userContext?.ownerId,
+      employerId: userContext?.ownerId ?? '',
     },
   });
 
@@ -63,7 +66,8 @@ export const ModifySalaryRecord = ({
   const [trainingFunds, setTrainingFunds] = useState<Array<{ value: string; label: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ value: string; label: string }>>([]);
 
-  const defaultMonth = defaultValues?.month ?? month;
+  const defaultMonth =
+    defaultValues && 'month' in defaultValues ? (defaultValues.month as string) : month;
   const useFormManager = useForm<SalaryRecordInput>({
     defaultValues: {
       ...defaultValues,

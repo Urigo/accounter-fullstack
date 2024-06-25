@@ -4,20 +4,26 @@ import { useQuery } from 'urql';
 import { Container } from '@mantine/core';
 import { graphql } from '../../graphql.js';
 import { AccounterLoader } from '../common/index.js';
-import { EditableBusinessTrip } from './editable-business-trip.jsx';
+import {
+  EditableBusinessTrip,
+  EditableBusinessTripFragmentDoc,
+} from './editable-business-trip.jsx';
 
-export const BusinessTripScreenDocument = graphql(`
-  query BusinessTripScreen($businessTripId: UUID!) {
-    businessTrip(id: $businessTripId) {
-      id
-      name
-      dates {
-        start
+export const BusinessTripScreenDocument = graphql(
+  `
+    query BusinessTripScreen($businessTripId: UUID!) {
+      businessTrip(id: $businessTripId) {
+        id
+        name
+        dates {
+          start
+        }
+        ...EditableBusinessTrip
       }
-      ...EditableBusinessTrip
     }
-  }
-`);
+  `,
+  [EditableBusinessTripFragmentDoc],
+);
 
 type Props = {
   businessTripId?: string;
@@ -25,7 +31,7 @@ type Props = {
 
 export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
   const match = useMatch('business-trips/:businessTripId');
-  const id = businessTripId || match?.params.businessTripId;
+  const id = businessTripId || match?.params.businessTripId || '';
   const [{ data, fetching }] = useQuery({
     query: BusinessTripScreenDocument,
     variables: {

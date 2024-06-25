@@ -1,9 +1,8 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { isFragmentReady } from '../../gql/index.js';
 import { FragmentOf, graphql } from '../../graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import {
@@ -12,22 +11,43 @@ import {
   ConfirmationModal,
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
-import { AllChargesErrorsFieldsFragmentDoc, ChargeErrors } from './charge-errors.js';
 import {
+  AllChargesErrorsFieldsFragmentDoc,
+  ChargeErrors,
+  isAllChargesErrorsFieldsFragmentReady,
+} from './charge-errors.js';
+import {
+  ChargeTableTransactionsFieldsFragmentDoc,
   ChargeTransactionsTable,
-  TableTransactionsFieldsFragmentDoc,
+  isChargeTableTransactionsFieldsFragmentReady,
 } from './charge-transactions-table.js';
 import {
   DocumentsGallery,
   DocumentsGalleryFieldsFragmentDoc,
+  isDocumentsGalleryFieldsFragmentReady,
 } from './documents/documents-gallery.js';
-import { DocumentsTable, TableDocumentsFieldsFragmentDoc } from './documents/documents-table.js';
+import {
+  DocumentsTable,
+  isTableDocumentsFieldsFragmentReady,
+  TableDocumentsFieldsFragmentDoc,
+} from './documents/documents-table.js';
 import {
   ConversionChargeInfoFragmentDoc,
   ConversionInfo,
+  isConversionChargeInfoFragmentReady,
 } from './extended-info/conversion-info.js';
-import { SalariesTable, TableSalariesFieldsFragmentDoc } from './extended-info/salaries-info.js';
 import {
+  CreditcardBankChargeInfoFragmentDoc,
+  CreditcardTransactionsInfo,
+  isCreditcardBankChargeInfoFragmentReady,
+} from './extended-info/creditcard-transactions-info.js';
+import {
+  isTableSalariesFieldsFragmentReady,
+  SalariesTable,
+  TableSalariesFieldsFragmentDoc,
+} from './extended-info/salaries-info.js';
+import {
+  isTableLedgerRecordsFieldsFragmentReady,
   LedgerRecordTable,
   TableLedgerRecordsFieldsFragmentDoc,
 } from './ledger-records/ledger-record-table.js';
@@ -43,13 +63,10 @@ export const FetchChargeDocument = graphql(
           documentsCount
           ledgerCount
         }
-        tags {
-          name
-        }
         ...DocumentsGalleryFields @defer
         ...TableDocumentsFields @defer
         ...TableLedgerRecordsFields @defer
-        ...ChargeTableTransactionsFields @deferr
+        ...ChargeTableTransactionsFields @defer
         ...ConversionChargeInfo @defer
         ...CreditcardBankChargeInfo @defer
         ...TableSalariesFields @defer
@@ -57,10 +74,11 @@ export const FetchChargeDocument = graphql(
           businessTrip {
             id
             ... on BusinessTrip @defer {
-            ...BusinessTripReportFields
+              ...BusinessTripReportFields
+            }
           }
+          ...AllChargesErrorsFields @defer
         }
-        ...AllChargesErrorsFields
       }
     }
   `,
@@ -68,9 +86,10 @@ export const FetchChargeDocument = graphql(
     DocumentsGalleryFieldsFragmentDoc,
     TableDocumentsFieldsFragmentDoc,
     TableLedgerRecordsFieldsFragmentDoc,
-    TableTransactionsFieldsFragmentDoc,
+    ChargeTableTransactionsFieldsFragmentDoc,
     ConversionChargeInfoFragmentDoc,
     TableSalariesFieldsFragmentDoc,
+    CreditcardBankChargeInfoFragmentDoc,
     BusinessTripReportFieldsFragmentDoc,
     AllChargesErrorsFieldsFragmentDoc,
   ],
@@ -104,7 +123,7 @@ export function ChargeExtendedInfo({
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
-  const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
+  const isSalaryCharge = charge?.__typename === 'SalaryCharge';
 
   useEffect(() => {
     const tabs = [];
@@ -131,47 +150,20 @@ export function ChargeExtendedInfo({
     }
   }
 
-  const docsAreReady = isFragmentReady(
-    FetchChargeDocument,
-    TableDocumentsFieldsFragmentDoc,
-    charge,
-  );
-
-  const ledgerRecordsAreReady = isFragmentReady(
-    FetchChargeDocument,
-    TableLedgerRecordsFieldsFragmentDoc,
-    charge,
-  );
-
-  const transactionsAreReady = isFragmentReady(
-    FetchChargeDocument,
-    ChargeTableTransactionsFieldsFragmentDoc,
-    charge,
-  );
-
-  const conversionIsReady = useMemo(() => {
-    return (
-      charge?.__typename === 'ConversionCharge' &&
-      isFragmentReady(FetchChargeDocument, ConversionChargeInfoFragmentDoc, charge)
-    );
-  }, [charge]);
-
-  const salariesAreReady =
-    charge?.__typename === 'SalaryCharge' &&
-    isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
-
-  const creditcardTransactionsAreReady =
-    charge?.__typename === 'CreditcardBankCharge' &&
-    isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge);
+  const docsAreReady = isTableDocumentsFieldsFragmentReady(charge);
+  const ledgerRecordsAreReady = isTableLedgerRecordsFieldsFragmentReady(charge);
+  const transactionsAreReady = isChargeTableTransactionsFieldsFragmentReady(charge);
+  const conversionIsReady = isConversionChargeInfoFragmentReady(charge);
+  const salariesAreReady = isTableSalariesFieldsFragmentReady(charge);
+  const creditcardTransactionsAreReady = isCreditcardBankChargeInfoFragmentReady(charge);
+  const galleryIsReady = isDocumentsGalleryFieldsFragmentReady(charge);
 
   return (
     <div className="flex flex-col gap-5">
       {fetching && (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
-      {isFragmentReady(FetchChargeDocument, AllChargesErrorsFieldsFragmentDoc, charge) && (
-        <ChargeErrors data={charge} />
-      )}
+      {isAllChargesErrorsFieldsFragmentReady(charge) && <ChargeErrors data={charge} />}
       {!fetching && charge && (
         <div className="flex flex-row">
           <Accordion
@@ -233,6 +225,7 @@ export function ChargeExtendedInfo({
                           toggle();
                         }}
                         variant="outline"
+                        loading={!galleryIsReady}
                       >
                         <Photo size={20} />
                       </ActionIcon>

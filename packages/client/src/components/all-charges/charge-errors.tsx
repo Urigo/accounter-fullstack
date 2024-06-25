@@ -19,8 +19,17 @@ export const AllChargesErrorsFieldsFragmentDoc = graphql(`
   }
 `);
 
+export function isAllChargesErrorsFieldsFragmentReady(
+  data?: object | FragmentOf<typeof AllChargesErrorsFieldsFragmentDoc>,
+): data is FragmentOf<typeof AllChargesErrorsFieldsFragmentDoc> {
+  if (!!data && 'errorsLedger' in data) {
+    return true;
+  }
+  return false;
+}
+
 interface Props {
-  data?: FragmentOf<typeof AllChargesErrorsFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesErrorsFieldsFragmentDoc>;
 }
 
 export const ChargeErrors = ({ data }: Props): ReactElement | null => {
@@ -29,8 +38,8 @@ export const ChargeErrors = ({ data }: Props): ReactElement | null => {
   return charge &&
     'errorsLedger' in charge &&
     'validate' in charge.errorsLedger &&
-    'errors' in charge.ledger.validate &&
-    charge.ledger.validate.errors.length ? (
+    'errors' in charge.errorsLedger.validate &&
+    charge.errorsLedger.validate.errors.length ? (
     <Paper shadow="xs" p="md">
       <Text c="red">Errors:</Text>
       <List size="sm" withPadding>

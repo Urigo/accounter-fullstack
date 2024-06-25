@@ -6,16 +6,22 @@ import { UpdateBusinessTripTravelAndSubsistenceTransactionInput } from '../../..
 import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateBusinessTripTravelAndSubsistenceTransaction } from '../../../../hooks/use-update-business-trip-travel-and-subsistence-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
-import { CoreTransactionRow } from './core-transaction-row.js';
+import {
+  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  CoreTransactionRow,
+} from './core-transaction-row.js';
 
-export const BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc = graphql(`
-  fragment BusinessTripReportTravelAndSubsistenceRowFields on BusinessTripTravelAndSubsistenceTransaction {
-    id
-    ...BusinessTripReportCoreTransactionRowFields
-    payedByEmployee
-    expenseType
-  }
-`);
+export const BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportTravelAndSubsistenceRowFields on BusinessTripTravelAndSubsistenceTransaction {
+      id
+      ...BusinessTripReportCoreTransactionRowFields
+      payedByEmployee
+      expenseType
+    }
+  `,
+  [BusinessTripReportCoreTransactionRowFieldsFragmentDoc],
+);
 
 interface Props {
   data: FragmentOf<typeof BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc>;

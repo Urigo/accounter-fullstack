@@ -1,8 +1,7 @@
 import { ReactElement } from 'react';
 import { Grid, List, Paper, Table, Text } from '@mantine/core';
-import { Currency } from '../../../../gql/graphql.js';
-import { graphql } from '../../../../graphql.js';
-import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
+import { Currency, currencyCodeToSymbol } from '../../../../helpers/currency.js';
 
 export const BusinessTripReportSummaryFieldsFragmentDoc = graphql(`
   fragment BusinessTripReportSummaryFields on BusinessTrip {
@@ -52,11 +51,13 @@ function upperFirst(raw: string): string {
 }
 
 export const Summary = ({ data }: Props): ReactElement => {
-  const { summary } = readFragment(BusinessTripReportSummaryFieldsFragmentDoc, data);
+  const businessTrip = readFragment(BusinessTripReportSummaryFieldsFragmentDoc, data);
 
-  if (!summary) {
+  if (!('summary' in businessTrip)) {
     return <Text>Loading...</Text>;
   }
+
+  const { summary } = businessTrip;
 
   const foreignCurrencies = Array.from(
     new Set<Currency>(
@@ -87,12 +88,12 @@ export const Summary = ({ data }: Props): ReactElement => {
             {foreignCurrencies.map(currency => (
               <th key={currency}>Total {currencyCodeToSymbol(currency)}</th>
             ))}
-            <th>Total {currencyCodeToSymbol(Currency.Ils)}</th>
+            <th>Total {currencyCodeToSymbol('ILS')}</th>
 
             {foreignCurrencies.map(currency => (
               <th key={currency}>Taxable {currencyCodeToSymbol(currency)}</th>
             ))}
-            <th>Taxable {currencyCodeToSymbol(Currency.Ils)}</th>
+            <th>Taxable {currencyCodeToSymbol('ILS')}</th>
             <th>Excess Expenditure</th>
           </tr>
         </thead>

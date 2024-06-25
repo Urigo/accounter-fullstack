@@ -10,7 +10,7 @@ import {
   Currency,
   UpdateBusinessTripFlightsTransactionInput,
 } from '../../../../gql/graphql.js';
-import { graphql } from '../../../../graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { CurrencyInput } from '../../index.js';
 

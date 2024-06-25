@@ -2,23 +2,83 @@ import { ReactElement, useMemo } from 'react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Indicator } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../gql/fragment-masking.js';
-import { graphql } from '../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../graphql.js';
 import { AccounterLoader, InsertBusinessTripModal } from '../common';
-import { EditableBusinessTrip } from './editable-business-trip.js';
+import { EditableBusinessTrip, EditableBusinessTripFragmentDoc } from './editable-business-trip.js';
 
-export const BusinessTripsScreenDocument = graphql(`
-  query BusinessTripsScreen {
-    allBusinessTrips {
+export const BusinessTripWrapperFragmentDoc = graphql(
+  `
+    fragment BusinessTripWrapper on BusinessTrip {
       id
       name
-      dates {
-        start
+      uncategorizedTransactions {
+        ... on Transaction @defer {
+          id
+        }
       }
-      ...BusinessTripWrapper
+      summary {
+        ... on BusinessTripSummary @defer {
+          errors
+        }
+      }
+      ...EditableBusinessTrip
     }
-  }
-`);
+  `,
+  [EditableBusinessTripFragmentDoc],
+);
+
+type BusinessTripWrapperProps = {
+  data: FragmentOf<typeof BusinessTripWrapperFragmentDoc>;
+  isFetching?: boolean;
+};
+
+const BusinessTripWrapper = ({ data, isFetching }: BusinessTripWrapperProps): ReactElement => {
+  const trip = readFragment(BusinessTripWrapperFragmentDoc, data);
+
+  const indicatorUp = useMemo(() => {
+    return (
+      trip &&
+      (trip.uncategorizedTransactions?.length ||
+        (trip.summary && 'errors' in trip.summary && trip.summary.errors?.length))
+    );
+  }, [trip]);
+
+  return (
+    <Accordion.Item value={trip.id}>
+      <Accordion.Control>
+        <Indicator
+          inline
+          size={12}
+          processing={isFetching}
+          disabled={!isFetching && !indicatorUp}
+          color={isFetching ? 'yellow' : 'red'}
+          zIndex="auto"
+        >
+          {trip.name}
+        </Indicator>
+      </Accordion.Control>
+      <Accordion.Panel>
+        <EditableBusinessTrip data={trip} isExtended key={trip.id} />
+      </Accordion.Panel>
+    </Accordion.Item>
+  );
+};
+
+export const BusinessTripsScreenDocument = graphql(
+  `
+    query BusinessTripsScreen {
+      allBusinessTrips {
+        id
+        name
+        dates {
+          start
+        }
+        ...BusinessTripWrapper
+      }
+    }
+  `,
+  [BusinessTripWrapperFragmentDoc],
+);
 
 export const BusinessTrips = (): ReactElement => {
   const [{ data, fetching }] = useQuery({
@@ -59,56 +119,5 @@ export const BusinessTrips = (): ReactElement => {
         <InsertBusinessTripModal />
       </div>
     </Container>
-  );
-};
-
-export const BusinessTripWrapperFragmentDoc = graphql(`
-  fragment BusinessTripWrapper on BusinessTrip {
-    id
-    name
-    uncategorizedTransactions {
-      ... on Transaction @defer {
-        id
-      }
-    }
-    summary {
-      ... on BusinessTripSummary @defer {
-        errors
-      }
-    }
-    ...EditableBusinessTrip
-  }
-`);
-
-type BusinessTripWrapperProps = {
-  data: FragmentOf<typeof BusinessTripWrapperFragmentDoc>;
-  isFetching?: boolean;
-};
-
-const BusinessTripWrapper = ({ data, isFetching }: BusinessTripWrapperProps): ReactElement => {
-  const trip = readFragment(BusinessTripWrapperFragmentDoc, data);
-
-  const indicatorUp = useMemo(() => {
-    return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
-  }, [trip]);
-
-  return (
-    <Accordion.Item value={trip.id}>
-      <Accordion.Control>
-        <Indicator
-          inline
-          size={12}
-          processing={isFetching}
-          disabled={!isFetching && !indicatorUp}
-          color={isFetching ? 'yellow' : 'red'}
-          zIndex="auto"
-        >
-          {trip.name}
-        </Indicator>
-      </Accordion.Control>
-      <Accordion.Panel>
-        <EditableBusinessTrip data={trip} isExtended key={trip.id} />
-      </Accordion.Panel>
-    </Accordion.Item>
   );
 };

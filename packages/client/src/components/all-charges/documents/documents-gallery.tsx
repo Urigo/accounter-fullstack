@@ -29,6 +29,15 @@ export const DocumentsGalleryFieldsFragmentDoc = graphql(`
   }
 `);
 
+export function isDocumentsGalleryFieldsFragmentReady(
+  data?: object | FragmentOf<typeof DocumentsGalleryFieldsFragmentDoc>,
+): data is FragmentOf<typeof DocumentsGalleryFieldsFragmentDoc> {
+  if (!!data && 'additionalDocuments' in data) {
+    return true;
+  }
+  return false;
+}
+
 type Props = {
   chargeProps: FragmentOf<typeof DocumentsGalleryFieldsFragmentDoc>;
   onChange: () => void;
