@@ -2,9 +2,8 @@ import { GraphQLError } from 'graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
-import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
+import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -97,11 +96,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             ) {
               postUpdateActions = async () => {
                 try {
-                  await deleteCharge(
-                    charge.id,
-                    injector.get(ChargesProvider),
-                    injector.get(TagsProvider),
-                  );
+                  await deleteCharges([charge.id], injector);
                 } catch (e) {
                   throw new GraphQLError(
                     `Failed to delete the empty former charge ID="${charge.id}"`,
@@ -146,8 +141,22 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
     deleteDocument: async (_, { documentId }, { injector }) => {
+      const document = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByIdLoader.load(documentId);
+      if (!document) {
+        throw new GraphQLError(`Document ID="${documentId}" not found`);
+      }
       const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
       if (res.length === 1) {
+        if (document.charge_id_new) {
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(document.charge_id_new);
+          if (charge && !charge.documents_count && !charge.transactions_count) {
+            await deleteCharges([charge.id], injector);
+          }
+        }
         return true;
       }
       throw new GraphQLError(

@@ -1,10 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { ChargesProvider } from '../providers/charges.provider.js';
+import { deleteCharges } from './delete-charges.helper.js';
 
 export const mergeChargesExecutor = async (
   chargeIdsToMerge: readonly string[],
@@ -29,28 +27,13 @@ export const mergeChargesExecutor = async (
           assertChargeID: baseChargeID,
         });
 
-      // clear tags
-      const clearAllChargeTagsPromise = injector
-        .get(TagsProvider)
-        .clearAllChargeTags({ chargeId: id });
-
-      // clear business trips
-      const clearBusinessTripsPromise = injector
-        .get(BusinessTripsProvider)
-        .updateChargeBusinessTrip(id, null);
-
-      return Promise.all([
-        replaceDocumentsChargeIdPromise,
-        replaceTransactionsChargeIdPromise,
-        clearAllChargeTagsPromise,
-        clearBusinessTripsPromise,
-      ]);
+      return Promise.all([replaceDocumentsChargeIdPromise, replaceTransactionsChargeIdPromise]);
     });
 
     await Promise.all(chargeCleaner);
 
     // delete charge
-    await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds: chargeIdsToMerge });
+    await deleteCharges([...chargeIdsToMerge], injector);
   } catch (e) {
     throw new GraphQLError(`Failed to merge charges: ${e}`);
   }
