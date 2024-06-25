@@ -9,7 +9,7 @@ import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
-import { deleteCharge } from '../helpers/delete-charge.helper.js';
+import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
@@ -216,7 +216,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
       }
 
-      await deleteCharge(chargeId, injector.get(ChargesProvider), injector.get(TagsProvider));
+      await deleteCharges([chargeId], injector);
       return true;
     },
   },

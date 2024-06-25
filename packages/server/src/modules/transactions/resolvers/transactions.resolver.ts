@@ -1,9 +1,8 @@
 import { GraphQLError } from 'graphql';
-import { deleteCharge } from '@modules/charges/helpers/delete-charge.helper.js';
+import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
@@ -92,20 +91,15 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               Number(charge.documents_count ?? 0) === 0 &&
               Number(charge.transactions_count ?? 1) === 1
             ) {
-              postUpdateActions = async () => {
-                try {
-                  await deleteCharge(
-                    charge.id,
-                    injector.get(ChargesProvider),
-                    injector.get(TagsProvider),
-                  );
-                } catch (e) {
-                  throw new GraphQLError(
-                    `Failed to delete the empty former charge ID="${charge.id}"`,
-                  );
-                }
-                return postUpdateActions();
-              };
+              postUpdateActions = async () =>
+                deleteCharges([charge.id], injector)
+                  .catch(e => {
+                    console.error(e);
+                    throw new GraphQLError(
+                      `Failed to delete the empty former charge ID="${charge.id}"`,
+                    );
+                  })
+                  .then(postUpdateActions);
             }
           }
         };
