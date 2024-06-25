@@ -2,7 +2,6 @@ import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-
 dotenv({
   path: '../../.env',
 });
@@ -28,6 +27,3 @@ export default defineConfig({
     ),
   },
 });
-
-
-
