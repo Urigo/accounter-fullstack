@@ -68,7 +68,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.90.12",
+    "@graphql-mesh/cli": "0.91.0",
     "@types/mime-types": "^2.1.1",
     "dotenv": "16.4.5",
     "mime-types": "2.1.35"
