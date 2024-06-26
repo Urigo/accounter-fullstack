@@ -54,7 +54,6 @@ export const TravelAndSubsistenceRow = ({
     updateBusinessTripTravelAndSubsistenceTransaction({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
-      close();
     });
   };
 

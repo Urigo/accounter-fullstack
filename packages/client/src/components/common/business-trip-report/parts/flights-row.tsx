@@ -53,7 +53,6 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
     updateBusinessTripFlightsTransaction({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
-      close();
     });
   };
 

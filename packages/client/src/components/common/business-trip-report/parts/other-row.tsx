@@ -46,7 +46,6 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
     updateBusinessTripOtherTransaction({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
-      close();
     });
   };
 
