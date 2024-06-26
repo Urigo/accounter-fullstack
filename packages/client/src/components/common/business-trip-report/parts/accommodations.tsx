@@ -1,30 +1,34 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportAccommodationsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { AddAccommodationTransaction } from '../buttons/add-accommodation-transaction.jsx';
-import { AccommodationsRow } from './accommodations-row.js';
+import {
+  AccommodationsRow,
+  BusinessTripReportAccommodationsRowFieldsFragmentDoc,
+} from './accommodations-row.js';
 import { CoreTransactionHeader } from './core-transaction-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripReportAccommodationsFields on BusinessTrip {
-    id
-    accommodationTransactions {
+export const BusinessTripReportAccommodationsFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportAccommodationsFields on BusinessTrip {
       id
-      date
-      ...BusinessTripReportAccommodationsRowFields
+      accommodationTransactions {
+        id
+        date
+        ...BusinessTripReportAccommodationsRowFields
+      }
     }
-  }
-`;
+  `,
+  [BusinessTripReportAccommodationsRowFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportAccommodationsFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportAccommodationsFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const Accommodations = ({ data, onChange }: Props): ReactElement => {
-  const { accommodationTransactions, id } = getFragmentData(
+  const { accommodationTransactions, id } = readFragment(
     BusinessTripReportAccommodationsFieldsFragmentDoc,
     data,
   );

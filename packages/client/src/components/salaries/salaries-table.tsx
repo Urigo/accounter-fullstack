@@ -1,23 +1,26 @@
 import { Dispatch, ReactElement, SetStateAction, useMemo } from 'react';
-import { SalariesTableFieldsFragment, SalariesTableFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
-import { SalariesMonth } from './salaries-month.js';
+import { FragmentOf, graphql, readFragment, ResultOf } from '../../graphql.js';
+import { SalariesMonth, SalariesMonthFieldsFragmentDoc } from './salaries-month.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment SalariesTableFields on Salary {
-    month
-    employee {
-      id
+export const SalariesTableFieldsFragmentDoc = graphql(
+  `
+    fragment SalariesTableFields on Salary {
+      month
+      employee {
+        id
+      }
+      ...SalariesMonthFields
     }
-    ...SalariesMonthFields
-  }
-`;
+  `,
+  [SalariesMonthFieldsFragmentDoc],
+);
+
+type SalariesTableFieldsFragment = ResultOf<typeof SalariesTableFieldsFragmentDoc>;
 
 interface Props {
   setEditSalaryRecord: Dispatch<SetStateAction<{ month: string; employeeId: string } | undefined>>;
   setInsertSalaryRecord: Dispatch<SetStateAction<{ month?: string } | undefined>>;
-  data?: FragmentType<typeof SalariesTableFieldsFragmentDoc>[];
+  data?: FragmentOf<typeof SalariesTableFieldsFragmentDoc>[];
 }
 
 export const SalariesTable = ({
@@ -27,8 +30,7 @@ export const SalariesTable = ({
 }: Props): ReactElement => {
   const monthlySalaries = useMemo(() => {
     const salaryRecords =
-      data?.map(salaryRecord => getFragmentData(SalariesTableFieldsFragmentDoc, salaryRecord)) ??
-      [];
+      data?.map(salaryRecord => readFragment(SalariesTableFieldsFragmentDoc, salaryRecord)) ?? [];
 
     const byMonth = new Map<string, SalariesTableFieldsFragment[]>();
     salaryRecords.map(salary => {

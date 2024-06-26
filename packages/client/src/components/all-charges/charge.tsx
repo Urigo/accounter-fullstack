@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { ChargeScreenDocument } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import {
   AccounterLoader,
   EditChargeModal,
@@ -9,17 +9,19 @@ import {
   MatchDocumentModal,
   UploadDocumentModal,
 } from '../common/index.js';
-import { AllChargesTable } from './all-charges-table.js';
+import { AllChargesTable, AllChargesTableFieldsFragmentDoc } from './all-charges-table.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ChargeScreen($chargeIds: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIds) {
-      id
-      ...AllChargesTableFields
+export const ChargeScreenDocument = graphql(
+  `
+    query ChargeScreen($chargeIds: [UUID!]!) {
+      chargesByIDs(chargeIDs: $chargeIds) {
+        id
+        ...AllChargesTableFields
+      }
     }
-  }
-`;
+  `,
+  [AllChargesTableFieldsFragmentDoc],
+);
 
 type Props = {
   chargeId?: string;
@@ -46,7 +48,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   const [{ data, fetching }] = useQuery({
     query: ChargeScreenDocument,
     variables: {
-      chargeIds: [id],
+      chargeIds: id ? [id] : [],
     },
   });
 

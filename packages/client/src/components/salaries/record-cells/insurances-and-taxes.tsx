@@ -1,11 +1,8 @@
 import { ReactElement } from 'react';
-import { SalariesRecordInsurancesAndTaxesFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const SalariesRecordInsurancesAndTaxesFieldsFragmentDoc = graphql(`
   fragment SalariesRecordInsurancesAndTaxesFields on Salary {
-    month
     employee {
       id
     }
@@ -15,11 +12,9 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
     }
     socialSecurityEmployeeAmount {
       formatted
-      raw
     }
     socialSecurityEmployerAmount {
       formatted
-      raw
     }
     incomeTaxAmount {
       formatted
@@ -30,10 +25,10 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       raw
     }
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof SalariesRecordInsurancesAndTaxesFieldsFragmentDoc>;
+  data: FragmentOf<typeof SalariesRecordInsurancesAndTaxesFieldsFragmentDoc>;
 }
 
 export const InsurancesAndTaxesCell = ({ data }: Props): ReactElement => {
@@ -43,7 +38,7 @@ export const InsurancesAndTaxesCell = ({ data }: Props): ReactElement => {
     socialSecurityEmployerAmount,
     incomeTaxAmount,
     notionalExpense,
-  } = getFragmentData(SalariesRecordInsurancesAndTaxesFieldsFragmentDoc, data);
+  } = readFragment(SalariesRecordInsurancesAndTaxesFieldsFragmentDoc, data);
 
   const isSocialSecurityInfo = !!socialSecurityEmployeeAmount || !!socialSecurityEmployerAmount;
 

@@ -1,7 +1,6 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripUncategorizedTransactionsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import {
   Account,
   Amount,
@@ -10,34 +9,51 @@ import {
   Description,
   EventDate,
   SourceID,
+  TransactionsTableAccountFieldsFragmentDoc,
+  TransactionsTableAmountFieldsFragmentDoc,
+  TransactionsTableDebitDateFieldsFragmentDoc,
+  TransactionsTableDescriptionFieldsFragmentDoc,
+  TransactionsTableEntityFieldsFragmentDoc,
+  TransactionsTableEventDateFieldsFragmentDoc,
+  TransactionsTableSourceIdFieldsFragmentDoc,
 } from '../../transactions-table/cells/index.js';
 import { SelectTransactionCategory } from '../buttons/select-transaction-category.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
-    id
-    uncategorizedTransactions {
+export const BusinessTripUncategorizedTransactionsFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
       id
-      eventDate
-      ...TransactionsTableEventDateFields
-      ...TransactionsTableDebitDateFields
-      ...TransactionsTableAmountFields
-      ...TransactionsTableAccountFields
-      ...TransactionsTableDescriptionFields
-      ...TransactionsTableSourceIDFields
-      ...TransactionsTableEntityFields
+      uncategorizedTransactions {
+        id
+        eventDate
+        ...TransactionsTableEventDateFields
+        ...TransactionsTableDebitDateFields
+        ...TransactionsTableAmountFields
+        ...TransactionsTableAccountFields
+        ...TransactionsTableDescriptionFields
+        ...TransactionsTableSourceIDFields
+        ...TransactionsTableEntityFields
+      }
     }
-  }
-`;
+  `,
+  [
+    TransactionsTableEventDateFieldsFragmentDoc,
+    TransactionsTableDebitDateFieldsFragmentDoc,
+    TransactionsTableAmountFieldsFragmentDoc,
+    TransactionsTableAccountFieldsFragmentDoc,
+    TransactionsTableDescriptionFieldsFragmentDoc,
+    TransactionsTableSourceIdFieldsFragmentDoc,
+    TransactionsTableEntityFieldsFragmentDoc,
+  ],
+);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripUncategorizedTransactionsFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const UncategorizedTransactions = ({ data, onChange }: Props): ReactElement => {
-  const { uncategorizedTransactions, id } = getFragmentData(
+  const { uncategorizedTransactions, id } = readFragment(
     BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
     data,
   );

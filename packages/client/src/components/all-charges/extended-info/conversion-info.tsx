@@ -1,15 +1,13 @@
 import { ReactElement } from 'react';
 import { Badge, Card, Grid, Group, Text } from '@mantine/core';
-import { ConversionChargeInfoFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { currencyCodeToSymbol } from '../../../helpers/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const ConversionChargeInfoFragmentDoc = graphql(`
   fragment ConversionChargeInfo on Charge {
     id
     __typename
-    ... on ConversionCharge {
+    ... on ConversionCharge @defer {
       eventRate {
         from
         to
@@ -22,15 +20,28 @@ import { currencyCodeToSymbol } from '../../../helpers/index.js';
       }
     }
   }
-`;
+`);
+
+export function isConversionChargeInfoFragmentReady(
+  data?: object | FragmentOf<typeof ConversionChargeInfoFragmentDoc>,
+): data is FragmentOf<typeof ConversionChargeInfoFragmentDoc> {
+  if (!!data && '__typename' in data && data.__typename === 'ConversionCharge') {
+    return true;
+  }
+  return false;
+}
 
 type Props = {
-  chargeProps: FragmentType<typeof ConversionChargeInfoFragmentDoc>;
+  chargeProps: FragmentOf<typeof ConversionChargeInfoFragmentDoc>;
 };
 
 export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
-  const charge = getFragmentData(ConversionChargeInfoFragmentDoc, chargeProps);
-  if (charge.__typename !== 'ConversionCharge') {
+  const charge = readFragment(ConversionChargeInfoFragmentDoc, chargeProps);
+  if (
+    charge.__typename !== 'ConversionCharge' ||
+    !('eventRate' in charge) ||
+    !('officialRate' in charge)
+  ) {
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <></>;
   }

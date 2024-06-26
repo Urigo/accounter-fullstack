@@ -1,10 +1,8 @@
 import { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
-import { DocumentSerialFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentSerialFieldsFragmentDoc = graphql(`
   fragment DocumentSerialFields on Document {
     id
     ... on Invoice {
@@ -23,14 +21,14 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
       serialNumber
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof DocumentSerialFieldsFragmentDoc>;
+  data: FragmentOf<typeof DocumentSerialFieldsFragmentDoc>;
 };
 
 export const Serial = ({ data }: Props): ReactElement => {
-  const document = getFragmentData(DocumentSerialFieldsFragmentDoc, data);
+  const document = readFragment(DocumentSerialFieldsFragmentDoc, data);
   const serialNumber = 'serialNumber' in document ? document.serialNumber : undefined;
 
   return (

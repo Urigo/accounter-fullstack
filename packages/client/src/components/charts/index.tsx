@@ -2,12 +2,8 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
 import { useQuery } from 'urql';
-import {
-  ChargeFilter,
-  Currency,
-  IncomeChargesChartDocument,
-  IncomeChargesChartQuery,
-} from '../../gql/graphql.js';
+import { ChargeFilter, Currency, IncomeChargesChartQuery } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { TimelessDateString } from '../../helpers/dates';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
@@ -17,8 +13,7 @@ import { BarChart } from './chart';
 import { ChargeFilterFilter } from './chart-filters';
 import { StatsCard } from './stats-card';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const IncomeChargesChartDocument = graphql(`
   query IncomeChargesChart($filters: ChargeFilter) {
     allCharges(filters: $filters) {
       nodes {
@@ -72,7 +67,7 @@ import { StatsCard } from './stats-card';
       }
     }
   }
-`;
+`);
 
 type Transaction = IncomeChargesChartQuery['allCharges']['nodes'][number]['transactions'][number];
 

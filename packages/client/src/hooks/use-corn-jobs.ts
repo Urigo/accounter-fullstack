@@ -1,29 +1,24 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  FlagForeignFeeTransactionsDocument,
-  MergeChargesByTransactionReferenceDocument,
-} from '../gql/graphql.js';
+import { graphql } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const FlagForeignFeeTransactionsDocument = graphql(`
   mutation FlagForeignFeeTransactions {
     flagForeignFeeTransactions {
       success
       errors
     }
   }
-`;
+`);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const MergeChargesByTransactionReferenceDocument = graphql(`
   mutation MergeChargesByTransactionReference {
     mergeChargesByTransactionReference {
       success
       errors
     }
   }
-`;
+`);
 
 type UseCornJobs = {
   fetching: boolean;

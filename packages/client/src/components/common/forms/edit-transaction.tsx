@@ -4,16 +4,12 @@ import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { SimpleGrid } from '..';
-import {
-  AllFinancialEntitiesDocument,
-  EditTransactionDocument,
-  UpdateTransactionInput,
-} from '../../../gql/graphql.js';
+import { AllFinancialEntitiesDocument, UpdateTransactionInput } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const EditTransactionDocument = graphql(`
   query EditTransaction($transactionIDs: [UUID!]!) {
     transactionsByIDs(transactionIDs: $transactionIDs) {
       id
@@ -48,7 +44,7 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
       isFee
     }
   }
-`;
+`);
 
 type Props = {
   transactionID: string;

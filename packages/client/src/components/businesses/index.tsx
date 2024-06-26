@@ -2,15 +2,15 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Table, Tooltip } from '@mantine/core';
-import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../../gql/graphql.js';
+import { AllBusinessesForScreenQuery } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterLoader } from '../common/index.js';
 import { AllBusinessesRow } from './all-businesses-row.js';
 import { BusinessesFilters } from './businesses-filters.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllBusinessesForScreenDocument = graphql(`
   query AllBusinessesForScreen($page: Int, $limit: Int, $name: String) {
     allBusinesses(page: $page, limit: $limit, name: $name) {
       nodes {
@@ -26,7 +26,7 @@ import { BusinessesFilters } from './businesses-filters.js';
       }
     }
   }
-`;
+`);
 
 export const Businesses = (): ReactElement => {
   const { get } = useUrlQuery();

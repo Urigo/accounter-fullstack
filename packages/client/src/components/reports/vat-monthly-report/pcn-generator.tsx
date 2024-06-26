@@ -2,18 +2,18 @@ import { ReactElement, useEffect } from 'react';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
+import type { VatReportFilter } from './index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const GeneratePcnDocument = graphql(`
   query GeneratePCN($fromDate: TimelessDate!, $toDate: TimelessDate!, $financialEntityId: UUID!) {
     pcnFile(fromDate: $fromDate, toDate: $toDate, financialEntityId: $financialEntityId) {
       reportContent
       fileName
     }
   }
-`;
+`);
 
 type Props = {
   filter: VatReportFilter;

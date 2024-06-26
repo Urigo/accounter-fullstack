@@ -2,34 +2,36 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Switch, Text, TextInput, Tooltip } from '@mantine/core';
-import {
-  BusinessTripReportOtherRowFieldsFragmentDoc,
-  UpdateBusinessTripOtherTransactionInput,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { UpdateBusinessTripOtherTransactionInput } from '../../../../gql/graphql.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUpdateBusinessTripOtherTransaction } from '../../../../hooks/use-update-business-trip-other-transaction.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.jsx';
-import { CoreTransactionRow } from './core-transaction-row.jsx';
+import {
+  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  CoreTransactionRow,
+} from './core-transaction-row.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
-    id
-    ...BusinessTripReportCoreTransactionRowFields
-    payedByEmployee
-    expenseType
-    deductibleExpense
-  }
-`;
+export const BusinessTripReportOtherRowFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
+      id
+      ...BusinessTripReportCoreTransactionRowFields
+      payedByEmployee
+      expenseType
+      deductibleExpense
+    }
+  `,
+  [BusinessTripReportCoreTransactionRowFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportOtherRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportOtherRowFieldsFragmentDoc>;
   businessTripId: string;
   onChange: () => void;
 }
 
 export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const otherTransaction = getFragmentData(BusinessTripReportOtherRowFieldsFragmentDoc, data);
+  const otherTransaction = readFragment(BusinessTripReportOtherRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { control, handleSubmit } = useForm<UpdateBusinessTripOtherTransactionInput>({

@@ -1,21 +1,19 @@
 import { ReactElement } from 'react';
-import { AllBusinessesNameFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { graphql } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllBusinessesNameFieldsFragmentDoc = graphql(`
   fragment AllBusinessesNameFields on LtdFinancialEntity {
     id
     name
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllBusinessesNameFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllBusinessesNameFieldsFragmentDoc>;
 };
 
 export const Name = ({ data }: Props): ReactElement => {
-  const business = getFragmentData(AllBusinessesNameFieldsFragmentDoc, data);
+  const business = readFragment(AllBusinessesNameFieldsFragmentDoc, data);
 
   return (
     <td>

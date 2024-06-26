@@ -1,10 +1,8 @@
 import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
-import { AllChargesTaxCategoryFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesTaxCategoryFieldsFragmentDoc = graphql(`
   fragment AllChargesTaxCategoryFields on Charge {
     __typename
     id
@@ -18,17 +16,16 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesTaxCategoryFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesTaxCategoryFieldsFragmentDoc>;
 };
 
 export const TaxCategory = ({ data }: Props): ReactElement => {
-  const { validationData, taxCategory, __typename } = getFragmentData(
-    AllChargesTaxCategoryFieldsFragmentDoc,
-    data,
-  );
+  const result = readFragment(AllChargesTaxCategoryFieldsFragmentDoc, data);
+  const { taxCategory, __typename } = result;
+  const validationData = 'validationData' in result ? result.validationData : undefined;
 
   const shouldHaveTaxCategory = useMemo((): boolean => {
     switch (__typename) {
@@ -43,7 +40,7 @@ export const TaxCategory = ({ data }: Props): ReactElement => {
   }, [__typename]);
 
   const isError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.TaxCategory),
+    () => validationData?.missingInfo?.includes('TAX_CATEGORY'),
     [validationData?.missingInfo],
   );
 

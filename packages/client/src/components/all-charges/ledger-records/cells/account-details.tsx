@@ -1,14 +1,10 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import {
-  ChargeFilter,
-  LedgerRecordsAccountDetailsFieldsFragmentDoc,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { ChargeFilter } from '../../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const LedgerRecordsAccountDetailsFieldsFragmentDoc = graphql(`
   fragment LedgerRecordsAccountDetailsFields on LedgerRecord {
     id
     creditAccount1 {
@@ -60,11 +56,11 @@ import { useUrlQuery } from '../../../../hooks/use-url-query.js';
       formatted
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc>;
-  diff?: FragmentType<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc> | null;
+  data: FragmentOf<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc>;
+  diff?: FragmentOf<typeof LedgerRecordsAccountDetailsFieldsFragmentDoc> | null;
   cred: boolean;
   first: boolean;
 };
@@ -84,7 +80,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
     localCurrencyCreditAmount2,
     localCurrencyDebitAmount1,
     localCurrencyDebitAmount2,
-  } = getFragmentData(LedgerRecordsAccountDetailsFieldsFragmentDoc, data);
+  } = readFragment(LedgerRecordsAccountDetailsFieldsFragmentDoc, data);
 
   const creditAccount = cred
     ? first
@@ -153,7 +149,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
     localCurrencyCreditAmount2: diffLocalCurrencyCreditAmount2,
     localCurrencyDebitAmount1: diffLocalCurrencyDebitAmount1,
     localCurrencyDebitAmount2: diffLocalCurrencyDebitAmount2,
-  } = getFragmentData(LedgerRecordsAccountDetailsFieldsFragmentDoc, diff) ?? {};
+  } = readFragment(LedgerRecordsAccountDetailsFieldsFragmentDoc, diff) ?? {};
 
   const diffCreditAccount = cred
     ? first
@@ -186,7 +182,7 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
   return (
     <td>
       <div className="flex flex-col">
-        {(creditAccount || isAccountDiff) && (
+        {creditAccount && (
           <>
             <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
               <NavLink

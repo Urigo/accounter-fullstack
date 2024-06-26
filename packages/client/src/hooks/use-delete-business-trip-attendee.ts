@@ -1,17 +1,17 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  DeleteBusinessTripAttendeeDocument,
-  DeleteBusinessTripAttendeeMutation,
-  DeleteBusinessTripAttendeeMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DeleteBusinessTripAttendeeDocument = graphql(`
   mutation DeleteBusinessTripAttendee($fields: DeleteBusinessTripAttendeeInput!) {
     deleteBusinessTripAttendee(fields: $fields)
   }
-`;
+`);
+
+type DeleteBusinessTripAttendeeMutationVariables = VariablesOf<
+  typeof DeleteBusinessTripAttendeeDocument
+>;
+type DeleteBusinessTripAttendeeMutation = ResultOf<typeof DeleteBusinessTripAttendeeDocument>;
 
 type UseDeleteBusinessTripAttendee = {
   fetching: boolean;

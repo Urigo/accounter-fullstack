@@ -2,18 +2,15 @@ import { ReactElement, useMemo, useState } from 'react';
 import { Switch } from '@mantine/core';
 import { Button } from '../..';
 import {
-  ChargeToMatchDocumentsFieldsFragmentDoc,
   DocumentsToChargeMatcherQuery,
   DocumentsToMatchFieldsFragment,
-  DocumentsToMatchFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { graphql } from '../../../../graphql.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document';
 import { StrictFilteredSelection } from './strict-filtered-selection';
 import { WideFilteredSelection } from './wide-filtered-selection';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const ChargeToMatchDocumentsFieldsFragmentDoc = graphql(`
   fragment ChargeToMatchDocumentsFields on Charge {
     id
     totalAmount {
@@ -31,10 +28,9 @@ import { WideFilteredSelection } from './wide-filtered-selection';
       sourceDescription
     }
   }
-`;
+`);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsToMatchFieldsFragmentDoc = graphql(`
   fragment DocumentsToMatchFields on Document {
     id
     __typename
@@ -94,21 +90,21 @@ import { WideFilteredSelection } from './wide-filtered-selection';
       }
     }
   }
-`;
+`);
 
 interface Props {
-  chargeProps: FragmentType<typeof ChargeToMatchDocumentsFieldsFragmentDoc>;
+  chargeProps: FragmentOf<typeof ChargeToMatchDocumentsFieldsFragmentDoc>;
   documentsProps?: DocumentsToChargeMatcherQuery;
-  // FragmentType<typeof DocumentsToMatchFieldsFragmentDoc>;
+  // FragmentOf<typeof DocumentsToMatchFieldsFragmentDoc>;
   onDone: () => void;
 }
 
 export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props): ReactElement {
-  const charge = getFragmentData(ChargeToMatchDocumentsFieldsFragmentDoc, chargeProps);
+  const charge = readFragment(ChargeToMatchDocumentsFieldsFragmentDoc, chargeProps);
   const documents = useMemo(
     () =>
       documentsProps?.documentsByFilters.map(d =>
-        getFragmentData(DocumentsToMatchFieldsFragmentDoc, d),
+        readFragment(DocumentsToMatchFieldsFragmentDoc, d),
       ) ?? [],
     [documentsProps],
   );

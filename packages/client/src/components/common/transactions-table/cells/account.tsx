@@ -1,9 +1,7 @@
 import { ReactElement } from 'react';
-import { TransactionsTableAccountFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TransactionsTableAccountFieldsFragmentDoc = graphql(`
   fragment TransactionsTableAccountFields on Transaction {
     id
     account {
@@ -13,14 +11,14 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
       type
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof TransactionsTableAccountFieldsFragmentDoc>;
+  data: FragmentOf<typeof TransactionsTableAccountFieldsFragmentDoc>;
 };
 
 export const Account = ({ data }: Props): ReactElement => {
-  const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
+  const transaction = readFragment(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;
 
   const accountType = account.type;

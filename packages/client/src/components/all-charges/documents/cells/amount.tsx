@@ -1,12 +1,11 @@
 import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
-import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
+import { Currency } from '../../../../helpers/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
 import { ConfirmMiniButton } from '../../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DocumentsTableAmountFieldsFragmentDoc = graphql(`
   fragment DocumentsTableAmountFields on Document {
     id
     ... on Invoice {
@@ -80,15 +79,15 @@ import { ConfirmMiniButton } from '../../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof DocumentsTableAmountFieldsFragmentDoc>;
+  data: FragmentOf<typeof DocumentsTableAmountFieldsFragmentDoc>;
   refetchDocument: () => void;
 };
 
 export const Amount = ({ data, refetchDocument }: Props): ReactElement => {
-  const document = getFragmentData(DocumentsTableAmountFieldsFragmentDoc, data);
+  const document = readFragment(DocumentsTableAmountFieldsFragmentDoc, data);
   const dbAmount = 'amount' in document ? document.amount : undefined;
 
   const suggestedAmount =

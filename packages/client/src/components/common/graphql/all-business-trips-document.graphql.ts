@@ -1,11 +1,10 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+import { graphql } from '../../../graphql.js';
+
+export const AllBusinessTripsDocument = graphql(`
   query AllBusinessTrips {
     allBusinessTrips {
       id
       name
     }
   }
-`;
-
-export {};
+`);

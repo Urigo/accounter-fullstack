@@ -1,19 +1,21 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateBusinessTripFlightsTransactionDocument,
-  UpdateBusinessTripFlightsTransactionMutation,
-  UpdateBusinessTripFlightsTransactionMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateBusinessTripFlightsTransactionDocument = graphql(`
   mutation UpdateBusinessTripFlightsTransaction(
     $fields: UpdateBusinessTripFlightsTransactionInput!
   ) {
     updateBusinessTripFlightsTransaction(fields: $fields)
   }
-`;
+`);
+
+type UpdateBusinessTripFlightsTransactionMutationVariables = VariablesOf<
+  typeof UpdateBusinessTripFlightsTransactionDocument
+>;
+type UpdateBusinessTripFlightsTransactionMutation = ResultOf<
+  typeof UpdateBusinessTripFlightsTransactionDocument
+>;
 
 type UseUpdateBusinessTripFlightsTransaction = {
   fetching: boolean;

@@ -1,30 +1,31 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportOtherFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { AddOtherTransaction } from '../buttons/add-other-transaction.js';
 import { CoreTransactionHeader } from './core-transaction-row.js';
-import { OtherRow } from './other-row.js';
+import { BusinessTripReportOtherRowFieldsFragmentDoc, OtherRow } from './other-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripReportOtherFields on BusinessTrip {
-    id
-    otherTransactions {
+export const BusinessTripReportOtherFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportOtherFields on BusinessTrip {
       id
-      date
-      ...BusinessTripReportOtherRowFields
+      otherTransactions {
+        id
+        date
+        ...BusinessTripReportOtherRowFields
+      }
     }
-  }
-`;
+  `,
+  [BusinessTripReportOtherRowFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportOtherFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportOtherFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const Other = ({ data, onChange }: Props): ReactElement => {
-  const { otherTransactions, id } = getFragmentData(BusinessTripReportOtherFieldsFragmentDoc, data);
+  const { otherTransactions, id } = readFragment(BusinessTripReportOtherFieldsFragmentDoc, data);
 
   if (!otherTransactions?.length) {
     return <AddOtherTransaction businessTripId={id} onAdd={onChange} />;

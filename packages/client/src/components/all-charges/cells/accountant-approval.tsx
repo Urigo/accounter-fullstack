@@ -1,24 +1,22 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Switch } from '@mantine/core';
-import { AllChargesAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-charge-accountant-approval.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesAccountantApprovalFieldsFragmentDoc = graphql(`
   fragment AllChargesAccountantApprovalFields on Charge {
     id
     accountantApproval
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof AllChargesAccountantApprovalFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesAccountantApprovalFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export function AccountantApproval({ data, onChange }: Props): ReactElement {
-  const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesAccountantApprovalFieldsFragmentDoc, data);
   const [checked, setChecked] = useState(charge.accountantApproval);
   const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
 

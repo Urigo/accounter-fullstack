@@ -1,24 +1,38 @@
 import { ReactElement } from 'react';
-import { BusinessTripReportFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { ReportHeader } from './parts/report-header.js';
-import { Summary } from './parts/summary.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
+import {
+  BusinessTripReportHeaderFieldsFragmentDoc,
+  BusinessTripReportSummaryFieldsFragmentDoc,
+  ReportHeader,
+  Summary,
+} from './parts/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripReportFields on BusinessTrip {
-    id
-    ...BusinessTripReportHeaderFields
-    ...BusinessTripReportSummaryFields
+export const BusinessTripReportFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportFields on BusinessTrip {
+      id
+      ...BusinessTripReportHeaderFields
+      ...BusinessTripReportSummaryFields
+    }
+  `,
+  [BusinessTripReportHeaderFieldsFragmentDoc, BusinessTripReportSummaryFieldsFragmentDoc],
+);
+
+export function isBusinessTripReportFieldsFragmentReady(
+  data?: object | FragmentOf<typeof BusinessTripReportFieldsFragmentDoc>,
+): data is FragmentOf<typeof BusinessTripReportFieldsFragmentDoc> {
+  if (!!data && 'id' in data) {
+    return true;
   }
-`;
+  return false;
+}
 
 type Props = {
-  data: FragmentType<typeof BusinessTripReportFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportFieldsFragmentDoc>;
 };
 
 export const BusinessTripSummarizedReport = ({ data }: Props): ReactElement => {
-  const reportData = getFragmentData(BusinessTripReportFieldsFragmentDoc, data);
+  const reportData = readFragment(BusinessTripReportFieldsFragmentDoc, data);
 
   return (
     <>

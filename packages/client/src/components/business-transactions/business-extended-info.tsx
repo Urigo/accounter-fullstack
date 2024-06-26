@@ -4,15 +4,14 @@ import { useQuery } from 'urql';
 import { Mark, NavLink, Table } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
-  BusinessTransactionsInfoDocument,
   BusinessTransactionsInfoQuery,
   Currency,
 } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTransactionsInfoDocument = graphql(`
   query BusinessTransactionsInfo($filters: BusinessTransactionsFilter) {
     businessTransactionsFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsFromLedgerRecordsSuccessfulResult {
@@ -55,7 +54,7 @@ import { AccounterLoader } from '../common/index.js';
       }
     }
   }
-`;
+`);
 
 interface Props {
   businessID: string;

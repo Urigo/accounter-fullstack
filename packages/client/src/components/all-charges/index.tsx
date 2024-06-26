@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useContext, useEffect, useState } from 'reac
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql.js';
+import { graphql, VariablesOf } from '../../graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
 import { UserContext } from '../../providers/user-provider.js';
@@ -14,23 +14,29 @@ import {
   MergeChargesButton,
   UploadDocumentModal,
 } from '../common';
-import { AllChargesTable } from './all-charges-table';
+import { AllChargesTable, AllChargesTableFieldsFragmentDoc } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
-    allCharges(page: $page, limit: $limit, filters: $filters) {
-      nodes {
-        id
-        ...AllChargesTableFields
-      }
-      pageInfo {
-        totalPages
+export const AllChargesDocument = graphql(
+  `
+    query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
+      allCharges(page: $page, limit: $limit, filters: $filters) {
+        nodes {
+          id
+          ...AllChargesTableFields
+        }
+        pageInfo {
+          totalPages
+        }
       }
     }
-  }
-`;
+  `,
+  [AllChargesTableFieldsFragmentDoc],
+);
+
+export type ChargeFilter = NonNullable<
+  NonNullable<VariablesOf<typeof AllChargesDocument>['filters']>
+>;
 
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
@@ -57,9 +63,9 @@ export const AllCharges = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
+          byOwners: userContext ? [userContext?.ownerId] : [],
           sortBy: {
-            field: ChargeSortByField.Date,
+            field: 'DATE',
             asc: false,
           },
         },

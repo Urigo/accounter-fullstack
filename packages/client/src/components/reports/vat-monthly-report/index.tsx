@@ -1,11 +1,7 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import { useQuery } from 'urql';
-import {
-  ChargeFilterType,
-  VatMonthlyReportDocument,
-  VatReportFilter,
-} from '../../../gql/graphql.js';
+import { graphql, VariablesOf } from '../../../graphql.js';
 import { dedupeFragments, TimelessDateString } from '../../../helpers';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
@@ -18,26 +14,42 @@ import {
   MergeChargesButton,
   UploadDocumentModal,
 } from '../../common';
-import { BusinessTripsTable } from './business-trips-table';
-import { ExpensesTable } from './expenses-section/expenses-table';
-import { IncomeTable } from './income-section/income-table';
-import { MiscTable } from './misc-table';
-import { MissingInfoTable } from './missing-info-table';
+import {
+  BusinessTripsTable,
+  VatReportBusinessTripsFieldsFragmentDoc,
+} from './business-trips-table';
+import {
+  ExpensesTable,
+  VatReportExpensesFieldsFragmentDoc,
+} from './expenses-section/expenses-table';
+import { IncomeTable, VatReportIncomeFieldsFragmentDoc } from './income-section/income-table';
+import { MiscTable, VatReportMiscTableFieldsFragmentDoc } from './misc-table';
+import { MissingInfoTable, VatReportMissingInfoFieldsFragmentDoc } from './missing-info-table';
 import { PCNGenerator } from './pcn-generator';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query VatMonthlyReport($filters: VatReportFilter) {
-    vatReport(filters: $filters) {
-      ...VatReportIncomeFields
-      ...VatReportExpensesFields
-      ...VatReportMissingInfoFields
-      ...VatReportMiscTableFields
-      ...VatReportBusinessTripsFields
+export const VatMonthlyReportDocument = graphql(
+  `
+    query VatMonthlyReport($filters: VatReportFilter) {
+      vatReport(filters: $filters) {
+        ...VatReportIncomeFields
+        ...VatReportExpensesFields
+        ...VatReportMissingInfoFields
+        ...VatReportMiscTableFields
+        ...VatReportBusinessTripsFields
+      }
     }
-  }
-`;
+  `,
+  [
+    VatReportIncomeFieldsFragmentDoc,
+    VatReportExpensesFieldsFragmentDoc,
+    VatReportMissingInfoFieldsFragmentDoc,
+    VatReportMiscTableFieldsFragmentDoc,
+    VatReportBusinessTripsFieldsFragmentDoc,
+  ],
+);
+
+export type VatReportFilter = NonNullable<VariablesOf<typeof VatMonthlyReportDocument>['filters']>;
 
 export const VatMonthlyReport = (): ReactElement => {
   const { get } = useUrlQuery();
@@ -49,7 +61,7 @@ export const VatMonthlyReport = (): ReactElement => {
           decodeURIComponent(get('vatMonthlyReportFilters') as string),
         ) as VatReportFilter)
       : {
-          financialEntityId: userContext?.ownerId,
+          financialEntityId: userContext?.ownerId ?? '',
           fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },
@@ -119,7 +131,7 @@ export const VatMonthlyReport = (): ReactElement => {
     <AccounterLoader />
   ) : (
     <div className="flex flex-col gap-4">
-      {filter.chargesType !== ChargeFilterType.Expense && (
+      {filter?.chargesType !== 'EXPENSE' && (
         <IncomeTable
           data={data?.vatReport}
           toggleMergeCharge={toggleMergeCharge}
@@ -127,7 +139,7 @@ export const VatMonthlyReport = (): ReactElement => {
         />
       )}
 
-      {filter.chargesType !== ChargeFilterType.Income && (
+      {filter?.chargesType !== 'INCOME' && (
         <ExpensesTable
           data={data?.vatReport}
           toggleMergeCharge={toggleMergeCharge}

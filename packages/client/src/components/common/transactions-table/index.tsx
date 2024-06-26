@@ -1,6 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { ChargeNavigateButton, EditMiniButton, EditTransactionModal } from '../index.js';
 import {
   Account,
@@ -10,25 +9,42 @@ import {
   Description,
   EventDate,
   SourceID,
+  TransactionsTableAccountFieldsFragmentDoc,
+  TransactionsTableAmountFieldsFragmentDoc,
+  TransactionsTableDebitDateFieldsFragmentDoc,
+  TransactionsTableDescriptionFieldsFragmentDoc,
+  TransactionsTableEntityFieldsFragmentDoc,
+  TransactionsTableEventDateFieldsFragmentDoc,
+  TransactionsTableSourceIdFieldsFragmentDoc,
 } from './cells/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment TransactionForTransactionsTableFields on Transaction {
-    id
-    chargeId
-    ...TransactionsTableEventDateFields
-    ...TransactionsTableDebitDateFields
-    ...TransactionsTableAmountFields
-    ...TransactionsTableAccountFields
-    ...TransactionsTableDescriptionFields
-    ...TransactionsTableSourceIDFields
-    ...TransactionsTableEntityFields
-  }
-`;
+export const TransactionForTransactionsTableFieldsFragmentDoc = graphql(
+  `
+    fragment TransactionForTransactionsTableFields on Transaction {
+      id
+      chargeId
+      ...TransactionsTableEventDateFields
+      ...TransactionsTableDebitDateFields
+      ...TransactionsTableAmountFields
+      ...TransactionsTableAccountFields
+      ...TransactionsTableDescriptionFields
+      ...TransactionsTableSourceIDFields
+      ...TransactionsTableEntityFields
+    }
+  `,
+  [
+    TransactionsTableEventDateFieldsFragmentDoc,
+    TransactionsTableDebitDateFieldsFragmentDoc,
+    TransactionsTableAmountFieldsFragmentDoc,
+    TransactionsTableAccountFieldsFragmentDoc,
+    TransactionsTableDescriptionFieldsFragmentDoc,
+    TransactionsTableSourceIdFieldsFragmentDoc,
+    TransactionsTableEntityFieldsFragmentDoc,
+  ],
+);
 
 type Props = {
-  transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
+  transactionsProps: FragmentOf<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
   enableEdit?: boolean;
   enableChargeLink?: boolean;
   onChange?: () => void;
@@ -41,7 +57,7 @@ export const TransactionsTable = ({
   enableChargeLink,
 }: Props): ReactElement => {
   const transactions = transactionsProps.map(rawTransaction =>
-    getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
+    readFragment(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
   );
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   return (

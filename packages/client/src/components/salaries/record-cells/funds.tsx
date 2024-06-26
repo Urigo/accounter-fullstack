@@ -1,11 +1,8 @@
 import { ReactElement } from 'react';
-import { SalariesRecordFundsFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const SalariesRecordFundsFieldsFragmentDoc = graphql(`
   fragment SalariesRecordFundsFields on Salary {
-    month
     employee {
       id
     }
@@ -43,10 +40,10 @@ import { FragmentType, getFragmentData } from '../../../gql/index.js';
     }
     trainingFundEmployerPercentage
   }
-`;
+`);
 
 interface Props {
-  data: FragmentType<typeof SalariesRecordFundsFieldsFragmentDoc>;
+  data: FragmentOf<typeof SalariesRecordFundsFieldsFragmentDoc>;
 }
 
 export const FundsCell = ({ data }: Props): ReactElement => {
@@ -63,7 +60,7 @@ export const FundsCell = ({ data }: Props): ReactElement => {
     trainingFundEmployeePercentage,
     trainingFundEmployerAmount,
     trainingFundEmployerPercentage,
-  } = getFragmentData(SalariesRecordFundsFieldsFragmentDoc, data);
+  } = readFragment(SalariesRecordFundsFieldsFragmentDoc, data);
 
   return (
     <td className="pl-5">

@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  RegenerateLedgerDocument,
-  RegenerateLedgerMutation,
-  RegenerateLedgerMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const RegenerateLedgerDocument = graphql(`
   mutation RegenerateLedger($chargeId: UUID!) {
     regenerateLedgerRecords(chargeId: $chargeId) {
       __typename
@@ -21,7 +16,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type RegenerateLedgerMutationVariables = VariablesOf<typeof RegenerateLedgerDocument>;
+type RegenerateLedgerMutation = ResultOf<typeof RegenerateLedgerDocument>;
 
 type Ledger = Extract<
   RegenerateLedgerMutation['regenerateLedgerRecords'],

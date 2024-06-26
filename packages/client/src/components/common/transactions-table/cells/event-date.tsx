@@ -1,22 +1,20 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TransactionsTableEventDateFieldsFragmentDoc = graphql(`
   fragment TransactionsTableEventDateFields on Transaction {
     id
     eventDate
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof TransactionsTableEventDateFieldsFragmentDoc>;
+  data: FragmentOf<typeof TransactionsTableEventDateFieldsFragmentDoc>;
 };
 
 export const EventDate = ({ data }: Props): ReactElement => {
-  const transaction = getFragmentData(TransactionsTableEventDateFieldsFragmentDoc, data);
+  const transaction = readFragment(TransactionsTableEventDateFieldsFragmentDoc, data);
   const eventDate = 'eventDate' in transaction ? transaction.eventDate : undefined;
 
   return (

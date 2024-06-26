@@ -1,12 +1,10 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
-import { AllChargesDescriptionFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesDescriptionFieldsFragmentDoc = graphql(`
   fragment AllChargesDescriptionFields on Charge {
     id
     userDescription
@@ -19,27 +17,36 @@ import { ConfirmMiniButton } from '../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesDescriptionFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesDescriptionFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const Description = ({ data, onChange }: Props): ReactElement => {
-  const charge = getFragmentData(AllChargesDescriptionFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesDescriptionFieldsFragmentDoc, data);
   const isError = useMemo(
-    () => charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description),
-    [charge?.validationData?.missingInfo],
+    () =>
+      'validationData' in charge
+        ? charge.validationData?.missingInfo?.includes('DESCRIPTION')
+        : undefined,
+    [charge],
   );
   const hasAlternative = useMemo(
-    () => isError && !!charge.missingInfoSuggestions?.description?.trim().length,
-    [isError, charge.missingInfoSuggestions?.description],
+    () =>
+      isError &&
+      'missingInfoSuggestions' in charge &&
+      !!charge.missingInfoSuggestions?.description?.trim().length,
+    [isError, charge],
   );
   const { userDescription, id: chargeId } = charge;
   const cellText = useMemo(
-    () => userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing',
-    [userDescription, charge.missingInfoSuggestions?.description],
+    () =>
+      userDescription?.trim() ??
+      ('missingInfoSuggestions' in charge && charge.missingInfoSuggestions?.description) ??
+      'Missing',
+    [userDescription, charge],
   );
 
   const { updateCharge, fetching } = useUpdateCharge();
@@ -64,7 +71,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
             <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
           </Indicator>
         </div>
-        {hasAlternative && (
+        {hasAlternative && 'missingInfoSuggestions' in charge && (
           <ConfirmMiniButton
             onClick={(event): void => {
               event.stopPropagation();

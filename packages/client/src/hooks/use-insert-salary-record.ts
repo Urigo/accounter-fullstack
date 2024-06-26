@@ -1,14 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  InsertSalaryRecordDocument,
-  InsertSalaryRecordMutation,
-  InsertSalaryRecordMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const InsertSalaryRecordDocument = graphql(`
   mutation InsertSalaryRecord($salaryRecords: [SalaryRecordInput!]!) {
     insertSalaryRecords(salaryRecords: $salaryRecords) {
       __typename
@@ -25,7 +20,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type InsertSalaryRecordMutationVariables = VariablesOf<typeof InsertSalaryRecordDocument>;
+type InsertSalaryRecordMutation = ResultOf<typeof InsertSalaryRecordDocument>;
 
 type SalaryRecord = Extract<
   InsertSalaryRecordMutation['insertSalaryRecords'],

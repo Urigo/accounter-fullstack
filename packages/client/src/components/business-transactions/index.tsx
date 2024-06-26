@@ -2,18 +2,15 @@ import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } fro
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Mark, Table, Text, Tooltip } from '@mantine/core';
-import {
-  BusinessTransactionsFilter,
-  BusinessTransactionsSummeryDocument,
-} from '../../gql/graphql.js';
+import { BusinessTransactionsFilter } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
 import { AccounterLoader, AccounterTableRow } from '../common';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const BusinessTransactionsSummeryDocument = graphql(`
   query BusinessTransactionsSummery($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
@@ -76,7 +73,7 @@ import { BusinessTransactionsFilters } from './business-transactions-filters';
       }
     }
   }
-`;
+`);
 
 export const BusinessTransactionsSummery = (): ReactElement => {
   const { get } = useUrlQuery();

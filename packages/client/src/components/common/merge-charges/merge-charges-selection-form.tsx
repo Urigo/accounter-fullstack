@@ -3,16 +3,12 @@ import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AccounterLoader, ListCapsule } from '..';
-import {
-  FetchMultipleChargesDocument,
-  FetchMultipleChargesQuery,
-  UpdateChargeInput,
-} from '../../../gql/graphql.js';
-import { useMergeCharges } from '../../../hooks/use-merge-charges';
+import { graphql, ResultOf } from '../../../graphql.js';
+import { useMergeCharges } from '../../../hooks/use-merge-charges.js';
+import type { UpdateChargeInput } from '../../../hooks/use-update-charge.js';
+import { AccounterLoader, ListCapsule } from '../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const FetchMultipleChargesDocument = graphql(`
   query FetchMultipleCharges($chargeIds: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIds) {
       id
@@ -33,7 +29,9 @@ import { useMergeCharges } from '../../../hooks/use-merge-charges';
       userDescription
     }
   }
-`;
+`);
+
+type FetchMultipleChargesQuery = ResultOf<typeof FetchMultipleChargesDocument>;
 
 interface Props {
   chargeIds: string[];

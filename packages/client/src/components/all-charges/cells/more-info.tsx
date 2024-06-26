@@ -1,11 +1,9 @@
 import { ReactElement, useMemo } from 'react';
 import { Indicator } from '@mantine/core';
-import { AllChargesMoreInfoFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { DragFile, ListCapsule } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesMoreInfoFieldsFragmentDoc = graphql(`
   fragment AllChargesMoreInfoFields on Charge {
     __typename
     id
@@ -24,15 +22,16 @@ import { DragFile, ListCapsule } from '../../common/index.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesMoreInfoFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesMoreInfoFieldsFragmentDoc>;
 };
 
 export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
-  const data = getFragmentData(AllChargesMoreInfoFieldsFragmentDoc, rawData);
-  const { metadata, validationData, id, __typename } = data;
+  const data = readFragment(AllChargesMoreInfoFieldsFragmentDoc, rawData);
+  const { metadata, id, __typename } = data;
+  const validationData = 'validationData' in data ? data.validationData : undefined;
 
   const shouldHaveDocuments = useMemo((): boolean => {
     switch (__typename) {
@@ -51,17 +50,23 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   }, [__typename]);
 
   const isTransactionsError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.Transactions),
+    () => validationData?.missingInfo?.includes('TRANSACTIONS'),
     [validationData?.missingInfo],
   );
 
   const isDocumentsError = useMemo(
-    () => shouldHaveDocuments && validationData?.missingInfo?.includes(MissingChargeInfo.Documents),
+    () => shouldHaveDocuments && validationData?.missingInfo?.includes('DOCUMENTS'),
     [shouldHaveDocuments, validationData?.missingInfo],
   );
 
-  const isProcessingLedger = useMemo(() => !metadata?.invalidLedger, [metadata?.invalidLedger]);
-  const ledgerStatus = useMemo(() => metadata?.invalidLedger, [metadata?.invalidLedger]);
+  const isProcessingLedger = useMemo(
+    () => !(metadata && 'invalidLedger' in metadata && metadata?.invalidLedger),
+    [metadata],
+  );
+  const ledgerStatus = useMemo(
+    () => !!metadata && 'invalidLedger' in metadata && metadata?.invalidLedger,
+    [metadata],
+  );
 
   return (
     <td>
@@ -118,8 +123,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
                 </Indicator>
               ),
               extraClassName:
-                !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
-                !shouldHaveDocuments
+                !validationData?.missingInfo?.includes('DOCUMENTS') || !shouldHaveDocuments
                   ? undefined
                   : 'bg-yellow-400',
             },

@@ -1,35 +1,49 @@
 import { ReactElement } from 'react';
-import { SalariesRecordFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../graphql.js';
 import { EditMiniButton } from '../common/index.js';
-import { EmployeeCell } from './record-cells/employee.js';
-import { FundsCell } from './record-cells/funds.js';
-import { InsurancesAndTaxesCell } from './record-cells/insurances-and-taxes.js';
-import { MainSalaryCell } from './record-cells/main-salary.js';
-import { WorkFrameCell } from './record-cells/work-frame.js';
+import {
+  EmployeeCell,
+  FundsCell,
+  InsurancesAndTaxesCell,
+  MainSalaryCell,
+  SalariesRecordEmployeeFieldsFragmentDoc,
+  SalariesRecordFundsFieldsFragmentDoc,
+  SalariesRecordInsurancesAndTaxesFieldsFragmentDoc,
+  SalariesRecordMainSalaryFieldsFragmentDoc,
+  SalariesRecordWorkFrameFieldsFragmentDoc,
+  WorkFrameCell,
+} from './record-cells/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment SalariesRecordFields on Salary {
-    month
-    employee {
-      id
+export const SalariesRecordFieldsFragmentDoc = graphql(
+  `
+    fragment SalariesRecordFields on Salary {
+      month
+      employee {
+        id
+      }
+      ...SalariesRecordEmployeeFields
+      ...SalariesRecordMainSalaryFields
+      ...SalariesRecordFundsFields
+      ...SalariesRecordInsurancesAndTaxesFields
+      ...SalariesRecordWorkFrameFields
     }
-    ...SalariesRecordEmployeeFields
-    ...SalariesRecordMainSalaryFields
-    ...SalariesRecordFundsFields
-    ...SalariesRecordInsurancesAndTaxesFields
-    ...SalariesRecordWorkFrameFields
-  }
-`;
+  `,
+  [
+    SalariesRecordEmployeeFieldsFragmentDoc,
+    SalariesRecordMainSalaryFieldsFragmentDoc,
+    SalariesRecordFundsFieldsFragmentDoc,
+    SalariesRecordInsurancesAndTaxesFieldsFragmentDoc,
+    SalariesRecordWorkFrameFieldsFragmentDoc,
+  ],
+);
 
 interface Props {
   setEditSalaryRecord: () => void;
-  data: FragmentType<typeof SalariesRecordFieldsFragmentDoc>;
+  data: FragmentOf<typeof SalariesRecordFieldsFragmentDoc>;
 }
 
 export const SalaryRecord = ({ setEditSalaryRecord, data }: Props): ReactElement => {
-  const salaryRecord = getFragmentData(SalariesRecordFieldsFragmentDoc, data);
+  const salaryRecord = readFragment(SalariesRecordFieldsFragmentDoc, data);
 
   return (
     <>

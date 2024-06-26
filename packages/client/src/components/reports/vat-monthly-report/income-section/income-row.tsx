@@ -1,37 +1,41 @@
 import { ReactElement, useState } from 'react';
 import { Paper } from '@mantine/core';
-import { VatReportIncomeRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { ChargeExtendedInfo } from '../../../all-charges/charge-extended-info.js';
 import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';
-import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import {
+  AccountantApproval,
+  VatReportAccountantApprovalFieldsFragmentDoc,
+} from '../cells/accountant-approval.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment VatReportIncomeRowFields on VatReportRecord {
-    ...VatReportAccountantApprovalFields
-    chargeId
-    business {
-      id
-      name
+export const VatReportIncomeRowFieldsFragmentDoc = graphql(
+  `
+    fragment VatReportIncomeRowFields on VatReportRecord {
+      ...VatReportAccountantApprovalFields
+      chargeId
+      business {
+        id
+        name
+      }
+      vatNumber
+      image
+      documentSerial
+      documentDate
+      chargeDate
+      amount {
+        formatted
+      }
+      taxReducedLocalAmount {
+        formatted
+      }
     }
-    vatNumber
-    image
-    documentSerial
-    documentDate
-    chargeDate
-    amount {
-      formatted
-    }
-    taxReducedLocalAmount {
-      formatted
-    }
-  }
-`;
+  `,
+  [VatReportAccountantApprovalFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof VatReportIncomeRowFieldsFragmentDoc>;
+  data: FragmentOf<typeof VatReportIncomeRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: string[];
   cumulativeAmount: number;
@@ -44,7 +48,7 @@ export const IncomeRow = ({
   cumulativeAmount,
 }: Props): ReactElement => {
   const [opened, setOpened] = useState(false);
-  const incomeItem = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, data);
+  const incomeItem = readFragment(VatReportIncomeRowFieldsFragmentDoc, data);
 
   return (
     <>

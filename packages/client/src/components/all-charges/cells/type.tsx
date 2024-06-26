@@ -11,23 +11,21 @@ import {
   Wallet,
 } from 'tabler-icons-react';
 import { ThemeIcon } from '@mantine/core';
-import { AllChargesTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesTypeFieldsFragmentDoc = graphql(`
   fragment AllChargesTypeFields on Charge {
     __typename
     id
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesTypeFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesTypeFieldsFragmentDoc>;
 };
 
 export const TypeCell = ({ data }: Props): ReactElement => {
-  const charge = getFragmentData(AllChargesTypeFieldsFragmentDoc, data);
+  const charge = readFragment(AllChargesTypeFieldsFragmentDoc, data);
   const { __typename } = charge;
 
   const type = useMemo((): {

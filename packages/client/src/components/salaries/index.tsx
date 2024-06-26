@@ -1,6 +1,6 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
-import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
+import { graphql } from '../../graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import {
@@ -10,24 +10,26 @@ import {
   InsertSalaryRecordModal,
 } from '../common/index.js';
 import { getDefaultFilterDates, SalariesFilter, SalariesFilters } from './salaries-filters.js';
-import { SalariesTable } from './salaries-table.js';
+import { SalariesTable, SalariesTableFieldsFragmentDoc } from './salaries-table.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query SalaryScreenRecords(
-    $fromDate: TimelessDate!
-    $toDate: TimelessDate!
-    $employeeIDs: [UUID!]
-  ) {
-    salaryRecordsByDates(fromDate: $fromDate, toDate: $toDate, employeeIDs: $employeeIDs) {
-      month
-      employee {
-        id
+export const SalaryScreenRecordsDocument = graphql(
+  `
+    query SalaryScreenRecords(
+      $fromDate: TimelessDate!
+      $toDate: TimelessDate!
+      $employeeIDs: [UUID!]
+    ) {
+      salaryRecordsByDates(fromDate: $fromDate, toDate: $toDate, employeeIDs: $employeeIDs) {
+        month
+        employee {
+          id
+        }
+        ...SalariesTableFields
       }
-      ...SalariesTableFields
     }
-  }
-`;
+  `,
+  [SalariesTableFieldsFragmentDoc],
+);
 
 export const Salaries = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);

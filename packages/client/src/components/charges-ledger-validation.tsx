@@ -2,16 +2,13 @@ import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } f
 import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
-import {
-  ChargeFilter,
-  ChargesLedgerValidationDocument,
-  ChargeSortByField,
-} from '../gql/graphql.js';
+import { graphql } from '../graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query';
 import { FiltersContext } from '../providers/filters-context';
 import { UserContext } from '../providers/user-provider.js';
-import { AllChargesTable } from './all-charges/all-charges-table';
+import { AllChargesTable, AllChargesTableFieldsFragmentDoc } from './all-charges/all-charges-table';
 import { ChargesFilters } from './all-charges/charges-filters';
+import { ChargeFilter } from './all-charges/index.js';
 import {
   AccounterLoader,
   EditChargeModal,
@@ -21,18 +18,20 @@ import {
   UploadDocumentModal,
 } from './common';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ChargesLedgerValidation($limit: Int, $filters: ChargeFilter) {
-    chargesWithLedgerChanges(limit: $limit, filters: $filters) @stream {
-      progress
-      charge {
-        id
-        ...AllChargesTableFields
+export const ChargesLedgerValidationDocument = graphql(
+  `
+    query ChargesLedgerValidation($limit: Int, $filters: ChargeFilter) {
+      chargesWithLedgerChanges(limit: $limit, filters: $filters) @stream {
+        progress
+        charge {
+          id
+          ...AllChargesTableFields
+        }
       }
     }
-  }
-`;
+  `,
+  [AllChargesTableFieldsFragmentDoc],
+);
 
 export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
@@ -58,9 +57,9 @@ export const ChargesLedgerValidation = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
+          byOwners: userContext?.ownerId ? [userContext.ownerId] : [],
           sortBy: {
-            field: ChargeSortByField.Date,
+            field: 'DATE',
             asc: false,
           },
         },

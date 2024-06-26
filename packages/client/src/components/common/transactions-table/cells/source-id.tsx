@@ -1,21 +1,19 @@
 import { ReactElement } from 'react';
-import { TransactionsTableSourceIdFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TransactionsTableSourceIdFieldsFragmentDoc = graphql(`
   fragment TransactionsTableSourceIDFields on Transaction {
     id
     referenceKey
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof TransactionsTableSourceIdFieldsFragmentDoc>;
+  data: FragmentOf<typeof TransactionsTableSourceIdFieldsFragmentDoc>;
 };
 
 export const SourceID = ({ data }: Props): ReactElement => {
-  const transaction = getFragmentData(TransactionsTableSourceIdFieldsFragmentDoc, data);
+  const transaction = readFragment(TransactionsTableSourceIdFieldsFragmentDoc, data);
 
   return (
     <td>

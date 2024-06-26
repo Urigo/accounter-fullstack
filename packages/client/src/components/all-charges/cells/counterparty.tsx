@@ -1,15 +1,10 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
-import {
-  AllChargesEntityFieldsFragmentDoc,
-  ChargeFilter,
-  MissingChargeInfo,
-} from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import type { ChargeFilter } from '../index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const AllChargesEntityFieldsFragmentDoc = graphql(`
   fragment AllChargesEntityFields on Charge {
     __typename
     id
@@ -23,15 +18,15 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
       }
     }
   }
-`;
+`);
 
 type Props = {
-  data: FragmentType<typeof AllChargesEntityFieldsFragmentDoc>;
+  data: FragmentOf<typeof AllChargesEntityFieldsFragmentDoc>;
 };
 
 export const Counterparty = ({ data }: Props): ReactElement => {
   const { get } = useUrlQuery();
-  const { counterparty, validationData, __typename } = getFragmentData(
+  const { counterparty, validationData, __typename } = readFragment(
     AllChargesEntityFieldsFragmentDoc,
     data,
   );
@@ -50,9 +45,7 @@ export const Counterparty = ({ data }: Props): ReactElement => {
   }, [__typename]);
 
   const isError = useMemo(
-    () =>
-      shouldHaveCounterparty &&
-      validationData?.missingInfo?.includes(MissingChargeInfo.Counterparty),
+    () => shouldHaveCounterparty && validationData?.missingInfo?.includes('COUNTERPARTY'),
     [shouldHaveCounterparty, validationData?.missingInfo],
   );
   const { name, id } = counterparty ?? { name: 'Missing', id: undefined };

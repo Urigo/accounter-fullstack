@@ -1,25 +1,40 @@
 import { ReactElement } from 'react';
-import { ChargeTableTransactionsFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
-import { TransactionsTable } from '../common/index.js';
+import { FragmentOf, graphql, readFragment } from '../../graphql.js';
+import {
+  TransactionForTransactionsTableFieldsFragmentDoc,
+  TransactionsTable,
+} from '../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment ChargeTableTransactionsFields on Charge {
-    id
-    transactions {
-      ...TransactionForTransactionsTableFields
+export const ChargeTableTransactionsFieldsFragmentDoc = graphql(
+  `
+    fragment ChargeTableTransactionsFields on Charge {
+      id
+      transactions {
+        ...TransactionForTransactionsTableFields
+      }
     }
+  `,
+  [TransactionForTransactionsTableFieldsFragmentDoc],
+);
+
+export function isChargeTableTransactionsFieldsFragmentReady(
+  data?: object | FragmentOf<typeof ChargeTableTransactionsFieldsFragmentDoc>,
+): data is FragmentOf<typeof ChargeTableTransactionsFieldsFragmentDoc> {
+  if (!!data && 'transactions' in data && data.transactions != null) {
+    console.log('data.transactions', data.transactions);
+    return true;
   }
-`;
+  console.log('not ready');
+  return false;
+}
 
 type Props = {
-  transactionsProps: FragmentType<typeof ChargeTableTransactionsFieldsFragmentDoc>;
+  transactionsProps: FragmentOf<typeof ChargeTableTransactionsFieldsFragmentDoc>;
   onChange: () => void;
 };
 
 export const ChargeTransactionsTable = ({ transactionsProps, onChange }: Props): ReactElement => {
-  const { transactions } = getFragmentData(
+  const { transactions } = readFragment(
     ChargeTableTransactionsFieldsFragmentDoc,
     transactionsProps,
   );

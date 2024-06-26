@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateSalaryRecordDocument,
-  UpdateSalaryRecordMutation,
-  UpdateSalaryRecordMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateSalaryRecordDocument = graphql(`
   mutation UpdateSalaryRecord($salaryRecord: SalaryRecordEditInput!) {
     updateSalaryRecord(salaryRecord: $salaryRecord) {
       __typename
@@ -24,12 +19,15 @@ import {
       }
     }
   }
-`;
+`);
 
 type SalaryRecord = Extract<
   UpdateSalaryRecordMutation['updateSalaryRecord'],
   { __typename: 'UpdateSalaryRecordSuccessfulResult' }
 >['salaryRecord'];
+
+type UpdateSalaryRecordMutationVariables = VariablesOf<typeof UpdateSalaryRecordDocument>;
+type UpdateSalaryRecordMutation = ResultOf<typeof UpdateSalaryRecordDocument>;
 
 type UseUpdateSalaryRecord = {
   fetching: boolean;

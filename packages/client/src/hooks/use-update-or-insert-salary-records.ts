@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  UpdateOrInsertSalaryRecordsDocument,
-  UpdateOrInsertSalaryRecordsMutation,
-  UpdateOrInsertSalaryRecordsMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const UpdateOrInsertSalaryRecordsDocument = graphql(`
   mutation UpdateOrInsertSalaryRecords($salaryRecords: [SalaryRecordInput!]!) {
     insertOrUpdateSalaryRecords(salaryRecords: $salaryRecords) {
       __typename
@@ -24,7 +19,16 @@ import {
       }
     }
   }
-`;
+`);
+
+export type SalaryRecordInput = VariablesOf<
+  typeof UpdateOrInsertSalaryRecordsDocument
+>['salaryRecords'];
+
+type UpdateOrInsertSalaryRecordsMutationVariables = VariablesOf<
+  typeof UpdateOrInsertSalaryRecordsDocument
+>;
+type UpdateOrInsertSalaryRecordsMutation = ResultOf<typeof UpdateOrInsertSalaryRecordsDocument>;
 
 type UseUpdateOrInsertSalaryRecords = {
   fetching: boolean;

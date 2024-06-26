@@ -1,5 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+import { graphql } from '../../../graphql.js';
+
+export const AllBusinessesDocument = graphql(`
   query AllBusinesses {
     allBusinesses {
       nodes {
@@ -8,6 +9,4 @@
       }
     }
   }
-`;
-
-export {};
+`);

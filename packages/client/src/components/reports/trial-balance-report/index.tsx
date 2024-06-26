@@ -2,25 +2,22 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
+import { graphql } from '../../../graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
 import { AccounterLoader } from '../../common';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceTable } from './trial-balance-table';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const TrialBalanceReportDocument = graphql(`
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
           business {
             id
-            name
             sortCode {
               id
-              name
             }
           }
           credit {
@@ -81,7 +78,7 @@ import { TrialBalanceTable } from './trial-balance-table';
       }
     }
   }
-`;
+`);
 
 export const TrialBalanceReport = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState(false);

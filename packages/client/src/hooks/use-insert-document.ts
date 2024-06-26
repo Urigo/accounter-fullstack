@@ -1,13 +1,8 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import {
-  InsertDocumentDocument,
-  InsertDocumentMutation,
-  InsertDocumentMutationVariables,
-} from '../gql/graphql.js';
+import { graphql, ResultOf, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const InsertDocumentDocument = graphql(`
   mutation InsertDocument($record: InsertDocumentInput!) {
     insertDocument(record: $record) {
       __typename
@@ -21,7 +16,10 @@ import {
       }
     }
   }
-`;
+`);
+
+type InsertDocumentMutationVariables = VariablesOf<typeof InsertDocumentDocument>;
+type InsertDocumentMutation = ResultOf<typeof InsertDocumentDocument>;
 
 type InsertDocumentSuccessfulResult = Extract<
   InsertDocumentMutation['insertDocument'],

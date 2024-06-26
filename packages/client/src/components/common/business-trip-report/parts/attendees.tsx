@@ -1,29 +1,30 @@
 import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { BusinessTripReportAttendeesFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { FragmentOf, graphql, readFragment } from '../../../../graphql.js';
 import { AddAttendee } from '../buttons/add-attendee.js';
-import { AttendeeRow } from './attendee-row.js';
+import { AttendeeRow, BusinessTripReportAttendeeRowFieldsFragmentDoc } from './attendee-row.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripReportAttendeesFields on BusinessTrip {
-    id
-    attendees {
+export const BusinessTripReportAttendeesFieldsFragmentDoc = graphql(
+  `
+    fragment BusinessTripReportAttendeesFields on BusinessTrip {
       id
-      name
-      ...BusinessTripReportAttendeeRowFields
+      attendees {
+        id
+        name
+        ...BusinessTripReportAttendeeRowFields
+      }
     }
-  }
-`;
+  `,
+  [BusinessTripReportAttendeeRowFieldsFragmentDoc],
+);
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportAttendeesFieldsFragmentDoc>;
+  data: FragmentOf<typeof BusinessTripReportAttendeesFieldsFragmentDoc>;
   onChange: () => void;
 }
 
 export const Attendees = ({ data, onChange }: Props): ReactElement => {
-  const { attendees, id } = getFragmentData(BusinessTripReportAttendeesFieldsFragmentDoc, data);
+  const { attendees, id } = readFragment(BusinessTripReportAttendeesFieldsFragmentDoc, data);
 
   if (!attendees?.length) {
     return <AddAttendee businessTripId={id} onAdd={onChange} />;

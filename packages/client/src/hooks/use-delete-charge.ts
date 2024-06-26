@@ -1,13 +1,14 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import { DeleteChargeDocument, DeleteChargeMutationVariables } from '../gql/graphql.js';
+import { graphql, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DeleteChargeDocument = graphql(`
   mutation DeleteCharge($chargeId: UUID!) {
     deleteCharge(chargeId: $chargeId)
   }
-`;
+`);
+
+type DeleteChargeMutationVariables = VariablesOf<typeof DeleteChargeDocument>;
 
 type UseDeleteCharge = {
   fetching: boolean;

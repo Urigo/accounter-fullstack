@@ -1,13 +1,14 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
-import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js';
+import { graphql, VariablesOf } from '../graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
+export const DeleteTagDocument = graphql(`
   mutation DeleteTag($tag: String!) {
     deleteTag(name: $tag)
   }
-`;
+`);
+
+type DeleteTagMutationVariables = VariablesOf<typeof DeleteTagDocument>;
 
 type UseDeleteTag = {
   fetching: boolean;
