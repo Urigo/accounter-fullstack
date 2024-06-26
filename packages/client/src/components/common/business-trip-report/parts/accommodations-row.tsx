@@ -49,7 +49,6 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
     updateBusinessTripAccommodationsTransaction({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
-      close();
     });
   };
 

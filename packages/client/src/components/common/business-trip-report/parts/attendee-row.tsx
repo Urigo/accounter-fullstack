@@ -47,7 +47,6 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
     updateBusinessTripAttendee({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
-      close();
     });
   };
 
