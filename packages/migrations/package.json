@@ -12,7 +12,7 @@
     "migration:run": "yarn db:migrator up"
   },
   "devDependencies": {
-    "@types/node": "20.14.8",
+    "@types/node": "20.14.9",
     "@types/pg": "8.11.6",
     "dotenv": "16.4.5",
     "got": "14.4.1",
