@@ -1682,14 +1682,14 @@
     "@whatwg-node/server" "^0.9.34"
     graphql-yoga "^5.3.0"
 
-"@graphql-mesh/json-schema@0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1":
-  version "0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/json-schema/-/json-schema-0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1.tgz#29d11faa32ddad85d19fc20cd54971cc56fd13e0"
-  integrity sha512-57BSYvLk8Dn9qg5BO5Qagocmtte7cDGBswXLHtUQfmS7sWGYOUYK7lEGdkjsQ9qz2Ep3OTDKErz/XqbGm4tsgA==
+"@graphql-mesh/json-schema@0.101.0":
+  version "0.101.0"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/json-schema/-/json-schema-0.101.0.tgz#12258124559bb6842d84664a4f7c8a8da5443a25"
+  integrity sha512-pTl2FNcMNswTZjGUIDkcWt5hpOFkxTQH6Q2qK9Pf1+NDy43XG8OSHymSlWizVuQ8iZ/uGwotPrbhCf2VgwzPmg==
   dependencies:
     "@graphql-mesh/string-interpolation" "0.5.4"
     "@json-schema-tools/meta-schema" "1.7.5"
-    "@omnigraph/json-schema" "0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
+    "@omnigraph/json-schema" "0.101.0"
     graphql-compose "9.0.11"
     json-machete "0.97.3"
 
@@ -1767,10 +1767,10 @@
     "@graphql-tools/delegate" "^10.0.11"
     "@graphql-tools/utils" "^10.2.1"
 
-"@graphql-mesh/transport-rest@0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1":
-  version "0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/transport-rest/-/transport-rest-0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1.tgz#d03f28c8e9b2c1050946b3c0c0a55ba532227662"
-  integrity sha512-W6Wa77mKiRLcHRqE9STk2JeEsjg6jqRdjOxs8hQrLMyLNu8AJsUrVU/K6Hywqv8ykRopVJB6+6HRyHIHmBtLKQ==
+"@graphql-mesh/transport-rest@0.2.10-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1", "@graphql-mesh/transport-rest@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/transport-rest/-/transport-rest-0.3.0.tgz#ffebd98eb3ff4de6cb72274fa563ba94ec9c2a3a"
+  integrity sha512-1H3FWQxIoROUAIcCfZb1O0LQbB9MUeGuRdHYfCe8ZihMxQsd0TCvXONWGV+RNTjMVaCcFRpv6O0YZ4KkuOiykQ==
   dependencies:
     "@graphql-mesh/string-interpolation" "^0.5.4"
     dset "^3.1.3"
@@ -2698,7 +2698,7 @@
   resolved "https://registry.yarnpkg.com/@npmcli/name-from-folder/-/name-from-folder-2.0.0.tgz#c44d3a7c6d5c184bb6036f4d5995eee298945815"
   integrity sha512-pwK+BfEBZJbKdNYpHHRTNBwBoqrN/iIMO0AiGvYsp3Hoaq0WbgGSWQR6SCldZovoDpY3yje5lkFUe6gsDgJ2vg==
 
-"@omnigraph/json-schema@0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1":
+"@omnigraph/json-schema@0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1", "@omnigraph/json-schema@0.101.0":
   version "0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1"
   resolved "https://registry.yarnpkg.com/@omnigraph/json-schema/-/json-schema-0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1.tgz#9fc6af1b3364bc531a9593034e3a414ed0296a6a"
   integrity sha512-3fI9J3uvnfNeU0Dlh9estAdERuqnq/LBEa82UAkO3BiKZ/uTTJ1xc2eUCuAyN2w1xj15Hi0gLvQehOcXDUij4Q==
