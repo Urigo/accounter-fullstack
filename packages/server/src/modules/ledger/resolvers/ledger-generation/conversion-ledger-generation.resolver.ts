@@ -272,20 +272,14 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           const ledgerEntry: LedgerProto = {
             id: quoteEntry.id + '|revaluation', // NOTE: this field is dummy
             creditAccountID1: isDebitConversion ? EXCHANGE_REVALUATION_TAX_CATEGORY_ID : undefined,
-            creditAmount1: conversionFee.foreignAmount
-              ? Math.abs(conversionFee.foreignAmount)
-              : undefined,
             localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
             debitAccountID1: isDebitConversion ? undefined : EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-            debitAmount1: conversionFee.foreignAmount
-              ? Math.abs(conversionFee.foreignAmount)
-              : undefined,
             localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
             description: 'Exchange Revaluation',
             isCreditorCounterparty: true,
             invoiceDate: quoteEntry.invoiceDate,
             valueDate: quoteEntry.valueDate,
-            currency: quoteEntry.currency,
+            currency: DEFAULT_LOCAL_CURRENCY,
             reference1: quoteEntry.reference1,
             ownerId: quoteEntry.ownerId,
             chargeId,
