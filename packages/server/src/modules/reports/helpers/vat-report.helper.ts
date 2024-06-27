@@ -62,9 +62,6 @@ export function adjustTaxRecords(
     const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
     const rate = getRateForCurrency(doc.currency_code, exchangeRates);
 
-    // convert document vat to ILS
-    const vat = doc.vat_amount ? doc.vat_amount * rate : null;
-
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
       chargeAccountantReviewed: charge.accountant_reviewed,
@@ -76,7 +73,7 @@ export function adjustTaxRecords(
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
       documentAmount: String((doc.type === DocumentType.CreditInvoice ? -1 : 1) * doc.total_amount),
-      vat,
+      vat: doc.vat_amount,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
       isExpense:
@@ -86,21 +83,19 @@ export function adjustTaxRecords(
     };
 
     // set default amountBeforeVAT
-    if (!partialRecord.vat) {
+    if (!doc.vat_amount) {
       partialRecord.amountBeforeVAT =
         doc.total_amount * rate * (doc.type === DocumentType.CreditInvoice ? -1 : 1);
-    }
-
-    if (partialRecord.businessId && partialRecord.vat) {
+    } else if (partialRecord.businessId) {
       // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
       const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
       const tiplessTotalAmount =
         doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);
-      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount!);
+      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount);
       if (vatDiff > 0.005) {
         throw new GraphQLError(
           `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
-            doc.vat_amount! / (tiplessTotalAmount - doc.vat_amount!)
+            doc.vat_amount / (tiplessTotalAmount - doc.vat_amount)
           } for invoice ID=${doc.id}`,
         );
       }
@@ -109,7 +104,7 @@ export function adjustTaxRecords(
       const isDecreasedVat = false;
 
       // decorate record with additional fields
-      const vatAfterDeduction = partialRecord.vat * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
+      const vatAfterDeduction = doc.vat_amount! * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
       partialRecord.vatAfterDeduction = vatAfterDeduction;
