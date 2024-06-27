@@ -163,6 +163,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                   )}
                 />
               ) : (
+                // eslint-disable-next-line react/jsx-no-useless-fragment
                 <></>
               )}
               <Controller
