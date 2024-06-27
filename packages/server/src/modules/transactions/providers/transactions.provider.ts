@@ -79,39 +79,9 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
       charge_id,
       NULL
     ),
-    source_id = COALESCE(
-      $sourceId,
-      source_id,
-      NULL
-    ),
-    source_description = COALESCE(
-      $sourceDescription,
-      source_description,
-      NULL
-    ),
-    currency = COALESCE(
-      $currency,
-      currency,
-      NULL
-    ),
-    event_date = COALESCE(
-      $eventDate,
-      event_date,
-      NULL
-    ),
-    debit_date = COALESCE(
+    debit_date_override = COALESCE(
       $debitDate,
-      debit_date,
-      NULL
-    ),
-    amount = COALESCE(
-      $Amount,
-      amount,
-      NULL
-    ),
-    current_balance = COALESCE(
-      $currentBalance,
-      current_balance,
+      debit_date_override,
       NULL
     ),
     business_id = COALESCE(

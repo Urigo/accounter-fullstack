@@ -174,6 +174,7 @@ export default gql`
   input UpdateTransactionInput {
     counterpartyId: UUID
     chargeId: UUID
+    effectiveDate: TimelessDate
     isFee: Boolean
   }
 
