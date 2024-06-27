@@ -25,6 +25,7 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
       isFee
       account {
         __typename
+        id
       }
     }
   }
