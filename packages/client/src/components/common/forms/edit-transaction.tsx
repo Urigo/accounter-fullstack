@@ -3,13 +3,13 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { SimpleGrid } from '..';
+import { SimpleGrid, TextInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   EditTransactionDocument,
   UpdateTransactionInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers';
+import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -17,35 +17,16 @@ import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
   query EditTransaction($transactionIDs: [UUID!]!) {
     transactionsByIDs(transactionIDs: $transactionIDs) {
       id
-      account {
-        id
-        ... on CardFinancialAccount {
-          __typename
-          fourDigits
-          number
-        }
-        ... on BankFinancialAccount {
-          __typename
-          name
-          accountNumber
-        }
-      }
-      sourceDescription
-      amount {
-        raw
-        currency
-      }
       counterparty {
         id
         name
       }
-      balance {
-        raw
-        currency
-      }
-      eventDate
       effectiveDate
       isFee
+      account {
+        __typename
+        id
+      }
     }
   }
 `;
@@ -160,6 +141,30 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                   />
                 )}
               />
+              {transaction?.account.__typename === 'CardFinancialAccount' ? (
+                <Controller
+                  name="effectiveDate"
+                  control={transactionControl}
+                  defaultValue={transaction.effectiveDate}
+                  rules={{
+                    pattern: {
+                      value: TIMELESS_DATE_REGEX,
+                      message: 'Date must be im format yyyy-mm-dd',
+                    },
+                  }}
+                  render={({ field, fieldState }): ReactElement => (
+                    <TextInput
+                      {...field}
+                      value={field.value ?? undefined}
+                      error={fieldState.error?.message}
+                      isDirty={fieldState.isDirty}
+                      label="Effective Date"
+                    />
+                  )}
+                />
+              ) : (
+                <></>
+              )}
               <Controller
                 name="isFee"
                 control={transactionControl}
