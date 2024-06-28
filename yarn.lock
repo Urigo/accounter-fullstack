@@ -1239,13 +1239,13 @@
     auto-bind "~4.0.0"
     tslib "~2.6.0"
 
-"@graphql-codegen/graphql-modules-preset@4.0.7":
-  version "4.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/graphql-modules-preset/-/graphql-modules-preset-4.0.7.tgz#36a6365638c3bdfb289540ffffadcc78390fd15a"
-  integrity sha512-E3GKLoT23VSLJXjdmyy7ymMh18B0/DgTaEV7J9ctGppS20m+CQErPAzbMLe+Lqv7bgbTbBJHLwD1oqqoSXVg3w==
+"@graphql-codegen/graphql-modules-preset@4.0.8":
+  version "4.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/graphql-modules-preset/-/graphql-modules-preset-4.0.8.tgz#25e869bb23203ed8ea065052ebb46d2a52d5a7d8"
+  integrity sha512-Q4Wxag0dYSLhqHqdOoHGL6nijtQsgooxQk5vhCQ9IJLDMsbtjE+iuAMNFsHaMeeHxwYgqeeXzxKNS/YBWIQoNQ==
   dependencies:
     "@graphql-codegen/plugin-helpers" "^5.0.4"
-    "@graphql-codegen/visitor-plugin-common" "5.2.0"
+    "@graphql-codegen/visitor-plugin-common" "5.3.0"
     "@graphql-tools/utils" "^10.0.0"
     change-case-all "1.0.15"
     parse-filepath "^1.0.2"
@@ -1367,10 +1367,26 @@
     parse-filepath "^1.0.2"
     tslib "~2.4.0"
 
-"@graphql-codegen/visitor-plugin-common@5.2.0", "@graphql-codegen/visitor-plugin-common@^5.2.0":
+"@graphql-codegen/visitor-plugin-common@5.2.0":
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/@graphql-codegen/visitor-plugin-common/-/visitor-plugin-common-5.2.0.tgz#8c48c0a62575d5f302678aae3994a50e9ac72cd0"
   integrity sha512-0p8AwmARaZCAlDFfQu6Sz+JV6SjbPDx3y2nNM7WAAf0au7Im/GpJ7Ke3xaIYBc1b2rTZ+DqSTJI/zomENGD9NA==
+  dependencies:
+    "@graphql-codegen/plugin-helpers" "^5.0.4"
+    "@graphql-tools/optimize" "^2.0.0"
+    "@graphql-tools/relay-operation-optimizer" "^7.0.0"
+    "@graphql-tools/utils" "^10.0.0"
+    auto-bind "~4.0.0"
+    change-case-all "1.0.15"
+    dependency-graph "^0.11.0"
+    graphql-tag "^2.11.0"
+    parse-filepath "^1.0.2"
+    tslib "~2.6.0"
+
+"@graphql-codegen/visitor-plugin-common@5.3.0", "@graphql-codegen/visitor-plugin-common@^5.2.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/visitor-plugin-common/-/visitor-plugin-common-5.3.0.tgz#c9e23e53d06630dbe724e9194c0884b4bb5aae41"
+  integrity sha512-+kUk7gRD/72Wfkjd7D96Lonh9k4lFw9d3O1+I07Jyja4QN9H42kdFEO0hM/b4Q9lLkI1yJ66Oym7lWz2Ikj3aw==
   dependencies:
     "@graphql-codegen/plugin-helpers" "^5.0.4"
     "@graphql-tools/optimize" "^2.0.0"
