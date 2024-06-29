@@ -76,13 +76,6 @@ export async function createAndConnectStore(options: { connectionString: string;
                 )
                 RETURNING id INTO charge_id_var;
             END IF;
-                  
-            -- if conversion, update charge's tag
-            IF (charge_id_var IS NOT NULL AND is_conversion IS TRUE) THEN
-                INSERT INTO ${options.schema}.tags (charge_id, tag_name)
-                VALUES (charge_id_var, 'conversion')
-                ON CONFLICT DO NOTHING;
-            END IF;
 
             -- create new transaction
             INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
