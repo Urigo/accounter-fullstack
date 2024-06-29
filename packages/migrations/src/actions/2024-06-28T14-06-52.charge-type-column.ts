@@ -1,7 +1,7 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2024-06-26T16-19-27.transactions-debit-date-override.sql',
+  name: '2024-06-26T16-19-27.charge-type-column.sql',
   run: ({ sql }) => sql`
     create type accounter_schema.charge_type as enum ('CONVERSION', 'PAYROLL');
 
