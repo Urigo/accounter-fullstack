@@ -98,7 +98,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountantReviewed: fields.accountantApproval,
-        isConversion: fields.isConversion,
+        type: fields.isConversion ? 'PAYROLL' : undefined,
         isProperty: fields.isProperty,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
@@ -173,7 +173,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
             accountantReviewed: fields?.accountantApproval,
-            isConversion: fields?.isConversion,
+            type: fields?.isConversion ? 'PAYROLL' : undefined,
             isProperty: fields?.isProperty,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             ownerId: fields?.ownerId,
@@ -351,7 +351,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     optionalBusinesses: DbCharge =>
       DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
-    isConversion: DbCharge => DbCharge.is_conversion ?? false,
-    isSalary: DbCharge => DbCharge.is_salary ?? false,
+    isSalary: DbCharge => DbCharge.type === 'PAYROLL' ?? false,
   },
 };
