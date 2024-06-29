@@ -53,10 +53,9 @@ export async function createAndConnectStore(options: { connectionString: string;
     
         -- create new charge
         IF (charge_id_var IS NULL) THEN
-            INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
+            INSERT INTO ${options.schema}.charges (owner_id)
             VALUES (
-                owner_id_var,
-                FALSE
+                owner_id_var
             )
             RETURNING id INTO charge_id_var;
         END IF;

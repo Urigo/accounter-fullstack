@@ -35,7 +35,7 @@ export const missingConversionInfoSuggestions: ResolverFn<
     if (fromCurrency && toCurrency) {
       return {
         description: `${fromCurrency} to ${toCurrency} conversion`,
-        tags: [{ name: 'conversion' }],
+        tags: [],
       };
     }
   }

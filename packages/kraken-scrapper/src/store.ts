@@ -69,19 +69,12 @@ export async function createAndConnectStore(options: { connectionString: string;
                 
             -- if no match, create new charge
             IF (charge_id_var IS NULL) THEN
-                INSERT INTO ${options.schema}.charges (owner_id, is_conversion)
+                INSERT INTO ${options.schema}.charges (owner_id, type)
                 VALUES (
                     owner_id_var,
-                    is_conversion
+                    CASE WHEN is_conversion IS TRUE THEN 'PAYROLL'::accounter_schema.charge_type END
                 )
                 RETURNING id INTO charge_id_var;
-            END IF;
-                  
-            -- if conversion, update charge's tag
-            IF (charge_id_var IS NOT NULL AND is_conversion IS TRUE) THEN
-                INSERT INTO ${options.schema}.tags (charge_id, tag_name)
-                VALUES (charge_id_var, 'conversion')
-                ON CONFLICT DO NOTHING;
             END IF;
 
             -- create new transaction

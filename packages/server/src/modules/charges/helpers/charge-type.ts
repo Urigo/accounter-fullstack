@@ -9,12 +9,11 @@ import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
 
 export function getChargeType(charge: IGetChargesByIdsResult): ChargeTypeEnum {
-  if (charge.is_conversion) {
-    return ChargeTypeEnum.Conversion;
-  }
-
-  if (charge.is_salary) {
-    return ChargeTypeEnum.Salary;
+  switch (charge.type) {
+    case 'CONVERSION':
+      return ChargeTypeEnum.Conversion;
+    case 'PAYROLL':
+      return ChargeTypeEnum.Salary;
   }
 
   if (charge.business_trip_id) {

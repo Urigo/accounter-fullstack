@@ -165,7 +165,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   UpdateTransactionResult: {
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'is_conversion' in obj && obj.is_conversion
+      return 'type' in obj && obj.type === 'CONVERSION'
         ? 'ConversionTransaction'
         : 'CommonTransaction';
     },
@@ -180,7 +180,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   ConversionTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.is_conversion ?? false,
+    __isTypeOf: DbTransaction => DbTransaction.charge_type === 'CONVERSION' ?? false,
     ...commonTransactionFields,
     effectiveDate: DbTransaction => {
       const date = effectiveDateSupplement(DbTransaction);
@@ -204,7 +204,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
   },
   CommonTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.is_conversion !== true,
+    __isTypeOf: DbTransaction => DbTransaction.charge_type !== 'CONVERSION',
     ...commonTransactionFields,
   },
 };
