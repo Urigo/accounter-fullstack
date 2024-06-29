@@ -146,7 +146,7 @@ const missingInfoSuggestions: Resolver<
       if (fromCurrency && toCurrency) {
         return {
           description: `${fromCurrency} to ${toCurrency} conversion`,
-          tags: [{ name: 'conversion' }],
+          tags: [],
         };
       }
     }
