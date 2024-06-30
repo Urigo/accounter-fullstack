@@ -4,6 +4,8 @@ import {
   EXPENSES_TO_PAY_TAX_CATEGORY,
   INCOME_IN_ADVANCE_TAX_CATEGORY,
   INCOME_TO_COLLECT_TAX_CATEGORY,
+  INPUT_VAT_TAX_CATEGORY_ID,
+  OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 
@@ -46,20 +48,69 @@ export function handleCrossYearLedgerEntries(
   const crossYearEntries: LedgerProto[] = [];
 
   for (const entry of accountingLedgerEntries) {
+    const adjustedEntry = { ...entry };
+    if (entry.creditAccountID2 && entry.creditAccountID2 === INPUT_VAT_TAX_CATEGORY_ID) {
+      crossYearEntries.push({
+        ...entry,
+        creditAccountID1: entry.creditAccountID2,
+        creditAccountID2: undefined,
+        creditAmount1: entry.creditAmount2,
+        creditAmount2: undefined,
+        localCurrencyCreditAmount1: entry.localCurrencyCreditAmount2!,
+        localCurrencyCreditAmount2: undefined,
+        localCurrencyDebitAmount1: entry.localCurrencyCreditAmount2!,
+        localCurrencyDebitAmount2: undefined,
+      });
+
+      // remove VAT from main entry
+      adjustedEntry.debitAmount1 &&= adjustedEntry.debitAmount1 - (entry.creditAmount2 ?? 0);
+      adjustedEntry.localCurrencyDebitAmount1 &&=
+        adjustedEntry.localCurrencyDebitAmount1 - entry.localCurrencyCreditAmount2!;
+      adjustedEntry.creditAccountID2 = undefined;
+      adjustedEntry.creditAmount2 = undefined;
+      adjustedEntry.localCurrencyCreditAmount2 = undefined;
+    } else if (entry.debitAccountID2 && entry.debitAccountID2 === OUTPUT_VAT_TAX_CATEGORY_ID) {
+      crossYearEntries.push({
+        ...entry,
+        debitAccountID1: entry.debitAccountID2,
+        debitAmount1: entry.debitAmount2,
+        localCurrencyDebitAmount1: entry.localCurrencyDebitAmount2!,
+
+        localCurrencyCreditAmount1: entry.localCurrencyDebitAmount2!,
+
+        debitAccountID2: undefined,
+        debitAmount2: undefined,
+        localCurrencyDebitAmount2: undefined,
+
+        creditAccountID2: undefined,
+        creditAmount2: undefined,
+        localCurrencyCreditAmount2: undefined,
+      });
+
+      // remove VAT from main entry
+      adjustedEntry.creditAmount1 &&= adjustedEntry.creditAmount1 - (entry.debitAmount2 ?? 0);
+      adjustedEntry.localCurrencyCreditAmount1 &&=
+        adjustedEntry.localCurrencyCreditAmount1 - entry.localCurrencyDebitAmount2!;
+      adjustedEntry.debitAccountID2 = undefined;
+      adjustedEntry.debitAmount2 = undefined;
+      adjustedEntry.localCurrencyDebitAmount2 = undefined;
+    }
+
     const yearsCount = years_of_relevance.length;
-    const amounts = divideEntryAmounts(entry, yearsCount);
+    const amounts = divideEntryAmounts(adjustedEntry, yearsCount);
 
     for (const yearDate of years_of_relevance) {
       if (
-        entry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
-        entry.valueDate.getFullYear() === yearDate.getFullYear()
+        adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
+        adjustedEntry.valueDate.getFullYear() === yearDate.getFullYear()
       ) {
-        crossYearEntries.push({ ...entry, ...amounts });
+        crossYearEntries.push({ ...adjustedEntry, ...amounts });
         continue;
       }
 
-      const isYearOfRelevancePrior = entry.invoiceDate.getFullYear() > yearDate.getFullYear();
-      const mediateTaxCategory = entry.isCreditorCounterparty
+      const isYearOfRelevancePrior =
+        adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
+      const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
         ? isYearOfRelevancePrior
           ? EXPENSES_TO_PAY_TAX_CATEGORY
           : EXPENSES_IN_ADVANCE_TAX_CATEGORY
@@ -73,20 +124,22 @@ export function handleCrossYearLedgerEntries(
       crossYearEntries.push(
         {
           // first chronological entry
-          ...entry,
+          ...adjustedEntry,
           ...amounts,
-          ...(entry.isCreditorCounterparty
+          ...(adjustedEntry.isCreditorCounterparty
             ? { creditAccountID1: mediateTaxCategory }
             : { debitAccountID1: mediateTaxCategory }),
           ...yearOfRelevanceDates,
+          ...(isYearOfRelevancePrior ? { vat: undefined } : {}),
         },
         {
           // second chronological entry
-          ...entry,
+          ...adjustedEntry,
           ...amounts,
-          ...(entry.isCreditorCounterparty
+          ...(adjustedEntry.isCreditorCounterparty
             ? { debitAccountID1: mediateTaxCategory }
             : { creditAccountID1: mediateTaxCategory }),
+          ...(isYearOfRelevancePrior ? {} : { vat: undefined }),
         },
       );
     }
