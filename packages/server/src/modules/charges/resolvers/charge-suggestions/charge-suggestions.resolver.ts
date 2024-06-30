@@ -1,5 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { IGetTagsByIDsResult } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   ETANA_BUSINESS_ID,
@@ -58,7 +60,10 @@ const missingInfoSuggestions: Resolver<
 
       return {
         description: suggestionData.description,
-        tags: suggestionData.tags,
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
+          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
   }
@@ -98,14 +103,20 @@ const missingInfoSuggestions: Resolver<
     if (business.id in (DbCharge.business_array ?? [])) {
       return {
         description: suggestionData.description,
-        tags: suggestionData.tags,
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
+          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
 
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         description: suggestionData.description,
-        tags: suggestionData.tags,
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
+          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
   }
@@ -168,7 +179,10 @@ const missingInfoSuggestions: Resolver<
           ? transactions[0].source_reference
           : `['${transactions.map(t => t.source_reference).join("','")}']`;
     return {
-      tags: [{ name: 'financial' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('financial')
+        .then(res => (res ? [res] : [])),
       description: `Fees for source transaction=${sourceTransaction}`,
     };
   }
@@ -180,7 +194,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `${previousMonth}/2022 Salary`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('גולדשטין אורי')) {
@@ -191,7 +208,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `${previousMonth}/2022 Salary`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('גרדוש')) {
@@ -202,7 +222,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `${previousMonth}/2022 Salary`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('תובל')) {
@@ -213,7 +236,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `${previousMonth}/2022 Salary`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('מנורה מבטחים פנס')) {
@@ -224,7 +250,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Pension ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('פניקס אקסלנס')) {
@@ -235,7 +264,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Training Fund ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('מיטב דש גמל ופנס')) {
@@ -246,7 +278,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Pension ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('מגדל מקפת')) {
@@ -257,7 +292,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Pension ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('מגדל השתלמות')) {
@@ -268,7 +306,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Training Fund ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('ביטוח לאומי')) {
@@ -279,7 +320,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Social Security Deductions for Salaries ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('LANCE GLOBAL')) {
@@ -288,7 +332,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       description: `The Guild Enterprise Support - ${previousMonth} 2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (
@@ -303,7 +350,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `Software Development and Consulting ${previousMonth}/23`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('slava')) {
@@ -312,7 +362,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       description: `Web Development Services ${previousMonth}/23`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('COURIER PLUS INC')) {
@@ -321,7 +374,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('GOBRANDS')) {
@@ -330,7 +386,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('MEDIC FIRST AI')) {
@@ -339,7 +398,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('מס הכנסה')) {
@@ -350,7 +412,10 @@ const missingInfoSuggestions: Resolver<
       month: '2-digit',
     });
     return {
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
       description: flag
         ? `Tax for employees for ${previousMonth}/2022`
         : `Advance Tax for ${previousMonth}/2022`,
@@ -364,7 +429,10 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `${previousMonth}/2022 lawyer support`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('המכס ומעמ-גביי תשלום') || description.includes('CUSTOM + V.A.T')) {
@@ -375,13 +443,19 @@ const missingInfoSuggestions: Resolver<
     });
     return {
       description: `VAT for ${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('חניון')) {
     return {
       description: 'Parking',
-      tags: [{ name: 'transportation' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('transportation')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('ETANA')) {
@@ -390,19 +464,28 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: 'long' });
     return {
       description: `The Guild Enterprise Support - ${previousMonth} 2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('deel')) {
     return {
       description: 'Laurin Salary',
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('GITHUB')) {
     const suggested = {
       description: 'GitHub Actions',
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
     if (formatAmount(DbCharge.event_amount) <= -2000) {
       suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
@@ -416,7 +499,10 @@ const missingInfoSuggestions: Resolver<
   if (formatAmount(DbCharge.event_amount) === -4329) {
     return {
       description: 'Office rent',
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('APPLE COM BILL/ITUNES.COM')) {
@@ -425,7 +511,10 @@ const missingInfoSuggestions: Resolver<
       taxCategory: 'אתר',
       beneficiaaries: [], // NOTE: used to be ' '
       description: flag ? 'LinkedIn' : 'Apple Services',
-      tags: [{ name: flag ? 'business' : 'computer' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load(flag ? 'business' : 'computer')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (
@@ -439,7 +528,10 @@ const missingInfoSuggestions: Resolver<
   ) {
     //NOTE: multiple suggestions business
     return {
-      tags: [{ name: 'financial' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('financial')
+        .then(res => (res ? [res] : [])),
       description: `Fees for bank_reference=${transactions[0].source_reference ?? 'Missing'}`,
     };
   }
@@ -447,21 +539,30 @@ const missingInfoSuggestions: Resolver<
     //NOTE: multiple suggestions business
     return {
       description: 'Interest fees on Euro plus',
-      tags: [{ name: 'financial' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('financial')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('פועלים- דמי כרטיס')) {
     //NOTE: multiple suggestions business
     return {
       description: 'Bank creditcard fees',
-      tags: [{ name: 'financial' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('financial')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('אריה קריסטל')) {
     //NOTE: multiple suggestions business
     return {
       description: 'Water bill for 04-2022',
-      tags: [{ name: 'house' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('house')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('aleksandra')) {
@@ -470,7 +571,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       description: `Software Consulting Fees (${previousMonth}/2023)`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (description.includes('denelop')) {
@@ -479,7 +583,10 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       description: `Software Development and Consulting ${previousMonth}/2023`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (formatAmount(DbCharge.event_amount) === -12_000) {
@@ -488,13 +595,19 @@ const missingInfoSuggestions: Resolver<
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
     return {
       description: `${previousMonth}/2022`,
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
   if (formatAmount(DbCharge.event_amount) === -600) {
     return {
       description: 'Matic Zavadlal - April 2021',
-      tags: [{ name: 'business' }],
+      tags: await injector
+        .get(TagsProvider)
+        .getTagByNameLoader.load('business')
+        .then(res => (res ? [res] : [])),
     };
   }
 

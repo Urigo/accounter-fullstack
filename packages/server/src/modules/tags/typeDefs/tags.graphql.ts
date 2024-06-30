@@ -7,9 +7,11 @@ export default gql`
   }
 
   extend type Mutation {
-    addTag(name: String!): Boolean! @auth(role: ADMIN)
-    deleteTag(name: String!): Boolean! @auth(role: ADMIN)
-    renameTag(prevName: String!, newName: String!): Boolean! @auth(role: ADMIN)
+    addTag(name: String!, parentId: UUID): Boolean! @auth(role: ADMIN)
+    deleteTag(id: UUID!): Boolean! @auth(role: ADMIN)
+    renameTag(id: UUID!, newName: String!): Boolean! @auth(role: ADMIN)
+    updateTagParent(id: UUID!, parentId: UUID): Boolean! @auth(role: ADMIN)
+    updateTagPart(tagId: UUID!, chargeId: UUID!, part: Float!): Boolean! @auth(role: ADMIN)
   }
 
   extend interface Charge {
@@ -56,6 +58,10 @@ export default gql`
   " defines a tag / category for charge arrangement" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type Tag {
     name: String!
+    id: UUID!
+    parent: Tag
+    namePath: [String!]
+    fullPath: [Tag!]
   }
 
   extend input UpdateChargeInput {
@@ -64,6 +70,6 @@ export default gql`
 
   " input variables for Tag"
   input TagInput {
-    name: String!
+    id: String!
   }
 `;

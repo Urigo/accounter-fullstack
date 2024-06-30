@@ -3,8 +3,7 @@ import { BusinessTripsProvider } from '@modules/business-trips/providers/busines
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { tags_enum } from '@modules/tags/types.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -119,23 +118,27 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         // handle tags
         if (fields?.tags?.length) {
-          const newTags = fields.tags.map(t => t.name);
-          const pastTags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(chargeId);
+          const newTagIDs = fields.tags.map(t => t.id);
+          const pastTags = await injector
+            .get(ChargeTagsProvider)
+            .getTagsByChargeIDLoader.load(chargeId)
+            .then(res => res.map(tag => tag.id!));
           // clear removed tags
-          const tagsToRemove = pastTags.filter(tag => !newTags.includes(tag));
+          const tagsToRemove = pastTags.filter(tagId => !newTagIDs.includes(tagId));
           if (tagsToRemove.length) {
-            await injector.get(TagsProvider).clearChargeTags({ chargeId, tagNames: tagsToRemove });
+            await injector
+              .get(ChargeTagsProvider)
+              .clearChargeTags({ chargeId, tagIDs: tagsToRemove });
           }
           // add new tags
-          for (const tag of newTags as tags_enum[]) {
-            if (!pastTags.includes(tag)) {
-              await injector
-                .get(TagsProvider)
-                .insertChargeTags({ chargeId, tagName: tag })
-                .catch(() => {
-                  throw new GraphQLError(`Error adding tag "${tag}" to charge ID="${chargeId}"`);
-                });
-            }
+          const tagIDsToAdd = newTagIDs.filter(tagId => !pastTags.includes(tagId));
+          for (const tagId of tagIDsToAdd) {
+            await injector
+              .get(ChargeTagsProvider)
+              .insertChargeTag({ chargeId, tagId })
+              .catch(() => {
+                throw new GraphQLError(`Error adding tag ID="${tagId}" to charge ID="${chargeId}"`);
+              });
           }
         }
 

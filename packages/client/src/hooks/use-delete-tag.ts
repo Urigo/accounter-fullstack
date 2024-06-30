@@ -4,8 +4,8 @@ import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation DeleteTag($tag: String!) {
-    deleteTag(name: $tag)
+  mutation DeleteTag($tagId: UUID!) {
+    deleteTag(id: $tagId)
   }
 `;
 

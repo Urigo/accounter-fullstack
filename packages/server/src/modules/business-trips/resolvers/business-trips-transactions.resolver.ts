@@ -57,7 +57,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
     ) => {
       try {
         if (!category) {
-          return null;
+          throw new GraphQLError(`Category is required`);
         }
 
         const [businessTripTransaction] = await injector
