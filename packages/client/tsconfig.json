@@ -4,7 +4,6 @@
     "composite": true,
     "jsx": "react-jsx",
     "noUnusedParameters": true,
-
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "useDefineForClassFields": true,
     "esModuleInterop": false,
