@@ -65,9 +65,9 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     SELECT c.*
     FROM accounter_schema.extended_charges c
     WHERE owner_id IN $$ownerIds
-    AND ($fromDate ::TEXT IS NULL OR t.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR t.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY t.event_date DESC;`;
+    AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY c.transactions_min_event_date DESC;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
