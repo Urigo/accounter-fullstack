@@ -292,6 +292,10 @@ export class SalariesProvider {
     { cache: false },
   );
 
+  public getAllSalaryRecords() {
+    return getAllSalaryRecords.run(undefined, this.dbProvider);
+  }
+
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
     return insertSalaryRecords.run(params, this.dbProvider);
   }
