@@ -77,19 +77,19 @@ const missingInfoSuggestions: Resolver<
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {
         description: 'Etherscan to Kraken transfer',
-        tags: [],
+        tags: [{ name: 'financial' }],
       };
     }
     if (isKrakenIncluded && isEtanaIncluded) {
       return {
         description: 'Kraken to Etana transfer',
-        tags: [],
+        tags: [{ name: 'financial' }],
       };
     }
     if (isPoalimIncluded && isEtanaIncluded) {
       return {
         description: 'Etana to Poalim transfer',
-        tags: [],
+        tags: [{ name: 'financial' }],
       };
     }
   }
@@ -135,7 +135,11 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  if (DbCharge.business_id === KRAKEN_BUSINESS_ID && transactions.length > 1) {
+  if (
+    DbCharge.is_conversion &&
+    DbCharge.business_id &&
+    [KRAKEN_BUSINESS_ID, POALIM_BUSINESS_ID].includes(DbCharge.business_id)
+  ) {
     let fromCurrency: string | undefined;
     let toCurrency: string | undefined;
 
