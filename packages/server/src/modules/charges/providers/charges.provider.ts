@@ -51,35 +51,23 @@ const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuer
     SELECT c.*, t.account_id
     FROM accounter_schema.extended_charges c
     LEFT JOIN accounter_schema.transactions t
-    ON c.id = t.charge_id
+    ON c.id = t.charge_id AND t.event_date = c.transactions_min_event_date
     WHERE c.id IN (
       SELECT charge_id
       FROM accounter_schema.transactions
       WHERE account_id IN $$financialAccountIDs
-      AND ($fromDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-      AND ($toDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    )
-    AND t.event_date = (
-      SELECT MIN(event_date)
-      FROM accounter_schema.transactions as t2
-      WHERE t2.charge_id = c.id
+      AND ($fromDate ::TEXT IS NULL OR transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+      AND ($toDate ::TEXT IS NULL OR transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     )
     ORDER BY t.event_date DESC;`;
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT c.*
     FROM accounter_schema.extended_charges c
-    LEFT JOIN accounter_schema.transactions t
-    ON c.id = t.charge_id
     WHERE owner_id IN $$ownerIds
-    AND t.event_date = (
-      SELECT MIN(event_date)
-      FROM accounter_schema.transactions as t2
-      WHERE t2.charge_id = c.id
-    )
-    AND ($fromDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY t.event_date DESC;`;
+    AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
+    AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    ORDER BY c.transactions_min_event_date DESC;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges

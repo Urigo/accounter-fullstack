@@ -77,19 +77,28 @@ const missingInfoSuggestions: Resolver<
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {
         description: 'Etherscan to Kraken transfer',
-        tags: [],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
     if (isKrakenIncluded && isEtanaIncluded) {
       return {
         description: 'Kraken to Etana transfer',
-        tags: [],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
     if (isPoalimIncluded && isEtanaIncluded) {
       return {
         description: 'Etana to Poalim transfer',
-        tags: [],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
   }
@@ -135,7 +144,11 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  if (DbCharge.business_id === KRAKEN_BUSINESS_ID && transactions.length > 1) {
+  if (
+    DbCharge.type === 'CONVERSION' &&
+    DbCharge.business_id &&
+    [KRAKEN_BUSINESS_ID, POALIM_BUSINESS_ID].includes(DbCharge.business_id)
+  ) {
     let fromCurrency: string | undefined;
     let toCurrency: string | undefined;
 

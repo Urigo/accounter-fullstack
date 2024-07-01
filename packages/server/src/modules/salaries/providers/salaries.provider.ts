@@ -281,10 +281,6 @@ export class SalariesProvider {
     return getSalaryRecordsByDates.run(params, this.dbProvider);
   }
 
-  public getAllTags() {
-    return getAllSalaryRecords.run(undefined, this.dbProvider);
-  }
-
   private async batchGetSalaryRecordsByChargeIds(chargeIds: stringArray) {
     const salaries = await getSalaryRecordsByChargeIds.run({ chargeIds }, this.dbProvider);
     return chargeIds.map(id => salaries.filter(record => record.charge_id === id));
@@ -295,6 +291,10 @@ export class SalariesProvider {
       this.batchGetSalaryRecordsByChargeIds(chargeIds as stringArray),
     { cache: false },
   );
+
+  public getAllSalaryRecords() {
+    return getAllSalaryRecords.run(undefined, this.dbProvider);
+  }
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
     return insertSalaryRecords.run(params, this.dbProvider);
