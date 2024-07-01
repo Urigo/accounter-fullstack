@@ -4,8 +4,8 @@ import { AddTagDocument, AddTagMutationVariables } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation AddTag($tag: String!) {
-    addTag(name: $tag)
+  mutation AddTag($tagName: String!) {
+    addTag(name: $tagName)
   }
 `;
 
@@ -26,7 +26,7 @@ export const useAddTag = (): UseAddTag => {
       new Promise<void>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
-            console.error(`Error adding new tag [${variables.tag}]: ${res.error}`);
+            console.error(`Error adding new tag [${variables.tagName}]: ${res.error}`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
@@ -34,7 +34,7 @@ export const useAddTag = (): UseAddTag => {
             return reject(res.error.message);
           }
           if (!res.data?.addTag) {
-            console.error(`Error adding new tag [${variables.tag}]`);
+            console.error(`Error adding new tag [${variables.tagName}]`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
@@ -43,7 +43,7 @@ export const useAddTag = (): UseAddTag => {
           }
           showNotification({
             title: 'Tag Added!',
-            message: `"${variables.tag}" tag was successfully added`,
+            message: `"${variables.tagName}" tag was successfully added`,
           });
           return resolve();
         }),

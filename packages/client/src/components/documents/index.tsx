@@ -25,9 +25,6 @@ import { AccounterLoader, AccounterTable, Button, PopUpModal } from '../common';
         id
         userDescription
         __typename
-        tags {
-          name
-        }
         vat {
           formatted
           __typename

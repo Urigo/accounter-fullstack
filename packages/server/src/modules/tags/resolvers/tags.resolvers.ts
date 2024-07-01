@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { EMPTY_UUID } from '@shared/constants';
 import { ChargeTagsProvider } from '../providers/charge-tags.provider.js';
 import { TagsProvider } from '../providers/tags.provider.js';
 import type { TagsModule } from '../types.js';
@@ -42,7 +43,7 @@ export const tagsResolvers: TagsModule.Resolvers = {
     updateTagParent: (_, { id, parentId }, { injector }) => {
       return injector
         .get(TagsProvider)
-        .updateTagParent({ id, parentId })
+        .updateTagParent({ id, parentId: parentId === EMPTY_UUID ? null : parentId })
         .catch(e => {
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating parent of tag id "${id}"`);
@@ -60,6 +61,43 @@ export const tagsResolvers: TagsModule.Resolvers = {
           );
         })
         .then(() => true);
+    },
+    updateTag: async (_, { id, fields }, { injector }) => {
+      const promises: Array<Promise<unknown>> = [];
+      if (fields.name) {
+        promises.push(
+          injector
+            .get(TagsProvider)
+            .renameTag({ id, newName: fields.name })
+            .catch(e => {
+              console.error(JSON.stringify(e, null, 2));
+              throw new GraphQLError(`Error renaming tag id "${id}"`);
+            }),
+        );
+      }
+      if (fields.parentId) {
+        promises.push(
+          injector
+            .get(TagsProvider)
+            .updateTagParent({
+              id,
+              parentId: fields.parentId === EMPTY_UUID ? null : fields.parentId,
+            })
+            .catch(e => {
+              console.error(JSON.stringify(e, null, 2));
+              throw new GraphQLError(`Error updating parent of tag id "${id}"`);
+            }),
+        );
+      }
+      if (promises.length === 0) {
+        return true;
+      }
+      return Promise.all(promises)
+        .then(() => true)
+        .catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error updating tag id "${id}"`);
+        });
     },
   },
   Tag: {

@@ -68,8 +68,8 @@ export const validateCharge = async (
 
   // validate tags
   const tags = await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id);
-  const tagsAreFine =
-    tags.length > 0 && tags.reduce((partsSum, tag) => partsSum + (tag.part ?? 0), 0) === 1;
+  const tagsAreFine = tags.length > 0;
+  //  && tags.reduce((partsSum, tag) => partsSum + (tag.part ?? 0), 0) === 1;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }

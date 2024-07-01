@@ -117,7 +117,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         }
 
         // handle tags
-        if (fields?.tags?.length) {
+        if (fields?.tags) {
           const newTagIDs = fields.tags.map(t => t.id);
           const pastTags = await injector
             .get(ChargeTagsProvider)
