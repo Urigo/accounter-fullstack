@@ -147,7 +147,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
         const suggestions: IInsertBusinessParams['suggestions'] = fields.suggestions
           ? ({
-              tags: fields.suggestions.tags?.map(tag => tag.name),
+              tags: fields.suggestions.tags?.map(tag => tag.id),
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
             } as Json)

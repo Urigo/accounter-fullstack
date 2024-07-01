@@ -4,14 +4,14 @@ import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation DeleteTag($tag: String!) {
-    deleteTag(name: $tag)
+  mutation DeleteTag($tagId: UUID!) {
+    deleteTag(id: $tagId)
   }
 `;
 
 type UseDeleteTag = {
   fetching: boolean;
-  deleteTag: (variables: DeleteTagMutationVariables) => Promise<void>;
+  deleteTag: (variables: DeleteTagMutationVariables & { name: string }) => Promise<void>;
 };
 
 export const useDeleteTag = (): UseDeleteTag => {
@@ -22,11 +22,11 @@ export const useDeleteTag = (): UseDeleteTag => {
 
   return {
     fetching,
-    deleteTag: (variables: DeleteTagMutationVariables): Promise<void> =>
+    deleteTag: (variables: DeleteTagMutationVariables & { name: string }): Promise<void> =>
       new Promise<void>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
-            console.error(`Error deleting new tag [${variables.tag}]: ${res.error}`);
+            console.error(`Error deleting new tag [${variables.name}]: ${res.error}`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
@@ -34,7 +34,7 @@ export const useDeleteTag = (): UseDeleteTag => {
             return reject(res.error.message);
           }
           if (!res.data?.deleteTag) {
-            console.error(`Error deleting new tag [${variables.tag}]`);
+            console.error(`Error deleting new tag [${variables.name}]`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
@@ -43,7 +43,7 @@ export const useDeleteTag = (): UseDeleteTag => {
           }
           showNotification({
             title: 'Tag Deleted!',
-            message: `"${variables.tag}" tag was successfully removed`,
+            message: `"${variables.name}" tag was successfully removed`,
           });
           return resolve();
         }),

@@ -20,9 +20,9 @@ import {
   ChargeFilterType,
   ChargeSortByField,
 } from '../../gql/graphql.js';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
+import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { PopUpModal, TextInput } from '../common/index.js';
+import { PopUpModal, SelectTagItem, TextInput } from '../common/index.js';
 
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
@@ -64,7 +64,9 @@ function ChargesFiltersForm({
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
-  const [tags, setTags] = useState<Array<{ value: string; label: string }>>([]);
+  const [tags, setTags] = useState<Array<{ value: string; label: string; description?: string }>>(
+    [],
+  );
   const [{ data: feData, fetching: feFetching, error: financialEntitiesError }] = useQuery({
     query: AllFinancialEntitiesDocument,
   });
@@ -119,11 +121,11 @@ function ChargesFiltersForm({
     if (feData?.allFinancialEntities?.nodes.length) {
       setFinancialEntities(
         feData.allFinancialEntities.nodes
+          .sort((a, b) => (a.name > b.name ? 1 : -1))
           .map(entity => ({
             value: entity.id,
             label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+          })),
       );
     }
   }, [feData, setFinancialEntities]);
@@ -132,12 +134,11 @@ function ChargesFiltersForm({
   useEffect(() => {
     if (tagsData?.allTags.length) {
       setTags(
-        tagsData.allTags
-          .map(entity => ({
-            value: entity.name,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
+        sortTags(tagsData.allTags).map(entity => ({
+          value: entity.id,
+          label: entity.name,
+          description: entity.namePath ? `${entity.namePath.join(' > ')} >` : undefined,
+        })),
       );
     }
   }, [tagsData, setTags]);
@@ -191,6 +192,7 @@ function ChargesFiltersForm({
               <MultiSelect
                 {...field}
                 data={tags}
+                itemComponent={SelectTagItem}
                 value={field.value ?? []}
                 disabled={tagsFetching}
                 label="Tags"
@@ -198,6 +200,10 @@ function ChargesFiltersForm({
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
+                filter={(value, _, item) =>
+                  item.label?.toLowerCase().includes(value.toLowerCase().trim()) ||
+                  item.description?.toLowerCase().includes(value.toLowerCase().trim())
+                }
               />
             )}
           />

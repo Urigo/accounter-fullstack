@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
-import { Indicator } from '@mantine/core';
+import { Group, Indicator, Text } from '@mantine/core';
 import { AllChargesTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
@@ -11,7 +11,9 @@ import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
     __typename
     id
     tags {
+      id
       name
+      namePath
     }
     ... on Charge @defer {
       validationData {
@@ -22,7 +24,9 @@ import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
       missingInfoSuggestions {
         ... on ChargeSuggestions {
           tags {
+            id
             name
+            namePath
           }
         }
       }
@@ -43,7 +47,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
     missingInfoSuggestions,
   } = getFragmentData(AllChargesTagsFieldsFragmentDoc, data);
   const { updateCharge, fetching } = useUpdateCharge();
-  const [tags, setTags] = useState<{ name: string }[]>(originalTags ?? []);
+  const [tags, setTags] = useState<typeof originalTags>(originalTags ?? []);
 
   const isError = useMemo(
     () => validationData?.missingInfo?.includes(MissingChargeInfo.Tags),
@@ -65,7 +69,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   }, [originalTags]);
 
   const updateTag = useCallback(
-    (tags?: Array<{ name: string }>) => {
+    (tags?: Array<{ name: string; id: string }>) => {
       updateCharge({
         chargeId,
         fields: { tags },
@@ -78,7 +82,18 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
     <td>
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
         <ListCapsule
-          items={tags.map(t => t.name)}
+          items={tags.map(t => (
+            <Group key={t.id}>
+              <div>
+                {t.namePath && (
+                  <Text size="xs" opacity={0.65}>
+                    {`${t.namePath.join(' > ')} >`}
+                  </Text>
+                )}
+                <Text size="sm">{t.name}</Text>
+              </div>
+            </Group>
+          ))}
           extraClassName={hasAlternative ? 'bg-yellow-400' : undefined}
         />
       </Indicator>

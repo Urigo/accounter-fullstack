@@ -363,7 +363,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           return {
             isValid: true,
             differences: [],
-            matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+            matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
             errors: generated.errors,
           };
         }
@@ -376,7 +376,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         return {
           isValid: fullMatching.isFullyMatched && generated.errors.length === 0,
           differences: toUpdate,
-          matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean),
+          matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
           errors: generated.errors,
         };
       } catch (err) {

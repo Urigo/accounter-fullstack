@@ -42,6 +42,10 @@ const config: CodegenConfig = {
             input: 'File | Blob',
             output: 'string',
           },
+          UUID: {
+            input: 'string',
+            output: 'string',
+          },
         },
         enumValues: {
           ChargeSortByField: '@shared/enums#ChargeSortByField',
@@ -58,9 +62,19 @@ const config: CodegenConfig = {
           BusinessTransaction: '@shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
           BusinessTrip: '@modules/business-trips/types.js#BusinessTripProto',
+          BusinessTripAccommodationTransaction:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsTransactionsResult',
           BusinessTripAttendee:
             '@modules/business-trips/types.js#IGetBusinessTripsAttendeesByBusinessTripIdsResult',
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
+          BusinessTripFlightTransaction:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsTransactionsResult',
+          BusinessTripOtherTransaction:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsOtherTransactionsResult',
+          BusinessTripTravelAndSubsistenceTransaction:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult',
+          BusinessTripUncategorizedTransaction:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsTransactionsResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
@@ -80,6 +94,7 @@ const config: CodegenConfig = {
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult',
+          LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto',
           LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargesIdsResult',
           Ledger: '@shared/types#LedgerRecordsProto',
           LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
@@ -90,21 +105,11 @@ const config: CodegenConfig = {
           Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult',
+          Tag: '@modules/tags/types.js#IGetAllTagsResult',
           TaxCategory: '@modules/financial-entities/types.js#IGetAllTaxCategoriesResult',
           Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
           WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
-          BusinessTripUncategorizedTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsTransactionsResult',
-          BusinessTripAccommodationTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsTransactionsResult',
-          BusinessTripFlightTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsTransactionsResult',
-          BusinessTripTravelAndSubsistenceTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult',
-          BusinessTripOtherTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsOtherTransactionsResult',
-          LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],

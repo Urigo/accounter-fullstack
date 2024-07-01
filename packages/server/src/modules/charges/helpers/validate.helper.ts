@@ -1,6 +1,6 @@
 import { Injector } from 'graphql-modules';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { GENERAL_FEE_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
@@ -67,8 +67,9 @@ export const validateCharge = async (
   }
 
   // validate tags
-  const tags = await injector.get(TagsProvider).getTagsByChargeIDLoader.load(charge.id);
+  const tags = await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id);
   const tagsAreFine = tags.length > 0;
+  //  && tags.reduce((partsSum, tag) => partsSum + (tag.part ?? 0), 0) === 1;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }

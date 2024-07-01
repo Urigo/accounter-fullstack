@@ -54,7 +54,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         // let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
 
         const existingChargePromise = async () => {
-          const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(fields.chargeId ?? '');
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
           }

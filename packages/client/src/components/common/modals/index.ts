@@ -11,3 +11,4 @@ export * from './match-document-modal.js';
 export * from './modal.js';
 export * from './upload-document-modal.js';
 export * from './insert-business.js';
+export * from './edit-tag-modal.js';

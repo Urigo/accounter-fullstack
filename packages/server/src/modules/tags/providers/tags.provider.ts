@@ -3,33 +3,59 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IClearAllChargeTagsParams,
-  IClearAllChargeTagsQuery,
-  IClearChargeTagsParams,
-  IClearChargeTagsQuery,
-  IGetTagsByChargeIDsQuery,
-  IInsertChargeTagsParams,
-  IInsertChargeTagsQuery,
-  tags_enum,
+  IAddNewTagParams,
+  IAddNewTagQuery,
+  IDeleteTagParams,
+  IDeleteTagQuery,
+  IGetAllTagsQuery,
+  IGetTagsByIDsQuery,
+  IGetTagsByNamesQuery,
+  IRenameTagParams,
+  IRenameTagQuery,
+  IUpdateTagParentParams,
+  IUpdateTagParentQuery,
 } from '../types.js';
 
-const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
-    SELECT charge_id, array_agg(tag_name) as tags
-    FROM accounter_schema.tags
-    WHERE charge_id IN $$chargeIDs
-    GROUP BY charge_id;`;
+const getAllTags = sql<IGetAllTagsQuery>`
+  SELECT *
+  FROM accounter_schema.extended_tags;
+`;
 
-const clearChargeTags = sql<IClearChargeTagsQuery>`
-    DELETE FROM accounter_schema.tags
-    WHERE charge_id = $chargeId
-    AND tag_name IN $$tagNames;`;
+const getTagsByIDs = sql<IGetTagsByIDsQuery>`
+  SELECT *
+  FROM accounter_schema.extended_tags
+  WHERE id in $$tagIDs;`;
 
-const clearAllChargeTags = sql<IClearAllChargeTagsQuery>`
-    DELETE FROM accounter_schema.tags
-    WHERE charge_id = $chargeId;`;
+const getTagsByNames = sql<IGetTagsByNamesQuery>`
+  SELECT *
+  FROM accounter_schema.extended_tags
+  WHERE name in $$tagNames;`;
 
-const insertChargeTags = sql<IInsertChargeTagsQuery>`
-    INSERT INTO accounter_schema.tags (charge_id, tag_name) VALUES ($chargeId, $tagName) ON CONFLICT DO NOTHING;`;
+const addNewTag = sql<IAddNewTagQuery>`
+  INSERT INTO accounter_schema.tags (name)
+  VALUES ($name)
+  RETURNING *;
+`;
+
+const renameTag = sql<IRenameTagQuery>`
+  UPDATE accounter_schema.tags
+  SET name = $newName
+  WHERE id = $id
+  RETURNING *;
+`;
+
+const deleteTag = sql<IDeleteTagQuery>`
+  DELETE FROM accounter_schema.tags
+  WHERE id = $id
+  RETURNING *;
+`;
+
+const updateTagParent = sql<IUpdateTagParentQuery>`
+  UPDATE accounter_schema.tags
+  SET parent = $parentId
+  WHERE id = $id
+  RETURNING *;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -38,59 +64,44 @@ const insertChargeTags = sql<IInsertChargeTagsQuery>`
 export class TagsProvider {
   constructor(private dbProvider: DBProvider) {}
 
-  public addTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE accounter_schema.tags_enum ADD VALUE $1::TEXT;', [
-      params.tagName,
-    ]);
-  }
-
-  public updateTagCategory(params: { prevTagName: string; newTagName: string }) {
-    return this.dbProvider.query(
-      'ALTER TYPE accounter_schema.tags_enum RENAME VALUE $1::TEXT TO $2::TEXT;',
-      [params.prevTagName, params.newTagName],
-    );
-  }
-
-  public removeTagCategory(params: { tagName: string }) {
-    return this.dbProvider.query('ALTER TYPE accounter_schema.tags_enum DROP ATTRIBUTE $1::TEXT;', [
-      params.tagName,
-    ]);
-  }
-
-  private async batchTagsByChargeID(chargeIDs: readonly string[]) {
-    const tagsArray = await getTagsByChargeIDs.run({ chargeIDs }, this.dbProvider);
-    const tags = Object.fromEntries(
-      tagsArray.map(tag => [
-        tag.charge_id,
-        ((tag.tags as unknown as string)
-          ?.replace(/[{}]/g, '')
-          .replace(/"/g, '')
-          .split(',') as Array<tags_enum>) ?? [],
-      ]),
-    );
-    return chargeIDs.map(id => tags[id] ?? []);
-  }
-
-  public getTagsByChargeIDLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTagsByChargeID(keys),
-    { cache: false },
-  );
-
-  public async clearChargeTags(params: IClearChargeTagsParams) {
-    return clearChargeTags.run(params, this.dbProvider);
-  }
-
-  public async clearAllChargeTags(params: IClearAllChargeTagsParams) {
-    return clearAllChargeTags.run(params, this.dbProvider);
-  }
-
-  public async insertChargeTags(params: IInsertChargeTagsParams) {
-    return insertChargeTags.run(params, this.dbProvider);
-  }
-
   public getAllTags() {
-    return this.dbProvider.query<{ unnest: string }>(
-      'SELECT unnest(enum_range(NULL::accounter_schema.tags_enum));',
-    );
+    return getAllTags.run(undefined, this.dbProvider);
   }
+
+  public addNewTag(params: IAddNewTagParams) {
+    return addNewTag.run(params, this.dbProvider);
+  }
+
+  public renameTag(params: IRenameTagParams) {
+    return renameTag.run(params, this.dbProvider);
+  }
+
+  public deleteTag(params: IDeleteTagParams) {
+    return deleteTag.run(params, this.dbProvider);
+  }
+
+  public updateTagParent(params: IUpdateTagParentParams) {
+    return updateTagParent.run(params, this.dbProvider);
+  }
+
+  private async batchTagsByID(tagIDs: readonly string[]) {
+    const tags = await getTagsByIDs.run({ tagIDs }, this.dbProvider);
+    return tagIDs.map(id => tags.find(tag => tag.id === id));
+  }
+
+  public getTagByIDLoader = new DataLoader((keys: readonly string[]) => this.batchTagsByID(keys), {
+    cache: false,
+  });
+
+  private async batchTagsByNames(tagNames: readonly string[]) {
+    const tags = await getTagsByNames.run({ tagNames }, this.dbProvider);
+    return tagNames.map(name => tags.find(tag => tag.name === name));
+  }
+
+  public getTagByNameLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchTagsByNames(keys),
+    {
+      cache: false,
+    },
+  );
 }

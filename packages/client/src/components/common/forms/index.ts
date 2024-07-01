@@ -9,3 +9,4 @@ export * from './modify-document-fields.js';
 export * from './modify-salary-record.js';
 export * from './upload-document.js';
 export * from './insert-business-fields.js';
+export * from './edit-tag.js';

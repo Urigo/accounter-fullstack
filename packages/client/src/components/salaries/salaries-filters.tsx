@@ -46,13 +46,20 @@ function SalariesFiltersForm({
   });
   const [employees, setEmployees] = useState<Array<{ value: string; label: string }>>([]);
   const { userContext } = useContext(UserContext);
-  const [{ data: employeesData, fetching: employeesFetching, error: financialEntitiesError }] =
-    useQuery({
-      query: AllEmployeesByEmployerDocument,
-      variables: {
-        employerId: userContext?.ownerId,
-      },
-    });
+  const [
+    { data: employeesData, fetching: employeesFetching, error: financialEntitiesError },
+    fetchEmployees,
+  ] = useQuery({
+    query: AllEmployeesByEmployerDocument,
+    variables: {
+      employerId: userContext?.ownerId ?? '',
+    },
+    pause: true,
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [userContext?.ownerId, fetchEmployees]);
 
   useEffect(() => {
     if (financialEntitiesError) {
