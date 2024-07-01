@@ -1,4 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
@@ -7,13 +8,13 @@ import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
 import { UserContext } from '../../providers/user-provider.js';
 import {
-  AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
 } from '../common';
+import { PageLayout } from '../layout/page-layout.js';
 import { AllChargesTable } from './all-charges-table';
 import { ChargesFilters } from './charges-filters';
 
@@ -121,9 +122,9 @@ export const AllCharges = (): ReactElement => {
   ]);
 
   return (
-    <>
+    <PageLayout title="All Charges" description="Manage charges">
       {fetching ? (
-        <AccounterLoader />
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <AllChargesTable
           setEditChargeId={setEditChargeId}
@@ -164,6 +165,6 @@ export const AllCharges = (): ReactElement => {
           setMatchDocuments={(): void => setMatchDocuments(undefined)}
         />
       )}
-    </>
+    </PageLayout>
   );
 };

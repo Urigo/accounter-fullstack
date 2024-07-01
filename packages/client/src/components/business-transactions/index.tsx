@@ -1,4 +1,5 @@
 import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Mark, Table, Text, Tooltip } from '@mantine/core';
@@ -8,7 +9,8 @@ import {
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
-import { AccounterLoader, AccounterTableRow } from '../common';
+import { AccounterTableRow } from '../common';
+import { PageLayout } from '../layout/page-layout.js';
 import { BusinessExtendedInfo } from './business-extended-info';
 import { BusinessTransactionsFilters } from './business-transactions-filters';
 
@@ -243,27 +245,35 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     },
   ];
 
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <Table striped highlightOnHover>
-      <thead className="sticky top-0 z-20">
-        <tr className="tracking-wider font-medium text-gray-900 text-sm bg-gray-100">
-          {columns.map((c, index) => (c.disabled ? null : <th key={String(index)}>{c.title}</th>))}
-          <th>More Info</th>
-        </tr>
-      </thead>
-      <tbody>
-        {businessTransactionsSum.map((item, index) => (
-          <AccounterTableRow
-            key={index}
-            columns={columns}
-            item={item}
-            moreInfo={() => <BusinessExtendedInfo businessID={item.business.id} filter={filter} />}
-            isShowAll={isAllOpened}
-          />
-        ))}
-      </tbody>
-    </Table>
+  return (
+    <PageLayout title="Business Transactions" description="Business Transactions Summery">
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <Table striped highlightOnHover>
+          <thead className="sticky top-0 z-20">
+            <tr className="tracking-wider font-medium text-gray-900 text-sm bg-gray-100">
+              {columns.map((c, index) =>
+                c.disabled ? null : <th key={String(index)}>{c.title}</th>,
+              )}
+              <th>More Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            {businessTransactionsSum.map((item, index) => (
+              <AccounterTableRow
+                key={index}
+                columns={columns}
+                item={item}
+                moreInfo={() => (
+                  <BusinessExtendedInfo businessID={item.business.id} filter={filter} />
+                )}
+                isShowAll={isAllOpened}
+              />
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </PageLayout>
   );
 };
