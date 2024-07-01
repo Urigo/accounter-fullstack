@@ -7,10 +7,10 @@ import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { sortTags } from '../../helpers/index.js';
 import { useAddTag } from '../../hooks/use-add-tag';
 import { useDeleteTag } from '../../hooks/use-delete-tag';
+import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context';
 import { EditTagModal } from '../common';
 import { PageLayout } from '../layout/page-layout.js';
-import { cn } from '../../lib/utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
