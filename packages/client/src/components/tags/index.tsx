@@ -7,7 +7,6 @@ import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { sortTags } from '../../helpers/index.js';
 import { useAddTag } from '../../hooks/use-add-tag';
 import { useDeleteTag } from '../../hooks/use-delete-tag';
-import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context';
 import { EditTagModal } from '../common';
 import { PageLayout } from '../layout/page-layout.js';
@@ -57,9 +56,9 @@ export const TagsManager = (): ReactElement => {
   );
 
   return (
-    <PageLayout title="Salaries" description="View and manage salaries of employees.">
+    <PageLayout title="Tags" description="Manage tags for your bookmarks.">
       {fetching ? (
-        <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <div className="h-full flex flex-col overflow-hidden">
           {allTags?.map(tag => (
