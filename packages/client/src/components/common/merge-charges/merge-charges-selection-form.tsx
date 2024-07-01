@@ -25,7 +25,9 @@ import { useMergeCharges } from '../../../hooks/use-merge-charges';
         name
       }
       tags {
+        id
         name
+        namePath
       }
       conversion
       property
@@ -129,7 +131,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         tags: selectedTags.value
           .split(',')
           .filter(t => t !== '')
-          .map(tag => ({ name: tag })),
+          .map(tag => ({ id: tag })),
       };
     }
     if (
@@ -391,7 +393,14 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         selectedConversion?.id === charge.id ? { background: '#228be633' } : {}
                       }
                     >
-                      <ListCapsule items={charge.tags.map(t => t.name)} />
+                      <ListCapsule
+                        items={charge.tags.map(t => (
+                          <div key={t.id} className="flex flex-col items-center">
+                            <div>{t.name}</div>
+                            {t.namePath && <div>{t.namePath.join(' > ')}</div>}
+                          </div>
+                        ))}
+                      />
                     </div>
                   </button>
                 </td>

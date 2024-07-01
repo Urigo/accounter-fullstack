@@ -9,3 +9,4 @@ export * from './graphql-document-dedupe-fragments.js';
 export * from './numbers.js';
 export * from './strings-manipulations.js';
 export * from './vat.js';
+export * from './tags.js';

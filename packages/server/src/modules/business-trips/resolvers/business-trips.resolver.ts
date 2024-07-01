@@ -68,7 +68,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         return injector
           .get(BusinessTripsProvider)
           .insertBusinessTrip(fields)
-          .then(result => result[0]);
+          .then(result => result[0]?.id);
       } catch (e) {
         console.error(`Error inserting business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error inserting business trip`);
@@ -79,7 +79,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         return injector
           .get(BusinessTripsProvider)
           .insertBusinessTrip(fields)
-          .then(result => result[0]);
+          .then(result => result[0]?.id);
       } catch (e) {
         console.error(`Error updating business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error inserting business trip`);

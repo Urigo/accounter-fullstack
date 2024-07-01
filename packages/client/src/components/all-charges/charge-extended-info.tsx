@@ -41,9 +41,6 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
         documentsCount
         ledgerCount
       }
-      tags {
-        name
-      }
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
       ...TableLedgerRecordsFields @defer
@@ -92,7 +89,7 @@ export function ChargeExtendedInfo({
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
-  const isSalaryCharge = (charge?.tags?.map(tag => tag.name) ?? []).includes('salary');
+  const isSalaryCharge = charge?.__typename === 'SalaryCharge';
 
   useEffect(() => {
     const tabs = [];

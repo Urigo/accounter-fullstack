@@ -1,5 +1,6 @@
 import tags from './typeDefs/tags.graphql.js';
 import { createModule } from 'graphql-modules';
+import { ChargeTagsProvider } from './providers/charge-tags.provider.js';
 import { TagsProvider } from './providers/tags.provider.js';
 import { tagsResolvers } from './resolvers/tags.resolvers.js';
 
@@ -10,7 +11,7 @@ export const tagsModule = createModule({
   dirname: __dirname,
   typeDefs: [tags],
   resolvers: [tagsResolvers],
-  providers: [TagsProvider],
+  providers: [TagsProvider, ChargeTagsProvider],
 });
 
 export * as TagsTypes from './types.js';

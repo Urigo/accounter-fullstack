@@ -26,7 +26,6 @@ import type {
   IUpdateChargeParams,
   IUpdateChargeQuery,
   IUpdateChargeResult,
-  tags_enumArray,
 } from '../types.js';
 
 export type ChargeRequiredWrapper<
@@ -305,7 +304,7 @@ export class ChargesProvider {
       ownerIds: isOwnerIds ? params.ownerIds! : [null],
       businessIds: isBusinessIds ? (params.businessIds! as string[]) : null,
       IDs: isIDs ? params.IDs! : [null],
-      tags: isTags ? (params.tags! as tags_enumArray) : null,
+      tags: isTags ? (params.tags! as string[]) : null,
       chargeType: params.chargeType ?? 'ALL',
       withoutInvoice: params.withoutInvoice ?? false,
       withoutDocuments: params.withoutDocuments ?? false,

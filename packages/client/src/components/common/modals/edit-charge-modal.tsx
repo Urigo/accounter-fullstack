@@ -28,7 +28,7 @@ import { writeToClipboard } from '../../../helpers';
         name
       }
       tags {
-        name
+        id
       }
       ... on BusinessTripCharge {
         businessTrip {

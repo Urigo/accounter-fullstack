@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
-import { TagsProvider } from '../../tags/providers/tags.provider.js';
+import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function deleteCharges(chargeIds: string[], injector: Injector): Promise<void> {
@@ -9,7 +9,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
     try {
       // clear tags
       const clearAllChargeTagsPromise = injector
-        .get(TagsProvider)
+        .get(ChargeTagsProvider)
         .clearAllChargeTags({ chargeId })
         .catch(e => {
           console.error(e);

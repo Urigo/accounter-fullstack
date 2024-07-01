@@ -8,7 +8,7 @@ import type { BusinessTripsModule } from '../types.js';
 
 export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTransactionResolvers =
   {
-    id: DbTransaction => DbTransaction.id,
+    id: DbTransaction => DbTransaction.id!,
     businessTrip: (DbTransaction, _, { injector }) =>
       injector
         .get(BusinessTripsProvider)
