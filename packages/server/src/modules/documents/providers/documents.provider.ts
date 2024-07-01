@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteDocumentParams,
@@ -191,6 +192,10 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   global: true,
 })
 export class DocumentsProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   public async getAllDocuments(params: IGetAllDocumentsParams) {
@@ -212,7 +217,8 @@ export class DocumentsProvider {
   public getDocumentsByChargeIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `document-by-charge-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -221,14 +227,17 @@ export class DocumentsProvider {
   }
 
   public async updateDocument(params: IUpdateDocumentParams) {
+    this.clearCache();
     return updateDocument.run(params, this.dbProvider);
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {
+    this.clearCache();
     return deleteDocument.run(params, this.dbProvider);
   }
 
   public async insertDocuments(params: IInsertDocumentsParams) {
+    this.clearCache();
     return insertDocuments.run(params, this.dbProvider);
   }
 
@@ -253,6 +262,7 @@ export class DocumentsProvider {
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
+    this.clearCache();
     return replaceDocumentsChargeId.run(params, this.dbProvider);
   }
 
@@ -271,7 +281,12 @@ export class DocumentsProvider {
   public getDocumentsByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchDocumentsByIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `document-${key}`,
+      cacheMap: this.cache,
     },
   );
+
+  public clearCache() {
+    this.cache.clear();
+  }
 }
