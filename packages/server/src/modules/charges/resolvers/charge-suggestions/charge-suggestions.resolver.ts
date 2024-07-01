@@ -77,19 +77,28 @@ const missingInfoSuggestions: Resolver<
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {
         description: 'Etherscan to Kraken transfer',
-        tags: [{ name: 'financial' }],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
     if (isKrakenIncluded && isEtanaIncluded) {
       return {
         description: 'Kraken to Etana transfer',
-        tags: [{ name: 'financial' }],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
     if (isPoalimIncluded && isEtanaIncluded) {
       return {
         description: 'Etana to Poalim transfer',
-        tags: [{ name: 'financial' }],
+        tags: await injector
+          .get(TagsProvider)
+          .getTagByNameLoader.load('financial')
+          .then(res => (res ? [res] : [])),
       };
     }
   }
@@ -136,7 +145,7 @@ const missingInfoSuggestions: Resolver<
   }
 
   if (
-    DbCharge.is_conversion &&
+    DbCharge.type === 'CONVERSION' &&
     DbCharge.business_id &&
     [KRAKEN_BUSINESS_ID, POALIM_BUSINESS_ID].includes(DbCharge.business_id)
   ) {
