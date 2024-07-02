@@ -1,11 +1,12 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
-import { AccounterLoader } from '../../common';
+import { PageLayout } from '../../layout/page-layout.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters';
 import { TrialBalanceTable } from './trial-balance-table';
 
@@ -124,13 +125,17 @@ export const TrialBalanceReport = (): ReactElement => {
       : data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum ?? [];
   }, [data?.businessTransactionsSumFromLedgerRecords]);
 
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <TrialBalanceTable
-      businessTransactionsSum={businessTransactionsSum}
-      filter={filter}
-      isAllOpened={isAllOpened}
-    />
+  return (
+    <PageLayout title="Trial Balance Report" description="Trial balance report for all businesses">
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <TrialBalanceTable
+          businessTransactionsSum={businessTransactionsSum}
+          filter={filter}
+          isAllOpened={isAllOpened}
+        />
+      )}
+    </PageLayout>
   );
 };

@@ -1,10 +1,12 @@
 import { ReactElement, useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Indicator } from '@mantine/core';
 import { FragmentType, getFragmentData } from '../../gql/fragment-masking.js';
 import { BusinessTripsScreenDocument, BusinessTripWrapperFragmentDoc } from '../../gql/graphql.js';
-import { AccounterLoader, InsertBusinessTripModal } from '../common';
+import { InsertBusinessTripModal } from '../common';
+import { PageLayout } from '../layout/page-layout.js';
 import { EditableBusinessTrip } from './editable-business-trip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -26,40 +28,48 @@ export const BusinessTrips = (): ReactElement => {
     query: BusinessTripsScreenDocument,
   });
 
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <Container>
-      <Accordion
-        className="w-full"
-        multiple
-        chevron={<Plus size="1rem" />}
-        styles={{
-          chevron: {
-            '&[data-rotate]': {
-              transform: 'rotate(45deg)',
-            },
-          },
-        }}
-      >
-        {data?.allBusinessTrips
-          .sort((a, b) => {
-            // sort by start date (if available, newest top) and then by name
-            if (a.dates?.start && b.dates?.start) {
-              return a.dates.start < b.dates.start ? 1 : -1;
-            }
-            if (a.dates?.start) return -1;
-            if (b.dates?.start) return 1;
-            return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
-          })
-          .map(businessTrip => (
-            <BusinessTripWrapper data={businessTrip} isFetching={fetching} key={businessTrip.id} />
-          ))}
-      </Accordion>
-      <div className="flex justify-end mx-4">
-        <InsertBusinessTripModal />
-      </div>
-    </Container>
+  return (
+    <PageLayout title="Business trips" description="Manage business trips">
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <Container>
+          <Accordion
+            className="w-full"
+            multiple
+            chevron={<Plus size="1rem" />}
+            styles={{
+              chevron: {
+                '&[data-rotate]': {
+                  transform: 'rotate(45deg)',
+                },
+              },
+            }}
+          >
+            {data?.allBusinessTrips
+              .sort((a, b) => {
+                // sort by start date (if available, newest top) and then by name
+                if (a.dates?.start && b.dates?.start) {
+                  return a.dates.start < b.dates.start ? 1 : -1;
+                }
+                if (a.dates?.start) return -1;
+                if (b.dates?.start) return 1;
+                return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
+              })
+              .map(businessTrip => (
+                <BusinessTripWrapper
+                  data={businessTrip}
+                  isFetching={fetching}
+                  key={businessTrip.id}
+                />
+              ))}
+          </Accordion>
+          <div className="flex justify-end mx-4">
+            <InsertBusinessTripModal />
+          </div>
+        </Container>
+      )}
+    </PageLayout>
   );
 };
 

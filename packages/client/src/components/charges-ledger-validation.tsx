@@ -1,4 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
@@ -13,13 +14,13 @@ import { UserContext } from '../providers/user-provider.js';
 import { AllChargesTable } from './all-charges/all-charges-table';
 import { ChargesFilters } from './all-charges/charges-filters';
 import {
-  AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
 } from './common';
+import { PageLayout } from './layout/page-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -129,8 +130,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
   ]);
 
   return (
-    <>
-      {fetching && <AccounterLoader />}
+    <PageLayout title="Charges Ledger Validation" description="Manage charges">
+      {fetching && <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />}
       {!fetching && (
         <AllChargesTable
           setEditChargeId={setEditChargeId}
@@ -184,6 +185,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
           setMatchDocuments={(): void => setMatchDocuments(undefined)}
         />
       )}
-    </>
+    </PageLayout>
   );
 };

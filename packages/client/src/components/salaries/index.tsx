@@ -1,14 +1,15 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import {
-  AccounterLoader,
   EditSalaryRecordModal,
   InsertMiniButton,
   InsertSalaryRecordModal,
 } from '../common/index.js';
+import { PageLayout } from '../layout/page-layout.js';
 import { getDefaultFilterDates, SalariesFilter, SalariesFilters } from './salaries-filters.js';
 import { SalariesTable } from './salaries-table.js';
 
@@ -63,9 +64,9 @@ export const Salaries = (): ReactElement => {
   }, [data, fetching, filter, setFiltersContext, setFilter]);
 
   return (
-    <>
+    <PageLayout title="Salaries" description="View and manage salaries of employees.">
       {fetching ? (
-        <AccounterLoader />
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <SalariesTable
           setEditSalaryRecord={setEditSalaryRecord}
@@ -83,6 +84,6 @@ export const Salaries = (): ReactElement => {
           setInsertSalaryRecord={setInsertSalaryRecord}
         />
       )}
-    </>
+    </PageLayout>
   );
 };

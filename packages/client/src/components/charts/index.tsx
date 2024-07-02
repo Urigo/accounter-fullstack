@@ -1,6 +1,7 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
+import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   ChargeFilter,
@@ -11,7 +12,7 @@ import {
 import { TimelessDateString } from '../../helpers/dates';
 import { useUrlQuery } from '../../hooks/use-url-query';
 import { FiltersContext } from '../../providers/filters-context';
-import { AccounterLoader } from '../common';
+import { PageLayout } from '../layout/page-layout.js';
 import { Card, CardContent, CardHeader, CardTitle } from './cards';
 import { BarChart } from './chart';
 import { ChargeFilterFilter } from './chart-filters';
@@ -254,13 +255,6 @@ export const ChartPage = (): ReactElement => {
       });
   }, [data]);
 
-  if (fetching)
-    return (
-      <div className="mt-40">
-        <AccounterLoader />
-      </div>
-    );
-
   const totalIncome = overviewData
     .map(i => i.income)
     .reduce((acc, curr) => numberToDecimalJS(acc + curr), 0);
@@ -269,37 +263,41 @@ export const ChartPage = (): ReactElement => {
     .reduce((acc, curr) => numberToDecimalJS(acc + curr), 0);
   const totalBalance = numberToDecimalJS(totalIncome - totalExpenses);
 
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <>
-      <h1 className="text-2xl mb-5 font-medium">
-        Data from {filter.fromDate} to {filter.toDate} - Currency: USD
-      </h1>
-      <StatsCard
-        items={[
-          {
-            title: 'Income',
-            number: totalIncome.toLocaleString(),
-          },
-          {
-            title: 'Outcome',
-            number: totalExpenses.toLocaleString(),
-          },
-          {
-            title: 'Balance for selected period',
-            number: totalBalance.toLocaleString(),
-          },
-        ]}
-      />
-      <Card>
-        <CardHeader>
-          <CardTitle>Income and Outcome</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BarChart type="bar" datasetsTitle={['Income', 'Outcome']} data={overviewData} />
-        </CardContent>
-      </Card>
-    </>
+  return (
+    <PageLayout title="Charts" description="Income and Outcome">
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <>
+          <h1 className="text-2xl mb-5 font-medium">
+            Data from {filter.fromDate} to {filter.toDate} - Currency: USD
+          </h1>
+          <StatsCard
+            items={[
+              {
+                title: 'Income',
+                number: totalIncome.toLocaleString(),
+              },
+              {
+                title: 'Outcome',
+                number: totalExpenses.toLocaleString(),
+              },
+              {
+                title: 'Balance for selected period',
+                number: totalBalance.toLocaleString(),
+              },
+            ]}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Income and Outcome</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BarChart type="bar" datasetsTitle={['Income', 'Outcome']} data={overviewData} />
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </PageLayout>
   );
 };
