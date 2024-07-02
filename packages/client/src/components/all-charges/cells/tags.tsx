@@ -69,10 +69,10 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   }, [originalTags]);
 
   const updateTag = useCallback(
-    (tags?: Array<{ name: string; id: string }>) => {
+    (tags?: Array<{ id: string }>) => {
       updateCharge({
         chargeId,
-        fields: { tags },
+        fields: { tags: tags?.map(t => ({ id: t.id })) },
       }).then(onChange);
     },
     [chargeId, updateCharge, onChange],
