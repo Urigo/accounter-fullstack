@@ -3,6 +3,7 @@ import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllSortCodesQuery,
   IGetSortCodesByFinancialEntitiesIdsQuery,
@@ -31,6 +32,10 @@ const getSortCodesByFinancialEntitiesIds = sql<IGetSortCodesByFinancialEntitiesI
   global: true,
 })
 export class SortCodesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   public getAllSortCodes() {
@@ -51,7 +56,8 @@ export class SortCodesProvider {
   public getSortCodesByIdLoader = new DataLoader(
     (keys: readonly number[]) => this.batchSortCodesByIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `sortcode-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -78,4 +84,8 @@ export class SortCodesProvider {
       cache: false,
     },
   );
+
+  public clearCache() {
+    this.cache.clear();
+  }
 }

@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllSalaryRecordsQuery,
   IGetSalaryRecordsByChargeIdsQuery,
@@ -251,6 +252,10 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
   global: true,
 })
 export class SalariesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   public getSalaryRecordsByMonth(params: IGetSalaryRecordsByMonthParams) {
@@ -274,7 +279,10 @@ export class SalariesProvider {
 
   public getSalaryRecordsByMonthLoader = new DataLoader(
     (months: readonly string[]) => this.batchSalaryRecordsByMonths(months),
-    { cache: false },
+    {
+      cacheKeyFn: key => `salary-month-${key}`,
+      cacheMap: this.cache,
+    },
   );
 
   public getSalaryRecordsByDates(params: IGetSalaryRecordsByDatesParams) {
@@ -289,7 +297,10 @@ export class SalariesProvider {
   public getSalaryRecordsByChargeIdLoader = new DataLoader(
     (chargeIds: readonly string[]) =>
       this.batchGetSalaryRecordsByChargeIds(chargeIds as stringArray),
-    { cache: false },
+    {
+      cacheKeyFn: key => `salary-charge-${key}`,
+      cacheMap: this.cache,
+    },
   );
 
   public getAllSalaryRecords() {
@@ -297,10 +308,16 @@ export class SalariesProvider {
   }
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
+    this.clearCache();
     return insertSalaryRecords.run(params, this.dbProvider);
   }
 
   public updateSalaryRecord(params: IUpdateSalaryRecordParams) {
+    this.clearCache();
     return updateSalaryRecord.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

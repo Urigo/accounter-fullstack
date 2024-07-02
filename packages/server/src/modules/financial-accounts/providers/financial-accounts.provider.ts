@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialAccountsQuery,
   IGetFinancialAccountsByAccountIDsQuery,
@@ -33,6 +34,10 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
   global: true,
 })
 export class FinancialAccountsProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialAccountsByOwnerIds(ownerIds: readonly string[]) {
@@ -47,7 +52,10 @@ export class FinancialAccountsProvider {
 
   public getFinancialAccountsByOwnerIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByOwnerIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: key => `account-by-owner-id-${key}`,
+      cacheMap: this.cache,
+    },
   );
 
   private async batchFinancialAccountsByAccountNumbers(accountNumbers: readonly string[]) {
@@ -65,7 +73,8 @@ export class FinancialAccountsProvider {
   public getFinancialAccountByAccountNumberLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByAccountNumbers(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `account-number-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -82,11 +91,16 @@ export class FinancialAccountsProvider {
   public getFinancialAccountByAccountIDLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialAccountsByAccountIDs(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `account-id-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public getAllFinancialAccounts() {
     return getAllFinancialAccounts.run(undefined, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

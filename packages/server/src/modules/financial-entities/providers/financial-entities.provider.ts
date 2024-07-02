@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialEntitiesQuery,
   IGetFinancialEntitiesByIdsQuery,
@@ -60,6 +61,10 @@ const insertFinancialEntity = sql<IInsertFinancialEntityQuery>`
   global: true,
 })
 export class FinancialEntitiesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialEntitiesByIds(ids: readonly string[]) {
@@ -76,7 +81,8 @@ export class FinancialEntitiesProvider {
   public getFinancialEntityByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `financial-entity-id-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -93,7 +99,8 @@ export class FinancialEntitiesProvider {
   public getFinancialEntityByNameLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByNames(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `financial-entity-name-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -102,10 +109,15 @@ export class FinancialEntitiesProvider {
   }
 
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
+    this.clearCache();
     return updateFinancialEntity.run(params, this.dbProvider);
   }
 
   public insertFinancialEntity(params: IInsertFinancialEntityParams) {
     return insertFinancialEntity.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }
