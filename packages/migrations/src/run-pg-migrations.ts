@@ -22,6 +22,7 @@ import migration_2024_06_26T09_03_58_ignore_zero_amount_isracard_transactions fr
 import migration_2024_06_26T16_19_27_transactions_debit_date_override from './actions/2024-06-26T16-19-27.transactions-debit-date-override.js';
 import migration_2024_06_28T14_06_52_charge_type_column from './actions/2024-06-28T14-06-52.charge-type-column.js';
 import migration_2024_06_29T17_52_10_refactor_tags from './actions/2024-06-29T17-52-10.refactor-tags.js';
+import migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates from './actions/2024-07-02T15-31-30.extended-charges-include-ledger-dates.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -51,5 +52,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_06_26T16_19_27_transactions_debit_date_override,
       migration_2024_06_28T14_06_52_charge_type_column,
       migration_2024_06_29T17_52_10_refactor_tags,
+      migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates,
     ],
   });
