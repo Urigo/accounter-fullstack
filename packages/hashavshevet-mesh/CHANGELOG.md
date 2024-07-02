@@ -1,10 +1,446 @@
 # @accounter-toolkit/hashavshevet-mesh
 
+## 0.2.1
+
+### Patch Changes
+
+- [#482](https://github.com/Urigo/accounter-fullstack/pull/482)
+  [`85f6b47`](https://github.com/Urigo/accounter-fullstack/commit/85f6b471c29f7b5133cc8d40b7d185d6d3acad88)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.99.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.2)
+    (from `0.99.0`, in `dependencies`)
+
+- [#487](https://github.com/Urigo/accounter-fullstack/pull/487)
+  [`92a3b41`](https://github.com/Urigo/accounter-fullstack/commit/92a3b4183ae433189b96a061464beb0b9b94de92)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.3)
+    (from `0.99.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.3)
+    (from `0.98.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.99.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.4)
+    (from `0.99.2`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.3)
+    (from `0.98.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.97.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.97.3)
+    (from `0.97.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.97.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.97.3)
+    (from `0.97.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.97.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.97.3)
+    (from `0.97.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.97.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.97.3)
+    (from `0.97.0`, in `dependencies`)
+
+- [#496](https://github.com/Urigo/accounter-fullstack/pull/496)
+  [`b56e384`](https://github.com/Urigo/accounter-fullstack/commit/b56e38483b4a2b854f94f7a519e46c0fe11b9a5f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.4)
+    (from `0.99.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.5)
+    (from `0.99.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.97.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.97.4)
+    (from `0.97.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.97.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.97.4)
+    (from `0.97.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.97.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.97.4)
+    (from `0.97.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.97.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.97.4)
+    (from `0.97.3`, in `dependencies`)
+
+- [#507](https://github.com/Urigo/accounter-fullstack/pull/507)
+  [`e6ba95a`](https://github.com/Urigo/accounter-fullstack/commit/e6ba95a212fcb58f44ab183ccf209207bf35b3b6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.6)
+    (from `0.99.4`, in `dependencies`)
+
+- [#516](https://github.com/Urigo/accounter-fullstack/pull/516)
+  [`f4c917c`](https://github.com/Urigo/accounter-fullstack/commit/f4c917c7af5bf91f94a2457c0edf002db8298808)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.7)
+    (from `0.99.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.6)
+    (from `0.98.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.6)
+    (from `0.99.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.6)
+    (from `0.98.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.97.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.97.5)
+    (from `0.97.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.97.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.97.5)
+    (from `0.97.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.97.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.97.5)
+    (from `0.97.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.97.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.97.5)
+    (from `0.97.4`, in `dependencies`)
+
+- [#522](https://github.com/Urigo/accounter-fullstack/pull/522)
+  [`0c0b2e2`](https://github.com/Urigo/accounter-fullstack/commit/0c0b2e24ddf9777262ced77f75f8044a0ad6990d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.8)
+    (from `0.99.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+
+- [#579](https://github.com/Urigo/accounter-fullstack/pull/579)
+  [`d53495b`](https://github.com/Urigo/accounter-fullstack/commit/d53495b0efce17348795766b7cc88786507fe61e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.9)
+    (from `0.99.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+
+- [#628](https://github.com/Urigo/accounter-fullstack/pull/628)
+  [`a610797`](https://github.com/Urigo/accounter-fullstack/commit/a6107970b9c6526860f862002246bd5be872db55)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.3)
+    (from `0.99.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.3)
+    (from `0.98.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.4)
+    (from `0.99.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.3)
+    (from `0.98.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.3)
+    (from `0.97.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.3)
+    (from `0.97.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.3)
+    (from `0.97.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.3)
+    (from `0.97.5`, in `dependencies`)
+
+- [#631](https://github.com/Urigo/accounter-fullstack/pull/631)
+  [`b03449e`](https://github.com/Urigo/accounter-fullstack/commit/b03449ed32bbaec45975866a0b50257d0b99fb02)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/cross-helpers@0.4.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.2)
+    (from `0.4.1`, in `dependencies`)
+
+- [#649](https://github.com/Urigo/accounter-fullstack/pull/649)
+  [`a7a1ccb`](https://github.com/Urigo/accounter-fullstack/commit/a7a1ccbacb18ddc86d1de4b996900e1be3c12ad3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.5)
+    (from `0.100.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.5)
+    (from `0.99.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.6)
+    (from `0.100.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.5)
+    (from `0.99.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.4)
+    (from `0.98.3`, in `dependencies`)
+
+- [#664](https://github.com/Urigo/accounter-fullstack/pull/664)
+  [`ebc6252`](https://github.com/Urigo/accounter-fullstack/commit/ebc625216c68c0d5fade0cbdf7dde6bee8ee46c3)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.10-alpha-20240602174415-2f77f99bd10ec04faef9e942cf0bfd3340b80fca` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.10)
+    (from `0.100.11`, in `dependencies`)
+
+- [#669](https://github.com/Urigo/accounter-fullstack/pull/669)
+  [`589ec6b`](https://github.com/Urigo/accounter-fullstack/commit/589ec6bc3e987c8bc670b05b0022d59422131934)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.7)
+    (from `0.100.6`, in `dependencies`)
+
+- [#695](https://github.com/Urigo/accounter-fullstack/pull/695)
+  [`6a14adf`](https://github.com/Urigo/accounter-fullstack/commit/6a14adfe23c354697b082c58c1df87d1fef9f53e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.6)
+    (from `0.100.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.6)
+    (from `0.99.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.8)
+    (from `0.100.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.6)
+    (from `0.99.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.5)
+    (from `0.98.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.5)
+    (from `0.98.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.5)
+    (from `0.98.4`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.5)
+    (from `0.98.4`, in `dependencies`)
+
+- [#709](https://github.com/Urigo/accounter-fullstack/pull/709)
+  [`60a0845`](https://github.com/Urigo/accounter-fullstack/commit/60a0845cdf5754c182fed84e36522e9555b4e30c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.7)
+    (from `0.100.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/cross-helpers@0.4.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.3)
+    (from `0.4.2`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.7)
+    (from `0.99.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.9)
+    (from `0.100.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.7)
+    (from `0.99.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.6)
+    (from `0.98.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.6)
+    (from `0.98.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.6)
+    (from `0.98.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.6)
+    (from `0.98.5`, in `dependencies`)
+
+- [#745](https://github.com/Urigo/accounter-fullstack/pull/745)
+  [`8f16dc6`](https://github.com/Urigo/accounter-fullstack/commit/8f16dc691c5fa9b011ee59191d62ece8b7aae1b3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.8)
+    (from `0.100.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.8)
+    (from `0.99.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.11)
+    (from `0.100.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.8)
+    (from `0.99.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.7)
+    (from `0.98.6`, in `dependencies`)
+  - Updated dependency [`graphql@16.8.2` ↗︎](https://www.npmjs.com/package/graphql/v/16.8.2) (from
+    `16.8.1`, in `dependencies`)
+
+- [#788](https://github.com/Urigo/accounter-fullstack/pull/788)
+  [`d6247ce`](https://github.com/Urigo/accounter-fullstack/commit/d6247ce0657c40a941c6e86a1c3ef260a8f52cf4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.9)
+    (from `0.100.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.9)
+    (from `0.99.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.12)
+    (from `0.100.10-alpha-20240602174415-2f77f99bd10ec04faef9e942cf0bfd3340b80fca`, in
+    `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.9)
+    (from `0.99.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.8)
+    (from `0.98.7`, in `dependencies`)
+
+- [#794](https://github.com/Urigo/accounter-fullstack/pull/794)
+  [`3adbc26`](https://github.com/Urigo/accounter-fullstack/commit/3adbc26730bae4f147df93481f3d875a667fcc68)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`graphql@16.9.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.9.0) (from
+    `16.8.2`, in `dependencies`)
+
+- [#795](https://github.com/Urigo/accounter-fullstack/pull/795)
+  [`c61694b`](https://github.com/Urigo/accounter-fullstack/commit/c61694bc859ce89ba04d1ea52629a1bc8657d070)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.10)
+    (from `0.100.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.10)
+    (from `0.99.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.100.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.13)
+    (from `0.100.12`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.10)
+    (from `0.99.9`, in `dependencies`)
+
+- [#811](https://github.com/Urigo/accounter-fullstack/pull/811)
+  [`10b4fa0`](https://github.com/Urigo/accounter-fullstack/commit/10b4fa03cd4a38fcdb4069a1c2ea42d1713c040c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.11)
+    (from `0.100.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.11)
+    (from `0.99.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.11)
+    (from `0.99.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.9)
+    (from `0.98.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.9)
+    (from `0.98.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.9)
+    (from `0.98.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.9)
+    (from `0.98.8`, in `dependencies`)
+
+- [#812](https://github.com/Urigo/accounter-fullstack/pull/812)
+  [`be71797`](https://github.com/Urigo/accounter-fullstack/commit/be71797d59f358e1458d357aabd1996d3c5558ae)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.101.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.101.0)
+    (from `0.100.14-alpha-20240624090904-0efa06eac80c025d51493ab4732a288c1d53fac1`, in
+    `dependencies`)
+
+- [#827](https://github.com/Urigo/accounter-fullstack/pull/827)
+  [`c9d0e34`](https://github.com/Urigo/accounter-fullstack/commit/c9d0e34cf45f2e4a5f4ba2c3c09e62cd9ca1c929)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.100.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.12)
+    (from `0.100.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/cross-helpers@0.4.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.4)
+    (from `0.4.3`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.99.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.12)
+    (from `0.99.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.101.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.101.1)
+    (from `0.101.0`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.99.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.99.12)
+    (from `0.99.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.98.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.98.10)
+    (from `0.98.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.98.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.98.10)
+    (from `0.98.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.98.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.98.10)
+    (from `0.98.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.98.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.98.10)
+    (from `0.98.9`, in `dependencies`)
+
+- [#470](https://github.com/Urigo/accounter-fullstack/pull/470)
+  [`4c86678`](https://github.com/Urigo/accounter-fullstack/commit/4c866780ef1c78880f9b62854d5ab9a5eb74db95)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate accounter-toolkit into the monorepo
+
 ## 0.2.0
 
 ### Minor Changes
 
-- [#210](https://github.com/gilgardosh/accounter-toolkit/pull/210) [`c84416c`](https://github.com/gilgardosh/accounter-toolkit/commit/c84416cb9c9f501b5f53b039985f5d2b24ea93c2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Drop support for NPM <18
+- [#210](https://github.com/gilgardosh/accounter-toolkit/pull/210)
+  [`c84416c`](https://github.com/gilgardosh/accounter-toolkit/commit/c84416cb9c9f501b5f53b039985f5d2b24ea93c2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Drop support for NPM <18
 
 ## 0.1.4
 
