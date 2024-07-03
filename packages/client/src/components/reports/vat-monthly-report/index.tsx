@@ -1,5 +1,6 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   ChargeFilterType,
@@ -11,13 +12,13 @@ import { useUrlQuery } from '../../../hooks/use-url-query';
 import { FiltersContext } from '../../../providers/filters-context';
 import { UserContext } from '../../../providers/user-provider.js';
 import {
-  AccounterLoader,
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
 } from '../../common';
+import { PageLayout } from '../../layout/page-layout.js';
 import { BusinessTripsTable } from './business-trips-table';
 import { ExpensesTable } from './expenses-section/expenses-table';
 import { IncomeTable } from './income-section/income-table';
@@ -115,79 +116,86 @@ export const VatMonthlyReport = (): ReactElement => {
     () => new Set(mergeSelectedCharges),
     [mergeSelectedCharges],
   );
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <div className="flex flex-col gap-4">
-      {filter.chargesType !== ChargeFilterType.Expense && (
-        <IncomeTable
-          data={data?.vatReport}
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={mergeSelectedCharges}
-        />
-      )}
+  return (
+    <PageLayout title="VAT Monthly Resport">
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filter.chargesType !== ChargeFilterType.Expense && (
+            <IncomeTable
+              data={data?.vatReport}
+              toggleMergeCharge={toggleMergeCharge}
+              mergeSelectedCharges={mergeSelectedCharges}
+            />
+          )}
 
-      {filter.chargesType !== ChargeFilterType.Income && (
-        <ExpensesTable
-          data={data?.vatReport}
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={mergeSelectedCharges}
-        />
-      )}
+          {filter.chargesType !== ChargeFilterType.Income && (
+            <ExpensesTable
+              data={data?.vatReport}
+              toggleMergeCharge={toggleMergeCharge}
+              mergeSelectedCharges={mergeSelectedCharges}
+            />
+          )}
 
-      <MissingInfoTable
-        data={data?.vatReport}
-        setEditCharge={setEditCharge}
-        setInsertDocument={setInsertDocument}
-        setUploadDocument={setUploadDocument}
-        setMatchDocuments={setMatchDocuments}
-        toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedChargesSet}
-      />
+          <MissingInfoTable
+            data={data?.vatReport}
+            setEditCharge={setEditCharge}
+            setInsertDocument={setInsertDocument}
+            setUploadDocument={setUploadDocument}
+            setMatchDocuments={setMatchDocuments}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={mergeSelectedChargesSet}
+          />
 
-      <BusinessTripsTable
-        data={data?.vatReport}
-        setEditCharge={setEditCharge}
-        setInsertDocument={setInsertDocument}
-        setUploadDocument={setUploadDocument}
-        setMatchDocuments={setMatchDocuments}
-        toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedChargesSet}
-      />
+          <BusinessTripsTable
+            data={data?.vatReport}
+            setEditCharge={setEditCharge}
+            setInsertDocument={setInsertDocument}
+            setUploadDocument={setUploadDocument}
+            setMatchDocuments={setMatchDocuments}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={mergeSelectedChargesSet}
+          />
 
-      <MiscTable
-        data={data?.vatReport}
-        setEditCharge={setEditCharge}
-        setInsertDocument={setInsertDocument}
-        setUploadDocument={setUploadDocument}
-        setMatchDocuments={setMatchDocuments}
-        toggleMergeCharge={toggleMergeCharge}
-        mergeSelectedCharges={mergeSelectedChargesSet}
-      />
+          <MiscTable
+            data={data?.vatReport}
+            setEditCharge={setEditCharge}
+            setInsertDocument={setInsertDocument}
+            setUploadDocument={setUploadDocument}
+            setMatchDocuments={setMatchDocuments}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={mergeSelectedChargesSet}
+          />
 
-      {/* modification modals */}
-      {editCharge && (
-        <EditChargeModal chargeId={editCharge.id} close={(): void => setEditCharge(undefined)} />
+          {/* modification modals */}
+          {editCharge && (
+            <EditChargeModal
+              chargeId={editCharge.id}
+              close={(): void => setEditCharge(undefined)}
+            />
+          )}
+          {insertDocument && (
+            <InsertDocumentModal
+              chargeId={insertDocument.id}
+              close={() => setInsertDocument(undefined)}
+            />
+          )}
+          {uploadDocument && (
+            <UploadDocumentModal
+              chargeId={uploadDocument?.id}
+              close={() => setUploadDocument(undefined)}
+            />
+          )}
+          {matchDocuments && (
+            <MatchDocumentModal
+              chargeId={matchDocuments.id}
+              ownerId={matchDocuments.ownerId}
+              setMatchDocuments={(): void => setMatchDocuments(undefined)}
+            />
+          )}
+        </div>
       )}
-      {insertDocument && (
-        <InsertDocumentModal
-          chargeId={insertDocument.id}
-          close={() => setInsertDocument(undefined)}
-        />
-      )}
-      {uploadDocument && (
-        <UploadDocumentModal
-          chargeId={uploadDocument?.id}
-          close={() => setUploadDocument(undefined)}
-        />
-      )}
-      {matchDocuments && (
-        <MatchDocumentModal
-          chargeId={matchDocuments.id}
-          ownerId={matchDocuments.ownerId}
-          setMatchDocuments={(): void => setMatchDocuments(undefined)}
-        />
-      )}
-    </div>
+    </PageLayout>
   );
 };
