@@ -1,10 +1,12 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { EMPTY_UUID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
@@ -221,6 +223,47 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       await deleteCharges([chargeId], injector);
       return true;
+    },
+    generateRevaluationCharge: async (_, { date, ownerId }, { injector }) => {
+      try {
+        const newChargePromise = injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Revaluation charge for ${date}`,
+          type: 'REVALUATION',
+        });
+
+        const foreignAccountsPromise = injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByFinancialAccountOwnerIdsLoader.load(ownerId);
+
+        const [[charge], accountTaxCategories] = await Promise.all([
+          newChargePromise,
+          foreignAccountsPromise,
+        ]);
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        if (accountTaxCategories.length === 0) {
+          throw new Error('No accounts found');
+        }
+
+        const foreignAccounts = accountTaxCategories.filter(
+          ({ currency }) => currency !== DEFAULT_LOCAL_CURRENCY,
+        );
+
+        if (accountTaxCategories.length === 0) {
+          throw new Error('No foreign accounts found');
+        }
+
+        // TODO: generate ledger records for each account using new charge id
+
+        return injector.get(ChargesProvider).getChargeByIdLoader.load(charge.id);
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating revaluation charge');
+      }
     },
   },
   UpdateChargeResult: {

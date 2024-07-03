@@ -9,6 +9,7 @@ import type {
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
+  IGetTaxCategoryByFinancialAccountOwnerIdsQuery,
   IGetTaxCategoryByIDsQuery,
   IGetTaxCategoryByNamesQuery,
   IInsertBusinessTaxCategoryParams,
@@ -38,6 +39,17 @@ LEFT JOIN accounter_schema.financial_entities fe
   ON fatc.tax_category_id = fe.id
 WHERE fatc.currency IN $$Currencies
 AND fatc.financial_account_id IN $$FinancialAccountIds;`;
+
+const getTaxCategoryByFinancialAccountOwnerIds = sql<IGetTaxCategoryByFinancialAccountOwnerIdsQuery>`
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, tc.hashavshevet_name, fatc.financial_account_id, fatc.currency, fa.owner as "financial_account_owner_id"
+FROM accounter_schema.financial_accounts_tax_categories fatc
+LEFT JOIN accounter_schema.tax_categories tc
+  ON fatc.tax_category_id = tc.id
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fatc.tax_category_id = fe.id
+LEFT JOIN accounter_schema.financial_accounts fa
+  ON fa.id = fatc.financial_account_id
+WHERE fa.owner IN $$ownerIds;`;
 
 const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
 SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, tc.hashavshevet_name, c.business_id, c.owner_id, c.id as charge_id
@@ -159,15 +171,22 @@ export class TaxCategoriesProvider {
     },
   );
 
-  private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
-    const taxCategories = await getTaxCategoryByChargeIDs.run(
+  private async batchTaxCategoryByFinancialAccountOwnerIds(ownerIds: readonly string[]) {
+    const taxCategories = await getTaxCategoryByFinancialAccountOwnerIds.run(
       {
-        chargeIds,
+        ownerIds,
       },
       this.dbProvider,
     );
-    return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
+    return ownerIds.map(id => taxCategories.filter(tc => tc.financial_account_owner_id === id));
   }
+
+  public taxCategoryByFinancialAccountOwnerIdsLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchTaxCategoryByFinancialAccountOwnerIds(keys),
+    {
+      cache: false,
+    },
+  );
 
   public taxCategoryByChargeIDsLoader = new DataLoader(
     (chargeIDs: readonly string[]) => this.batchTaxCategoryByChargeIDs(chargeIDs),
@@ -224,5 +243,15 @@ export class TaxCategoriesProvider {
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
     return insertBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
+    const taxCategories = await getTaxCategoryByChargeIDs.run(
+      {
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
   }
 }
