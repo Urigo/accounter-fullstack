@@ -11,6 +11,10 @@ export default gql`
     validationData: ValidationData
   }
 
+  extend type RevaluationCharge {
+    validationData: ValidationData
+  }
+
   extend type ConversionCharge {
     validationData: ValidationData
   }

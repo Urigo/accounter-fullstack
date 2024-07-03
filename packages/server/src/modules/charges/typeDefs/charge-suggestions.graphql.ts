@@ -11,6 +11,10 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
+  extend type RevaluationCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
   extend type ConversionCharge {
     missingInfoSuggestions: ChargeSuggestions
   }

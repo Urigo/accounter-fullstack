@@ -22,6 +22,10 @@ export default gql`
     transactions: [Transaction!]!
   }
 
+  extend type RevaluationCharge {
+    transactions: [Transaction!]!
+  }
+
   extend type ConversionCharge {
     transactions: [Transaction!]!
   }

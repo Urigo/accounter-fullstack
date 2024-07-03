@@ -173,6 +173,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
   },
   CommonCharge: commonChargeFields,
+  RevaluationCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,

@@ -241,6 +241,22 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
+  RevaluationCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Revaluation,
+    ...commonChargeFields,
+    vat: () => null,
+    totalAmount: () => null,
+    property: () => false,
+    conversion: () => false,
+    salary: () => false,
+    isInvoicePaymentDifferentCurrency: () => false,
+    minEventDate: DbCharge => DbCharge.ledger_min_invoice_date,
+    minDebitDate: DbCharge => DbCharge.ledger_min_value_date,
+    // minDocumentsDate:
+    // validationData:
+    // metadata:
+    yearsOfRelevance: () => null,
+  },
   ConversionCharge: {
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Conversion,
     ...commonChargeFields,

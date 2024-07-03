@@ -33,6 +33,8 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
       return generateLedgerRecordsForBankDeposit;
     case 'CreditcardBankCharge':
       return generateLedgerRecordsForCommonCharge;
+    case 'RevaluationCharge':
+      return generateLedgerRecordsForCommonCharge;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
@@ -91,7 +93,12 @@ export async function ledgerUnbalancedBusinessesByCharge(
       ///////////
       // TODO //
       //////////
-      throw new Error('CreditcardBankCharge is not supported yet');
+      return undefined;
+    case 'RevaluationCharge':
+      ///////////
+      // TODO //
+      //////////
+      return undefined;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
