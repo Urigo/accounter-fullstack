@@ -49,6 +49,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     date: timelessDate => timelessDate,
   },
   CommonCharge: commonChargeFields,
+  RevaluationCharge: commonChargeFields,
   ConversionCharge: {
     ...commonChargeFields,
     officialRate: async (dbCharge, _, { injector }) => {

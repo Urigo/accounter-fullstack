@@ -1,20 +1,15 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import type { BusinessTransactionProto, RawBusinessTransactionsSum } from '@shared/types';
-import {
-  handleBusinessLedgerRecord,
-  handleBusinessTransaction,
-} from '../helpers/business-transactions.helper.js';
+import type { BusinessTransactionProto } from '@shared/types';
+import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
-import type {
-  FinancialEntitiesModule,
-  IGetBusinessesByIdsResult,
-  IGetFinancialEntitiesByIdsResult,
-} from '../types.js';
+import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';
+import { businessTransactionsSumFromLedgerRecords } from './business-transactions-sum-from-ledger-records.resolver.js';
 
 export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Pick<
@@ -22,126 +17,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     'BusinessTransactionsSumFromLedgerRecordsResult' | 'BusinessTransactionsFromLedgerRecordsResult'
   > = {
   Query: {
-    businessTransactionsSumFromLedgerRecords: async (_, { filters }, context, _info) => {
-      const injector = context.injector;
-      const { ownerIds, businessIDs, fromDate, toDate, type } = filters || {};
-
-      const shouldFetchAllFinancialEntities = !businessIDs?.length && !!type;
-      const financialEntities = await (shouldFetchAllFinancialEntities
-        ? injector.get(FinancialEntitiesProvider).getAllFinancialEntities()
-        : injector
-            .get(FinancialEntitiesProvider)
-            .getFinancialEntityByIdLoader.loadMany(businessIDs ?? []));
-
-      const isFilteredByFinancialEntities = !!businessIDs?.length || type;
-
-      const financialEntitiesIDs = financialEntities
-        ?.filter(fe => {
-          if (!fe || !('id' in fe)) {
-            return false;
-          }
-          if (type) {
-            return type.toLocaleLowerCase() === fe.type;
-          }
-          return true;
-        })
-        .map(fe => (fe as IGetFinancialEntitiesByIdsResult).id);
-
-      try {
-        const charges = await injector.get(ChargesProvider).getChargesByFilters({
-          ownerIds: ownerIds ?? undefined,
-          businessIds: businessIDs,
-          fromAnyDate: fromDate,
-          toAnyDate: toDate,
-        });
-        const ledgerRecordSets = await Promise.all(
-          charges.map(charge =>
-            injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
-          ),
-        );
-
-        const ledgerRecords = ledgerRecordSets.flat();
-
-        const rawRes: Record<string, RawBusinessTransactionsSum> = {};
-
-        for (const ledger of ledgerRecords) {
-          // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && dateToTimelessDateString(ledger.invoice_date) < fromDate) {
-            continue;
-          }
-          if (!!toDate && dateToTimelessDateString(ledger.invoice_date) > toDate) {
-            continue;
-          }
-
-          if (
-            ledger.credit_entity1 &&
-            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.credit_entity1))
-          ) {
-            handleBusinessLedgerRecord(
-              rawRes,
-              ledger.credit_entity1,
-              ledger.currency as Currency,
-              true,
-              ledger.credit_local_amount1,
-              ledger.credit_foreign_amount1,
-            );
-          }
-
-          if (
-            ledger.credit_entity2 &&
-            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.credit_entity2))
-          ) {
-            handleBusinessLedgerRecord(
-              rawRes,
-              ledger.credit_entity2,
-              ledger.currency as Currency,
-              true,
-              ledger.credit_local_amount2,
-              ledger.credit_foreign_amount2,
-            );
-          }
-
-          if (
-            ledger.debit_entity1 &&
-            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.debit_entity1))
-          ) {
-            handleBusinessLedgerRecord(
-              rawRes,
-              ledger.debit_entity1,
-              ledger.currency as Currency,
-              false,
-              ledger.debit_local_amount1,
-              ledger.debit_foreign_amount1,
-            );
-          }
-
-          if (
-            ledger.debit_entity2 &&
-            (!isFilteredByFinancialEntities || financialEntitiesIDs.includes(ledger.debit_entity2))
-          ) {
-            handleBusinessLedgerRecord(
-              rawRes,
-              ledger.debit_entity2,
-              ledger.currency as Currency,
-              false,
-              ledger.debit_local_amount2,
-              ledger.debit_foreign_amount2,
-            );
-          }
-        }
-
-        return {
-          __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
-          businessTransactionsSum: Object.values(rawRes),
-        };
-      } catch (e) {
-        console.error(e);
-        return {
-          __typename: 'CommonError',
-          message: 'Error fetching business transactions summary from ledger records',
-        };
-      }
-    },
+    businessTransactionsSumFromLedgerRecords,
     businessTransactionsFromLedgerRecords: async (_, { filters }, context, _info) => {
       const injector = context.injector;
       const { ownerIds, businessIDs, fromDate, toDate, type } = filters || {};
@@ -309,31 +185,34 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
           return res;
         }),
-    credit: rawSum => formatFinancialAmount(rawSum.ils.credit, Currency.Ils),
-    debit: rawSum => formatFinancialAmount(rawSum.ils.debit, Currency.Ils),
-    total: rawSum => formatFinancialAmount(rawSum.ils.total, Currency.Ils),
+    credit: rawSum =>
+      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].credit, DEFAULT_LOCAL_CURRENCY),
+    debit: rawSum =>
+      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].debit, DEFAULT_LOCAL_CURRENCY),
+    total: rawSum =>
+      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].total, DEFAULT_LOCAL_CURRENCY),
     eurSum: rawSum =>
-      rawSum.eur.credit || rawSum.eur.debit
+      rawSum[Currency.Eur].credit || rawSum[Currency.Eur].debit
         ? {
-            credit: formatFinancialAmount(rawSum.eur.credit, Currency.Eur),
-            debit: formatFinancialAmount(rawSum.eur.debit, Currency.Eur),
-            total: formatFinancialAmount(rawSum.eur.total, Currency.Eur),
+            credit: formatFinancialAmount(rawSum[Currency.Eur].credit, Currency.Eur),
+            debit: formatFinancialAmount(rawSum[Currency.Eur].debit, Currency.Eur),
+            total: formatFinancialAmount(rawSum[Currency.Eur].total, Currency.Eur),
           }
         : null,
     gbpSum: rawSum =>
-      rawSum.gbp.credit || rawSum.gbp.debit
+      rawSum[Currency.Gbp].credit || rawSum[Currency.Gbp].debit
         ? {
-            credit: formatFinancialAmount(rawSum.gbp.credit, Currency.Gbp),
-            debit: formatFinancialAmount(rawSum.gbp.debit, Currency.Gbp),
-            total: formatFinancialAmount(rawSum.gbp.total, Currency.Gbp),
+            credit: formatFinancialAmount(rawSum[Currency.Gbp].credit, Currency.Gbp),
+            debit: formatFinancialAmount(rawSum[Currency.Gbp].debit, Currency.Gbp),
+            total: formatFinancialAmount(rawSum[Currency.Gbp].total, Currency.Gbp),
           }
         : null,
     usdSum: rawSum =>
-      rawSum.usd.credit | rawSum.usd.debit
+      rawSum[Currency.Usd].credit | rawSum[Currency.Usd].debit
         ? {
-            credit: formatFinancialAmount(rawSum.usd.credit, Currency.Usd),
-            debit: formatFinancialAmount(rawSum.usd.debit, Currency.Usd),
-            total: formatFinancialAmount(rawSum.usd.total, Currency.Usd),
+            credit: formatFinancialAmount(rawSum[Currency.Usd].credit, Currency.Usd),
+            debit: formatFinancialAmount(rawSum[Currency.Usd].debit, Currency.Usd),
+            total: formatFinancialAmount(rawSum[Currency.Usd].total, Currency.Usd),
           }
         : null,
   },

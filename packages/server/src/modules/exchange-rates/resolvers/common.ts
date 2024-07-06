@@ -44,7 +44,10 @@ export const commonTransactionFields:
 
 export const commonChargeFields: ExchangeRatesModule.ChargeResolvers = {
   exchangeRates: DbCharge => {
-    const ratesDate = DbCharge.transactions_min_debit_date || DbCharge.documents_min_date;
+    const ratesDate =
+      DbCharge.transactions_min_debit_date ||
+      DbCharge.documents_min_date ||
+      DbCharge.ledger_min_invoice_date;
 
     if (!ratesDate) {
       return null;

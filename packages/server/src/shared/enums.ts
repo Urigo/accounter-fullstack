@@ -20,12 +20,12 @@ export enum TransactionDirection {
 }
 
 export enum Currency {
-  Usd = 'USD',
-  Ils = 'ILS',
-  Gbp = 'GBP',
-  Eur = 'EUR',
-  Grt = 'GRT',
   Eth = 'ETH',
+  Eur = 'EUR',
+  Gbp = 'GBP',
+  Grt = 'GRT',
+  Ils = 'ILS',
+  Usd = 'USD',
   Usdc = 'USDC',
 }
 
@@ -48,4 +48,5 @@ export enum ChargeTypeEnum {
   Common = 'CommonCharge',
   BankDeposit = 'BankDepositCharge',
   CreditcardBankCharge = 'CreditcardBankCharge',
+  Revaluation = 'RevaluationCharge',
 }

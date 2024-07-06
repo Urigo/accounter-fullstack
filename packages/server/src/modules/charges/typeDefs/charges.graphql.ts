@@ -17,6 +17,7 @@ export default gql`
       fields: UpdateChargeInput
     ): MergeChargeResult! @auth(role: ADMIN)
     deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
+    generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): RevaluationCharge!
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
@@ -52,6 +53,24 @@ export default gql`
 
   " common charge "
   type CommonCharge implements Charge {
+    id: UUID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
+    userDescription: String
+    minEventDate: Date
+    minDebitDate: Date
+    minDocumentsDate: Date
+    metadata: ChargeMetadata
+    yearsOfRelevance: [String]
+  }
+
+  " revaluation charge "
+  type RevaluationCharge implements Charge {
     id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount

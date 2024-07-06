@@ -10,6 +10,7 @@ import { generateLedgerRecordsForConversion } from '../resolvers/ledger-generati
 import { generateLedgerRecordsForDividend } from '../resolvers/ledger-generation/dividend-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from '../resolvers/ledger-generation/internal-transfer-ledger-generation.resolver.js';
 import { generateLedgerRecordsForMonthlyVat } from '../resolvers/ledger-generation/monthly-vat-ledger-generation.resolver.js';
+import { generateLedgerRecordsForRevaluation } from '../resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/ledger-generation/salary-ledger-generation.resolver.js';
 
 export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
@@ -33,6 +34,8 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
       return generateLedgerRecordsForBankDeposit;
     case 'CreditcardBankCharge':
       return generateLedgerRecordsForCommonCharge;
+    case 'RevaluationCharge':
+      return generateLedgerRecordsForRevaluation;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
@@ -91,7 +94,12 @@ export async function ledgerUnbalancedBusinessesByCharge(
       ///////////
       // TODO //
       //////////
-      throw new Error('CreditcardBankCharge is not supported yet');
+      return undefined;
+    case 'RevaluationCharge':
+      ///////////
+      // TODO //
+      //////////
+      return undefined;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }

@@ -208,6 +208,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type RevaluationCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type ConversionCharge {
     additionalDocuments: [Document!]!
   }

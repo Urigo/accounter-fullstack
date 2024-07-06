@@ -44,6 +44,16 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
       case 'MonthlyVatCharge':
       case 'BankDepositCharge':
       case 'CreditcardBankCharge':
+      case 'RevaluationCharge':
+        return false;
+      default:
+        return true;
+    }
+  }, [__typename]);
+
+  const shouldHaveTransactions = useMemo((): boolean => {
+    switch (__typename) {
+      case 'RevaluationCharge':
         return false;
       default:
         return true;
@@ -51,8 +61,10 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   }, [__typename]);
 
   const isTransactionsError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.Transactions),
-    [validationData?.missingInfo],
+    () =>
+      shouldHaveTransactions &&
+      validationData?.missingInfo?.includes(MissingChargeInfo.Transactions),
+    [shouldHaveTransactions, validationData?.missingInfo],
   );
 
   const isDocumentsError = useMemo(
@@ -69,7 +81,10 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
         <ListCapsule
           items={[
             {
-              extraClassName: metadata?.transactionsCount ? undefined : 'bg-yellow-400',
+              extraClassName:
+                metadata?.transactionsCount || !shouldHaveTransactions
+                  ? undefined
+                  : 'bg-yellow-400',
               content: (
                 <Indicator
                   key="transactions"

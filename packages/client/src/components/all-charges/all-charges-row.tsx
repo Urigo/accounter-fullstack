@@ -43,6 +43,7 @@ import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-in
       ... on ChargeMetadata @defer {
         transactionsCount
         documentsCount
+        ledgerCount
       }
     }
     ...AllChargesAccountantApprovalFields @defer
@@ -121,8 +122,17 @@ export const AllChargesRow = ({
   }, [isAllOpened]);
 
   const hasExtendedInfo = useMemo(
-    () => !!(charge.metadata?.documentsCount || charge.metadata?.transactionsCount),
-    [charge.metadata?.documentsCount, charge.metadata?.transactionsCount],
+    () =>
+      !!(
+        charge.metadata?.documentsCount ||
+        charge.metadata?.transactionsCount ||
+        charge.metadata?.ledgerCount
+      ),
+    [
+      charge.metadata?.documentsCount,
+      charge.metadata?.transactionsCount,
+      charge.metadata?.ledgerCount,
+    ],
   );
 
   return (

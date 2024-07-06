@@ -3,6 +3,7 @@ import { BusinessTripsProvider } from '@modules/business-trips/providers/busines
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { generateLedgerRecordsForRevaluation } from '@modules/ledger/resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
@@ -222,6 +223,40 @@ export const chargesResolvers: ChargesModule.Resolvers &
       await deleteCharges([chargeId], injector);
       return true;
     },
+    generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
+      const { injector } = context;
+      try {
+        const [charge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Revaluation charge for ${date}`,
+          type: 'REVALUATION',
+        });
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const newExtendedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+
+        if (!newExtendedCharge) {
+          throw new Error('Error creating new charge');
+        }
+
+        await generateLedgerRecordsForRevaluation(
+          newExtendedCharge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
+
+        return newExtendedCharge;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating revaluation charge');
+      }
+    },
   },
   UpdateChargeResult: {
     __resolveType: (obj, _context, _info) => {
@@ -240,6 +275,22 @@ export const chargesResolvers: ChargesModule.Resolvers &
   CommonCharge: {
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Common,
     ...commonChargeFields,
+  },
+  RevaluationCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Revaluation,
+    ...commonChargeFields,
+    vat: () => null,
+    totalAmount: () => null,
+    property: () => false,
+    conversion: () => false,
+    salary: () => false,
+    isInvoicePaymentDifferentCurrency: () => false,
+    minEventDate: DbCharge => DbCharge.ledger_min_invoice_date,
+    minDebitDate: DbCharge => DbCharge.ledger_min_value_date,
+    // minDocumentsDate:
+    // validationData:
+    // metadata:
+    yearsOfRelevance: () => null,
   },
   ConversionCharge: {
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Conversion,

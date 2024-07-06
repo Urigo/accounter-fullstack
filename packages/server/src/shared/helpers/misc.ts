@@ -192,5 +192,5 @@ export function optionalDateToTimelessDateString(date?: Date | null): TimelessDa
   if (!date) {
     return null;
   }
-  return format(date, 'yyyy-MM-dd') as TimelessDateString;
+  return dateToTimelessDateString(date) as TimelessDateString;
 }
