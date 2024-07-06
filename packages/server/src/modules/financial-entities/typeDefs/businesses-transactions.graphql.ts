@@ -18,6 +18,7 @@ export default gql`
     type: FinancialEntityType
     fromDate: TimelessDate
     toDate: TimelessDate
+    includeRevaluation: Boolean
   }
 
   " represent financial entity type "

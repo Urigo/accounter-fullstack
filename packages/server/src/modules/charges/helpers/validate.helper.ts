@@ -19,7 +19,9 @@ export const validateCharge = async (
 
   // check for consistent counterparty business
   const businessNotRequired =
-    [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary].includes(chargeType) || isGeneralFees;
+    [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Revaluation].includes(
+      chargeType,
+    ) || isGeneralFees;
   const business =
     charge.business_id && !businessNotRequired
       ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
@@ -44,6 +46,7 @@ export const validateCharge = async (
       ChargeTypeEnum.Conversion,
       ChargeTypeEnum.MonthlyVat,
       ChargeTypeEnum.CreditcardBankCharge,
+      ChargeTypeEnum.Revaluation,
     ].includes(chargeType) ||
     isGeneralFees;
   const documentsAreFine =
@@ -54,8 +57,9 @@ export const validateCharge = async (
 
   // validate transactions
   const hasTransaction = charge.transactions_event_amount != null;
+  const transactionsNotRequired = [ChargeTypeEnum.Revaluation].includes(chargeType);
   const dbTransactionsAreValid = !charge.invalid_transactions;
-  const transactionsAreFine = hasTransaction && dbTransactionsAreValid;
+  const transactionsAreFine = transactionsNotRequired || (hasTransaction && dbTransactionsAreValid);
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }
@@ -86,9 +90,11 @@ export const validateCharge = async (
   }
 
   // validate tax category
-  const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
-    chargeType,
-  );
+  const shouldHaveTaxCategory = ![
+    ChargeTypeEnum.Salary,
+    ChargeTypeEnum.InternalTransfer,
+    ChargeTypeEnum.Revaluation,
+  ].includes(chargeType);
   const taxCategoryIsFine = !shouldHaveTaxCategory || !!charge.tax_category_id;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);

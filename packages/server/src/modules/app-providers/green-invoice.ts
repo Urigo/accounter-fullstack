@@ -1,6 +1,6 @@
-import { format } from 'date-fns';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { init, type Sdk } from '@accounter/green-invoice-graphql';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 
@@ -96,8 +96,8 @@ export class GreenInvoiceProvider {
 
         const res = await sdk.searchExpenseDrafts_query({
           input: {
-            fromDate: format(new Date(), 'yyyy-MM-dd'),
-            toDate: format(new Date(), 'yyyy-MM-dd'),
+            fromDate: dateToTimelessDateString(new Date()),
+            toDate: dateToTimelessDateString(new Date()),
           },
         });
         if (

@@ -264,9 +264,7 @@ export class ChargesProvider {
       userDescription: null,
       ...params,
     };
-    return generateCharge.run(fullParams, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IGenerateChargeResult>[]
-    >;
+    return generateCharge.run(fullParams, this.dbProvider);
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {

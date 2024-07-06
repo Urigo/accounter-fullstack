@@ -20,6 +20,11 @@ export class ExchangeProvider {
   public async getExchangeRates(baseCurrency: Currency, quoteCurrency: Currency, date: Date) {
     let rate = 1;
 
+    // if base and quote are the same currency, return rate
+    if (baseCurrency === quoteCurrency) {
+      return rate;
+    }
+
     // adjust rate and convert to FIAT if base or quote are crypto
     const ifBaseIsCryptoAdjuster = async () => {
       if (isCryptoCurrency(baseCurrency)) {
@@ -41,15 +46,14 @@ export class ExchangeProvider {
         quoteCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY as Currency;
       }
     };
-    await Promise.all([ifBaseIsCryptoAdjuster(), ifQuoteIsCryptoAdjuster()]);
-
-    // if base and quote are the same currency, return rate
-    if (baseCurrency === quoteCurrency) {
-      return rate;
-    }
+    const getFiatRatesPromise = this.fiatExchangeProvider.getExchangeRatesByDatesLoader.load(date);
+    const [rates] = await Promise.all([
+      getFiatRatesPromise,
+      ifBaseIsCryptoAdjuster(),
+      ifQuoteIsCryptoAdjuster(),
+    ]);
 
     // adjust rate and convert to local default currency if base or quote are not local
-    const rates = await this.fiatExchangeProvider.getExchangeRatesByDatesLoader.load(date);
     if (baseCurrency !== DEFAULT_LOCAL_CURRENCY) {
       const baseRate = getRateForCurrency(baseCurrency, rates);
       rate = rate * baseRate;

@@ -11,11 +11,7 @@ type CurrencySum = {
   total: number;
 };
 
-export type RawBusinessTransactionsSum = {
-  ils: CurrencySum;
-  eur: CurrencySum;
-  gbp: CurrencySum;
-  usd: CurrencySum;
+export type RawBusinessTransactionsSum = Record<Currency, CurrencySum> & {
   businessId: string;
 };
 

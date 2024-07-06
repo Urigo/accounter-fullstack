@@ -1,4 +1,5 @@
 import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { BusinessTransactionProto, RawBusinessTransactionsSum } from '@shared/types';
 
@@ -14,60 +15,19 @@ export function handleBusinessLedgerRecord(
   const foreignAmount = stringifiedForeignAmount ? parseFloat(stringifiedForeignAmount) : 0;
 
   rawRes[businessId] ??= {
-    ils: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    eur: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    gbp: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
-    usd: {
-      credit: 0,
-      debit: 0,
-      total: 0,
-    },
+    ...(Object.fromEntries(
+      Object.values(Currency).map(currency => [currency, { credit: 0, debit: 0, total: 0 }]),
+    ) as Omit<RawBusinessTransactionsSum, 'businessId'>),
     businessId,
   };
 
   const record = rawRes[businessId];
-  let currencyField: 'eur' | 'usd' | 'gbp' | 'ils' | undefined = undefined;
-  switch (currency) {
-    case Currency.Ils: {
-      currencyField = 'ils';
-      break;
-    }
-    case Currency.Eur: {
-      currencyField = 'eur';
-      break;
-    }
-    case Currency.Gbp: {
-      currencyField = 'gbp';
-      break;
-    }
-    case Currency.Usd: {
-      currencyField = 'usd';
-      break;
-    }
-    default: {
-      console.log(`currency ${currency} not supported`);
-      currencyField = 'ils';
-    }
-  }
+  record[DEFAULT_LOCAL_CURRENCY].credit += isCredit ? amount : 0;
+  record[DEFAULT_LOCAL_CURRENCY].debit += isCredit ? 0 : amount;
+  record[DEFAULT_LOCAL_CURRENCY].total += (isCredit ? 1 : -1) * amount;
 
-  record.ils.credit += isCredit ? amount : 0;
-  record.ils.debit += isCredit ? 0 : amount;
-  record.ils.total += (isCredit ? 1 : -1) * amount;
-
-  if (currencyField !== 'ils') {
-    const foreignInfo = record[currencyField];
+  if (currency !== DEFAULT_LOCAL_CURRENCY) {
+    const foreignInfo = record[currency];
 
     foreignInfo.credit += isCredit ? foreignAmount : 0;
     foreignInfo.debit += isCredit ? 0 : foreignAmount;
