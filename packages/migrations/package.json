@@ -16,7 +16,7 @@
     "@types/pg": "8.11.6",
     "dotenv": "16.4.5",
     "got": "14.4.1",
-    "pg-promise": "11.8.0",
+    "pg-promise": "11.9.0",
     "slonik": "38.0.0",
     "tslib": "2.6.3",
     "typescript": "5.5.3",
