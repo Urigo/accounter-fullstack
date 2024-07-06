@@ -8,7 +8,6 @@ import type {
   IDeleteChargesByIdsQuery,
   IGenerateChargeParams,
   IGenerateChargeQuery,
-  IGenerateChargeResult,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
