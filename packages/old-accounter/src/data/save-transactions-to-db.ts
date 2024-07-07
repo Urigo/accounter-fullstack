@@ -48,6 +48,9 @@ export async function saveTransactionsToDB<
     if (transaction.card && transaction.card == '17 *') {
       transaction.card = '9217';
     }
+    if (transaction.card && transaction.card == '70 *') {
+      transaction.card = '9270';
+    }
     if (accountType == 'ils') {
       normalizeBeneficiaryDetailsData<Type>(transaction);
       if (transaction.activityDescriptionIncludeValueDate == undefined) {
@@ -69,7 +72,12 @@ export async function saveTransactionsToDB<
     if (accountType == 'isracard') {
       tableName = 'isracard_creditcard_transactions';
     }
-    const columnNamesResult = await pool.query<{ column_name: string; data_type: string }>(`
+    const columnNamesResult = await pool.query<{
+      column_name: string;
+      data_type: string;
+      is_nullable: string;
+      column_default: string | null;
+    }>(`
       SELECT * 
       FROM information_schema.columns
       WHERE table_schema = 'accounter_schema'
@@ -116,6 +124,7 @@ export async function saveTransactionsToDB<
       optionalTransactionKeys,
       accountType,
     );
+    fillInDefaultValues<Type>(transaction, columnNamesResult, accountType);
 
     const additionalColumnsToExcludeFromTransactionComparison: string[] = [];
     additionalColumnsToExcludeFromTransactionComparison.push('formattedEventAmount');
@@ -184,6 +193,12 @@ export async function saveTransactionsToDB<
               ${accountType}${sign}${transaction.eventAmount.toLocaleString()},
               ${transaction.accountNumber}
             `);
+          } else if (transaction.transactionType == 'FUTURE') {
+            console.log(`Future transaction - 
+                ${reverse(transaction.activityDescription)},
+                ${accountType}${sign}${transaction.eventAmount.toLocaleString()},
+                ${transaction.accountNumber}
+              `);
           } else if (
             accountType == 'ils' &&
             moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
@@ -302,6 +317,51 @@ function findMissingTransactionKeys<Type extends AccountTypes>(
       console.log(`new keys!! InTransactionNotInDB ${accountType}`, InTransactionNotInDB);
     }
   }
+}
+
+function fillInDefaultValues<Type extends AccountTypes>(
+  // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
+  transaction: TransactionTypeSelector<Type>,
+  columnNames: {
+    rows: {
+      column_name: string;
+      is_nullable: string;
+      data_type: string;
+      column_default: string | null;
+    }[];
+  },
+  accountType: string,
+) {
+  const allKeys = Object.keys(transaction);
+  const existingFields = columnNames.rows.map(column => ({
+    name: camelCase(column.column_name),
+    nullable: column.is_nullable === 'YES',
+    type: column.data_type,
+    defaultValue: column.column_default,
+  }));
+
+  // const InTransactionNotInDB = allKeys.filter(x => !fixedExistingKeys.includes(x));
+  const inDBNotInTransaction = existingFields.filter(x => !allKeys.includes(x.name) && !x.nullable);
+
+  for (const key of inDBNotInTransaction) {
+    if (key.name == 'id') {
+      continue;
+    }
+    if (key.defaultValue) {
+      console.log(`Cannot autofill ${key.name} in ${accountType} with ${key.defaultValue}`);
+    } else {
+      switch (key.type) {
+        case 'integer':
+        case 'bit':
+          transaction[key.name] = 0;
+          break;
+        default:
+          console.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
+      }
+    }
+  }
+
+  return;
 }
 
 function createWhereClause<Type extends AccountTypes>(

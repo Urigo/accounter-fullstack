@@ -577,6 +577,8 @@ async function getCreditCardTransactionsAndSave(
     '6466',
     '9270',
     '5084',
+    '7086',
+    '70 *',
   ];
   const onlyWantedCreditCardsTransactions = allData.filter(transaction =>
     wantedCreditCards.includes(transaction.card),
