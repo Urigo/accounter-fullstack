@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowDown } from 'lucide-react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -62,79 +63,88 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row justify-between space-x-2 py-4">
-        <div className="flex gap-3 flex-row w-[400px] ml-[1px]">
-          <Input
-            placeholder="Search by tag name"
-            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-            onChange={event => table.getColumn('name')?.setFilterValue(event.target.value)}
-            className="max-w-sm w-[200px]"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Display Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter(column => column.getCanHide())
-                .map(column => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={value => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Change Row Count
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {[10, 25, 50, 100].map(pageSize => (
-                <DropdownMenuCheckboxItem
-                  key={pageSize}
-                  checked={table.getRowCount() === pageSize}
-                  onCheckedChange={() => table.setPageSize(pageSize)}
-                >
-                  {pageSize}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="flex flex-row gap-3 text-center items-baseline">
-          <div>
-            Displaying {table.getRowModel().rows.length} of {data.length} results
+      <div className="flex lg:flex-row flex-col w-full mb-10">
+        <div className="flex items-center lg:flex-row flex-col w-full lg:w-2/3">
+          <div className="flex lg:flex-row flex-col mb-3 lg:mb-0 w-1/2 justify-stretch">
+            <Input
+              placeholder="Search by tag name"
+              value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+              onChange={event => table.getColumn('name')?.setFilterValue(event.target.value)}
+              className="max-w-sm"
+            />
           </div>
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+          <div className="flex lg:flex-row flex-col mb-3 lg:mb-0 gap-2 w-1/2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default">
+                  Display Columns
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter(column => column.getCanHide())
+                  .map(column => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={value => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default">
+                  Change Row Count
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {[10, 25, 50, 100].map(pageSize => (
+                  <DropdownMenuCheckboxItem
+                    key={pageSize}
+                    checked={table.getRowCount() === pageSize}
+                    onCheckedChange={() => table.setPageSize(pageSize)}
+                  >
+                    {pageSize} rows
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+        <div className="flex lg:items-center justify-between text-center lg:flex-row flex-col w-full lg:w-1/3">
+          <h4 className="flex font-normal lg:flex-row flex-col w-full">
+            Displaying {table.getRowModel().rows.length} of {data.length} results
+          </h4>
+          <div className="flex lg:flex-row flex-col gap-2 w-full">
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
