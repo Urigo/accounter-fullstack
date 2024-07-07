@@ -1,14 +1,13 @@
-import { Link, useResolvedPath } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { MobileSidebar } from './mobile-sidebar';
-import { navItems } from './sidebar';
 import { UserNav } from './user-nav';
+import { Link } from '@tanstack/react-router';
 
 export function Header(): JSX.Element {
-  const resolvedPath = useResolvedPath({
-    pathname: window.location.pathname,
-  });
-  const titleByPath = navItems.find(link => link.to === resolvedPath.pathname)?.label;
+  // const resolvedPath = useMatch({
+  //   from: '/',
+  // });
+  // const titleByPath = navItems.find(link => link.to === resolvedPath.pathname)?.label;
 
   return (
     <div className="supports-backdrop-blur:bg-background/60 fixed left-0 right-0 top-0 z-20 border-b bg-background/95 backdrop-blur">
@@ -20,12 +19,12 @@ export function Header(): JSX.Element {
         </div>
         <div className="hidden md:visible md:flex flex-row justify-start gap-3">
           <h1 className="text-xl font-semibold">Accounter</h1>
-          {titleByPath && (
+          {/* {titleByPath && (
             <>
               <h1 className="text-xl"> | </h1>
               <h1 className="text-xl">{titleByPath}</h1>
             </>
-          )}
+          )} */}
         </div>
         <div className={cn('block lg:!hidden')}>
           <MobileSidebar />

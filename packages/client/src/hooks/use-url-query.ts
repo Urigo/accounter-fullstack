@@ -1,5 +1,5 @@
+import { useLocation } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 
 type UseUrlQuery = {
   query: URLSearchParams;

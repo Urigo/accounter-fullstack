@@ -1,6 +1,6 @@
 import { ReactElement, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { NavLink } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
 
 interface props {
   header: string | ReactNode;
@@ -25,42 +25,66 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
             <NavLink
               className="text-gray-700 rounded"
               label="All Charges"
-              onClick={(): void => navigate('/charges')}
+              onClick={
+                void navigate({
+                  to: '/charges',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Ledger Validation"
-              onClick={(): void => navigate('/charges-ledger-validation')}
+              onClick={
+                void navigate({
+                  to: '/charges-ledger-validation',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Documents"
-              onClick={(): void => navigate('/documents')}
+              onClick={
+                void navigate({
+                  to: '/documents',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Businesses"
-              onClick={(): void => navigate('/businesses')}
+              onClick={
+                void navigate({
+                  to: '/businesses',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Business Transactions"
-              onClick={(): void => navigate('/business-transactions')}
+              onClick={
+                void navigate({
+                  to: '/business-transactions',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Business Trips"
-              onClick={(): void => navigate('/business-trips')}
+              onClick={
+                void navigate({
+                  to: '/business-trips',
+                })
+              }
             />
           </li>
           <li>
@@ -68,12 +92,20 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
               <NavLink
                 className="text-gray-700 rounded"
                 label="Trial Balance Report"
-                onClick={(): void => navigate('/reports/trial-balance')}
+                onClick={
+                  void navigate({
+                    to: '/reports/trial-balance',
+                  })
+                }
               />
               <NavLink
                 className="text-gray-700 rounded"
                 label="VAT Monthly Report"
-                onClick={(): void => navigate('/reports/vat-monthly')}
+                onClick={
+                  void navigate({
+                    to: '/reports/vat-monthly',
+                  })
+                }
               />
             </NavLink>
           </li>
@@ -81,14 +113,22 @@ export const NavBar = ({ header, extraLinks, filters }: props): ReactElement => 
             <NavLink
               className="text-gray-700 rounded"
               label="Tags"
-              onClick={(): void => navigate('/tags')}
+              onClick={
+                void navigate({
+                  to: '/tags',
+                })
+              }
             />
           </li>
           <li>
             <NavLink
               className="text-gray-700 rounded"
               label="Salaries"
-              onClick={(): void => navigate('/salaries')}
+              onClick={
+                void navigate({
+                  to: '/salaries',
+                })
+              }
             />
           </li>
           {extraLinks?.map(link => (

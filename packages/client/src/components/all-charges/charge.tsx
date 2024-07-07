@@ -1,5 +1,4 @@
 import { ReactElement, useState } from 'react';
-import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument } from '../../gql/graphql.js';
 import {
@@ -10,6 +9,7 @@ import {
   UploadDocumentModal,
 } from '../common/index.js';
 import { AllChargesTable } from './all-charges-table.js';
+import { useMatch } from '@tanstack/react-router';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -26,9 +26,11 @@ type Props = {
 };
 
 export const Charge = ({ chargeId }: Props): ReactElement => {
-  const match = useMatch('/charges/:chargeId');
+  const match = useMatch({
+    from: '/_auth/charges/$id',
+  });
 
-  const id = chargeId || match?.params.chargeId;
+  const id = chargeId || match?.params.id;
 
   const [editChargeId, setEditChargeId] = useState<
     { id: string; onChange: () => void } | undefined

@@ -58,12 +58,12 @@ export const AllCharges = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
-          sortBy: {
-            field: ChargeSortByField.Date,
-            asc: false,
-          },
+        byOwners: [userContext?.ownerId],
+        sortBy: {
+          field: ChargeSortByField.Date,
+          asc: false,
         },
+      },
   );
 
   const toggleMergeCharge = useCallback(

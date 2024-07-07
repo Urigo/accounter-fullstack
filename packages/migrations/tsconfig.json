@@ -13,7 +13,7 @@
     "sourceMap": true,
     "declaration": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "strict": true
   },
   "include": ["src"]

@@ -1,6 +1,5 @@
 import { ReactElement, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userService } from '../services/user-service';
@@ -8,6 +7,7 @@ import { Button } from './ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
+import { useNavigate } from '@tanstack/react-router';
 
 const formSchema = z.object({
   username: z.string().min(2).max(50),
@@ -33,7 +33,9 @@ export function LoginPage(): ReactElement {
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       userService.login(values.username, values.password).then(_user => {
-        navigate('/');
+        navigate({
+          to: '/',
+        });
       });
       toast({
         title: 'Success',

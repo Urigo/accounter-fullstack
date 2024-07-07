@@ -6,6 +6,7 @@
     "noUnusedParameters": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "useDefineForClassFields": true,
+    "moduleResolution": "bundler",
     "esModuleInterop": false,
     "noEmit": true
   },
