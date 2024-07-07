@@ -1,34 +1,18 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { FileDownload } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Modal, Select } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { Modal, Select } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
 
-export function FetchIncomeDocumentsButton(): ReactElement {
-  const [isLoading, setIsLoading] = useState(false);
-  const [opened, { close, open }] = useDisclosure(false);
-
-  return (
-    <>
-      <ActionIcon loading={isLoading} size={30} onClick={open}>
-        <FileDownload size={20} />
-      </ActionIcon>
-      {opened && <ModalContent opened={opened} close={close} setIsLoading={setIsLoading} />}
-    </>
-  );
-}
-
 type ModalProps = {
   opened: boolean;
   close: () => void;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export function ModalContent({ opened, close, setIsLoading }: ModalProps): ReactElement {
+export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -66,7 +50,7 @@ export function ModalContent({ opened, close, setIsLoading }: ModalProps): React
   const { fetchIncomeDocuments, fetching: fetchingDocuments } = useFetchIncomeDocuments();
 
   useEffect(() => {
-    setIsLoading(fetchingBusinesses || fetchingDocuments);
+    setIsLoading?.(fetchingBusinesses || fetchingDocuments);
   }, [fetchingBusinesses, fetchingDocuments, setIsLoading]);
 
   const onSubmit: SubmitHandler<{ ownerId: string }> = data => {
