@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { Loader2, MoreHorizontal } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -30,8 +30,8 @@ const formSchema = z.object({
 
 export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
   const [isOpenDialog, setIsOpenDialog] = useState(false);
-  const { deleteTag } = useDeleteTag();
-  const { updateTag, fetching } = useUpdateTag();
+  const { deleteTag, fetching: deleteFetching } = useDeleteTag();
+  const { updateTag, fetching: updateFetching } = useUpdateTag();
   // Cant figure out how to pass the refetch from the Tags query to the TagActionsModal.
   const navigate = useNavigate();
 
@@ -85,18 +85,27 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
             />
             <DialogFooter className="flex gap-3 justify-between flex-row w-full">
               <Button
-                disabled={fetching}
+                disabled={updateFetching || deleteFetching}
                 className="w-full justify-center font-semibold"
                 type="submit"
               >
-                Save changes
+                {updateFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin self-center" />
+                ) : (
+                  'Save changes'
+                )}
               </Button>
               <Button
                 className="w-full justify-center font-semibold"
                 variant="destructive"
                 onClick={handleDelete}
+                disabled={deleteFetching || updateFetching}
               >
-                Delete tag
+                {deleteFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin self-center" />
+                ) : (
+                  'Delete tag'
+                )}
               </Button>
             </DialogFooter>
           </form>

@@ -68,7 +68,7 @@ export function DataTable<TData, TValue>({
             placeholder="Search by tag name"
             value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
             onChange={event => table.getColumn('name')?.setFilterValue(event.target.value)}
-            className="max-w-sm"
+            className="max-w-sm w-[200px]"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -92,6 +92,24 @@ export function DataTable<TData, TValue>({
                     </DropdownMenuCheckboxItem>
                   );
                 })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Change Row Count
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {[10, 25, 50, 100].map(pageSize => (
+                <DropdownMenuCheckboxItem
+                  key={pageSize}
+                  checked={table.getRowCount() === pageSize}
+                  onCheckedChange={() => table.setPageSize(pageSize)}
+                >
+                  {pageSize}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

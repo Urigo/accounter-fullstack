@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +16,7 @@ type TagActionsModalProps = {
 };
 
 export function AddTagForm({ refetch }: TagActionsModalProps): JSX.Element {
-  const { addTag } = useAddTag();
+  const { fetching, addTag } = useAddTag();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,7 +50,7 @@ export function AddTagForm({ refetch }: TagActionsModalProps): JSX.Element {
           />
         </form>
         <Button onClick={form.handleSubmit(onSubmit)} type="submit">
-          Add Tag
+          {fetching ? <Loader2 className="h-4 w-4 animate-spin self-center" /> : 'Add'}
         </Button>
       </Form>
     </div>
