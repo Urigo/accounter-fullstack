@@ -1,5 +1,5 @@
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { useToast } from '../components/ui/use-toast.js';
 import { AddTagDocument, AddTagMutationVariables } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -19,6 +19,7 @@ export const useAddTag = (): UseAddTag => {
   // TODO: add local data update method after chang e
 
   const [{ fetching }, mutate] = useMutation(AddTagDocument);
+  const { toast } = useToast();
 
   return {
     fetching,
@@ -27,23 +28,23 @@ export const useAddTag = (): UseAddTag => {
         mutate(variables).then(res => {
           if (res.error) {
             console.error(`Error adding new tag [${variables.tagName}]: ${res.error}`);
-            showNotification({
+            toast({
               title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+              description: 'Oh no!, we have an error! 🤥',
             });
             return reject(res.error.message);
           }
           if (!res.data?.addTag) {
             console.error(`Error adding new tag [${variables.tagName}]`);
-            showNotification({
+            toast({
               title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+              description: 'Oh no!, we have an error! 🤥',
             });
             return reject('No data returned');
           }
-          showNotification({
+          toast({
             title: 'Tag Added!',
-            message: `"${variables.tagName}" tag was successfully added`,
+            description: `"${variables.tagName}" tag was successfully added`,
           });
           return resolve();
         }),
