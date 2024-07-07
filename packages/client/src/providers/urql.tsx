@@ -1,8 +1,8 @@
 import { ReactNode, useEffect, useMemo } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
 import { AnyVariables, createClient, fetchExchange, mapExchange, Operation, Provider } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
 import { userService } from '../services/user-service';
+import { redirect } from '@tanstack/react-router';
 
 function initializeAuthState(): {
   token: string | null;
@@ -13,7 +13,6 @@ function initializeAuthState(): {
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
   const { isLoggedIn } = userService;
-  const navigate = useNavigate();
   const loggedIn = isLoggedIn();
 
   const client = useMemo(() => {
@@ -46,9 +45,9 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
               result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
               result?.error?.response.status === 401;
             if (isAuthError) {
-              navigate('/login', {
-                state: { message: 'You are not authorized to access this page' },
-              });
+              redirect({
+                to: '/login'
+              })
             }
           },
         }),
@@ -78,18 +77,16 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
         fetchExchange,
       ],
     });
-  }, [loggedIn, navigate]);
+  }, [loggedIn]);
 
   useEffect(() => {
     if (!client) {
-      navigate('/login');
+      redirect({
+        to: '/login'
+      });
     }
     return;
-  }, [client, navigate]);
+  }, [client]);
 
-  return client ? (
-    <Provider value={client}>{children}</Provider>
-  ) : (
-    <Navigate to="/login" state={{ prevPath: window.location.pathname }} />
-  );
+  return <Provider value={client}>{children}</Provider>;
 }

@@ -1,6 +1,8 @@
 import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+
+import viteReact from '@vitejs/plugin-react'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 dotenv({
   path: '../../.env',
@@ -8,7 +10,7 @@ dotenv({
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [viteReact(), TanStackRouterVite()],
   server: {
     port: 3001,
   },

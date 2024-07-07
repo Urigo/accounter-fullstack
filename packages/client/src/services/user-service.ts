@@ -25,6 +25,8 @@ export const userService = {
   currentUser,
 };
 
+export type UserService = typeof userService;
+
 async function login(username: string, password: string): Promise<User> {
   if (username && password) {
     const authdata = btoa(`${username}:${password}`);

@@ -1,10 +1,10 @@
 import { Dispatch, SetStateAction } from 'react';
 import { usePathname } from 'next/navigation';
-import { Link } from 'react-router-dom';
 import { useSidebar } from '../../hooks/use-sidebar';
 import { cn } from '../../lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { NavItem } from './sidebar';
+import { Link } from '@tanstack/react-router';
 
 interface DashboardNavProps {
   items: NavItem[];
