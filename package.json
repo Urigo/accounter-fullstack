@@ -38,7 +38,7 @@
     "prettier:check": "prettier --cache --check .",
     "prettier:fix": "prettier --cache --write --list-different .",
     "release": "yarn build && changeset publish",
-    "scrape": "yarn --cwd old-accounter scrape",
+    "scrape": "yarn --cwd packages/old-accounter scrape",
     "server:build": "yarn --cwd packages/server build",
     "server:dev": "yarn --cwd packages/server dev",
     "start": "yarn --cwd packages/old-accounter start",
