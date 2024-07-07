@@ -1,8 +1,8 @@
 import { User2Icon } from 'lucide-react';
-import { ArrowBigRightLines } from 'tabler-icons-react';
+import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { CornJobsConfirmation, FetchIncomeDocumentsButton, LogoutButton } from '../common';
+import { CornJobsConfirmation, LogoutButton, PullDocumentsModal } from '../common';
 import { Avatar } from '../ui/avatar';
 import { Button } from '../ui/button';
 import {
@@ -16,6 +16,8 @@ import {
 
 export function UserNav(): JSX.Element {
   const [cornJobsOpened, { close: closeCornJobs, open: openCornJobs }] = useDisclosure(false);
+  const [pullDocumentsOpened, { close: closePullDocuments, open: openPullDocuments }] =
+    useDisclosure(false);
 
   return (
     <>
@@ -36,7 +38,11 @@ export function UserNav(): JSX.Element {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
-            <FetchIncomeDocumentsButton />
+            <Tooltip label="Pull Green Invoice Documents">
+              <ActionIcon size={30} onClick={openPullDocuments}>
+                <FileDownload size={20} />
+              </ActionIcon>
+            </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Tooltip label="Execute corn jobs">
@@ -51,6 +57,7 @@ export function UserNav(): JSX.Element {
         </DropdownMenuContent>
       </DropdownMenu>
       <CornJobsConfirmation close={closeCornJobs} opened={cornJobsOpened} />
+      <PullDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
     </>
   );
 }

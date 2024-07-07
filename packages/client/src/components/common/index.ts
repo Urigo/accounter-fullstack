@@ -12,7 +12,6 @@ export * from './list-capsule.js';
 export * from './loader.js';
 export * from './merge-charges/index.js';
 export * from './modals/index.js';
-export * from './nav-bar.js';
 export * from './notification.js';
 export * from './simple-grid.js';
 export * from './footer.js';
