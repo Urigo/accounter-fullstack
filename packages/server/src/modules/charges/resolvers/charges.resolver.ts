@@ -405,6 +405,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     optionalBusinesses: DbCharge =>
       DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
-    isSalary: DbCharge => DbCharge.type === 'PAYROLL' ?? false,
+    isSalary: DbCharge => DbCharge.type === 'PAYROLL',
   },
 };

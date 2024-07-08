@@ -183,7 +183,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   ConversionTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.charge_type === 'CONVERSION' ?? false,
+    __isTypeOf: DbTransaction => DbTransaction.charge_type === 'CONVERSION',
     ...commonTransactionFields,
     effectiveDate: DbTransaction => {
       const date = effectiveDateSupplement(DbTransaction);
