@@ -128,6 +128,9 @@ export async function getCurrencyRates(pool: Pool) {
     }
   }
 
+  // remove today's rates as they might update until the end of the day
+  govData.delete(format(new Date(), 'yyyy-MM-dd'));
+
   const newRecords: string[] = [];
   const newValues = [];
   let newValuesCount = 1;
