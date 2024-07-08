@@ -17,9 +17,7 @@
     "pg-promise": "11.9.0"
   },
   "devDependencies": {
-    "@types/node": "20.14.10",
-    "tsup": "8.1.0",
-    "typescript": "5.5.3"
+    "tsup": "8.1.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
