@@ -1,8 +1,6 @@
 import moment from 'moment';
 import { getLastInvoiceNumbers, lastInvoiceNumbersQuery } from '../first-page.js';
 import { pool } from '../index.js';
-// import fetch from 'node-fetch';
-// import XML from 'pixl-xml';
 import { createTaxEntriesForMonth } from '../tax-monthly-report/taxes-for-month.js';
 
 export const reportToReview = async (query: any): Promise<string> => {
