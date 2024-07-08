@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable, Scope } from 'graphql-modules';
-import type { Pool, QueryResultBase, QueryResultRow } from 'pg';
+import postgres, { type QueryResultBase, type QueryResultRow } from 'pg';
 import 'reflect-metadata';
 
 type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[] };
@@ -9,7 +9,7 @@ type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[] };
   scope: Scope.Singleton,
 })
 export class DBProvider {
-  constructor(private pool: Pool) {}
+  constructor(private pool: postgres.Pool) {}
 
   public async query<Entity extends QueryResultRow>(
     queryStatement: string,
