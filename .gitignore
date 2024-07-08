@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.guild
 **/__generated__/
 **/gql/
 .idea/

@@ -50,7 +50,7 @@
                 "properties": {
                   "messageCode": {
                     "type": "number",
-                    "enum": [11040, 1260003]
+                    "enum": [11040, 1260003, 1260011]
                   },
                   "messageDescription": {
                     "type": "string"
@@ -360,7 +360,7 @@
           "transactionType": {
             "type": "string",
             "description": "Fixed (REGULAR) or still in process/temporary (TODAY)",
-            "enum": ["REGULAR", "TODAY"]
+            "enum": ["REGULAR", "TODAY", "FUTURE"]
           },
           "valueDate": {
             "type": "number"
