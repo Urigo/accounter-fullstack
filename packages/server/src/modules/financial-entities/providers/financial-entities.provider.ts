@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialEntitiesQuery,
+  IGetAllFinancialEntitiesResult,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
   IInsertFinancialEntityParams,
@@ -105,7 +106,14 @@ export class FinancialEntitiesProvider {
   );
 
   public getAllFinancialEntities() {
-    return getAllFinancialEntities.run(undefined, this.dbProvider);
+    const data = this.cache.get('all-financial-entities');
+    if (data) {
+      return data as Array<IGetAllFinancialEntitiesResult>;
+    }
+    return getAllFinancialEntities.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-financial-entities', data, 60 * 5);
+      return data;
+    });
   }
 
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
@@ -114,6 +122,7 @@ export class FinancialEntitiesProvider {
   }
 
   public insertFinancialEntity(params: IInsertFinancialEntityParams) {
+    this.cache.delete('all-financial-entities');
     return insertFinancialEntity.run(params, this.dbProvider);
   }
 

@@ -9,6 +9,7 @@ import type {
   IDeleteTagParams,
   IDeleteTagQuery,
   IGetAllTagsQuery,
+  IGetAllTagsResult,
   IGetTagsByIDsQuery,
   IGetTagsByNamesQuery,
   IRenameTagParams,
@@ -70,7 +71,14 @@ export class TagsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public getAllTags() {
-    return getAllTags.run(undefined, this.dbProvider);
+    const data = this.cache.get('all-tags');
+    if (data) {
+      return data as Array<IGetAllTagsResult>;
+    }
+    return getAllTags.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-tags', data, 60 * 5);
+      return data;
+    });
   }
 
   public addNewTag(params: IAddNewTagParams) {
@@ -89,6 +97,7 @@ export class TagsProvider {
   }
 
   public updateTagParent(params: IUpdateTagParentParams) {
+    this.clearCache();
     return updateTagParent.run(params, this.dbProvider);
   }
 

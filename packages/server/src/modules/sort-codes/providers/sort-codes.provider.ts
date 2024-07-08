@@ -6,6 +6,7 @@ import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllSortCodesQuery,
+  IGetAllSortCodesResult,
   IGetSortCodesByFinancialEntitiesIdsQuery,
   IGetSortCodesByIdsQuery,
 } from '../types.js';
@@ -39,7 +40,14 @@ export class SortCodesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public getAllSortCodes() {
-    return getAllSortCodes.run(undefined, this.dbProvider);
+    const data = this.cache.get('all-sort-codes');
+    if (data) {
+      return data as Array<IGetAllSortCodesResult>;
+    }
+    return getAllSortCodes.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-sort-codes', data, 60 * 5);
+      return data;
+    });
   }
 
   private async batchSortCodesByIds(sortCodesIds: readonly number[]) {
