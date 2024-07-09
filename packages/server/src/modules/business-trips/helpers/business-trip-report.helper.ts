@@ -8,9 +8,8 @@ import {
   type BusinessTripSummaryCategories,
   type BusinessTripSummaryRow,
 } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
+import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import type {
-  currency,
   flight_class,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
@@ -19,7 +18,7 @@ import type {
   // IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult,
 } from '../types.js';
 
-export type SummaryCategoryData = { [key in currency]?: { total: number; taxable: number } };
+export type SummaryCategoryData = Partial<Record<Currency, { total: number; taxable: number }>>;
 export type SummaryData = Record<BusinessTripSummaryCategories, SummaryCategoryData>;
 export type TripMetaData = {
   tripDuration: number;
@@ -63,7 +62,7 @@ function getTransactionCoreData(
   transactions: IGetTransactionsByIdsResult[],
 ): {
   amount: number;
-  currency: currency;
+  currency: Currency;
   date: Date;
 } {
   if (tripTransaction.payed_by_employee) {
@@ -74,7 +73,7 @@ function getTransactionCoreData(
     }
     return {
       amount: Number(tripTransaction.amount),
-      currency: tripTransaction.currency,
+      currency: formatCurrency(tripTransaction.currency),
       date: new Date(tripTransaction.date),
     };
   }
@@ -89,23 +88,21 @@ function getTransactionCoreData(
   }
   return {
     amount: Number(transaction.amount) * -1,
-    currency: transaction.currency,
+    currency: formatCurrency(transaction.currency),
     date: new Date(transaction.debit_date),
   };
 }
 
 async function getLocalAmountAndExchangeRate(
   injector: Injector,
-  currency: currency,
+  currency: Currency,
   amount: number,
   date: Date,
 ) {
   const exchangeRatePromise =
     currency === DEFAULT_LOCAL_CURRENCY
       ? Promise.resolve(1)
-      : injector
-          .get(ExchangeProvider)
-          .getExchangeRates(currency as Currency, DEFAULT_LOCAL_CURRENCY, date);
+      : injector.get(ExchangeProvider).getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, date);
   const usdRatePromise =
     currency === Currency.Usd
       ? Promise.resolve()

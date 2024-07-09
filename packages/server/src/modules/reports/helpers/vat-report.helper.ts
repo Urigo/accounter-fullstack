@@ -8,7 +8,8 @@ import {
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import { DECREASED_VAT_RATIO, DEFAULT_VAT_PERCENTAGE } from '@shared/constants';
-import { DocumentType } from '@shared/enums';
+import { Currency, DocumentType } from '@shared/enums';
+import { formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
   charge: IGetChargesByFiltersResult;
@@ -22,7 +23,7 @@ export type RawVatReportRecord = {
   chargeAccountantReviewed: boolean;
   chargeDate: Date;
   chargeId: string;
-  currencyCode: string;
+  currencyCode: Currency;
   documentAmount: string;
   documentId: string;
   documentDate: Date | null;
@@ -46,6 +47,7 @@ export function adjustTaxRecords(
 
   for (const rawRecord of rawRecords) {
     const { charge, doc, business } = rawRecord;
+    const currency = formatCurrency(doc.currency_code);
 
     if (!doc.total_amount) {
       throw new Error(`Amount missing for invoice ID=${doc.id}`);
@@ -60,14 +62,14 @@ export function adjustTaxRecords(
 
     // get exchange rate
     const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
-    const rate = getRateForCurrency(doc.currency_code, exchangeRates);
+    const rate = getRateForCurrency(currency, exchangeRates);
 
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
       chargeAccountantReviewed: charge.accountant_reviewed,
       chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
-      currencyCode: doc.currency_code,
+      currencyCode: currency,
       documentDate: doc.date,
       documentId: doc.id,
       documentSerial: doc.serial_number,

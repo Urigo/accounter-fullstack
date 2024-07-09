@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
@@ -141,38 +140,6 @@ const missingInfoSuggestions: Resolver<
     }
     if (description.includes(phrase)) {
       return suggestion;
-    }
-  }
-
-  if (
-    DbCharge.type === 'CONVERSION' &&
-    DbCharge.business_id &&
-    [KRAKEN_BUSINESS_ID, POALIM_BUSINESS_ID].includes(DbCharge.business_id)
-  ) {
-    let fromCurrency: string | undefined;
-    let toCurrency: string | undefined;
-
-    for (const transaction of transactions) {
-      if (transaction.is_fee) continue;
-      const amount = formatAmount(transaction.amount);
-      if (amount > 0) {
-        if (toCurrency) {
-          throw new GraphQLError('Multiple destination currencies in Kraken conversion');
-        }
-        toCurrency = transaction.currency;
-      }
-      if (amount < 0) {
-        if (fromCurrency) {
-          throw new GraphQLError('Multiple source currencies in Kraken conversion');
-        }
-        fromCurrency = transaction.currency;
-      }
-      if (fromCurrency && toCurrency) {
-        return {
-          description: `${fromCurrency} to ${toCurrency} conversion`,
-          tags: [],
-        };
-      }
     }
   }
 
