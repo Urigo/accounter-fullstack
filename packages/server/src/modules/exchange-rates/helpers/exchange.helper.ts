@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import type { currency, IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField } from '@shared/types';
@@ -51,13 +52,13 @@ export function defineConversionBaseAndQuote(transactions: Array<IGetTransaction
 }
 
 export function getRateForCurrency(
-  currencyCode: currency,
+  currencyCode: Currency,
   exchangeRates: IGetExchangeRatesByDatesResult,
 ) {
-  if (currencyCode === 'ILS') {
+  if (currencyCode === DEFAULT_LOCAL_CURRENCY) {
     return 1;
   }
-  if (currencyCode && ['USD', 'EUR', 'GBP'].includes(currencyCode)) {
+  if (currencyCode && [Currency.Usd, Currency.Eur, Currency.Gbp].includes(currencyCode)) {
     const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {

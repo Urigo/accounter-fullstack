@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { generateAuthoritiesExpensesLedger } from '@modules/ledger/helpers/authorities-expenses-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
@@ -96,6 +97,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
+    const authoritiesMiscExpensesLedgerEntries: LedgerProto[] = [];
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
@@ -113,16 +115,35 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
           // preparations for core ledger entries
           let exchangeRate: number | undefined = undefined;
-          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-            // get exchange rate for currency
-            exchangeRate = await injector
-              .get(ExchangeProvider)
-              .getExchangeRates(
-                transaction.currency,
-                DEFAULT_LOCAL_CURRENCY,
-                transaction.debit_timestamp,
-              );
-          }
+          const exchangeRatePromise = async () => {
+            if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+              // get exchange rate for currency
+              exchangeRate = await injector
+                .get(ExchangeProvider)
+                .getExchangeRates(
+                  transaction.currency,
+                  DEFAULT_LOCAL_CURRENCY,
+                  transaction.debit_timestamp,
+                );
+            }
+          };
+
+          const authoritiesMiscExpensesPromise = generateAuthoritiesExpensesLedger(
+            transaction,
+            injector,
+          );
+
+          const [authoritiesExpensesLedger] = await Promise.all([
+            authoritiesMiscExpensesPromise,
+            exchangeRatePromise(),
+          ]);
+
+          // add authorities misc expenses ledger entries
+          authoritiesExpensesLedger.map(entry => {
+            entry.ownerId = charge.owner_id;
+            authoritiesMiscExpensesLedgerEntries.push(entry);
+            updateLedgerBalanceByEntry(entry, ledgerBalance);
+          });
 
           const partialEntry = generatePartialLedgerEntry(
             transaction,
@@ -237,7 +258,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
-    const records = [...financialAccountLedgerEntries, ...accountingLedgerEntries];
+    const records = [
+      ...financialAccountLedgerEntries,
+      ...accountingLedgerEntries,
+      ...authoritiesMiscExpensesLedgerEntries,
+    ];
 
     if (insertLedgerRecordsIfNotExists) {
       await storeInitialGeneratedRecords(charge, records, injector);

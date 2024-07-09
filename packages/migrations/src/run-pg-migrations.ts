@@ -24,6 +24,7 @@ import migration_2024_06_28T14_06_52_charge_type_column from './actions/2024-06-
 import migration_2024_06_29T17_52_10_refactor_tags from './actions/2024-06-29T17-52-10.refactor-tags.js';
 import migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates from './actions/2024-07-02T15-31-30.extended-charges-include-ledger-dates.js';
 import migration_2024_07_03T17_09_04_extended_charge_type_enum from './actions/2024-07-03T17-09-04.extended-charge-type-enum.js';
+import migration_2024_07_08T17_37_01_authorities_misc_expenses from './actions/2024-07-08T17-37-01.authorities-misc-expenses.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -55,5 +56,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_06_29T17_52_10_refactor_tags,
       migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates,
       migration_2024_07_03T17_09_04_extended_charge_type_enum,
+      migration_2024_07_08T17_37_01_authorities_misc_expenses,
     ],
   });

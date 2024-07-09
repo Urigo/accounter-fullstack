@@ -5,6 +5,7 @@ import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.hel
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
+import { formatCurrency } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
@@ -203,7 +204,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         console.error(`Conversion transaction ID="${DbTransaction.id}" has no official rate`);
         throw new GraphQLError('Conversion transaction must have official rate');
       }
-      return getRateForCurrency(DbTransaction.currency, officialRate);
+      return getRateForCurrency(formatCurrency(DbTransaction.currency), officialRate);
     },
   },
   CommonTransaction: {
