@@ -16,9 +16,9 @@ export default {
         counterparty   uuid          not null
             constraint authorities_misc_expenses_financial_entities_id_fk
                 references accounter_schema.financial_entities,
-        date           date          not null,
+        date           date,
         constraint authorities_misc_expenses_pk
-            primary key (transaction_id, counterparty, date)
+            primary key (transaction_id, counterparty)
     );
 
     create index if not exists authorities_misc_expenses_transaction_id_index

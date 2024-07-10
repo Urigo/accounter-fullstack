@@ -23,6 +23,44 @@ export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpen
         }
       },
     },
+    Mutation: {
+      insertAuthoritiesExpense: async (_, { fields }, { injector }) => {
+        try {
+          return await injector
+            .get(AuthoritiesMiscExpensesProvider)
+            .insertExpense(fields)
+            .then(res => {
+              if (!res.length) {
+                throw new GraphQLError('Error inserting authorities misc expense');
+              }
+              return res[0];
+            });
+        } catch (e) {
+          console.error('Error inserting authorities misc expense', e);
+          throw new GraphQLError(
+            (e as Error)?.message ?? 'Error inserting authorities misc expense',
+          );
+        }
+      },
+      updateAuthoritiesExpense: async (_, { transactionId, fields }, { injector }) => {
+        try {
+          return await injector
+            .get(AuthoritiesMiscExpensesProvider)
+            .updateExpense({ transactionId, ...fields })
+            .then(res => {
+              if (!res.length) {
+                throw new GraphQLError('Error updating authorities misc expense');
+              }
+              return res[0];
+            });
+        } catch (e) {
+          console.error('Error updating authorities misc expense', e);
+          throw new GraphQLError(
+            (e as Error)?.message ?? 'Error updating authorities misc expense',
+          );
+        }
+      },
+    },
     AuthoritiesExpense: {
       transaction: async (dbExpense, _, { injector }) =>
         injector

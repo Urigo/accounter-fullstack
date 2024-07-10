@@ -58,7 +58,7 @@ const updateExpense = sql<IUpdateExpenseQuery>`
 
 const insertExpense = sql<IInsertExpenseQuery>`
   INSERT INTO accounter_schema.authorities_misc_expenses (transaction_id, counterparty, amount, description, date)
-  VALUES ($transactionId, $counterparty, $amount, $description, $date)
+  VALUES ($transactionId, $counterpartyId, $amount, $description, $date)
   RETURNING *`;
 
 @Injectable({
