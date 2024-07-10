@@ -8,7 +8,9 @@ export const commonChargeLedgerResolver: LedgerModule.ChargeResolvers = {
       .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
 
     return {
-      records: ledgerRecords,
+      records: ledgerRecords.sort((a, b) =>
+        a.invoice_date.getTime() < b.invoice_date.getTime() ? 1 : -1,
+      ),
       charge: DbCharge,
       errors: [],
     };
