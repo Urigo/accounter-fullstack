@@ -42,4 +42,49 @@ export default gql`
     date: TimelessDate
     counterpartyId: UUID
   }
+
+  extend interface Charge {
+    " list of authorities misc expenses linked to transactions of the charge "
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type BankDepositCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type BusinessTripCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type CommonCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type ConversionCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type CreditcardBankCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type DividendCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type InternalTransferCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type MonthlyVatCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type RevaluationCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
+
+  extend type SalaryCharge {
+    authoritiesMiscExpenses: [AuthoritiesExpense!]!
+  }
 `;

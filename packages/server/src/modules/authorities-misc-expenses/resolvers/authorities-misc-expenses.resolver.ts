@@ -5,6 +5,7 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { AuthoritiesMiscExpensesProvider } from '../providers/authorities-misc-expenses.provider.js';
 import type { AuthoritiesMiscExpensesModule } from '../types.js';
+import { commonChargeFields } from './common.resolver.js';
 
 export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpensesModule.Resolvers =
   {
@@ -68,4 +69,14 @@ export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpen
       description: dbExpense => dbExpense.description,
       date: dbExpense => (dbExpense.date ? dateToTimelessDateString(dbExpense.date) : null),
     },
+    BankDepositCharge: commonChargeFields,
+    BusinessTripCharge: commonChargeFields,
+    CreditcardBankCharge: commonChargeFields,
+    CommonCharge: commonChargeFields,
+    ConversionCharge: commonChargeFields,
+    DividendCharge: commonChargeFields,
+    InternalTransferCharge: commonChargeFields,
+    MonthlyVatCharge: commonChargeFields,
+    RevaluationCharge: commonChargeFields,
+    SalaryCharge: commonChargeFields,
   };

@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllAuthoritiesQuery,
   IGetExpensesByChargeIdsQuery,
+  IGetExpensesByChargeIdsResult,
   IGetExpensesByTransactionIdsQuery,
   IInsertExpenseParams,
   IInsertExpenseQuery,
@@ -85,7 +86,15 @@ export class AuthoritiesMiscExpensesProvider {
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
     const expenses = await getExpensesByChargeIds.run({ chargeIds }, this.dbProvider);
-    return chargeIds.map(id => expenses.filter(expense => expense.charge_id === id));
+    const expensesByChargeId = new Map<string, IGetExpensesByChargeIdsResult[]>();
+    expenses.map(expense => {
+      if (expensesByChargeId.has(expense.charge_id)) {
+        expensesByChargeId.get(expense.charge_id)?.push(expense);
+      } else {
+        expensesByChargeId.set(expense.charge_id, [expense]);
+      }
+    });
+    return chargeIds.map(id => expensesByChargeId.get(id) ?? []);
   }
 
   public getExpensesByChargeIdLoader = new DataLoader(

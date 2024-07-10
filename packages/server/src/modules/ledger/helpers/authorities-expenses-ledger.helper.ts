@@ -4,10 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
-import {
-  getFinancialAccountTaxCategoryId,
-  validateTransactionBasicVariables,
-} from './utils.helper.js';
+import { validateTransactionBasicVariables } from './utils.helper.js';
 
 async function doesIncludeAuthority(
   transaction: IGetTransactionsByChargeIdsResult,
@@ -54,11 +51,6 @@ export async function generateAuthoritiesExpensesLedger(
         amount = exchangeRate * amount;
       }
 
-      const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-        injector,
-        transaction,
-      );
-
       const isCreditorCounterparty = Number(expense.amount) < 0;
 
       const entry: LedgerProto = {
@@ -73,10 +65,10 @@ export async function generateAuthoritiesExpensesLedger(
         ...(isCreditorCounterparty
           ? {
               creditAccountID1: authorityId,
-              debitAccountID1: financialAccountTaxCategoryId,
+              debitAccountID1: expense.counterparty,
             }
           : {
-              creditAccountID1: financialAccountTaxCategoryId,
+              creditAccountID1: expense.counterparty,
               debitAccountID1: authorityId,
             }),
         localCurrencyCreditAmount1: Math.abs(amount),
