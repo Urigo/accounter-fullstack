@@ -35,6 +35,10 @@ const updateExpense = sql<IUpdateExpenseQuery>`
     $transactionId,
     transaction_id
   ),
+  counterparty = COALESCE(
+    $counterparty,
+    counterparty
+  ),
   amount = COALESCE(
     $amount,
     amount
@@ -42,14 +46,18 @@ const updateExpense = sql<IUpdateExpenseQuery>`
   description = COALESCE(
     $description,
     description
+  ),
+  date = COALESCE(
+    $date,
+    date
   )
   WHERE
     transaction_id = $transactionId
   RETURNING *;`;
 
 const insertExpense = sql<IInsertExpenseQuery>`
-  INSERT INTO accounter_schema.authorities_misc_expenses (transaction_id, amount, description)
-  VALUES ($transactionId, $amount, $description)
+  INSERT INTO accounter_schema.authorities_misc_expenses (transaction_id, counterparty, amount, description, date)
+  VALUES ($transactionId, $counterparty, $amount, $description, $date)
   RETURNING *`;
 
 @Injectable({

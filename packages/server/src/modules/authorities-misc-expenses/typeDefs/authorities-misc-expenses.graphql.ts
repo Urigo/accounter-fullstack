@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    getAuthoritiesExpensesByCharge(chargeId: UUID!): [AuthoritiesExpense!]! @auth(role: ACCOUNTANT)
+    authoritiesExpensesByCharge(chargeId: UUID!): [AuthoritiesExpense!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
@@ -20,14 +20,18 @@ export default gql`
     transaction: Transaction!
     transactionId: UUID!
     charge: Charge!
+    counterparty: FinancialEntity!
     amount: FinancialAmount!
     description: String
+    date: TimelessDate
   }
 
   " input variables for updateAuthoritiesExpense "
   input UpdateAuthoritiesExpenseInput {
     amount: Float
     description: String
+    date: TimelessDate
+    counterpartyId: UUID
   }
 
   " input variables for insertAuthoritiesExpense "
@@ -35,5 +39,7 @@ export default gql`
     transactionId: UUID!
     amount: Float
     description: String
+    date: TimelessDate
+    counterpartyId: UUID
   }
 `;

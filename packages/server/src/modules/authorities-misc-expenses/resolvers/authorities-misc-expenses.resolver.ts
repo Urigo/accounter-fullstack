@@ -1,7 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { formatFinancialAmount } from '@shared/helpers';
+import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { AuthoritiesMiscExpensesProvider } from '../providers/authorities-misc-expenses.provider.js';
 import type { AuthoritiesMiscExpensesModule } from '../types.js';
 
@@ -45,6 +46,16 @@ export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpen
             }
             return charge;
           }),
+      counterparty: async (dbExpense, _, { injector }) =>
+        injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(dbExpense.counterparty)
+          .then(entity => {
+            if (!entity) {
+              throw new GraphQLError(`Financial entity ID="${dbExpense.counterparty}" not found`);
+            }
+            return entity;
+          }),
       amount: async (dbExpense, _, { injector }) => {
         const transaction = await injector
           .get(TransactionsProvider)
@@ -55,5 +66,6 @@ export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpen
         return formatFinancialAmount(dbExpense.amount, transaction.currency);
       },
       description: dbExpense => dbExpense.description,
+      date: dbExpense => (dbExpense.date ? dateToTimelessDateString(dbExpense.date) : null),
     },
   };
