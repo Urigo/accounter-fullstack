@@ -5,10 +5,10 @@ export function getSalaryMonth(charge: IGetChargesByIdsResult): string | null {
   if (charge.user_description?.length) {
     const transactionDate =
       charge.transactions_min_debit_date ?? charge.transactions_min_event_date ?? undefined;
-    const month = getMonthFromDescription(charge.user_description, transactionDate);
+    const months = getMonthFromDescription(charge.user_description, transactionDate);
 
-    if (month) {
-      return month;
+    if (months?.length) {
+      return months[0];
     }
   }
   const date = charge.transactions_min_debit_date ?? charge.transactions_min_event_date;

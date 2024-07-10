@@ -46,25 +46,34 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         `Monthly VAT charge must have description that indicates it's month (ID="${chargeId}")`,
       );
     }
-    const vatDate = charge.user_description
+    const vatDates = charge.user_description
       ? getMonthFromDescription(charge.user_description, transactionDate)
       : null;
-    if (!vatDate) {
+    if (!vatDates?.length) {
       errors.add(`Cannot extract charge ID="${chargeId}" VAT month`);
     }
 
-    const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
-    const ledgerDate = new Date(year, month, 0);
-    const fromDate = dateToTimelessDateString(new Date(year, month - 1, 1));
-    const toDate = dateToTimelessDateString(ledgerDate);
-
     // get VAT relevant records
-    const vatRecordsPromise = getVatRecords(
-      charge,
-      { filters: { financialEntityId: charge.owner_id, fromDate, toDate } },
-      context,
-      __,
-    );
+    const vatRecordsPromises = (vatDates ?? []).map(async vatDate => {
+      const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
+      const ledgerDate = new Date(year, month, 0);
+      const fromDate = dateToTimelessDateString(new Date(year, month - 1, 1));
+      const toDate = dateToTimelessDateString(ledgerDate);
+
+      const { income, expenses } = await getVatRecords(
+        charge,
+        { filters: { financialEntityId: charge.owner_id, fromDate, toDate } },
+        context,
+        __,
+      );
+
+      return {
+        income,
+        expenses,
+        ledgerDate,
+        vatDate,
+      };
+    });
 
     const transactionsPromise = injector
       .get(TransactionsProvider)
@@ -77,9 +86,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       .get(TaxCategoriesProvider)
       .taxCategoryByIDsLoader.load(OUTPUT_VAT_TAX_CATEGORY_ID);
 
-    const [{ income, expenses }, transactions, inputsVatTaxCategory, outputsVatTaxCategory] =
+    const [vatRecords, transactions, inputsVatTaxCategory, outputsVatTaxCategory] =
       await Promise.all([
-        vatRecordsPromise,
+        Promise.all(vatRecordsPromises),
         transactionsPromise,
         inputsVatTaxCategoryPromise,
         outputsVatTaxCategoryPromise,
@@ -92,13 +101,6 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
       errors.add(`Missing some of the VAT tax categories`);
     } else {
-      const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
-        income as RawVatReportRecord[],
-      );
-      const [expensesVat, roundedExpensesVat] = getVatDataFromVatReportRecords(
-        expenses as RawVatReportRecord[],
-      );
-
       // for each transaction, create a ledger record
       const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
         try {
@@ -158,71 +160,79 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       });
 
       await Promise.all(mainTransactionsPromises);
+      for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {
+        const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
+          income as RawVatReportRecord[],
+        );
+        const [expensesVat, roundedExpensesVat] = getVatDataFromVatReportRecords(
+          expenses as RawVatReportRecord[],
+        );
 
-      const accountingLedgerMaterials: Array<{
-        amount: number;
-        taxCategoryId: string;
-        counterpartyId?: string;
-      }> = [];
-      accountingLedgerMaterials.push(
-        {
-          amount: roundedIncomeVat,
-          taxCategoryId: outputsVatTaxCategory.id,
-          counterpartyId: VAT_BUSINESS_ID,
-        },
-        {
-          amount: roundedExpensesVat * -1,
-          taxCategoryId: inputsVatTaxCategory.id,
-          counterpartyId: VAT_BUSINESS_ID,
-        },
-      );
+        const accountingLedgerMaterials: Array<{
+          amount: number;
+          taxCategoryId: string;
+          counterpartyId?: string;
+        }> = [];
+        accountingLedgerMaterials.push(
+          {
+            amount: roundedIncomeVat,
+            taxCategoryId: outputsVatTaxCategory.id,
+            counterpartyId: VAT_BUSINESS_ID,
+          },
+          {
+            amount: roundedExpensesVat * -1,
+            taxCategoryId: inputsVatTaxCategory.id,
+            counterpartyId: VAT_BUSINESS_ID,
+          },
+        );
 
-      const roundedIncomeVatDiff = Math.round((roundedIncomeVat - incomeVat) * 100) / 100;
-      if (roundedIncomeVatDiff) {
-        accountingLedgerMaterials.push({
-          amount: roundedIncomeVatDiff * -1,
-          taxCategoryId: outputsVatTaxCategory.id,
-          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-        });
-      }
-
-      const roundedExpensesVatDiff = Math.round((roundedExpensesVat - expensesVat) * 100) / 100;
-      if (roundedExpensesVatDiff) {
-        accountingLedgerMaterials.push({
-          amount: roundedExpensesVatDiff,
-          taxCategoryId: inputsVatTaxCategory.id,
-          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-        });
-      }
-
-      accountingLedgerMaterials.map(({ amount, taxCategoryId, counterpartyId }) => {
-        if (amount === 0) {
-          return;
+        const roundedIncomeVatDiff = Math.round((roundedIncomeVat - incomeVat) * 100) / 100;
+        if (roundedIncomeVatDiff) {
+          accountingLedgerMaterials.push({
+            amount: roundedIncomeVatDiff * -1,
+            taxCategoryId: outputsVatTaxCategory.id,
+            counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+          });
         }
 
-        const isCreditorCounterparty = amount > 0;
+        const roundedExpensesVatDiff = Math.round((roundedExpensesVat - expensesVat) * 100) / 100;
+        if (roundedExpensesVatDiff) {
+          accountingLedgerMaterials.push({
+            amount: roundedExpensesVatDiff,
+            taxCategoryId: inputsVatTaxCategory.id,
+            counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+          });
+        }
 
-        const ledgerProto: LedgerProto = {
-          id: chargeId,
-          invoiceDate: ledgerDate,
-          valueDate: ledgerDate,
-          currency: DEFAULT_LOCAL_CURRENCY,
-          creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
-          localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
-          localCurrencyDebitAmount1: Math.abs(amount),
-          description:
-            counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
-              ? 'Balance cancellation'
-              : `VAT command ${vatDate}`,
-          isCreditorCounterparty,
-          ownerId: charge.owner_id,
-          chargeId,
-        };
+        accountingLedgerMaterials.map(({ amount, taxCategoryId, counterpartyId }) => {
+          if (amount === 0) {
+            return;
+          }
 
-        accountingLedgerEntries.push(ledgerProto);
-        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
-      });
+          const isCreditorCounterparty = amount > 0;
+
+          const ledgerProto: LedgerProto = {
+            id: chargeId,
+            invoiceDate: ledgerDate,
+            valueDate: ledgerDate,
+            currency: DEFAULT_LOCAL_CURRENCY,
+            creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
+            localCurrencyCreditAmount1: Math.abs(amount),
+            debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
+            localCurrencyDebitAmount1: Math.abs(amount),
+            description:
+              counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
+                ? 'Balance cancellation'
+                : `VAT command ${vatDate}`,
+            isCreditorCounterparty,
+            ownerId: charge.owner_id,
+            chargeId,
+          };
+
+          accountingLedgerEntries.push(ledgerProto);
+          updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
+        });
+      }
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);

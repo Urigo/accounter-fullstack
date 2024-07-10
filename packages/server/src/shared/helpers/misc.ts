@@ -107,7 +107,7 @@ function convertMonthNameToNumber(monthName: string): string | null {
  * @param eventDate Date - optional, if provided, will use it to determine year
  * @returns month in format yyyy-mm, else null
  */
-export function getMonthFromDescription(rawDescription: string, eventDate?: Date): string | null {
+export function getMonthFromDescription(rawDescription: string, eventDate?: Date): string[] | null {
   if (!rawDescription.length) {
     return null;
   }
@@ -117,7 +117,7 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
   const matches = description.match(dateRegex);
   if (matches?.length) {
     const month = matches[0];
-    return month;
+    return [month];
   }
 
   // search for "mm-yyyy" in description
@@ -126,16 +126,24 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
   if (matches2?.length) {
     const month = matches2[0];
     const adjustedMonth = month.split('-').reverse().join('-');
-    return adjustedMonth;
+    return [adjustedMonth];
   }
 
   // search for "mm/yyyy" in description
   const dateRegex3 = /\b(\d{2})\/(\d{4})\b/;
   const matches3 = description.match(dateRegex3);
   if (matches3?.length) {
+    // case two month
+    const dateRegex3double = /\b(\d{2})-(\d{2})\/(\d{4})\b/;
+    const matches3double = description.match(dateRegex3double);
+    if (matches3double?.length) {
+      const [_dateString, monthA, monthB, year] = matches3double;
+      return [`${year}-${monthA}`, `${year}-${monthB}`];
+    }
+    // case one month
     const month = matches3[0];
     const adjustedMonth = month.split('/').reverse().join('-');
-    return adjustedMonth;
+    return [adjustedMonth];
   }
 
   // search for "mm/yy" in description
@@ -144,41 +152,47 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
   if (matches4?.length) {
     const month = matches4[0];
     const adjustedMonth = '20' + month.split('/').reverse().join('-');
-    return adjustedMonth;
+    return [adjustedMonth];
   }
 
   // search for month name in description
   const dateRegex5 =
-    /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?)\b/;
+    /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?)\b/g;
 
-  const matches5 = description.match(dateRegex5);
-  if (matches5?.length) {
-    const monthName = matches5[0];
-    const month = convertMonthNameToNumber(monthName);
+  const monthNames = description.match(dateRegex5);
+  if (monthNames?.length) {
+    const dateStrings = [];
+    for (const monthName of monthNames) {
+      const month = convertMonthNameToNumber(monthName);
 
-    if (month) {
-      // try to search for year in description
-      const dateRegex5 =
-        /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:19[7-9]\d|2\d{3})\b/;
-      const matches5 = description.match(dateRegex5);
-      if (matches5?.length) {
-        const year = matches5[0].split(' ')[1];
-        if (year) {
+      if (month) {
+        // try to search for year in description
+        const dateRegex5 =
+          /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:19[7-9]\d|2\d{3})\b/g;
+        const matches5 = description.match(dateRegex5);
+        if (matches5?.length) {
+          const year = matches5[0].split(' ')[1];
+          if (year) {
+            const adjustedMonth = `${year}-${month}`;
+            dateStrings.push(adjustedMonth);
+            continue;
+          }
+        }
+
+        if (eventDate) {
+          let year = eventDate.getFullYear();
+
+          // case date is in Jan/Feb and salary month is Nov/Dec, use date's prev year
+          if (eventDate.getMonth() < 2 && month > '10') {
+            year--;
+          }
           const adjustedMonth = `${year}-${month}`;
-          return adjustedMonth;
+          dateStrings.push(adjustedMonth);
         }
       }
-
-      if (eventDate) {
-        let year = eventDate.getFullYear();
-
-        // case date is in Jan/Feb and salary month is Nov/Dec, use date's prev year
-        if (eventDate.getMonth() < 2 && month > '10') {
-          year--;
-        }
-        const adjustedMonth = `${year}-${month}`;
-        return adjustedMonth;
-      }
+    }
+    if (dateStrings.length) {
+      return dateStrings;
     }
   }
   return null;
