@@ -19,6 +19,8 @@ import type {
   IGetChargesByFinancialEntityIdsResult,
   IGetChargesByIdsQuery,
   IGetChargesByIdsResult,
+  IGetChargesByTransactionIdsQuery,
+  IGetChargesByTransactionIdsResult,
   IUpdateAccountantApprovalParams,
   IUpdateAccountantApprovalQuery,
   IUpdateAccountantApprovalResult,
@@ -45,6 +47,12 @@ const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *
     FROM accounter_schema.extended_charges
     WHERE id IN $$chargeIds;`;
+
+const getChargesByTransactionIds = sql<IGetChargesByTransactionIdsQuery>`
+    SELECT t.id AS transaction_id, c.* FROM accounter_schema.transactions t
+    LEFT JOIN accounter_schema.extended_charges c
+      ON t.charge_id = c.id
+    WHERE t.id IN $$transactionIds;`;
 
 const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuery>`
     SELECT c.*, t.account_id
@@ -189,6 +197,21 @@ export class ChargesProvider {
 
   public getChargeByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchChargesByIds(keys),
+    { cache: false },
+  );
+
+  private async batchChargesByTransactionIds(transactionIds: readonly string[]) {
+    const charges = (await getChargesByTransactionIds.run(
+      {
+        transactionIds,
+      },
+      this.dbProvider,
+    )) as ChargeRequiredWrapper<IGetChargesByTransactionIdsResult>[];
+    return transactionIds.map(id => charges.find(charge => charge.id === id));
+  }
+
+  public getChargeByTransactionIdLoader = new DataLoader(
+    (transactionIds: readonly string[]) => this.batchChargesByTransactionIds(transactionIds),
     { cache: false },
   );
 
