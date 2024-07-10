@@ -43,7 +43,7 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
 
   page.click('.submit-btn');
 
-  const answers = await inquirer.prompt([
+  const answers = await inquirer.prompt<{'SMSPassword': string}>([
     {
       type: 'input',
       name: 'SMSPassword',
@@ -81,7 +81,7 @@ async function personalLogin(credentials: hapoalimCredentials, page: Page) {
 async function replacePassword(previousCredentials: hapoalimCredentials, page: Page) {
   await page.waitForSelector('#buttonAction');
 
-  const answers = await inquirer.prompt([
+  const answers = await inquirer.prompt<{'newPassword': string}>([
     {
       type: 'input',
       name: 'newPassword',
