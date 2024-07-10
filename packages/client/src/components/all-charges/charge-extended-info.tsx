@@ -12,6 +12,7 @@ import {
   FetchChargeDocument,
   TableDocumentsFieldsFragmentDoc,
   TableLedgerRecordsFieldsFragmentDoc,
+  TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
@@ -27,6 +28,7 @@ import { DocumentsGallery } from './documents/documents-gallery.js';
 import { DocumentsTable } from './documents/documents-table.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
+import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
 import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
 
@@ -57,6 +59,10 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
         }
       }
       ...AllChargesErrorsFields @defer
+      authoritiesMiscExpenses {
+        transactionId
+      }
+      ...TableMiscExpensesFields @defer
     }
   }
 `;
@@ -90,6 +96,7 @@ export function ChargeExtendedInfo({
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = charge?.__typename === 'SalaryCharge';
+  const hasMiscExpenses = !!charge?.authoritiesMiscExpenses?.length;
 
   useEffect(() => {
     const tabs = [];
@@ -105,8 +112,11 @@ export function ChargeExtendedInfo({
     if (isSalaryCharge) {
       tabs.push('salaries');
     }
+    if (hasMiscExpenses) {
+      tabs.push('miscExpenses');
+    }
     setAccordionItems(tabs);
-  }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge]);
+  }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge, hasMiscExpenses]);
 
   function toggleAccordionItem(item: string): void {
     if (accordionItems.includes(item)) {
@@ -137,6 +147,12 @@ export function ChargeExtendedInfo({
   const transactionsAreReady = isFragmentReady(
     FetchChargeDocument,
     ChargeTableTransactionsFieldsFragmentDoc,
+    charge,
+  );
+
+  const miscExpensesAreReady = isFragmentReady(
+    FetchChargeDocument,
+    TableMiscExpensesFieldsFragmentDoc,
     charge,
   );
 
@@ -196,49 +212,75 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            <Accordion.Item value="transactions">
-              <Accordion.Control
-                disabled={!hasTransactions}
-                onClick={() => toggleAccordionItem('transactions')}
-              >
-                Transactions
-              </Accordion.Control>
-              <Accordion.Panel>
-                {transactionsAreReady && (
-                  <ChargeTransactionsTable transactionsProps={charge} onChange={onExtendedChange} />
-                )}
-              </Accordion.Panel>
-            </Accordion.Item>
-
-            <Accordion.Item value="documents">
-              <Accordion.Control
-                disabled={!hasDocs}
-                onClick={() => toggleAccordionItem('documents')}
-              >
-                <div className="flex flex-row items-center gap-2 justify-start w-full">
-                  {hasDocs && (
-                    <Tooltip label="Documents Gallery">
-                      <ActionIcon
-                        onClick={event => {
-                          event.stopPropagation();
-                          toggle();
-                        }}
-                        variant="outline"
-                        loading={!galleryIsReady}
-                      >
-                        <Photo size={20} />
-                      </ActionIcon>
-                    </Tooltip>
+            {hasTransactions && (
+              <Accordion.Item value="transactions">
+                <Accordion.Control
+                  disabled={!hasTransactions}
+                  onClick={() => toggleAccordionItem('transactions')}
+                >
+                  Transactions
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {transactionsAreReady && (
+                    <ChargeTransactionsTable
+                      transactionsProps={charge}
+                      onChange={onExtendedChange}
+                    />
                   )}
-                  Documents
-                </div>
-              </Accordion.Control>
-              <Accordion.Panel>
-                {docsAreReady && (
-                  <DocumentsTable documentsProps={charge} onChange={onExtendedChange} />
-                )}
-              </Accordion.Panel>
-            </Accordion.Item>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {hasMiscExpenses && (
+              <Accordion.Item value="miscExpenses">
+                <Accordion.Control
+                  disabled={!hasMiscExpenses}
+                  onClick={() => toggleAccordionItem('miscExpenses')}
+                >
+                  Misc Expenses
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {miscExpensesAreReady && (
+                    <ChargeMiscExpensesTable
+                      miscExpensesData={charge}
+                      onChange={onExtendedChange}
+                    />
+                  )}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {hasDocs && (
+              <Accordion.Item value="documents">
+                <Accordion.Control
+                  disabled={!hasDocs}
+                  onClick={() => toggleAccordionItem('documents')}
+                >
+                  <div className="flex flex-row items-center gap-2 justify-start w-full">
+                    {hasDocs && (
+                      <Tooltip label="Documents Gallery">
+                        <ActionIcon
+                          onClick={event => {
+                            event.stopPropagation();
+                            toggle();
+                          }}
+                          variant="outline"
+                          loading={!galleryIsReady}
+                        >
+                          <Photo size={20} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                    Documents
+                  </div>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {docsAreReady && (
+                    <DocumentsTable documentsProps={charge} onChange={onExtendedChange} />
+                  )}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
 
             {charge.__typename === 'SalaryCharge' && (
               <Accordion.Item value="salaries">
@@ -278,27 +320,29 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            <Accordion.Item value="ledger">
-              <Accordion.Control
-                disabled={!hasLedgerRecords}
-                onClick={event => {
-                  event.stopPropagation();
-                  toggleAccordionItem('ledger');
-                }}
-              >
-                <div className="flex flex-row items-center gap-2 justify-start w-full">
-                  <RegenerateLedgerRecordsButton
-                    chargeId={charge.id}
-                    onChange={onExtendedChange}
-                    variant="outline"
-                  />
-                  Ledger Records
-                </div>
-              </Accordion.Control>
-              <Accordion.Panel>
-                {ledgerRecordsAreReady && <LedgerRecordTable ledgerRecordsProps={charge} />}
-              </Accordion.Panel>
-            </Accordion.Item>
+            {hasLedgerRecords && (
+              <Accordion.Item value="ledger">
+                <Accordion.Control
+                  disabled={!hasLedgerRecords}
+                  onClick={event => {
+                    event.stopPropagation();
+                    toggleAccordionItem('ledger');
+                  }}
+                >
+                  <div className="flex flex-row items-center gap-2 justify-start w-full">
+                    <RegenerateLedgerRecordsButton
+                      chargeId={charge.id}
+                      onChange={onExtendedChange}
+                      variant="outline"
+                    />
+                    Ledger Records
+                  </div>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {ledgerRecordsAreReady && <LedgerRecordTable ledgerRecordsProps={charge} />}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
           </Accordion>
           {galleryIsReady && (
             <Box maw="1/6">

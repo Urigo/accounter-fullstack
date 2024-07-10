@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { ChargeNavigateButton, EditMiniButton, EditTransactionModal } from '../index.js';
+import { InsertMiscExpenseModal } from '../modals/insert-misc-expense-modal.js';
 import {
   Account,
   Amount,
@@ -74,7 +75,10 @@ export const TransactionsTable = ({
               <Counterparty data={transaction} enableEdit={enableEdit} onChange={onChange} />
               <td>
                 {enableEdit && (
-                  <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
+                  <>
+                    <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
+                    <InsertMiscExpenseModal transactionId={transaction.id} />
+                  </>
                 )}
                 {enableChargeLink && <ChargeNavigateButton chargeId={transaction.chargeId} />}
               </td>
