@@ -9,7 +9,7 @@ import type { AuthoritiesMiscExpensesModule } from '../types.js';
 export const authoritiesMiscExpensesLedgerEntriesResolvers: AuthoritiesMiscExpensesModule.Resolvers =
   {
     Query: {
-      getAuthoritiesExpensesByCharge: async (_, { chargeId }, { injector }) => {
+      authoritiesExpensesByCharge: async (_, { chargeId }, { injector }) => {
         try {
           return await injector
             .get(AuthoritiesMiscExpensesProvider)
