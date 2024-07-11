@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
@@ -25,7 +26,16 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
           throw new Error(`Failed to clear business trip`);
         });
 
-      Promise.all([clearAllChargeTagsPromise, clearBusinessTripsPromise]);
+      // clear ledger records
+      const clearLedgerPromise = injector
+        .get(LedgerProvider)
+        .deleteLedgerRecordsByChargeIdLoader.load(chargeId)
+        .catch(e => {
+          console.error(e);
+          throw new Error(`Failed to clear business trip`);
+        });
+
+      Promise.all([clearAllChargeTagsPromise, clearBusinessTripsPromise, clearLedgerPromise]);
     } catch (e) {
       throw new GraphQLError(`Charge ID="${chargeId}" deletion error: ${e}`);
     }
