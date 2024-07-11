@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
+  IDeleteLedgerRecordsByChargeIdsQuery,
   IDeleteLedgerRecordsQuery,
   IGetLedgerRecordsByChargesIdsQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
@@ -161,6 +162,11 @@ const deleteLedgerRecords = sql<IDeleteLedgerRecordsQuery>`
   WHERE id IN $$ledgerRecordIds;
 `;
 
+const deleteLedgerRecordsByChargeIds = sql<IDeleteLedgerRecordsByChargeIdsQuery>`
+  DELETE FROM accounter_schema.ledger_records
+  WHERE charge_id IN $$chargeIds;
+`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -230,6 +236,21 @@ export class LedgerProvider {
 
   public deleteLedgerRecordsByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.deleteLedgerRecordsByIds(keys),
+    { cache: false },
+  );
+
+  private async deleteLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
+    await deleteLedgerRecordsByChargeIds.run(
+      {
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(_id => void 0);
+  }
+
+  public deleteLedgerRecordsByChargeIdLoader = new DataLoader(
+    (chargeIds: readonly string[]) => this.deleteLedgerRecordsByChargeIds(chargeIds),
     { cache: false },
   );
 }
