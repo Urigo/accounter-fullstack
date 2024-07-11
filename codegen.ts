@@ -55,6 +55,8 @@ const config: CodegenConfig = {
           TransactionDirection: '@shared/enums#TransactionDirection',
         },
         mappers: {
+          AuthoritiesExpense:
+            '@modules/authorities-misc-expenses/types.js#IGetExpensesByTransactionIdsResult',
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',

@@ -10,6 +10,7 @@ import type {
   IGetTransactionsByFiltersQuery,
   IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
+  IGetTransactionsByIdsResult,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
@@ -134,7 +135,9 @@ export class TransactionsProvider {
       },
       this.dbProvider,
     );
-    return ids.map(id => transactions.find(charge => charge.id === id));
+    return ids.map(id =>
+      (transactions as IGetTransactionsByIdsResult[]).find(charge => charge.id === id),
+    );
   }
 
   public getTransactionByIdLoader = new DataLoader(

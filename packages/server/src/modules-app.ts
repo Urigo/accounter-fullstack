@@ -10,6 +10,7 @@ import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
+import { authoritiesMiscExpensesModule } from './modules/authorities-misc-expenses/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { commonModule } from './modules/common/index.js';
@@ -39,6 +40,7 @@ export async function createGraphQLApp(env: Environment) {
     modules: [
       commonModule,
       accountantApprovalModule,
+      authoritiesMiscExpensesModule,
       businessTripsModule,
       chargesModule,
       cornJobsModule,

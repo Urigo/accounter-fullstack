@@ -93,7 +93,7 @@ export default gql`
     CREDIT
   }
 
-  " temp type until DB  supports transactions differenciation"
+  " temp type until DB supports transactions differentiation "
   type CommonTransaction implements Transaction {
     id: UUID!
     referenceId: String!
