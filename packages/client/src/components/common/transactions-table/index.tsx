@@ -77,7 +77,7 @@ export const TransactionsTable = ({
                 {enableEdit && (
                   <>
                     <EditMiniButton onClick={(): void => setEditTransactionId(transaction.id)} />
-                    <InsertMiscExpenseModal transactionId={transaction.id} />
+                    <InsertMiscExpenseModal transactionId={transaction.id} onDone={onChange} />
                   </>
                 )}
                 {enableChargeLink && <ChargeNavigateButton chargeId={transaction.chargeId} />}
