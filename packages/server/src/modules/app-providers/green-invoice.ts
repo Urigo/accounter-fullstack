@@ -133,7 +133,18 @@ export class GreenInvoiceProvider {
         retryCounter -= 1;
       }
 
-      throw new Error('Failed to find uploaded draft');
+      console.log('Failed to fetch OCR data, returning empty draft');
+      const emptyDraft = {
+        expense: {
+          documentType: '_405', // "receipt on donation" which is not supported, resulting in unprocessed document
+          number: undefined,
+          date: undefined,
+          amount: 0,
+          currency: DEFAULT_LOCAL_CURRENCY,
+          vat: 0,
+        },
+      } as ExpenseDraft;
+      return emptyDraft;
     } catch (e) {
       console.error(e);
       throw new Error(`Green Invoice error: ${(e as Error).message}`);
