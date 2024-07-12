@@ -98,7 +98,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountantReviewed: fields.accountantApproval,
-        type: fields.isConversion ? 'PAYROLL' : undefined,
+        type: fields.isConversion ? 'CONVERSION' : undefined,
         isProperty: fields.isProperty,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
@@ -177,7 +177,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
             accountantReviewed: fields?.accountantApproval,
-            type: fields?.isConversion ? 'PAYROLL' : undefined,
+            type: fields?.isConversion ? 'CONVERSION' : undefined,
             isProperty: fields?.isProperty,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             ownerId: fields?.ownerId,
