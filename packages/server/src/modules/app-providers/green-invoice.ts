@@ -136,7 +136,7 @@ export class GreenInvoiceProvider {
       console.log('Failed to fetch OCR data, returning empty draft');
       const emptyDraft = {
         expense: {
-          documentType: '_20',
+          documentType: '_405', // "receipt on donation" which is not supported, resulting in unprocessed document
           number: undefined,
           date: undefined,
           amount: 0,
