@@ -251,7 +251,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             // Generate parent charge
             const [charge] = await injector.get(ChargesProvider).generateCharge({
               ownerId,
-              userDescription: 'Green Invoice generated charge',
+              userDescription: greenInvoiceDoc.description ?? 'Green Invoice generated charge',
             });
             if (!charge) {
               throw new Error('Failed to generate charge');
