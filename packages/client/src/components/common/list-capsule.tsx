@@ -19,7 +19,7 @@ export const ListCapsule = ({ items, extraClassName = '' }: Props): ReactElement
           i === 0 ? 'rounded-t-lg' : '',
           'border-gray-200',
           item && typeof item === 'object' && 'extraClassName' in item
-            ? item.extraClassName ?? ''
+            ? (item.extraClassName ?? '')
             : '',
         ].join(' ');
         return (

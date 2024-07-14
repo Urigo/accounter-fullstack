@@ -190,7 +190,9 @@ export const ModifyDocumentFields = ({
                 name="vat.currency"
                 control={control}
                 defaultValue={
-                  isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
+                  isDocumentProcessed
+                    ? (document?.amount?.currency ?? Currency.Ils)
+                    : defaultCurrency
                 }
                 render={({
                   field: currencyCodeField,
@@ -215,7 +217,9 @@ export const ModifyDocumentFields = ({
                 name="amount.currency"
                 control={control}
                 defaultValue={
-                  isDocumentProcessed ? document?.amount?.currency ?? Currency.Ils : defaultCurrency
+                  isDocumentProcessed
+                    ? (document?.amount?.currency ?? Currency.Ils)
+                    : defaultCurrency
                 }
                 render={({
                   field: currencyCodeField,

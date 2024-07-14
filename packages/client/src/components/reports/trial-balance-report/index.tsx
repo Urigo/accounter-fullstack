@@ -122,7 +122,7 @@ export const TrialBalanceReport = (): ReactElement => {
   const businessTransactionsSum = useMemo(() => {
     return data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'
       ? []
-      : data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum ?? [];
+      : (data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum ?? []);
   }, [data?.businessTransactionsSumFromLedgerRecords]);
 
   return (

@@ -79,9 +79,9 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const transactions =
     data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
       ? []
-      : data?.businessTransactionsFromLedgerRecords.businessTransactions.sort((a, b) =>
+      : (data?.businessTransactionsFromLedgerRecords.businessTransactions.sort((a, b) =>
           a.invoiceDate > b.invoiceDate ? 1 : -1,
-        ) ?? [];
+        ) ?? []);
 
   const extendedTransactions: Array<
     Extract<
@@ -103,15 +103,15 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           : (extendedTransactions[i - 1].ilsBalance ?? 0) + transactions[i].amount.raw,
       eurBalance:
         i === 0
-          ? transactions[i].eurAmount?.raw ?? 0
+          ? (transactions[i].eurAmount?.raw ?? 0)
           : (extendedTransactions[i - 1].eurBalance ?? 0) + (transactions[i].eurAmount?.raw ?? 0),
       gbpBalance:
         i === 0
-          ? transactions[i].gbpAmount?.raw ?? 0
+          ? (transactions[i].gbpAmount?.raw ?? 0)
           : (extendedTransactions[i - 1].gbpBalance ?? 0) + (transactions[i].gbpAmount?.raw ?? 0),
       usdBalance:
         i === 0
-          ? transactions[i].usdAmount?.raw ?? 0
+          ? (transactions[i].usdAmount?.raw ?? 0)
           : (extendedTransactions[i - 1].usdBalance ?? 0) + (transactions[i].usdAmount?.raw ?? 0),
     });
   }

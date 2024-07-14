@@ -32,6 +32,15 @@ export default gql`
     website: String
     phoneNumber: String
     exemptDealer: Boolean
+
+    suggestions: Suggestions
+  }
+
+  " input for business suggestions "
+  type Suggestions {
+    phrases: [String!]!
+    tags: [Tag!]!
+    description: String
   }
 
   " Financial entity, identifier by ID, represents an actual person "
@@ -67,6 +76,7 @@ export default gql`
     governmentId: String
     taxCategory: UUID
     exemptDealer: Boolean
+    suggestions: SuggestionsInput
   }
 
   " input for insertNewBusiness "
@@ -87,8 +97,8 @@ export default gql`
 
   " input for business suggestions "
   input SuggestionsInput {
-    phrases: [String!]!
-    tags: [TagInput!]!
+    phrases: [String!]
+    tags: [TagInput!]
     description: String
   }
 
