@@ -43,6 +43,7 @@ export function App(): ReactElement {
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
             <Route path="vat-monthly" element={<VatMonthlyReport />} />
+            <Route path="profit-and-loss" element={<ProfitAndLossReport />} />
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
