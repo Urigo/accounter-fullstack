@@ -212,7 +212,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(account => account?.id === root.accountId) ?? null
+            ? (res.status.repdata.find(account => account?.id === root.accountId) ?? null)
             : null;
         });
       },
@@ -248,7 +248,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(account => account?.id === root.counterAccountId) ?? null
+            ? (res.status.repdata.find(account => account?.id === root.counterAccountId) ?? null)
             : null;
         });
       },
@@ -286,7 +286,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(batch => batch?.id === root.batchId) ?? null
+            ? (res.status.repdata.find(batch => batch?.id === root.batchId) ?? null)
             : null;
         });
       },
@@ -363,7 +363,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(account => account?.id === root.creditorId) ?? null
+            ? (res.status.repdata.find(account => account?.id === root.creditorId) ?? null)
             : null;
         });
       },
@@ -399,7 +399,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status.repdata && res.status.repdata.length > 0
-            ? res.status.repdata[0] ?? null
+            ? (res.status.repdata[0] ?? null)
             : null;
         });
       },
@@ -479,7 +479,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(account => account?.id === root.accountId) ?? null
+            ? (res.status.repdata.find(account => account?.id === root.accountId) ?? null)
             : null;
         });
       },
@@ -517,7 +517,7 @@ const resolvers: Resolvers = {
           },
         }).then(res => {
           return res?.status?.repdata && res.status.repdata.length > 0
-            ? res.status.repdata.find(batch => batch?.id === root.batchno) ?? null
+            ? (res.status.repdata.find(batch => batch?.id === root.batchno) ?? null)
             : null;
         });
       },
