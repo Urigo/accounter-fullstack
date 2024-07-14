@@ -15,7 +15,7 @@ export function Header(): JSX.Element {
       <nav className="flex h-14 items-center justify-between px-4">
         <div className="hidden lg:block">
           <Link to="/">
-            <img src="../public/icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
+            <img src="../icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
           </Link>
         </div>
         <div className="hidden md:visible md:flex flex-row justify-start gap-3">
