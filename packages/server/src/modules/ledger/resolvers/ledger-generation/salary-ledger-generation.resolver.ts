@@ -1,8 +1,8 @@
 import { lastDayOfMonth } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { generateAuthoritiesExpensesLedger } from '@modules/ledger/helpers/authorities-expenses-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
@@ -150,7 +150,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     // for each common transaction, create a ledger record
     const financialAccountLedgerEntries: LedgerProto[] = [];
-    const authoritiesMiscExpensesLedgerEntries: LedgerProto[] = [];
+    const miscExpensesLedgerEntries: LedgerProto[] = [];
     const transactionEntriesPromises = mainTransactions.map(async preValidatedTransaction => {
       try {
         const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
@@ -170,20 +170,17 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           }
         };
 
-        const authoritiesMiscExpensesPromise = generateAuthoritiesExpensesLedger(
-          transaction,
-          injector,
-        );
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
 
-        const [authoritiesExpensesLedger] = await Promise.all([
-          authoritiesMiscExpensesPromise,
+        const [miscExpensesLedger] = await Promise.all([
+          miscExpensesPromise,
           exchangeRatePromise(),
         ]);
 
-        // add authorities misc expenses ledger entries
-        authoritiesExpensesLedger.map(entry => {
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
           entry.ownerId = charge.owner_id;
-          authoritiesMiscExpensesLedgerEntries.push(entry);
+          miscExpensesLedgerEntries.push(entry);
           updateLedgerBalanceByEntry(entry, ledgerBalance);
         });
 
@@ -509,7 +506,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       ...financialAccountLedgerEntries,
       ...batchedLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
-      ...authoritiesMiscExpensesLedgerEntries,
+      ...miscExpensesLedgerEntries,
       ...miscLedgerEntries,
     ];
 

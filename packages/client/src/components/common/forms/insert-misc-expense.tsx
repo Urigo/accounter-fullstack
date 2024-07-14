@@ -4,10 +4,10 @@ import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { ModifyMiscExpenseFields } from '.';
 import {
-  InsertAuthoritiesExpenseInput,
+  InsertMiscExpenseInput,
   MiscExpenseTransactionFieldsDocument,
 } from '../../../gql/graphql.js';
-import { useInsertAuthorityMiscExpense } from '../../../hooks/use-insert-authority-misc-expense.js';
+import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -26,7 +26,7 @@ type Props = {
   transactionId: string;
 };
 
-type Input = Omit<InsertAuthoritiesExpenseInput, 'transactionId'>;
+type Input = Omit<InsertMiscExpenseInput, 'transactionId'>;
 
 export const InsertMiscExpense = ({ onDone, transactionId }: Props): ReactElement => {
   const [isInserting, setIsInserting] = useState(false);
@@ -35,7 +35,7 @@ export const InsertMiscExpense = ({ onDone, transactionId }: Props): ReactElemen
     handleSubmit,
     formState: { dirtyFields },
   } = useForm<Input>();
-  const { insertAuthorityMiscExpense, fetching } = useInsertAuthorityMiscExpense();
+  const { insertMiscExpense, fetching } = useInsertMiscExpense();
 
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: MiscExpenseTransactionFieldsDocument,
@@ -51,13 +51,13 @@ export const InsertMiscExpense = ({ onDone, transactionId }: Props): ReactElemen
   const onInsertDone = useCallback(
     async (data: Input) => {
       setIsInserting(true);
-      await insertAuthorityMiscExpense({
+      await insertMiscExpense({
         fields: { ...data, transactionId },
       });
       onDone();
       setIsInserting(false);
     },
-    [insertAuthorityMiscExpense, onDone, transactionId],
+    [insertMiscExpense, onDone, transactionId],
   );
   const onSubmit: SubmitHandler<Input> = data => {
     if (data && Object.keys(data).length > 0) {

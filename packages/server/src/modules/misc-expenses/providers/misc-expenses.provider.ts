@@ -65,7 +65,7 @@ const insertExpense = sql<IInsertExpenseQuery>`
   scope: Scope.Singleton,
   global: true,
 })
-export class AuthoritiesMiscExpensesProvider {
+export class MiscExpensesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public getAllAuthorities() {

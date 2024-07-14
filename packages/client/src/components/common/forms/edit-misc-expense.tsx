@@ -1,17 +1,14 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Loader } from '@mantine/core';
-import {
-  EditMiscExpenseFieldsFragmentDoc,
-  UpdateAuthoritiesExpenseInput,
-} from '../../../gql/graphql.js';
+import { EditMiscExpenseFieldsFragmentDoc, UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { useUpdateAuthoritiesMiscExpense } from '../../../hooks/use-update-authority-misc-expense.js';
+import { useUpdateMiscExpense } from '../../../hooks/use-update-misc-expense.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment EditMiscExpenseFields on AuthoritiesExpense {
+  fragment EditMiscExpenseFields on MiscExpense {
     transactionId
     amount {
       raw
@@ -37,7 +34,7 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<UpdateAuthoritiesExpenseInput>({
+  } = useForm<UpdateMiscExpenseInput>({
     defaultValues: {
       amount: expense.amount.raw,
       description: expense.description,
@@ -45,21 +42,21 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
       counterpartyId: expense.counterparty?.id,
     },
   });
-  const { updateAuthoritiesMiscExpense, fetching } = useUpdateAuthoritiesMiscExpense();
+  const { updateMiscExpense, fetching } = useUpdateMiscExpense();
 
   const onUpdateDone = useCallback(
-    async (data: UpdateAuthoritiesExpenseInput) => {
+    async (data: UpdateMiscExpenseInput) => {
       setIsUpdating(true);
-      await updateAuthoritiesMiscExpense({
+      await updateMiscExpense({
         transactionId: expense.transactionId,
         fields: data,
       });
       onDone();
       setIsUpdating(false);
     },
-    [updateAuthoritiesMiscExpense, onDone, expense.transactionId],
+    [updateMiscExpense, onDone, expense.transactionId],
   );
-  const onSubmit: SubmitHandler<UpdateAuthoritiesExpenseInput> = data => {
+  const onSubmit: SubmitHandler<UpdateMiscExpenseInput> = data => {
     if (data && Object.keys(data).length > 0) {
       onUpdateDone({ ...data });
     }

@@ -7,7 +7,7 @@ import { EditMiscExpenseModal } from '../../common/index.js';
 /* GraphQL */ `
   fragment TableMiscExpensesFields on Charge {
     id
-    authoritiesMiscExpenses {
+    miscExpenses {
       amount {
         formatted
       }
@@ -31,7 +31,7 @@ type Props = {
 export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): ReactElement => {
   const charge = getFragmentData(TableMiscExpensesFieldsFragmentDoc, miscExpensesData);
 
-  const { authoritiesMiscExpenses } = charge;
+  const { miscExpenses } = charge;
   return (
     <table className="w-full h-full">
       <thead>
@@ -44,7 +44,7 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
         </tr>
       </thead>
       <tbody>
-        {authoritiesMiscExpenses?.map(expense => (
+        {miscExpenses?.map(expense => (
           <tr key={`${expense?.transactionId}-${expense?.counterparty}-${expense?.date}`}>
             <td>
               <div>{expense?.counterparty?.name}</div>
