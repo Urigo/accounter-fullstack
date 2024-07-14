@@ -67,6 +67,7 @@ module.exports = {
                 'PaginatedFinancialEntities',
                 'PCNFileResult',
                 'PCNRawData',
+                'ProfitAndLossReport',
                 'SicknessDays',
                 'SortCode',
                 'Suggestions',
