@@ -1,6 +1,7 @@
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { generateAuthoritiesExpensesLedger } from '@modules/ledger/helpers/authorities-expenses-ledger.helper.js';
 import {
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
@@ -172,7 +173,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // for each transaction, create a ledger record
       const mainTransactionsPromises = mainTransactions.map(async transaction => {
-        const ledgerEntry = await ledgerEntryFromMainTransaction(
+        const ledgerEntryPromise = ledgerEntryFromMainTransaction(
           transaction,
           injector,
           chargeId,
@@ -185,6 +186,25 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           } else {
             throw e;
           }
+        });
+
+        const authoritiesMiscExpensesPromise = generateAuthoritiesExpensesLedger(
+          transaction,
+          injector,
+        );
+
+        const [ledgerEntry, authoritiesExpensesLedger] = await Promise.all([
+          ledgerEntryPromise,
+          authoritiesMiscExpensesPromise,
+        ]);
+
+        // add authorities misc expenses ledger entries
+        authoritiesExpensesLedger.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
         });
 
         if (!ledgerEntry) {
