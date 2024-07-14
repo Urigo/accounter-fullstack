@@ -69,6 +69,7 @@ module.exports = {
                 'PCNRawData',
                 'SicknessDays',
                 'SortCode',
+                'Suggestions',
                 'TransactionSuggestions',
                 'UpdateChargeSuccessfulResult',
                 'VatReportResult',
