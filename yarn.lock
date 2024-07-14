@@ -2672,65 +2672,65 @@
   resolved "https://registry.yarnpkg.com/@kurkle/color/-/color-0.3.2.tgz#5acd38242e8bde4f9986e7913c8fdf49d3aa199f"
   integrity sha512-fuscdXJ9G1qb7W8VdHi+IwRqij3lBkosAm4ydQtEmbY58OzHXqQhvlxqEkoz0yssNVn38bcpRWgA9PP+OGoisw==
 
-"@mantine/carousel@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/carousel/-/carousel-6.0.21.tgz#3e2a77e365014b314f90e8b474b350432c926640"
-  integrity sha512-cQAQ5RlVhSrYA8aez/euzs5nQKcGcwxVTS/gf46GEZ0gcDJXlymZPbc2OopH/WDczEaMWOF7wz8R9+uG1hYNCg==
+"@mantine/carousel@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/carousel/-/carousel-6.0.22.tgz#739df333fa4bf114117f8c78206e83f90b1a25cd"
+  integrity sha512-wM3K2tIAWZoi/H2t7Wo+W8st9wDzheMfln0XtvhfyBZfhrhOkQdqPNgauX/+EeNg3U7HHJJQnAJxB4R23RKr2A==
   dependencies:
-    "@mantine/utils" "6.0.21"
+    "@mantine/utils" "6.0.22"
 
-"@mantine/core@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/core/-/core-6.0.21.tgz#6e3a1b8d0f6869518a644d5f5e3d55a5db7e1e51"
-  integrity sha512-Kx4RrRfv0I+cOCIcsq/UA2aWcYLyXgW3aluAuW870OdXnbII6qg7RW28D+r9D76SHPxWFKwIKwmcucAG08Divg==
+"@mantine/core@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/core/-/core-6.0.22.tgz#654ed7252f711ca420d3c2c26da9a2d9d0b64550"
+  integrity sha512-6kv0eY7n565fyjgS20qUYeCSxg3f1TJ5vurzbP1HHtFXXKSY0bYoqqDoHipFCt6NxsPQGeiC6cC0c/IWIlxoKQ==
   dependencies:
     "@floating-ui/react" "^0.19.1"
-    "@mantine/styles" "6.0.21"
-    "@mantine/utils" "6.0.21"
+    "@mantine/styles" "6.0.22"
+    "@mantine/utils" "6.0.22"
     "@radix-ui/react-scroll-area" "1.0.2"
     react-remove-scroll "^2.5.5"
     react-textarea-autosize "8.3.4"
 
-"@mantine/dates@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/dates/-/dates-6.0.21.tgz#a140da22bd4188aff446ddb5d3bcf37b658b0608"
-  integrity sha512-nSX7MxNkHyyDJqEJOT7Wg930jBfgWz+3pnoWo601cYDvFjh5GgcRz66v36rnMJFK1/56k5G9rWzUOzuM94j6hg==
+"@mantine/dates@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/dates/-/dates-6.0.22.tgz#e6f2325705c8355ca7416ab4039db4fe065f62f2"
+  integrity sha512-RwZzaRtyCdwXWrszjoDFUrYdy2s6sAZgXZzp+ytp0KJDm63+H+4ri1Qkv7bWKVBgrTP7alsxCIGHV2weEOZKog==
   dependencies:
-    "@mantine/utils" "6.0.21"
+    "@mantine/utils" "6.0.22"
 
-"@mantine/dropzone@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/dropzone/-/dropzone-6.0.21.tgz#65867e5bbfe59094afc6751206cfc1466744f72b"
-  integrity sha512-v63tL4x7R1CvBNnxJVaVPhBVnQcfROQvyOV0xK/v0ZGNAzFxjJoiCRMGdlBjxnEawM0dRhNs/46ItpBgjQIr6g==
+"@mantine/dropzone@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/dropzone/-/dropzone-6.0.22.tgz#dcd2010a79e555a85d1e298ea0056c8f7b18ce98"
+  integrity sha512-5qyrecSGL2CUYk2IsANb++C5Ul4YX78IOQRbhknyitlNvduoQs8TI0GEil7uLHmSC2lGOoel3ttFtX4nGtX25A==
   dependencies:
-    "@mantine/utils" "6.0.21"
+    "@mantine/utils" "6.0.22"
     react-dropzone "14.2.3"
 
-"@mantine/hooks@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/hooks/-/hooks-6.0.21.tgz#bc009d8380ad18455b90f3ddaf484de16a13da95"
-  integrity sha512-sYwt5wai25W6VnqHbS5eamey30/HD5dNXaZuaVEAJ2i2bBv8C0cCiczygMDpAFiSYdXoSMRr/SZ2CrrPTzeNew==
+"@mantine/hooks@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/hooks/-/hooks-6.0.22.tgz#2c7938a0a11b3e4019974ea41aa15c8a4c80d87a"
+  integrity sha512-e10//QTN2sAmC4Ryeu5X5L/TsxnrjXMOaGq3dxFPIPsCSwLzyxqySfjzVViWmoPWAj0Ak9MvE2MHFjzmOpA80w==
 
-"@mantine/notifications@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/notifications/-/notifications-6.0.21.tgz#bec53664abce13a2cc61a1be1840d82a746f62da"
-  integrity sha512-qsrqxuJHK8b67sf9Pfk+xyhvpf9jMsivW8vchfnJfjv7yz1lLvezjytMFp4fMDoYhjHnDPOEc/YFockK4muhOw==
+"@mantine/notifications@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/notifications/-/notifications-6.0.22.tgz#12d9da9d38e9d8cd2d56ec28abcabf7613ac731c"
+  integrity sha512-x7iIil2yC81fEv/7YK6NYn6CKaftlw0E/hdprmxGWFhy87W9sYiYzPqigXZh11IJZFFW9ZPftpjPQFvDwE4KOw==
   dependencies:
-    "@mantine/utils" "6.0.21"
+    "@mantine/utils" "6.0.22"
     react-transition-group "4.4.2"
 
-"@mantine/styles@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/styles/-/styles-6.0.21.tgz#8ea097fc76cbb3ed55f5cfd719d2f910aff5031b"
-  integrity sha512-PVtL7XHUiD/B5/kZ/QvZOZZQQOj12QcRs3Q6nPoqaoPcOX5+S7bMZLMH0iLtcGq5OODYk0uxlvuJkOZGoPj8Mg==
+"@mantine/styles@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/styles/-/styles-6.0.22.tgz#d883823f910e9ab8a56fd80ef667b6f56f2e2bd5"
+  integrity sha512-Rud/IQp2EFYDiP4csRy2XBrho/Ct+W2/b+XbvCRTeQTmpFy/NfAKm/TWJa5zPvuv/iLTjGkVos9SHw/DteESpQ==
   dependencies:
     clsx "1.1.1"
     csstype "3.0.9"
 
-"@mantine/utils@6.0.21":
-  version "6.0.21"
-  resolved "https://registry.yarnpkg.com/@mantine/utils/-/utils-6.0.21.tgz#6185506e91cba3e308aaa8ea9ababc8e767995d6"
-  integrity sha512-33RVDRop5jiWFao3HKd3Yp7A9mEq4HAJxJPTuYm1NkdqX6aTKOQK7wT8v8itVodBp+sb4cJK6ZVdD1UurK/txQ==
+"@mantine/utils@6.0.22":
+  version "6.0.22"
+  resolved "https://registry.yarnpkg.com/@mantine/utils/-/utils-6.0.22.tgz#7eace697084e2bc5a831eb0fd7cbbc04cc1b0354"
+  integrity sha512-RSKlNZvxhMCkOFZ6slbYvZYbWjHUM+PxDQnupIOxIdsTZQQjx/BFfrfJ7kQFOP+g7MtpOds8weAetEs5obwMOQ==
 
 "@manypkg/find-root@^1.1.0":
   version "1.1.0"
@@ -10697,10 +10697,10 @@ prettier-plugin-sql@0.18.1:
     sql-formatter "^15.0.2"
     tslib "^2.6.2"
 
-prettier@3.3.2, prettier@^3.2.5:
-  version "3.3.2"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.2.tgz#03ff86dc7c835f2d2559ee76876a3914cec4a90a"
-  integrity sha512-rAVeHYMcv8ATV5d508CFdn+8/pHPpXeIid1DdrPwXnaAdH7cqjVbpJaT5eq4yRAFU/lsbwYwSF/n5iNrdJHPQA==
+prettier@3.3.3, prettier@^3.2.5:
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.3.tgz#30c54fe0be0d8d12e6ae61dbb10109ea00d53105"
+  integrity sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==
 
 prettier@^2.7.1:
   version "2.8.8"
