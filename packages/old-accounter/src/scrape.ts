@@ -1214,18 +1214,18 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const thirdScraperInstance = await init();
   console.log('After Init scraper');
   await Promise.allSettled([
-    getCreditCardData(pool, newScraperInstance, {
-      ID: process.env.ISRACARD_ID,
-      password: process.env.ISRACARD_PASSWORD,
-      card6Digits: process.env.ISRACARD_6_DIGITS,
-    }),
-    getCreditCardData(pool, thirdScraperInstance, {
-      ID: process.env.DOTAN_ISRACARD_ID,
-      password: process.env.DOTAN_ISRACARD_PASSWORD,
-      card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS,
-    }),
+    // getCreditCardData(pool, newScraperInstance, {
+    //   ID: process.env.ISRACARD_ID,
+    //   password: process.env.ISRACARD_PASSWORD,
+    //   card6Digits: process.env.ISRACARD_6_DIGITS,
+    // }),
+    // getCreditCardData(pool, thirdScraperInstance, {
+    //   ID: process.env.DOTAN_ISRACARD_ID,
+    //   password: process.env.DOTAN_ISRACARD_PASSWORD,
+    //   card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS,
+    // }),
     getBankData(pool, secondScraperInstance),
-    getCurrencyRates(pool),
+    // getCurrencyRates(pool),
   ]);
   console.log('after all');
 

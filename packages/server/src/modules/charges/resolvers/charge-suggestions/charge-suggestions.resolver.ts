@@ -7,6 +7,7 @@ import {
   ETHERSCAN_BUSINESS_ID,
   KRAKEN_BUSINESS_ID,
   POALIM_BUSINESS_ID,
+  UUID_REGEX,
 } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type {
@@ -23,9 +24,7 @@ import { missingConversionInfoSuggestions } from './conversion-suggeestions.reso
 
 type SuggestionData = {
   description?: string;
-  tags: Array<{
-    name: string;
-  }>;
+  tags: Array<string>;
   phrases: Array<string>;
 };
 
@@ -59,10 +58,13 @@ const missingInfoSuggestions: Resolver<
 
       return {
         description: suggestionData.description,
-        tags: await injector
-          .get(TagsProvider)
-          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
-          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
+        tags: await Promise.all(
+          suggestionData.tags.map(tag =>
+            UUID_REGEX.test(tag)
+              ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
+              : injector.get(TagsProvider).getTagByNameLoader.load(tag),
+          ),
+        ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
   }
@@ -111,20 +113,26 @@ const missingInfoSuggestions: Resolver<
     if (business.id in (DbCharge.business_array ?? [])) {
       return {
         description: suggestionData.description,
-        tags: await injector
-          .get(TagsProvider)
-          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
-          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
+        tags: await Promise.all(
+          suggestionData.tags.map(tag =>
+            UUID_REGEX.test(tag)
+              ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
+              : injector.get(TagsProvider).getTagByNameLoader.load(tag),
+          ),
+        ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
 
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         description: suggestionData.description,
-        tags: await injector
-          .get(TagsProvider)
-          .getTagByNameLoader.loadMany(suggestionData.tags.map(t => t.name))
-          .then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
+        tags: await Promise.all(
+          suggestionData.tags.map(tag =>
+            UUID_REGEX.test(tag)
+              ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
+              : injector.get(TagsProvider).getTagByNameLoader.load(tag),
+          ),
+        ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
       };
     }
   }

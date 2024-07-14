@@ -1,4 +1,6 @@
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { GraphQLError } from 'graphql';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { DEFAULT_FINANCIAL_ENTITY_ID, UUID_REGEX } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
@@ -14,6 +16,15 @@ import type {
   Json,
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
+
+type RequireAtLeastOne<T> = {
+  [K in keyof T]-?: Required<Pick<T, K>>;
+}[keyof T];
+
+type Tag = RequireAtLeastOne<{
+  name: string;
+  id: string;
+}>;
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<Resolvers, 'Business' | 'UpdateBusinessResponse'> = {
@@ -61,6 +72,52 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           .get(FinancialEntitiesProvider)
           .updateFinancialEntity({ ...fields, financialEntityId: businessId });
       }
+
+      let suggestionData: IUpdateBusinessParams['suggestionData'] = null;
+      if (fields.suggestions) {
+        const currentBusiness = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(businessId);
+        if (!currentBusiness) {
+          return {
+            __typename: 'CommonError',
+            message: `Business ID="${businessId}" not found`,
+          };
+        }
+        if (
+          currentBusiness.suggestion_data &&
+          typeof currentBusiness.suggestion_data === 'object'
+        ) {
+          const tags = fields.suggestions.tags
+            ? fields.suggestions.tags.map(tag => tag.id)
+            : 'tags' in currentBusiness.suggestion_data
+              ? (currentBusiness.suggestion_data.tags as Tag[]).map(tag =>
+                  'id' in tag ? tag.id : tag.name,
+                )
+              : undefined;
+          const phrases =
+            fields.suggestions.phrases ??
+            ('phrases' in currentBusiness.suggestion_data
+              ? (currentBusiness.suggestion_data.phrases as string[])
+              : undefined);
+          const description =
+            fields.suggestions.description ??
+            ('description' in currentBusiness.suggestion_data
+              ? (currentBusiness.suggestion_data.description as string)
+              : undefined);
+          suggestionData = {
+            tags,
+            phrases,
+            description,
+          } as unknown as Json;
+        } else {
+          suggestionData = {
+            tags: fields.suggestions.tags?.map(tag => tag.id),
+            phrases: fields.suggestions.phrases?.map(phrase => phrase),
+            description: fields.suggestions.description ?? undefined,
+          } as Json;
+        }
+      }
       const adjustedFields: IUpdateBusinessParams = {
         address: fields.address,
         email: fields.email,
@@ -70,6 +127,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         phoneNumber: fields.phoneNumber,
         website: fields.website,
         businessId,
+        suggestionData,
       };
       try {
         if (
@@ -79,7 +137,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           fields.governmentId ||
           fields.phoneNumber ||
           fields.website ||
-          fields.exemptDealer
+          fields.exemptDealer ||
+          fields.suggestions
         ) {
           await injector
             .get(BusinessesProvider)
@@ -225,6 +284,40 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     exemptDealer: DbBusiness => DbBusiness.exempt_dealer,
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,
+    suggestions: (DbBusiness, _, { injector }) => {
+      if (DbBusiness.suggestion_data && typeof DbBusiness.suggestion_data === 'object') {
+        return {
+          tags:
+            'tags' in DbBusiness.suggestion_data
+              ? (DbBusiness.suggestion_data.tags as string[]).map(suggestedTag =>
+                  (UUID_REGEX.test(suggestedTag)
+                    ? injector.get(TagsProvider).getTagByIDLoader.load(suggestedTag)
+                    : injector.get(TagsProvider).getTagByNameLoader.load(suggestedTag)
+                  )
+                    .then(tag => {
+                      if (!tag) {
+                        throw new GraphQLError(`Tag "${suggestedTag}" not found`);
+                      }
+                      return tag;
+                    })
+                    .catch(e => {
+                      console.error(e);
+                      throw new GraphQLError(`Failed to load tag "${suggestedTag}"`);
+                    }),
+                )
+              : [],
+          phrases:
+            'phrases' in DbBusiness.suggestion_data
+              ? (DbBusiness.suggestion_data.phrases as string[])
+              : [],
+          description:
+            'description' in DbBusiness.suggestion_data
+              ? (DbBusiness.suggestion_data.description as string)
+              : null,
+        };
+      }
+      return null;
+    },
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,

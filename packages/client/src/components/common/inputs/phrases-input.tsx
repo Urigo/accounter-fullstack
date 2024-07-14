@@ -13,17 +13,17 @@ import { ActionIcon, TextInput } from '@mantine/core';
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
   phrasesPath: ArrayPath<T>;
-  defaultPhrase?: string;
+  defaultPhrases?: string[];
 };
 
 export function PhrasesInput<T extends FieldValues>({
   formManager,
   phrasesPath,
-  defaultPhrase,
+  defaultPhrases,
 }: Props<T>): ReactElement {
   const { control, setValue } = formManager;
   const [phrases, setPhrases] = useState<{ ''?: string }[]>(
-    defaultPhrase ? [{ '': defaultPhrase }] : [],
+    defaultPhrases ? defaultPhrases.map(phrase => ({ '': phrase })) : [],
   );
 
   const change = (phrase: string, index: number): void => {
