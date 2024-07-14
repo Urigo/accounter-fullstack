@@ -1748,10 +1748,10 @@
     json-pointer "0.6.2"
     lodash.get "4.4.2"
 
-"@graphql-mesh/transform-rename@0.98.10":
-  version "0.98.10"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/transform-rename/-/transform-rename-0.98.10.tgz#be460218035be62c7982655088844da5499d6c27"
-  integrity sha512-7wHvtDOV4KxP57JXVyRldKOKvl4IdOOnLczMSipV7fPJpHPkn2PTaHy1zaYOpt/9sPsW3PGBXe0PGJ3sC7vi4w==
+"@graphql-mesh/transform-rename@0.99.0":
+  version "0.99.0"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/transform-rename/-/transform-rename-0.99.0.tgz#4cd4363e266ec8102f73c79766f800c236127082"
+  integrity sha512-z3cH9O0XcrwIowtnaWPREDlUJxr/gqRJTZOuIV6hkeagSNXCA2/8BFltJsBKivL0Z6u3IA0IIZ6sQmmLvwN5ZA==
   dependencies:
     "@graphql-tools/delegate" "^10.0.12"
     "@graphql-tools/wrap" "^10.0.5"
@@ -1786,16 +1786,7 @@
     qs "6.12.3"
     url-join "4.0.1"
 
-"@graphql-mesh/types@0.98.10":
-  version "0.98.10"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/types/-/types-0.98.10.tgz#5882e8363634136572518962fa32e354ca10ce7f"
-  integrity sha512-sVT+1f0Pws92aVgL1Bfnq96FL0wzbM4drEfSgK7qdW7Crq1+Fkp017zz333SMjuw442HiYIf9m3yPXois4bqKg==
-  dependencies:
-    "@graphql-tools/batch-delegate" "^9.0.3"
-    "@graphql-tools/delegate" "^10.0.12"
-    "@graphql-typed-document-node/core" "^3.2.0"
-
-"@graphql-mesh/types@^0.99.0":
+"@graphql-mesh/types@0.99.0", "@graphql-mesh/types@^0.99.0":
   version "0.99.0"
   resolved "https://registry.yarnpkg.com/@graphql-mesh/types/-/types-0.99.0.tgz#336784ec16934f8465d0c3aab96efc68d564e30b"
   integrity sha512-Fb4L2EHBRUPuQWIp5ZlIh1vbMnK4zqo3jc8O5UPYUnp3OGdgB/gC735S/wN0k9StKa5iMsC9A+rI6DLknLsDnw==

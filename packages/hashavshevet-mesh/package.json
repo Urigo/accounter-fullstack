@@ -63,7 +63,7 @@
     "@graphql-mesh/runtime": "0.100.0",
     "@graphql-mesh/store": "0.99.0",
     "@graphql-mesh/transform-resolvers-composition": "0.99.0",
-    "@graphql-mesh/types": "0.98.10",
+    "@graphql-mesh/types": "0.99.0",
     "@graphql-mesh/utils": "0.99.0",
     "graphql": "16.9.0"
   },
