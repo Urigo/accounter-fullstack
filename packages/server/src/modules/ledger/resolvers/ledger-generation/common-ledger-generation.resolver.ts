@@ -1,13 +1,13 @@
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { generateAuthoritiesExpensesLedger } from '@modules/ledger/helpers/authorities-expenses-ledger.helper.js';
 import {
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
   ledgerEntryFromMainTransaction,
 } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import {
@@ -188,18 +188,15 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           }
         });
 
-        const authoritiesMiscExpensesPromise = generateAuthoritiesExpensesLedger(
-          transaction,
-          injector,
-        );
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
 
-        const [ledgerEntry, authoritiesExpensesLedger] = await Promise.all([
+        const [ledgerEntry, miscExpensesLedger] = await Promise.all([
           ledgerEntryPromise,
-          authoritiesMiscExpensesPromise,
+          miscExpensesPromise,
         ]);
 
-        // add authorities misc expenses ledger entries
-        authoritiesExpensesLedger.map(entry => {
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
           entry.ownerId = charge.owner_id;
           feeFinancialAccountLedgerEntries.push(entry);
           updateLedgerBalanceByEntry(entry, ledgerBalance);

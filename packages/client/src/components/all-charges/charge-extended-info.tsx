@@ -59,7 +59,7 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table.js';
         }
       }
       ...AllChargesErrorsFields @defer
-      authoritiesMiscExpenses {
+      miscExpenses {
         transactionId
       }
       ...TableMiscExpensesFields @defer
@@ -96,7 +96,7 @@ export function ChargeExtendedInfo({
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = charge?.__typename === 'SalaryCharge';
-  const hasMiscExpenses = !!charge?.authoritiesMiscExpenses?.length;
+  const hasMiscExpenses = !!charge?.miscExpenses?.length;
 
   useEffect(() => {
     const tabs = [];

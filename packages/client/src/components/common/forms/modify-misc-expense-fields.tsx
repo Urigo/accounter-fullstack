@@ -9,17 +9,15 @@ import { CurrencyInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   type Currency,
-  type InsertAuthoritiesExpenseInput,
-  type UpdateAuthoritiesExpenseInput,
+  type InsertMiscExpenseInput,
+  type UpdateMiscExpenseInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
   control: Control<
-    T extends true
-      ? Omit<InsertAuthoritiesExpenseInput, 'transacionId'>
-      : UpdateAuthoritiesExpenseInput,
+    T extends true ? Omit<InsertMiscExpenseInput, 'transacionId'> : UpdateMiscExpenseInput,
     object
   >;
   currency: Currency;

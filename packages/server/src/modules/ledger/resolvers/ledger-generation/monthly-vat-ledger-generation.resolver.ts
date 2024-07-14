@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { generateAuthoritiesExpensesLedger } from '@modules/ledger/helpers/authorities-expenses-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -97,7 +97,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
-    const authoritiesMiscExpensesLedgerEntries: LedgerProto[] = [];
+    const miscExpensesLedgerEntries: LedgerProto[] = [];
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     if (!inputsVatTaxCategory || !outputsVatTaxCategory) {
@@ -128,20 +128,17 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
             }
           };
 
-          const authoritiesMiscExpensesPromise = generateAuthoritiesExpensesLedger(
-            transaction,
-            injector,
-          );
+          const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
 
-          const [authoritiesExpensesLedger] = await Promise.all([
-            authoritiesMiscExpensesPromise,
+          const [miscExpensesLedger] = await Promise.all([
+            miscExpensesPromise,
             exchangeRatePromise(),
           ]);
 
-          // add authorities misc expenses ledger entries
-          authoritiesExpensesLedger.map(entry => {
+          // add misc expenses ledger entries
+          miscExpensesLedger.map(entry => {
             entry.ownerId = charge.owner_id;
-            authoritiesMiscExpensesLedgerEntries.push(entry);
+            miscExpensesLedgerEntries.push(entry);
             updateLedgerBalanceByEntry(entry, ledgerBalance);
           });
 
@@ -261,7 +258,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const records = [
       ...financialAccountLedgerEntries,
       ...accountingLedgerEntries,
-      ...authoritiesMiscExpensesLedgerEntries,
+      ...miscExpensesLedgerEntries,
     ];
 
     if (insertLedgerRecordsIfNotExists) {

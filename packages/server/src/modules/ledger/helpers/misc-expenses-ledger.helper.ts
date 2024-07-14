@@ -1,6 +1,6 @@
 import type { Injector } from 'graphql-modules';
-import { AuthoritiesMiscExpensesProvider } from '@modules/authorities-misc-expenses/providers/authorities-misc-expenses.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
@@ -10,7 +10,7 @@ import { validateTransactionBasicVariables } from './utils.helper.js';
 //   transaction: IGetTransactionsByChargeIdsResult,
 //   injector: Injector,
 // ): Promise<boolean> {
-//   const authorities = await injector.get(AuthoritiesMiscExpensesProvider).getAllAuthorities();
+//   const authorities = await injector.get(MiscExpensesProvider).getAllAuthorities();
 //   const authoritiesIds = authorities.map(authority => authority.id);
 //   if (transaction.business_id && authoritiesIds.includes(transaction.business_id)) {
 //     return true;
@@ -18,12 +18,12 @@ import { validateTransactionBasicVariables } from './utils.helper.js';
 //   return false;
 // }
 
-export async function generateAuthoritiesExpensesLedger(
+export async function generateMiscExpensesLedger(
   transaction: IGetTransactionsByChargeIdsResult,
   injector: Injector,
 ): Promise<LedgerProto[]> {
   const expenses = await injector
-    .get(AuthoritiesMiscExpensesProvider)
+    .get(MiscExpensesProvider)
     .getExpensesByTransactionIdLoader.load(transaction.id);
   if (!expenses.length) {
     return [];
@@ -32,7 +32,7 @@ export async function generateAuthoritiesExpensesLedger(
   const {
     currency,
     valueDate,
-    transactionBusinessId: authorityId,
+    transactionBusinessId: businessId,
   } = validateTransactionBasicVariables(transaction);
 
   const ledgerEntries: LedgerProto[] = [];
@@ -63,12 +63,12 @@ export async function generateAuthoritiesExpensesLedger(
       }),
       ...(isCreditorCounterparty
         ? {
-            creditAccountID1: authorityId,
+            creditAccountID1: businessId,
             debitAccountID1: expense.counterparty,
           }
         : {
             creditAccountID1: expense.counterparty,
-            debitAccountID1: authorityId,
+            debitAccountID1: businessId,
           }),
       localCurrencyCreditAmount1: Math.abs(amount),
       localCurrencyDebitAmount1: Math.abs(amount),
