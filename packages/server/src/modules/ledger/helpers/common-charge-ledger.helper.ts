@@ -1,4 +1,5 @@
 import { Injector } from 'graphql-modules';
+import { validateDocumentVat } from '@modules/documents/helpers/validate-document-vat.helper.js';
 import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -67,6 +68,10 @@ export async function ledgerEntryFromDocument(
     vatTaxCategory = isCreditorCounterparty
       ? OUTPUT_VAT_TAX_CATEGORY_ID
       : INPUT_VAT_TAX_CATEGORY_ID;
+
+    validateDocumentVat(document, message => {
+      throw new LedgerError(message);
+    });
   }
 
   // handle non-local currencies
