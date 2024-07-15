@@ -3697,6 +3697,63 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-6.3.1.tgz#43bbe2a94de0d7a11b95b7fc8100fa0e4694bbe0"
   integrity sha512-FX4MfcifwJyFOI2lPoX7PQxCqx8BG1HCho7WdiXwpEQx1Ycij0JxkfYtGK7yqNScrZGSlt6RE6sw8QYoH7eKnQ==
 
+"@slonik/driver@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/driver/-/driver-45.6.0.tgz#d52c164bc9130a9dd2c705d491d429fc5b7b55f5"
+  integrity sha512-ufqrppKuoWQ6CR1NqypjHA4PBqkcvYhNH8tqb3QpkoLN6J7BPsaXOrN30iOtHBuWbTgKxrwnRJY9lOTGdtSKoA==
+  dependencies:
+    "@slonik/types" "^45.6.0"
+    "@slonik/utilities" "^45.6.0"
+    roarr "^7.21.1"
+    serialize-error "^8.0.0"
+    strict-event-emitter-types "^2.0.0"
+
+"@slonik/errors@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/errors/-/errors-45.6.0.tgz#09d6b0a3aba991235b34a25cf47bf71f8e12916b"
+  integrity sha512-Jy0YJcXGARtSd2Frl80oWhWrCC5cDoaq5bhbaUuMpeVBurvIYlc66rXgUHDKPrqE4sYHzSNbQWEOvaOwGEmTIA==
+  dependencies:
+    "@slonik/types" "^45.6.0"
+
+"@slonik/pg-driver@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/pg-driver/-/pg-driver-45.6.0.tgz#618a79713ef11fa8709787de83c04fa06ade7ff9"
+  integrity sha512-dJ16x+Dm4Zd9al9np805kB0sxJY3xNdFbEp/vTyqEGIPpfOW3lneEqf+6PNeEwJnKwsbfPUyEP8BwCVuGFha7g==
+  dependencies:
+    "@slonik/driver" "^45.6.0"
+    "@slonik/errors" "^45.6.0"
+    "@slonik/sql-tag" "^45.6.0"
+    "@slonik/types" "^45.6.0"
+    "@slonik/utilities" "^45.6.0"
+    pg "^8.12.0"
+    pg-query-stream "^4.6.0"
+    pg-types "^4.0.2"
+    postgres-array "^3.0.2"
+
+"@slonik/sql-tag@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/sql-tag/-/sql-tag-45.6.0.tgz#f7fa3d972bd16fc5925172e8adea7d743fa16124"
+  integrity sha512-g7MrUg4Zy6r4bqnYQlsmaFhaDqJYASXC/9GPFKZpP08GzKL0iZjxfBWNrK2tkQEVZlq/xmqmXeLNR6+U8FjOMg==
+  dependencies:
+    "@slonik/errors" "^45.6.0"
+    "@slonik/types" "^45.6.0"
+    roarr "^7.21.1"
+    safe-stable-stringify "^2.4.3"
+    serialize-error "^8.0.0"
+
+"@slonik/types@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/types/-/types-45.6.0.tgz#d4e0c00380d4bf0326907f6724dc04fd2dd798fe"
+  integrity sha512-xvxa6lj7JD825Jnn8MOwQa2cId2O6v8O6d31Xef3/FXzeJSkhlnVw6A2Ilrh62rEMVXT+KQKEhEfEoSITV5BNQ==
+
+"@slonik/utilities@^45.6.0":
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/@slonik/utilities/-/utilities-45.6.0.tgz#aeb8df0020ac197bb8d9d16f52f0d60c78a7bac9"
+  integrity sha512-vjVLRqHyXX73tLN8jGnNWFv359AUKW9CnDduAElkHC3LKkoPRbtUKfZWSDOWz/dbmjBMCczO3n1KIpDSMcnJOA==
+  dependencies:
+    "@slonik/types" "^45.6.0"
+    roarr "^7.21.1"
+
 "@swc/counter@^0.1.3":
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@swc/counter/-/counter-0.1.3.tgz#cc7463bd02949611c6329596fccd2b0ec782b0e9"
@@ -3994,7 +4051,7 @@
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.2.tgz#5950e50960793055845e956c427fc2b0d70c5239"
   integrity sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==
 
-"@types/pg@8.11.6", "@types/pg@^8.10.7":
+"@types/pg@8.11.6":
   version "8.11.6"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.11.6.tgz#a2d0fb0a14b53951a17df5197401569fb9c0c54b"
   integrity sha512-/2WmmBXHLsfRqzfHW7BNZ8SbYzE8OSk7i3WjFYvfgRHj7S1xj+16Je5fUKv3lVdVzk/zn9TXOqf+avFCFIE0yQ==
@@ -10474,12 +10531,12 @@ pg-promise@11.9.1:
     pg-minify "1.6.5"
     spex "3.3.0"
 
-pg-protocol@*, pg-protocol@^1.6.0, pg-protocol@^1.6.1:
+pg-protocol@*, pg-protocol@^1.6.1:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.6.1.tgz#21333e6d83b01faaebfe7a33a7ad6bfd9ed38cb3"
   integrity sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==
 
-pg-query-stream@^4.5.3:
+pg-query-stream@^4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/pg-query-stream/-/pg-query-stream-4.6.0.tgz#d43716d4e5704013488904fc9cff6f18e5236b67"
   integrity sha512-sg2Hewe6ge6osEY07zGu7Z8djrsQBvyiTy5ZjQffoSatEgnNNVsV3EWDm9Px/8R9oaAL1YnfnP8AXPMmfzujZg==
@@ -10497,7 +10554,7 @@ pg-types@^2.1.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg-types@^4.0.1:
+pg-types@^4.0.1, pg-types@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/pg-types/-/pg-types-4.0.2.tgz#399209a57c326f162461faa870145bb0f918b76d"
   integrity sha512-cRL3JpS3lKMGsKaWndugWQoLOCoP+Cic8oseVcbr0qhPzYD5DWXK+RZ9LY9wxRf7RQia4SCwQlXk0q6FCPrVng==
@@ -10510,7 +10567,7 @@ pg-types@^4.0.1:
     postgres-interval "^3.0.0"
     postgres-range "^1.1.1"
 
-pg@8.12.0, pg@^8.11.3:
+pg@8.12.0, pg@^8.12.0:
   version "8.12.0"
   resolved "https://registry.yarnpkg.com/pg/-/pg-8.12.0.tgz#9341724db571022490b657908f65aee8db91df79"
   integrity sha512-A+LHUSnwnxrnL/tZ+OLfqR1SxLN3c/pgDztZ47Rpbsd4jUytsTtwQo/TLPRzPJMp/1pbhYVhH9cuSZLAajNfjQ==
@@ -11717,22 +11774,20 @@ slice-ansi@^7.0.0:
     ansi-styles "^6.2.1"
     is-fullwidth-code-point "^5.0.0"
 
-slonik@38.0.0:
-  version "38.0.0"
-  resolved "https://registry.yarnpkg.com/slonik/-/slonik-38.0.0.tgz#f065ae61e5612a1ad04d4875bc89713439ccb060"
-  integrity sha512-L3b05upcVO1VVdx3G2hFjlbyiTNM9StOK+5Zto0wVnVBvW3Jsk2v3vpybCiG2GWfvu4wiCyWubwzHa2WnguRuQ==
+slonik@45.6.0:
+  version "45.6.0"
+  resolved "https://registry.yarnpkg.com/slonik/-/slonik-45.6.0.tgz#73f7cf3583f0c00e7e102480ff7a4564c0ab3b49"
+  integrity sha512-q3qX1ff0sqmrKIN/6Ra/+bhNtg5AH44pFJwp2T6+bs2oo3lrF3AnyZfPCjzm+uQAsUsW64RNVcoAaUoWMbxsxA==
   dependencies:
-    "@types/pg" "^8.10.7"
+    "@slonik/driver" "^45.6.0"
+    "@slonik/errors" "^45.6.0"
+    "@slonik/pg-driver" "^45.6.0"
+    "@slonik/sql-tag" "^45.6.0"
+    "@slonik/utilities" "^45.6.0"
     get-stack-trace "^3.1.1"
     iso8601-duration "^1.3.0"
-    pg "^8.11.3"
-    pg-protocol "^1.6.0"
-    pg-query-stream "^4.5.3"
-    pg-types "^4.0.1"
-    postgres-array "^3.0.2"
     postgres-interval "^4.0.2"
     roarr "^7.21.1"
-    safe-stable-stringify "^2.4.3"
     serialize-error "^8.0.0"
 
 smart-buffer@^4.2.0:
@@ -11915,6 +11970,11 @@ streamx@^2.15.0, streamx@^2.18.0:
     text-decoder "^1.1.0"
   optionalDependencies:
     bare-events "^2.2.0"
+
+strict-event-emitter-types@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/strict-event-emitter-types/-/strict-event-emitter-types-2.0.0.tgz#05e15549cb4da1694478a53543e4e2f4abcf277f"
+  integrity sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==
 
 string-argv@~0.3.2:
   version "0.3.2"
