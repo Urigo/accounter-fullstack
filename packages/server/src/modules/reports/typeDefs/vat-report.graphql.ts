@@ -36,11 +36,13 @@ export default gql`
     chargeDate: TimelessDate
     amount: FinancialAmount!
     localAmount: FinancialAmount
-    vat: FinancialAmount
-    vatAfterDeduction: FinancialAmount
+    localVat: FinancialAmount
+    foreignVat: FinancialAmount
+    foreignVatAfterDeduction: FinancialAmount
     localVatAfterDeduction: FinancialAmount
     " Int value"
     roundedLocalVatAfterDeduction: FinancialIntAmount
     taxReducedLocalAmount: FinancialIntAmount
+    taxReducedForeignAmount: FinancialIntAmount
   }
 `;

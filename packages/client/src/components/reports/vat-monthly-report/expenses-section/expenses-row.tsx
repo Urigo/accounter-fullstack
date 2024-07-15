@@ -28,10 +28,10 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
     localAmount {
       formatted
     }
-    vat {
+    localVat {
       formatted
     }
-    vatAfterDeduction {
+    foreignVatAfterDeduction {
       formatted
     }
     localVatAfterDeduction {
@@ -87,9 +87,9 @@ export const ExpensesRow = ({
         <td>{expenseItem.chargeDate}</td>
         <td className="whitespace-nowrap">{expenseItem.amount.formatted}</td>
         <td className="whitespace-nowrap">{expenseItem.localAmount?.formatted}</td>
-        <td className="whitespace-nowrap">{expenseItem.vat?.formatted}</td>
+        <td className="whitespace-nowrap">{expenseItem.localVat?.formatted}</td>
         <td className="whitespace-nowrap">{expenseItem.localVatAfterDeduction?.formatted}</td>
-        <td className="whitespace-nowrap">{expenseItem.vatAfterDeduction?.formatted}</td>
+        <td className="whitespace-nowrap">{expenseItem.foreignVatAfterDeduction?.formatted}</td>
         <td className="whitespace-nowrap">
           {expenseItem.roundedLocalVatAfterDeduction?.formatted}
         </td>

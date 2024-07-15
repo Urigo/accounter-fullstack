@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { Currency } from '@shared/enums';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   dateToTimelessDateString,
   formatFinancialAmount,
@@ -57,18 +57,33 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     documentSerial: raw => raw.documentSerial,
     image: raw => raw.documentUrl,
     localAmount: raw =>
-      raw.eventAmountILS ? formatFinancialAmount(raw.eventAmountILS, Currency.Ils) : null,
+      raw.eventLocalAmount
+        ? formatFinancialAmount(raw.eventLocalAmount, DEFAULT_LOCAL_CURRENCY)
+        : null,
     localVatAfterDeduction: raw =>
-      raw.vatAfterDeductionILS
-        ? formatFinancialAmount(raw.vatAfterDeductionILS, Currency.Ils)
+      raw.localVatAfterDeduction
+        ? formatFinancialAmount(raw.localVatAfterDeduction, DEFAULT_LOCAL_CURRENCY)
         : null,
     roundedLocalVatAfterDeduction: raw =>
-      raw.roundedVATToAdd ? formatFinancialIntAmount(raw.roundedVATToAdd, Currency.Ils) : null,
+      raw.roundedVATToAdd
+        ? formatFinancialIntAmount(raw.roundedVATToAdd, DEFAULT_LOCAL_CURRENCY)
+        : null,
     taxReducedLocalAmount: raw =>
-      raw.amountBeforeVAT ? formatFinancialIntAmount(raw.amountBeforeVAT, Currency.Ils) : null,
-    vat: raw => (raw.vat ? formatFinancialAmount(raw.vat, Currency.Ils) : null),
-    vatAfterDeduction: raw =>
-      raw.vatAfterDeduction ? formatFinancialAmount(raw.vatAfterDeduction, Currency.Ils) : null,
+      raw.localAmountBeforeVAT
+        ? formatFinancialIntAmount(raw.localAmountBeforeVAT, DEFAULT_LOCAL_CURRENCY)
+        : null,
+    taxReducedForeignAmount: raw =>
+      raw.foreignAmountBeforeVAT
+        ? formatFinancialIntAmount(raw.foreignAmountBeforeVAT, raw.currencyCode)
+        : null,
+    localVat: raw =>
+      raw.localVat ? formatFinancialAmount(raw.localVat, DEFAULT_LOCAL_CURRENCY) : null,
+    foreignVat: raw =>
+      raw.foreignVat ? formatFinancialAmount(raw.foreignVat, raw.currencyCode) : null,
+    foreignVatAfterDeduction: raw =>
+      raw.foreignVatAfterDeduction
+        ? formatFinancialAmount(raw.foreignVatAfterDeduction, raw.currencyCode)
+        : null,
     vatNumber: (raw, _, { injector }) =>
       raw.businessId
         ? injector

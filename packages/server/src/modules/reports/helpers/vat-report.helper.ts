@@ -6,7 +6,11 @@ import {
 } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
-import { DECREASED_VAT_RATIO, DEFAULT_VAT_PERCENTAGE } from '@shared/constants';
+import {
+  DECREASED_VAT_RATIO,
+  DEFAULT_LOCAL_CURRENCY,
+  DEFAULT_VAT_PERCENTAGE,
+} from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
 import { formatCurrency } from '@shared/helpers';
 
@@ -17,7 +21,8 @@ export type VatReportRecordSources = {
 };
 
 export type RawVatReportRecord = {
-  amountBeforeVAT?: number;
+  localAmountBeforeVAT?: number;
+  foreignAmountBeforeVAT?: number;
   businessId: string | null;
   chargeAccountantReviewed: boolean;
   chargeDate: Date;
@@ -28,13 +33,14 @@ export type RawVatReportRecord = {
   documentDate: Date | null;
   documentSerial: string | null;
   documentUrl: string | null;
-  eventAmountILS?: number;
+  eventLocalAmount?: number;
   isExpense: boolean;
   isProperty: boolean;
   roundedVATToAdd?: number;
-  vat: number | null;
-  vatAfterDeduction?: number;
-  vatAfterDeductionILS?: number;
+  foreignVat: number | null;
+  localVat: number | null;
+  foreignVatAfterDeduction?: number;
+  localVatAfterDeduction?: number;
   vatNumber?: string | null;
 };
 
@@ -74,7 +80,8 @@ export function adjustTaxRecords(
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
       documentAmount: String((doc.type === DocumentType.CreditInvoice ? -1 : 1) * doc.total_amount),
-      vat: doc.vat_amount,
+      foreignVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? null : doc.vat_amount,
+      localVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? doc.vat_amount : null,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
       isExpense:
@@ -85,7 +92,7 @@ export function adjustTaxRecords(
 
     // set default amountBeforeVAT
     if (!doc.vat_amount) {
-      partialRecord.amountBeforeVAT =
+      partialRecord.localAmountBeforeVAT =
         doc.total_amount * rate * (doc.type === DocumentType.CreditInvoice ? -1 : 1);
     } else if (partialRecord.businessId) {
       // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
@@ -108,11 +115,12 @@ export function adjustTaxRecords(
       const vatAfterDeduction = doc.vat_amount! * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
-      partialRecord.vatAfterDeduction = vatAfterDeduction;
+      partialRecord.foreignVatAfterDeduction = vatAfterDeduction;
+      partialRecord.localVatAfterDeduction = vatAfterDeduction * rate;
+      partialRecord.foreignAmountBeforeVAT = amountBeforeVAT;
+      partialRecord.localAmountBeforeVAT = amountBeforeVAT * rate;
       partialRecord.roundedVATToAdd = Math.round(vatAfterDeduction * rate);
-      partialRecord.amountBeforeVAT = amountBeforeVAT * rate;
-      partialRecord.eventAmountILS = doc.total_amount * rate;
-      partialRecord.vatAfterDeductionILS = vatAfterDeduction * rate;
+      partialRecord.eventLocalAmount = doc.total_amount * rate;
     }
 
     records.push(partialRecord);
