@@ -95,7 +95,7 @@ const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTra
     }
     let entryType = EntryType.INPUT_REGULAR;
     if (!t.isExpense) {
-      if (Number(t.vatAfterDeduction) > 0) {
+      if (Number(t.foreignVatAfterDeduction) > 0) {
         entryType = EntryType.SALE_REGULAR;
       } else {
         entryType = EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
@@ -108,8 +108,8 @@ const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTra
       invoiceDate: format(new Date(t.documentDate!), 'yyyyMMdd'),
       refGroup: '0000',
       refNumber: t.documentSerial ?? undefined,
-      totalVat: Math.round(Math.abs(Number(t.vatAfterDeduction ?? 0))),
-      invoiceSum: Math.round(Number(t.amountBeforeVAT)),
+      totalVat: Math.round(Math.abs(Number(t.foreignVatAfterDeduction ?? 0))),
+      invoiceSum: Math.round(Number(t.localAmountBeforeVAT)),
       isProperty: t.isProperty,
     });
   }

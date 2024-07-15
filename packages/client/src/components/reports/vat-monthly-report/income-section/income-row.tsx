@@ -21,7 +21,7 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
     documentSerial
     documentDate
     chargeDate
-    amount {
+    taxReducedForeignAmount {
       formatted
     }
     taxReducedLocalAmount {
@@ -65,7 +65,7 @@ export const IncomeRow = ({
         <td>{incomeItem.documentSerial}</td>
         <td>{incomeItem.documentDate}</td>
         <td>{incomeItem.chargeDate}</td>
-        <td>{incomeItem.amount.formatted}</td>
+        <td>{incomeItem.taxReducedForeignAmount?.formatted}</td>
         <td>{incomeItem.taxReducedLocalAmount?.formatted}</td>
         <td>{'₪ ' + formatStringifyAmount(cumulativeAmount, 0)}</td>
         <AccountantApproval data={incomeItem} />
