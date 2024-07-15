@@ -43,12 +43,12 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
   charge: async (documentRoot, _, { injector }) => {
-    if (!documentRoot.charge_id_new) {
+    if (!documentRoot.charge_id) {
       return null;
     }
     const charge = await injector
       .get(ChargesProvider)
-      .getChargeByIdLoader.load(documentRoot.charge_id_new);
+      .getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
   },
 };

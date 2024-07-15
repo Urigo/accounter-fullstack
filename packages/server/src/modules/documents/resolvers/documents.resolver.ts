@@ -68,10 +68,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           if (!document) {
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
-          if (document.charge_id_new) {
+          if (document.charge_id) {
             const charge = await injector
               .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id_new);
+              .getChargeByIdLoader.load(document.charge_id);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -149,10 +149,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
       const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
       if (res.length === 1) {
-        if (document.charge_id_new) {
+        if (document.charge_id) {
           const charge = await injector
             .get(ChargesProvider)
-            .getChargeByIdLoader.load(document.charge_id_new);
+            .getChargeByIdLoader.load(document.charge_id);
           if (charge && !charge.documents_count && !charge.transactions_count) {
             await deleteCharges([charge.id], injector);
           }

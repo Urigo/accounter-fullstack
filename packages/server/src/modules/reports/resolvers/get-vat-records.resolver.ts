@@ -46,11 +46,11 @@ export const getVatRecords: ResolverFn<
       })
       .then(documents =>
         documents.filter(doc => {
-          if (doc.charge_id_new) {
-            docsChargesIDs.add(doc.charge_id_new);
+          if (doc.charge_id) {
+            docsChargesIDs.add(doc.charge_id);
           }
           // filter invoice documents with linked charge
-          if (!doc.charge_id_new || !doc.creditor_id || !doc.debtor_id) {
+          if (!doc.charge_id || !doc.creditor_id || !doc.debtor_id) {
             return false;
           }
           const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(doc.type);
@@ -104,7 +104,7 @@ export const getVatRecords: ResolverFn<
 
     relevantDocuments.map(doc => {
       // filter charge linked to document
-      const charge = docsCharges.find(charge => charge.id === doc.charge_id_new);
+      const charge = docsCharges.find(charge => charge.id === doc.charge_id);
       if (!charge) {
         throw new GraphQLError(`for some weird reason no charge found for document ID=${doc.id}`);
       }
