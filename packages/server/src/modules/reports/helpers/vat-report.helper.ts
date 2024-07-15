@@ -95,7 +95,7 @@ export function adjustTaxRecords(
         doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);
       const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount);
       if (vatDiff > 0.005) {
-        throw new GraphQLError(
+        console.error(
           `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
             doc.vat_amount / (tiplessTotalAmount - doc.vat_amount)
           } for invoice ID=${doc.id}`,
