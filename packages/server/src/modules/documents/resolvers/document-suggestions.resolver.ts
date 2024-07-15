@@ -26,10 +26,10 @@ const missingInfoSuggestions: Resolver<
   GraphQLModules.Context
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};
-  if (RawDocument.charge_id_new) {
+  if (RawDocument.charge_id) {
     const charge = await injector
       .get(ChargesProvider)
-      .getChargeByIdLoader.load(RawDocument.charge_id_new);
+      .getChargeByIdLoader.load(RawDocument.charge_id);
     if (charge?.business_id) {
       response.counterpartyId = charge.business_id;
     }

@@ -144,7 +144,7 @@ export async function ledgerEntryFromDocument(
     debitAccountID2: debitAccountID2 ?? undefined,
     debitAmount2: debitAmount2 ?? undefined,
     localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
-    description: document.description ?? undefined,
+    description: undefined,
     reference1: document.serial_number ?? undefined,
     isCreditorCounterparty,
     ownerId,

@@ -31,14 +31,14 @@ const getAllDocuments = sql<IGetAllDocumentsQuery>`
 const getDocumentsByChargeId = sql<IGetDocumentsByChargeIdQuery>`
   SELECT *
   FROM accounter_schema.documents
-  WHERE charge_id_new in $$chargeIds
+  WHERE charge_id in $$chargeIds
   ORDER BY created_at DESC;
 `;
 
 const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
-  WHERE charge_id_new IN(
+  WHERE charge_id IN(
     SELECT c.id as financial_entity_id
     FROM accounter_schema.charges c
     WHERE c.owner_id IN $$ownerIds
@@ -55,11 +55,11 @@ const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
 const updateDocument = sql<IUpdateDocumentQuery>`
   UPDATE accounter_schema.documents
   SET
-  charge_id_new = CASE
+  charge_id = CASE
     WHEN $chargeId='00000000-0000-0000-0000-000000000000' THEN NULL
     ELSE COALESCE(
       $chargeId::UUID,
-      charge_id_new,
+      charge_id,
       NULL
     ) END,
   currency_code = COALESCE(
@@ -141,7 +141,7 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       total_amount,
       currency_code,
       vat_amount,
-      charge_id_new
+      charge_id
     )
     VALUES $$document(
       image,
@@ -159,7 +159,7 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
 const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
   SELECT d.*
   FROM accounter_schema.documents d
-  LEFT JOIN accounter_schema.extended_charges c ON c.id = d.charge_id_new
+  LEFT JOIN accounter_schema.extended_charges c ON c.id = d.charge_id
   WHERE
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
@@ -181,8 +181,8 @@ type IGetAdjustedDocumentsByFiltersParams = Optional<
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   UPDATE accounter_schema.documents
-  SET charge_id_new = $assertChargeID
-  WHERE charge_id_new = $replaceChargeID
+  SET charge_id = $assertChargeID
+  WHERE charge_id = $replaceChargeID
   RETURNING id;
 `;
 
@@ -202,7 +202,7 @@ export class DocumentsProvider {
     try {
       const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.dbProvider);
 
-      return chargeIds.map(id => docs.filter(doc => doc.charge_id_new === id));
+      return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
     } catch (e) {
       console.error(e);
       return chargeIds.map(() => []);
