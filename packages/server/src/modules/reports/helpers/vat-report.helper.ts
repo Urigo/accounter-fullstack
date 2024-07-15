@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import {
