@@ -14,7 +14,7 @@
     "@whatwg-node/fetch": "0.9.18",
     "diary": "0.4.5",
     "dotenv": "16.4.5",
-    "pg-promise": "11.9.0"
+    "pg-promise": "11.9.1"
   },
   "devDependencies": {
     "tsup": "8.1.0"
