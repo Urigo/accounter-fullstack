@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
-import type { RawVatReportRecord } from './vat-report.helper';
+import type { RawVatReportRecord } from './vat-report.helper.js';
 
 type GeneratorParameters = Parameters<typeof pcnGenerator>;
 type Header = GeneratorParameters[0];

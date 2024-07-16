@@ -1,6 +1,6 @@
 import { diary } from 'diary';
 import createPgp from 'pg-promise';
-import type { KrakenLedgerRecord, KrakenTradeRecord } from './kraken';
+import type { KrakenLedgerRecord, KrakenTradeRecord } from './kraken.js';
 
 const logger = diary('store');
 const ledgerTable = `kraken_ledger_records`;

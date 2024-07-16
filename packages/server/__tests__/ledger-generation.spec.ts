@@ -1,7 +1,7 @@
 import { Application, testkit } from 'graphql-modules';
 import 'reflect-metadata';
 import { beforeAll, describe, it } from 'vitest';
-import { fetchChargeQuery, fetchChargesQuery, getDummyApp } from './ledger-test-data';
+import { fetchChargeQuery, fetchChargesQuery, getDummyApp } from './ledger-test-data.js';
 
 let app: Application;
 

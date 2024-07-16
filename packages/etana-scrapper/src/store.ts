@@ -1,6 +1,6 @@
 import { diary } from 'diary';
 import createPgp from 'pg-promise';
-import type { ProcessedEtanaAccountTransaction } from './etana';
+import type { ProcessedEtanaAccountTransaction } from './etana.js';
 
 const logger = diary('store');
 

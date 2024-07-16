@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import React from 'react';
-import type { ToastActionElement, ToastProps } from './toast';
+import type { ToastActionElement, ToastProps } from './toast.js';
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1_000_000;
