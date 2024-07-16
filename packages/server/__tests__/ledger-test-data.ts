@@ -1,28 +1,28 @@
 import { gql, testkit } from 'graphql-modules';
-import { chargesModule } from '../src/modules/charges';
-import { ChargesProvider } from '../src/modules/charges/providers/charges.provider';
-import type { IGetChargesByIdsResult } from '../src/modules/charges/types';
-import { commonModule } from '../src/modules/common';
-import { documentsModule } from '../src/modules/documents';
-import { DocumentsProvider } from '../src/modules/documents/providers/documents.provider';
-import type { IGetAllDocumentsResult } from '../src/modules/documents/types';
-import { ExchangeProvider } from '../src/modules/exchange-rates/providers/exchange.provider';
-import type { IGetExchangeRatesByDateResult } from '../src/modules/exchange-rates/types';
-import { financialAccountsModule } from '../src/modules/financial-accounts';
-import { FinancialAccountsProvider } from '../src/modules/financial-accounts/providers/financial-accounts.provider';
-import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types';
-import { financialEntitiesModule } from '../src/modules/financial-entities';
-import { BusinessesProvider } from '../src/modules/financial-entities/providers/businesses.provider';
-import { TaxCategoriesProvider } from '../src/modules/financial-entities/providers/tax-categories.provider';
+import { chargesModule } from '../src/modules/charges/index.js';
+import { ChargesProvider } from '../src/modules/charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../src/modules/charges/types.js';
+import { commonModule } from '../src/modules/common/index.js';
+import { documentsModule } from '../src/modules/documents/index.js';
+import { DocumentsProvider } from '../src/modules/documents/providers/documents.provider.js';
+import type { IGetAllDocumentsResult } from '../src/modules/documents/types.js';
+import { ExchangeProvider } from '../src/modules/exchange-rates/providers/exchange.provider.js';
+import type { IGetExchangeRatesByDateResult } from '../src/modules/exchange-rates/types.js';
+import { financialAccountsModule } from '../src/modules/financial-accounts/index.js';
+import { FinancialAccountsProvider } from '../src/modules/financial-accounts/providers/financial-accounts.provider.js';
+import { IGetAllFinancialAccountsResult } from '../src/modules/financial-accounts/types.js';
+import { financialEntitiesModule } from '../src/modules/financial-entities/index.js';
+import { BusinessesProvider } from '../src/modules/financial-entities/providers/businesses.provider.js';
+import { TaxCategoriesProvider } from '../src/modules/financial-entities/providers/tax-categories.provider.js';
 import type {
   IGetAllTaxCategoriesResult,
   IGetBusinessesByIdsResult,
   IGetTaxCategoryByBusinessAndOwnerIDsResult,
-} from '../src/modules/financial-entities/types';
-import { ledgerModule } from '../src/modules/ledger';
-import { tagsModule } from '../src/modules/tags';
-import { TransactionsProvider } from '../src/modules/transactions/providers/transactions.provider';
-import type { IGetTransactionsByIdsResult } from '../src/modules/transactions/types';
+} from '../src/modules/financial-entities/types.js';
+import { ledgerModule } from '../src/modules/ledger/index.js';
+import { tagsModule } from '../src/modules/tags/index.js';
+import { TransactionsProvider } from '../src/modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '../src/modules/transactions/types.js';
 
 const ledgerCounterpartyHelper = (DbLedgerRecord: any, account: string) => {
   let counterpartyProto = undefined;
@@ -108,7 +108,7 @@ export function getDummyApp() {
         useValue: {
           getDocumentsByChargeIdLoader: {
             load: (chargeId: string) => {
-              return Object.values(documents).filter(d => d.charge_id_new === chargeId);
+              return Object.values(documents).filter(d => d.charge_id === chargeId);
             },
           },
         },
@@ -407,10 +407,6 @@ const financialAccounts: Record<string, IGetAllFinancialAccountsResult> = {
     branch_number: null,
     branch_type_code: null,
     extended_bank_number: null,
-    hashavshevet_account_eur: 'checking_eur',
-    hashavshevet_account_gbp: 'checking_gbp',
-    hashavshevet_account_ils: 'checking_ils',
-    hashavshevet_account_usd: 'checking_usd',
     kod_harshaat_peilut: null,
     meteg_doar_net: null,
     mymail_entitlement_switch: null,
@@ -433,7 +429,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1000',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -470,7 +465,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1001',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -507,7 +501,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1002',
     invoices_count: null,
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -544,7 +537,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1100',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -581,7 +573,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1101',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -618,7 +609,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1102',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -656,7 +646,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1103',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -694,7 +683,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1104',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -732,7 +720,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1105',
     invoices_count: null,
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -769,7 +756,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1200',
     invoices_count: null,
-    is_conversion: true,
+    type: 'CONVERSION',
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -806,7 +793,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1201',
     invoices_count: null,
-    is_conversion: true,
+    type: 'CONVERSION',
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -843,7 +830,7 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1202',
     invoices_count: null,
-    is_conversion: true,
+    type: 'CONVERSION',
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -880,7 +867,6 @@ const charges: Record<string, IGetChargesByIdsResult> = {
     event_amount: null,
     id: '1900',
     invoices_count: '1',
-    is_conversion: false,
     is_property: false,
     owner_id: businesses['2000'].id,
     receipts_count: null,
@@ -913,15 +899,12 @@ const charges: Record<string, IGetChargesByIdsResult> = {
 const documents: Record<string, IGetAllDocumentsResult> = {
   '3000': {
     id: '3000',
-    charge_id_new: charges['1000'].id,
+    charge_id: charges['1000'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2001'].id,
     currency_code: 'ILS',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -934,15 +917,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3001': {
     id: '3001',
-    charge_id_new: charges['1001'].id,
+    charge_id: charges['1001'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2001'].id,
     currency_code: 'ILS',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -955,15 +935,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3100': {
     id: '3100',
-    charge_id_new: charges['1100'].id,
+    charge_id: charges['1100'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2003'].id,
     currency_code: 'USD',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -976,15 +953,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3101': {
     id: '3101',
-    charge_id_new: charges['1101'].id,
+    charge_id: charges['1101'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2003'].id,
     currency_code: 'USD',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -997,15 +971,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3102': {
     id: '3102',
-    charge_id_new: charges['1102'].id,
+    charge_id: charges['1102'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2003'].id,
     currency_code: 'USD',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -1018,15 +989,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3103': {
     id: '3103',
-    charge_id_new: charges['1103'].id,
+    charge_id: charges['1103'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2003'].id,
     currency_code: 'USD',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -1039,15 +1007,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3104': {
     id: '3104',
-    charge_id_new: charges['1104'].id,
+    charge_id: charges['1104'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2003'].id,
     currency_code: 'USD',
     date: new Date('2020-01-02'),
-    debtor: null,
     debtor_id: businesses['2000'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -1060,15 +1025,12 @@ const documents: Record<string, IGetAllDocumentsResult> = {
   },
   '3900': {
     id: '3900',
-    charge_id_new: charges['1900'].id,
+    charge_id: charges['1900'].id,
     created_at: new Date(),
-    creditor: null,
     creditor_id: businesses['2000'].id,
     currency_code: 'USD',
     date: new Date('2020-01-01'),
-    debtor: null,
     debtor_id: businesses['2001'].id,
-    description: null,
     file_url: null,
     image_url: null,
     is_reviewed: false,
@@ -1097,7 +1059,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1120,7 +1081,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1143,7 +1103,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1166,7 +1125,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1189,7 +1147,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1212,7 +1169,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1235,7 +1191,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1258,7 +1213,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1281,7 +1235,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 2',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1304,7 +1257,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1327,7 +1279,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1350,7 +1301,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1373,7 +1323,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1396,7 +1345,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1419,7 +1367,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,
@@ -1442,7 +1389,6 @@ const transactions: Record<string, IGetTransactionsByIdsResult> = {
     source_reference: 'ref 1',
     created_at: new Date(),
     updated_at: new Date(),
-    is_conversion: false,
     account_type: 'bank',
     currency_rate: '0',
     debit_timestamp: null,

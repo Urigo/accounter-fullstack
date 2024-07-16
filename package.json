@@ -79,7 +79,6 @@
   "resolutions": {
     "graphql": "16.9.0"
   },
-  "bob": false,
   "lint-staged": {
     "*.--write": "prettier --write"
   }
