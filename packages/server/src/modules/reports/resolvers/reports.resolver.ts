@@ -9,9 +9,10 @@ import {
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
 import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
-import { RawVatReportRecord } from '../helpers/vat-report.helper.js';
+import type { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
+import { profitAndLossReport } from './reports/profit-and-loss-report.resolver.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
@@ -39,6 +40,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         reportMonth,
       );
     },
+    profitAndLossReport,
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,

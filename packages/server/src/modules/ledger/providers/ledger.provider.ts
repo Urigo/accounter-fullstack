@@ -7,6 +7,8 @@ import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
   IDeleteLedgerRecordsQuery,
   IGetLedgerRecordsByChargesIdsQuery,
+  IGetLedgerRecordsByDatesParams,
+  IGetLedgerRecordsByDatesQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsQuery,
@@ -26,6 +28,11 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
       OR debit_entity2 IN $$financialEntityIds
       OR credit_entity1 IN $$financialEntityIds
       OR credit_entity1 IN $$financialEntityIds;`;
+
+const getLedgerRecordsByDates = sql<IGetLedgerRecordsByDatesQuery>`
+    SELECT *
+    FROM accounter_schema.ledger_records
+    WHERE invoice_date BETWEEN $fromDate AND $toDate;`;
 
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
@@ -212,6 +219,10 @@ export class LedgerProvider {
     (keys: readonly string[]) => this.batchLedgerRecordsByFinancialEntityIds(keys),
     { cache: false },
   );
+
+  public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
+    return getLedgerRecordsByDates.run(params, this.dbProvider);
+  }
 
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
     return updateLedgerRecord.run(params, this.dbProvider);

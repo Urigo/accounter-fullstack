@@ -6,6 +6,7 @@ import {
   BookOpenCheck,
   ChevronLeft,
   Files,
+  HandCoins,
   Handshake,
   PlaneTakeoff,
   Receipt,
@@ -63,6 +64,11 @@ export const navItems: NavItem[] = [
     label: 'VAT Monthly Report',
     to: '/reports/vat-monthly',
     icon: <Receipt />,
+  },
+  {
+    label: 'Profit and Loss Report',
+    to: '/reports/profit-and-loss',
+    icon: <HandCoins />,
   },
   {
     label: 'Charts',

@@ -117,7 +117,7 @@ export const VatMonthlyReport = (): ReactElement => {
     [mergeSelectedCharges],
   );
   return (
-    <PageLayout title="VAT Monthly Resport">
+    <PageLayout title="VAT Monthly Report">
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
