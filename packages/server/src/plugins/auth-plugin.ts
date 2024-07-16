@@ -7,12 +7,14 @@ import {
   useGenericAuth,
   ValidateUserFn,
 } from '@envelop/generic-auth';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import type { Role } from '@shared/gql-types';
 import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
 
-type UserType = {
+export type UserType = {
   username: string;
+  userId: string;
   role?: Role;
 };
 
@@ -68,6 +70,7 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
 
     return {
       username: user.name,
+      userId: DEFAULT_FINANCIAL_ENTITY_ID, // TODO: replace with actual authentication
       role,
     };
   } catch (e) {
