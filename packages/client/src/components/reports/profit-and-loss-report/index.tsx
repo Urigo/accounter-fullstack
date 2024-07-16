@@ -38,6 +38,9 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
       financialExpenses {
         formatted
       }
+      otherIncome {
+        formatted
+      }
       profitBeforeTax {
         formatted
       }
@@ -139,6 +142,12 @@ export const ProfitAndLossReport = (): ReactElement => {
                   <td>Financial Expenses</td>
                   {yearlyReports.map(report => (
                     <td key={report.year}>{report.financialExpenses.formatted}</td>
+                  ))}
+                </tr>
+                <tr>
+                  <td>Other Income</td>
+                  {yearlyReports.map(report => (
+                    <td key={report.year}>{report.otherIncome.formatted}</td>
                   ))}
                 </tr>
                 <tr>

@@ -19,6 +19,7 @@ export default gql`
     operatingProfit: FinancialAmount!
 
     financialExpenses: FinancialAmount!
+    otherIncome: FinancialAmount!
     profitBeforeTax: FinancialAmount!
 
     tax: FinancialAmount!

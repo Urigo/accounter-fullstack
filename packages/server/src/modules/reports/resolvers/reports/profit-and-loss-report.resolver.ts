@@ -96,7 +96,7 @@ export const profitAndLossReport: ResolverFn<
 
     const researchAndDevelopmentExpensesAmount = amountBySortCodeValidation(
       decoratedLedgerRecords,
-      sortCode => sortCode === 920,
+      sortCode => [920, 930].includes(sortCode),
     );
 
     const marketingExpensesAmount = amountBySortCodeValidation(
@@ -107,6 +107,8 @@ export const profitAndLossReport: ResolverFn<
     const managementAndGeneralExpensesAmount = amountBySortCodeValidation(
       decoratedLedgerRecords,
       sortCode => [940, 945].includes(sortCode),
+
+      // split 945 trips into 936 marketing trips and 921 r&d trips
     );
 
     const operatingProfitAmount =
@@ -120,7 +122,15 @@ export const profitAndLossReport: ResolverFn<
       sortCode => sortCode === 990,
     );
 
-    const profitBeforeTaxAmount = operatingProfitAmount + financialExpensesAmount;
+    const otherIncomeAmount = amountBySortCodeValidation(
+      decoratedLedgerRecords,
+      sortCode => sortCode === 995,
+    );
+
+    const profitBeforeTaxAmount =
+      operatingProfitAmount + financialExpensesAmount + otherIncomeAmount;
+
+    // 999: profitBeforeTaxAmount
 
     // הוצאות מימון (שערוכים, שערי המרה) 990 למעט to pay / to collect
 
@@ -157,6 +167,7 @@ export const profitAndLossReport: ResolverFn<
       ),
       operatingProfit: formatFinancialAmount(operatingProfitAmount, DEFAULT_LOCAL_CURRENCY),
       financialExpenses: formatFinancialAmount(financialExpensesAmount, DEFAULT_LOCAL_CURRENCY),
+      otherIncome: formatFinancialAmount(otherIncomeAmount, DEFAULT_LOCAL_CURRENCY),
       profitBeforeTax: formatFinancialAmount(profitBeforeTaxAmount, DEFAULT_LOCAL_CURRENCY),
       tax: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
       netProfit: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
