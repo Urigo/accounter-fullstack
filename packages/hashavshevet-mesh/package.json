@@ -69,7 +69,7 @@
   },
   "devDependencies": {
     "@graphql-mesh/cli": "0.92.0",
-    "tsup": "8.1.0"
+    "tsup": "8.1.1"
   },
   "publishConfig": {
     "directory": "dist",
