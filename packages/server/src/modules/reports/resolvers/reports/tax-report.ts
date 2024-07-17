@@ -1,16 +1,16 @@
 import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
+import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
-  ProfitAndLossReport,
-  QueryProfitAndLossReportArgs,
+  QueryTaxReportArgs,
   RequireFields,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
+  TaxReport,
 } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
@@ -18,11 +18,11 @@ import {
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
 
-export const profitAndLossReport: ResolverFn<
-  ReadonlyArray<ResolversTypes['ProfitAndLossReport']>,
+export const taxReport: ResolverFn<
+  ReadonlyArray<ResolversTypes['TaxReport']>,
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
-  RequireFields<QueryProfitAndLossReportArgs, 'years'>
+  RequireFields<QueryTaxReportArgs, 'years'>
 > = async (_, { years }, { injector }) => {
   years.map(year => {
     if (year < 2000 || year > new Date().getFullYear()) {
@@ -73,64 +73,38 @@ export const profitAndLossReport: ResolverFn<
     ledgerByYear.get(year)?.push(record);
   });
 
-  const yearlyReports: ProfitAndLossReport[] = [];
+  const yearlyReports: TaxReport[] = [];
   for (const [year, ledgerRecords] of ledgerByYear) {
     const decoratedLedgerRecords = decorateLedgerRecords(ledgerRecords, financialEntitiesDict);
 
-    const {
-      revenueAmount,
-      costOfSalesAmount,
-      grossProfitAmount,
-      researchAndDevelopmentExpensesAmount,
-      marketingExpensesAmount,
-      managementAndGeneralExpensesAmount,
-      operatingProfitAmount,
-      financialExpensesAmount,
-      otherIncomeAmount,
-      profitBeforeTaxAmount,
-    } = getProfitLossReportAmounts(decoratedLedgerRecords);
+    const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
+      getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    // 999: profitBeforeTaxAmount
+    const researchAndDevelopmentExpensesForTax = researchAndDevelopmentExpensesAmount / 3;
 
-    // הוצאות מימון (שערוכים, שערי המרה) 990 למעט to pay / to collect
+    const taxableIncomeAmount =
+      profitBeforeTaxAmount -
+      researchAndDevelopmentExpensesAmount +
+      researchAndDevelopmentExpensesForTax;
 
-    // רווח לפני מיסים (דלתא)
+    const taxRate = 0.23;
 
-    // מיסים
-    // 3 סוגי התאמות:
-    // מתנות - אף פעם לא מוכר
-    // קנסות
-    // מחקר ופיתוח: פער זמני, נפרש על פני 3 שנים
-    // דוחות נסיעה
-
-    // רווח שנתי נטו
-
-    //   untaxable expenses:
-    //     gifts over 190 ILS per gift
-    //     fines
-    //     a portion of the salary expenses of Uri&Dotan - a report from accounting
-    //     R&D expenses - spread over 3 years
+    const annualTaxExpenseAmount = taxableIncomeAmount * taxRate;
 
     yearlyReports.push({
       year,
-      revenue: formatFinancialAmount(revenueAmount, DEFAULT_LOCAL_CURRENCY),
-      costOfSales: formatFinancialAmount(costOfSalesAmount, DEFAULT_LOCAL_CURRENCY),
-      grossProfit: formatFinancialAmount(grossProfitAmount, DEFAULT_LOCAL_CURRENCY),
-      researchAndDevelopmentExpenses: formatFinancialAmount(
+      profitBeforeTax: formatFinancialAmount(profitBeforeTaxAmount, DEFAULT_LOCAL_CURRENCY),
+      researchAndDevelopmentExpensesByRecords: formatFinancialAmount(
         researchAndDevelopmentExpensesAmount,
         DEFAULT_LOCAL_CURRENCY,
       ),
-      marketingExpenses: formatFinancialAmount(marketingExpensesAmount, DEFAULT_LOCAL_CURRENCY),
-      managementAndGeneralExpenses: formatFinancialAmount(
-        managementAndGeneralExpensesAmount,
+      researchAndDevelopmentExpensesForTax: formatFinancialAmount(
+        researchAndDevelopmentExpensesForTax,
         DEFAULT_LOCAL_CURRENCY,
       ),
-      operatingProfit: formatFinancialAmount(operatingProfitAmount, DEFAULT_LOCAL_CURRENCY),
-      financialExpenses: formatFinancialAmount(financialExpensesAmount, DEFAULT_LOCAL_CURRENCY),
-      otherIncome: formatFinancialAmount(otherIncomeAmount, DEFAULT_LOCAL_CURRENCY),
-      profitBeforeTax: formatFinancialAmount(profitBeforeTaxAmount, DEFAULT_LOCAL_CURRENCY),
-      tax: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
-      netProfit: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
+      taxableIncome: formatFinancialAmount(taxableIncomeAmount, DEFAULT_LOCAL_CURRENCY),
+      taxRate,
+      annualTaxExpense: formatFinancialAmount(annualTaxExpenseAmount, DEFAULT_LOCAL_CURRENCY),
     });
   }
 

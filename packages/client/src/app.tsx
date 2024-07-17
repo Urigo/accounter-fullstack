@@ -12,6 +12,7 @@ import { ChartPage } from './components/charts';
 import { DocumentsReport } from './components/documents';
 import { DashboardLayout } from './components/layout/dashboard-layout';
 import { ProfitAndLossReport } from './components/reports/profit-and-loss-report';
+import { TaxReport } from './components/reports/tax-report';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
 import { Salaries } from './components/salaries';
@@ -45,6 +46,8 @@ export function App(): ReactElement {
             <Route path="vat-monthly" element={<VatMonthlyReport />} />
             <Route path="profit-and-loss" element={<ProfitAndLossReport />} />
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
+            <Route path="tax" element={<TaxReport />} />
+            <Route path="tax/:year" element={<TaxReport />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />
