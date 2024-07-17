@@ -8,6 +8,7 @@ import {
   Files,
   HandCoins,
   Handshake,
+  ParkingMeter,
   PlaneTakeoff,
   Receipt,
   ReceiptText,
@@ -69,6 +70,11 @@ export const navItems: NavItem[] = [
     label: 'Profit and Loss Report',
     to: '/reports/profit-and-loss',
     icon: <HandCoins />,
+  },
+  {
+    label: 'Tax Report',
+    to: '/reports/tax',
+    icon: <ParkingMeter />,
   },
   {
     label: 'Charts',

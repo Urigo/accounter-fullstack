@@ -71,6 +71,7 @@ module.exports = {
                 'SicknessDays',
                 'SortCode',
                 'Suggestions',
+                'TaxReport',
                 'TransactionSuggestions',
                 'UpdateChargeSuccessfulResult',
                 'VatReportResult',
