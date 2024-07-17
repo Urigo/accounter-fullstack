@@ -14,9 +14,11 @@ import {
 } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
+  amountBySortCodeValidation,
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
+import { calculateTaxAmounts } from '../../helpers/tax.helper.js';
 
 export const profitAndLossReport: ResolverFn<
   ReadonlyArray<ResolversTypes['ProfitAndLossReport']>,
@@ -90,26 +92,20 @@ export const profitAndLossReport: ResolverFn<
       profitBeforeTaxAmount,
     } = getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    // 999: profitBeforeTaxAmount
+    let incomeTaxAmount = amountBySortCodeValidation(
+      decoratedLedgerRecords,
+      sortCode => sortCode === 999,
+    );
 
-    // הוצאות מימון (שערוכים, שערי המרה) 990 למעט to pay / to collect
+    // TODO: this filler is temporary, until decided how ledger should be generated
+    if (incomeTaxAmount === 0) {
+      incomeTaxAmount = calculateTaxAmounts(
+        researchAndDevelopmentExpensesAmount,
+        profitBeforeTaxAmount,
+      ).annualTaxExpenseAmount;
+    }
 
-    // רווח לפני מיסים (דלתא)
-
-    // מיסים
-    // 3 סוגי התאמות:
-    // מתנות - אף פעם לא מוכר
-    // קנסות
-    // מחקר ופיתוח: פער זמני, נפרש על פני 3 שנים
-    // דוחות נסיעה
-
-    // רווח שנתי נטו
-
-    //   untaxable expenses:
-    //     gifts over 190 ILS per gift
-    //     fines
-    //     a portion of the salary expenses of Uri&Dotan - a report from accounting
-    //     R&D expenses - spread over 3 years
+    const netProfitAmount = profitBeforeTaxAmount - incomeTaxAmount;
 
     yearlyReports.push({
       year,
@@ -129,8 +125,8 @@ export const profitAndLossReport: ResolverFn<
       financialExpenses: formatFinancialAmount(financialExpensesAmount, DEFAULT_LOCAL_CURRENCY),
       otherIncome: formatFinancialAmount(otherIncomeAmount, DEFAULT_LOCAL_CURRENCY),
       profitBeforeTax: formatFinancialAmount(profitBeforeTaxAmount, DEFAULT_LOCAL_CURRENCY),
-      tax: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
-      netProfit: formatFinancialAmount(0, DEFAULT_LOCAL_CURRENCY),
+      tax: formatFinancialAmount(incomeTaxAmount, DEFAULT_LOCAL_CURRENCY),
+      netProfit: formatFinancialAmount(netProfitAmount, DEFAULT_LOCAL_CURRENCY),
     });
   }
 
