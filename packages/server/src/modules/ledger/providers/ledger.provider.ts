@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
@@ -19,7 +19,8 @@ import type {
 const getLedgerRecordsByChargesIds = sql<IGetLedgerRecordsByChargesIdsQuery>`
     SELECT *
     FROM accounter_schema.ledger_records
-    WHERE charge_id IN $$chargeIds;`;
+    WHERE charge_id IN $$chargeIds
+    AND owner_id = $ownerId;`;
 
 const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEntityIdsQuery>`
     SELECT *
@@ -27,12 +28,14 @@ const getLedgerRecordsByFinancialEntityIds = sql<IGetLedgerRecordsByFinancialEnt
     WHERE debit_entity1 IN $$financialEntityIds
       OR debit_entity2 IN $$financialEntityIds
       OR credit_entity1 IN $$financialEntityIds
-      OR credit_entity1 IN $$financialEntityIds;`;
+      OR credit_entity1 IN $$financialEntityIds
+      AND owner_id = $ownerId;`;
 
 const getLedgerRecordsByDates = sql<IGetLedgerRecordsByDatesQuery>`
     SELECT *
     FROM accounter_schema.ledger_records
-    WHERE invoice_date BETWEEN $fromDate AND $toDate;`;
+    WHERE invoice_date BETWEEN $fromDate AND $toDate
+    AND owner_id = $ownerId;`;
 
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
@@ -115,6 +118,7 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   )
   WHERE
     id = $ledgerId
+    AND owner_id = $ownerId
   RETURNING *;
 `;
 
@@ -166,25 +170,31 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
 
 const deleteLedgerRecords = sql<IDeleteLedgerRecordsQuery>`
   DELETE FROM accounter_schema.ledger_records
-  WHERE id IN $$ledgerRecordIds;
+  WHERE id IN $$ledgerRecordIds
+  AND owner_id = $ownerId;
 `;
 
 const deleteLedgerRecordsByChargeIds = sql<IDeleteLedgerRecordsByChargeIdsQuery>`
   DELETE FROM accounter_schema.ledger_records
-  WHERE charge_id IN $$chargeIds;
+  WHERE charge_id IN $$chargeIds
+  AND owner_id = $ownerId;
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class LedgerProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private dbProvider: DBProvider,
+  ) {}
 
   private async batchLedgerRecordsByChargesIds(ids: readonly string[]) {
     const ledgerRecords = await getLedgerRecordsByChargesIds.run(
       {
         chargeIds: ids,
+        ownerId: this.context.currentUser.userId,
       },
       this.dbProvider,
     );
@@ -200,6 +210,7 @@ export class LedgerProvider {
     const ledgerRecords = await getLedgerRecordsByFinancialEntityIds.run(
       {
         financialEntityIds: ids,
+        ownerId: this.context.currentUser.userId,
       },
       this.dbProvider,
     );
@@ -221,11 +232,17 @@ export class LedgerProvider {
   );
 
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
-    return getLedgerRecordsByDates.run(params, this.dbProvider);
+    return getLedgerRecordsByDates.run(
+      { ...params, ownerId: params.ownerId ?? this.context.currentUser.userId },
+      this.dbProvider,
+    );
   }
 
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
-    return updateLedgerRecord.run(params, this.dbProvider);
+    return updateLedgerRecord.run(
+      { ...params, ownerId: params.ownerId ?? this.context.currentUser.userId },
+      this.dbProvider,
+    );
   }
 
   public async insertLedgerRecords(params: IInsertLedgerRecordsParams) {
@@ -239,6 +256,7 @@ export class LedgerProvider {
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
+        ownerId: this.context.currentUser.userId,
       },
       this.dbProvider,
     );
@@ -254,6 +272,7 @@ export class LedgerProvider {
     await deleteLedgerRecordsByChargeIds.run(
       {
         chargeIds,
+        ownerId: this.context.currentUser.userId,
       },
       this.dbProvider,
     );

@@ -1,5 +1,6 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
+import type { UserType } from 'plugins/auth-plugin.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from '@modules/app-providers/coinmarketcap.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
@@ -31,6 +32,7 @@ declare global {
   namespace GraphQLModules {
     interface GlobalContext {
       env: Environment;
+      currentUser: UserType;
     }
   }
 }
