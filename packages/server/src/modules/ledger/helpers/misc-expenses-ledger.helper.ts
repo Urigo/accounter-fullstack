@@ -74,7 +74,7 @@ export async function generateMiscExpensesLedger(
       localCurrencyDebitAmount1: Math.abs(amount),
       description: expense.description ?? undefined,
       valueDate,
-      invoiceDate: transaction.event_date,
+      invoiceDate: expense.date ?? transaction.event_date,
       isCreditorCounterparty,
     };
     ledgerEntries.push(entry);
