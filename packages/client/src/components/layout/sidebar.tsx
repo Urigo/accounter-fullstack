@@ -22,7 +22,7 @@ export function Sidebar({ className }: SidebarProps): JSX.Element {
   return (
     <nav
       className={cn(
-        'relative hidden h-screen flex-none border-r z-10 pt-10 md:block',
+        'relative hidden h-screen flex-none border-r z-10 pt-10 md:block bg-white',
         status && 'duration-300',
         isMinimized ? 'w-[72px]' : 'w-[240px]',
         className,
@@ -30,7 +30,7 @@ export function Sidebar({ className }: SidebarProps): JSX.Element {
     >
       <ChevronLeft
         className={cn(
-          'absolute -right-3 top-20 cursor-pointer bg-gray-100 rounded-full border text-3xl text-foreground',
+          'absolute -right-3 top-20 cursor-pointer bg-gray-300 border-black/75 rounded-full border text-3xl text-foreground',
           isMinimized && 'rotate-180',
         )}
         onClick={handleToggle}
