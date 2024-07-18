@@ -1,11 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'tabler-icons-react';
+import { cn } from '../../lib/utils';
 import { Button, buttonVariants } from '../ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '../ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,14 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../ui/tooltip';
-import { cn } from '../../lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { SideLink } from './sidelinks';
 
 interface NavProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -34,22 +25,11 @@ export function Nav({ links, isCollapsed, closeNav }: NavProps): JSX.Element {
   const renderLink = ({ sub, ...rest }: SideLink): JSX.Element => {
     const key = `${rest.title}-${rest.href}`;
     if (isCollapsed && sub)
-      return (
-        <NavLinkIconDropdown
-          {...rest}
-          sub={sub}
-          key={key}
-          closeNav={closeNav}
-        />
-      );
+      return <NavLinkIconDropdown {...rest} sub={sub} key={key} closeNav={closeNav} />;
 
-    if (isCollapsed)
-      return <NavLinkIcon {...rest} key={key} closeNav={closeNav} />;
+    if (isCollapsed) return <NavLinkIcon {...rest} key={key} closeNav={closeNav} />;
 
-    if (sub)
-      return (
-        <NavLinkDropdown {...rest} sub={sub} key={key} closeNav={closeNav} />
-      );
+    if (sub) return <NavLinkDropdown {...rest} sub={sub} key={key} closeNav={closeNav} />;
 
     return <NavLink {...rest} key={key} closeNav={closeNav} />;
   };
@@ -85,7 +65,7 @@ function NavLink({
           size: 'sm',
         }),
         'h-12 font-semibold tracking-tight justify-start text-wrap rounded-none px-6',
-        subLink && 'h-10 w-full border-l border-l-slate-500 px-2'
+        subLink && 'h-10 w-full border-l border-l-slate-500 px-2',
       )}
       aria-current="page"
     >
@@ -100,25 +80,17 @@ function NavLink({
   );
 }
 
-function NavLinkDropdown({
-  title,
-  icon,
-  label,
-  sub,
-  closeNav,
-}: NavLinkProps): JSX.Element {
+function NavLinkDropdown({ title, icon, label, sub, closeNav }: NavLinkProps): JSX.Element {
   /* Open collapsible by default
    * if one of child element is active */
-  const isChildActive = !!sub?.find(
-    (s: SideLink) => s.href === window.location.pathname
-  );
+  const isChildActive = !!sub?.find((s: SideLink) => s.href === window.location.pathname);
 
   return (
     <Collapsible defaultOpen={isChildActive}>
       <CollapsibleTrigger
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'sm' }),
-          'group h-12 w-full justify-start rounded-none px-6'
+          'group h-12 w-full justify-start rounded-none px-6',
         )}
       >
         <div className="mr-2">{icon}</div>
@@ -128,17 +100,13 @@ function NavLinkDropdown({
             {label}
           </div>
         )}
-        <span
-          className={cn(
-            'ml-auto transition-all group-data-[state="open"]:-rotate-180'
-          )}
-        >
+        <span className={cn('ml-auto transition-all group-data-[state="open"]:-rotate-180')}>
           <ChevronDown />
         </span>
       </CollapsibleTrigger>
       <CollapsibleContent className="collapsibleDropdown" asChild>
         <ul>
-          {sub!.map((sublink) => (
+          {sub!.map(sublink => (
             <li key={sublink.title} className="my-1 ml-8">
               <NavLink {...sublink} subLink closeNav={closeNav} />
             </li>
@@ -160,35 +128,25 @@ function NavLinkIcon({ title, icon, label, href }: NavLinkProps): JSX.Element {
               variant: 'ghost',
               size: 'icon',
             }),
-            'h-12 w-12'
+            'h-12 w-12',
           )}
         >
           {icon}
           <span className="sr-only">{title}</span>
         </Link>
       </TooltipTrigger>
-      <TooltipContent
-        side="right"
-        className="flex font-semibold tracking-tight items-center gap-4"
-      >
+      <TooltipContent side="right" className="flex font-semibold tracking-tight items-center gap-4">
         {title}
-        {label && (
-          <span className="ml-auto text-muted-foreground">{label}</span>
-        )}
+        {label && <span className="ml-auto text-muted-foreground">{label}</span>}
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function NavLinkIconDropdown({
-  title,
-  icon,
-  label,
-  sub,
-}: NavLinkProps): JSX.Element {
+function NavLinkIconDropdown({ title, icon, label, sub }: NavLinkProps): JSX.Element {
   /* Open collapsible by default
    * if one of child element is active */
-  const isChildActive = !!sub?.find((s) => s.href === window.location.pathname);
+  const isChildActive = !!sub?.find(s => s.href === window.location.pathname);
 
   return (
     <DropdownMenu>
@@ -208,10 +166,7 @@ function NavLinkIconDropdown({
           side="right"
           className="flex font-semibold tracking-tight items-center gap-4"
         >
-          {title}{' '}
-          {label && (
-            <span className="ml-auto text-muted-foreground">{label}</span>
-          )}
+          {title} {label && <span className="ml-auto text-muted-foreground">{label}</span>}
           <ChevronDown size={18} className="-rotate-90 text-muted-foreground" />
         </TooltipContent>
       </Tooltip>
@@ -229,13 +184,11 @@ function NavLinkIconDropdown({
                   variant: 'ghost',
                   size: 'sm',
                 }),
-                'h-12 cursor-pointer justify-start text-wrap rounded-none px-6'
+                'h-12 cursor-pointer justify-start text-wrap rounded-none px-6',
               )}
             >
               {icon}{' '}
-              <span className="ml-2 max-w-52 text-wrap font-semibold tracking-tight">
-                {title}
-              </span>
+              <span className="ml-2 max-w-52 text-wrap font-semibold tracking-tight">{title}</span>
               {label && <span className="ml-auto text-xs">{label}</span>}
             </Link>
           </DropdownMenuItem>
