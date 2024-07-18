@@ -17,6 +17,7 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
+import { calculateTaxAmounts } from '../../helpers/tax.helper.js';
 
 export const taxReport: ResolverFn<
   ReadonlyArray<ResolversTypes['TaxReport']>,
@@ -80,16 +81,12 @@ export const taxReport: ResolverFn<
     const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
       getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    const researchAndDevelopmentExpensesForTax = researchAndDevelopmentExpensesAmount / 3;
-
-    const taxableIncomeAmount =
-      profitBeforeTaxAmount -
-      researchAndDevelopmentExpensesAmount +
-      researchAndDevelopmentExpensesForTax;
-
-    const taxRate = 0.23;
-
-    const annualTaxExpenseAmount = taxableIncomeAmount * taxRate;
+    const {
+      researchAndDevelopmentExpensesForTax,
+      taxableIncomeAmount,
+      taxRate,
+      annualTaxExpenseAmount,
+    } = calculateTaxAmounts(researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount);
 
     yearlyReports.push({
       year,
