@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
@@ -194,7 +195,7 @@ export class LedgerProvider {
     const ledgerRecords = await getLedgerRecordsByChargesIds.run(
       {
         chargeIds: ids,
-        ownerId: this.context.currentUser.userId,
+        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       },
       this.dbProvider,
     );
