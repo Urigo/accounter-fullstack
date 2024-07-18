@@ -4,6 +4,9 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allTags: [Tag!]! @auth(role: ACCOUNTANT)
+    allTagsPaginated(filter: TagFilter): TagConnection!
+    @auth(role: ACCOUNTANT)
+    tagsByIds(ids: [UUID!]!): [Tag!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
@@ -13,6 +16,22 @@ export default gql`
     updateTagParent(id: UUID!, parentId: UUID): Boolean! @auth(role: ADMIN)
     updateTagPart(tagId: UUID!, chargeId: UUID!, part: Float!): Boolean! @auth(role: ADMIN)
     updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean! @auth(role: ADMIN)
+  }
+
+  input TagFilter {
+    limit: Int,
+    offset: Int
+  }
+
+  type TagConnection {
+    edges: [TagEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+  }
+
+  type TagEdge {
+    node: Tag!
+    cursor: String
   }
 
   " input variables for updateTag "
