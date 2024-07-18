@@ -4,8 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allTags: [Tag!]! @auth(role: ACCOUNTANT)
-    allTagsPaginated(filter: TagFilter): TagConnection!
-    @auth(role: ACCOUNTANT)
+    allTagsPaginated(filter: TagFilter): TagConnection! @auth(role: ACCOUNTANT)
     tagsByIds(ids: [UUID!]!): [Tag!]! @auth(role: ACCOUNTANT)
   }
 
@@ -19,7 +18,7 @@ export default gql`
   }
 
   input TagFilter {
-    limit: Int,
+    limit: Int
     offset: Int
   }
 

@@ -24,7 +24,10 @@ export const tagsResolvers: TagsModule.Resolvers = {
           throw new Error(e.message);
         });
 
-      const pageTags = tags.slice(filter.offset * filter.limit - filter.limit, filter.offset * filter.limit);
+      const pageTags = tags.slice(
+        filter.offset * filter.limit - filter.limit,
+        filter.offset * filter.limit,
+      );
       if (!pageTags) {
         throw new GraphQLError('Tags not found');
       }
@@ -142,24 +145,24 @@ export const tagsResolvers: TagsModule.Resolvers = {
     parent: (dbTag, _, { injector }) =>
       dbTag.parent
         ? injector
-          .get(TagsProvider)
-          .getTagByIDLoader.load(dbTag.parent)
-          .then(res => res ?? null)
+            .get(TagsProvider)
+            .getTagByIDLoader.load(dbTag.parent)
+            .then(res => res ?? null)
         : null,
     namePath: dbTag => dbTag.names_path,
     fullPath: (dbTag, _, { injector }) =>
       dbTag.ids_path
         ? dbTag.ids_path.map(id =>
-          injector
-            .get(TagsProvider)
-            .getTagByIDLoader.load(id)
-            .then(res => {
-              if (!res) {
-                throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
-              }
-              return res;
-            }),
-        )
+            injector
+              .get(TagsProvider)
+              .getTagByIDLoader.load(id)
+              .then(res => {
+                if (!res) {
+                  throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
+                }
+                return res;
+              }),
+          )
         : [],
   },
   CommonCharge: commonTagsChargeFields,

@@ -71,7 +71,7 @@ const getTagsByFilters = sql<IGetTagsByFiltersQuery>`
   global: true,
 })
 export class TagsProvider {
-  constructor(private dbProvider: DBProvider) { }
+  constructor(private dbProvider: DBProvider) {}
 
   public getAllTags() {
     return getAllTags.run(undefined, this.dbProvider);
