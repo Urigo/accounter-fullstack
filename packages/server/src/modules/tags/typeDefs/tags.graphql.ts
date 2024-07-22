@@ -4,7 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allTags: [Tag!]! @auth(role: ACCOUNTANT)
-    allTagsPaginated(filter: TagFilter): TagConnection! @auth(role: ACCOUNTANT)
+    allTagsPaginated(filter: TagFilter): PaginatedTags! @auth(role: ACCOUNTANT)
     tagsByIds(ids: [UUID!]!): [Tag!]! @auth(role: ACCOUNTANT)
   }
 
@@ -18,19 +18,14 @@ export default gql`
   }
 
   input TagFilter {
-    limit: Int
-    offset: Int
+    limit: Int! = 10
+    offset: Int! = 0
   }
 
-  type TagConnection {
-    edges: [TagEdge!]!
+  " response for paginated tags "
+    type PaginatedTags {
+    nodes: [Tag!]!
     pageInfo: PageInfo!
-    totalCount: Int!
-  }
-
-  type TagEdge {
-    node: Tag!
-    cursor: String
   }
 
   " input variables for updateTag "

@@ -11,42 +11,30 @@ export const tagsResolvers: TagsModule.Resolvers = {
     tagsByIds: (_, { ids }, { injector }) => injector.get(TagsProvider).getTagsByIDs(ids),
     allTagsPaginated: async (_, { filter }, { injector }) => {
       if (!filter?.limit || !filter?.offset) {
-        throw new GraphQLError('limit and offset must be provided');
+        throw new GraphQLError('Limit and offset are required - Please provide a value for each one of them');
       }
+      const { limit, offset } = filter;
 
-      const tags = await injector
-        .get(TagsProvider)
-        .getTagsByFilters({
-          limit: filter.limit,
-          offset: filter.offset,
-        })
+      const tagsProvider = await injector.get(TagsProvider);
+      const tags = await tagsProvider
+        .getTagsByFilters({ limit, offset })
         .catch(e => {
           throw new Error(e.message);
         });
 
-      const pageTags = tags.slice(
-        filter.offset * filter.limit - filter.limit,
-        filter.offset * filter.limit,
-      );
-      if (!pageTags) {
-        throw new GraphQLError('Tags not found');
-      }
+      const totalTags = (await tagsProvider.countTags()).map((tag) => tag.count)
 
       return {
-        edges: pageTags.map(tag => ({
-          cursor: tag.id,
-          node: tag,
-        })),
         pageInfo: {
-          endCursor: pageTags.length > 0 ? pageTags[pageTags.length - 1].id : null,
-          hasNextPage: pageTags.length === filter.limit,
-          totalPages: Math.ceil(tags.length / filter.limit),
-          currentPage: filter.offset,
-          pageSize: filter.limit,
+          totalPages: Math.ceil(Number(totalTags) / limit),
+          currentPage: Math.ceil(offset / limit),
+          pageSize: limit,
         },
-        totalCount: tags.length,
+        nodes: tags.slice(offset, offset + limit),
+        __typename: 'PaginatedTags',
       };
     },
+
   },
   Mutation: {
     addTag: (_, { name }, { injector }) => {
@@ -145,24 +133,24 @@ export const tagsResolvers: TagsModule.Resolvers = {
     parent: (dbTag, _, { injector }) =>
       dbTag.parent
         ? injector
-            .get(TagsProvider)
-            .getTagByIDLoader.load(dbTag.parent)
-            .then(res => res ?? null)
+          .get(TagsProvider)
+          .getTagByIDLoader.load(dbTag.parent)
+          .then(res => res ?? null)
         : null,
     namePath: dbTag => dbTag.names_path,
     fullPath: (dbTag, _, { injector }) =>
       dbTag.ids_path
         ? dbTag.ids_path.map(id =>
-            injector
-              .get(TagsProvider)
-              .getTagByIDLoader.load(id)
-              .then(res => {
-                if (!res) {
-                  throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
-                }
-                return res;
-              }),
-          )
+          injector
+            .get(TagsProvider)
+            .getTagByIDLoader.load(id)
+            .then(res => {
+              if (!res) {
+                throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
+              }
+              return res;
+            }),
+        )
         : [],
   },
   CommonCharge: commonTagsChargeFields,

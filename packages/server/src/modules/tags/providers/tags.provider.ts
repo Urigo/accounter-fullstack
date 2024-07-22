@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IAddNewTagParams,
   IAddNewTagQuery,
+  ICountTagsQuery,
   IDeleteTagParams,
   IDeleteTagQuery,
   IGetAllTagsQuery,
@@ -66,12 +67,18 @@ const getTagsByFilters = sql<IGetTagsByFiltersQuery>`
   OFFSET $offset;
 `;
 
+const countTags = sql<ICountTagsQuery>`
+  SELECT COUNT(*)
+  FROM accounter_schema.extended_tags;
+`;
+
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class TagsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private dbProvider: DBProvider) { }
 
   public getAllTags() {
     return getAllTags.run(undefined, this.dbProvider);
@@ -98,6 +105,9 @@ export class TagsProvider {
 
   public updateTagParent(params: IUpdateTagParentParams) {
     return updateTagParent.run(params, this.dbProvider);
+  }
+  public countTags() {
+    return countTags.run(undefined, this.dbProvider);
   }
 
   private async batchTagsByID(tagIDs: readonly string[]) {
