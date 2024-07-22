@@ -18,8 +18,8 @@ export default gql`
   }
 
   input TagFilter {
-    limit: Int! = 10
-    offset: Int! = 0
+    limit: Int
+    offset: Int
   }
 
   " response for paginated tags "
