@@ -102,15 +102,15 @@ export async function handleCrossYearLedgerEntries(
   if (accountingLedgerEntries.length === 0) {
     return null;
   }
-  if (accountingLedgerEntries.length > 1) {
-    throw new LedgerError('Unable to split multiple documents');
-  }
   const spreadRecords = await injector
     .get(ChargeSpreadProvider)
     .getChargeSpreadByChargeIdLoader.load(charge.id);
 
   if (!spreadRecords?.length) {
     return null;
+  }
+  if (accountingLedgerEntries.length > 1) {
+    throw new LedgerError('Unable to split multiple documents');
   }
 
   // calculate cross year entries

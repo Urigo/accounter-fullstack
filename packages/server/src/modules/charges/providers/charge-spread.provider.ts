@@ -56,7 +56,7 @@ const deleteAllChargeSpreadByChargeIds = sql<IDeleteAllChargeSpreadByChargeIdsQu
 
 const deleteAllChargeSpreadByChargeIdAndYearOfRelevance = sql<IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceQuery>`
     DELETE FROM accounter_schema.charge_spread
-    WHERE charge_id = $$chargeId
+    WHERE charge_id = $chargeId
     AND year_of_relevance = $yearOfRelevance;`;
 
 @Injectable({

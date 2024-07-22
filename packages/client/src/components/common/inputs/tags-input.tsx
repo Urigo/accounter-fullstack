@@ -71,7 +71,6 @@ export function TagsInput<T extends FieldValues>({
                     data={allTags}
                     label={label}
                     itemComponent={SelectTagItem}
-                    value={field.value}
                     disabled={fetching}
                     placeholder="Scroll to see all options"
                     maxDropdownHeight={160}

@@ -36,7 +36,10 @@ import { writeToClipboard } from '../../../helpers';
           name
         }
       }
-      yearsOfRelevance
+      yearsOfRelevance {
+        year
+        amount
+      }
     }
   }
 `;

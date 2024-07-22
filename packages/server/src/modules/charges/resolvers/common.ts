@@ -40,7 +40,12 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     const spreadRecords = await injector
       .get(ChargeSpreadProvider)
       .getChargeSpreadByChargeIdLoader.load(DbCharge.id);
-    return spreadRecords?.map(record => dateToTimelessDateString(record.year_of_relevance)) ?? null;
+    return (
+      spreadRecords?.map(record => ({
+        year: dateToTimelessDateString(record.year_of_relevance),
+        amount: record.amount ? Number(record.amount) : null,
+      })) ?? null
+    );
   },
 };
 

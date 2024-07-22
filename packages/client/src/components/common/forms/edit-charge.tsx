@@ -1,11 +1,9 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
-import { YearPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
+import { ChargeSpreadInput, InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
   AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
@@ -22,14 +20,8 @@ type Props = {
   onChange: () => void;
 };
 
-export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): ReactElement => {
-  const { yearsOfRelevance: originalYearsOfRelevance, ...charge } = originalCharge;
+export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => {
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
-  const [yearsOfRelevance, setYearsOfRelevance] = useState<Date[] | undefined>(
-    originalYearsOfRelevance
-      ? originalYearsOfRelevance.map(date => new Date(date as string))
-      : undefined,
-  );
   const [
     {
       data: financialEntitiesData,
@@ -46,16 +38,24 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
   const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
   const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
 
-  const useFormManager = useForm<UpdateChargeInput>({
-    defaultValues: charge,
+  const formManager = useForm<UpdateChargeInput>({
+    defaultValues: {
+      ...charge,
+      yearsOfRelevance: charge.yearsOfRelevance
+        ?.map(record => ({
+          year: record.year as TimelessDateString,
+          amount: record.amount,
+        }))
+        .sort((a, b) => (a.year > b.year ? 1 : -1)),
+    },
   });
 
   const {
     control: chargeControl,
     handleSubmit: handleChargeSubmit,
     formState: { dirtyFields: dirtyChargeFields },
-    setValue,
-  } = useFormManager;
+    // setValue,
+  } = formManager;
 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = data => {
     if (!charge) {
@@ -67,7 +67,12 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       updateCharge({
         chargeId: charge.id,
-        fields: dataToUpdate,
+        fields: {
+          ...dataToUpdate,
+          yearsOfRelevance: data.yearsOfRelevance
+            ? Object.values(data.yearsOfRelevance)
+            : undefined,
+        },
       }).then(() => onChange?.());
     }
   };
@@ -160,18 +165,6 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
     }
   }, [businessTripsData, setBusinessTrips]);
 
-  function onSelectYears(dates: Date[]): void {
-    setYearsOfRelevance(dates);
-    setValue(
-      'yearsOfRelevance',
-      dates.map(date => format(date, 'yyyy-MM-dd') as TimelessDateString),
-      {
-        shouldDirty: true,
-        shouldTouch: true,
-      },
-    );
-  }
-
   return (
     <form onSubmit={handleChargeSubmit(onChargeSubmit)}>
       <div className="flex-row px-10 h-max justify-start block">
@@ -252,7 +245,7 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
               />
             )}
           />
-          <TagsInput formManager={useFormManager} tagsPath="tags" />
+          <TagsInput formManager={formManager} tagsPath="tags" />
           <Controller
             name="isProperty"
             control={chargeControl}
@@ -281,13 +274,7 @@ export const EditCharge = ({ charge: originalCharge, close, onChange }: Props): 
               />
             )}
           />
-          <YearPickerInput
-            label="Years of relevance"
-            type="multiple"
-            // placeholder="Pick date"
-            value={yearsOfRelevance}
-            onChange={onSelectYears}
-          />
+          <ChargeSpreadInput formManager={formManager} chargeSpreadPath="yearsOfRelevance" />
         </SimpleGrid>
       </div>
       <div className="mt-10 mb-5 flex justify-center gap-5">
