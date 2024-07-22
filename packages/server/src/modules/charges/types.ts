@@ -20,6 +20,5 @@ export type IGetChargesByFiltersResult = ChargeRequiredWrapper<IGetChargesByFilt
 export type IGetChargesByTransactionIdsResult =
   ChargeRequiredWrapper<IGetChargesByTransactionIdsResultRaw>;
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 export * from './__generated__/charges.types.js';
+export * from './__generated__/charge-spread.types.js';

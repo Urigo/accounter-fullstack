@@ -418,10 +418,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
     }
 
-    const crossYearLedgerEntries = handleCrossYearLedgerEntries(
+    const crossYearLedgerEntries = await handleCrossYearLedgerEntries(
       charge,
+      injector,
       accountingLedgerEntries,
-      financialAccountLedgerEntries,
     );
 
     const records = [

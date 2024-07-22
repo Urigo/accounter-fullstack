@@ -18,6 +18,7 @@ export default gql`
     ): MergeChargeResult! @auth(role: ADMIN)
     deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): RevaluationCharge!
+      @auth(role: ACCOUNTANT)
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
@@ -48,7 +49,7 @@ export default gql`
     " metadata about the charge "
     metadata: ChargeMetadata
     " the tax year in which the action took place "
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " common charge "
@@ -66,7 +67,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " revaluation charge "
@@ -84,7 +85,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge with conversion transactions "
@@ -102,7 +103,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge with conversion transactions "
@@ -120,7 +121,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of internal transfer "
@@ -138,7 +139,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of dividends "
@@ -156,7 +157,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of dividends "
@@ -174,7 +175,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of monthly VAT payment "
@@ -192,7 +193,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of bank deposits "
@@ -210,7 +211,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " charge of creditcard over bank account "
@@ -228,7 +229,7 @@ export default gql`
     minDebitDate: Date
     minDocumentsDate: Date
     metadata: ChargeMetadata
-    yearsOfRelevance: [String]
+    yearsOfRelevance: [YearOfRelevance!]
   }
 
   " input variables for charge filtering "
@@ -300,7 +301,13 @@ export default gql`
     userDescription: String
     defaultTaxCategoryID: UUID
     businessTripID: UUID
-    yearsOfRelevance: [TimelessDate]
+    yearsOfRelevance: [YearOfRelevanceInput!]
+  }
+
+  " input variables for charge spread "
+  input YearOfRelevanceInput {
+    year: TimelessDate!
+    amount: Float
   }
 
   " result type for updateCharge "
@@ -402,5 +409,11 @@ export default gql`
 
   extend interface Business {
     charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
+  }
+
+  " charge spread type "
+  type YearOfRelevance {
+    year: String!
+    amount: Float
   }
 `;

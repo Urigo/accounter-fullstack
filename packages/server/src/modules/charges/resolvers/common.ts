@@ -2,6 +2,7 @@ import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { ChargeResolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { validateCharge } from '../helpers/validate.helper.js';
+import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
@@ -35,10 +36,17 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
   validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
   metadata: DbCharge => DbCharge,
-  yearsOfRelevance: DbCharge =>
-    DbCharge.years_of_relevance
-      ? DbCharge.years_of_relevance.map(date => dateToTimelessDateString(date))
-      : null,
+  yearsOfRelevance: async (DbCharge, _, { injector }) => {
+    const spreadRecords = await injector
+      .get(ChargeSpreadProvider)
+      .getChargeSpreadByChargeIdLoader.load(DbCharge.id);
+    return (
+      spreadRecords?.map(record => ({
+        year: dateToTimelessDateString(record.year_of_relevance),
+        amount: record.amount ? Number(record.amount) : null,
+      })) ?? null
+    );
+  },
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {

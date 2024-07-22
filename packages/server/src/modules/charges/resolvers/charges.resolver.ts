@@ -11,6 +11,7 @@ import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
+import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
 import {
@@ -104,7 +105,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
-        // yearsOfRelevance: fields.yearsOfRelevance as IUpdateChargeParams['yearsOfRelevance'],
         chargeId,
       };
       try {
@@ -117,6 +117,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error(`Charge ID="${chargeId}" not found`);
         }
 
+        const indirectUpdatesPromises: Array<Promise<unknown>> = [];
+
         // handle tags
         if (fields?.tags) {
           const newTagIDs = fields.tags.map(t => t.id);
@@ -127,34 +129,67 @@ export const chargesResolvers: ChargesModule.Resolvers &
           // clear removed tags
           const tagsToRemove = pastTags.filter(tagId => !newTagIDs.includes(tagId));
           if (tagsToRemove.length) {
-            await injector
-              .get(ChargeTagsProvider)
-              .clearChargeTags({ chargeId, tagIDs: tagsToRemove });
+            indirectUpdatesPromises.push(
+              injector
+                .get(ChargeTagsProvider)
+                .clearChargeTags({ chargeId, tagIDs: tagsToRemove })
+                .catch(() => {
+                  throw new GraphQLError(
+                    `Error clearing tags IDs="${tagsToRemove}" to charge ID="${chargeId}"`,
+                  );
+                }),
+            );
           }
           // add new tags
           const tagIDsToAdd = newTagIDs.filter(tagId => !pastTags.includes(tagId));
           for (const tagId of tagIDsToAdd) {
-            await injector
-              .get(ChargeTagsProvider)
-              .insertChargeTag({ chargeId, tagId })
-              .catch(() => {
-                throw new GraphQLError(`Error adding tag ID="${tagId}" to charge ID="${chargeId}"`);
-              });
+            indirectUpdatesPromises.push(
+              injector
+                .get(ChargeTagsProvider)
+                .insertChargeTag({ chargeId, tagId })
+                .catch(() => {
+                  throw new GraphQLError(
+                    `Error adding tag ID="${tagId}" to charge ID="${chargeId}"`,
+                  );
+                }),
+            );
           }
         }
 
         // handle business trip
         if (fields?.businessTripID) {
-          await injector
-            .get(BusinessTripsProvider)
-            .updateChargeBusinessTrip(
-              chargeId,
-              fields.businessTripID === EMPTY_UUID ? null : fields.businessTripID,
-            )
-            .catch(() => {
-              throw new GraphQLError(`Error updating business trip for charge ID="${chargeId}"`);
-            });
+          indirectUpdatesPromises.push(
+            injector
+              .get(BusinessTripsProvider)
+              .updateChargeBusinessTrip(
+                chargeId,
+                fields.businessTripID === EMPTY_UUID ? null : fields.businessTripID,
+              )
+              .catch(() => {
+                throw new GraphQLError(`Error updating business trip for charge ID="${chargeId}"`);
+              }),
+          );
         }
+
+        // handle charge spread
+        if (fields?.yearsOfRelevance) {
+          const updateSpreadRecords = async () => {
+            await injector
+              .get(ChargeSpreadProvider)
+              .deleteAllChargeSpreadByChargeIds({ chargeIds: [chargeId] });
+
+            return injector.get(ChargeSpreadProvider).insertChargeSpread({
+              chargeSpread: fields.yearsOfRelevance!.map(record => ({
+                chargeId,
+                yearOfRelevance: record.year,
+                amount: record.amount,
+              })),
+            });
+          };
+          indirectUpdatesPromises.push(updateSpreadRecords());
+        }
+
+        await Promise.all(indirectUpdatesPromises);
 
         return { charge: updatedCharge };
       } catch (e) {
