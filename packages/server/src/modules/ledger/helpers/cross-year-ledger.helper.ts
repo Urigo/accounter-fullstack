@@ -1,5 +1,8 @@
+import { Injector } from 'graphql-modules';
+import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import {
+  DEFAULT_LOCAL_CURRENCY,
   EXPENSES_IN_ADVANCE_TAX_CATEGORY,
   EXPENSES_TO_PAY_TAX_CATEGORY,
   INCOME_IN_ADVANCE_TAX_CATEGORY,
@@ -8,6 +11,7 @@ import {
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
+import { LedgerError } from './utils.helper.js';
 
 function divideAmount(yearsCount: number, amount?: number): number | undefined {
   if (yearsCount === 1) {
@@ -16,37 +20,101 @@ function divideAmount(yearsCount: number, amount?: number): number | undefined {
   return amount ? amount / yearsCount : undefined;
 }
 
-function divideEntryAmounts(entry: LedgerProto, yearsCount: number): Partial<LedgerProto> {
+function divideEntryAmounts(
+  entry: LedgerProto,
+  yearsCount: number,
+  predefinedAmount = 0,
+): Partial<
+  Pick<
+    LedgerProto,
+    'creditAmount1' | 'debitAmount1' | 'localCurrencyCreditAmount1' | 'localCurrencyDebitAmount1'
+  >
+> {
+  const originAmount =
+    entry.currency === DEFAULT_LOCAL_CURRENCY
+      ? entry.localCurrencyDebitAmount1
+      : entry.debitAmount1;
+  const ratio = 1 - Math.abs(predefinedAmount / originAmount!);
   return {
-    creditAmount1: divideAmount(yearsCount, entry.creditAmount1),
-    creditAmount2: divideAmount(yearsCount, entry.creditAmount2),
-    debitAmount1: divideAmount(yearsCount, entry.debitAmount1),
-    debitAmount2: divideAmount(yearsCount, entry.debitAmount2),
-    localCurrencyCreditAmount1: divideAmount(yearsCount, entry.localCurrencyCreditAmount1),
-    localCurrencyCreditAmount2: divideAmount(yearsCount, entry.localCurrencyCreditAmount2),
-    localCurrencyDebitAmount1: divideAmount(yearsCount, entry.localCurrencyDebitAmount1),
-    localCurrencyDebitAmount2: divideAmount(yearsCount, entry.localCurrencyDebitAmount2),
+    creditAmount1: divideAmount(yearsCount, partialAmountCalculator(entry.creditAmount1, ratio)),
+    debitAmount1: divideAmount(yearsCount, partialAmountCalculator(entry.debitAmount1, ratio)),
+    localCurrencyCreditAmount1: divideAmount(
+      yearsCount,
+      partialAmountCalculator(entry.localCurrencyCreditAmount1, ratio),
+    ),
+    localCurrencyDebitAmount1: divideAmount(
+      yearsCount,
+      partialAmountCalculator(entry.localCurrencyDebitAmount1, ratio),
+    ),
   };
 }
 
-export function handleCrossYearLedgerEntries(
-  charge: IGetChargesByIdsResult,
-  accountingLedgerEntries: LedgerProto[],
-  financialAccountLedgerEntries: LedgerProto[],
-): LedgerProto[] | null {
-  const { years_of_relevance } = charge;
-  const entries = [...accountingLedgerEntries, ...financialAccountLedgerEntries];
-  if (entries.length === 0) {
+function partialAmountCalculator(amount: number | undefined, ratio = 0): number | undefined {
+  if (amount === undefined) {
+    return undefined;
+  }
+  return amount * ratio;
+}
+
+function getPartialEntryAmounts(
+  entry: LedgerProto,
+  stringAmount: string | null,
+): Partial<LedgerProto> | null {
+  if (stringAmount === null) {
+    return null;
+  }
+  const partialAmount = Number(stringAmount);
+  if (Number.isNaN(partialAmount)) {
     return null;
   }
 
-  if (!years_of_relevance) {
+  const mainAmount = Math.abs(
+    Math.max(
+      ...(entry.currency === DEFAULT_LOCAL_CURRENCY
+        ? [entry.localCurrencyDebitAmount1 ?? 0, entry.localCurrencyCreditAmount1 ?? 0]
+        : [entry.debitAmount1 ?? 0, entry.creditAmount1 ?? 0]),
+    ),
+  );
+
+  if ((entry.debitAmount1 || entry.creditAmount1) && partialAmount > mainAmount) {
+    throw new LedgerError('Partial amount exceeds ledger record amount');
+  }
+
+  const ratio = partialAmount / mainAmount;
+
+  return {
+    creditAmount1: partialAmountCalculator(entry.creditAmount1, ratio),
+    creditAmount2: partialAmountCalculator(entry.creditAmount2, ratio),
+    debitAmount1: partialAmountCalculator(entry.debitAmount1, ratio),
+    debitAmount2: partialAmountCalculator(entry.debitAmount2, ratio),
+    localCurrencyCreditAmount1: partialAmountCalculator(entry.localCurrencyCreditAmount1, ratio),
+    localCurrencyCreditAmount2: partialAmountCalculator(entry.localCurrencyCreditAmount2, ratio),
+    localCurrencyDebitAmount1: partialAmountCalculator(entry.localCurrencyDebitAmount1, ratio),
+    localCurrencyDebitAmount2: partialAmountCalculator(entry.localCurrencyDebitAmount2, ratio),
+  };
+}
+
+export async function handleCrossYearLedgerEntries(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+  accountingLedgerEntries: LedgerProto[],
+): Promise<LedgerProto[] | null> {
+  if (accountingLedgerEntries.length === 0) {
+    return null;
+  }
+  if (accountingLedgerEntries.length > 1) {
+    throw new LedgerError('Unable to split multiple documents');
+  }
+  const spreadRecords = await injector
+    .get(ChargeSpreadProvider)
+    .getChargeSpreadByChargeIdLoader.load(charge.id);
+
+  if (!spreadRecords?.length) {
     return null;
   }
 
   // calculate cross year entries
   const crossYearEntries: LedgerProto[] = [];
-
   for (const entry of accountingLedgerEntries) {
     const adjustedEntry = { ...entry };
     if (entry.creditAccountID2 && entry.creditAccountID2 === INPUT_VAT_TAX_CATEGORY_ID) {
@@ -96,10 +164,28 @@ export function handleCrossYearLedgerEntries(
       adjustedEntry.localCurrencyDebitAmount2 = undefined;
     }
 
-    const yearsCount = years_of_relevance.length;
-    const amounts = divideEntryAmounts(adjustedEntry, yearsCount);
+    let yearsWithoutSpecifiedAmountCount = 0;
+    let predefinedAmount = 0;
+    spreadRecords.map(record => {
+      if (record.amount === null) {
+        yearsWithoutSpecifiedAmountCount += 1;
+      } else {
+        predefinedAmount += Number(record.amount);
+      }
+    });
 
-    for (const yearDate of years_of_relevance) {
+    if (adjustedEntry.creditAmount1 !== adjustedEntry.debitAmount1) {
+      throw new LedgerError('Credit and debit amounts are not equal');
+    }
+    const defaultAmounts = divideEntryAmounts(
+      adjustedEntry,
+      yearsWithoutSpecifiedAmountCount,
+      predefinedAmount,
+    );
+
+    for (const spreadRecord of spreadRecords) {
+      const amounts = getPartialEntryAmounts(adjustedEntry, spreadRecord.amount) ?? defaultAmounts;
+      const yearDate = spreadRecord.year_of_relevance;
       if (
         adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
         adjustedEntry.valueDate.getFullYear() === yearDate.getFullYear()
