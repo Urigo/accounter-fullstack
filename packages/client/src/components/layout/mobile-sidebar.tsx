@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { MenuIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { DashboardNav } from './dashboard-nav';
-import { navItems } from './sidebar';
+import { Nav } from './nav';
+import { sidelinks } from './sidelinks';
 
 export function MobileSidebar(): JSX.Element {
   const [open, setOpen] = useState(false);
@@ -16,7 +16,7 @@ export function MobileSidebar(): JSX.Element {
           <div className="px-3 py-2">
             <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Overview</h2>
             <div className="space-y-1">
-              <DashboardNav items={navItems} isMobileNav setOpen={setOpen} />
+              <Nav isCollapsed={false} links={sidelinks} closeNav={() => setOpen(false)} />
             </div>
           </div>
         </div>
