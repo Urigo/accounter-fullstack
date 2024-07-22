@@ -304,6 +304,7 @@ export default gql`
     yearsOfRelevance: [YearOfRelevanceInput!]
   }
 
+  " input variables for charge spread "
   input YearOfRelevanceInput {
     year: TimelessDate!
     amount: Float
@@ -410,6 +411,7 @@ export default gql`
     charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }
 
+  " charge spread type "
   type YearOfRelevance {
     year: String!
     amount: Float

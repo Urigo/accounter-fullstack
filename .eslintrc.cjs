@@ -78,6 +78,7 @@ module.exports = {
                 'VatReportRecord',
                 'VacationDays',
                 'ValidationData',
+                'YearOfRelevance',
               ],
             },
           },
