@@ -1,4 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { format, sub } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -8,6 +9,7 @@ import {
   ChargesLedgerValidationDocument,
   ChargeSortByField,
 } from '../gql/graphql.js';
+import { TimelessDateString } from '../helpers/dates.js';
 import { useUrlQuery } from '../hooks/use-url-query';
 import { FiltersContext } from '../providers/filters-context';
 import { UserContext } from '../providers/user-provider.js';
@@ -64,6 +66,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
             field: ChargeSortByField.Date,
             asc: false,
           },
+          toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
+          fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
         },
   );
 
