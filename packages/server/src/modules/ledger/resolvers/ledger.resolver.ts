@@ -405,7 +405,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   CommonCharge: {
     ...commonChargeLedgerResolver,
   },
-  RevaluationCharge: {
+  FinancialCharge: {
     ...commonChargeLedgerResolver,
   },
   ConversionCharge: {

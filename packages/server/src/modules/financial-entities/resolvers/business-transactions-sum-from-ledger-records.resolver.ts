@@ -1,6 +1,6 @@
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
+import { REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import {
   Currency,
   QueryBusinessTransactionsSumFromLedgerRecordsArgs,

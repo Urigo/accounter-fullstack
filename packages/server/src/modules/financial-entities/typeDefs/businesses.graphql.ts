@@ -111,7 +111,7 @@ export default gql`
     owner: Business!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     owner: Business!
   }
 

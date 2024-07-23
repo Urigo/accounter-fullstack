@@ -11,7 +11,7 @@ export default gql`
     validationData: ValidationData
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     validationData: ValidationData
   }
 

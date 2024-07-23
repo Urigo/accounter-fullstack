@@ -30,7 +30,7 @@ export default gql`
     tags: [Tag!]!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     tags: [Tag!]!
   }
 

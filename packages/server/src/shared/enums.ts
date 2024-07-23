@@ -48,5 +48,5 @@ export enum ChargeTypeEnum {
   Common = 'CommonCharge',
   BankDeposit = 'BankDepositCharge',
   CreditcardBankCharge = 'CreditcardBankCharge',
-  Revaluation = 'RevaluationCharge',
+  Financial = 'FinancialCharge',
 }

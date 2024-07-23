@@ -208,7 +208,7 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     additionalDocuments: [Document!]!
   }
 

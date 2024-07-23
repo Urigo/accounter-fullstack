@@ -54,8 +54,8 @@ export const TypeCell = ({ data }: Props): ReactElement => {
         return { text: 'Bank Deposit', icon: <PigMoney /> };
       case 'CreditcardBankCharge':
         return { text: 'Credit Card Bank Charge', icon: <CreditCard /> };
-      case 'RevaluationCharge':
-        return { text: 'Revaluation Charge', icon: <Scale /> };
+      case 'FinancialCharge':
+        return { text: 'Financial Charge', icon: <Scale /> };
       default:
         return { text: 'Unknown', icon: <Coin /> };
     }

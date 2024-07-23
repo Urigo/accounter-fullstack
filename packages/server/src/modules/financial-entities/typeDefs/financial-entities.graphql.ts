@@ -29,7 +29,7 @@ export default gql`
     counterparty: FinancialEntity
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     counterparty: FinancialEntity
   }
 

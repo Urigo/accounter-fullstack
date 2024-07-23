@@ -15,7 +15,7 @@ export default gql`
     taxCategory: TaxCategory
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     taxCategory: TaxCategory
   }
 

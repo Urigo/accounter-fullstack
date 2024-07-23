@@ -3,9 +3,14 @@ import { BusinessTripsProvider } from '@modules/business-trips/providers/busines
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { generateLedgerRecordsForRevaluation } from '@modules/ledger/resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
+import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { EMPTY_UUID } from '@shared/constants';
+import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import {
+  EMPTY_UUID,
+  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+  TAX_EXPENSES_TAX_CATEGORY_ID,
+} from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
@@ -264,7 +269,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
-          type: 'REVALUATION',
+          type: 'FINANCIAL',
+          taxCategoryId: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
         });
 
         if (!charge) {
@@ -279,7 +285,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        await generateLedgerRecordsForRevaluation(
+        await generateLedgerRecordsForFinancialCharge(
           newExtendedCharge,
           { insertLedgerRecordsIfNotExists: true },
           context,
@@ -290,6 +296,67 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating revaluation charge');
+      }
+    },
+    generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
+      try {
+        const [charge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Tax expenses charge for ${year.substring(0, 4)}`,
+          type: 'FINANCIAL',
+          taxCategoryId: TAX_EXPENSES_TAX_CATEGORY_ID,
+        });
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const newExtendedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+
+        if (!newExtendedCharge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const tagName = 'financial';
+
+        const addTagPromise = async () => {
+          const tag = await injector
+            .get(TagsProvider)
+            .getTagByNameLoader.load(tagName)
+            .catch(() => {
+              throw new GraphQLError(`Error adding "${tagName}" tag`);
+            });
+
+          if (!tag) {
+            throw new GraphQLError(`"${tagName}" tag not found`);
+          }
+
+          await injector
+            .get(ChargeTagsProvider)
+            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .catch(() => {
+              throw new GraphQLError(
+                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
+              );
+            });
+        };
+
+        const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
+          newExtendedCharge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
+
+        await Promise.all([addTagPromise(), generateLedgerPromise]);
+
+        return newExtendedCharge;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating tax expenses charge');
       }
     },
   },
@@ -311,8 +378,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
-  RevaluationCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Revaluation,
+  FinancialCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,

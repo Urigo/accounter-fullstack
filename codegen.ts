@@ -103,7 +103,7 @@ const config: CodegenConfig = {
           PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           Proforma: '@modules/documents/types.js#IGetAllDocumentsResult',
           Receipt: '@modules/documents/types.js#IGetAllDocumentsResult',
-          RevaluationCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
+          FinancialCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult',

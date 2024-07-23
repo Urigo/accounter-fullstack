@@ -18,7 +18,7 @@ import {
 } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, TimelessDateString } from '@shared/types';
-import { ledgerProtoToRecordsConverter } from '../../helpers/utils.helper.js';
+import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';
 
