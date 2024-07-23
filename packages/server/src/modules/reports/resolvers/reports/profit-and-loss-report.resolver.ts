@@ -92,20 +92,12 @@ export const profitAndLossReport: ResolverFn<
       profitBeforeTaxAmount,
     } = getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    let incomeTaxAmount = amountBySortCodeValidation(
+    const incomeTaxAmount = amountBySortCodeValidation(
       decoratedLedgerRecords,
       sortCode => sortCode === 999,
     );
 
-    // TODO: this filler is temporary, until decided how ledger should be generated
-    if (incomeTaxAmount === 0) {
-      incomeTaxAmount = calculateTaxAmounts(
-        researchAndDevelopmentExpensesAmount,
-        profitBeforeTaxAmount,
-      ).annualTaxExpenseAmount;
-    }
-
-    const netProfitAmount = profitBeforeTaxAmount - incomeTaxAmount;
+    const netProfitAmount = profitBeforeTaxAmount + incomeTaxAmount;
 
     yearlyReports.push({
       year,
