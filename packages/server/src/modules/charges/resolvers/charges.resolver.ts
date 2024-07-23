@@ -3,7 +3,7 @@ import { BusinessTripsProvider } from '@modules/business-trips/providers/busines
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { generateLedgerRecordsForRevaluation } from '@modules/ledger/resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
+import { generateLedgerRecordsForRevaluation } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { EMPTY_UUID, EXCHANGE_REVALUATION_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
