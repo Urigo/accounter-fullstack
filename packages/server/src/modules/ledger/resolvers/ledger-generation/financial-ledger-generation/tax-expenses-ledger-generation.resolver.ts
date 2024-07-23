@@ -97,8 +97,8 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
-      invoiceDate: new Date(year, 12, 31),
-      valueDate: new Date(year, 12, 31),
+      invoiceDate: new Date(year, 11, 31),
+      valueDate: new Date(year, 11, 31),
       currency: DEFAULT_LOCAL_CURRENCY,
       isCreditorCounterparty: true,
       creditAccountID1: TAX_BUSINESS_ID,
