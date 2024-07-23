@@ -1,12 +1,10 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2024-07-23T12-58-43.edit-charge-type-enum.sql',
+  name: '2024-07-23T12-58-43.edit-charge-type-enum2.sql',
   run: ({ sql }) => sql`
-    ALTER TYPE accounter_schema.charge_type ADD VALUE 'FINANCIAL';
-
     UPDATE accounter_schema.charges
-    SET type = 'FINANCIAL'
+    SET type = 'FINANCIAL'::accounter_schema.charge_type
     WHERE type = 'REVALUATION';
 
     CREATE TYPE accounter_schema.charge_type_new AS ENUM ('CONVERSION', 'PAYROLL', 'FINANCIAL');
@@ -19,9 +17,9 @@ export default {
       ALTER COLUMN type TYPE accounter_schema.charge_type_new
         USING (type::text::accounter_schema.charge_type_new);
     
-    DROP TYPE admin_level1;
+    DROP TYPE accounter_schema.charge_type;
 
-    ALTER TYPE admin_level1_new RENAME TO admin_level1;
+    ALTER TYPE accounter_schema.charge_type_new RENAME TO charge_type;
 
     create or replace view accounter_schema.extended_transactions
       (id, charge_id, business_id, currency, debit_date, debit_timestamp, source_debit_date, event_date,
