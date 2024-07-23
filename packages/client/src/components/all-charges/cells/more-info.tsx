@@ -44,7 +44,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
       case 'MonthlyVatCharge':
       case 'BankDepositCharge':
       case 'CreditcardBankCharge':
-      case 'RevaluationCharge':
+      case 'FinancialCharge':
         return false;
       default:
         return true;
@@ -53,7 +53,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
 
   const shouldHaveTransactions = useMemo((): boolean => {
     switch (__typename) {
-      case 'RevaluationCharge':
+      case 'FinancialCharge':
         return false;
       default:
         return true;

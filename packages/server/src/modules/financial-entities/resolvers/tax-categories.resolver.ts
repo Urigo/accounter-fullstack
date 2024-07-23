@@ -21,7 +21,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     },
   },
   CommonCharge: commonTaxChargeFields,
-  RevaluationCharge: commonTaxChargeFields,
+  FinancialCharge: commonTaxChargeFields,
   ConversionCharge: commonTaxChargeFields,
   SalaryCharge: commonTaxChargeFields,
   InternalTransferCharge: commonTaxChargeFields,

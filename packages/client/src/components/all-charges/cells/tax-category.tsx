@@ -36,7 +36,6 @@ export const TaxCategory = ({ data }: Props): ReactElement => {
       case 'InternalTransferCharge':
       case 'SalaryCharge':
       case 'BankDepositCharge':
-      case 'RevaluationCharge':
         return false;
       default:
         return true;

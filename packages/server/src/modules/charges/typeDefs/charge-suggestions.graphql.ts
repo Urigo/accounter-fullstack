@@ -11,7 +11,7 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     missingInfoSuggestions: ChargeSuggestions
   }
 

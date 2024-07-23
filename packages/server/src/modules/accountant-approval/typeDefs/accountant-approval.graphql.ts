@@ -16,7 +16,7 @@ export default gql`
     accountantApproval: Boolean!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     accountantApproval: Boolean!
   }
 

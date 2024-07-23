@@ -30,7 +30,7 @@ export default gql`
     exchangeRates: ExchangeRates
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     exchangeRates: ExchangeRates
   }
 

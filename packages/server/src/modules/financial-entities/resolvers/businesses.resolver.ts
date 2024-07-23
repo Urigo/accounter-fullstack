@@ -331,7 +331,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   CommonCharge: commonChargeFields,
-  RevaluationCharge: commonChargeFields,
+  FinancialCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,

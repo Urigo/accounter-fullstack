@@ -77,7 +77,7 @@ export default gql`
     miscExpenses: [MiscExpense!]!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     miscExpenses: [MiscExpense!]!
   }
 

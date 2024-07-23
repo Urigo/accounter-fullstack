@@ -17,7 +17,7 @@ export default gql`
       fields: UpdateChargeInput
     ): MergeChargeResult! @auth(role: ADMIN)
     deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
-    generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): RevaluationCharge!
+    generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
   }
 
@@ -70,8 +70,8 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
   }
 
-  " revaluation charge "
-  type RevaluationCharge implements Charge {
+  " financial charge "
+  type FinancialCharge implements Charge {
     id: UUID!
     vat: FinancialAmount
     withholdingTax: FinancialAmount

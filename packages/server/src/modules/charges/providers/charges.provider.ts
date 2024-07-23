@@ -122,8 +122,8 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 `;
 
 const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_reviewed, user_description)
-  VALUES ($ownerId, $type, $isProperty, $accountantReviewed, $userDescription)
+  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_reviewed, user_description, tax_category_id)
+  VALUES ($ownerId, $type, $isProperty, $accountantReviewed, $userDescription, $taxCategoryId)
   RETURNING *;
 `;
 

@@ -37,7 +37,7 @@ export default gql`
     ledger: Ledger!
   }
 
-  extend type RevaluationCharge {
+  extend type FinancialCharge {
     ledger: Ledger!
   }
 

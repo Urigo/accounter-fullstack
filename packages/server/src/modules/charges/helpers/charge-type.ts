@@ -14,8 +14,8 @@ export function getChargeType(charge: IGetChargesByIdsResult): ChargeTypeEnum {
       return ChargeTypeEnum.Conversion;
     case 'PAYROLL':
       return ChargeTypeEnum.Salary;
-    case 'REVALUATION':
-      return ChargeTypeEnum.Revaluation;
+    case 'FINANCIAL':
+      return ChargeTypeEnum.Financial;
   }
 
   if (charge.business_trip_id) {

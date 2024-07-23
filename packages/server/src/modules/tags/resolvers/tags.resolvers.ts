@@ -127,7 +127,7 @@ export const tagsResolvers: TagsModule.Resolvers = {
         : [],
   },
   CommonCharge: commonTagsChargeFields,
-  RevaluationCharge: commonTagsChargeFields,
+  FinancialCharge: commonTagsChargeFields,
   ConversionCharge: commonTagsChargeFields,
   SalaryCharge: commonTagsChargeFields,
   InternalTransferCharge: commonTagsChargeFields,

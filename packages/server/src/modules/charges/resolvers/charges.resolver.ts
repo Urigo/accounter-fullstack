@@ -5,7 +5,7 @@ import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/help
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForRevaluation } from '@modules/ledger/resolvers/ledger-generation/revaluation-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID, EXCHANGE_REVALUATION_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
@@ -264,7 +264,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
-          type: 'REVALUATION',
+          type: 'FINANCIAL',
+          taxCategoryId: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
         });
 
         if (!charge) {
@@ -311,8 +312,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
-  RevaluationCharge: {
-    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Revaluation,
+  FinancialCharge: {
+    __isTypeOf: DbCharge => getChargeType(DbCharge) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,

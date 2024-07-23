@@ -26,7 +26,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
     },
   },
   CommonCharge: commonChargeFields,
-  RevaluationCharge: commonChargeFields,
+  FinancialCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
