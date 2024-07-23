@@ -18,7 +18,6 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
-import { calculateTaxAmounts } from '../../helpers/tax.helper.js';
 
 export const profitAndLossReport: ResolverFn<
   ReadonlyArray<ResolversTypes['ProfitAndLossReport']>,
