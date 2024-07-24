@@ -45,7 +45,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
           throw new Error(`Failed to clear business trip`);
         });
 
-      Promise.all([
+      await Promise.all([
         clearAllChargeTagsPromise,
         clearBusinessTripsPromise,
         clearLedgerPromise,
