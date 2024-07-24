@@ -16,8 +16,8 @@ import { TaxReport } from './components/reports/tax-report';
 import { TrialBalanceReport } from './components/reports/trial-balance-report';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report';
 import { Salaries } from './components/salaries';
-import { TagsManager } from './components/tags';
 import { FiltersContext } from './providers/filters-context';
+import { TagsPage } from './components/tags';
 
 export function App(): ReactElement {
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
@@ -50,7 +50,7 @@ export function App(): ReactElement {
             <Route path="tax/:year" element={<TaxReport />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
-          <Route path="tags" element={<TagsManager />} />
+          <Route path="tags" element={<TagsPage />} />
           <Route
             path="*"
             element={

@@ -4,10 +4,10 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Tag } from '../../gql/graphql.js';
-import { useDeleteTag } from '../../hooks/use-delete-tag';
-import { useUpdateTag } from '../../hooks/use-update-tag';
-import { Button } from '../ui/button';
+import { EditTagModalFieldsFragmentDoc, Tag, } from '../../gql/graphql.js';
+import { useDeleteTag } from '../../hooks/use-delete-tag.js';
+import { useUpdateTag } from '../../hooks/use-update-tag.js';
+import { Button } from '../ui/button.js';
 import {
   Dialog,
   DialogContent,
@@ -16,19 +16,37 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
-import { Input } from '../ui/input';
+} from '../ui/dialog.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
+import { Input } from '../ui/input.js';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectScrollDownButton, SelectScrollUpButton, SelectTrigger, SelectValue } from '../ui/select.js';
+import { FragmentType, getFragmentData } from '../../gql/fragment-masking.js';
 
-type TagActionsModalProps = {
-  tag: Tag;
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment EditTagModalFields on Tag {
+    name
+    id
+    parent {
+      id
+      name
+    }
+  }
+`;
+
+type Props = {
+  data: FragmentType<typeof EditTagModalFieldsFragmentDoc>;
+  allTagsSorted: Tag[];
 };
 
 const formSchema = z.object({
   name: z.string().min(2),
+  parent: z.string().optional(),
 });
 
-export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
+export function TagActionsModal({ data, allTagsSorted }: Props): JSX.Element {
+  const tag = getFragmentData(EditTagModalFieldsFragmentDoc, data);
+
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const { deleteTag, fetching: deleteFetching } = useDeleteTag();
   const { updateTag, fetching: updateFetching } = useUpdateTag();
@@ -39,11 +57,18 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: tag.name,
+      parent: tag.parent?.name ?? '',
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>): void {
-    updateTag({ tagId: tag.id, fields: values }).then(() => {
+
+    updateTag({
+      tagId: tag.id, fields: {
+        name: values.name,
+        parentId: allTagsSorted.find((tag) => tag.name === values.parent)?.id,
+      }
+    }).then(() => {
       setIsOpenDialog(false);
       navigate(0);
     });
@@ -78,6 +103,34 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
                   <FormLabel>Tag Name</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder={tag.name} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="parent"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parent Tag</FormLabel>
+                  <FormControl>
+                    <Select {...field} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue>{field.value}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectScrollUpButton />
+                        <SelectScrollDownButton />
+                        <SelectGroup>
+                          {allTagsSorted.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.name}>
+                              {tag.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

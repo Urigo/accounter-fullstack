@@ -1,49 +1,67 @@
-import { ReactElement, useContext, useEffect } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { AllTagsScreenDocument } from '../../gql/graphql.js';
-import { sortTags } from '../../helpers/index.js';
-import { FiltersContext } from '../../providers/filters-context';
-import { PageLayout } from '../layout/page-layout.js';
+import { AllTagsPageDocument } from '../../gql/graphql.js';
+import { TagsTable } from './tags-table.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import { AddTagForm } from './add-tag-form.js';
-import { columns } from './columns.js';
-import { DataTable } from './data-table.js';
+import { AllTagsPagePagination } from './tags-page-pagination.js';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllTagsScreen {
-    allTags {
-      id
-      name
-      namePath
-      ...EditTagFields
+  query AllTagsPage($limit: Int!, $offset: Int!) {
+    allTagsPaginated(filter: { limit: $limit, offset: $offset }) {
+      nodes {
+        ...AllTabsTableFields
+      }
+      pageInfo {
+        totalPages
+        currentPage
+        pageSize
+      }
     }
   }
 `;
 
-export const TagsManager = (): ReactElement => {
-  const { setFiltersContext } = useContext(FiltersContext);
-  const [{ data, fetching }, refetch] = useQuery({
-    query: AllTagsScreenDocument,
-  });
+export const TagsPage = (): ReactElement => {
+    const { setFiltersContext } = useContext(FiltersContext);
+    const { get, set } = useUrlQuery();
+    const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
+    const limit = 50;
 
-  useEffect(() => {
-    setFiltersContext(
-      <div className="flex flex-row gap-x-5">
-        <AddTagForm refetch={refetch} />
-      </div>,
+
+    const [{ data, fetching }, refetch] = useQuery({
+        query: AllTagsPageDocument,
+        variables: {
+            limit,
+            offset: activePage,
+        },
+        pause: !limit || !activePage,
+    });
+
+    console.log('data', data);
+
+    useEffect(() => {
+        setFiltersContext(
+            <div className="flex flex-row gap-3">
+                <AddTagForm refetch={refetch} />
+                <AllTagsPagePagination currentPage={activePage} onPageChange={setActivePage} totalPages={data?.allTagsPaginated.pageInfo.totalPages || 1} />
+            </div>,
+        );
+    }, [activePage, data, refetch, setFiltersContext]);
+
+    useEffect(() => {
+        set('page', activePage.toString());
+    }, [activePage, set]);
+
+    return (
+        <div>
+            {fetching ? (
+                <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+            ) : (
+                <TagsTable data={data?.allTagsPaginated?.nodes} />
+            )}
+        </div>
     );
-  }, [setFiltersContext, refetch]);
-
-  const allTags = sortTags(data?.allTags ?? []);
-
-  return (
-    <PageLayout title="Tags" description="Manage tags for your bookmarks.">
-      {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : (
-        <DataTable columns={columns} data={allTags} />
-      )}
-    </PageLayout>
-  );
 };

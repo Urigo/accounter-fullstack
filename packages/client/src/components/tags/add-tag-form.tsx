@@ -42,7 +42,7 @@ export function AddTagForm({ refetch }: TagActionsModalProps): JSX.Element {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Input {...field} placeholder="Add new tag" />
+                  <Input className='w-[200px] '{...field} placeholder="Add new tag" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
