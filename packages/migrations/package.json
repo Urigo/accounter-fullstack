@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@types/pg": "8.11.6",
-    "got": "14.4.1",
+    "got": "14.4.2",
     "pg-promise": "11.9.1",
     "slonik": "38.0.0",
     "tslib": "2.6.3",
