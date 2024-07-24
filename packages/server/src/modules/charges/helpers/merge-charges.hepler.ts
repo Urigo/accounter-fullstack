@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { deleteCharges } from './delete-charges.helper.js';
 
@@ -27,7 +28,19 @@ export const mergeChargesExecutor = async (
           assertChargeID: baseChargeID,
         });
 
-      return Promise.all([replaceDocumentsChargeIdPromise, replaceTransactionsChargeIdPromise]);
+      // update linked ledger records
+      const replaceLedgerRecordsChargeIdPromise = injector
+        .get(LedgerProvider)
+        .replaceLedgerRecordsChargeId({
+          replaceChargeID: id,
+          assertChargeID: baseChargeID,
+        });
+
+      return Promise.all([
+        replaceDocumentsChargeIdPromise,
+        replaceTransactionsChargeIdPromise,
+        replaceLedgerRecordsChargeIdPromise,
+      ]);
     });
 
     await Promise.all(chargeCleaner);
