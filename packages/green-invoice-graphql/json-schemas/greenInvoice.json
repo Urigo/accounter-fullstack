@@ -633,6 +633,41 @@
       },
       "required": ["url", "fields"]
     },
+    "getBankTransactionsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "pages": {
+          "type": "integer"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "from": {
+          "type": "integer"
+        },
+        "to": {
+          "type": "integer"
+        },
+        "aggregations": {
+          "type": "object",
+          "additionalProperties": false
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BankTransaction"
+          }
+        }
+      },
+      "required": []
+    },
     "AccountingClassification": {
       "type": "object",
       "additionalProperties": false,
@@ -675,6 +710,102 @@
         "vat": {
           "type": "number",
           "description": "The classification VAT"
+        }
+      }
+    },
+    "BankTransaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The transaction ID"
+        },
+        "aspspCode": {
+          "type": "string",
+          "description": "The bank code",
+          "enum": ["12"]
+        },
+        "businessId": {
+          "type": "string",
+          "description": "The business ID"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "The creation date timestamp"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "The update date timestamp"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "classification": {
+          "type": "integer"
+        },
+        "bookingStatus": {
+          "type": "string",
+          "description": "The booking status",
+          "enum": ["booked"]
+        },
+        "source": {
+          "type": "string",
+          "description": "The source of the transaction",
+          "enum": ["bank"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction"
+        },
+        "resourceId": {
+          "type": "string",
+          "description": "The resource ID"
+        },
+        "creditorName": {
+          "type": ["string", "null"],
+          "description": "The creditor name"
+        },
+        "creditorAccount": {
+          "type": ["string", "null"],
+          "description": "The creditor account"
+        },
+        "currency": { "$ref": "#/definitions/Currency" },
+        "valueDate": {
+          "type": "string",
+          "description": "Value date of the transaction"
+        },
+        "bookingDate": {
+          "type": "string",
+          "description": "Booking date of the transaction"
+        },
+        "checkId": {
+          "type": ["string", "null"],
+          "description": "The check ID"
+        },
+        "description": {
+          "type": "string"
+        },
+        "debtorName": {
+          "type": ["string", "null"],
+          "description": "The debtor name"
+        },
+        "debtorAccount": {
+          "type": ["string", "null"],
+          "description": "The debtor account"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the transaction",
+          "enum": ["credit", "debt"]
+        },
+        "name": { "type": "string" },
+        "date": {
+          "type": "string"
+        },
+        "iban": {
+          "type": "string",
+          "description": "The IBAN of the transaction"
         }
       }
     },
