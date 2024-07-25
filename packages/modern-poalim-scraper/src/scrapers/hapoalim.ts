@@ -43,13 +43,15 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
 
   page.click('.submit-btn');
 
-  const answers = await inquirer.prompt<{'SMSPassword': string}>([
+  const answers = await inquirer.prompt<{'SMSPassword': string}>(
     {
       type: 'input',
       name: 'SMSPassword',
-      message: 'Enter the code you got in SMS:',
+      message: {
+        message: 'Enter the code you got in SMS:'
+      },
     },
-  ]);
+  );
 
   await page.type('input[formcontrolname="code"]', answers.SMSPassword);
 
@@ -81,13 +83,13 @@ async function personalLogin(credentials: hapoalimCredentials, page: Page) {
 async function replacePassword(previousCredentials: hapoalimCredentials, page: Page) {
   await page.waitForSelector('#buttonAction');
 
-  const answers = await inquirer.prompt<{'newPassword': string}>([
-    {
+  const answers = await inquirer.prompt<{'newPassword': string}>({
       type: 'input',
       name: 'newPassword',
-      message: 'Enter your new wanted password:',
-    },
-  ]);
+      message: {
+        message: 'Enter your new wanted password:'
+      },
+    });
 
   await page.type('[name="oldpassword"]', previousCredentials.password);
   await page.type('[name="newpassword"]', answers.newPassword);
