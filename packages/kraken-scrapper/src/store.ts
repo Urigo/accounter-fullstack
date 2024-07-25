@@ -72,7 +72,7 @@ export async function createAndConnectStore(options: { connectionString: string;
                 INSERT INTO ${options.schema}.charges (owner_id, type)
                 VALUES (
                     owner_id_var,
-                    CASE WHEN is_conversion IS TRUE THEN 'PAYROLL'::accounter_schema.charge_type END
+                    CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END
                 )
                 RETURNING id INTO charge_id_var;
             END IF;
