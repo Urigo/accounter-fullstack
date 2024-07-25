@@ -1,10 +1,9 @@
-import { ReactElement, useMemo } from 'react';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Indicator } from '@mantine/core';
-import { FragmentType, getFragmentData } from '../../gql/fragment-masking.js';
-import { BusinessTripsScreenDocument, BusinessTripWrapperFragmentDoc } from '../../gql/graphql.js';
+import { BusinessTripsScreenDocument, BusinessTripsScreenQuery } from '../../gql/graphql.js';
 import { InsertBusinessTripModal } from '../common';
 import { PageLayout } from '../layout/page-layout.js';
 import { EditableBusinessTrip } from './editable-business-trip.js';
@@ -18,18 +17,50 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
       dates {
         start
       }
-      ...BusinessTripWrapper
+      ... on BusinessTrip @defer {
+        uncategorizedTransactions {
+          ... on Transaction @defer {
+            id
+          }
+        }
+        summary {
+          ... on BusinessTripSummary @defer {
+            errors
+          }
+        }
+      }
     }
   }
 `;
 
 export const BusinessTrips = (): ReactElement => {
+  const [businessTrips, setBusinessTrips] = useState<BusinessTripsScreenQuery['allBusinessTrips']>(
+    [],
+  );
   const [{ data, fetching }] = useQuery({
     query: BusinessTripsScreenDocument,
   });
 
+  useEffect(() => {
+    if (!data?.allBusinessTrips?.length) {
+      setBusinessTrips([]);
+      return;
+    }
+
+    const newBusinessTrips = data.allBusinessTrips.sort((a, b) => {
+      // sort by start date (if available, newest top) and then by name
+      if (a.dates?.start && b.dates?.start) {
+        return a.dates.start < b.dates.start ? 1 : -1;
+      }
+      if (a.dates?.start) return -1;
+      if (b.dates?.start) return 1;
+      return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
+    });
+    setBusinessTrips(newBusinessTrips);
+  }, [data?.allBusinessTrips]);
+
   return (
-    <PageLayout title="Business trips" description="Manage business trips">
+    <PageLayout title="Business Trips" description="Manage business trips">
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
@@ -46,23 +77,13 @@ export const BusinessTrips = (): ReactElement => {
               },
             }}
           >
-            {data?.allBusinessTrips
-              .sort((a, b) => {
-                // sort by start date (if available, newest top) and then by name
-                if (a.dates?.start && b.dates?.start) {
-                  return a.dates.start < b.dates.start ? 1 : -1;
-                }
-                if (a.dates?.start) return -1;
-                if (b.dates?.start) return 1;
-                return a.name.toLocaleLowerCase() < b.name.toLocaleLowerCase() ? -1 : 1;
-              })
-              .map(businessTrip => (
-                <BusinessTripWrapper
-                  data={businessTrip}
-                  isFetching={fetching}
-                  key={businessTrip.id}
-                />
-              ))}
+            {businessTrips?.map(businessTrip => (
+              <BusinessTripWrapper
+                trip={businessTrip}
+                isFetching={fetching}
+                key={businessTrip.id}
+              />
+            ))}
           </Accordion>
           <div className="flex justify-end mx-4">
             <InsertBusinessTripModal />
@@ -73,33 +94,12 @@ export const BusinessTrips = (): ReactElement => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment BusinessTripWrapper on BusinessTrip {
-    id
-    name
-    uncategorizedTransactions {
-      ... on Transaction @defer {
-        id
-      }
-    }
-    summary {
-      ... on BusinessTripSummary @defer {
-        errors
-      }
-    }
-    ...EditableBusinessTrip
-  }
-`;
-
 type BusinessTripWrapperProps = {
-  data: FragmentType<typeof BusinessTripWrapperFragmentDoc>;
+  trip: BusinessTripsScreenQuery['allBusinessTrips'][number];
   isFetching?: boolean;
 };
 
-const BusinessTripWrapper = ({ data, isFetching }: BusinessTripWrapperProps): ReactElement => {
-  const trip = getFragmentData(BusinessTripWrapperFragmentDoc, data);
-
+const BusinessTripWrapper = ({ trip, isFetching }: BusinessTripWrapperProps): ReactElement => {
   const indicatorUp = useMemo(() => {
     return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
   }, [trip]);
@@ -119,7 +119,7 @@ const BusinessTripWrapper = ({ data, isFetching }: BusinessTripWrapperProps): Re
         </Indicator>
       </Accordion.Control>
       <Accordion.Panel>
-        <EditableBusinessTrip data={trip} isExtended key={trip.id} />
+        <EditableBusinessTrip tripId={trip.id} isExtended key={trip.id} />
       </Accordion.Panel>
     </Accordion.Item>
   );
