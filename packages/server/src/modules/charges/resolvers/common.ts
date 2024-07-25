@@ -7,7 +7,7 @@ import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.pro
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 const calculateTotalAmount: ChargeResolvers['totalAmount'] = async charge => {
-  if (charge.is_salary && charge.transactions_event_amount != null) {
+  if (charge.type === 'PAYROLL' && charge.transactions_event_amount != null) {
     return formatFinancialAmount(charge.transactions_event_amount, DEFAULT_LOCAL_CURRENCY);
   }
   if (charge.documents_event_amount != null && charge.documents_currency) {

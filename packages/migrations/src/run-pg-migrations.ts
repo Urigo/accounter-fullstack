@@ -30,6 +30,7 @@ import migration_2024_07_18T13_43_02_enhance_charge_spreading from './actions/20
 import migration_2024_07_23T12_58_43_edit_charge_type_enum1 from './actions/2024-07-23T12-58-43.edit-charge-type-enum1.js';
 import migration_2024_07_23T12_58_43_edit_charge_type_enum2 from './actions/2024-07-23T12-58-43.edit-charge-type-enum2.js';
 import migration_2024_07_25T14_10_36_enhance_view_tables from './actions/2024-07-25T14-10-36.enhance-view-tables.js';
+import migration_2024_07_25T22_38_12_charge_type_fixes from './actions/2024-07-25T22-38-12.charge-type-fixes.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -67,5 +68,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_07_23T12_58_43_edit_charge_type_enum1,
       migration_2024_07_23T12_58_43_edit_charge_type_enum2,
       migration_2024_07_25T14_10_36_enhance_view_tables,
+      migration_2024_07_25T22_38_12_charge_type_fixes,
     ],
   });
