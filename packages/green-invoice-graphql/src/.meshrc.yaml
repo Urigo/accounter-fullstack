@@ -107,6 +107,37 @@ sources:
               context: context
               data: data
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlResponse
+
+          - type: Query
+            field: getBankTransactions
+            path: /open-banking/v2/transactions
+            method: GET
+            argTypeMap:
+              valueDate:
+                type: object
+                properties:
+                  from:
+                    type: string
+                  to:
+                    type: string
+                required:
+                  - from
+                  - to
+              from:
+                type: number
+              size:
+                type: number
+              bookingStatus:
+                type: string
+            queryStringOptions:
+              indices: true
+              arrayFormat: brackets
+            queryParamArgMap:
+              valueDate: valueDate
+              from: from
+              size: size
+              bookingStatus: bookingStatus
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getBankTransactionsResponse
 codegen:
   ignoreEnumValuesFromSchema: false
 
