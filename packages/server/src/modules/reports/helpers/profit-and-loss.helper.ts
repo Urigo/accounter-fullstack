@@ -89,19 +89,16 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
 
   const researchAndDevelopmentExpensesAmount = amountBySortCodeValidation(
     decoratedLedgerRecords,
-    sortCode => [920, 930].includes(sortCode),
+    sortCode => [920, 921, 930].includes(sortCode),
   );
 
-  const marketingExpensesAmount = amountBySortCodeValidation(
-    decoratedLedgerRecords,
-    sortCode => sortCode === 935,
+  const marketingExpensesAmount = amountBySortCodeValidation(decoratedLedgerRecords, sortCode =>
+    [935, 936].includes(sortCode),
   );
 
   const managementAndGeneralExpensesAmount = amountBySortCodeValidation(
     decoratedLedgerRecords,
     sortCode => [940, 945].includes(sortCode),
-
-    // split 945 trips into 936 marketing trips and 921 r&d trips
   );
 
   const operatingProfitAmount =
