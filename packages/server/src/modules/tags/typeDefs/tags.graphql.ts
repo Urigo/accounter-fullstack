@@ -4,8 +4,9 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allTags: [Tag!]! @auth(role: ACCOUNTANT)
-    allTagsPaginated(filter: TagFilter): PaginatedTags! @auth(role: ACCOUNTANT)
     tagsByIds(ids: [UUID!]!): [Tag!]! @auth(role: ACCOUNTANT)
+    allTagsPaginated(page: Int = 1, limit: Int = 999999): PaginatedTags!
+      @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
@@ -17,16 +18,20 @@ export default gql`
     updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean! @auth(role: ADMIN)
   }
 
-  input TagFilter {
-    limit: Int
-    offset: Int
-  }
 
   " response for paginated tags "
-    type PaginatedTags {
+  type PaginatedTags {
     nodes: [Tag!]!
-    pageInfo: PageInfo!
+    pageInfo: TagPageInfo!
   }
+
+  type TagPageInfo {
+  hasPreviousPage: Boolean!
+  hasNextPage: Boolean!
+  startCursor: String!
+  endCursor: String!
+  totalPages: Int!
+}
 
   " input variables for updateTag "
   input UpdateTagFieldsInput {

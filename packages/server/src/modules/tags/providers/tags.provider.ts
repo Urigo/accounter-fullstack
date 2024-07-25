@@ -60,12 +60,15 @@ const updateTagParent = sql<IUpdateTagParentQuery>`
 RETURNING *;
 `;
 
+
 const getTagsByFilters = sql<IGetTagsByFiltersQuery>`
   SELECT *
   FROM accounter_schema.extended_tags
+  ORDER BY name
   LIMIT $limit
   OFFSET $offset;
 `;
+
 
 const countTags = sql<ICountTagsQuery>`
   SELECT COUNT(*)

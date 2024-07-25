@@ -3,7 +3,7 @@ import { FragmentType, getFragmentData } from '../../gql';
 import { AllTabsTableFieldsFragmentDoc } from '../../gql/graphql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { sortTags } from '../../helpers';
 import { TagCell, TagParent } from './cells/parent';
 import { TagName } from './cells/name';
@@ -27,9 +27,8 @@ type TagsTableProps = {
 
 export function TagsTable({ data }: TagsTableProps): JSX.Element {
     const tags = data?.map(charge => getFragmentData(AllTabsTableFieldsFragmentDoc, charge)) ?? [];
-    console.log("tags", tags);
     const allTagsSorted = sortTags(tags);
-    console.log("allTagsSorted", allTagsSorted);
+
 
     const [expandedRows, setExpandedRows] = useState([] as number[]);
     const toggleRowExpansion = (index: number): void => {
@@ -42,6 +41,8 @@ export function TagsTable({ data }: TagsTableProps): JSX.Element {
             });
         }
     }
+
+
 
     return (
         <Card>

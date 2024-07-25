@@ -16,7 +16,6 @@ export function AllTagsPagePagination({ currentPage, onPageChange, totalPages }:
         const oldPage = get('page');
         if (newPage !== oldPage) {
             set('page', newPage);
-
         }
     }, [currentPage, get, set]);
 
