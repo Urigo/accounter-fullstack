@@ -114,10 +114,20 @@ export const chargesResolvers: ChargesModule.Resolvers &
       };
       try {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        const res = await injector.get(ChargesProvider).updateCharge({ ...adjustedFields });
+        const res = await injector
+          .get(ChargesProvider)
+          .updateCharge({ ...adjustedFields })
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError(`Error updating charge ID="${chargeId}"`);
+          });
         const updatedCharge = await injector
           .get(ChargesProvider)
-          .getChargeByIdLoader.load(res[0].id);
+          .getChargeByIdLoader.load(res[0].id)
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError(`Error loading updated charge ID="${chargeId}"`);
+          });
         if (!updatedCharge) {
           throw new Error(`Charge ID="${chargeId}" not found`);
         }
@@ -127,38 +137,45 @@ export const chargesResolvers: ChargesModule.Resolvers &
         // handle tags
         if (fields?.tags) {
           const newTagIDs = fields.tags.map(t => t.id);
-          const pastTags = await injector
-            .get(ChargeTagsProvider)
-            .getTagsByChargeIDLoader.load(chargeId)
-            .then(res => res.map(tag => tag.id!));
-          // clear removed tags
-          const tagsToRemove = pastTags.filter(tagId => !newTagIDs.includes(tagId));
-          if (tagsToRemove.length) {
-            indirectUpdatesPromises.push(
-              injector
-                .get(ChargeTagsProvider)
-                .clearChargeTags({ chargeId, tagIDs: tagsToRemove })
-                .catch(() => {
-                  throw new GraphQLError(
-                    `Error clearing tags IDs="${tagsToRemove}" to charge ID="${chargeId}"`,
-                  );
-                }),
-            );
-          }
-          // add new tags
-          const tagIDsToAdd = newTagIDs.filter(tagId => !pastTags.includes(tagId));
-          for (const tagId of tagIDsToAdd) {
-            indirectUpdatesPromises.push(
-              injector
-                .get(ChargeTagsProvider)
-                .insertChargeTag({ chargeId, tagId })
-                .catch(() => {
-                  throw new GraphQLError(
-                    `Error adding tag ID="${tagId}" to charge ID="${chargeId}"`,
-                  );
-                }),
-            );
-          }
+          const updateTagsPromise = async () => {
+            const tagsPromises: Array<Promise<unknown>> = [];
+            const pastTags = await injector
+              .get(ChargeTagsProvider)
+              .getTagsByChargeIDLoader.load(chargeId)
+              .then(res => res.map(tag => tag.id!));
+            // clear removed tags
+            const tagsToRemove = pastTags.filter(tagId => !newTagIDs.includes(tagId));
+            if (tagsToRemove.length) {
+              tagsPromises.push(
+                injector
+                  .get(ChargeTagsProvider)
+                  .clearChargeTags({ chargeId, tagIDs: tagsToRemove })
+                  .catch(e => {
+                    console.error(e);
+                    throw new GraphQLError(
+                      `Error clearing tags IDs="${tagsToRemove}" to charge ID="${chargeId}"`,
+                    );
+                  }),
+              );
+            }
+            // add new tags
+            const tagIDsToAdd = newTagIDs.filter(tagId => !pastTags.includes(tagId));
+            for (const tagId of tagIDsToAdd) {
+              tagsPromises.push(
+                injector
+                  .get(ChargeTagsProvider)
+                  .insertChargeTag({ chargeId, tagId })
+                  .catch(e => {
+                    console.error(e);
+                    throw new GraphQLError(
+                      `Error adding tag ID="${tagId}" to charge ID="${chargeId}"`,
+                    );
+                  }),
+              );
+            }
+            await Promise.all(tagsPromises);
+          };
+          indirectUpdatesPromises.push(updateTagsPromise());
         }
 
         // handle business trip
@@ -170,26 +187,39 @@ export const chargesResolvers: ChargesModule.Resolvers &
                 chargeId,
                 fields.businessTripID === EMPTY_UUID ? null : fields.businessTripID,
               )
-              .catch(() => {
+              .catch(e => {
+                console.error(e);
                 throw new GraphQLError(`Error updating business trip for charge ID="${chargeId}"`);
               }),
           );
         }
 
         // handle charge spread
-        if (fields?.yearsOfRelevance) {
+        if (fields?.yearsOfRelevance?.length) {
           const updateSpreadRecords = async () => {
             await injector
               .get(ChargeSpreadProvider)
-              .deleteAllChargeSpreadByChargeIds({ chargeIds: [chargeId] });
+              .deleteAllChargeSpreadByChargeIds({ chargeIds: [chargeId] })
+              .catch(e => {
+                console.error(e);
+                throw new GraphQLError(`Error deleting spread records for charge ID="${chargeId}"`);
+              });
 
-            return injector.get(ChargeSpreadProvider).insertChargeSpread({
-              chargeSpread: fields.yearsOfRelevance!.map(record => ({
-                chargeId,
-                yearOfRelevance: record.year,
-                amount: record.amount,
-              })),
-            });
+            return injector
+              .get(ChargeSpreadProvider)
+              .insertChargeSpread({
+                chargeSpread: fields.yearsOfRelevance!.map(record => ({
+                  chargeId,
+                  yearOfRelevance: record.year,
+                  amount: record.amount,
+                })),
+              })
+              .catch(e => {
+                console.error(e);
+                throw new GraphQLError(
+                  `Error inserting spread records for charge ID="${chargeId}"`,
+                );
+              });
           };
           indirectUpdatesPromises.push(updateSpreadRecords());
         }
