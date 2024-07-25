@@ -17,12 +17,12 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
   }
   return (
     <>
-      <Tooltip label="Insert New Business Trip">
+      <Tooltip label="Add New Business Trip">
         <ActionIcon onClick={open}>
           <WorldUpload size={20} />
         </ActionIcon>
       </Tooltip>
-      <Modal centered opened={opened} onClose={close} title="Insert Business Trip">
+      <Modal centered opened={opened} onClose={close} title="Add Business Trip">
         <InsertBusinessTrip onDone={onInsertDone} />
       </Modal>
     </>

@@ -15,7 +15,6 @@ import { EditableBusinessTrip } from './editable-business-trip.jsx';
       dates {
         start
       }
-      ...EditableBusinessTrip
     }
   }
 `;
@@ -38,7 +37,7 @@ export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
     <AccounterLoader />
   ) : (
     <Container className="mt-5">
-      <EditableBusinessTrip data={data.businessTrip} isExtended />
+      {businessTripId && <EditableBusinessTrip tripId={businessTripId} isExtended />}
     </Container>
   );
 };
