@@ -1,5 +1,5 @@
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { useToast } from '../components/ui/use-toast.js';
 import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -19,6 +19,7 @@ export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add local data update method after chang e
 
   const [{ fetching }, mutate] = useMutation(DeleteTagDocument);
+  const { toast } = useToast();
 
   return {
     fetching,
@@ -27,23 +28,23 @@ export const useDeleteTag = (): UseDeleteTag => {
         mutate(variables).then(res => {
           if (res.error) {
             console.error(`Error deleting new tag [${variables.name}]: ${res.error}`);
-            showNotification({
+            toast({
               title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+              description: 'Oh no!, we have an error! 🤥',
             });
             return reject(res.error.message);
           }
           if (!res.data?.deleteTag) {
             console.error(`Error deleting new tag [${variables.name}]`);
-            showNotification({
+            toast({
               title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+              description: 'Oh no!, we have an error! 🤥',
             });
             return reject('No data returned');
           }
-          showNotification({
+          toast({
             title: 'Tag Deleted!',
-            message: `"${variables.name}" tag was successfully removed`,
+            description: `"${variables.name}" tag was successfully removed`,
           });
           return resolve();
         }),

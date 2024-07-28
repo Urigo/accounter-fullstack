@@ -5,9 +5,12 @@ import { sql } from '@pgtyped/runtime';
 import type {
   IAddNewTagParams,
   IAddNewTagQuery,
+  ICountTagsQuery,
   IDeleteTagParams,
   IDeleteTagQuery,
   IGetAllTagsQuery,
+  IGetTagsByFiltersParams,
+  IGetTagsByFiltersQuery,
   IGetTagsByIDsQuery,
   IGetTagsByNamesQuery,
   IRenameTagParams,
@@ -22,50 +25,73 @@ const getAllTags = sql<IGetAllTagsQuery>`
 `;
 
 const getTagsByIDs = sql<IGetTagsByIDsQuery>`
-  SELECT *
+SELECT *
   FROM accounter_schema.extended_tags
-  WHERE id in $$tagIDs;`;
+  WHERE id in $$tagIDs; `;
 
 const getTagsByNames = sql<IGetTagsByNamesQuery>`
-  SELECT *
+SELECT *
   FROM accounter_schema.extended_tags
-  WHERE name in $$tagNames;`;
+  WHERE name in $$tagNames; `;
 
 const addNewTag = sql<IAddNewTagQuery>`
-  INSERT INTO accounter_schema.tags (name)
-  VALUES ($name)
-  RETURNING *;
+  INSERT INTO accounter_schema.tags(name)
+VALUES($name)
+RETURNING *;
 `;
 
 const renameTag = sql<IRenameTagQuery>`
   UPDATE accounter_schema.tags
   SET name = $newName
   WHERE id = $id
-  RETURNING *;
+RETURNING *;
 `;
 
 const deleteTag = sql<IDeleteTagQuery>`
   DELETE FROM accounter_schema.tags
   WHERE id = $id
-  RETURNING *;
+RETURNING *;
 `;
 
 const updateTagParent = sql<IUpdateTagParentQuery>`
   UPDATE accounter_schema.tags
   SET parent = $parentId
   WHERE id = $id
-  RETURNING *;
+RETURNING *;
 `;
+
+
+const getTagsByFilters = sql<IGetTagsByFiltersQuery>`
+  SELECT *
+  FROM accounter_schema.extended_tags
+  ORDER BY name
+  LIMIT $limit
+  OFFSET $offset;
+`;
+
+
+const countTags = sql<ICountTagsQuery>`
+  SELECT COUNT(*)
+  FROM accounter_schema.extended_tags;
+`;
+
 
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class TagsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private dbProvider: DBProvider) { }
 
   public getAllTags() {
     return getAllTags.run(undefined, this.dbProvider);
+  }
+  public getTagsByIDs(tagIDs: readonly string[]) {
+    return getTagsByIDs.run({ tagIDs }, this.dbProvider);
+  }
+
+  public getTagsByFilters(params: IGetTagsByFiltersParams) {
+    return getTagsByFilters.run(params, this.dbProvider);
   }
 
   public addNewTag(params: IAddNewTagParams) {
@@ -82,6 +108,9 @@ export class TagsProvider {
 
   public updateTagParent(params: IUpdateTagParentParams) {
     return updateTagParent.run(params, this.dbProvider);
+  }
+  public countTags() {
+    return countTags.run(undefined, this.dbProvider);
   }
 
   private async batchTagsByID(tagIDs: readonly string[]) {

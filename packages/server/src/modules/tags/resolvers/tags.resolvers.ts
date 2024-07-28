@@ -8,123 +8,103 @@ import { commonTagsChargeFields } from './common.js';
 export const tagsResolvers: TagsModule.Resolvers = {
   Query: {
     allTags: (_, __, { injector }) => injector.get(TagsProvider).getAllTags(),
+    tagsByIds: (_, { ids }, { injector }) => injector.get(TagsProvider).getTagsByIDs(ids),
+    allTagsPaginated: async (_, { page, limit }, { injector }) => {
+      const offset = (page - 1) * limit;
+
+      const [tags, tagsCount] = await Promise.all([
+        injector.get(TagsProvider).getTagsByFilters({ limit, offset }),
+        injector.get(TagsProvider).countTags(),
+      ]);
+
+      const totalTags = tagsCount[0]?.count || 0;
+      const totalPages = Math.ceil(Number(totalTags) / limit);
+
+      const pageInfo = {
+        totalPages,
+        hasNextPage: (page * limit) < Number(totalTags),
+        hasPreviousPage: page > 1,
+        startCursor: offset.toString(),
+        endCursor: (offset + tags.length).toString(),
+      };
+
+      return {
+        __typename: 'PaginatedTags',
+        nodes: tags,
+        pageInfo,
+      };
+    },
+
   },
   Mutation: {
     addTag: (_, { name }, { injector }) => {
-      return injector
-        .get(TagsProvider)
-        .addNewTag({ name })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error adding tag "${name}"`);
-        })
-        .then(() => true);
+      return injector.get(TagsProvider).addNewTag({ name }).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error adding tag "${name}"`);
+      }).then(() => true);
     },
     deleteTag: (_, { id }, { injector }) => {
-      return injector
-        .get(TagsProvider)
-        .deleteTag({ id })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error deleting tag id "${id}"`);
-        })
-        .then(() => true);
+      return injector.get(TagsProvider).deleteTag({ id }).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error deleting tag id "${id}"`);
+      }).then(() => true);
     },
     renameTag: (_, { id, newName }, { injector }) => {
-      return injector
-        .get(TagsProvider)
-        .renameTag({ id, newName })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error renaming tag id "${id}"`);
-        })
-        .then(() => true);
+      return injector.get(TagsProvider).renameTag({ id, newName }).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error renaming tag id "${id}"`);
+      }).then(() => true);
     },
     updateTagParent: (_, { id, parentId }, { injector }) => {
-      return injector
-        .get(TagsProvider)
-        .updateTagParent({ id, parentId: parentId === EMPTY_UUID ? null : parentId })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error updating parent of tag id "${id}"`);
-        })
-        .then(() => true);
+      return injector.get(TagsProvider).updateTagParent({ id, parentId: parentId === EMPTY_UUID ? null : parentId }).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error updating parent of tag id "${id}"`);
+      }).then(() => true);
     },
     updateTagPart: (_, { tagId, chargeId, part }, { injector }) => {
-      return injector
-        .get(ChargeTagsProvider)
-        .updateChargeTagPart({ tagId, chargeId, part })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(
-            `Error updating tag's part (id "${tagId}", charge id "${chargeId}")`,
-          );
-        })
-        .then(() => true);
+      return injector.get(ChargeTagsProvider).updateChargeTagPart({ tagId, chargeId, part }).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error updating tag's part (id "${tagId}", charge id "${chargeId}")`);
+      }).then(() => true);
     },
     updateTag: async (_, { id, fields }, { injector }) => {
       const promises: Array<Promise<unknown>> = [];
       if (fields.name) {
-        promises.push(
-          injector
-            .get(TagsProvider)
-            .renameTag({ id, newName: fields.name })
-            .catch(e => {
-              console.error(JSON.stringify(e, null, 2));
-              throw new GraphQLError(`Error renaming tag id "${id}"`);
-            }),
-        );
+        promises.push(injector.get(TagsProvider).renameTag({ id, newName: fields.name }).catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error renaming tag id "${id}"`);
+        }));
       }
       if (fields.parentId) {
-        promises.push(
-          injector
-            .get(TagsProvider)
-            .updateTagParent({
-              id,
-              parentId: fields.parentId === EMPTY_UUID ? null : fields.parentId,
-            })
-            .catch(e => {
-              console.error(JSON.stringify(e, null, 2));
-              throw new GraphQLError(`Error updating parent of tag id "${id}"`);
-            }),
-        );
+        promises.push(injector.get(TagsProvider).updateTagParent({ id, parentId: fields.parentId === EMPTY_UUID ? null : fields.parentId }).catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error updating parent of tag id "${id}"`);
+        }));
       }
       if (promises.length === 0) {
         return true;
       }
-      return Promise.all(promises)
-        .then(() => true)
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error updating tag id "${id}"`);
-        });
+      return Promise.all(promises).then(() => true).catch(e => {
+        console.error(JSON.stringify(e, null, 2));
+        throw new GraphQLError(`Error updating tag id "${id}"`);
+      });
     },
   },
   Tag: {
     id: tag => tag.id!,
     name: tag => tag.name!,
     parent: (dbTag, _, { injector }) =>
-      dbTag.parent
-        ? injector
-            .get(TagsProvider)
-            .getTagByIDLoader.load(dbTag.parent)
-            .then(res => res ?? null)
-        : null,
+      dbTag.parent ? injector.get(TagsProvider).getTagByIDLoader.load(dbTag.parent).then(res => res ?? null) : null,
     namePath: dbTag => dbTag.names_path,
     fullPath: (dbTag, _, { injector }) =>
-      dbTag.ids_path
-        ? dbTag.ids_path.map(id =>
-            injector
-              .get(TagsProvider)
-              .getTagByIDLoader.load(id)
-              .then(res => {
-                if (!res) {
-                  throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
-                }
-                return res;
-              }),
-          )
-        : [],
+      dbTag.ids_path ? dbTag.ids_path.map(id =>
+        injector.get(TagsProvider).getTagByIDLoader.load(id).then(res => {
+          if (!res) {
+            throw new Error(`Tag with id ${id}, ancestor of tag id ${dbTag.id} not found`);
+          }
+          return res;
+        }),
+      ) : [],
   },
   CommonCharge: commonTagsChargeFields,
   FinancialCharge: commonTagsChargeFields,
