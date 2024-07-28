@@ -25,7 +25,7 @@ const getRateByCurrencyAndDate = sql<IGetRateByCurrencyAndDateQuery>`
 
 const insertRates = sql<IInsertRatesQuery>`
   INSERT INTO accounter_schema.crypto_exchange_rates (date, coin_symbol, value, against, sample_date)
-  VALUES $$rates(date, coin_symbol, value, against, sample_date)
+  VALUES $$rates(date, currency, value, against, sampleDate)
   ON CONFLICT (date, coin_symbol, against) DO UPDATE
   SET value = EXCLUDED.value
   RETURNING *;
@@ -69,20 +69,9 @@ export class CryptoExchangeProvider {
         value: number;
         sampleDate: Date;
       }[],
-    ) =>
-      this.addRates(
-        keys.map(({ date, currency, against, value, sampleDate }) => ({
-          date,
-          coin_symbol: currency,
-          against,
-          value,
-          sample_date: sampleDate,
-        })),
-      ),
+    ) => this.addRates(keys.map(rate => ({ ...rate, against: rate.against ?? null }))),
     {
       cache: false,
-      cacheKeyFn: ({ date, currency, against }) =>
-        `${format(date, 'dd-MM-yyyy')}-${currency}-${against ?? 'USD'}`,
     },
   );
 
