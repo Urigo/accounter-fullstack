@@ -2,8 +2,10 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialEntitiesQuery,
+  IGetAllFinancialEntitiesResult,
   IGetFinancialEntitiesByIdsQuery,
   IGetFinancialEntitiesByNamesQuery,
   IInsertFinancialEntityParams,
@@ -60,6 +62,10 @@ const insertFinancialEntity = sql<IInsertFinancialEntityQuery>`
   global: true,
 })
 export class FinancialEntitiesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialEntitiesByIds(ids: readonly string[]) {
@@ -76,7 +82,8 @@ export class FinancialEntitiesProvider {
   public getFinancialEntityByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `financial-entity-id-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -93,19 +100,33 @@ export class FinancialEntitiesProvider {
   public getFinancialEntityByNameLoader = new DataLoader(
     (keys: readonly string[]) => this.batchFinancialEntitiesByNames(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `financial-entity-name-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public getAllFinancialEntities() {
-    return getAllFinancialEntities.run(undefined, this.dbProvider);
+    const data = this.cache.get('all-financial-entities');
+    if (data) {
+      return data as Array<IGetAllFinancialEntitiesResult>;
+    }
+    return getAllFinancialEntities.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-financial-entities', data, 60 * 5);
+      return data;
+    });
   }
 
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
+    this.clearCache();
     return updateFinancialEntity.run(params, this.dbProvider);
   }
 
   public insertFinancialEntity(params: IInsertFinancialEntityParams) {
+    this.cache.delete('all-financial-entities');
     return insertFinancialEntity.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

@@ -2,12 +2,14 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IAddNewTagParams,
   IAddNewTagQuery,
   IDeleteTagParams,
   IDeleteTagQuery,
   IGetAllTagsQuery,
+  IGetAllTagsResult,
   IGetTagsByIDsQuery,
   IGetTagsByNamesQuery,
   IRenameTagParams,
@@ -62,25 +64,40 @@ const updateTagParent = sql<IUpdateTagParentQuery>`
   global: true,
 })
 export class TagsProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   public getAllTags() {
-    return getAllTags.run(undefined, this.dbProvider);
+    const data = this.cache.get('all-tags');
+    if (data) {
+      return data as Array<IGetAllTagsResult>;
+    }
+    return getAllTags.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-tags', data, 60 * 5);
+      return data;
+    });
   }
 
   public addNewTag(params: IAddNewTagParams) {
+    this.clearCache();
     return addNewTag.run(params, this.dbProvider);
   }
 
   public renameTag(params: IRenameTagParams) {
+    this.clearCache();
     return renameTag.run(params, this.dbProvider);
   }
 
   public deleteTag(params: IDeleteTagParams) {
+    this.clearCache();
     return deleteTag.run(params, this.dbProvider);
   }
 
   public updateTagParent(params: IUpdateTagParentParams) {
+    this.clearCache();
     return updateTagParent.run(params, this.dbProvider);
   }
 
@@ -90,7 +107,8 @@ export class TagsProvider {
   }
 
   public getTagByIDLoader = new DataLoader((keys: readonly string[]) => this.batchTagsByID(keys), {
-    cache: false,
+    cacheKeyFn: key => `tag-id-${key}`,
+    cacheMap: this.cache,
   });
 
   private async batchTagsByNames(tagNames: readonly string[]) {
@@ -101,7 +119,12 @@ export class TagsProvider {
   public getTagByNameLoader = new DataLoader(
     (keys: readonly string[]) => this.batchTagsByNames(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `tag-name-${key}`,
+      cacheMap: this.cache,
     },
   );
+
+  public clearCache() {
+    this.cache.clear();
+  }
 }

@@ -3,6 +3,7 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { getCacheInstance } from '@shared/helpers';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
@@ -197,6 +198,10 @@ const replaceLedgerRecordsChargeId = sql<IReplaceLedgerRecordsChargeIdQuery>`
   global: true,
 })
 export class LedgerProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
     private dbProvider: DBProvider,
@@ -215,7 +220,10 @@ export class LedgerProvider {
 
   public getLedgerRecordsByChargesIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchLedgerRecordsByChargesIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: key => `ledger-by-charge-id-${key}`,
+      cacheMap: this.cache,
+    },
   );
 
   private async batchLedgerRecordsByFinancialEntityIds(ids: readonly string[]) {
@@ -240,7 +248,10 @@ export class LedgerProvider {
 
   public getLedgerRecordsByFinancialEntityIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchLedgerRecordsByFinancialEntityIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: key => `ledger-by-financial-entity-id-${key}`,
+      cacheMap: this.cache,
+    },
   );
 
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
@@ -251,6 +262,7 @@ export class LedgerProvider {
   }
 
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
+    this.clearCache();
     return updateLedgerRecord.run(
       { ...params, ownerId: params.ownerId ?? this.context.currentUser.userId },
       this.dbProvider,
@@ -260,11 +272,13 @@ export class LedgerProvider {
   public async insertLedgerRecords(params: IInsertLedgerRecordsParams) {
     if (params.ledgerRecords.length === 0) return [];
 
+    this.clearCache();
     params.ledgerRecords.map(validateLedgerRecordParams);
     return insertLedgerRecords.run(params, this.dbProvider);
   }
 
   private async deleteLedgerRecordsByIds(ids: readonly string[]) {
+    this.clearCache();
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
@@ -298,5 +312,9 @@ export class LedgerProvider {
 
   public replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
     return replaceLedgerRecordsChargeId.run(params, this.dbProvider);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

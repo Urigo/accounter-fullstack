@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import type {
   IGetExchangeRatesByDateQuery,
   IGetExchangeRatesByDatesParams,
@@ -36,6 +36,10 @@ const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
   global: true,
 })
 export class FiatExchangeProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   public async getExchangeRates(date: Date) {
@@ -75,7 +79,8 @@ export class FiatExchangeProvider {
   public getExchangeRatesByDatesLoader = new DataLoader(
     (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `exchange-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -94,5 +99,9 @@ export class FiatExchangeProvider {
       debitExchangeRates: results[0],
       invoiceExchangeRates: results[1],
     };
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { IGetEmployeesByEmployerQuery } from '../types.js';
 
 const getEmployeesByEmployer = sql<IGetEmployeesByEmployerQuery>`
@@ -14,6 +15,10 @@ const getEmployeesByEmployer = sql<IGetEmployeesByEmployerQuery>`
   global: true,
 })
 export class EmployeesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchEmployeesByEmployerIDs(employerIDs: readonly string[]) {
@@ -29,6 +34,13 @@ export class EmployeesProvider {
 
   public getEmployeesByEmployerLoader = new DataLoader(
     (employerIDs: readonly string[]) => this.batchEmployeesByEmployerIDs(employerIDs),
-    { cache: false },
+    {
+      cacheKeyFn: key => `salary-employer-${key}`,
+      cacheMap: this.cache,
+    },
   );
+
+  public clearCache() {
+    this.cache.clear();
+  }
 }

@@ -91,11 +91,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
-      : [];
+      : Promise.resolve([]);
 
     const transactionsPromise = gotTransactions
       ? injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(chargeId)
-      : [];
+      : Promise.resolve([]);
 
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
