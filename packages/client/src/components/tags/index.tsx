@@ -34,13 +34,14 @@ export const TagsPage = (): ReactElement => {
     const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
     const limit = 25;
 
-    const [{ data, fetching, error }, refetch] = useQuery({
+    const [{ data, fetching }, refetch] = useQuery({
         query: AllTagsPageDocument,
         variables: {
             limit,
             page: activePage,
         },
     });
+
     useEffect(() => {
         setFiltersContext(
             <div className="flex flex-row gap-3">
@@ -55,7 +56,7 @@ export const TagsPage = (): ReactElement => {
                 />
             </div>,
         );
-    }, [activePage, data, refetch, setFiltersContext, set]);
+    }, [activePage, refetch, setFiltersContext, set, data?.allTagsPaginated.pageInfo.totalPages]);
 
     return (
         <div>

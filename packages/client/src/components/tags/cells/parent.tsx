@@ -32,7 +32,7 @@ export const TagParent = ({ data }: Props): ReactElement | null => {
                     <div className="grid gap-2">
                         <ul>
                             <li className='gap-3 flex'>
-                                <span className="text-black font-semibold">Parent:</span>
+                                <span className="text-black font-semibold mr-3">Parent:</span>
                                 <Badge>
                                     {tag.parent.name}
                                 </Badge>

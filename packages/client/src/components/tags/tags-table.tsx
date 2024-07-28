@@ -3,20 +3,21 @@ import { FragmentType, getFragmentData } from '../../gql';
 import { AllTabsTableFieldsFragmentDoc } from '../../gql/graphql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { sortTags } from '../../helpers';
 import { TagCell, TagParent } from './cells/parent';
 import { TagName } from './cells/name';
 import { TagActionsModal } from './tag-actions-modal';
+import { TagChildren } from './cells/tag-children';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllTabsTableFields on Tag {
       id
       name
-        ...EditTagModalFields
         ...AllTagsNameField
         ...AllTagsParentField
+        ...AllTagsChildrenField
   }
 `;
 
@@ -33,6 +34,7 @@ export function TagsTable({ data }: TagsTableProps): JSX.Element {
     const [expandedRows, setExpandedRows] = useState([] as number[]);
     const toggleRowExpansion = (index: number): void => {
         if (allTagsSorted[index]) {
+
             setExpandedRows(prev => {
                 if (prev.includes(index)) {
                     return prev.filter(i => i !== index);
@@ -41,9 +43,6 @@ export function TagsTable({ data }: TagsTableProps): JSX.Element {
             });
         }
     }
-
-
-
     return (
         <Card>
             <CardHeader>
@@ -73,11 +72,14 @@ export function TagsTable({ data }: TagsTableProps): JSX.Element {
                                         </TagCell>
                                         <TagName data={tag} />
                                         <TableCell>
-                                            <TagActionsModal allTagsSorted={allTagsSorted} data={tag} />
+                                            <TagActionsModal tag={tag} />
                                         </TableCell>
                                     </TableRow>
                                     {expandedRows.includes(index) && (
-                                        <TagParent data={tag} />
+                                        <>
+                                            <TagParent data={tag} />
+                                            <TagChildren data={tag} />
+                                        </>
                                     )}
                                 </Fragment>
                             ))}
