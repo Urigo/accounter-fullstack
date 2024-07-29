@@ -126,13 +126,15 @@ const missingInfoSuggestions: Resolver<
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         description: suggestionData.description,
-        tags: await Promise.all(
-          suggestionData.tags.map(tag =>
-            UUID_REGEX.test(tag)
-              ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
-              : injector.get(TagsProvider).getTagByNameLoader.load(tag),
-          ),
-        ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
+        tags: suggestionData.tags
+          ? await Promise.all(
+              suggestionData.tags.map(tag =>
+                UUID_REGEX.test(tag)
+                  ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
+                  : injector.get(TagsProvider).getTagByNameLoader.load(tag),
+              ),
+            ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[])
+          : [],
       };
     }
   }
