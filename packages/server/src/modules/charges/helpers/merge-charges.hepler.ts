@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -36,10 +37,19 @@ export const mergeChargesExecutor = async (
           assertChargeID: baseChargeID,
         });
 
+      // update linked business trips employee payments
+      const replaceBusinessTripsEmployeePaymentsChargeIdPromise = injector
+        .get(BusinessTripEmployeePaymentsProvider)
+        .replaceBusinessTripsEmployeePaymentsChargeId({
+          replaceChargeID: id,
+          assertChargeID: baseChargeID,
+        });
+
       return Promise.all([
         replaceDocumentsChargeIdPromise,
         replaceTransactionsChargeIdPromise,
         replaceLedgerRecordsChargeIdPromise,
+        replaceBusinessTripsEmployeePaymentsChargeIdPromise,
       ]);
     });
 

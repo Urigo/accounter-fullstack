@@ -3,6 +3,7 @@ import businessTripTransactions from './typeDefs/business-trip-transactions.grap
 import businessTrips from './typeDefs/business-trips.graphql.js';
 import { createModule } from 'graphql-modules';
 import { BusinessTripAttendeesProvider } from './providers/business-trips-attendees.provider.js';
+import { BusinessTripEmployeePaymentsProvider } from './providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsTransactionsProvider } from './providers/business-trips-transactions-accommodations.provider.js';
 import { BusinessTripFlightsTransactionsProvider } from './providers/business-trips-transactions-flights.provider.js';
 import { BusinessTripOtherTransactionsProvider } from './providers/business-trips-transactions-other.provider.js';
@@ -32,6 +33,7 @@ export const businessTripsModule = createModule({
     BusinessTripTravelAndSubsistenceTransactionsProvider,
     BusinessTripOtherTransactionsProvider,
     BusinessTripAttendeesProvider,
+    BusinessTripEmployeePaymentsProvider,
   ],
 });
 

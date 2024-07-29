@@ -124,6 +124,20 @@ export type {
   IDeleteBusinessTripOtherTransactionResult,
   IDeleteBusinessTripOtherTransactionQuery,
 } from './__generated__/business-trips-transactions-other.types.js';
+export type {
+  IUpdateBusinessTripEmployeePaymentParams,
+  IUpdateBusinessTripEmployeePaymentResult,
+  IUpdateBusinessTripEmployeePaymentQuery,
+  IInsertBusinessTripEmployeePaymentParams,
+  IInsertBusinessTripEmployeePaymentResult,
+  IInsertBusinessTripEmployeePaymentQuery,
+  IDeleteBusinessTripEmployeePaymentParams,
+  IDeleteBusinessTripEmployeePaymentResult,
+  IDeleteBusinessTripEmployeePaymentQuery,
+  IReplaceBusinessTripsEmployeePaymentsChargeIdParams,
+  IReplaceBusinessTripsEmployeePaymentsChargeIdResult,
+  IReplaceBusinessTripsEmployeePaymentsChargeIdQuery,
+} from './__generated__/business-trips-employee-payments.types.js';
 export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
   id: NonNullable<IGetAllBusinessTripsResult['id']>;
   name: NonNullable<IGetAllBusinessTripsResult['name']>;
