@@ -50,6 +50,7 @@ export default gql`
   input UpdateBusinessTripFlightsTransactionInput {
     id: UUID!
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -73,6 +74,7 @@ export default gql`
   input UpdateBusinessTripAccommodationsTransactionInput {
     id: UUID!
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -87,6 +89,7 @@ export default gql`
   input UpdateBusinessTripOtherTransactionInput {
     id: UUID!
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -101,6 +104,7 @@ export default gql`
   input UpdateBusinessTripTravelAndSubsistenceTransactionInput {
     id: UUID!
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -113,6 +117,7 @@ export default gql`
   " the input for adding a new business trip flights transaction "
   input AddBusinessTripFlightsTransactionInput {
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -127,6 +132,7 @@ export default gql`
   " the input for adding a new business trip accommodation transaction "
   input AddBusinessTripAccommodationsTransactionInput {
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -140,6 +146,7 @@ export default gql`
   " the input for adding a new business trip other transaction "
   input AddBusinessTripOtherTransactionInput {
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float
@@ -153,6 +160,7 @@ export default gql`
   " the input for adding a new business trip T&S transaction "
   input AddBusinessTripTravelAndSubsistenceTransactionInput {
     businessTripId: UUID!
+
     date: TimelessDate
     valueDate: TimelessDate
     amount: Float

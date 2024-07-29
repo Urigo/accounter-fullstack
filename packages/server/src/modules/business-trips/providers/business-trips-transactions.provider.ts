@@ -53,30 +53,6 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
     $category,
     category
   ),
-  date = COALESCE(
-    $date,
-    date
-  ),
-  value_date = COALESCE(
-    $valueDate,
-    value_date
-  ),
-  amount = COALESCE(
-    $amount,
-    amount
-  ),
-  currency = COALESCE(
-    $currency,
-    currency
-  ),
-  employee_business_id = COALESCE(
-    $employeeBusinessId,
-    employee_business_id
-  ),
-  payed_by_employee = COALESCE(
-    $payedByEmployee,
-    payed_by_employee
-  ),
   transaction_id = COALESCE(
     $transactionId,
     transaction_id
@@ -87,8 +63,8 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
 `;
 
 const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, date, value_date, amount, currency, employee_business_id, payed_by_employee, transaction_id)
-  VALUES($businessTripId, $category, $date, $valueDate, $amount, $currency, $employeeBusinessId, $payedByEmployee, $transactionId)
+  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, transaction_id)
+  VALUES($businessTripId, $category, $transactionId)
   RETURNING *;`;
 
 const deleteBusinessTripTransaction = sql<IDeleteBusinessTripTransactionQuery>`

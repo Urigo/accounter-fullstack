@@ -26,6 +26,7 @@ export const GENERAL_FEE_TAX_CATEGORY_ID = '260b4633-396c-4efa-82e1-2269ce572d75
 export const EXCHANGE_REVALUATION_TAX_CATEGORY_ID = '6156ac60-a0cd-4dee-9208-5439da9d4cd2';
 export const TAX_EXPENSES_TAX_CATEGORY_ID = 'c86899cb-d91b-48ed-a6e2-9575f16dd2db';
 export const BALANCE_CANCELLATION_TAX_CATEGORY_ID = 'fe4b3698-ee5a-4764-a1dc-0c133239fa2b';
+export const BUSINESS_TRIP_TAX_CATEGORY_ID = 'd311c118-a4a3-4b79-8f0c-628d5957a3c6';
 export const DEFAULT_TAX_CATEGORY = '0a593022-5d9c-4529-b154-fedefde05bb7';
 
 // cross year tax categories
