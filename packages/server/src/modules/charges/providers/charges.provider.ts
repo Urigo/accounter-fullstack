@@ -149,8 +149,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($accountantApproval::BOOLEAN IS NULL OR ec.accountant_reviewed = $accountantApproval)
   AND ($isTags = 0 OR ec.tags && $tags)
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date)  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date)  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date)  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date)  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN ec.event_amount  END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN ec.event_amount  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL))  END ASC,
