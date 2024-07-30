@@ -1,9 +1,11 @@
+import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IDeleteBusinessTripEmployeePaymentParams,
   IDeleteBusinessTripEmployeePaymentQuery,
+  IGetBusinessTripEmployeePaymentsByChargeIdsQuery,
   IInsertBusinessTripEmployeePaymentParams,
   IInsertBusinessTripEmployeePaymentQuery,
   IReplaceBusinessTripsEmployeePaymentsChargeIdParams,
@@ -11,6 +13,13 @@ import type {
   IUpdateBusinessTripEmployeePaymentParams,
   IUpdateBusinessTripEmployeePaymentQuery,
 } from '../types.js';
+
+const getBusinessTripEmployeePaymentsByChargeIds = sql<IGetBusinessTripEmployeePaymentsByChargeIdsQuery>`
+  SELECT btep.*, btt.business_trip_id, btt.category
+  FROM accounter_schema.business_trips_employee_payments btep
+  LEFT JOIN accounter_schema.business_trips_transactions btt
+    ON btt.id = btep.id
+WHERE ($isChargeIds = 0 OR btep.charge_id IN $$chargeIds);`;
 
 const updateBusinessTripEmployeePayment = sql<IUpdateBusinessTripEmployeePaymentQuery>`
   UPDATE accounter_schema.business_trips_employee_payments
@@ -68,6 +77,24 @@ const replaceBusinessTripsEmployeePaymentsChargeId = sql<IReplaceBusinessTripsEm
 })
 export class BusinessTripEmployeePaymentsProvider {
   constructor(private dbProvider: DBProvider) {}
+
+  private async batchBusinessTripEmployeePaymentsByChargeIds(chargeIds: readonly string[]) {
+    const businessTrips = await getBusinessTripEmployeePaymentsByChargeIds.run(
+      {
+        isChargeIds: chargeIds.length > 0 ? 1 : 0,
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(id => businessTrips.filter(record => record.charge_id === id));
+  }
+
+  public getBusinessTripEmployeePaymentsByChargeIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripEmployeePaymentsByChargeIds(ids),
+    {
+      cache: false,
+    },
+  );
 
   public updateBusinessTripEmployeePayment(params: IUpdateBusinessTripEmployeePaymentParams) {
     return updateBusinessTripEmployeePayment.run(params, this.dbProvider);

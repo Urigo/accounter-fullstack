@@ -26,11 +26,11 @@ const getAllBusinessTripsTransactions = sql<IGetAllBusinessTripsTransactionsQuer
   FROM accounter_schema.extended_business_trip_transactions`;
 
 const getBusinessTripsTransactionsByChargeIds = sql<IGetBusinessTripsTransactionsByChargeIdsQuery>`
-  SELECT *
-  FROM accounter_schema.extended_business_trip_transactions btt
-  LEFT JOIN accounter_schema.business_trip_charges btc
-    USING (business_trip_id)
-  WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
+  SELECT t.charge_id, btt.*
+  FROM accounter_schema.business_trips_transactions btt
+  LEFT JOIN accounter_schema.transactions t
+    ON t.id = btt.transaction_id
+  WHERE ($isChargeIds = 0 OR t.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTransactionsByBusinessTripIdsQuery>`
   SELECT *

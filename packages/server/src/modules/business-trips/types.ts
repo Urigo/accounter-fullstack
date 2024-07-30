@@ -137,6 +137,9 @@ export type {
   IReplaceBusinessTripsEmployeePaymentsChargeIdParams,
   IReplaceBusinessTripsEmployeePaymentsChargeIdResult,
   IReplaceBusinessTripsEmployeePaymentsChargeIdQuery,
+  IGetBusinessTripEmployeePaymentsByChargeIdsParams,
+  IGetBusinessTripEmployeePaymentsByChargeIdsResult,
+  IGetBusinessTripEmployeePaymentsByChargeIdsQuery,
 } from './__generated__/business-trips-employee-payments.types.js';
 export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
   id: NonNullable<IGetAllBusinessTripsResult['id']>;
