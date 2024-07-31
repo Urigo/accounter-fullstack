@@ -36,8 +36,6 @@ export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
   return fetching || !data?.businessTrip ? (
     <AccounterLoader />
   ) : (
-    <Container className="mt-5">
-      {businessTripId && <EditableBusinessTrip tripId={businessTripId} isExtended />}
-    </Container>
+    <Container className="mt-5">{id && <EditableBusinessTrip tripId={id} isExtended />}</Container>
   );
 };
