@@ -363,8 +363,8 @@ export function multipleForeignCurrenciesBalanceEntries(
       localDiff += local;
     }
 
-    if (balanceAgainstLocal && !foreignAmounts.ILS) {
-      foreignAmounts.ILS = {
+    if (balanceAgainstLocal && !foreignAmounts[DEFAULT_LOCAL_CURRENCY]) {
+      foreignAmounts[DEFAULT_LOCAL_CURRENCY] = {
         local: -localDiff,
         foreign: 0,
       };

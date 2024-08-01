@@ -1,6 +1,7 @@
 import { lastDayOfMonth } from 'date-fns';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
@@ -284,22 +285,32 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       const amount = Math.abs(balance);
       const isCreditorCounterparty = balance > 0;
 
-      const ledgerEntry: StrictLedgerProto = {
-        id: matchingTransaction.id + '|fee', // NOTE: this field is dummy
-        creditAccountID1: isCreditorCounterparty ? businessId : EXCHANGE_RATE_TAX_CATEGORY_ID,
-        localCurrencyCreditAmount1: amount,
-        debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : businessId,
-        localCurrencyDebitAmount1: amount,
-        description: 'Exchange ledger record',
-        isCreditorCounterparty,
-        invoiceDate: matchingTransaction.invoiceDate,
-        valueDate: entry.valueDate,
-        currency: DEFAULT_LOCAL_CURRENCY,
-        ownerId: matchingTransaction.ownerId,
-        chargeId,
-      };
-      miscLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      // validate exchange rate
+      const validation = validateExchangeRate(
+        businessId,
+        [...accountingLedgerEntries, ...financialAccountLedgerEntries],
+        amount,
+      );
+      if (validation === true) {
+        const ledgerEntry: StrictLedgerProto = {
+          id: matchingTransaction.id + '|fee', // NOTE: this field is dummy
+          creditAccountID1: isCreditorCounterparty ? businessId : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          localCurrencyCreditAmount1: amount,
+          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : businessId,
+          localCurrencyDebitAmount1: amount,
+          description: 'Exchange ledger record',
+          isCreditorCounterparty,
+          invoiceDate: matchingTransaction.invoiceDate,
+          valueDate: entry.valueDate,
+          currency: DEFAULT_LOCAL_CURRENCY,
+          ownerId: matchingTransaction.ownerId,
+          chargeId,
+        };
+        miscLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      } else {
+        errors.add(validation);
+      }
     }
 
     // for each batched transaction, create a ledger record

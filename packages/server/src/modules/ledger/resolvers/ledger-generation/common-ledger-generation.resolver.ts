@@ -7,6 +7,7 @@ import {
   ledgerEntryFromMainTransaction,
 } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
+import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
@@ -269,7 +270,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
 
     // multiple currencies balance
-
     const mainBusiness = charge.business_id;
     const businessBalance = ledgerBalance.get(mainBusiness ?? '');
     if (
@@ -387,27 +387,43 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           }
         }
 
-        if (exchangeRateTaxCategory) {
-          const ledgerEntry: StrictLedgerProto = {
-            id: transactionEntry.id + '|fee', // NOTE: this field is dummy
-            creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
-            localCurrencyCreditAmount1: amount,
-            debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
-            localCurrencyDebitAmount1: amount,
-            description: 'Exchange ledger record',
-            isCreditorCounterparty,
-            invoiceDate: documentEntry.invoiceDate,
-            valueDate: transactionEntry.valueDate,
-            currency: DEFAULT_LOCAL_CURRENCY,
-            ownerId: transactionEntry.ownerId,
-            chargeId,
-          };
-          miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        // validate exchange rate
+
+        const validation = validateExchangeRate(
+          entityId,
+          [
+            ...accountingLedgerEntries,
+            ...financialAccountLedgerEntries,
+            ...feeFinancialAccountLedgerEntries,
+            ...miscLedgerEntries,
+          ],
+          amount,
+        );
+        if (validation === true) {
+          if (exchangeRateTaxCategory) {
+            const ledgerEntry: StrictLedgerProto = {
+              id: transactionEntry.id + '|fee', // NOTE: this field is dummy
+              creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
+              localCurrencyCreditAmount1: amount,
+              debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
+              localCurrencyDebitAmount1: amount,
+              description: 'Exchange ledger record',
+              isCreditorCounterparty,
+              invoiceDate: documentEntry.invoiceDate,
+              valueDate: transactionEntry.valueDate,
+              currency: DEFAULT_LOCAL_CURRENCY,
+              ownerId: transactionEntry.ownerId,
+              chargeId,
+            };
+            miscLedgerEntries.push(ledgerEntry);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          } else {
+            errors.add(
+              `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
+            );
+          }
         } else {
-          errors.add(
-            `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
-          );
+          errors.add(validation);
         }
       } else {
         errors.add(
