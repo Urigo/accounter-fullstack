@@ -1,6 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
+import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -51,6 +52,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
     const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const interestLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
 
     let isWithdrawal = false;
@@ -125,7 +127,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
 
         foreignAmount = amount;
-        // calculate amounts in ILS
+        // calculate amounts in ILS:
         amount = exchangeRate * amount;
       }
 
@@ -152,7 +154,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         chargeId,
       };
 
-      financialAccountLedgerEntries.push(ledgerEntry);
+      interestLedgerEntries.push(ledgerEntry);
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     });
 
@@ -217,6 +219,22 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           const isCreditorCounterparty = rawAmount > 0;
           const mainAccountId = mainLedgerEntry.creditAccountID1;
 
+          // validate exchange rate
+          try {
+            const exchangeAmount = calculateExchangeRate(mainLedgerEntry.creditAccountID1, [
+              ...financialAccountLedgerEntries,
+              convertLedgerRecordToProto(depositLedgerRecord),
+            ]);
+            if (
+              (!exchangeAmount && !!amount) ||
+              (exchangeAmount && Math.abs(exchangeAmount) !== amount)
+            ) {
+              throw new LedgerError('Exchange rate error');
+            }
+          } catch (e) {
+            errors.add((e as Error).message);
+          }
+
           const exchangeLedgerEntry: StrictLedgerProto = {
             id: mainTransaction.id + '|fee', // NOTE: this field is dummy
             creditAccountID1: isCreditorCounterparty
@@ -251,6 +269,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
     const records = [
       ...financialAccountLedgerEntries,
+      ...interestLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];

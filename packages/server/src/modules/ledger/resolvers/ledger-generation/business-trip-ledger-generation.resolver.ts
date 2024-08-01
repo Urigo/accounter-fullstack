@@ -7,7 +7,9 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromDocument } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
+import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
@@ -32,6 +34,7 @@ import {
   getLedgerBalanceInfo,
   LedgerError,
   ledgerProtoToRecordsConverter,
+  multipleForeignCurrenciesBalanceEntries,
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
@@ -56,7 +59,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+    const ledgerBalance = new Map<
+      string,
+      {
+        amount: number;
+        entityId: string;
+        foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
+      }
+    >();
 
     const gotRelevantDocuments =
       Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
@@ -139,45 +149,73 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           isSelfClosingLedger = false;
         }
 
-        // get tax category
-        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
 
-        // preparations for core ledger entries
-        let exchangeRate: number | undefined = undefined;
-        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-          // get exchange rate for currency
-          exchangeRate = await injector
-            .get(ExchangeProvider)
-            .getExchangeRates(
-              transaction.currency,
-              DEFAULT_LOCAL_CURRENCY,
-              transaction.debit_timestamp,
-            );
-        }
-
-        const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
-
-        transactionsTotalLocalAmount +=
-          (partialEntry.isCreditorCounterparty ? 1 : -1) * partialEntry.localCurrencyCreditAmount1;
-
-        isSelfClosingLedger &&= partialEntry.localCurrencyCreditAmount1 < AMOUNT_FOR_SELF_CLOSING;
-        const entryBusinessId =
-          (isSelfClosingLedger ? tripTaxCategory : null) ?? transaction.business_id;
-        if (!entryBusinessId) {
-          throw new LedgerError(
-            `Transaction reference "${transaction.source_reference}" is missing business ID`,
+        const ledgerEntryPromise = async (): Promise<StrictLedgerProto> => {
+          // get tax category
+          const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
+            injector,
+            transaction,
           );
-        }
 
-        const ledgerEntry: StrictLedgerProto = {
-          ...partialEntry,
-          creditAccountID1: partialEntry.isCreditorCounterparty
-            ? entryBusinessId
-            : accountTaxCategoryId,
-          debitAccountID1: partialEntry.isCreditorCounterparty
-            ? accountTaxCategoryId
-            : entryBusinessId,
+          // preparations for core ledger entries
+          let exchangeRate: number | undefined = undefined;
+          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+            // get exchange rate for currency
+            exchangeRate = await injector
+              .get(ExchangeProvider)
+              .getExchangeRates(
+                transaction.currency,
+                DEFAULT_LOCAL_CURRENCY,
+                transaction.debit_timestamp,
+              );
+          }
+
+          const partialEntry = generatePartialLedgerEntry(
+            transaction,
+            charge.owner_id,
+            exchangeRate,
+          );
+
+          transactionsTotalLocalAmount +=
+            (partialEntry.isCreditorCounterparty ? 1 : -1) *
+            partialEntry.localCurrencyCreditAmount1;
+
+          isSelfClosingLedger &&= partialEntry.localCurrencyCreditAmount1 < AMOUNT_FOR_SELF_CLOSING;
+          const entryBusinessId =
+            (isSelfClosingLedger ? tripTaxCategory : null) ?? transaction.business_id;
+          if (!entryBusinessId) {
+            throw new LedgerError(
+              `Transaction reference "${transaction.source_reference}" is missing business ID`,
+            );
+          }
+
+          const ledgerEntry: StrictLedgerProto = {
+            ...partialEntry,
+            creditAccountID1: partialEntry.isCreditorCounterparty
+              ? entryBusinessId
+              : accountTaxCategoryId,
+            debitAccountID1: partialEntry.isCreditorCounterparty
+              ? accountTaxCategoryId
+              : entryBusinessId,
+          };
+
+          return ledgerEntry;
         };
+
+        const [ledgerEntry, miscExpensesLedger] = await Promise.all([
+          ledgerEntryPromise(),
+          miscExpensesPromise,
+        ]);
+
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
 
         financialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
@@ -382,6 +420,45 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       undefined,
       allowedUnbalancedBusinesses,
     );
+
+    const miscLedgerEntries: LedgerProto[] = [];
+
+    // multiple currencies balance
+    const mainBusiness = charge.business_id;
+    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    if (
+      mainBusiness &&
+      Object.keys(businessBalance?.foreignAmounts ?? {}).length >
+        (charge.invoice_payment_currency_diff ? 0 : 1)
+    ) {
+      const transactionEntries = financialAccountLedgerEntries.filter(entry =>
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+      );
+      const documentEntries = accountingLedgerEntries.filter(entry =>
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+      );
+
+      try {
+        const entries = multipleForeignCurrenciesBalanceEntries(
+          documentEntries,
+          transactionEntries,
+          charge,
+          businessBalance!.foreignAmounts!,
+          charge.invoice_payment_currency_diff ?? false,
+        );
+        for (const ledgerEntry of entries) {
+          miscLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        }
+      } catch (e) {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
+      }
+    }
+
     // check if exchange rate record is needed
     const hasMultipleDates = dates.size > 1;
     const foreignCurrencyCount = currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
@@ -391,8 +468,6 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const unbalancedBusinesses = ledgerBalanceInfo.unbalancedEntities.filter(({ entityId }) =>
       ledgerBalanceInfo.financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
     );
-
-    const miscLedgerEntries: LedgerProto[] = [];
 
     if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
       const transactionEntry = financialAccountLedgerEntries[0];
@@ -419,25 +494,42 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
       }
 
-      if (exchangeRateTaxCategory) {
-        const ledgerEntry: StrictLedgerProto = {
-          id: transactionEntry.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
-          localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
-          localCurrencyDebitAmount1: amount,
-          description: 'Exchange ledger record',
-          isCreditorCounterparty,
-          invoiceDate: documentEntry.invoiceDate,
-          valueDate: transactionEntry.valueDate,
-          currency: DEFAULT_LOCAL_CURRENCY,
-          ownerId: transactionEntry.ownerId,
-          chargeId,
-        };
-        miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      // validate exchange rate
+      const validation = validateExchangeRate(
+        entityId,
+        [
+          ...financialAccountLedgerEntries,
+          ...feeFinancialAccountLedgerEntries,
+          ...accountingLedgerEntries,
+          ...miscLedgerEntries,
+        ],
+        amount,
+      );
+      if (validation === true) {
+        if (exchangeRateTaxCategory) {
+          const ledgerEntry: StrictLedgerProto = {
+            id: transactionEntry.id + '|fee', // NOTE: this field is dummy
+            creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
+            localCurrencyCreditAmount1: amount,
+            debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
+            localCurrencyDebitAmount1: amount,
+            description: 'Exchange ledger record',
+            isCreditorCounterparty,
+            invoiceDate: documentEntry.invoiceDate,
+            valueDate: transactionEntry.valueDate,
+            currency: DEFAULT_LOCAL_CURRENCY,
+            ownerId: transactionEntry.ownerId,
+            chargeId,
+          };
+          miscLedgerEntries.push(ledgerEntry);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        } else {
+          errors.add(
+            `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
+          );
+        }
       } else {
-        errors.add(`Failed to locate tax category for exchange rate for business ID="${entityId}"`);
+        errors.add(validation);
       }
     }
 
