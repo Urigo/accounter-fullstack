@@ -32,6 +32,7 @@ import migration_2024_07_23T12_58_43_edit_charge_type_enum2 from './actions/2024
 import migration_2024_07_25T14_10_36_enhance_view_tables from './actions/2024-07-25T14-10-36.enhance-view-tables.js';
 import migration_2024_07_25T22_38_12_charge_type_fixes from './actions/2024-07-25T22-38-12.charge-type-fixes.js';
 import migration_2024_07_29T12_40_02_enhance_business_trip_employee_payments from './actions/2024-07-29T12-40-02.enhance-business-trip-employee-payments.js';
+import migration_2024_08_01T09_01_35_transaction_view_debit_date_fix from './actions/2024-08-01T09-01-35.transaction-view-debit-date-fix.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -71,5 +72,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_07_25T14_10_36_enhance_view_tables,
       migration_2024_07_25T22_38_12_charge_type_fixes,
       migration_2024_07_29T12_40_02_enhance_business_trip_employee_payments,
+      migration_2024_08_01T09_01_35_transaction_view_debit_date_fix,
     ],
   });

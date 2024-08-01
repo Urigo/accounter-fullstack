@@ -186,7 +186,7 @@ export class CryptoExchangeProvider {
     },
     {
       cacheKeyFn: ({ cryptoCurrency, date, against = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY }) =>
-        `${cryptoCurrency}-${format(date, 'dd-MM-yyyy')}-${against}`,
+        `${cryptoCurrency}-${date.getTime()}-${against}`,
       cacheMap: this.cache,
     },
   );
