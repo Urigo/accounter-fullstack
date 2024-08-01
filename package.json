@@ -61,7 +61,7 @@
     "@graphql-inspector/cli": "5.0.6",
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.11.11",
-    "@theguild/prettier-config": "2.0.6",
+    "@theguild/prettier-config": "2.0.7",
     "@types/node": "20.14.13",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "8.2.2",
