@@ -44,47 +44,11 @@ import { WideFilteredSelection } from './wide-filtered-selection';
     image
     file
     documentType
-    creditor {
-      id
-      name
-    }
-    ... on Proforma {
-      serialNumber
-      date
-      amount {
-        raw
-        formatted
-        currency
+    ... on FinancialDocument {
+      creditor {
+        id
+        name
       }
-    }
-    ... on InvoiceReceipt {
-      serialNumber
-      date
-      amount {
-        raw
-        formatted
-        currency
-      }
-    }
-    ... on CreditInvoice {
-      serialNumber
-      date
-      amount {
-        raw
-        formatted
-        currency
-      }
-    }
-    ... on Invoice {
-      serialNumber
-      date
-      amount {
-        raw
-        formatted
-        currency
-      }
-    }
-    ... on Receipt {
       serialNumber
       date
       amount {
@@ -123,13 +87,17 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
           if (
             document.charge ||
             document.__typename === 'Unprocessed' ||
+            document.__typename === 'OtherDocument' ||
             document.amount?.raw == null ||
             !document.date
           ) {
             return false;
           }
           return true;
-        }) as Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[]
+        }) as Exclude<
+          DocumentsToMatchFieldsFragment,
+          { __typename: 'Unprocessed' } | { __typename: 'OtherDocument' }
+        >[]
       ).sort((a, b) => {
         if (a.date ?? (b.date ?? '') > '') return 1;
         if (a.date ?? (b.date ?? '') < '') return -1;

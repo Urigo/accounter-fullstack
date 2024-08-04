@@ -7,12 +7,18 @@ import { stringComparer } from './strings-manipulations.js';
 
 type DocumentMatchScore = {
   score: number;
-  document: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>;
+  document: Exclude<
+    DocumentsToMatchFieldsFragment,
+    { __typename: 'Unprocessed' } | { __typename: 'OtherDocument' }
+  >;
 };
 
 export const rateOptionalDocumentsMatches = (
   charge: ChargeToMatchDocumentsFieldsFragment,
-  documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[],
+  documents: Exclude<
+    DocumentsToMatchFieldsFragment,
+    { __typename: 'Unprocessed' } | { __typename: 'OtherDocument' }
+  >[],
 ): DocumentMatchScore[] => {
   /* create diffs dictionary */
   const comparisonDict: Record<string, Record<string, number>> = {

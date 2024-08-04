@@ -12,87 +12,7 @@ import { getBusinessHref } from '../../helpers.js';
   fragment DocumentsTableCreditorFields on Document {
     id
     documentType
-    ... on Invoice {
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-      }
-      missingInfoSuggestions {
-        isIncome
-        counterparty {
-          id
-          name
-        }
-        owner {
-          id
-          name
-        }
-      }
-    }
-    ... on InvoiceReceipt {
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-      }
-      missingInfoSuggestions {
-        isIncome
-        counterparty {
-          id
-          name
-        }
-        owner {
-          id
-          name
-        }
-      }
-    }
-    ... on CreditInvoice {
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-      }
-      missingInfoSuggestions {
-        isIncome
-        counterparty {
-          id
-          name
-        }
-        owner {
-          id
-          name
-        }
-      }
-    }
-    ... on Proforma {
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-      }
-      missingInfoSuggestions {
-        isIncome
-        counterparty {
-          id
-          name
-        }
-        owner {
-          id
-          name
-        }
-      }
-    }
-    ... on Receipt {
+    ... on FinancialDocument {
       creditor {
         id
         name
@@ -125,8 +45,12 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
   const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
+  const shouldHaveDebtor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
+    document.documentType as DocumentType,
+  );
   const isError =
-    !dbCreditor?.id || [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
+    (shouldHaveDebtor && !dbCreditor?.id) ||
+    [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
 
   const encodedFilters = get('chargesFilters');
 
@@ -192,7 +116,7 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {!isError && (
+            {shouldHaveDebtor && (
               <a href={getHref(id)} target="_blank" rel="noreferrer">
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
