@@ -37,7 +37,7 @@ const updateExpense = sql<IUpdateExpenseQuery>`
     transaction_id
   ),
   counterparty = COALESCE(
-    $counterparty,
+    $counterpartyId,
     counterparty
   ),
   amount = COALESCE(
