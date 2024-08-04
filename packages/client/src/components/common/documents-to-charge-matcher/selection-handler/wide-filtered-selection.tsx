@@ -7,7 +7,10 @@ import {
 } from '../../../../gql/graphql.js';
 
 interface Props {
-  documents: Exclude<DocumentsToMatchFieldsFragment, { __typename: 'Unprocessed' }>[];
+  documents: Exclude<
+    DocumentsToMatchFieldsFragment,
+    { __typename: 'Unprocessed' } | { __typename: 'OtherDocument' }
+  >[];
   charge: ChargeToMatchDocumentsFieldsFragment;
   toggleDocument(documentId: string): void;
   selectedDocuments: string[];

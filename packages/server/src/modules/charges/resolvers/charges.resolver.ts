@@ -471,6 +471,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
   Unprocessed: {
     ...commonDocumentsFields,
   },
+  OtherDocument: {
+    ...commonDocumentsFields,
+  },
   Receipt: {
     ...commonDocumentsFields,
   },

@@ -19,10 +19,7 @@ type Suggestion = Awaited<ResolversTypes['DocumentSuggestions']>;
 
 const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
-  | ResolversParentTypes['Invoice']
-  | ResolversParentTypes['Receipt']
-  | ResolversParentTypes['InvoiceReceipt']
-  | ResolversParentTypes['CreditInvoice'],
+  ResolversParentTypes['FinancialDocument'],
   GraphQLModules.Context
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};

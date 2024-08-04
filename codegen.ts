@@ -100,6 +100,7 @@ const config: CodegenConfig = {
           Ledger: '@shared/types#LedgerRecordsProto',
           LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
+          OtherDocument: '@modules/documents/types.js#IGetAllDocumentsResult',
           PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           Proforma: '@modules/documents/types.js#IGetAllDocumentsResult',
           Receipt: '@modules/documents/types.js#IGetAllDocumentsResult',

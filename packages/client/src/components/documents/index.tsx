@@ -15,14 +15,6 @@ import { PageLayout } from '../layout/page-layout.js';
       id
       image
       file
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-        name
-      }
       charge {
         id
         userDescription
@@ -43,118 +35,7 @@ import { PageLayout } from '../layout/page-layout.js';
         }
       }
       __typename
-      ... on Unprocessed {
-        id
-        image
-        file
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-      }
-      ... on Proforma {
-        id
-        image
-        file
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-        vat {
-          raw
-          formatted
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-      ... on Receipt {
-        id
-        image
-        file
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-        vat {
-          raw
-          formatted
-          currency
-        }
-        serialNumber
-        date
-      }
-      ... on Invoice {
-        id
-        image
-        file
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-        vat {
-          raw
-          formatted
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-      ... on InvoiceReceipt {
-        id
-        image
-        file
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-        vat {
-          raw
-          formatted
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-      ... on CreditInvoice {
-        id
-        image
-        file
+      ... on FinancialDocument {
         creditor {
           id
           name
@@ -250,8 +131,8 @@ export const DocumentsReport = (): ReactElement => {
                 value: doc => doc.charge?.transactions?.[0]?.amount.formatted ?? null,
                 style: { whiteSpace: 'nowrap' },
               },
-              { title: 'Creditor', value: doc => doc.creditor?.name ?? null },
-              { title: 'Debtor', value: doc => doc.debtor?.name ?? null },
+              { title: 'Creditor', value: doc => ('creditor' in doc ? doc.creditor?.name : null) },
+              { title: 'Debtor', value: doc => ('debtor' in doc ? doc.debtor?.name : null) },
               {
                 title: 'Related Transaction',
                 value: doc =>

@@ -1,6 +1,10 @@
 import { ReactElement, useCallback } from 'react';
 import { Indicator } from '@mantine/core';
-import { Currency, DocumentsTableAmountFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import {
+  Currency,
+  DocumentsTableAmountFieldsFragmentDoc,
+  DocumentType,
+} from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
 import { ConfirmMiniButton } from '../../../common/index.js';
@@ -9,63 +13,8 @@ import { ConfirmMiniButton } from '../../../common/index.js';
 /* GraphQL */ `
   fragment DocumentsTableAmountFields on Document {
     id
-    ... on Invoice {
-      amount {
-        raw
-        formatted
-        currency
-      }
-      missingInfoSuggestions {
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-    }
-    ... on InvoiceReceipt {
-      amount {
-        raw
-        formatted
-        currency
-      }
-      missingInfoSuggestions {
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-    }
-    ... on Proforma {
-      amount {
-        raw
-        formatted
-        currency
-      }
-      missingInfoSuggestions {
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-    }
-    ... on Receipt {
-      amount {
-        raw
-        formatted
-        currency
-      }
-      missingInfoSuggestions {
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
-    }
-    ... on CreditInvoice {
+    documentType
+    ... on FinancialDocument {
       amount {
         raw
         formatted
@@ -116,17 +65,14 @@ export const Amount = ({ data, refetchDocument }: Props): ReactElement => {
     [document.id, updateDocument, refetchDocument],
   );
 
+  const shouldHaveAmount = ![DocumentType.Other].includes(document.documentType as DocumentType);
+  const isError = shouldHaveAmount && amount?.formatted == null;
+
   return (
     <td>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
-          <Indicator
-            inline
-            size={12}
-            disabled={amount?.formatted != null}
-            color="red"
-            zIndex="auto"
-          >
+          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
             <p
               className={[
                 'whitespace-nowrap',

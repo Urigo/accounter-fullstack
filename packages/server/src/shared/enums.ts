@@ -36,6 +36,7 @@ export enum DocumentType {
   CreditInvoice = 'CREDIT_INVOICE',
   Proforma = 'PROFORMA',
   Unprocessed = 'UNPROCESSED',
+  Other = 'OTHER',
 }
 
 export enum ChargeTypeEnum {
