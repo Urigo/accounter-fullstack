@@ -137,9 +137,6 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
   Proforma: {
     ...commonDocumentsFields,
   },
-  Unprocessed: {
-    ...commonDocumentsFields,
-  },
   Receipt: {
     ...commonDocumentsFields,
   },

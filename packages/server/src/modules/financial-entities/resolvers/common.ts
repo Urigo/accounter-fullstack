@@ -57,7 +57,7 @@ export const commonTransactionFields:
       : null,
 };
 
-export const commonDocumentsFields: FinancialEntitiesModule.DocumentResolvers = {
+export const commonDocumentsFields: FinancialEntitiesModule.FinancialDocumentResolvers = {
   creditor: (documentRoot, _, { injector }) =>
     documentRoot.creditor_id
       ? injector

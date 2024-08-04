@@ -2,28 +2,28 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  extend type Invoice {
+  extend interface FinancialDocument {
     " missing info suggestions data "
+    missingInfoSuggestions: DocumentSuggestions
+  }
+
+  extend type Invoice {
     missingInfoSuggestions: DocumentSuggestions
   }
 
   extend type Receipt {
-    " missing info suggestions data "
     missingInfoSuggestions: DocumentSuggestions
   }
 
   extend type InvoiceReceipt {
-    " missing info suggestions data "
     missingInfoSuggestions: DocumentSuggestions
   }
 
   extend type CreditInvoice {
-    " missing info suggestions data "
     missingInfoSuggestions: DocumentSuggestions
   }
 
   extend type Proforma {
-    " missing info suggestions data "
     missingInfoSuggestions: DocumentSuggestions
   }
 

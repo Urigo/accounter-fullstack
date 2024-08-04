@@ -90,17 +90,7 @@ export default gql`
     counterparty: FinancialEntity
   }
 
-  extend interface Document {
-    creditor: FinancialEntity
-    debtor: FinancialEntity
-  }
-
   extend interface FinancialDocument {
-    creditor: FinancialEntity
-    debtor: FinancialEntity
-  }
-
-  extend type Unprocessed {
     creditor: FinancialEntity
     debtor: FinancialEntity
   }
