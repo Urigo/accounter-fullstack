@@ -19,11 +19,11 @@ export default gql`
   }
 
   extend type Mutation {
-    insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ADMIN)
+    insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ACCOUNTANT)
     updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
       @auth(role: ACCOUNTANT)
-    deleteDocument(documentId: UUID!): Boolean! @auth(role: ADMIN)
-    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ADMIN)
+    deleteDocument(documentId: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ACCOUNTANT)
     fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
   }
 
