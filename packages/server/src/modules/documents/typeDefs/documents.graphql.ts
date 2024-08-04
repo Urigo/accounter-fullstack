@@ -35,6 +35,7 @@ export default gql`
     CREDIT_INVOICE
     PROFORMA
     UNPROCESSED
+    OTHER
   }
 
   " represent a link to an external file "
@@ -57,6 +58,15 @@ export default gql`
 
   " document that haven't yet been processed"
   type Unprocessed implements Document & Linkable {
+    id: UUID!
+    image: URL
+    file: URL
+    documentType: DocumentType
+    isReviewed: Boolean
+  }
+
+  " processed non-financial document "
+  type OtherDocument implements Document & Linkable {
     id: UUID!
     image: URL
     file: URL

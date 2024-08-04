@@ -385,6 +385,10 @@ export default gql`
     charge: Charge
   }
 
+  extend type OtherDocument {
+    charge: Charge
+  }
+
   extend interface FinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }
