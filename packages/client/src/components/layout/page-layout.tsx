@@ -1,5 +1,4 @@
-import { Heading } from '../ui/heading';
-import { Separator } from '../ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 type PageLayoutProps = {
   children: React.ReactNode;
@@ -9,10 +8,17 @@ type PageLayoutProps = {
 
 export function PageLayout({ children, title, description }: PageLayoutProps): JSX.Element {
   return (
-    <div className="flex flex-col gap-5">
-      <Heading title={title} description={description} />
-      <Separator />
-      {children}
-    </div>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className='text-[24px]'>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col w-full gap-5">
+          {children}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

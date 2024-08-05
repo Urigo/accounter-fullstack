@@ -1,6 +1,6 @@
 import { ReactElement, useEffect } from 'react';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from '../ui/pagination';
-import { Button } from '../ui/button';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from '../../ui/pagination';
+import { Button } from '../../ui/button';
 import { Loader2 } from 'lucide-react';
 
 interface PaginationProps {

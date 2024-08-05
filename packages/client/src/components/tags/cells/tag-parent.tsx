@@ -27,20 +27,18 @@ export const TagParent = ({ data }: Props): ReactElement | null => {
     const tag = getFragmentData(AllTagsParentFieldFragmentDoc, data);
     return (
         tag.parent ? (
-            <TableRow>
-                <TableCell colSpan={5} className="px-20 py-4 bg-gray-200/50">
-                    <div className="grid gap-2">
-                        <ul>
-                            <li className='gap-3 flex'>
-                                <span className="text-black font-semibold mr-3">Parent:</span>
-                                <Badge>
-                                    {tag.parent.name}
-                                </Badge>
-                            </li>
-                        </ul>
-                    </div>
-                </TableCell>
-            </TableRow>
+            <TableCell colSpan={5} className="px-20 py-4 bg-gray-200/50">
+                <div className="grid gap-2">
+                    <ul>
+                        <li className='gap-3 flex'>
+                            <span className="text-black font-semibold mr-3">Parent:</span>
+                            <Badge>
+                                {tag.parent.name}
+                            </Badge>
+                        </li>
+                    </ul>
+                </div>
+            </TableCell>
         ) : null
     );
 };

@@ -4,8 +4,8 @@ import { useQuery } from 'urql';
 import { AllTagsPageDocument } from '../../gql/graphql.js';
 import { TagsTable } from './tags-table.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { AddTagForm } from './add-tag-form.js';
-import { AllTagsPagePagination } from './tags-page-pagination.js';
+import { AddTagForm } from './filters/add-tag-form.js';
+import { AllTagsPagePagination } from './filters/tags-page-pagination.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 
 
@@ -29,7 +29,6 @@ import { useUrlQuery } from '../../hooks/use-url-query.js';
 
 export const TagsPage = (): ReactElement => {
     const { setFiltersContext } = useContext(FiltersContext);
-
     const { get, set } = useUrlQuery();
     const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
     const limit = 25;
