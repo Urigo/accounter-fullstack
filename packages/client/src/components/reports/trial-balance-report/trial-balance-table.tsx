@@ -2,6 +2,7 @@ import { ReactElement, useMemo } from 'react';
 import { Table } from '@mantine/core';
 import type { TrialBalanceReportQuery } from '../../../gql/graphql.js';
 import { formatStringifyAmount } from '../../../helpers/index.js';
+import { DownloadCSV } from './download-csv.js';
 import type { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceReportGroup } from './trial-balance-report-group.js';
 import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
@@ -9,6 +10,15 @@ import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
 function roundNearest100(num: number): number {
   return Math.floor(num / 100) * 100;
 }
+
+export type SortCodeGroup = {
+  sortCodes: Record<number, ExtendedSortCode>;
+  totalCredit: number;
+  totalDebit: number;
+  credit: number;
+  debit: number;
+  sum: number;
+};
 
 type Props = {
   businessTransactionsSum: Extract<
@@ -25,17 +35,7 @@ export const TrialBalanceTable = ({
   isAllOpened,
 }: Props): ReactElement => {
   const sortCodesGroups = useMemo(() => {
-    const adjustedSortCodes: Record<
-      number,
-      {
-        sortCodes: Record<number, ExtendedSortCode>;
-        totalCredit: number;
-        totalDebit: number;
-        credit: number;
-        debit: number;
-        sum: number;
-      }
-    > = {};
+    const adjustedSortCodes: Record<number, SortCodeGroup> = {};
 
     for (const record of businessTransactionsSum) {
       // use default group if no sort code
@@ -103,6 +103,13 @@ export const TrialBalanceTable = ({
           <th>Total Debit</th>
           <th>Total Credit</th>
           <th>Balance</th>
+          <th>
+            <DownloadCSV
+              data={sortCodesGroups}
+              fromDate={filter.fromDate ?? undefined}
+              toDate={filter.toDate ?? undefined}
+            />
+          </th>
         </tr>
       </thead>
       <tbody>
