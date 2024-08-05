@@ -47,6 +47,9 @@ export const TagsPage = (): ReactElement => {
             <div className="flex flex-row gap-3">
                 <AddTagForm refetch={refetch} />
                 <AllTagsPagePagination
+                    fetching={fetching}
+                    get={get}
+                    set={set}
                     currentPage={activePage}
                     onPageChange={(page) => {
                         setActivePage(page);
@@ -56,14 +59,14 @@ export const TagsPage = (): ReactElement => {
                 />
             </div>,
         );
-    }, [activePage, refetch, setFiltersContext, set, data?.allTagsPaginated.pageInfo.totalPages]);
+    }, [activePage, refetch, setFiltersContext, set, data?.allTagsPaginated.pageInfo.totalPages, get, fetching]);
 
     return (
         <div>
             {fetching ? (
                 <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
             ) : (
-                <TagsTable data={data?.allTagsPaginated?.nodes} />
+                <TagsTable refetch={refetch} data={data?.allTagsPaginated?.nodes} />
             )}
         </div>
     );

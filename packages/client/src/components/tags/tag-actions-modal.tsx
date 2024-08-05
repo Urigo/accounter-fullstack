@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Loader2, MoreHorizontal } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AllTagsForEditModalDocument, Tag, } from '../../gql/graphql.js';
@@ -33,6 +32,7 @@ const formSchema = z.object({
   allTags {
     id
     name
+    namePath
     parent {
       id
       name
@@ -43,9 +43,10 @@ const formSchema = z.object({
 
 type TagActionsModalProps = {
   tag: Tag;
+  refetch: () => void;
 };
 
-export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
+export function TagActionsModal({ tag, refetch }: TagActionsModalProps): JSX.Element {
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const [{ data, fetching }] = useQuery({
     query: AllTagsForEditModalDocument,
@@ -57,8 +58,6 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
 
   const { deleteTag, fetching: deleteFetching } = useDeleteTag();
   const { updateTag, fetching: updateFetching } = useUpdateTag();
-  // Cant figure out how to pass the refetch from the Tags query to the TagActionsModal.
-  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,7 +76,7 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
       }
     }).then(() => {
       setIsOpenDialog(false);
-      navigate(0);
+      refetch();
     });
   }
 
@@ -87,7 +86,7 @@ export function TagActionsModal({ tag }: TagActionsModalProps): JSX.Element {
       name: tag.name
     }).then(() => {
       setIsOpenDialog(false);
-      navigate(0);
+      refetch();
     });
   }
 

@@ -1,12 +1,15 @@
 import { ReactElement } from 'react';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AllTagsChildrenFieldFragmentDoc } from '../../../gql/graphql.js';
+import { AllTagsChildrenFieldFragmentDoc, AllTagsForEditModalDocument, Tag } from '../../../gql/graphql.js';
 import { TableCell, TableRow } from '../../ui/table.js';
 import { Badge } from '../../ui/badge.js';
+import { useQuery } from 'urql';
+import { Loader2 } from 'lucide-react';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment AllTagsChildrenField on Tag {
+    name
     namePath
   }
 `;
@@ -24,24 +27,39 @@ function indentStrings(strings: string[] | undefined | null): string[] {
 }
 
 export const TagChildren = ({ data }: Props): ReactElement | null => {
-    const tag = getFragmentData(AllTagsChildrenFieldFragmentDoc, data);
-    const tagNamePath = indentStrings(tag.namePath);
-    if (tagNamePath.length === 0) return null;
+    const tagData = getFragmentData(AllTagsChildrenFieldFragmentDoc, data);
+    const [{ data: allTags, fetching }] = useQuery({
+        query: AllTagsForEditModalDocument,
+    });
+
+    const childrenTags = allTags?.allTags.filter(tag =>
+        tag.namePath?.includes(tagData.name)
+    ).map(tag => ({
+        name: tag.name
+    })) ?? [];
+
+    const indentedChildren = indentStrings(childrenTags.map(tag => tag.name));
+    if (indentedChildren.length === 0) return null;
 
     return (
         <TableRow>
             <TableCell colSpan={5} className="px-20 py-4 bg-gray-200/50">
                 <div className="flex flex-row justify-start">
-                    <span className="text-black font-semibold mr-3">Children:</span>
-                    <div className='flex flex-col justify-start gap-3'>
-                        {tagNamePath.map((name, index) => (
-                            <div key={index} className='text-sm'>
-                                <Badge variant='outline'>
-                                    {name}
-                                </Badge>
+                    {fetching ? (
+                        <Loader2 className="w-6 h-6" />
+                    ) :
+                        <>
+                            <span className="text-black font-semibold mr-3">Children:</span><div className='flex flex-col justify-start gap-3'>
+                                {indentedChildren.map((tag, index) => (
+                                    <div key={index} className='text-sm'>
+                                        <Badge variant='outline'>
+                                            {tag}
+                                        </Badge>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    }
                 </div>
             </TableCell>
         </TableRow>
