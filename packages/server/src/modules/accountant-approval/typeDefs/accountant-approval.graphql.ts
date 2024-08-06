@@ -5,6 +5,8 @@ export default gql`
   extend type Mutation {
     toggleChargeAccountantApproval(chargeId: UUID!, approved: Boolean!): Boolean!
       @auth(role: ACCOUNTANT)
+    toggleBusinessTripAccountantApproval(businessTripId: UUID!, approved: Boolean!): Boolean!
+      @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {
@@ -54,5 +56,9 @@ export default gql`
 
   extend input UpdateChargeInput {
     accountantApproval: Boolean
+  }
+
+  extend type BusinessTrip {
+    accountantApproval: Boolean!
   }
 `;

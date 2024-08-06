@@ -1,6 +1,10 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import {
+  IUpdateAccountantApprovalParams,
+  IUpdateAccountantApprovalQuery,
+} from '@modules/charges/types.js';
 import { sql } from '@pgtyped/runtime';
 import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 import type {
@@ -57,6 +61,10 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
   trip_purpose = COALESCE(
     $tripPurpose,
     trip_purpose
+  ),
+  accountant_reviewed = COALESCE(
+    $accountantReviewed,
+    accountant_reviewed
   )
   WHERE
     id = $businessTripId
@@ -67,6 +75,15 @@ const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
   INSERT INTO accounter_schema.business_trips (name, destination, trip_purpose)
   VALUES($name, $destination, $tripPurpose)
   RETURNING id;`;
+
+const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
+  UPDATE accounter_schema.business_trips
+  SET
+    accountant_reviewed = $accountantReviewed
+  WHERE
+    id = $businessTripId
+  RETURNING *;
+`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -129,5 +146,9 @@ export class BusinessTripsProvider {
 
   public insertBusinessTrip(params: IInsertBusinessTripParams) {
     return insertBusinessTrip.run(params, this.dbProvider);
+  }
+
+  public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
+    return updateAccountantApproval.run(params, this.dbProvider);
   }
 }

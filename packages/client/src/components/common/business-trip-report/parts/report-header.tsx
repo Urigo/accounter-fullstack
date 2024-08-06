@@ -3,6 +3,7 @@ import { differenceInDays, format } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { AccountantApproval } from '../buttons/accountant-approval.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -15,23 +16,25 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
     }
     purpose
     destination
+    ...BusinessTripAccountantApprovalFields
   }
 `;
 
 interface Props {
   data: FragmentType<typeof BusinessTripReportHeaderFieldsFragmentDoc>;
+  onChange: () => void;
 }
 
-export const ReportHeader = ({ data }: Props): ReactElement => {
-  const { name, dates, purpose, destination } = getFragmentData(
-    BusinessTripReportHeaderFieldsFragmentDoc,
-    data,
-  );
+export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
+  const businessTrip = getFragmentData(BusinessTripReportHeaderFieldsFragmentDoc, data);
+
+  const { name, dates, purpose, destination } = businessTrip;
 
   return (
     <Grid>
-      <Grid.Col span={12}>
+      <Grid.Col span={12} className="flex flex-row justify-between items-center">
         <Text fz="xl">{name}</Text>
+        <AccountantApproval data={businessTrip} onChange={onChange} />
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>
         From Date:

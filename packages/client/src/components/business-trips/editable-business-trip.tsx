@@ -70,7 +70,7 @@ export function EditableBusinessTrip({ tripId, isExtended = false }: Props): Rea
     <Card shadow="sm" radius="md" withBorder>
       {trip ? (
         <>
-          <ReportHeader data={trip} />
+          <ReportHeader data={trip} onChange={onChangeDo} />
           <Accordion
             className="w-full"
             multiple
