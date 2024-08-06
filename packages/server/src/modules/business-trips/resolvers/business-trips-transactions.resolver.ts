@@ -124,12 +124,12 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
       try {
         const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields, 'OTHER');
 
-        const { id, expenseType, deductibleExpense } = fields;
-        const hasOtherFieldsToUpdate = expenseType || deductibleExpense != null;
+        const { id, description, deductibleExpense } = fields;
+        const hasOtherFieldsToUpdate = description || deductibleExpense != null;
         const otherTransactionUpdate = hasOtherFieldsToUpdate
           ? injector.get(BusinessTripOtherTransactionsProvider).updateBusinessTripOtherTransaction({
               businessTripTransactionId: id,
-              expenseType,
+              description,
               deductibleExpense,
             })
           : Promise.resolve();
@@ -314,7 +314,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         await Promise.all([
           injector.get(BusinessTripOtherTransactionsProvider).insertBusinessTripOtherTransaction({
             id: coreTransaction.id,
-            expenseType: fields.expenseType,
+            description: fields.description,
             deductibleExpense: fields.deductibleExpense,
           }),
           injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({

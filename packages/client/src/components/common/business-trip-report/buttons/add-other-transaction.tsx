@@ -70,14 +70,14 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
           />
 
           <Controller
-            name="expenseType"
+            name="description"
             control={control}
             render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={field.value ?? undefined}
                 error={fieldState.error?.message}
-                label="Expense Type"
+                label="Description"
               />
             )}
           />

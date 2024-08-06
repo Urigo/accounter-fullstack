@@ -36,7 +36,7 @@ export const Other = ({ data, onChange }: Props): ReactElement => {
         <thead>
           <tr>
             <CoreTransactionHeader />
-            <th>Expense Type</th>
+            <th>Description</th>
             <th>Deductible Expense</th>
             <th />
           </tr>

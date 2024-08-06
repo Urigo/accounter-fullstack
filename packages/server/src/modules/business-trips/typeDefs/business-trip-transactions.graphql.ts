@@ -96,7 +96,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    expenseType: String
+    description: String
     deductibleExpense: Boolean
   }
 
@@ -153,7 +153,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    expenseType: String
+    description: String
     deductibleExpense: Boolean
   }
 

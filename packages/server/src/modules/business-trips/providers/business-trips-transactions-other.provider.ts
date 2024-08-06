@@ -51,9 +51,9 @@ const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransacti
     $deductibleExpense,
     deductible_expense
   ),
-  expense_type = COALESCE(
-    $expenseType,
-    expense_type
+  description = COALESCE(
+    $description,
+    description
   )
   WHERE
     id = $businessTripTransactionId
@@ -61,8 +61,8 @@ const updateBusinessTripOtherTransaction = sql<IUpdateBusinessTripOtherTransacti
 `;
 
 const insertBusinessTripOtherTransaction = sql<IInsertBusinessTripOtherTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_other (id, deductible_expense, expense_type)
-  VALUES($id, $deductibleExpense, $expenseType)
+  INSERT INTO accounter_schema.business_trips_transactions_other (id, deductible_expense, description)
+  VALUES($id, $deductibleExpense, $description)
   RETURNING *;`;
 
 const deleteBusinessTripOtherTransaction = sql<IDeleteBusinessTripOtherTransactionQuery>`
