@@ -22,7 +22,7 @@ export const BusinessTripSummarizedReport = ({ data }: Props): ReactElement => {
 
   return (
     <>
-      <ReportHeader data={reportData} />
+      <ReportHeader data={reportData} onChange={() => {}} />
       <Summary data={reportData} />
     </>
   );

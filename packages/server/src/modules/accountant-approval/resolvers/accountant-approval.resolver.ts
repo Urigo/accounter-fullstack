@@ -1,3 +1,5 @@
+import { BusinessTripsTypes } from '@modules/business-trips/index.js';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { AccountantApprovalModule } from '../types.js';
@@ -24,6 +26,21 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
       }
       return res[0].accountant_reviewed || false;
     },
+    toggleBusinessTripAccountantApproval: async (_, { businessTripId, approved }, { injector }) => {
+      const adjustedFields: BusinessTripsTypes.IUpdateAccountantApprovalParams = {
+        accountantReviewed: approved,
+        businessTripId,
+      };
+      const res = await injector
+        .get(BusinessTripsProvider)
+        .updateAccountantApproval({ ...adjustedFields });
+
+      if (!res || res.length === 0) {
+        throw new Error(`Failed to update business trip ID='${businessTripId}'`);
+      }
+
+      return res[0].accountant_reviewed || false;
+    },
   },
   CommonCharge: commonChargeFields,
   FinancialCharge: commonChargeFields,
@@ -35,4 +52,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
+  BusinessTrip: {
+    accountantApproval: dbBusinessTrip => dbBusinessTrip.accountant_reviewed ?? false,
+  },
 };

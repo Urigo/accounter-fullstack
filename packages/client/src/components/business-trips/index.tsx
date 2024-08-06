@@ -18,6 +18,7 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
         start
       }
       ... on BusinessTrip @defer {
+        accountantApproval
         uncategorizedTransactions {
           ... on Transaction @defer {
             id
@@ -59,6 +60,8 @@ export const BusinessTrips = (): ReactElement => {
     setBusinessTrips(newBusinessTrips);
   }, [data?.allBusinessTrips]);
 
+  const [openedTrips, setOpenedTrips] = useState<string[]>([]);
+
   return (
     <PageLayout title="Business Trips" description="Manage business trips">
       {fetching ? (
@@ -68,6 +71,8 @@ export const BusinessTrips = (): ReactElement => {
           <Accordion
             className="w-full"
             multiple
+            value={openedTrips}
+            onChange={setOpenedTrips}
             chevron={<Plus size="1rem" />}
             styles={{
               chevron: {
@@ -82,6 +87,7 @@ export const BusinessTrips = (): ReactElement => {
                 trip={businessTrip}
                 isFetching={fetching}
                 key={businessTrip.id}
+                isOpened={openedTrips.includes(businessTrip.id)}
               />
             ))}
           </Accordion>
@@ -97,12 +103,19 @@ export const BusinessTrips = (): ReactElement => {
 type BusinessTripWrapperProps = {
   trip: BusinessTripsScreenQuery['allBusinessTrips'][number];
   isFetching?: boolean;
+  isOpened: boolean;
 };
 
-const BusinessTripWrapper = ({ trip, isFetching }: BusinessTripWrapperProps): ReactElement => {
-  const indicatorUp = useMemo(() => {
+const BusinessTripWrapper = ({
+  trip,
+  isFetching,
+  isOpened,
+}: BusinessTripWrapperProps): ReactElement => {
+  const isError = useMemo(() => {
     return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
   }, [trip]);
+
+  const indicatorUp = isError || !trip?.accountantApproval;
 
   return (
     <Accordion.Item value={trip.id}>
@@ -111,15 +124,15 @@ const BusinessTripWrapper = ({ trip, isFetching }: BusinessTripWrapperProps): Re
           inline
           size={12}
           processing={isFetching}
-          disabled={!isFetching && !indicatorUp}
-          color={isFetching ? 'yellow' : 'red'}
+          disabled={!indicatorUp}
+          color={isError ? 'red' : 'yellow'}
           zIndex="auto"
         >
           {trip.name}
         </Indicator>
       </Accordion.Control>
       <Accordion.Panel>
-        <EditableBusinessTrip tripId={trip.id} isExtended key={trip.id} />
+        {isOpened && <EditableBusinessTrip tripId={trip.id} isExtended key={trip.id} />}
       </Accordion.Panel>
     </Accordion.Item>
   );
