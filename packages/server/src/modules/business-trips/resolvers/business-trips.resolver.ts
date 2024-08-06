@@ -185,7 +185,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripOtherTransaction: {
     __isTypeOf: DbTransaction => DbTransaction.category === 'OTHER',
     ...commonBusinessTransactionFields,
-    expenseType: dbTransaction => dbTransaction.expense_type,
+    description: dbTransaction => dbTransaction.description,
   },
   BusinessTripCharge: {
     businessTrip: (dbCharge, _, { injector }) => {

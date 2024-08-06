@@ -139,8 +139,8 @@ export default gql`
 
     " הוצאה מוכרת "
     deductibleExpense: Boolean
-    " סוג ההוצאה "
-    expenseType: String
+    " פירוט "
+    description: String
   }
 
   " represent business trip summary data "

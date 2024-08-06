@@ -17,7 +17,7 @@ import { CoreTransactionRow } from './core-transaction-row.jsx';
     id
     ...BusinessTripReportCoreTransactionRowFields
     payedByEmployee
-    expenseType
+    description
     deductibleExpense
   }
 `;
@@ -62,9 +62,9 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
         <form id={`form ${otherTransaction.id}`} onSubmit={handleSubmit(onSubmit)}>
           {isEditMode ? (
             <Controller
-              name="expenseType"
+              name="description"
               control={control}
-              defaultValue={otherTransaction.expenseType}
+              defaultValue={otherTransaction.description}
               render={({ field, fieldState }): ReactElement => (
                 <TextInput
                   form={`form ${otherTransaction.id}`}
@@ -72,13 +72,13 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
                   {...field}
                   value={field.value ?? undefined}
                   error={fieldState.error?.message}
-                  label="Expense Type"
+                  label="Description"
                 />
               )}
             />
           ) : (
-            <Text c={otherTransaction.expenseType ? undefined : 'red'}>
-              {otherTransaction.expenseType ?? 'Missing'}
+            <Text c={otherTransaction.description ? undefined : 'red'}>
+              {otherTransaction.description ?? 'Missing'}
             </Text>
           )}
         </form>
