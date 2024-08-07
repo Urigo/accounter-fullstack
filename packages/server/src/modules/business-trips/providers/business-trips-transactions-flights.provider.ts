@@ -22,7 +22,7 @@ const getAllBusinessTripsFlightsTransactions = sql<IGetAllBusinessTripsFlightsTr
   USING (id);`;
 
 const getBusinessTripsFlightsTransactionsByChargeIds = sql<IGetBusinessTripsFlightsTransactionsByChargeIdsQuery>`
-  SELECT btc.charge_id, f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_id
+  SELECT btc.charge_id, f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_ids
   FROM accounter_schema.business_trips_transactions_flights f
   LEFT JOIN accounter_schema.extended_business_trip_transactions t
     USING (id)

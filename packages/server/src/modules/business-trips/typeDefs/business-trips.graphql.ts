@@ -63,7 +63,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     " שולם על ידי העובד "
     payedByEmployee: Boolean
   }
@@ -76,7 +76,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     payedByEmployee: Boolean
   }
 
@@ -88,7 +88,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     payedByEmployee: Boolean
 
     country: String
@@ -103,7 +103,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     payedByEmployee: Boolean
 
     origin: String
@@ -119,7 +119,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     payedByEmployee: Boolean
 
     " סוג ההוצאה "
@@ -134,7 +134,7 @@ export default gql`
     valueDate: TimelessDate
     amount: FinancialAmount
     employee: FinancialEntity
-    transaction: Transaction
+    transactions: [Transaction!]
     payedByEmployee: Boolean
 
     " הוצאה מוכרת "

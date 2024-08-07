@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { stringArray } from '@modules/charges/types.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   IDeleteBusinessTripTransactionParams,
@@ -9,6 +10,7 @@ import type {
   IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
   IGetBusinessTripsTransactionsByIdsQuery,
+  IGetBusinessTripsTransactionsByTransactionIdsQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripTransactionParams,
@@ -26,16 +28,19 @@ const getAllBusinessTripsTransactions = sql<IGetAllBusinessTripsTransactionsQuer
   FROM accounter_schema.extended_business_trip_transactions`;
 
 const getBusinessTripsTransactionsByChargeIds = sql<IGetBusinessTripsTransactionsByChargeIdsQuery>`
-  SELECT t.charge_id, btt.*
-  FROM accounter_schema.business_trips_transactions btt
-  LEFT JOIN accounter_schema.transactions t
-    ON t.id = btt.transaction_id
-  WHERE ($isChargeIds = 0 OR t.charge_id IN $$chargeIds);`;
+  SELECT *
+  FROM accounter_schema.extended_business_trip_transactions btt
+  WHERE ($isChargeIds = 0 OR btt.charge_ids && $chargeIds);`;
 
 const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTransactionsByBusinessTripIdsQuery>`
   SELECT *
   FROM accounter_schema.extended_business_trip_transactions
   WHERE ($isBusinessTripIds = 0 OR business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsTransactionsByTransactionIds = sql<IGetBusinessTripsTransactionsByTransactionIdsQuery>`
+  SELECT *
+  FROM accounter_schema.extended_business_trip_transactions
+  WHERE ($isTransactionIds = 0 OR transaction_ids && $transactionIds);`;
 
 const getBusinessTripsTransactionsByIds = sql<IGetBusinessTripsTransactionsByIdsQuery>`
   SELECT *
@@ -52,10 +57,6 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
   category = COALESCE(
     $category,
     category
-  ),
-  transaction_id = COALESCE(
-    $transactionId,
-    transaction_id
   )
   WHERE
     id = $businessTripTransactionId
@@ -78,11 +79,11 @@ const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransa
   FROM accounter_schema.extended_transactions t
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.charge_id = btc.charge_id
-  LEFT JOIN accounter_schema.business_trips_transactions btt
-    ON btc.business_trip_id = btt.business_trip_id
-      AND btt.transaction_id = t.id
-
-  WHERE btc.business_trip_id = $businessTripId
+      AND btc.business_trip_id = $businessTripId
+  LEFT JOIN accounter_schema.extended_business_trip_transactions btt
+    ON t.id = ANY(btt.transaction_ids)
+    AND btt.business_trip_id = $businessTripId 
+  WHERE btc.business_trip_id IS NOT NULL
     AND btt.id IS NULL;`;
 
 @Injectable({
@@ -106,11 +107,11 @@ export class BusinessTripTransactionsProvider {
     const businessTrips = await getBusinessTripsTransactionsByChargeIds.run(
       {
         isChargeIds: chargeIds.length > 0 ? 1 : 0,
-        chargeIds,
+        chargeIds: chargeIds as stringArray,
       },
       this.dbProvider,
     );
-    return chargeIds.map(id => businessTrips.filter(record => record.charge_id === id));
+    return chargeIds.map(id => businessTrips.filter(record => record.charge_ids?.includes(id)));
   }
 
   public getBusinessTripsTransactionsByChargeIdLoader = new DataLoader(
@@ -137,6 +138,26 @@ export class BusinessTripTransactionsProvider {
 
   public getBusinessTripsTransactionsByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsTransactionsByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsTransactionsByTransactionIds(transactionIds: readonly string[]) {
+    const businessTrips = await getBusinessTripsTransactionsByTransactionIds.run(
+      {
+        isTransactionIds: transactionIds.length > 0 ? 1 : 0,
+        transactionIds: transactionIds as stringArray,
+      },
+      this.dbProvider,
+    );
+    return transactionIds.map(id =>
+      businessTrips.filter(record => record.transaction_ids?.includes(id)),
+    );
+  }
+
+  public getBusinessTripsTransactionsByTransactionIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsTransactionsByTransactionIds(ids),
     {
       cache: false,
     },
