@@ -41,19 +41,19 @@ export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTr
               return res;
             })
         : null,
-    transaction: async (DbTransaction, _, { injector }) =>
-      DbTransaction.transaction_id
+    transactions: async (DbTripTransaction, _, { injector }) =>
+      DbTripTransaction.transaction_ids?.length
         ? injector
             .get(TransactionsProvider)
-            .getTransactionByIdLoader.load(DbTransaction.transaction_id)
+            .getTransactionByIdLoader.loadMany(DbTripTransaction.transaction_ids)
             .then(res => {
               if (!res) {
                 throw new GraphQLError(
-                  `Transaction with id ${DbTransaction.transaction_id} not found`,
+                  `Some transaction of business trip transaction id ${DbTripTransaction.id} were not found`,
                 );
               }
-              return res as IGetTransactionsByIdsResult;
+              return res as IGetTransactionsByIdsResult[];
             })
-        : await null,
+        : Promise.resolve(null),
     payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
   };

@@ -36,6 +36,7 @@ import migration_2024_08_01T09_01_35_transaction_view_debit_date_fix from './act
 import migration_2024_08_04T12_37_14_add_document_type_other from './actions/2024-08-04T12-37-14.add-document-type-other.js';
 import migration_2024_08_06T08_47_51_business_trip_accountant_approval from './actions/2024-08-06T08-47-51.business-trip-accountant-approval.js';
 import migration_2024_08_06T14_00_00_add_description_to_business_trip_other_transaction from './actions/2024-08-06T14-00-00.add-description-to-business-trip-other-transaction.js';
+import migration_2024_08_06T15_00_00_enhance_business_trip_transactions_matching from './actions/2024-08-06T15-00-00.enhance-business-trip-transactions-matching.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -79,5 +80,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_08_04T12_37_14_add_document_type_other,
       migration_2024_08_06T08_47_51_business_trip_accountant_approval,
       migration_2024_08_06T14_00_00_add_description_to_business_trip_other_transaction,
+      migration_2024_08_06T15_00_00_enhance_business_trip_transactions_matching,
     ],
   });
