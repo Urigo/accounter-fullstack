@@ -313,8 +313,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             return;
           }
 
-          const matchingEntry = financialAccountLedgerEntries.find(
-            entry => entry.id === businessTripTransaction.transaction_id,
+          const matchingEntry = financialAccountLedgerEntries.find(entry =>
+            businessTripTransaction.transaction_ids?.includes(entry.id),
           );
           if (!matchingEntry) {
             return;

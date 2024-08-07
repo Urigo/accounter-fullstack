@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
@@ -13,9 +12,7 @@ import type {
   flight_class,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
-  // IGetBusinessTripsOtherTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-  // IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult,
 } from '../types.js';
 
 export type SummaryCategoryData = Partial<Record<Currency, { total: number; taxable: number }>>;
@@ -59,7 +56,6 @@ export function calculateTotalReportSummaryCategory(data: Partial<SummaryData>) 
 
 function getTransactionCoreData(
   tripTransaction: IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-  transactions: IGetTransactionsByIdsResult[],
 ): {
   amount: number;
   currency: Currency;
@@ -77,19 +73,15 @@ function getTransactionCoreData(
       date: new Date(tripTransaction.date),
     };
   }
-  const transaction = transactions.find(t => t.id === tripTransaction.transaction_id);
-  if (!transaction) {
-    throw new GraphQLError(`Transaction not found for trip transaction ID ${tripTransaction.id}`);
-  }
-  if (!transaction.currency || !transaction.amount || !transaction.debit_date) {
+  if (!tripTransaction.currency || !tripTransaction.amount || !tripTransaction.value_date) {
     throw new GraphQLError(
-      `Currency, amount or date not found for transaction ID ${transaction.id}`,
+      `Currency, amount or date not found for business trip transaction ID ${tripTransaction.id}`,
     );
   }
   return {
-    amount: Number(transaction.amount) * -1,
-    currency: formatCurrency(transaction.currency),
-    date: new Date(transaction.debit_date),
+    amount: Number(tripTransaction.amount) * -1,
+    currency: formatCurrency(tripTransaction.currency),
+    date: new Date(tripTransaction.value_date),
   };
 }
 
@@ -115,9 +107,8 @@ async function getLocalAmountAndExchangeRate(
 async function getTransactionAmountsData(
   injector: Injector,
   businessTripTransaction: IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-  transactions: IGetTransactionsByIdsResult[],
 ) {
-  const { amount, currency, date } = getTransactionCoreData(businessTripTransaction, transactions);
+  const { amount, currency, date } = getTransactionCoreData(businessTripTransaction);
   const isForeign = currency !== DEFAULT_LOCAL_CURRENCY;
 
   const { localAmount, exchangeRate, foreignAmount, usdRate } = await getLocalAmountAndExchangeRate(
@@ -134,14 +125,13 @@ export async function flightTransactionDataCollector(
   injector: Injector,
   businessTripTransaction: IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
-  transactions: IGetTransactionsByIdsResult[],
 ): Promise<string | void> {
   // populate category
   partialSummaryData['FLIGHT'] ??= {};
   const category = partialSummaryData['FLIGHT'] as SummaryCategoryData;
 
   const { currency, isForeign, localAmount, exchangeRate, foreignAmount } =
-    await getTransactionAmountsData(injector, businessTripTransaction, transactions);
+    await getTransactionAmountsData(injector, businessTripTransaction);
 
   // calculate taxable amount
   const fullyTaxableClasses: flight_class[] = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'];
@@ -176,7 +166,6 @@ export async function accommodationTransactionDataCollector(
   injector: Injector,
   businessTripTransaction: IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
-  transactions: IGetTransactionsByIdsResult[],
   destination: string | null,
 ): Promise<string | void> {
   // populate category
@@ -184,7 +173,7 @@ export async function accommodationTransactionDataCollector(
   const category = partialSummaryData['ACCOMMODATION'] as SummaryCategoryData;
 
   const { currency, isForeign, localAmount, exchangeRate, foreignAmount, usdRate } =
-    await getTransactionAmountsData(injector, businessTripTransaction, transactions);
+    await getTransactionAmountsData(injector, businessTripTransaction);
 
   if (!businessTripTransaction.nights_count) {
     console.error(
@@ -224,7 +213,6 @@ export async function otherTransactionsDataCollector(
   injector: Injector,
   otherTransactions: IGetBusinessTripsTransactionsByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
-  transactions: IGetTransactionsByIdsResult[],
   tripMetaData: TripMetaData,
 ): Promise<string | void> {
   if (otherTransactions.length === 0) {
@@ -240,7 +228,7 @@ export async function otherTransactionsDataCollector(
       .get(ExchangeProvider)
       .getExchangeRates(Currency.Usd, DEFAULT_LOCAL_CURRENCY, tripMetaData.endDate),
     ...otherTransactions.map(businessTripTransaction =>
-      getTransactionAmountsData(injector, businessTripTransaction, transactions),
+      getTransactionAmountsData(injector, businessTripTransaction),
     ),
   ]);
 

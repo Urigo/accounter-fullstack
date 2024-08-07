@@ -27,40 +27,45 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
           .get(BusinessTripTransactionsProvider)
           .insertBusinessTripTransaction({
             businessTripId,
-            transactionId,
             category,
           });
         const id = businessTripTransaction.id;
-        switch (category) {
-          case 'FLIGHT':
-            await injector
-              .get(BusinessTripFlightsTransactionsProvider)
-              .insertBusinessTripFlightsTransaction({
-                id,
-              });
-            break;
-          case 'ACCOMMODATION':
-            await injector
-              .get(BusinessTripAccommodationsTransactionsProvider)
-              .insertBusinessTripAccommodationsTransaction({
-                id,
-              });
-            break;
-          case 'TRAVEL_AND_SUBSISTENCE':
-            await injector
-              .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
-              .insertBusinessTripTravelAndSubsistenceTransaction({ id });
-            break;
-          case 'OTHER':
-            await injector
-              .get(BusinessTripOtherTransactionsProvider)
-              .insertBusinessTripOtherTransaction({
-                id,
-              });
-            break;
-          default:
-            throw new GraphQLError(`Invalid category ${category}`);
-        }
+
+        const updateTransactionMatchPromise = injector
+          .get(BusinessTripTransactionsProvider)
+          .insertBusinessTripTransactionMatch({
+            businessTripTransactionId: id,
+            transactionId,
+          });
+        const insertToCategoryPromise = async () => {
+          switch (category) {
+            case 'FLIGHT':
+              return injector
+                .get(BusinessTripFlightsTransactionsProvider)
+                .insertBusinessTripFlightsTransaction({
+                  id,
+                });
+            case 'ACCOMMODATION':
+              return injector
+                .get(BusinessTripAccommodationsTransactionsProvider)
+                .insertBusinessTripAccommodationsTransaction({
+                  id,
+                });
+            case 'TRAVEL_AND_SUBSISTENCE':
+              return injector
+                .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
+                .insertBusinessTripTravelAndSubsistenceTransaction({ id });
+            case 'OTHER':
+              return injector
+                .get(BusinessTripOtherTransactionsProvider)
+                .insertBusinessTripOtherTransaction({
+                  id,
+                });
+            default:
+              throw new GraphQLError(`Invalid category ${category}`);
+          }
+        };
+        await Promise.all([updateTransactionMatchPromise, insertToCategoryPromise()]);
         return id;
       } catch (e) {
         console.error(`Error updating business trip transaction's category`, e);
@@ -72,8 +77,8 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         const coreTransactionUpdatePromise = coreTransactionUpdate(injector, fields, 'FLIGHT');
 
         const { id, origin, destination, flightClass } = fields;
-        const hasFlightFliedsToUpdate = origin || destination || flightClass;
-        const flightTransactionUpdate = hasFlightFliedsToUpdate
+        const hasFlightFieldsToUpdate = origin || destination || flightClass;
+        const flightTransactionUpdate = hasFlightFieldsToUpdate
           ? injector
               .get(BusinessTripFlightsTransactionsProvider)
               .updateBusinessTripFlightsTransaction({

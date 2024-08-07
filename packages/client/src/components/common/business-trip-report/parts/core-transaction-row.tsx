@@ -31,7 +31,7 @@ import { CurrencyInput } from '../../index.js';
       name
     }
     payedByEmployee
-    transaction {
+    transactions {
       id
       chargeId
     }
@@ -220,18 +220,18 @@ export const CoreTransactionRow = ({
                   <ThemeIcon variant="default" radius="lg">
                     <X />
                   </ThemeIcon>
-                  <NavLink
-                    label="To Charge"
-                    className="[&>*>.mantine-NavLink-label]:font-semibold"
-                    onClick={event => {
-                      event.stopPropagation();
-                      window.open(
-                        `/charges/${businessTripTransaction.transaction?.chargeId}`,
-                        '_blank',
-                        'noreferrer',
-                      );
-                    }}
-                  />
+                  {businessTripTransaction.transactions?.length &&
+                    businessTripTransaction.transactions.map(t => (
+                      <NavLink
+                        key={t.id}
+                        label="To Charge"
+                        className="[&>*>.mantine-NavLink-label]:font-semibold"
+                        onClick={event => {
+                          event.stopPropagation();
+                          window.open(`/charges/${t.chargeId}`, '_blank', 'noreferrer');
+                        }}
+                      />
+                    ))}
                 </>
               )}
             </div>

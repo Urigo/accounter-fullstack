@@ -1,7 +1,5 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import type { BusinessTripSummaryCategories } from '@shared/gql-types';
 import {
   accommodationTransactionDataCollector,
@@ -30,24 +28,6 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       .get(BusinessTripTransactionsProvider)
       .getBusinessTripExtendedTransactionsByBusinessTripId(dbBusinessTrip.id);
 
-    const transactions = await injector
-      .get(TransactionsProvider)
-      .getTransactionByIdLoader.loadMany(
-        Array.from(
-          new Set(
-            [
-              ...flightTransactions,
-              ...accommodationsTransactions,
-              ...travelAndSubsistenceTransactions,
-              ...otherTransactions,
-            ].map(t => t.transaction_id),
-          ),
-        ).filter(Boolean) as string[],
-      )
-      .then(
-        res => res.filter(t => t && t instanceof Error === false) as IGetTransactionsByIdsResult[],
-      );
-
     const summaryData: Partial<SummaryData> = {};
 
     if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
@@ -64,20 +44,17 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
 
     await Promise.all([
       ...flightTransactions.map(flightTransaction =>
-        flightTransactionDataCollector(injector, flightTransaction, summaryData, transactions).then(
-          res => {
-            if (res && typeof res === 'string') {
-              errors.push(res);
-            }
-          },
-        ),
+        flightTransactionDataCollector(injector, flightTransaction, summaryData).then(res => {
+          if (res && typeof res === 'string') {
+            errors.push(res);
+          }
+        }),
       ),
       ...accommodationsTransactions.map(accommodationsTransaction =>
         accommodationTransactionDataCollector(
           injector,
           accommodationsTransaction,
           summaryData,
-          transactions,
           dbBusinessTrip.destination,
         ).then(res => {
           if (res && typeof res === 'string') {
@@ -89,7 +66,6 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
         injector,
         [...travelAndSubsistenceTransactions, ...otherTransactions],
         summaryData,
-        transactions,
         {
           tripDuration,
           hasAccommodationExpenses: accommodationsTransactions.length > 0,
