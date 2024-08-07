@@ -13,6 +13,8 @@ import type {
   IGetBusinessTripsTransactionsByTransactionIdsQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
+  IInsertBusinessTripTransactionMatchParams,
+  IInsertBusinessTripTransactionMatchQuery,
   IInsertBusinessTripTransactionParams,
   IInsertBusinessTripTransactionQuery,
   IUpdateBusinessTripTransactionParams,
@@ -64,8 +66,13 @@ const updateBusinessTripTransaction = sql<IUpdateBusinessTripTransactionQuery>`
 `;
 
 const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category, transaction_id)
-  VALUES($businessTripId, $category, $transactionId)
+  INSERT INTO accounter_schema.business_trips_transactions (business_trip_id, category)
+  VALUES($businessTripId, $category)
+  RETURNING *;`;
+
+const insertBusinessTripTransactionMatch = sql<IInsertBusinessTripTransactionMatchQuery>`
+  INSERT INTO accounter_schema.business_trips_transactions_match (business_trip_transaction_id, transaction_id, amount)
+  VALUES($businessTripTransactionId, $transactionId, $amount)
   RETURNING *;`;
 
 const deleteBusinessTripTransaction = sql<IDeleteBusinessTripTransactionQuery>`
@@ -187,6 +194,10 @@ export class BusinessTripTransactionsProvider {
 
   public insertBusinessTripTransaction(params: IInsertBusinessTripTransactionParams) {
     return insertBusinessTripTransaction.run(params, this.dbProvider);
+  }
+
+  public insertBusinessTripTransactionMatch(params: IInsertBusinessTripTransactionMatchParams) {
+    return insertBusinessTripTransactionMatch.run(params, this.dbProvider);
   }
 
   public async getBusinessTripExtendedTransactionsByChargeId(chargeId: string) {

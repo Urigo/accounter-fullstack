@@ -33,6 +33,9 @@ export type {
   IGetBusinessTripsTransactionsByTransactionIdsParams,
   IGetBusinessTripsTransactionsByTransactionIdsResult,
   IGetBusinessTripsTransactionsByTransactionIdsQuery,
+  IInsertBusinessTripTransactionMatchParams,
+  IInsertBusinessTripTransactionMatchResult,
+  IInsertBusinessTripTransactionMatchQuery,
 } from './__generated__/business-trips-transactions.types.js';
 export type {
   flight_class,
