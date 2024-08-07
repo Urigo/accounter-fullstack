@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
@@ -13,9 +12,7 @@ import type {
   flight_class,
   IGetBusinessTripsAccommodationsTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsFlightsTransactionsByBusinessTripIdsResult,
-  // IGetBusinessTripsOtherTransactionsByBusinessTripIdsResult,
   IGetBusinessTripsTransactionsByBusinessTripIdsResult,
-  // IGetBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdsResult,
 } from '../types.js';
 
 export type SummaryCategoryData = Partial<Record<Currency, { total: number; taxable: number }>>;
