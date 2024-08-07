@@ -42,28 +42,29 @@ export default {
                                 t.charge_ids,
                                 btt.category,
                                 CASE
-                                    WHEN btt.transaction_id IS NULL THEN ep.date
+                                    WHEN t.business_trip_transaction_id IS NULL THEN ep.date
                                     ELSE t.event_date
                                     END                                AS date,
                                 CASE
-                                    WHEN btt.transaction_id IS NULL THEN ep.value_date
+                                    WHEN t.business_trip_transaction_id IS NULL THEN ep.value_date
                                     ELSE t.debit_date
                                     END                                AS value_date,
                                 CASE
                                     WHEN t.business_trip_transaction_id IS NULL THEN ep.amount
-                                    WHEN ARRAY_LENGTH(t.currencies, 1) = 1 THEN t.amount
+                                    WHEN array_length(t.currencies, 1) = 1 THEN t.amount
                                     ELSE NULL::numeric
                                     END                                AS amount,
                                 CASE
                                     WHEN t.business_trip_transaction_id IS NULL THEN ep.currency
-                                    WHEN ARRAY_LENGTH(t.currencies, 1) = 1 THEN t.currencies[1]
+                                    WHEN array_length(t.currencies, 1) = 1 THEN t.currencies[1]
                                     ELSE NULL::accounter_schema.currency
                                     END                                AS currency,
                                 ep.employee_business_id,
                                 t.business_trip_transaction_id IS NULL AS payed_by_employee
     FROM accounter_schema.business_trips_transactions btt
             LEFT JOIN transactions_by_business_trip_transaction t ON t.business_trip_transaction_id = btt.id
-            LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id;
+            LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id
+    ORDER BY btt.id;
 
     alter table accounter_schema.business_trips_transactions
         drop column transaction_id;
