@@ -2,9 +2,9 @@ import { ReactElement } from 'react';
 import { Edit } from 'tabler-icons-react';
 import { ActionIcon, Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { EditMiscExpense } from '..';
 import { EditMiscExpenseFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType } from '../../../gql/index.js';
+import { EditMiscExpense } from '../index.js';
 
 interface Props {
   data: FragmentType<typeof EditMiscExpenseFieldsFragmentDoc>;

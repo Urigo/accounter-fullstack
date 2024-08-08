@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { InsertDocument, PopUpDrawer } from '..';
-import { writeToClipboard } from '../../../helpers';
+import { writeToClipboard } from '../../../helpers/index.js';
+import { InsertDocument, PopUpDrawer } from '../index.js';
 
 interface Props {
   chargeId: string;

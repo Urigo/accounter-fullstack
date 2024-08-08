@@ -1,8 +1,8 @@
 import { Link, useResolvedPath } from 'react-router-dom';
-import { cn } from '../../lib/utils';
-import { MobileSidebar } from './mobile-sidebar';
-import { sidelinks } from './sidelinks';
-import { UserNav } from './user-nav';
+import { cn } from '../../lib/utils.js';
+import { MobileSidebar } from './mobile-sidebar.js';
+import { sidelinks } from './sidelinks.js';
+import { UserNav } from './user-nav.js';
 
 export function Header(): JSX.Element {
   const resolvedPath = useResolvedPath({

@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { Loader } from '@mantine/core';
-import { Icon } from './icon';
+import { Icon } from './icon.js';
 
 export const AccounterLoader = (): ReactElement => {
   return (

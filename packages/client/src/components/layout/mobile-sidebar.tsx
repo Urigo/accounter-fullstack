@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { MenuIcon } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { Nav } from './nav';
-import { sidelinks } from './sidelinks';
+import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet.js';
+import { Nav } from './nav.js';
+import { sidelinks } from './sidelinks.js';
 
 export function MobileSidebar(): JSX.Element {
   const [open, setOpen] = useState(false);

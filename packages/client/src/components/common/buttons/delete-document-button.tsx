@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { ConfirmationModal } from '..';
-import { useDeleteDocument } from '../../../hooks/use-delete-document';
+import { useDeleteDocument } from '../../../hooks/use-delete-document.js';
+import { ConfirmationModal } from '../index.js';
 
 interface Props {
   documentId: string;

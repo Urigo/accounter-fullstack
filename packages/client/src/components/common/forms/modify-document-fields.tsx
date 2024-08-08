@@ -3,7 +3,6 @@ import { Control, Controller, UseFormWatch } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CurrencyInput, SelectInput, TextInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   Currency,
@@ -12,14 +11,15 @@ import {
   InsertDocumentInput,
   UpdateDocumentFieldsInput,
 } from '../../../gql/graphql.js';
-import { TIMELESS_DATE_REGEX } from '../../../helpers/consts';
+import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import {
   isDocumentCreditInvoice,
   isDocumentInvoice,
   isDocumentInvoiceReceipt,
   isDocumentProforma,
   isDocumentReceipt,
-} from '../../../helpers/documents';
+} from '../../../helpers/documents.js';
+import { CurrencyInput, SelectInput, TextInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
   document?: EditDocumentQuery['documentById'];

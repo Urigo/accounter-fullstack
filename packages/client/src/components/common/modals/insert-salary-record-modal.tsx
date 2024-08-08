@@ -1,7 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useCallback } from 'react';
-import { ModifySalaryRecord, PopUpDrawer } from '..';
 import type { SalaryRecordInput } from '../../../gql/graphql.js';
 import { useInsertSalaryRecord } from '../../../hooks/use-insert-salary-record.js';
+import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
 
 interface Props {
   insertSalaryRecordParams: { month?: string };

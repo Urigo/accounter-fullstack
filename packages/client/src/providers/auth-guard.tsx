@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
-import { LoginPage } from '../components/login-page';
-import { userService } from '../services/user-service';
+import { LoginPage } from '../components/login-page.js';
+import { userService } from '../services/user-service.js';
 
 export const AuthGuard = ({ children }: { children?: ReactNode }): ReactNode => {
   const { isLoggedIn } = userService;

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'tabler-icons-react';
-import { cn } from '../../lib/utils';
-import { Button, buttonVariants } from '../ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { cn } from '../../lib/utils.js';
+import { Button, buttonVariants } from '../ui/button.js';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible.js';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +10,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { ScrollArea } from '../ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { SideLink } from './sidelinks';
+} from '../ui/dropdown-menu.js';
+import { ScrollArea } from '../ui/scroll-area.js';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip.js';
+import { SideLink } from './sidelinks.js';
 
 interface NavProps extends React.HTMLAttributes<HTMLDivElement> {
   isCollapsed: boolean;

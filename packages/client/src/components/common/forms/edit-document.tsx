@@ -2,11 +2,11 @@ import { ReactElement, useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Drawer, Image, Loader } from '@mantine/core';
-import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '..';
 import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers/form';
-import { useUpdateDocument } from '../../../hooks/use-update-document';
-import { ModifyDocumentFields } from './modify-document-fields';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers/form.js';
+import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '../index.js';
+import { ModifyDocumentFields } from './modify-document-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

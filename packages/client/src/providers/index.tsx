@@ -2,10 +2,10 @@ import { ReactElement, ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '../components/ui/toaster';
-import { AuthGuard } from './auth-guard';
-import { UrqlProvider } from './urql';
-import { UserProvider } from './user-provider';
+import { Toaster } from '../components/ui/toaster.js';
+import { AuthGuard } from './auth-guard.js';
+import { UrqlProvider } from './urql.js';
+import { UserProvider } from './user-provider.js';
 
 const queryClient = new QueryClient();
 

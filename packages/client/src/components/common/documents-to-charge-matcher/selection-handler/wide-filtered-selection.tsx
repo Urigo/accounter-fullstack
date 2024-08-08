@@ -1,10 +1,10 @@
 import { ReactElement, useState } from 'react';
 import { Image } from '@mantine/core';
-import { AccounterTable, Button, PopUpModal } from '../..';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
 } from '../../../../gql/graphql.js';
+import { AccounterTable, Button, PopUpModal } from '../../index.js';
 
 interface Props {
   documents: Exclude<

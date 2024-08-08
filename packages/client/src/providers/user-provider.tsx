@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useEffect, useState } from 'react';
-import { User, userService } from '../services/user-service';
+import { User, userService } from '../services/user-service.js';
 
 type ContextType = {
   userContext: UserInfo | null;

@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { RefreshDot } from 'tabler-icons-react';
 import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
-import { ConfirmationModal } from '..';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
+import { ConfirmationModal } from '../index.js';
 
 type Props = {
   chargeId: string;

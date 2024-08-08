@@ -4,7 +4,7 @@ import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Indicator } from '@mantine/core';
 import { BusinessTripsScreenDocument, BusinessTripsScreenQuery } from '../../gql/graphql.js';
-import { InsertBusinessTripModal } from '../common';
+import { InsertBusinessTripModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { EditableBusinessTrip } from './editable-business-trip.js';
 

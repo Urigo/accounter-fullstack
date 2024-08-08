@@ -4,11 +4,11 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
-import { useUrlQuery } from '../../../hooks/use-url-query';
-import { FiltersContext } from '../../../providers/filters-context';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
-import { TrialBalanceReportFilters } from './trial-balance-report-filters';
-import { TrialBalanceTable } from './trial-balance-table';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
+import { TrialBalanceTable } from './trial-balance-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

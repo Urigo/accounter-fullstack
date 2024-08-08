@@ -4,8 +4,8 @@ import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Table } from '@mantine/core';
 import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
-import { dedupeFragments } from '../../../helpers';
-import { FiltersContext } from '../../../providers/filters-context';
+import { dedupeFragments } from '../../../helpers/index.js';
+import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 

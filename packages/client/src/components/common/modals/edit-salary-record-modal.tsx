@@ -2,10 +2,10 @@ import { ReactElement, useCallback } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
-import { ModifySalaryRecord, PopUpDrawer } from '..';
 import { EditSalaryRecordDocument, SalaryRecordInput } from '../../../gql/graphql.js';
-import { TimelessDateString } from '../../../helpers';
+import { TimelessDateString } from '../../../helpers/index.js';
 import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.js';
+import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -7,9 +7,9 @@ import {
   VatMonthlyReportDocument,
   VatReportFilter,
 } from '../../../gql/graphql.js';
-import { dedupeFragments, TimelessDateString } from '../../../helpers';
-import { useUrlQuery } from '../../../hooks/use-url-query';
-import { FiltersContext } from '../../../providers/filters-context';
+import { dedupeFragments, TimelessDateString } from '../../../helpers/index.js';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import {
   EditChargeModal,
@@ -17,15 +17,15 @@ import {
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
-} from '../../common';
+} from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
-import { BusinessTripsTable } from './business-trips-table';
-import { ExpensesTable } from './expenses-section/expenses-table';
-import { IncomeTable } from './income-section/income-table';
-import { MiscTable } from './misc-table';
-import { MissingInfoTable } from './missing-info-table';
-import { PCNGenerator } from './pcn-generator';
-import { VatMonthlyReportFilter } from './vat-monthly-report-filters';
+import { BusinessTripsTable } from './business-trips-table.js';
+import { ExpensesTable } from './expenses-section/expenses-table.js';
+import { IncomeTable } from './income-section/income-table.js';
+import { MiscTable } from './misc-table.js';
+import { MissingInfoTable } from './missing-info-table.js';
+import { PCNGenerator } from './pcn-generator.js';
+import { VatMonthlyReportFilter } from './vat-monthly-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

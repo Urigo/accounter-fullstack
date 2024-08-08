@@ -1,5 +1,5 @@
 import { ComponentProps, forwardRef, ReactElement } from 'react';
-import { Input } from './input';
+import { Input } from './input.js';
 
 type Props = Omit<ComponentProps<typeof Input>, 'type'> & {
   children?: ReactElement | ReactElement[];

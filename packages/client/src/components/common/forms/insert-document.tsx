@@ -1,10 +1,10 @@
 import { ReactElement, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { showNotification } from '@mantine/notifications';
-import { SimpleGrid } from '..';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
-import { useInsertDocument } from '../../../hooks/use-insert-document';
-import { ModifyDocumentFields } from './modify-document-fields';
+import { useInsertDocument } from '../../../hooks/use-insert-document.js';
+import { SimpleGrid } from '../index.js';
+import { ModifyDocumentFields } from './modify-document-fields.js';
 
 type Props = {
   chargeId: string;

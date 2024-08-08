@@ -2,9 +2,9 @@ import { User2Icon } from 'lucide-react';
 import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { CornJobsConfirmation, LogoutButton, PullDocumentsModal } from '../common';
-import { Avatar } from '../ui/avatar';
-import { Button } from '../ui/button';
+import { CornJobsConfirmation, LogoutButton, PullDocumentsModal } from '../common/index.js';
+import { Avatar } from '../ui/avatar.js';
+import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '../ui/dropdown-menu.js';
 
 export function UserNav(): JSX.Element {
   const [cornJobsOpened, { close: closeCornJobs, open: openCornJobs }] = useDisclosure(false);

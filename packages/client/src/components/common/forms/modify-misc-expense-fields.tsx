@@ -5,7 +5,6 @@ import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { CurrencyInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   type Currency,
@@ -13,6 +12,7 @@ import {
   type UpdateMiscExpenseInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
+import { CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
