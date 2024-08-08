@@ -1,9 +1,9 @@
 import { ReactElement, useState } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { ConfirmationModal } from '..';
-import { EMPTY_UUID } from '../../../helpers';
-import { useUpdateDocument } from '../../../hooks/use-update-document';
+import { EMPTY_UUID } from '../../../helpers/index.js';
+import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { ConfirmationModal } from '../index.js';
 
 interface Props {
   documentId: string;

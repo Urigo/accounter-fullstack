@@ -3,14 +3,14 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { SimpleGrid, TextInput } from '..';
 import {
   AllFinancialEntitiesDocument,
   EditTransactionDocument,
   UpdateTransactionInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
+import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { SimpleGrid, TextInput } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

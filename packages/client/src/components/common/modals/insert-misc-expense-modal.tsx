@@ -2,7 +2,7 @@ import { ReactElement } from 'react';
 import { PlaylistAdd } from 'tabler-icons-react';
 import { ActionIcon, Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { InsertMiscExpense } from '..';
+import { InsertMiscExpense } from '../index.js';
 
 interface Props {
   transactionId: string;

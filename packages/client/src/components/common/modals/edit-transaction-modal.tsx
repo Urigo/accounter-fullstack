@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { EditTransaction, PopUpDrawer, UnlinkTransactionButton } from '..';
-import { writeToClipboard } from '../../../helpers';
+import { writeToClipboard } from '../../../helpers/index.js';
+import { EditTransaction, PopUpDrawer, UnlinkTransactionButton } from '../index.js';
 
 interface Props {
   transactionID?: string;

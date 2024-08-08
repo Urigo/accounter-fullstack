@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './cards';
+import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
 
 interface StatsCardProps {
   items: {

@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
 import { ActionIcon, ActionIconProps, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { MergeChargesSelectionForm } from './merge-charges-selection-form';
+import { MergeChargesSelectionForm } from './merge-charges-selection-form.js';
 
 export function MergeChargesButton(props: {
   selected: { id: string; onChange: () => void }[];

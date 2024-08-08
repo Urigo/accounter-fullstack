@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
-import { useSidebar } from '../../hooks/use-sidebar';
-import { Footer } from './footer';
-import { Header } from './header';
-import { Sidebar } from './sidebar';
+import { useSidebar } from '../../hooks/use-sidebar.js';
+import { Footer } from './footer.js';
+import { Header } from './header.js';
+import { Sidebar } from './sidebar.js';
 
 type DashboardLayoutProps = {
   filtersContext: ReactElement | null;

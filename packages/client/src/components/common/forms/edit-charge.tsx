@@ -3,7 +3,6 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ChargeSpreadInput, InsertBusinessTripModal, SimpleGrid, TagsInput, TextInput } from '..';
 import {
   AllBusinessTripsDocument,
   AllFinancialEntitiesDocument,
@@ -11,8 +10,20 @@ import {
   EditChargeQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { EMPTY_UUID, MakeBoolean, relevantDataPicker, TimelessDateString } from '../../../helpers';
-import { useUpdateCharge } from '../../../hooks/use-update-charge';
+import {
+  EMPTY_UUID,
+  MakeBoolean,
+  relevantDataPicker,
+  TimelessDateString,
+} from '../../../helpers/index.js';
+import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
+import {
+  ChargeSpreadInput,
+  InsertBusinessTripModal,
+  SimpleGrid,
+  TagsInput,
+  TextInput,
+} from '../index.js';
 
 type Props = {
   charge: EditChargeQuery['chargesByIDs'][number];

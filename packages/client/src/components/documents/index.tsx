@@ -4,8 +4,8 @@ import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql.js';
-import { FiltersContext } from '../../providers/filters-context';
-import { AccounterTable, Button, PopUpModal } from '../common';
+import { FiltersContext } from '../../providers/filters-context.js';
+import { AccounterTable, Button, PopUpModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

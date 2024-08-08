@@ -3,13 +3,13 @@ import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AccounterLoader, ListCapsule } from '..';
 import {
   FetchMultipleChargesDocument,
   FetchMultipleChargesQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
-import { useMergeCharges } from '../../../hooks/use-merge-charges';
+import { useMergeCharges } from '../../../hooks/use-merge-charges.js';
+import { AccounterLoader, ListCapsule } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

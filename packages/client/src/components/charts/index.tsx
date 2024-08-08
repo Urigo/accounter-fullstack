@@ -1,6 +1,6 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import Decimal from 'decimal.js';
+import { Decimal } from 'decimal.js';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -9,14 +9,14 @@ import {
   IncomeChargesChartDocument,
   IncomeChargesChartQuery,
 } from '../../gql/graphql.js';
-import { TimelessDateString } from '../../helpers/dates';
-import { useUrlQuery } from '../../hooks/use-url-query';
-import { FiltersContext } from '../../providers/filters-context';
+import { TimelessDateString } from '../../helpers/dates.js';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { Card, CardContent, CardHeader, CardTitle } from './cards';
-import { BarChart } from './chart';
-import { ChargeFilterFilter } from './chart-filters';
-import { StatsCard } from './stats-card';
+import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
+import { ChargeFilterFilter } from './chart-filters.js';
+import { BarChart } from './chart.js';
+import { StatsCard } from './stats-card.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

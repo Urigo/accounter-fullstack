@@ -6,8 +6,8 @@ import {
   Route,
   RouterProvider,
 } from 'react-router-dom';
-import { App } from './app';
-import { Providers } from './providers/index';
+import { App } from './app.js';
+import { Providers } from './providers/index.js';
 import './index.css';
 
 const rootElement = document.getElementById('root');

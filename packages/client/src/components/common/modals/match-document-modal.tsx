@@ -1,9 +1,9 @@
 import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
-import { PopUpDrawer } from '..';
-import { writeToClipboard } from '../../../helpers';
-import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher';
+import { writeToClipboard } from '../../../helpers/index.js';
+import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher/index.js';
+import { PopUpDrawer } from '../index.js';
 
 interface Props {
   chargeId: string;

@@ -5,7 +5,6 @@ import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { MonthPicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { CurrencyInput, SimpleGrid, TextInput } from '..';
 import {
   AllEmployeesByEmployerDocument,
   AllFinancialEntitiesDocument,
@@ -13,8 +12,14 @@ import {
   AllTrainingFundsDocument,
   SalaryRecordInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker, TimelessDateString, UUID_REGEX } from '../../../helpers';
+import {
+  MakeBoolean,
+  relevantDataPicker,
+  TimelessDateString,
+  UUID_REGEX,
+} from '../../../helpers/index.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { CurrencyInput, SimpleGrid, TextInput } from '../index.js';
 
 type Props = {
   isNewInsert: boolean;

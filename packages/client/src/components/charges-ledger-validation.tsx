@@ -10,18 +10,18 @@ import {
   ChargeSortByField,
 } from '../gql/graphql.js';
 import { TimelessDateString } from '../helpers/dates.js';
-import { useUrlQuery } from '../hooks/use-url-query';
-import { FiltersContext } from '../providers/filters-context';
+import { useUrlQuery } from '../hooks/use-url-query.js';
+import { FiltersContext } from '../providers/filters-context.js';
 import { UserContext } from '../providers/user-provider.js';
-import { AllChargesTable } from './all-charges/all-charges-table';
-import { ChargesFilters } from './all-charges/charges-filters';
+import { AllChargesTable } from './all-charges/all-charges-table.js';
+import { ChargesFilters } from './all-charges/charges-filters.js';
 import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
-} from './common';
+} from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

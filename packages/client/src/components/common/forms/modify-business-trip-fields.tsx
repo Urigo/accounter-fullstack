@@ -2,9 +2,9 @@ import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 import { DateInput } from '@mantine/dates';
-import { TextInput } from '..';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
+import { TextInput } from '../index.js';
 
 interface Props {
   control: Control<InsertBusinessTripInput, object>;

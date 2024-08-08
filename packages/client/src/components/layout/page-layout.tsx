@@ -1,5 +1,5 @@
-import { Heading } from '../ui/heading';
-import { Separator } from '../ui/separator';
+import { Heading } from '../ui/heading.js';
+import { Separator } from '../ui/separator.js';
 
 type PageLayoutProps = {
   children: React.ReactNode;

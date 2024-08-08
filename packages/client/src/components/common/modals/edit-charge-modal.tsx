@@ -2,9 +2,9 @@ import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader } from '@mantine/core';
-import { EditCharge, PopUpDrawer } from '..';
 import { EditChargeDocument } from '../../../gql/graphql.js';
-import { writeToClipboard } from '../../../helpers';
+import { writeToClipboard } from '../../../helpers/index.js';
+import { EditCharge, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { AccounterLoader } from '..';
 import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql.js';
-import { SelectionHandler } from './selection-handler';
+import { AccounterLoader } from '../index.js';
+import { SelectionHandler } from './selection-handler/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

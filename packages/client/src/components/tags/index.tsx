@@ -5,10 +5,10 @@ import { useQuery } from 'urql';
 import { ActionIcon, TextInput } from '@mantine/core';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { sortTags } from '../../helpers/index.js';
-import { useAddTag } from '../../hooks/use-add-tag';
-import { useDeleteTag } from '../../hooks/use-delete-tag';
-import { FiltersContext } from '../../providers/filters-context';
-import { EditTagModal } from '../common';
+import { useAddTag } from '../../hooks/use-add-tag.js';
+import { useDeleteTag } from '../../hooks/use-delete-tag.js';
+import { FiltersContext } from '../../providers/filters-context.js';
+import { EditTagModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

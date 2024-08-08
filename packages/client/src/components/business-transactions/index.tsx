@@ -7,12 +7,12 @@ import {
   BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
 } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query';
-import { FiltersContext } from '../../providers/filters-context';
-import { AccounterTableRow } from '../common';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { FiltersContext } from '../../providers/filters-context.js';
+import { AccounterTableRow } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { BusinessExtendedInfo } from './business-extended-info';
-import { BusinessTransactionsFilters } from './business-transactions-filters';
+import { BusinessExtendedInfo } from './business-extended-info.js';
+import { BusinessTransactionsFilters } from './business-transactions-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -4,8 +4,8 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query';
-import { FiltersContext } from '../../providers/filters-context';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
 import {
   EditChargeModal,
@@ -13,10 +13,10 @@ import {
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
-} from '../common';
+} from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { AllChargesTable } from './all-charges-table';
-import { ChargesFilters } from './charges-filters';
+import { AllChargesTable } from './all-charges-table.js';
+import { ChargesFilters } from './charges-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

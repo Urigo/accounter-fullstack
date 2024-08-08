@@ -2,12 +2,12 @@ import { ReactElement, useCallback, useMemo, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
-import { ModifyMiscExpenseFields } from '.';
 import {
   InsertMiscExpenseInput,
   MiscExpenseTransactionFieldsDocument,
 } from '../../../gql/graphql.js';
 import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
+import { ModifyMiscExpenseFields } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

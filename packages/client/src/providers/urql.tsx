@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AnyVariables, createClient, fetchExchange, mapExchange, Operation, Provider } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
-import { userService } from '../services/user-service';
+import { userService } from '../services/user-service.js';
 
 function initializeAuthState(): {
   token: string | null;

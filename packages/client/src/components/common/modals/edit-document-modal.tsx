@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { Copy } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { DeleteDocumentButton, EditDocument, PopUpDrawer, UnlinkDocumentButton } from '..';
-import { writeToClipboard } from '../../../helpers';
+import { writeToClipboard } from '../../../helpers/index.js';
+import { DeleteDocumentButton, EditDocument, PopUpDrawer, UnlinkDocumentButton } from '../index.js';
 
 interface Props {
   documentId?: string;

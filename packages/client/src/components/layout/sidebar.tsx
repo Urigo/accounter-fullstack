@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { useSidebar } from '../../hooks/use-sidebar';
-import { cn } from '../../lib/utils';
-import { Nav } from './nav';
-import { sidelinks } from './sidelinks';
+import { useSidebar } from '../../hooks/use-sidebar.js';
+import { cn } from '../../lib/utils.js';
+import { Nav } from './nav.js';
+import { sidelinks } from './sidelinks.js';
 
 type SidebarProps = {
   className?: string;
