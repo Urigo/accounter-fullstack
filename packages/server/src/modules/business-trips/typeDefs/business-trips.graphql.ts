@@ -85,5 +85,6 @@ export default gql`
   type UncategorizedTransaction {
     transaction: Transaction!
     categorizedAmount: FinancialAmount!
+    errors: [String!]!
   }
 `;

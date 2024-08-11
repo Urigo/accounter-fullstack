@@ -1,5 +1,7 @@
 import { ReactElement } from 'react';
-import { Table, Text } from '@mantine/core';
+import { AlertCircle } from 'tabler-icons-react';
+import { Popover, Table, Text } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragment,
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
@@ -119,6 +121,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
       raw
       formatted
     }
+    errors
   }
 `;
 
@@ -127,7 +130,7 @@ type AmountProps = {
 };
 
 export const Amount = ({ data }: AmountProps): ReactElement => {
-  const { transaction, categorizedAmount } = getFragmentData(
+  const { transaction, categorizedAmount, errors } = getFragmentData(
     UncategorizedTransactionsTableAmountFieldsFragmentDoc,
     data,
   );
@@ -139,25 +142,46 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
   return (
     <td>
       <div
-        className="flex flex-col nowrap"
+        className="flex flex-col whitespace-nowrap"
         style={{
           color: Number(amount?.raw) > 0 ? 'green' : 'red',
         }}
       >
-        {amount?.formatted}
+        <div className="flex gap-1">
+          {amount?.formatted}
+          {errors.length && <ErrorsPopover errors={errors} />}
+        </div>
         {categorizedAmountDiff && (
-          <span className="text-gray-500 ml-2">Categorized: {categorizedAmount.formatted}</span>
+          <div className="text-gray-500 ml-2">{categorizedAmount.formatted} categorized </div>
         )}
         {transaction.cryptoExchangeRate && (
-          <span className="text-gray-500 ml-2">
+          <div className="text-gray-500 ml-2">
             {`(Rate: ${transaction.cryptoExchangeRate.rate})`}
             <br />
             {amount?.raw
               ? `${formatStringifyAmount(amount.raw * transaction.cryptoExchangeRate.rate)}$`
               : null}
-          </span>
+          </div>
         )}
       </div>
     </td>
+  );
+};
+
+export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement => {
+  const [opened, { close, open }] = useDisclosure(false);
+  return (
+    <Popover width={200} position="bottom" shadow="md" opened={opened}>
+      <Popover.Target>
+        <AlertCircle onMouseEnter={open} onMouseLeave={close} />
+      </Popover.Target>
+      <Popover.Dropdown sx={{ pointerEvents: 'none' }} className="whitespace-normal text-red-500">
+        {errors.map((error, i) => (
+          <Text key={i} size="sm">
+            {error}
+          </Text>
+        ))}
+      </Popover.Dropdown>
+    </Popover>
   );
 };

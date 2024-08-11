@@ -140,6 +140,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
           const matchInfo = await getTransactionMatchedAmount(injector, transaction).catch(_ => ({
             isFullyMatched: false,
             amount: 0,
+            errors: ["Error matching transaction's amount"],
           }));
           return {
             transaction,
@@ -155,6 +156,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       return uncategorizedTransactions.map(({ transaction, matchInfo }) => ({
         transaction,
         categorizedAmount: formatFinancialAmount(matchInfo.amount, transaction.currency),
+        errors: matchInfo.errors ?? [],
       }));
     },
   },

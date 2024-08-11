@@ -45,7 +45,7 @@ function validateTransactionAgainstBusinessTripsExpenses(
 
     if (Math.abs(Number(transaction.amount) - totalAmount) > 0.005) {
       throw new LedgerError(
-        `Transaction reference "${transaction.source_reference}" amount does not match the business expenses total amount`,
+        `Transaction reference "${transaction.source_reference}" amount does not match the business trip expenses total amount`,
       );
     }
   }
@@ -66,7 +66,7 @@ export const validateTransactionAgainstBusinessTrips = async (
 export const getTransactionMatchedAmount = async (
   injector: Injector,
   transaction: IGetTransactionsByChargeIdsResult,
-): Promise<{ isFullyMatched: boolean; amount: number }> => {
+): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
   const transactionMatchingExpenses = await injector
     .get(BusinessTripTransactionsProvider)
     .getBusinessTripsTransactionsByTransactionIdLoader.load(transaction.id);
@@ -77,8 +77,24 @@ export const getTransactionMatchedAmount = async (
       amount: 0,
     };
   }
+  const expensesSum = transactionMatchingExpenses.reduce(
+    (acc, expense) => (expense.amount ? acc + Number(expense.amount) : acc),
+    0,
+  );
 
-  validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
+  try {
+    validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
+  } catch (e) {
+    const errors = [];
+    if (e instanceof LedgerError) {
+      errors.push(e.message);
+    }
+    return {
+      isFullyMatched: false,
+      amount: expensesSum,
+      errors,
+    };
+  }
 
   if (transactionMatchingExpenses[0].amount === null) {
     return {
@@ -86,11 +102,7 @@ export const getTransactionMatchedAmount = async (
       amount: Number(transaction.amount),
     };
   }
-  const sum = transactionMatchingExpenses.reduce(
-    (acc, expense) => (expense.amount ? acc + Number(expense.amount) : acc),
-    0,
-  );
-  const isFullyMatched = Math.abs(Number(transaction.amount) - sum) < 0.005;
+  const isFullyMatched = Math.abs(Number(transaction.amount) - expensesSum) < 0.005;
   return {
     isFullyMatched,
     amount: Number(transaction.amount),
