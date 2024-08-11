@@ -14,9 +14,9 @@ import { commonBusinessTripTransactionFields } from './common.js';
 
 export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
-    updateBusinessTripTransactionCategory: async (
+    categorizeBusinessTripTransaction: async (
       _,
-      { fields: { businessTripId, transactionId, category } },
+      { fields: { businessTripId, transactionId, category, amount } },
       { injector },
     ) => {
       try {
@@ -37,6 +37,7 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
           .insertBusinessTripTransactionMatch({
             businessTripTransactionId: id,
             transactionId,
+            amount,
           });
         const insertToCategoryPromise = async () => {
           switch (category) {
@@ -193,6 +194,9 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
           injector.get(BusinessTripEmployeePaymentsProvider).deleteBusinessTripEmployeePayment({
             businessTripTransactionId,
           }),
+          injector
+            .get(BusinessTripTransactionsProvider)
+            .deleteBusinessTripTransactionMatch({ businessTripTransactionId }),
         ]);
 
         // core transaction must be deleted AFTER all extensions were dropped

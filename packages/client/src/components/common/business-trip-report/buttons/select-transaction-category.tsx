@@ -1,13 +1,13 @@
 import { ReactElement } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Edit } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripTransactionCategories,
-  UpdateBusinessTripTransactionCategoryInput,
+  CategorizeBusinessTripTransactionInput,
 } from '../../../../gql/graphql.js';
-import { useUpdateBusinessTripTransactionCategory } from '../../../../hooks/use-update-business-trip-transaction-category.js';
+import { useCategorizeBusinessTripTransaction } from '../../../../hooks/use-update-business-trip-transaction-category.js';
 
 export function SelectTransactionCategory(props: {
   businessTripId: string;
@@ -19,7 +19,7 @@ export function SelectTransactionCategory(props: {
 
   return (
     <>
-      <Tooltip label="Edit Category">
+      <Tooltip label="Categorize">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -64,15 +64,15 @@ function ModalContent({
   close,
   onChange,
 }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<UpdateBusinessTripTransactionCategoryInput>({
+  const { control, handleSubmit } = useForm<CategorizeBusinessTripTransactionInput>({
     defaultValues: { businessTripId, transactionId },
   });
 
-  const { updateBusinessTripTransactionCategory, fetching: updatingInProcess } =
-    useUpdateBusinessTripTransactionCategory();
+  const { categorizeBusinessTripTransaction, fetching: updatingInProcess } =
+    useCategorizeBusinessTripTransaction();
 
-  const onSubmit: SubmitHandler<UpdateBusinessTripTransactionCategoryInput> = data => {
-    updateBusinessTripTransactionCategory({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<CategorizeBusinessTripTransactionInput> = data => {
+    categorizeBusinessTripTransaction({ fields: data }).then(() => {
       onChange?.();
       close();
     });
@@ -98,6 +98,21 @@ function ModalContent({
                 searchable
                 error={fieldState.error?.message}
                 withinPortal
+              />
+            )}
+          />
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <NumberInput
+                {...field}
+                value={field.value ?? undefined}
+                hideControls
+                precision={2}
+                removeTrailingZeros
+                error={fieldState.error?.message}
+                label="Amount"
               />
             )}
           />

@@ -4,6 +4,8 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { stringArray } from '@modules/charges/types.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripTransactionMatchParams,
+  IDeleteBusinessTripTransactionMatchQuery,
   IDeleteBusinessTripTransactionParams,
   IDeleteBusinessTripTransactionQuery,
   IGetAllBusinessTripsTransactionsQuery,
@@ -75,6 +77,11 @@ const insertBusinessTripTransaction = sql<IInsertBusinessTripTransactionQuery>`
 const insertBusinessTripTransactionMatch = sql<IInsertBusinessTripTransactionMatchQuery>`
   INSERT INTO accounter_schema.business_trips_transactions_match (business_trip_transaction_id, transaction_id, amount)
   VALUES($businessTripTransactionId, $transactionId, $amount)
+  RETURNING *;`;
+
+const deleteBusinessTripTransactionMatch = sql<IDeleteBusinessTripTransactionMatchQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_match
+  WHERE business_trip_transaction_id = $businessTripTransactionId
   RETURNING *;`;
 
 const deleteBusinessTripTransaction = sql<IDeleteBusinessTripTransactionQuery>`
@@ -304,5 +311,9 @@ export class BusinessTripTransactionsProvider {
 
   public deleteBusinessTripTransaction(params: IDeleteBusinessTripTransactionParams) {
     return deleteBusinessTripTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripTransactionMatch(params: IDeleteBusinessTripTransactionMatchParams) {
+    return deleteBusinessTripTransactionMatch.run(params, this.dbProvider);
   }
 }

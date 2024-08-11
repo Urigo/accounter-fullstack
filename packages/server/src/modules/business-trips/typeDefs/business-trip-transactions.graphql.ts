@@ -79,9 +79,8 @@ export default gql`
   }
 
   extend type Mutation {
-    updateBusinessTripTransactionCategory(
-      fields: UpdateBusinessTripTransactionCategoryInput!
-    ): UUID! @auth(role: ACCOUNTANT)
+    categorizeBusinessTripTransaction(fields: CategorizeBusinessTripTransactionInput!): UUID!
+      @auth(role: ACCOUNTANT)
     updateBusinessTripFlightsTransaction(fields: UpdateBusinessTripFlightsTransactionInput!): UUID!
       @auth(role: ACCOUNTANT)
     updateBusinessTripAccommodationsTransaction(
@@ -108,10 +107,11 @@ export default gql`
   }
 
   " the input for updating a business trip transaction category "
-  input UpdateBusinessTripTransactionCategoryInput {
+  input CategorizeBusinessTripTransactionInput {
     businessTripId: UUID!
     transactionId: UUID!
     category: BusinessTripTransactionCategories
+    amount: Float
   }
 
   " represent category type of business trip summary "
