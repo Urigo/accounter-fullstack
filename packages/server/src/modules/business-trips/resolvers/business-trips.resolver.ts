@@ -1,7 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { getTransactionMatchedAmount } from '../helpers/business-trips-transactions.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
 import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
@@ -11,7 +12,6 @@ import { BusinessTripTransactionsProvider } from '../providers/business-trips-tr
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 import { businessTripSummary } from './business-trip-summary.resolver.js';
-import { commonBusinessTransactionFields } from './common.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Query: {
@@ -105,31 +105,6 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         .get(BusinessTripAttendeesProvider)
         .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    transactions: async (dbBusinessTrip, _, { injector }) => {
-      try {
-        const {
-          nonExtendedTransactions,
-          flightTransactions,
-          accommodationsTransactions,
-          travelAndSubsistenceTransactions,
-          otherTransactions,
-        } = await injector
-          .get(BusinessTripTransactionsProvider)
-          .getBusinessTripExtendedTransactionsByBusinessTripId(dbBusinessTrip.id);
-        return [
-          ...nonExtendedTransactions,
-          ...flightTransactions,
-          ...accommodationsTransactions,
-          ...travelAndSubsistenceTransactions,
-          ...otherTransactions,
-        ];
-      } catch (e) {
-        console.error(`Error fetching business trip transactions`, e);
-        throw new GraphQLError(
-          (e as Error)?.message ?? `Error fetching business trip transactions`,
-        );
-      }
-    },
     flightTransactions: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripFlightsTransactionsProvider)
@@ -154,38 +129,34 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
     summary: businessTripSummary,
     uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
-      return injector
+      const transactions = (await injector
         .get(BusinessTripTransactionsProvider)
-        .getUncategorizedTransactionsByBusinessTripId({ businessTripId: dbBusinessTrip.id })
-        .then(res => res as IGetTransactionsByIdsResult[]);
+        .getTransactionsByBusinessTripId({
+          businessTripId: dbBusinessTrip.id,
+        })) as IGetTransactionsByChargeIdsResult[];
+
+      const transactionCategorizeInfo = await Promise.all(
+        transactions.map(async transaction => {
+          const matchInfo = await getTransactionMatchedAmount(injector, transaction).catch(_ => ({
+            isFullyMatched: false,
+            amount: 0,
+          }));
+          return {
+            transaction,
+            matchInfo,
+          };
+        }),
+      );
+
+      const uncategorizedTransactions = transactionCategorizeInfo.filter(({ matchInfo }) => {
+        return !matchInfo.isFullyMatched;
+      });
+
+      return uncategorizedTransactions.map(({ transaction, matchInfo }) => ({
+        transaction,
+        categorizedAmount: formatFinancialAmount(matchInfo.amount, transaction.currency),
+      }));
     },
-  },
-  BusinessTripUncategorizedTransaction: {
-    __isTypeOf: DbTransaction => !DbTransaction.category,
-    ...commonBusinessTransactionFields,
-  },
-  BusinessTripAccommodationTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.category === 'ACCOMMODATION',
-    ...commonBusinessTransactionFields,
-    country: dbTransaction => dbTransaction.country,
-    nightsCount: dbTransaction => dbTransaction.nights_count,
-  },
-  BusinessTripFlightTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.category === 'FLIGHT',
-    ...commonBusinessTransactionFields,
-    origin: dbTransaction => dbTransaction.origin,
-    destination: dbTransaction => dbTransaction.destination,
-    class: dbTransaction => dbTransaction.class,
-  },
-  BusinessTripTravelAndSubsistenceTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.category === 'TRAVEL_AND_SUBSISTENCE',
-    ...commonBusinessTransactionFields,
-    expenseType: dbTransaction => dbTransaction.expense_type,
-  },
-  BusinessTripOtherTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.category === 'OTHER',
-    ...commonBusinessTransactionFields,
-    description: dbTransaction => dbTransaction.description,
   },
   BusinessTripCharge: {
     businessTrip: (dbCharge, _, { injector }) => {

@@ -63,8 +63,7 @@ export default {
                                 t.business_trip_transaction_id IS NULL AS payed_by_employee
     FROM accounter_schema.business_trips_transactions btt
             LEFT JOIN transactions_by_business_trip_transaction t ON t.business_trip_transaction_id = btt.id
-            LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id
-    ORDER BY btt.id;
+            LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id;
 
     alter table accounter_schema.business_trips_transactions
         drop column transaction_id;

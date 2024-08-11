@@ -46,101 +46,12 @@ export default gql`
     destination: String
     purpose: String
     attendees: [BusinessTripAttendee!]!
-    transactions: [BusinessTripTransaction!]!
     flightTransactions: [BusinessTripFlightTransaction!]!
     accommodationTransactions: [BusinessTripAccommodationTransaction!]!
     travelAndSubsistenceTransactions: [BusinessTripTravelAndSubsistenceTransaction!]!
     otherTransactions: [BusinessTripOtherTransaction!]!
     summary: BusinessTripSummary!
-    uncategorizedTransactions: [Transaction!]!
-  }
-
-  " business trip transaction prototype "
-  interface BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    " שולם על ידי העובד "
-    payedByEmployee: Boolean
-  }
-
-  " represent a business trip uncategorized transaction "
-  type BusinessTripUncategorizedTransaction implements BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    payedByEmployee: Boolean
-  }
-
-  " represent a business trip accommodation transaction "
-  type BusinessTripAccommodationTransaction implements BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    payedByEmployee: Boolean
-
-    country: String
-    nightsCount: Int
-  }
-
-  " represent a business trip flight transaction "
-  type BusinessTripFlightTransaction implements BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    payedByEmployee: Boolean
-
-    origin: String
-    destination: String
-    class: String
-  }
-
-  " represent a business trip travel and subsistence transaction "
-  type BusinessTripTravelAndSubsistenceTransaction implements BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    payedByEmployee: Boolean
-
-    " סוג ההוצאה "
-    expenseType: String
-  }
-
-  " represent a business trip other transaction "
-  type BusinessTripOtherTransaction implements BusinessTripTransaction {
-    id: UUID!
-    businessTrip: BusinessTrip!
-    date: TimelessDate
-    valueDate: TimelessDate
-    amount: FinancialAmount
-    employee: FinancialEntity
-    transactions: [Transaction!]
-    payedByEmployee: Boolean
-
-    " הוצאה מוכרת "
-    deductibleExpense: Boolean
-    " פירוט "
-    description: String
+    uncategorizedTransactions: [UncategorizedTransaction]!
   }
 
   " represent business trip summary data "
@@ -168,5 +79,11 @@ export default gql`
     TRAVEL_AND_SUBSISTENCE
     OTHER
     TOTAL
+  }
+
+  " represent transaction not (fully) categorized under business trips "
+  type UncategorizedTransaction {
+    transaction: Transaction!
+    categorizedAmount: FinancialAmount!
   }
 `;

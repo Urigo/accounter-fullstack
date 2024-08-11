@@ -1,10 +1,14 @@
 import { ReactElement } from 'react';
-import { Table } from '@mantine/core';
-import { BusinessTripUncategorizedTransactionsFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { Table, Text } from '@mantine/core';
+import {
+  BusinessTripUncategorizedTransactionsFieldsFragment,
+  BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
+  UncategorizedTransactionsTableAmountFieldsFragmentDoc,
+} from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { formatStringifyAmount } from '../../../../helpers/index.js';
 import {
   Account,
-  Amount,
   Counterparty,
   DebitDate,
   Description,
@@ -18,15 +22,17 @@ import { SelectTransactionCategory } from '../buttons/select-transaction-categor
   fragment BusinessTripUncategorizedTransactionsFields on BusinessTrip {
     id
     uncategorizedTransactions {
-      id
-      eventDate
-      ...TransactionsTableEventDateFields
-      ...TransactionsTableDebitDateFields
-      ...TransactionsTableAmountFields
-      ...TransactionsTableAccountFields
-      ...TransactionsTableDescriptionFields
-      ...TransactionsTableSourceIDFields
-      ...TransactionsTableEntityFields
+      transaction {
+        id
+        eventDate
+        ...TransactionsTableEventDateFields
+        ...TransactionsTableDebitDateFields
+        ...TransactionsTableAccountFields
+        ...TransactionsTableDescriptionFields
+        ...TransactionsTableSourceIDFields
+        ...TransactionsTableEntityFields
+      }
+      ...UncategorizedTransactionsTableAmountFields
     }
   }
 `;
@@ -63,21 +69,28 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
           </tr>
         </thead>
         <tbody>
-          {uncategorizedTransactions
-            ?.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
-            .map(transaction => (
-              <tr key={transaction.id}>
-                <EventDate data={transaction} />
-                <DebitDate data={transaction} />
-                <Amount data={transaction} />
-                <Account data={transaction} />
-                <Description data={transaction} />
-                <SourceID data={transaction} />
-                <Counterparty data={transaction} />
+          {(
+            uncategorizedTransactions as Array<
+              Exclude<
+                BusinessTripUncategorizedTransactionsFieldsFragment['uncategorizedTransactions'][number],
+                null
+              >
+            >
+          )
+            .sort((a, b) => a.transaction.eventDate.localeCompare(b.transaction.eventDate))
+            .map(uncategorizedTransaction => (
+              <tr key={uncategorizedTransaction.transaction.id}>
+                <EventDate data={uncategorizedTransaction.transaction} />
+                <DebitDate data={uncategorizedTransaction.transaction} />
+                <Amount data={uncategorizedTransaction} />
+                <Account data={uncategorizedTransaction.transaction} />
+                <Description data={uncategorizedTransaction.transaction} />
+                <SourceID data={uncategorizedTransaction.transaction} />
+                <Counterparty data={uncategorizedTransaction.transaction} />
                 <td>
                   <SelectTransactionCategory
                     businessTripId={id}
-                    transactionId={transaction.id}
+                    transactionId={uncategorizedTransaction.transaction.id}
                     onChange={onChange}
                   />
                 </td>
@@ -86,5 +99,65 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
         </tbody>
       </Table>
     </div>
+  );
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment UncategorizedTransactionsTableAmountFields on UncategorizedTransaction {
+    transaction {
+      id
+      amount {
+        raw
+        formatted
+      }
+      cryptoExchangeRate {
+        rate
+      }
+    }
+    categorizedAmount {
+      raw
+      formatted
+    }
+  }
+`;
+
+type AmountProps = {
+  data: FragmentType<typeof UncategorizedTransactionsTableAmountFieldsFragmentDoc>;
+};
+
+export const Amount = ({ data }: AmountProps): ReactElement => {
+  const { transaction, categorizedAmount } = getFragmentData(
+    UncategorizedTransactionsTableAmountFieldsFragmentDoc,
+    data,
+  );
+  const amount = 'amount' in transaction ? transaction.amount : undefined;
+
+  const categorizedAmountDiff =
+    amount?.raw !== categorizedAmount.raw && categorizedAmount.raw !== 0;
+
+  return (
+    <td>
+      <div
+        className="flex flex-col nowrap"
+        style={{
+          color: Number(amount?.raw) > 0 ? 'green' : 'red',
+        }}
+      >
+        {amount?.formatted}
+        {categorizedAmountDiff && (
+          <span className="text-gray-500 ml-2">Categorized: {categorizedAmount.formatted}</span>
+        )}
+        {transaction.cryptoExchangeRate && (
+          <span className="text-gray-500 ml-2">
+            {`(Rate: ${transaction.cryptoExchangeRate.rate})`}
+            <br />
+            {amount?.raw
+              ? `${formatStringifyAmount(amount.raw * transaction.cryptoExchangeRate.rate)}$`
+              : null}
+          </span>
+        )}
+      </div>
+    </td>
   );
 };

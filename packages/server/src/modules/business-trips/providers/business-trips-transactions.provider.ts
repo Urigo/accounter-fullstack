@@ -11,6 +11,8 @@ import type {
   IGetBusinessTripsTransactionsByChargeIdsQuery,
   IGetBusinessTripsTransactionsByIdsQuery,
   IGetBusinessTripsTransactionsByTransactionIdsQuery,
+  IGetTransactionsByBusinessTripIdParams,
+  IGetTransactionsByBusinessTripIdQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripTransactionMatchParams,
@@ -92,6 +94,14 @@ const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransa
     AND btt.business_trip_id = $businessTripId 
   WHERE btc.business_trip_id IS NOT NULL
     AND btt.id IS NULL;`;
+
+const getTransactionsByBusinessTripId = sql<IGetTransactionsByBusinessTripIdQuery>`
+  SELECT t.*
+  FROM accounter_schema.extended_transactions t
+  LEFT JOIN accounter_schema.business_trip_charges btc
+    ON t.charge_id = btc.charge_id
+      AND btc.business_trip_id = $businessTripId
+  WHERE btc.business_trip_id IS NOT NULL;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -286,6 +296,10 @@ export class BusinessTripTransactionsProvider {
     params: IGetUncategorizedTransactionsByBusinessTripIdParams,
   ) {
     return getUncategorizedTransactionsByBusinessTripId.run(params, this.dbProvider);
+  }
+
+  public getTransactionsByBusinessTripId(params: IGetTransactionsByBusinessTripIdParams) {
+    return getTransactionsByBusinessTripId.run(params, this.dbProvider);
   }
 
   public deleteBusinessTripTransaction(params: IDeleteBusinessTripTransactionParams) {

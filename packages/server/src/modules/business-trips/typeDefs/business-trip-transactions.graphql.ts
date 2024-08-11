@@ -2,6 +2,82 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  " business trip transaction prototype "
+  interface BusinessTripTransaction {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    " שולם על ידי העובד "
+    payedByEmployee: Boolean
+  }
+
+  " represent a business trip accommodation transaction "
+  type BusinessTripAccommodationTransaction implements BusinessTripTransaction {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    payedByEmployee: Boolean
+
+    country: String
+    nightsCount: Int
+  }
+
+  " represent a business trip flight transaction "
+  type BusinessTripFlightTransaction implements BusinessTripTransaction {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    payedByEmployee: Boolean
+
+    origin: String
+    destination: String
+    class: String
+  }
+
+  " represent a business trip travel and subsistence transaction "
+  type BusinessTripTravelAndSubsistenceTransaction implements BusinessTripTransaction {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    payedByEmployee: Boolean
+
+    " סוג ההוצאה "
+    expenseType: String
+  }
+
+  " represent a business trip other transaction "
+  type BusinessTripOtherTransaction implements BusinessTripTransaction {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    payedByEmployee: Boolean
+
+    " הוצאה מוכרת "
+    deductibleExpense: Boolean
+    " פירוט "
+    description: String
+  }
+
   extend type Mutation {
     updateBusinessTripTransactionCategory(
       fields: UpdateBusinessTripTransactionCategoryInput!

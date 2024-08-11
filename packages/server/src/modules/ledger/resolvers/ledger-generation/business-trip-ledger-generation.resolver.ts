@@ -1,4 +1,5 @@
 import { Injector } from 'graphql-modules';
+import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips/helpers/business-trips-transactions.helper.js';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
@@ -151,6 +152,15 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
         const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
 
+        const validateTransactionAgainstBusinessTripsPromise =
+          validateTransactionAgainstBusinessTrips(injector, transaction).catch(e => {
+            if (e instanceof LedgerError) {
+              errors.add(e.message);
+            } else {
+              throw e;
+            }
+          });
+
         const ledgerEntryPromise = async (): Promise<StrictLedgerProto> => {
           // get tax category
           const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(
@@ -206,6 +216,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         const [ledgerEntry, miscExpensesLedger] = await Promise.all([
           ledgerEntryPromise(),
           miscExpensesPromise,
+          validateTransactionAgainstBusinessTripsPromise,
         ]);
 
         // add misc expenses ledger entries

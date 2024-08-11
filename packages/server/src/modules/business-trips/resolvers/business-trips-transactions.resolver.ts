@@ -10,6 +10,7 @@ import { BusinessTripOtherTransactionsProvider } from '../providers/business-tri
 import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import type { BusinessTripsModule } from '../types.js';
+import { commonBusinessTripTransactionFields } from './common.js';
 
 export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
@@ -383,5 +384,28 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
         throw new GraphQLError('Error adding new business trip travel & subsistence transaction');
       }
     },
+  },
+  BusinessTripAccommodationTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'ACCOMMODATION',
+    ...commonBusinessTripTransactionFields,
+    country: dbTransaction => dbTransaction.country,
+    nightsCount: dbTransaction => dbTransaction.nights_count,
+  },
+  BusinessTripFlightTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'FLIGHT',
+    ...commonBusinessTripTransactionFields,
+    origin: dbTransaction => dbTransaction.origin,
+    destination: dbTransaction => dbTransaction.destination,
+    class: dbTransaction => dbTransaction.class,
+  },
+  BusinessTripTravelAndSubsistenceTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'TRAVEL_AND_SUBSISTENCE',
+    ...commonBusinessTripTransactionFields,
+    expenseType: dbTransaction => dbTransaction.expense_type,
+  },
+  BusinessTripOtherTransaction: {
+    __isTypeOf: DbTransaction => DbTransaction.category === 'OTHER',
+    ...commonBusinessTripTransactionFields,
+    description: dbTransaction => dbTransaction.description,
   },
 };

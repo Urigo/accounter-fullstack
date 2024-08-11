@@ -28,7 +28,9 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
       ...BusinessTripReportSummaryFields
       ... on BusinessTrip {
         uncategorizedTransactions {
-          id
+          transaction {
+            id
+          }
         }
       }
     }
