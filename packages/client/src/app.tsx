@@ -11,6 +11,7 @@ import { ChargesLedgerValidation } from './components/charges-ledger-validation.
 import { ChartPage } from './components/charts/index.js';
 import { DocumentsReport } from './components/documents/index.js';
 import { DashboardLayout } from './components/layout/dashboard-layout.js';
+import { AccountantApprovals } from './components/reports/accountant-approvals.js';
 import { ProfitAndLossReport } from './components/reports/profit-and-loss-report/index.js';
 import { TaxReport } from './components/reports/tax-report/index.js';
 import { TrialBalanceReport } from './components/reports/trial-balance-report/index.js';
@@ -41,6 +42,7 @@ export function App(): ReactElement {
           />
           <Route path="charts" element={<ChartPage />} />
           <Route path="documents" element={<DocumentsReport />} />
+          <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
             <Route path="vat-monthly" element={<VatMonthlyReport />} />

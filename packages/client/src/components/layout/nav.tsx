@@ -36,7 +36,7 @@ export function Nav({ links, isCollapsed, closeNav }: NavProps): JSX.Element {
   return (
     <ScrollArea className="h-screen pb-40">
       <TooltipProvider delayDuration={0}>
-        <nav className="grid items-start gap-2">{links.map(renderLink)}</nav>
+        <nav className="grid grid-cols-1 items-start gap-2">{links.map(renderLink)}</nav>
       </TooltipProvider>
     </ScrollArea>
   );
@@ -184,7 +184,7 @@ function NavLinkIconDropdown({ title, icon, label, sub }: NavLinkProps): JSX.Ele
                   variant: 'ghost',
                   size: 'sm',
                 }),
-                'h-12 cursor-pointer justify-start text-wrap rounded-none px-6',
+                'flex h-12 cursor-pointer justify-start text-wrap rounded-none px-6',
               )}
             >
               {icon}{' '}
