@@ -296,3 +296,13 @@ async function getExchangeRateForDate(injector: Injector, date: Date, currency: 
     .getExchangeRatesByDatesLoader.load(date);
   return getRateForCurrency(currency, exchangeRates);
 }
+
+export function isRefundCharge(description?: string | null): boolean {
+  if (!description) {
+    return false;
+  }
+  const normalizedDescription = description.toLocaleLowerCase();
+  return (
+    normalizedDescription.includes('refund') || normalizedDescription.includes('reimbursement')
+  );
+}
