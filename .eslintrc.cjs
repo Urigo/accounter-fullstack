@@ -73,6 +73,7 @@ module.exports = {
                 'Suggestions',
                 'TaxReport',
                 'TransactionSuggestions',
+                'UncategorizedTransaction',
                 'UpdateChargeSuccessfulResult',
                 'VatReportResult',
                 'VatReportRecord',
