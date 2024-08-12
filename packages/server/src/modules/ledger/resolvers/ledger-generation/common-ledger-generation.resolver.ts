@@ -2,6 +2,7 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
+  isRefundCharge,
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
   ledgerEntryFromMainTransaction,
@@ -381,7 +382,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               ? exchangeRateEntry.creditAccountID1
               : exchangeRateEntry.debitAccountID1;
 
-          const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
+          const isRefund = isRefundCharge(charge.user_description);
+          const isIncomeCharge =
+            !isRefund && charge.event_amount && Number(charge.event_amount) > 0;
           if (isIncomeCharge) {
             exchangeRateTaxCategory = INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID;
           }
