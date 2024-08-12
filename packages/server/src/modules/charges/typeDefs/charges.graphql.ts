@@ -52,6 +52,8 @@ export default gql`
     metadata: ChargeMetadata
     " the tax year in which the action took place "
     yearsOfRelevance: [YearOfRelevance!]
+    " flag for optional VAT "
+    optionalVAT: Boolean
   }
 
   " common charge "
@@ -70,6 +72,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " financial charge "
@@ -88,6 +91,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge with conversion transactions "
@@ -106,6 +110,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge with conversion transactions "
@@ -124,6 +129,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of internal transfer "
@@ -142,6 +148,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of dividends "
@@ -160,6 +167,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of dividends "
@@ -178,6 +186,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of monthly VAT payment "
@@ -196,6 +205,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of bank deposits "
@@ -214,6 +224,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " charge of creditcard over bank account "
@@ -232,6 +243,7 @@ export default gql`
     minDocumentsDate: Date
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
   }
 
   " input variables for charge filtering "
@@ -304,6 +316,7 @@ export default gql`
     defaultTaxCategoryID: UUID
     businessTripID: UUID
     yearsOfRelevance: [YearOfRelevanceInput!]
+    optionalVAT: Boolean
   }
 
   " input variables for charge spread "

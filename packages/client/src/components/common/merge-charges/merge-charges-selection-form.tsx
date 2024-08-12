@@ -33,6 +33,7 @@ import { AccounterLoader, ListCapsule } from '../index.js';
       property
       isInvoicePaymentDifferentCurrency
       userDescription
+      optionalVAT
     }
   }
 `;
@@ -61,6 +62,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     undefined,
   );
   const [selectedProperty, setSelectedProperty] = useState<
+    { id: string; value: boolean } | undefined
+  >(undefined);
+  const [selectedOptionalVAT, setSelectedOptionalVAT] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedConversion, setSelectedConversion] = useState<
@@ -124,6 +128,13 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         isProperty: selectedProperty.value,
       };
     }
+    if (selectedOptionalVAT && selectedOptionalVAT.value !== mainCharge.property) {
+      fields ??= {};
+      fields = {
+        ...fields,
+        optionalVAT: selectedOptionalVAT.value,
+      };
+    }
     if (selectedTags && selectedTags.value !== mainCharge.tags.map(tag => tag.name).join(',')) {
       fields ??= {};
       fields = {
@@ -159,6 +170,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedOwner,
     selectedConversion,
     selectedProperty,
+    selectedOptionalVAT,
     selectedCurrencyDiff,
     selectedTags,
     onDone,
@@ -203,6 +215,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedProperty({
                           id: charge.id,
                           value: charge.property ?? false,
+                        });
+                        setSelectedOptionalVAT({
+                          id: charge.id,
+                          value: charge.optionalVAT ?? false,
                         });
                         setSelectedCurrencyDiff({
                           id: charge.id,
@@ -338,6 +354,39 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
               ))}
             </tr>
             <tr>
+              <th>Optional VAT</th>
+              {charges.map(charge => (
+                <td key={charge.id}>
+                  <button
+                    className="w-full px-2"
+                    disabled={
+                      charge.optionalVAT == null ||
+                      charge.optionalVAT === selectedOptionalVAT?.value
+                    }
+                    onClick={(): void => {
+                      setSelectedOptionalVAT({
+                        id: charge.id,
+                        value: charge.optionalVAT ?? false,
+                      });
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center px-2 py-2 border-x-2"
+                      style={
+                        selectedOptionalVAT?.id === charge.id ? { background: '#228be633' } : {}
+                      }
+                    >
+                      {charge.optionalVAT ? (
+                        <SquareCheck size={20} color="green" />
+                      ) : (
+                        <SquareX size={20} color="red" />
+                      )}
+                    </div>
+                  </button>
+                </td>
+              ))}
+            </tr>
+            <tr>
               <th>Invoice-Payment Currency Difference</th>
               {charges.map(charge => (
                 <td key={charge.id}>
@@ -389,9 +438,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                   >
                     <div
                       className="flex items-center justify-center px-2 py-2 border-x-2"
-                      style={
-                        selectedConversion?.id === charge.id ? { background: '#228be633' } : {}
-                      }
+                      style={selectedTags?.id === charge.id ? { background: '#228be633' } : {}}
                     >
                       <ListCapsule
                         items={charge.tags.map(t => (

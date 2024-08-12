@@ -30,6 +30,7 @@ import { EditCharge, PopUpDrawer } from '../index.js';
       tags {
         id
       }
+      optionalVAT
       ... on BusinessTripCharge {
         businessTrip {
           id

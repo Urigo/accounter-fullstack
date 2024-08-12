@@ -251,6 +251,19 @@ export function ModifyBusinessFields({
             />
           )}
         />
+        <Controller
+          name="optionalVAT"
+          control={control}
+          defaultValue={false}
+          render={({ field: { value, ...field }, fieldState }): ReactElement => (
+            <Switch
+              {...field}
+              checked={value === true}
+              label="Is VAT optional?"
+              error={fieldState.error?.message}
+            />
+          )}
+        />
       </SimpleGrid>
       <Divider my="sm" />
       <Title order={5}>Suggestions</Title>

@@ -285,6 +285,14 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               />
             )}
           />
+          <Controller
+            name="optionalVAT"
+            control={chargeControl}
+            defaultValue={charge.optionalVAT ?? false}
+            render={({ field: { value, ...field } }): ReactElement => (
+              <Switch {...field} checked={value === true} label="Optional VAT" />
+            )}
+          />
           <ChargeSpreadInput formManager={formManager} chargeSpreadPath="yearsOfRelevance" />
         </SimpleGrid>
       </div>

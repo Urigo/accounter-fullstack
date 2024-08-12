@@ -79,7 +79,10 @@ export const validateCharge = async (
   }
 
   // validate vat
-  const isVATlessBusiness = business && (business.country !== 'Israel' || business.exempt_dealer);
+  const isVATlessBusiness =
+    charge.optional_vat ||
+    (business &&
+      (business.country !== 'Israel' || business.exempt_dealer || business.optional_vat));
   const vatIsFine =
     documentsNotRequired ||
     isGeneralFees ||

@@ -32,6 +32,7 @@ export default gql`
     website: String
     phoneNumber: String
     exemptDealer: Boolean
+    optionalVAT: Boolean
 
     suggestions: Suggestions
   }
@@ -77,6 +78,7 @@ export default gql`
     taxCategory: UUID
     exemptDealer: Boolean
     suggestions: SuggestionsInput
+    optionalVAT: Boolean
   }
 
   " input for insertNewBusiness "
@@ -93,6 +95,7 @@ export default gql`
     taxCategory: UUID
     exemptDealer: Boolean
     suggestions: SuggestionsInput
+    optionalVAT: Boolean
   }
 
   " input for business suggestions "
