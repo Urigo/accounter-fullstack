@@ -163,6 +163,7 @@ function ChargesFiltersForm({
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
+                withinPortal
               />
             )}
           />
@@ -181,6 +182,7 @@ function ChargesFiltersForm({
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
+                withinPortal
               />
             )}
           />
@@ -200,6 +202,7 @@ function ChargesFiltersForm({
                 maxDropdownHeight={160}
                 searchable
                 error={fieldState.error?.message}
+                withinPortal
                 filter={(value, _, item) =>
                   item.label?.toLowerCase().includes(value.toLowerCase().trim()) ||
                   item.description?.toLowerCase().includes(value.toLowerCase().trim())
@@ -259,6 +262,7 @@ function ChargesFiltersForm({
                 placeholder="Filter income/expense"
                 maxDropdownHeight={160}
                 error={fieldState.error?.message}
+                withinPortal
               />
             )}
           />
@@ -276,6 +280,7 @@ function ChargesFiltersForm({
                 searchable
                 error={fieldState.error?.message}
                 rightSectionProps={{ style: { width: '3.5rem' } }}
+                withinPortal
                 rightSection={
                   <Switch
                     defaultChecked={filter.sortBy?.asc ?? false}
@@ -320,6 +325,7 @@ function ChargesFiltersForm({
                 placeholder="All"
                 maxDropdownHeight={160}
                 error={fieldState.error?.message}
+                withinPortal
               />
             )}
           />

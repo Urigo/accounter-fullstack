@@ -4,13 +4,19 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { stringArray } from '@modules/charges/types.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteBusinessTripTransactionMatchParams,
+  IDeleteBusinessTripTransactionMatchQuery,
   IDeleteBusinessTripTransactionParams,
   IDeleteBusinessTripTransactionQuery,
+  IDeleteSpecificBusinessTripTransactionMatchParams,
+  IDeleteSpecificBusinessTripTransactionMatchQuery,
   IGetAllBusinessTripsTransactionsQuery,
   IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
   IGetBusinessTripsTransactionsByIdsQuery,
   IGetBusinessTripsTransactionsByTransactionIdsQuery,
+  IGetTransactionsByBusinessTripIdParams,
+  IGetTransactionsByBusinessTripIdQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripTransactionMatchParams,
@@ -41,8 +47,8 @@ const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTrans
 
 const getBusinessTripsTransactionsByTransactionIds = sql<IGetBusinessTripsTransactionsByTransactionIdsQuery>`
   SELECT *
-  FROM accounter_schema.extended_business_trip_transactions
-  WHERE ($isTransactionIds = 0 OR transaction_ids && $transactionIds);`;
+  FROM accounter_schema.business_trips_transactions_match
+  WHERE transaction_id in $$transactionIds;`;
 
 const getBusinessTripsTransactionsByIds = sql<IGetBusinessTripsTransactionsByIdsQuery>`
   SELECT *
@@ -75,6 +81,17 @@ const insertBusinessTripTransactionMatch = sql<IInsertBusinessTripTransactionMat
   VALUES($businessTripTransactionId, $transactionId, $amount)
   RETURNING *;`;
 
+const deleteBusinessTripTransactionMatch = sql<IDeleteBusinessTripTransactionMatchQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_match
+  WHERE business_trip_transaction_id = $businessTripTransactionId
+  RETURNING *;`;
+
+const deleteSpecificBusinessTripTransactionMatch = sql<IDeleteSpecificBusinessTripTransactionMatchQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_match
+  WHERE business_trip_transaction_id = $businessTripTransactionId
+    AND transaction_id = $transactionId
+  RETURNING *;`;
+
 const deleteBusinessTripTransaction = sql<IDeleteBusinessTripTransactionQuery>`
   DELETE FROM accounter_schema.business_trips_transactions
   WHERE id = $businessTripTransactionId
@@ -92,6 +109,14 @@ const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransa
     AND btt.business_trip_id = $businessTripId 
   WHERE btc.business_trip_id IS NOT NULL
     AND btt.id IS NULL;`;
+
+const getTransactionsByBusinessTripId = sql<IGetTransactionsByBusinessTripIdQuery>`
+  SELECT t.*
+  FROM accounter_schema.extended_transactions t
+  LEFT JOIN accounter_schema.business_trip_charges btc
+    ON t.charge_id = btc.charge_id
+      AND btc.business_trip_id = $businessTripId
+  WHERE btc.business_trip_id IS NOT NULL;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -153,14 +178,11 @@ export class BusinessTripTransactionsProvider {
   private async batchBusinessTripsTransactionsByTransactionIds(transactionIds: readonly string[]) {
     const businessTrips = await getBusinessTripsTransactionsByTransactionIds.run(
       {
-        isTransactionIds: transactionIds.length > 0 ? 1 : 0,
         transactionIds: transactionIds as stringArray,
       },
       this.dbProvider,
     );
-    return transactionIds.map(id =>
-      businessTrips.filter(record => record.transaction_ids?.includes(id)),
-    );
+    return transactionIds.map(id => businessTrips.filter(record => record.transaction_id === id));
   }
 
   public getBusinessTripsTransactionsByTransactionIdLoader = new DataLoader(
@@ -178,7 +200,7 @@ export class BusinessTripTransactionsProvider {
       },
       this.dbProvider,
     );
-    return transactionIds.map(id => businessTripsTransactions.filter(record => record.id === id));
+    return transactionIds.map(id => businessTripsTransactions.find(record => record.id === id));
   }
 
   public getBusinessTripsTransactionsByIdLoader = new DataLoader(
@@ -288,7 +310,21 @@ export class BusinessTripTransactionsProvider {
     return getUncategorizedTransactionsByBusinessTripId.run(params, this.dbProvider);
   }
 
+  public getTransactionsByBusinessTripId(params: IGetTransactionsByBusinessTripIdParams) {
+    return getTransactionsByBusinessTripId.run(params, this.dbProvider);
+  }
+
   public deleteBusinessTripTransaction(params: IDeleteBusinessTripTransactionParams) {
     return deleteBusinessTripTransaction.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTripTransactionMatch(params: IDeleteBusinessTripTransactionMatchParams) {
+    return deleteBusinessTripTransactionMatch.run(params, this.dbProvider);
+  }
+
+  public deleteSpecificBusinessTripTransactionMatch(
+    params: IDeleteSpecificBusinessTripTransactionMatchParams,
+  ) {
+    return deleteSpecificBusinessTripTransactionMatch.run(params, this.dbProvider);
   }
 }

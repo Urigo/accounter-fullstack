@@ -1,45 +1,47 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
 import {
-  UpdateBusinessTripTransactionCategoryDocument,
-  UpdateBusinessTripTransactionCategoryMutation,
-  UpdateBusinessTripTransactionCategoryMutationVariables,
+  CategorizeIntoExistingBusinessTripTransactionDocument,
+  CategorizeIntoExistingBusinessTripTransactionMutation,
+  CategorizeIntoExistingBusinessTripTransactionMutationVariables,
 } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateBusinessTripTransactionCategory(
-    $fields: UpdateBusinessTripTransactionCategoryInput!
+  mutation CategorizeIntoExistingBusinessTripTransaction(
+    $fields: CategorizeIntoExistingBusinessTripTransactionInput!
   ) {
-    updateBusinessTripTransactionCategory(fields: $fields)
+    categorizeIntoExistingBusinessTripTransaction(fields: $fields)
   }
 `;
 
-type UseUpdateBusinessTripTransactionCategory = {
+type UseCategorizeIntoExistingBusinessTripTransaction = {
   fetching: boolean;
-  updateBusinessTripTransactionCategory: (
-    variables: UpdateBusinessTripTransactionCategoryMutationVariables,
+  categorizeIntoExistingBusinessTripTransaction: (
+    variables: CategorizeIntoExistingBusinessTripTransactionMutationVariables,
   ) => Promise<
-    UpdateBusinessTripTransactionCategoryMutation['updateBusinessTripTransactionCategory']
+    CategorizeIntoExistingBusinessTripTransactionMutation['categorizeIntoExistingBusinessTripTransaction']
   >;
 };
 
-export const useUpdateBusinessTripTransactionCategory =
-  (): UseUpdateBusinessTripTransactionCategory => {
+export const useCategorizeIntoExistingBusinessTripTransaction =
+  (): UseCategorizeIntoExistingBusinessTripTransaction => {
     // TODO: add authentication
     // TODO: add local data update method after update
 
-    const [{ fetching }, mutate] = useMutation(UpdateBusinessTripTransactionCategoryDocument);
+    const [{ fetching }, mutate] = useMutation(
+      CategorizeIntoExistingBusinessTripTransactionDocument,
+    );
 
     return {
       fetching,
-      updateBusinessTripTransactionCategory: (
-        variables: UpdateBusinessTripTransactionCategoryMutationVariables,
+      categorizeIntoExistingBusinessTripTransaction: (
+        variables: CategorizeIntoExistingBusinessTripTransactionMutationVariables,
       ): Promise<
-        UpdateBusinessTripTransactionCategoryMutation['updateBusinessTripTransactionCategory']
+        CategorizeIntoExistingBusinessTripTransactionMutation['categorizeIntoExistingBusinessTripTransaction']
       > =>
         new Promise<
-          UpdateBusinessTripTransactionCategoryMutation['updateBusinessTripTransactionCategory']
+          CategorizeIntoExistingBusinessTripTransactionMutation['categorizeIntoExistingBusinessTripTransaction']
         >((resolve, reject) =>
           mutate(variables).then(res => {
             if (res.error) {
@@ -62,7 +64,7 @@ export const useUpdateBusinessTripTransactionCategory =
               title: 'Update Success!',
               message: 'Business trip transaction category was updated! 🎉',
             });
-            return resolve(res.data.updateBusinessTripTransactionCategory);
+            return resolve(res.data.categorizeIntoExistingBusinessTripTransaction);
           }),
         ),
     };

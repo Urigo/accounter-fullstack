@@ -20,8 +20,10 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
       ... on BusinessTrip @defer {
         accountantApproval
         uncategorizedTransactions {
-          ... on Transaction @defer {
-            id
+          transaction {
+            ... on Transaction @defer {
+              id
+            }
           }
         }
         summary {

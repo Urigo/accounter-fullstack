@@ -51,6 +51,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
               value={date}
               label="Start Date"
               placeholder="Start Date"
+              popoverProps={{ withinPortal: true }}
             />
           );
         }}
@@ -80,12 +81,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
               value={date}
               label="End Date"
               placeholder="End Date"
-              popoverProps={{
-                position: 'bottom-start',
-                onPositionChange: pos => {
-                  console.log('pos:', pos);
-                },
-              }}
+              popoverProps={{ withinPortal: true }}
             />
           );
         }}

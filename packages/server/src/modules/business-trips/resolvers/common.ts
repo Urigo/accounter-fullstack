@@ -6,7 +6,7 @@ import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
-export const commonBusinessTransactionFields: BusinessTripsModule.BusinessTripTransactionResolvers =
+export const commonBusinessTripTransactionFields: BusinessTripsModule.BusinessTripTransactionResolvers =
   {
     id: DbTransaction => DbTransaction.id!,
     businessTrip: (DbTransaction, _, { injector }) =>
