@@ -4,19 +4,19 @@ import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, Switch, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportOtherRowFieldsFragmentDoc,
-  UpdateBusinessTripOtherTransactionInput,
+  UpdateBusinessTripOtherExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateBusinessTripOtherTransaction } from '../../../../hooks/use-update-business-trip-other-transaction.js';
+import { useUpdateBusinessTripOtherExpense } from '../../../../hooks/use-update-business-trip-other-expense.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
-import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.jsx';
-import { CoreTransactionRow } from './core-transaction-row.jsx';
+import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
+import { CoreExpenseRow } from './core-expense-row.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment BusinessTripReportOtherRowFields on BusinessTripOtherTransaction {
+  fragment BusinessTripReportOtherRowFields on BusinessTripOtherExpense {
     id
-    ...BusinessTripReportCoreTransactionRowFields
+    ...BusinessTripReportCoreExpenseRowFields
     payedByEmployee
     description
     deductibleExpense
@@ -30,46 +30,46 @@ interface Props {
 }
 
 export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const otherTransaction = getFragmentData(BusinessTripReportOtherRowFieldsFragmentDoc, data);
+  const otherExpense = getFragmentData(BusinessTripReportOtherRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripOtherTransactionInput>({
+  const { control, handleSubmit } = useForm<UpdateBusinessTripOtherExpenseInput>({
     defaultValues: {
-      id: otherTransaction.id,
+      id: otherExpense.id,
       businessTripId,
     },
   });
 
-  const { updateBusinessTripOtherTransaction, fetching: updatingInProcess } =
-    useUpdateBusinessTripOtherTransaction();
+  const { updateBusinessTripOtherExpense, fetching: updatingInProcess } =
+    useUpdateBusinessTripOtherExpense();
 
-  const onSubmit: SubmitHandler<UpdateBusinessTripOtherTransactionInput> = data => {
-    updateBusinessTripOtherTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<UpdateBusinessTripOtherExpenseInput> = data => {
+    updateBusinessTripOtherExpense({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
     });
   };
 
   return (
-    <tr key={otherTransaction.id}>
-      <CoreTransactionRow
-        data={otherTransaction}
+    <tr key={otherExpense.id}>
+      <CoreExpenseRow
+        data={otherExpense}
         isEditMode={isEditMode}
         control={control}
         businessTripId={businessTripId}
       />
 
       <td>
-        <form id={`form ${otherTransaction.id}`} onSubmit={handleSubmit(onSubmit)}>
+        <form id={`form ${otherExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
           {isEditMode ? (
             <Controller
               name="description"
               control={control}
-              defaultValue={otherTransaction.description}
+              defaultValue={otherExpense.description}
               render={({ field, fieldState }): ReactElement => (
                 <TextInput
-                  form={`form ${otherTransaction.id}`}
-                  data-autofocus={otherTransaction.payedByEmployee ? undefined : true}
+                  form={`form ${otherExpense.id}`}
+                  data-autofocus={otherExpense.payedByEmployee ? undefined : true}
                   {...field}
                   value={field.value ?? undefined}
                   error={fieldState.error?.message}
@@ -78,8 +78,8 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
               )}
             />
           ) : (
-            <Text c={otherTransaction.description ? undefined : 'red'}>
-              {otherTransaction.description ?? 'Missing'}
+            <Text c={otherExpense.description ? undefined : 'red'}>
+              {otherExpense.description ?? 'Missing'}
             </Text>
           )}
         </form>
@@ -90,11 +90,11 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
             <Controller
               name="deductibleExpense"
               control={control}
-              defaultValue={otherTransaction.deductibleExpense}
+              defaultValue={otherExpense.deductibleExpense}
               render={({ field: { value, ...field }, fieldState }): ReactElement => (
                 <Switch
                   {...field}
-                  form={`form ${otherTransaction.id}`}
+                  form={`form ${otherExpense.id}`}
                   checked={value === true}
                   error={fieldState.error?.message}
                   label="Deductible Expense"
@@ -102,10 +102,10 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
               )}
             />
           ) : (
-            <Text c={otherTransaction.deductibleExpense ? undefined : 'red'}>
-              {otherTransaction.deductibleExpense === true
+            <Text c={otherExpense.deductibleExpense ? undefined : 'red'}>
+              {otherExpense.deductibleExpense === true
                 ? 'Yes'
-                : otherTransaction.deductibleExpense === false
+                : otherExpense.deductibleExpense === false
                   ? 'No'
                   : 'Missing'}
             </Text>
@@ -128,27 +128,19 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
         </Tooltip>
         {isEditMode && (
           <Tooltip label="Confirm Changes">
-            <ActionIcon
-              type="submit"
-              form={`form ${otherTransaction.id}`}
-              variant="default"
-              size={30}
-            >
+            <ActionIcon type="submit" form={`form ${otherExpense.id}`} variant="default" size={30}>
               <Check size={20} color="green" />
             </ActionIcon>
           </Tooltip>
         )}
 
         <CategorizeIntoExistingExpense
-          businessTripTransactionId={otherTransaction.id}
+          businessTripExpenseId={otherExpense.id}
           businessTripId={businessTripId}
           onChange={onChange}
         />
 
-        <DeleteBusinessTripTransaction
-          businessTripTransactionId={otherTransaction.id}
-          onDelete={onChange}
-        />
+        <DeleteBusinessTripExpense businessTripExpenseId={otherExpense.id} onDelete={onChange} />
       </td>
     </tr>
   );

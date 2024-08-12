@@ -1,13 +1,13 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Select, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Switch, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripFlightsTransactionInput, FlightClass } from '../../../../gql/graphql.js';
-import { useAddBusinessTripFlightsTransaction } from '../../../../hooks/use-add-business-trip-flights-transaction.js';
-import { AddTransactionFields } from './add-transaction-fields.js';
+import { AddBusinessTripOtherExpenseInput } from '../../../../gql/graphql.js';
+import { useAddBusinessTripOtherExpense } from '../../../../hooks/use-add-business-trip-other-expense.js';
+import { AddExpenseFields } from './add-expense-fields.js';
 
-export function AddFlightTransaction(props: {
+export function AddOtherExpense(props: {
   businessTripId: string;
   onAdd?: () => void;
 }): ReactElement {
@@ -16,7 +16,7 @@ export function AddFlightTransaction(props: {
 
   return (
     <>
-      <Tooltip label="Add Flight Transaction">
+      <Tooltip label="Add Other Expense">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -35,11 +35,6 @@ export function AddFlightTransaction(props: {
   );
 }
 
-const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
-  value,
-  label: key,
-}));
-
 type ModalProps = {
   opened: boolean;
   close: () => void;
@@ -48,16 +43,16 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripFlightsTransactionInput>({
+  const { control, handleSubmit } = useForm<AddBusinessTripOtherExpenseInput>({
     defaultValues: { businessTripId },
   });
   const [fetching, setFetching] = useState(false);
 
-  const { addBusinessTripFlightsTransaction, fetching: addingInProcess } =
-    useAddBusinessTripFlightsTransaction();
+  const { addBusinessTripOtherExpense, fetching: addingInProcess } =
+    useAddBusinessTripOtherExpense();
 
-  const onSubmit: SubmitHandler<AddBusinessTripFlightsTransactionInput> = data => {
-    addBusinessTripFlightsTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<AddBusinessTripOtherExpenseInput> = data => {
+    addBusinessTripOtherExpense({ fields: data }).then(() => {
       onAdd?.();
       close();
     });
@@ -65,53 +60,36 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Flight Transaction</Modal.Title>
+      <Modal.Title>Add Other Expense</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <AddTransactionFields
+          <AddExpenseFields
             businessTripId={businessTripId}
             control={control}
             setFetching={setFetching}
           />
 
           <Controller
-            name="origin"
+            name="description"
             control={control}
             render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={field.value ?? undefined}
                 error={fieldState.error?.message}
-                label="Origin"
+                label="Description"
               />
             )}
           />
           <Controller
-            name="destination"
+            name="deductibleExpense"
             control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
+            render={({ field: { value, ...field }, fieldState }): ReactElement => (
+              <Switch
                 {...field}
-                value={field.value ?? undefined}
+                checked={value === true}
+                label="Deductible Expense"
                 error={fieldState.error?.message}
-                label="Destination"
-              />
-            )}
-          />
-          <Controller
-            name="flightClass"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                data={flightClasses}
-                value={field.value}
-                label="Flight Class"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
               />
             )}
           />

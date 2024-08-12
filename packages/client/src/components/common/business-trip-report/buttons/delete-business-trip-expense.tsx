@@ -2,25 +2,25 @@ import { ReactElement, useCallback } from 'react';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useDeleteBusinessTripTransaction } from '../../../../hooks/use-delete-business-trip-transaction.js';
-import { ConfirmationModal } from '../../modals/confirmation-modal.jsx';
+import { useDeleteBusinessTripExpense } from '../../../../hooks/use-delete-business-trip-expense.js';
+import { ConfirmationModal } from '../../modals/confirmation-modal.js';
 
-export function DeleteBusinessTripTransaction(props: {
-  businessTripTransactionId: string;
+export function DeleteBusinessTripExpense(props: {
+  businessTripExpenseId: string;
   onDelete?: () => void;
 }): ReactElement {
   const [opened, { close, open }] = useDisclosure(false);
 
-  const { fetching, deleteBusinessTripTransaction } = useDeleteBusinessTripTransaction();
+  const { fetching, deleteBusinessTripExpense } = useDeleteBusinessTripExpense();
 
   const onExecute = useCallback(() => {
-    deleteBusinessTripTransaction({
-      businessTripTransactionId: props.businessTripTransactionId,
+    deleteBusinessTripExpense({
+      businessTripExpenseId: props.businessTripExpenseId,
     }).then(() => {
       props.onDelete?.();
       close();
     });
-  }, [props, deleteBusinessTripTransaction, close]);
+  }, [props, deleteBusinessTripExpense, close]);
 
   return (
     <>
@@ -28,9 +28,9 @@ export function DeleteBusinessTripTransaction(props: {
         opened={opened}
         onClose={close}
         onConfirm={onExecute}
-        title="Are you sure you want to remove transaction?"
+        title="Are you sure you want to remove expense?"
       />
-      <Tooltip label="Remove Transaction">
+      <Tooltip label="Remove Expense">
         <ActionIcon variant="default" loading={fetching} size={30} onClick={open}>
           <Trash size={20} color="red" />
         </ActionIcon>

@@ -2,13 +2,13 @@ import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { getTransactionMatchedAmount } from '../helpers/business-trips-transactions.helper.js';
+import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
-import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
-import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
-import { BusinessTripOtherTransactionsProvider } from '../providers/business-trips-transactions-other.provider.js';
-import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
-import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
+import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
+import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
+import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
+import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 import { businessTripSummary } from './business-trip-summary.resolver.js';
@@ -105,32 +105,30 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         .get(BusinessTripAttendeesProvider)
         .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    flightTransactions: async (dbBusinessTrip, _, { injector }) => {
+    flightExpenses: async (dbBusinessTrip, _, { injector }) => {
       return injector
-        .get(BusinessTripFlightsTransactionsProvider)
-        .getBusinessTripsFlightsTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+        .get(BusinessTripFlightsExpensesProvider)
+        .getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    accommodationTransactions: async (dbBusinessTrip, _, { injector }) => {
+    accommodationExpenses: async (dbBusinessTrip, _, { injector }) => {
       return injector
-        .get(BusinessTripAccommodationsTransactionsProvider)
-        .getBusinessTripsAccommodationsTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+        .get(BusinessTripAccommodationsExpensesProvider)
+        .getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    travelAndSubsistenceTransactions: async (dbBusinessTrip, _, { injector }) => {
+    travelAndSubsistenceExpenses: async (dbBusinessTrip, _, { injector }) => {
       return injector
-        .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
-        .getBusinessTripsTravelAndSubsistenceTransactionsByBusinessTripIdLoader.load(
-          dbBusinessTrip.id,
-        );
+        .get(BusinessTripTravelAndSubsistenceExpensesProvider)
+        .getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    otherTransactions: async (dbBusinessTrip, _, { injector }) => {
+    otherExpenses: async (dbBusinessTrip, _, { injector }) => {
       return injector
-        .get(BusinessTripOtherTransactionsProvider)
-        .getBusinessTripsOtherTransactionsByBusinessTripIdLoader.load(dbBusinessTrip.id);
+        .get(BusinessTripOtherExpensesProvider)
+        .getBusinessTripsOtherExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
     summary: businessTripSummary,
     uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
       const transactions = (await injector
-        .get(BusinessTripTransactionsProvider)
+        .get(BusinessTripExpensesProvider)
         .getTransactionsByBusinessTripId({
           businessTripId: dbBusinessTrip.id,
         })) as IGetTransactionsByChargeIdsResult[];

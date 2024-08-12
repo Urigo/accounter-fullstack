@@ -1,8 +1,8 @@
 import { Injector } from 'graphql-modules';
-import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips/helpers/business-trips-transactions.helper.js';
+import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips/helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
-import { BusinessTripTransactionsProvider } from '@modules/business-trips/providers/business-trips-transactions.provider.js';
+import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -100,9 +100,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         })
         .catch(reject);
     });
-    const businessTripTransactionsPromise = injector
-      .get(BusinessTripTransactionsProvider)
-      .getBusinessTripsTransactionsByChargeIdLoader.load(chargeId);
+    const businessTripExpensesPromise = injector
+      .get(BusinessTripExpensesProvider)
+      .getBusinessTripsExpensesByChargeIdLoader.load(chargeId);
     const businessTripsEmployeePaymentsPromise = injector
       .get(BusinessTripEmployeePaymentsProvider)
       .getBusinessTripEmployeePaymentsByChargeIdLoader.load(chargeId);
@@ -113,14 +113,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       transactions,
       documents,
       documentsTaxCategoryId,
-      businessTripTransactions,
+      businessTripExpenses,
       businessTripsEmployeePayments,
       businessTripAttendees,
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
       documentsTaxCategoryIdPromise,
-      businessTripTransactionsPromise,
+      businessTripExpensesPromise,
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,
     ]);
@@ -318,35 +318,33 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // generate ledger from business trip transactions
     if (!isSelfClosingLedger && !accountingLedgerEntries.length) {
-      const businessTripTransactionsPromises = businessTripTransactions.map(
-        async businessTripTransaction => {
-          if (!tripTaxCategory) {
-            return;
-          }
+      const businessTripExpensesPromises = businessTripExpenses.map(async businessTripExpense => {
+        if (!tripTaxCategory) {
+          return;
+        }
 
-          const matchingEntry = financialAccountLedgerEntries.find(entry =>
-            businessTripTransaction.transaction_ids?.includes(entry.id),
-          );
-          if (!matchingEntry) {
-            return;
-          }
+        const matchingEntry = financialAccountLedgerEntries.find(entry =>
+          businessTripExpense.transaction_ids?.includes(entry.id),
+        );
+        if (!matchingEntry) {
+          return;
+        }
 
-          const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
-          const businessId = isCreditorCounterparty
-            ? matchingEntry.debitAccountID1
-            : matchingEntry.creditAccountID1;
-          const ledgerEntry: StrictLedgerProto = {
-            ...matchingEntry,
-            id: businessTripTransaction.id!,
-            isCreditorCounterparty,
-            creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
-            debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
-          };
+        const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
+        const businessId = isCreditorCounterparty
+          ? matchingEntry.debitAccountID1
+          : matchingEntry.creditAccountID1;
+        const ledgerEntry: StrictLedgerProto = {
+          ...matchingEntry,
+          id: businessTripExpense.id!,
+          isCreditorCounterparty,
+          creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
+          debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
+        };
 
-          financialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        },
-      );
+        financialAccountLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      });
 
       const businessTripsEmployeePaymentsPromises = businessTripsEmployeePayments.map(
         async businessTripsEmployeePayment => {
@@ -418,7 +416,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       );
 
       await Promise.all([
-        ...businessTripTransactionsPromises,
+        ...businessTripExpensesPromises,
         ...businessTripsEmployeePaymentsPromises,
       ]);
     }

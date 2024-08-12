@@ -2,15 +2,15 @@ import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportAccommodationsFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { AddAccommodationTransaction } from '../buttons/add-accommodation-transaction.jsx';
+import { AddAccommodationExpense } from '../buttons/add-accommodation-expense.js';
 import { AccommodationsRow } from './accommodations-row.js';
-import { CoreTransactionHeader } from './core-transaction-row.js';
+import { CoreExpenseHeader } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessTripReportAccommodationsFields on BusinessTrip {
     id
-    accommodationTransactions {
+    accommodationExpenses {
       id
       date
       ...BusinessTripReportAccommodationsRowFields
@@ -24,13 +24,13 @@ interface Props {
 }
 
 export const Accommodations = ({ data, onChange }: Props): ReactElement => {
-  const { accommodationTransactions, id } = getFragmentData(
+  const { accommodationExpenses, id } = getFragmentData(
     BusinessTripReportAccommodationsFieldsFragmentDoc,
     data,
   );
 
-  if (!accommodationTransactions?.length) {
-    return <AddAccommodationTransaction businessTripId={id} onAdd={onChange} />;
+  if (!accommodationExpenses?.length) {
+    return <AddAccommodationExpense businessTripId={id} onAdd={onChange} />;
   }
 
   return (
@@ -38,14 +38,14 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
       <Table highlightOnHover withBorder>
         <thead>
           <tr>
-            <CoreTransactionHeader />
+            <CoreExpenseHeader />
             <th>Location</th>
             <th>Nights</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {accommodationTransactions
+          {accommodationExpenses
             .sort((a, b) => {
               // sort by start date (if available, newest top) and then by name
               if (a.date && b.date) {
@@ -55,17 +55,17 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
               if (b.date) return 1;
               return 0;
             })
-            .map(accommodationTransaction => (
+            .map(accommodationExpense => (
               <AccommodationsRow
-                data={accommodationTransaction}
+                data={accommodationExpense}
                 businessTripId={id}
                 onChange={onChange}
-                key={accommodationTransaction.id}
+                key={accommodationExpense.id}
               />
             ))}
           <tr>
             <td colSpan={6}>
-              <AddAccommodationTransaction businessTripId={id} onAdd={onChange} />
+              <AddAccommodationExpense businessTripId={id} onAdd={onChange} />
             </td>
           </tr>
         </tbody>

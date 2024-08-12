@@ -5,20 +5,20 @@ import { ActionIcon, Select, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
-  UpdateBusinessTripFlightsTransactionInput,
+  UpdateBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateBusinessTripFlightsTransaction } from '../../../../hooks/use-update-business-trip-flights-transaction.js';
+import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-update-business-trip-flights-expense.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
-import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
-import { CoreTransactionRow } from './core-transaction-row.js';
+import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
+import { CoreExpenseRow } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment BusinessTripReportFlightsRowFields on BusinessTripFlightTransaction {
+  fragment BusinessTripReportFlightsRowFields on BusinessTripFlightExpense {
     id
     payedByEmployee
-    ...BusinessTripReportCoreTransactionRowFields
+    ...BusinessTripReportCoreExpenseRowFields
     origin
     destination
     class
@@ -37,48 +37,48 @@ interface Props {
 }
 
 export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const flightTransaction = getFragmentData(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
+  const flightExpense = getFragmentData(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripFlightsTransactionInput>({
+  const { control, handleSubmit } = useForm<UpdateBusinessTripFlightsExpenseInput>({
     defaultValues: {
-      id: flightTransaction.id,
+      id: flightExpense.id,
       businessTripId,
     },
   });
 
-  const { updateBusinessTripFlightsTransaction, fetching: updatingInProcess } =
-    useUpdateBusinessTripFlightsTransaction();
+  const { updateBusinessTripFlightsExpense, fetching: updatingInProcess } =
+    useUpdateBusinessTripFlightsExpense();
 
-  const onSubmit: SubmitHandler<UpdateBusinessTripFlightsTransactionInput> = data => {
-    updateBusinessTripFlightsTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<UpdateBusinessTripFlightsExpenseInput> = data => {
+    updateBusinessTripFlightsExpense({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
     });
   };
 
   return (
-    <tr key={flightTransaction.id}>
-      <CoreTransactionRow
-        data={flightTransaction}
+    <tr key={flightExpense.id}>
+      <CoreExpenseRow
+        data={flightExpense}
         isEditMode={isEditMode}
         control={control}
         businessTripId={businessTripId}
       />
 
       <td>
-        <form id={`form ${flightTransaction.id}`} onSubmit={handleSubmit(onSubmit)}>
+        <form id={`form ${flightExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-2 justify-center">
             {isEditMode ? (
               <div className="flex gap-2 items-center">
                 <Controller
                   name="origin"
                   control={control}
-                  defaultValue={flightTransaction.origin}
+                  defaultValue={flightExpense.origin}
                   render={({ field, fieldState }): ReactElement => (
                     <TextInput
-                      data-autofocus={flightTransaction.payedByEmployee ? undefined : true}
-                      form={`form ${flightTransaction.id}`}
+                      data-autofocus={flightExpense.payedByEmployee ? undefined : true}
+                      form={`form ${flightExpense.id}`}
                       {...field}
                       value={field.value ?? undefined}
                       error={fieldState.error?.message}
@@ -90,10 +90,10 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
                 <Controller
                   name="destination"
                   control={control}
-                  defaultValue={flightTransaction.destination}
+                  defaultValue={flightExpense.destination}
                   render={({ field, fieldState }): ReactElement => (
                     <TextInput
-                      form={`form ${flightTransaction.id}`}
+                      form={`form ${flightExpense.id}`}
                       {...field}
                       value={field.value ?? undefined}
                       error={fieldState.error?.message}
@@ -105,12 +105,12 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
             ) : (
               <div>
                 <Text fw={700} className="flex gap-2 items-center">
-                  <Text c={flightTransaction.origin ? undefined : 'red'}>
-                    {flightTransaction.origin ?? 'Missing'}
+                  <Text c={flightExpense.origin ? undefined : 'red'}>
+                    {flightExpense.origin ?? 'Missing'}
                   </Text>
                   {' → '}
-                  <Text c={flightTransaction.destination ? undefined : 'red'}>
-                    {flightTransaction.destination ?? 'Missing'}
+                  <Text c={flightExpense.destination ? undefined : 'red'}>
+                    {flightExpense.destination ?? 'Missing'}
                   </Text>
                 </Text>
               </div>
@@ -119,12 +119,10 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
               <Controller
                 name="flightClass"
                 control={control}
-                defaultValue={
-                  (flightTransaction.class as FlightClass | null | undefined) ?? undefined
-                }
+                defaultValue={(flightExpense.class as FlightClass | null | undefined) ?? undefined}
                 render={({ field, fieldState }): ReactElement => (
                   <Select
-                    form={`form ${flightTransaction.id}`}
+                    form={`form ${flightExpense.id}`}
                     data-autofocus
                     {...field}
                     data={flightClasses}
@@ -140,9 +138,9 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
               />
             ) : (
               <Text
-                c={flightTransaction.class ? undefined : 'red'}
+                c={flightExpense.class ? undefined : 'red'}
                 fz="sm"
-              >{`Class: ${flightTransaction.class ?? 'Missing'}`}</Text>
+              >{`Class: ${flightExpense.class ?? 'Missing'}`}</Text>
             )}
           </div>
         </form>
@@ -163,27 +161,19 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
         </Tooltip>
         {isEditMode && (
           <Tooltip label="Confirm Changes">
-            <ActionIcon
-              type="submit"
-              form={`form ${flightTransaction.id}`}
-              variant="default"
-              size={30}
-            >
+            <ActionIcon type="submit" form={`form ${flightExpense.id}`} variant="default" size={30}>
               <Check size={20} color="green" />
             </ActionIcon>
           </Tooltip>
         )}
 
         <CategorizeIntoExistingExpense
-          businessTripTransactionId={flightTransaction.id}
+          businessTripExpenseId={flightExpense.id}
           businessTripId={businessTripId}
           onChange={onChange}
         />
 
-        <DeleteBusinessTripTransaction
-          businessTripTransactionId={flightTransaction.id}
-          onDelete={onChange}
-        />
+        <DeleteBusinessTripExpense businessTripExpenseId={flightExpense.id} onDelete={onChange} />
       </td>
     </tr>
   );

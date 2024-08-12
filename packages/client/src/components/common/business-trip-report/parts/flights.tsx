@@ -2,15 +2,15 @@ import { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportFlightsFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { AddFlightTransaction } from '../buttons/add-flight-transaction.js';
-import { CoreTransactionHeader } from './core-transaction-row.js';
+import { AddFlightExpense } from '../buttons/add-flight-expense.js';
+import { CoreExpenseHeader } from './core-expense-row.js';
 import { FlightsRow } from './flights-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessTripReportFlightsFields on BusinessTrip {
     id
-    flightTransactions {
+    flightExpenses {
       id
       date
       ...BusinessTripReportFlightsRowFields
@@ -24,13 +24,10 @@ interface Props {
 }
 
 export const Flights = ({ data, onChange }: Props): ReactElement => {
-  const { flightTransactions, id } = getFragmentData(
-    BusinessTripReportFlightsFieldsFragmentDoc,
-    data,
-  );
+  const { flightExpenses, id } = getFragmentData(BusinessTripReportFlightsFieldsFragmentDoc, data);
 
-  if (!flightTransactions?.length) {
-    return <AddFlightTransaction businessTripId={id} onAdd={onChange} />;
+  if (!flightExpenses?.length) {
+    return <AddFlightExpense businessTripId={id} onAdd={onChange} />;
   }
 
   return (
@@ -38,13 +35,13 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
       <Table highlightOnHover withBorder>
         <thead>
           <tr>
-            <CoreTransactionHeader />
+            <CoreExpenseHeader />
             <th>Flight</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {flightTransactions
+          {flightExpenses
             .sort((a, b) => {
               // sort by start date (if available, newest top) and then by name
               if (a.date && b.date) {
@@ -54,17 +51,17 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
               if (b.date) return 1;
               return 0;
             })
-            .map(flightTransaction => (
+            .map(flightExpense => (
               <FlightsRow
-                data={flightTransaction}
+                data={flightExpense}
                 businessTripId={id}
                 onChange={onChange}
-                key={flightTransaction.id}
+                key={flightExpense.id}
               />
             ))}
           <tr>
             <td colSpan={5}>
-              <AddFlightTransaction businessTripId={id} onAdd={onChange} />
+              <AddFlightExpense businessTripId={id} onAdd={onChange} />
             </td>
           </tr>
         </tbody>
