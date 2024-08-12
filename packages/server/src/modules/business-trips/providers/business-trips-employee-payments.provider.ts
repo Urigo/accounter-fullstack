@@ -49,18 +49,18 @@ const updateBusinessTripEmployeePayment = sql<IUpdateBusinessTripEmployeePayment
     employee_business_id
   )
   WHERE
-    id = $businessTripTransactionId
+    id = $businessTripExpenseId
   RETURNING *;
 `;
 
 const insertBusinessTripEmployeePayment = sql<IInsertBusinessTripEmployeePaymentQuery>`
   INSERT INTO accounter_schema.business_trips_employee_payments (id, charge_id, date, value_date, amount, currency, employee_business_id)
-  VALUES($businessTripTransactionId, $chargeId, $date, $valueDate, $amount, $currency, $employeeBusinessId)
+  VALUES($businessTripExpenseId, $chargeId, $date, $valueDate, $amount, $currency, $employeeBusinessId)
   RETURNING *;`;
 
 const deleteBusinessTripEmployeePayment = sql<IDeleteBusinessTripEmployeePaymentQuery>`
   DELETE FROM accounter_schema.business_trips_employee_payments
-  WHERE id = $businessTripTransactionId
+  WHERE id = $businessTripExpenseId
   RETURNING id;
 `;
 

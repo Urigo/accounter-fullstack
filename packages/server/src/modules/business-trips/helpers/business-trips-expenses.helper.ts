@@ -4,24 +4,24 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { BUSINESS_TRIP_TAX_CATEGORY_ID, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
-import { BusinessTripTransactionCategories } from '@shared/gql-types';
+import { BusinessTripExpenseCategories } from '@shared/gql-types';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
-import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
-import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
-import { BusinessTripOtherTransactionsProvider } from '../providers/business-trips-transactions-other.provider.js';
-import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
-import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
+import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
+import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
+import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
+import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type {
   business_trip_transaction_type,
-  IGetBusinessTripsTransactionsByTransactionIdsResult,
+  IGetBusinessTripsExpensesByTransactionIdsResult,
   IUpdateBusinessTripEmployeePaymentParams,
-  IUpdateBusinessTripTransactionParams,
+  IUpdateBusinessTripExpenseParams,
 } from '../types.js';
 
 function validateTransactionAgainstBusinessTripsExpenses(
   transaction: IGetTransactionsByChargeIdsResult,
-  transactionMatchingExpenses: IGetBusinessTripsTransactionsByTransactionIdsResult[],
+  transactionMatchingExpenses: IGetBusinessTripsExpensesByTransactionIdsResult[],
 ): boolean {
   if (!transactionMatchingExpenses?.length) {
     throw new LedgerError(
@@ -62,8 +62,8 @@ export const validateTransactionAgainstBusinessTrips = async (
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<boolean> => {
   const transactionMatchingExpenses = await injector
-    .get(BusinessTripTransactionsProvider)
-    .getBusinessTripsTransactionsByTransactionIdLoader.load(transaction.id);
+    .get(BusinessTripExpensesProvider)
+    .getBusinessTripsExpensesByTransactionIdLoader.load(transaction.id);
 
   return validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
 };
@@ -73,8 +73,8 @@ export const getTransactionMatchedAmount = async (
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
   const transactionMatchingExpenses = await injector
-    .get(BusinessTripTransactionsProvider)
-    .getBusinessTripsTransactionsByTransactionIdLoader.load(transaction.id);
+    .get(BusinessTripExpensesProvider)
+    .getBusinessTripsExpensesByTransactionIdLoader.load(transaction.id);
 
   if (!transactionMatchingExpenses?.length) {
     return {
@@ -114,33 +114,33 @@ export const getTransactionMatchedAmount = async (
   };
 };
 
-export async function coreTransactionUpdate(
+export async function coreExpenseUpdate(
   injector: Injector,
-  fields: IUpdateBusinessTripTransactionParams &
+  fields: IUpdateBusinessTripExpenseParams &
     IUpdateBusinessTripEmployeePaymentParams & { id: string },
   categoryToValidate?: business_trip_transaction_type,
 ) {
   const { id, businessTripId, date, valueDate, amount, currency, employeeBusinessId, chargeId } =
     fields;
-  const currentTransaction = await injector
-    .get(BusinessTripTransactionsProvider)
-    .getBusinessTripsTransactionsByIdLoader.load(id);
+  const currentExpense = await injector
+    .get(BusinessTripExpensesProvider)
+    .getBusinessTripsExpensesByIdLoader.load(id);
 
-  if (!currentTransaction) {
-    throw new GraphQLError(`Business trip transaction with id ${id} not found`);
+  if (!currentExpense) {
+    throw new GraphQLError(`Business trip expense with id ${id} not found`);
   }
-  if (categoryToValidate && currentTransaction.category !== categoryToValidate) {
+  if (categoryToValidate && currentExpense.category !== categoryToValidate) {
     throw new GraphQLError(
-      `Business trip transaction with id ${id} is not a ${categoryToValidate} transaction`,
+      `Business trip expense with id ${id} is not a ${categoryToValidate} expense`,
     );
   }
 
-  const updateCoreTransactionPromise = async () => {
+  const updateCoreExpensePromise = async () => {
     return businessTripId
-      ? injector.get(BusinessTripTransactionsProvider).updateBusinessTripTransaction({
-          businessTripTransactionId: id,
+      ? injector.get(BusinessTripExpensesProvider).updateBusinessTripExpense({
+          businessTripExpenseId: id,
           businessTripId,
-          ...(currentTransaction.payed_by_employee
+          ...(currentExpense.payed_by_employee
             ? {
                 date,
                 valueDate,
@@ -157,7 +157,7 @@ export async function coreTransactionUpdate(
       date || valueDate || amount || currency || employeeBusinessId || chargeId;
     return hasCommonFieldsToUpdate
       ? injector.get(BusinessTripEmployeePaymentsProvider).updateBusinessTripEmployeePayment({
-          businessTripTransactionId: id,
+          businessTripExpenseId: id,
           chargeId,
           date,
           valueDate,
@@ -167,12 +167,12 @@ export async function coreTransactionUpdate(
       : Promise.resolve();
   };
 
-  const [updatedTripTransaction] = await Promise.all([
-    updateCoreTransactionPromise(),
+  const [updatedTripExpense] = await Promise.all([
+    updateCoreExpensePromise(),
     updateEmployeePaymentPromise(),
   ]);
 
-  return updatedTripTransaction;
+  return updatedTripExpense;
 }
 
 export async function generateChargeForEmployeePayment(injector: Injector, businessTripId: string) {
@@ -198,42 +198,38 @@ export async function generateChargeForEmployeePayment(injector: Injector, busin
 
 export const updateExistingTripExpense = async (
   injector: Injector,
-  businessTripTransactionId: string,
+  businessTripExpenseId: string,
   transactionId: string,
-  category?: BusinessTripTransactionCategories,
+  category?: BusinessTripExpenseCategories,
   amount?: number | null,
 ) => {
   const updateTransactionMatchPromise = injector
-    .get(BusinessTripTransactionsProvider)
-    .insertBusinessTripTransactionMatch({
-      businessTripTransactionId,
+    .get(BusinessTripExpensesProvider)
+    .insertBusinessTripExpenseMatch({
+      businessTripExpenseId,
       transactionId,
       amount,
     });
   const insertToCategoryPromise = async () => {
     switch (category) {
       case 'FLIGHT':
-        return injector
-          .get(BusinessTripFlightsTransactionsProvider)
-          .insertBusinessTripFlightsTransaction({
-            id: businessTripTransactionId,
-          });
+        return injector.get(BusinessTripFlightsExpensesProvider).insertBusinessTripFlightsExpense({
+          id: businessTripExpenseId,
+        });
       case 'ACCOMMODATION':
         return injector
-          .get(BusinessTripAccommodationsTransactionsProvider)
-          .insertBusinessTripAccommodationsTransaction({
-            id: businessTripTransactionId,
+          .get(BusinessTripAccommodationsExpensesProvider)
+          .insertBusinessTripAccommodationsExpense({
+            id: businessTripExpenseId,
           });
       case 'TRAVEL_AND_SUBSISTENCE':
         return injector
-          .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
-          .insertBusinessTripTravelAndSubsistenceTransaction({ id: businessTripTransactionId });
+          .get(BusinessTripTravelAndSubsistenceExpensesProvider)
+          .insertBusinessTripTravelAndSubsistenceExpense({ id: businessTripExpenseId });
       case 'OTHER':
-        return injector
-          .get(BusinessTripOtherTransactionsProvider)
-          .insertBusinessTripOtherTransaction({
-            id: businessTripTransactionId,
-          });
+        return injector.get(BusinessTripOtherExpensesProvider).insertBusinessTripOtherExpense({
+          id: businessTripExpenseId,
+        });
       default:
         throw new GraphQLError(`Invalid category ${category}`);
     }

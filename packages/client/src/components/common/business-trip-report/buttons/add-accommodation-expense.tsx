@@ -1,13 +1,13 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Switch, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, NumberInput, Overlay, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripOtherTransactionInput } from '../../../../gql/graphql.js';
-import { useAddBusinessTripOtherTransaction } from '../../../../hooks/use-add-business-trip-other-transaction.js';
-import { AddTransactionFields } from './add-transaction-fields.js';
+import { AddBusinessTripAccommodationsExpenseInput } from '../../../../gql/graphql.js';
+import { useAddBusinessTripAccommodationsExpense } from '../../../../hooks/use-add-business-trip-accommodations-expense.js';
+import { AddExpenseFields } from './add-expense-fields.js';
 
-export function AddOtherTransaction(props: {
+export function AddAccommodationExpense(props: {
   businessTripId: string;
   onAdd?: () => void;
 }): ReactElement {
@@ -16,7 +16,7 @@ export function AddOtherTransaction(props: {
 
   return (
     <>
-      <Tooltip label="Add Other Transaction">
+      <Tooltip label="Add Accommodations Expense">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -43,16 +43,16 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripOtherTransactionInput>({
+  const { control, handleSubmit } = useForm<AddBusinessTripAccommodationsExpenseInput>({
     defaultValues: { businessTripId },
   });
   const [fetching, setFetching] = useState(false);
 
-  const { addBusinessTripOtherTransaction, fetching: addingInProcess } =
-    useAddBusinessTripOtherTransaction();
+  const { addBusinessTripAccommodationsExpense, fetching: addingInProcess } =
+    useAddBusinessTripAccommodationsExpense();
 
-  const onSubmit: SubmitHandler<AddBusinessTripOtherTransactionInput> = data => {
-    addBusinessTripOtherTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<AddBusinessTripAccommodationsExpenseInput> = data => {
+    addBusinessTripAccommodationsExpense({ fields: data }).then(() => {
       onAdd?.();
       close();
     });
@@ -60,36 +60,39 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Other Transaction</Modal.Title>
+      <Modal.Title>Add Accommodation Expense</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <AddTransactionFields
+          <AddExpenseFields
             businessTripId={businessTripId}
             control={control}
             setFetching={setFetching}
           />
 
           <Controller
-            name="description"
+            name="country"
             control={control}
             render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={field.value ?? undefined}
                 error={fieldState.error?.message}
-                label="Description"
+                label="Country"
               />
             )}
           />
           <Controller
-            name="deductibleExpense"
+            name="nightsCount"
             control={control}
-            render={({ field: { value, ...field }, fieldState }): ReactElement => (
-              <Switch
+            render={({ field, fieldState }): ReactElement => (
+              <NumberInput
                 {...field}
-                checked={value === true}
-                label="Deductible Expense"
+                value={field.value ?? undefined}
+                hideControls
+                precision={2}
+                removeTrailingZeros
                 error={fieldState.error?.message}
+                label="Nights Count"
               />
             )}
           />

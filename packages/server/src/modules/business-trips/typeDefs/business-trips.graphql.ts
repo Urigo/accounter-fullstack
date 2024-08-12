@@ -46,10 +46,10 @@ export default gql`
     destination: String
     purpose: String
     attendees: [BusinessTripAttendee!]!
-    flightTransactions: [BusinessTripFlightTransaction!]!
-    accommodationTransactions: [BusinessTripAccommodationTransaction!]!
-    travelAndSubsistenceTransactions: [BusinessTripTravelAndSubsistenceTransaction!]!
-    otherTransactions: [BusinessTripOtherTransaction!]!
+    flightExpenses: [BusinessTripFlightExpense!]!
+    accommodationExpenses: [BusinessTripAccommodationExpense!]!
+    travelAndSubsistenceExpenses: [BusinessTripTravelAndSubsistenceExpense!]!
+    otherExpenses: [BusinessTripOtherExpense!]!
     summary: BusinessTripSummary!
     uncategorizedTransactions: [UncategorizedTransaction]!
   }

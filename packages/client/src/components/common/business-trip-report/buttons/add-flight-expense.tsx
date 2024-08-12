@@ -1,13 +1,13 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, NumberInput, Overlay, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Select, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripAccommodationsTransactionInput } from '../../../../gql/graphql.js';
-import { useAddBusinessTripAccommodationsTransaction } from '../../../../hooks/use-add-business-trip-accommodations-transaction.js';
-import { AddTransactionFields } from './add-transaction-fields.jsx';
+import { AddBusinessTripFlightsExpenseInput, FlightClass } from '../../../../gql/graphql.js';
+import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
+import { AddExpenseFields } from './add-expense-fields.js';
 
-export function AddAccommodationTransaction(props: {
+export function AddFlightExpense(props: {
   businessTripId: string;
   onAdd?: () => void;
 }): ReactElement {
@@ -16,7 +16,7 @@ export function AddAccommodationTransaction(props: {
 
   return (
     <>
-      <Tooltip label="Add Accommodations Transaction">
+      <Tooltip label="Add Flight Expense">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -35,6 +35,11 @@ export function AddAccommodationTransaction(props: {
   );
 }
 
+const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
+  value,
+  label: key,
+}));
+
 type ModalProps = {
   opened: boolean;
   close: () => void;
@@ -43,16 +48,16 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripAccommodationsTransactionInput>({
+  const { control, handleSubmit } = useForm<AddBusinessTripFlightsExpenseInput>({
     defaultValues: { businessTripId },
   });
   const [fetching, setFetching] = useState(false);
 
-  const { addBusinessTripAccommodationsTransaction, fetching: addingInProcess } =
-    useAddBusinessTripAccommodationsTransaction();
+  const { addBusinessTripFlightsExpense, fetching: addingInProcess } =
+    useAddBusinessTripFlightsExpense();
 
-  const onSubmit: SubmitHandler<AddBusinessTripAccommodationsTransactionInput> = data => {
-    addBusinessTripAccommodationsTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<AddBusinessTripFlightsExpenseInput> = data => {
+    addBusinessTripFlightsExpense({ fields: data }).then(() => {
       onAdd?.();
       close();
     });
@@ -60,39 +65,53 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Accommodation Transaction</Modal.Title>
+      <Modal.Title>Add Flight Expense</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <AddTransactionFields
+          <AddExpenseFields
             businessTripId={businessTripId}
             control={control}
             setFetching={setFetching}
           />
 
           <Controller
-            name="country"
+            name="origin"
             control={control}
             render={({ field, fieldState }): ReactElement => (
               <TextInput
                 {...field}
                 value={field.value ?? undefined}
                 error={fieldState.error?.message}
-                label="Country"
+                label="Origin"
               />
             )}
           />
           <Controller
-            name="nightsCount"
+            name="destination"
             control={control}
             render={({ field, fieldState }): ReactElement => (
-              <NumberInput
+              <TextInput
                 {...field}
                 value={field.value ?? undefined}
-                hideControls
-                precision={2}
-                removeTrailingZeros
                 error={fieldState.error?.message}
-                label="Nights Count"
+                label="Destination"
+              />
+            )}
+          />
+          <Controller
+            name="flightClass"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                data={flightClasses}
+                value={field.value}
+                label="Flight Class"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                withinPortal
               />
             )}
           />

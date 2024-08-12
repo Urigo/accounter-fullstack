@@ -4,19 +4,19 @@ import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
-  UpdateBusinessTripAccommodationsTransactionInput,
+  UpdateBusinessTripAccommodationsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateBusinessTripAccommodationsTransaction } from '../../../../hooks/use-update-business-trip-accommodations-transaction.js';
+import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/use-update-business-trip-accommodations-expense.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
-import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
-import { CoreTransactionRow } from './core-transaction-row.js';
+import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
+import { CoreExpenseRow } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment BusinessTripReportAccommodationsRowFields on BusinessTripAccommodationTransaction {
+  fragment BusinessTripReportAccommodationsRowFields on BusinessTripAccommodationExpense {
     id
-    ...BusinessTripReportCoreTransactionRowFields
+    ...BusinessTripReportCoreExpenseRowFields
     payedByEmployee
     country
     nightsCount
@@ -30,49 +30,49 @@ interface Props {
 }
 
 export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
-  const accommodationTransaction = getFragmentData(
+  const accommodationExpense = getFragmentData(
     BusinessTripReportAccommodationsRowFieldsFragmentDoc,
     data,
   );
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripAccommodationsTransactionInput>({
+  const { control, handleSubmit } = useForm<UpdateBusinessTripAccommodationsExpenseInput>({
     defaultValues: {
-      id: accommodationTransaction.id,
+      id: accommodationExpense.id,
       businessTripId,
     },
   });
 
-  const { updateBusinessTripAccommodationsTransaction, fetching: updatingInProcess } =
-    useUpdateBusinessTripAccommodationsTransaction();
+  const { updateBusinessTripAccommodationsExpense, fetching: updatingInProcess } =
+    useUpdateBusinessTripAccommodationsExpense();
 
-  const onSubmit: SubmitHandler<UpdateBusinessTripAccommodationsTransactionInput> = data => {
-    updateBusinessTripAccommodationsTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<UpdateBusinessTripAccommodationsExpenseInput> = data => {
+    updateBusinessTripAccommodationsExpense({ fields: data }).then(() => {
       onChange?.();
       setIsEditMode(false);
     });
   };
 
   return (
-    <tr key={accommodationTransaction.id}>
-      <CoreTransactionRow
-        data={accommodationTransaction}
+    <tr key={accommodationExpense.id}>
+      <CoreExpenseRow
+        data={accommodationExpense}
         isEditMode={isEditMode}
         control={control}
         businessTripId={businessTripId}
       />
 
       <td>
-        <form id={`form ${accommodationTransaction.id}`} onSubmit={handleSubmit(onSubmit)}>
+        <form id={`form ${accommodationExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
           {isEditMode ? (
             <Controller
               name="country"
               control={control}
-              defaultValue={accommodationTransaction.country}
+              defaultValue={accommodationExpense.country}
               render={({ field, fieldState }): ReactElement => (
                 <TextInput
-                  form={`form ${accommodationTransaction.id}`}
-                  data-autofocus={accommodationTransaction.payedByEmployee ? undefined : true}
+                  form={`form ${accommodationExpense.id}`}
+                  data-autofocus={accommodationExpense.payedByEmployee ? undefined : true}
                   {...field}
                   value={field.value ?? undefined}
                   error={fieldState.error?.message}
@@ -81,8 +81,8 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               )}
             />
           ) : (
-            <Text c={accommodationTransaction.country ? undefined : 'red'}>
-              {accommodationTransaction.country ?? 'Missing'}
+            <Text c={accommodationExpense.country ? undefined : 'red'}>
+              {accommodationExpense.country ?? 'Missing'}
             </Text>
           )}
         </form>
@@ -93,12 +93,12 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             <Controller
               name="nightsCount"
               control={control}
-              defaultValue={accommodationTransaction.nightsCount}
+              defaultValue={accommodationExpense.nightsCount}
               render={({ field, fieldState }): ReactElement => (
                 <NumberInput
                   {...field}
                   value={field.value ?? undefined}
-                  form={`form ${accommodationTransaction.id}`}
+                  form={`form ${accommodationExpense.id}`}
                   hideControls
                   precision={2}
                   removeTrailingZeros
@@ -108,8 +108,8 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               )}
             />
           ) : (
-            <Text c={accommodationTransaction.nightsCount ? undefined : 'red'}>
-              {accommodationTransaction.nightsCount ?? 'Missing'}
+            <Text c={accommodationExpense.nightsCount ? undefined : 'red'}>
+              {accommodationExpense.nightsCount ?? 'Missing'}
             </Text>
           )}
         </div>
@@ -132,7 +132,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
           <Tooltip label="Confirm Changes">
             <ActionIcon
               type="submit"
-              form={`form ${accommodationTransaction.id}`}
+              form={`form ${accommodationExpense.id}`}
               variant="default"
               size={30}
             >
@@ -142,13 +142,13 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
         )}
 
         <CategorizeIntoExistingExpense
-          businessTripTransactionId={accommodationTransaction.id}
+          businessTripExpenseId={accommodationExpense.id}
           businessTripId={businessTripId}
           onChange={onChange}
         />
 
-        <DeleteBusinessTripTransaction
-          businessTripTransactionId={accommodationTransaction.id}
+        <DeleteBusinessTripExpense
+          businessTripExpenseId={accommodationExpense.id}
           onDelete={onChange}
         />
       </td>

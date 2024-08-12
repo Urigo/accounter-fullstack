@@ -4,12 +4,12 @@ import { Edit } from 'tabler-icons-react';
 import { ActionIcon, Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  BusinessTripTransactionCategories,
-  CategorizeBusinessTripTransactionInput,
+  BusinessTripExpenseCategories,
+  CategorizeBusinessTripExpenseInput,
 } from '../../../../gql/graphql.js';
-import { useCategorizeBusinessTripTransaction } from '../../../../hooks/use-categorize-business-trip-transaction.js';
+import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categorize-business-trip-expense.js';
 
-export function CategorizeTransaction(props: {
+export function CategorizeExpense(props: {
   businessTripId: string;
   transactionId: string;
   onChange: () => void;
@@ -44,7 +44,7 @@ export function CategorizeTransaction(props: {
   );
 }
 
-const categories = Object.entries(BusinessTripTransactionCategories).map(([key, value]) => ({
+const categories = Object.entries(BusinessTripExpenseCategories).map(([key, value]) => ({
   value,
   label: key,
 }));
@@ -64,15 +64,15 @@ function ModalContent({
   close,
   onChange,
 }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<CategorizeBusinessTripTransactionInput>({
+  const { control, handleSubmit } = useForm<CategorizeBusinessTripExpenseInput>({
     defaultValues: { businessTripId, transactionId },
   });
 
-  const { categorizeBusinessTripTransaction, fetching: updatingInProcess } =
-    useCategorizeBusinessTripTransaction();
+  const { categorizeBusinessTripExpense, fetching: updatingInProcess } =
+    useCategorizeBusinessTripExpense();
 
-  const onSubmit: SubmitHandler<CategorizeBusinessTripTransactionInput> = data => {
-    categorizeBusinessTripTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<CategorizeBusinessTripExpenseInput> = data => {
+    categorizeBusinessTripExpense({ fields: data }).then(() => {
       onChange?.();
       close();
     });
@@ -80,7 +80,7 @@ function ModalContent({
 
   return (
     <Modal opened={opened} onClose={close} centered>
-      <Modal.Title>Set Transaction Category</Modal.Title>
+      <Modal.Title>Set Expense Category</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 mt-3">
           <Controller

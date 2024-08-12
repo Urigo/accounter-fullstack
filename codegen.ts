@@ -63,17 +63,17 @@ const config: CodegenConfig = {
           BusinessTransaction: '@shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
           BusinessTrip: '@modules/business-trips/types.js#BusinessTripProto',
-          BusinessTripAccommodationTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsTransactionsResult',
+          BusinessTripAccommodationExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsExpensesResult',
           BusinessTripAttendee:
             '@modules/business-trips/types.js#IGetBusinessTripsAttendeesByBusinessTripIdsResult',
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
-          BusinessTripFlightTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsTransactionsResult',
-          BusinessTripOtherTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsOtherTransactionsResult',
-          BusinessTripTravelAndSubsistenceTransaction:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceTransactionsResult',
+          BusinessTripFlightExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsExpensesResult',
+          BusinessTripOtherExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsOtherExpensesResult',
+          BusinessTripTravelAndSubsistenceExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceExpensesResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',

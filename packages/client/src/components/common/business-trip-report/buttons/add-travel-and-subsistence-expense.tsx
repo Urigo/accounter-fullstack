@@ -3,11 +3,11 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { ActionIcon, Loader, Modal, Overlay, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripTravelAndSubsistenceTransactionInput } from '../../../../gql/graphql.js';
-import { useAddBusinessTripTravelAndSubsistenceTransaction } from '../../../../hooks/use-add-business-trip-travel-and-subsistence-transaction.js';
-import { AddTransactionFields } from './add-transaction-fields.jsx';
+import { AddBusinessTripTravelAndSubsistenceExpenseInput } from '../../../../gql/graphql.js';
+import { useAddBusinessTripTravelAndSubsistenceExpense } from '../../../../hooks/use-add-business-trip-travel-and-subsistence-expense.js';
+import { AddExpenseFields } from './add-expense-fields.jsx';
 
-export function AddTravelAndSubsistenceTransaction(props: {
+export function AddTravelAndSubsistenceExpense(props: {
   businessTripId: string;
   onAdd?: () => void;
 }): ReactElement {
@@ -16,7 +16,7 @@ export function AddTravelAndSubsistenceTransaction(props: {
 
   return (
     <>
-      <Tooltip label="Add T&S Transaction">
+      <Tooltip label="Add T&S Expense">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -43,16 +43,16 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripTravelAndSubsistenceTransactionInput>({
+  const { control, handleSubmit } = useForm<AddBusinessTripTravelAndSubsistenceExpenseInput>({
     defaultValues: { businessTripId },
   });
   const [fetching, setFetching] = useState(false);
 
-  const { addBusinessTripTravelAndSubsistenceTransaction, fetching: addingInProcess } =
-    useAddBusinessTripTravelAndSubsistenceTransaction();
+  const { addBusinessTripTravelAndSubsistenceExpense, fetching: addingInProcess } =
+    useAddBusinessTripTravelAndSubsistenceExpense();
 
-  const onSubmit: SubmitHandler<AddBusinessTripTravelAndSubsistenceTransactionInput> = data => {
-    addBusinessTripTravelAndSubsistenceTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<AddBusinessTripTravelAndSubsistenceExpenseInput> = data => {
+    addBusinessTripTravelAndSubsistenceExpense({ fields: data }).then(() => {
       onAdd?.();
       close();
     });
@@ -60,10 +60,10 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Travel & Subsistence Transaction</Modal.Title>
+      <Modal.Title>Add Travel & Subsistence Expense</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <AddTransactionFields
+          <AddExpenseFields
             businessTripId={businessTripId}
             control={control}
             setFetching={setFetching}

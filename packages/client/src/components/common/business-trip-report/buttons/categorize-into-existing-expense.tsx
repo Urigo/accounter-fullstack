@@ -16,11 +16,11 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import {
-  CategorizeIntoExistingBusinessTripTransactionInput,
+  CategorizeIntoExistingBusinessTripExpenseInput,
   UncategorizedTransactionsByBusinessTripDocument,
   UncategorizedTransactionsByBusinessTripQuery,
 } from '../../../../gql/graphql.js';
-import { useCategorizeIntoExistingBusinessTripTransaction } from '../../../../hooks/use-categorize-into-existing-business-trip-transaction.js';
+import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/use-categorize-into-existing-business-trip-expense.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -47,11 +47,11 @@ import { useCategorizeIntoExistingBusinessTripTransaction } from '../../../../ho
 `;
 
 export function CategorizeIntoExistingExpense(props: {
-  businessTripTransactionId: string;
+  businessTripExpenseId: string;
   businessTripId: string;
   onChange: () => void;
 }): ReactElement {
-  const { businessTripTransactionId, businessTripId, onChange } = props;
+  const { businessTripExpenseId, businessTripId, onChange } = props;
   const [opened, { close, open }] = useDisclosure(false);
 
   return (
@@ -70,7 +70,7 @@ export function CategorizeIntoExistingExpense(props: {
       </Tooltip>
       {opened && (
         <ModalContent
-          businessTripTransactionId={businessTripTransactionId}
+          businessTripExpenseId={businessTripExpenseId}
           businessTripId={businessTripId}
           opened={opened}
           close={close}
@@ -85,7 +85,7 @@ type ModalProps = {
   opened: boolean;
   close: () => void;
   onChange: () => void;
-  businessTripTransactionId: string;
+  businessTripExpenseId: string;
   businessTripId: string;
 };
 
@@ -97,14 +97,14 @@ type UncategorizedTransaction = Exclude<
 >;
 
 function ModalContent({
-  businessTripTransactionId,
+  businessTripExpenseId,
   businessTripId,
   opened,
   close,
   onChange,
 }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<CategorizeIntoExistingBusinessTripTransactionInput>({
-    defaultValues: { businessTripTransactionId },
+  const { control, handleSubmit } = useForm<CategorizeIntoExistingBusinessTripExpenseInput>({
+    defaultValues: { businessTripExpenseId },
   });
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState<
     Array<ItemProps & { value: string }>
@@ -114,11 +114,11 @@ function ModalContent({
     variables: { businessTripId },
   });
 
-  const { categorizeIntoExistingBusinessTripTransaction, fetching: updatingInProcess } =
-    useCategorizeIntoExistingBusinessTripTransaction();
+  const { categorizeIntoExistingBusinessTripExpense, fetching: updatingInProcess } =
+    useCategorizeIntoExistingBusinessTripExpense();
 
-  const onSubmit: SubmitHandler<CategorizeIntoExistingBusinessTripTransactionInput> = data => {
-    categorizeIntoExistingBusinessTripTransaction({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<CategorizeIntoExistingBusinessTripExpenseInput> = data => {
+    categorizeIntoExistingBusinessTripExpense({ fields: data }).then(() => {
       onChange?.();
       close();
     });

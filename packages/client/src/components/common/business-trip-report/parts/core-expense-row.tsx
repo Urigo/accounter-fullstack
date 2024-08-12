@@ -7,9 +7,9 @@ import { NavLink, Select, Text, TextInput, ThemeIcon } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessTripAttendeesDocument,
-  BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
   Currency,
-  UpdateBusinessTripFlightsTransactionInput,
+  UpdateBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
@@ -17,7 +17,7 @@ import { CurrencyInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment BusinessTripReportCoreTransactionRowFields on BusinessTripTransaction {
+  fragment BusinessTripReportCoreExpenseRowFields on BusinessTripExpense {
     id
     date
     valueDate
@@ -39,20 +39,20 @@ import { CurrencyInput } from '../../index.js';
 `;
 
 interface Props {
-  data: FragmentType<typeof BusinessTripReportCoreTransactionRowFieldsFragmentDoc>;
+  data: FragmentType<typeof BusinessTripReportCoreExpenseRowFieldsFragmentDoc>;
   isEditMode: boolean;
-  control: Control<UpdateBusinessTripFlightsTransactionInput, unknown>;
+  control: Control<UpdateBusinessTripFlightsExpenseInput, unknown>;
   businessTripId: string;
 }
 
-export const CoreTransactionRow = ({
+export const CoreExpenseRow = ({
   data,
   isEditMode = false,
   control,
   businessTripId,
 }: Props): ReactElement => {
-  const businessTripTransaction = getFragmentData(
-    BusinessTripReportCoreTransactionRowFieldsFragmentDoc,
+  const businessTripExpense = getFragmentData(
+    BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
     data,
   );
 
@@ -90,12 +90,12 @@ export const CoreTransactionRow = ({
     <>
       <td>
         <div className="flex flex-col gap-2 justify-center">
-          {isEditMode && businessTripTransaction.payedByEmployee ? (
+          {isEditMode && businessTripExpense.payedByEmployee ? (
             <>
               <Controller
                 name="date"
                 control={control}
-                defaultValue={businessTripTransaction.date}
+                defaultValue={businessTripExpense.date}
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
@@ -106,7 +106,7 @@ export const CoreTransactionRow = ({
                   <TextInput
                     {...field}
                     data-autofocus
-                    form={`form ${businessTripTransaction.id}`}
+                    form={`form ${businessTripExpense.id}`}
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Date"
@@ -116,7 +116,7 @@ export const CoreTransactionRow = ({
               <Controller
                 name="valueDate"
                 control={control}
-                defaultValue={businessTripTransaction.valueDate}
+                defaultValue={businessTripExpense.valueDate}
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
@@ -126,7 +126,7 @@ export const CoreTransactionRow = ({
                 render={({ field, fieldState }): ReactElement => (
                   <TextInput
                     {...field}
-                    form={`form ${businessTripTransaction.id}`}
+                    form={`form ${businessTripExpense.id}`}
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Value Date"
@@ -136,33 +136,32 @@ export const CoreTransactionRow = ({
             </>
           ) : (
             <>
-              {businessTripTransaction.date &&
-                format(new Date(businessTripTransaction.date), 'dd/MM/yy')}
+              {businessTripExpense.date && format(new Date(businessTripExpense.date), 'dd/MM/yy')}
               <Text fz="sm" c="dimmed">
-                {businessTripTransaction.valueDate &&
-                  format(new Date(businessTripTransaction.valueDate), 'dd/MM/yy')}
+                {businessTripExpense.valueDate &&
+                  format(new Date(businessTripExpense.valueDate), 'dd/MM/yy')}
               </Text>
             </>
           )}
         </div>
       </td>
       <td>
-        {isEditMode && businessTripTransaction.payedByEmployee ? (
+        {isEditMode && businessTripExpense.payedByEmployee ? (
           <Controller
             name="amount"
             control={control}
-            defaultValue={businessTripTransaction.amount?.raw ?? undefined}
+            defaultValue={businessTripExpense.amount?.raw ?? undefined}
             render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
               <Controller
                 name="currency"
                 control={control}
-                defaultValue={businessTripTransaction.amount?.currency ?? Currency.Ils}
+                defaultValue={businessTripExpense.amount?.currency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
                 }): ReactElement => (
                   <CurrencyInput
-                    form={`form ${businessTripTransaction.id}`}
+                    form={`form ${businessTripExpense.id}`}
                     {...amountField}
                     value={amountField.value ?? undefined}
                     error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
@@ -170,7 +169,7 @@ export const CoreTransactionRow = ({
                     currencyCodeProps={{
                       ...currencyCodeField,
                       label: 'Currency',
-                      form: `form ${businessTripTransaction.id}`,
+                      form: `form ${businessTripExpense.id}`,
                     }}
                   />
                 )}
@@ -178,19 +177,19 @@ export const CoreTransactionRow = ({
             )}
           />
         ) : (
-          <div>{businessTripTransaction.amount?.formatted}</div>
+          <div>{businessTripExpense.amount?.formatted}</div>
         )}
       </td>
       <td>
         <div className="flex flex-col gap-2 justify-center">
-          {isEditMode && businessTripTransaction.payedByEmployee ? (
+          {isEditMode && businessTripExpense.payedByEmployee ? (
             <Controller
               name="employeeBusinessId"
               control={control}
-              defaultValue={businessTripTransaction.employee?.id}
+              defaultValue={businessTripExpense.employee?.id}
               render={({ field, fieldState }): ReactElement => (
                 <Select
-                  form={`form ${businessTripTransaction.id}`}
+                  form={`form ${businessTripExpense.id}`}
                   {...field}
                   data={attendees}
                   value={field.value}
@@ -206,13 +205,13 @@ export const CoreTransactionRow = ({
             />
           ) : (
             <div className="flex flex-row gap-2 items-center">
-              {businessTripTransaction.payedByEmployee ? (
+              {businessTripExpense.payedByEmployee ? (
                 <>
                   <ThemeIcon variant="default" radius="lg">
                     <Check />
                   </ThemeIcon>
-                  <Text c={businessTripTransaction.employee?.name ? undefined : 'red'}>
-                    {businessTripTransaction.employee?.name ?? 'Missing'}
+                  <Text c={businessTripExpense.employee?.name ? undefined : 'red'}>
+                    {businessTripExpense.employee?.name ?? 'Missing'}
                   </Text>
                 </>
               ) : (
@@ -220,8 +219,8 @@ export const CoreTransactionRow = ({
                   <ThemeIcon variant="default" radius="lg">
                     <X />
                   </ThemeIcon>
-                  {businessTripTransaction.transactions?.length &&
-                    businessTripTransaction.transactions.map(t => (
+                  {businessTripExpense.transactions?.length &&
+                    businessTripExpense.transactions.map(t => (
                       <NavLink
                         key={t.id}
                         label="To Charge"
@@ -242,7 +241,7 @@ export const CoreTransactionRow = ({
   );
 };
 
-export const CoreTransactionHeader = (): ReactElement => {
+export const CoreExpenseHeader = (): ReactElement => {
   return (
     <>
       <th>Date</th>

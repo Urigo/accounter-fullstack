@@ -2,8 +2,8 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " business trip transaction prototype "
-  interface BusinessTripTransaction {
+  " business trip expense prototype "
+  interface BusinessTripExpense {
     id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
@@ -15,8 +15,8 @@ export default gql`
     payedByEmployee: Boolean
   }
 
-  " represent a business trip accommodation transaction "
-  type BusinessTripAccommodationTransaction implements BusinessTripTransaction {
+  " represent a business trip accommodation expense "
+  type BusinessTripAccommodationExpense implements BusinessTripExpense {
     id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
@@ -30,8 +30,8 @@ export default gql`
     nightsCount: Int
   }
 
-  " represent a business trip flight transaction "
-  type BusinessTripFlightTransaction implements BusinessTripTransaction {
+  " represent a business trip flight expense "
+  type BusinessTripFlightExpense implements BusinessTripExpense {
     id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
@@ -46,8 +46,8 @@ export default gql`
     class: String
   }
 
-  " represent a business trip travel and subsistence transaction "
-  type BusinessTripTravelAndSubsistenceTransaction implements BusinessTripTransaction {
+  " represent a business trip travel and subsistence expense "
+  type BusinessTripTravelAndSubsistenceExpense implements BusinessTripExpense {
     id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
@@ -61,8 +61,8 @@ export default gql`
     expenseType: String
   }
 
-  " represent a business trip other transaction "
-  type BusinessTripOtherTransaction implements BusinessTripTransaction {
+  " represent a business trip other expense "
+  type BusinessTripOtherExpense implements BusinessTripExpense {
     id: UUID!
     businessTrip: BusinessTrip!
     date: TimelessDate
@@ -79,65 +79,63 @@ export default gql`
   }
 
   extend type Mutation {
-    categorizeBusinessTripTransaction(fields: CategorizeBusinessTripTransactionInput!): UUID!
+    categorizeBusinessTripExpense(fields: CategorizeBusinessTripExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
-    categorizeIntoExistingBusinessTripTransaction(
-      fields: CategorizeIntoExistingBusinessTripTransactionInput!
+    categorizeIntoExistingBusinessTripExpense(
+      fields: CategorizeIntoExistingBusinessTripExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
-    uncategorizePartialBusinessTripTransaction(
-      businessTripTransactionId: UUID!
+    uncategorizePartialBusinessTripExpense(
+      businessTripExpenseId: UUID!
       transactionId: UUID!
     ): Boolean! @auth(role: ACCOUNTANT)
-    updateBusinessTripFlightsTransaction(fields: UpdateBusinessTripFlightsTransactionInput!): UUID!
+    updateBusinessTripFlightsExpense(fields: UpdateBusinessTripFlightsExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
-    updateBusinessTripAccommodationsTransaction(
-      fields: UpdateBusinessTripAccommodationsTransactionInput!
+    updateBusinessTripAccommodationsExpense(
+      fields: UpdateBusinessTripAccommodationsExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
-    updateBusinessTripOtherTransaction(fields: UpdateBusinessTripOtherTransactionInput!): UUID!
+    updateBusinessTripOtherExpense(fields: UpdateBusinessTripOtherExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
-    updateBusinessTripTravelAndSubsistenceTransaction(
-      fields: UpdateBusinessTripTravelAndSubsistenceTransactionInput!
+    updateBusinessTripTravelAndSubsistenceExpense(
+      fields: UpdateBusinessTripTravelAndSubsistenceExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
-    deleteBusinessTripTransaction(businessTripTransactionId: UUID!): Boolean!
-      @auth(role: ACCOUNTANT)
+    deleteBusinessTripExpense(businessTripExpenseId: UUID!): Boolean! @auth(role: ACCOUNTANT)
 
-    addBusinessTripFlightsTransaction(fields: AddBusinessTripFlightsTransactionInput!): UUID!
+    addBusinessTripFlightsExpense(fields: AddBusinessTripFlightsExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
-    addBusinessTripAccommodationsTransaction(
-      fields: AddBusinessTripAccommodationsTransactionInput!
-    ): UUID! @auth(role: ACCOUNTANT)
-    addBusinessTripOtherTransaction(fields: AddBusinessTripOtherTransactionInput!): UUID!
+    addBusinessTripAccommodationsExpense(fields: AddBusinessTripAccommodationsExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
-    addBusinessTripTravelAndSubsistenceTransaction(
-      fields: AddBusinessTripTravelAndSubsistenceTransactionInput!
+    addBusinessTripOtherExpense(fields: AddBusinessTripOtherExpenseInput!): UUID!
+      @auth(role: ACCOUNTANT)
+    addBusinessTripTravelAndSubsistenceExpense(
+      fields: AddBusinessTripTravelAndSubsistenceExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
   }
 
-  " the input for categorizing a business trip transaction "
-  input CategorizeBusinessTripTransactionInput {
+  " the input for categorizing a business trip expense "
+  input CategorizeBusinessTripExpenseInput {
     businessTripId: UUID!
     transactionId: UUID!
-    category: BusinessTripTransactionCategories
+    category: BusinessTripExpenseCategories
     amount: Float
   }
 
   " represent category type of business trip summary "
-  enum BusinessTripTransactionCategories {
+  enum BusinessTripExpenseCategories {
     ACCOMMODATION
     FLIGHT
     TRAVEL_AND_SUBSISTENCE
     OTHER
   }
 
-  " the input for categorizing into an existing business trip transaction "
-  input CategorizeIntoExistingBusinessTripTransactionInput {
-    businessTripTransactionId: UUID!
+  " the input for categorizing into an existing business trip expense "
+  input CategorizeIntoExistingBusinessTripExpenseInput {
+    businessTripExpenseId: UUID!
     transactionId: UUID!
     amount: Float
   }
 
-  " the input for updating a business trip flights transaction "
-  input UpdateBusinessTripFlightsTransactionInput {
+  " the input for updating a business trip flights expense "
+  input UpdateBusinessTripFlightsExpenseInput {
     id: UUID!
     businessTripId: UUID!
 
@@ -160,8 +158,8 @@ export default gql`
     FIRST_CLASS
   }
 
-  " the input for updating a business trip accommodation transaction "
-  input UpdateBusinessTripAccommodationsTransactionInput {
+  " the input for updating a business trip accommodation expense "
+  input UpdateBusinessTripAccommodationsExpenseInput {
     id: UUID!
     businessTripId: UUID!
 
@@ -175,8 +173,8 @@ export default gql`
     nightsCount: Int
   }
 
-  " the input for updating a business trip other transaction "
-  input UpdateBusinessTripOtherTransactionInput {
+  " the input for updating a business trip other expense "
+  input UpdateBusinessTripOtherExpenseInput {
     id: UUID!
     businessTripId: UUID!
 
@@ -190,8 +188,8 @@ export default gql`
     deductibleExpense: Boolean
   }
 
-  " the input for updating a business trip T&S transaction "
-  input UpdateBusinessTripTravelAndSubsistenceTransactionInput {
+  " the input for updating a business trip T&S expense "
+  input UpdateBusinessTripTravelAndSubsistenceExpenseInput {
     id: UUID!
     businessTripId: UUID!
 
@@ -204,8 +202,8 @@ export default gql`
     expenseType: String
   }
 
-  " the input for adding a new business trip flights transaction "
-  input AddBusinessTripFlightsTransactionInput {
+  " the input for adding a new business trip flights expense "
+  input AddBusinessTripFlightsExpenseInput {
     businessTripId: UUID!
 
     date: TimelessDate
@@ -219,8 +217,8 @@ export default gql`
     flightClass: FlightClass
   }
 
-  " the input for adding a new business trip accommodation transaction "
-  input AddBusinessTripAccommodationsTransactionInput {
+  " the input for adding a new business trip accommodation expense "
+  input AddBusinessTripAccommodationsExpenseInput {
     businessTripId: UUID!
 
     date: TimelessDate
@@ -233,8 +231,8 @@ export default gql`
     nightsCount: Int
   }
 
-  " the input for adding a new business trip other transaction "
-  input AddBusinessTripOtherTransactionInput {
+  " the input for adding a new business trip other expense "
+  input AddBusinessTripOtherExpenseInput {
     businessTripId: UUID!
 
     date: TimelessDate
@@ -247,8 +245,8 @@ export default gql`
     deductibleExpense: Boolean
   }
 
-  " the input for adding a new business trip T&S transaction "
-  input AddBusinessTripTravelAndSubsistenceTransactionInput {
+  " the input for adding a new business trip T&S expense "
+  input AddBusinessTripTravelAndSubsistenceExpenseInput {
     businessTripId: UUID!
 
     date: TimelessDate

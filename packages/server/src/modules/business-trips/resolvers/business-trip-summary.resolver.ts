@@ -2,15 +2,15 @@ import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { BusinessTripSummaryCategories } from '@shared/gql-types';
 import {
-  accommodationTransactionDataCollector,
+  accommodationExpenseDataCollector,
   calculateTotalReportSummaryCategory,
   convertSummaryCategoryDataToRow,
-  flightTransactionDataCollector,
+  flightExpenseDataCollector,
   onlyUnique,
-  otherTransactionsDataCollector,
+  otherExpensesDataCollector,
   SummaryData,
 } from '../helpers/business-trip-report.helper.js';
-import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
+import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
 export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['summary'] = async (
@@ -19,14 +19,10 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
   { injector },
 ) => {
   try {
-    const {
-      flightTransactions,
-      accommodationsTransactions,
-      travelAndSubsistenceTransactions,
-      otherTransactions,
-    } = await injector
-      .get(BusinessTripTransactionsProvider)
-      .getBusinessTripExtendedTransactionsByBusinessTripId(dbBusinessTrip.id);
+    const { flightExpenses, accommodationsExpenses, travelAndSubsistenceExpenses, otherExpenses } =
+      await injector
+        .get(BusinessTripExpensesProvider)
+        .getBusinessTripExtendedExpensesByBusinessTripId(dbBusinessTrip.id);
 
     const summaryData: Partial<SummaryData> = {};
 
@@ -43,17 +39,17 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
     const errors: string[] = [];
 
     await Promise.all([
-      ...flightTransactions.map(flightTransaction =>
-        flightTransactionDataCollector(injector, flightTransaction, summaryData).then(res => {
+      ...flightExpenses.map(flightExpense =>
+        flightExpenseDataCollector(injector, flightExpense, summaryData).then(res => {
           if (res && typeof res === 'string') {
             errors.push(res);
           }
         }),
       ),
-      ...accommodationsTransactions.map(accommodationsTransaction =>
-        accommodationTransactionDataCollector(
+      ...accommodationsExpenses.map(accommodationsExpense =>
+        accommodationExpenseDataCollector(
           injector,
-          accommodationsTransaction,
+          accommodationsExpense,
           summaryData,
           dbBusinessTrip.destination,
         ).then(res => {
@@ -62,13 +58,13 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
           }
         }),
       ),
-      otherTransactionsDataCollector(
+      otherExpensesDataCollector(
         injector,
-        [...travelAndSubsistenceTransactions, ...otherTransactions],
+        [...travelAndSubsistenceExpenses, ...otherExpenses],
         summaryData,
         {
           tripDuration,
-          hasAccommodationExpenses: accommodationsTransactions.length > 0,
+          hasAccommodationExpenses: accommodationsExpenses.length > 0,
           destination: dbBusinessTrip.destination,
           endDate: dbBusinessTrip.to_date,
         },
@@ -89,7 +85,7 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       errors: errors.length ? errors.filter(onlyUnique) : undefined,
     };
   } catch (e) {
-    console.error(`Error fetching business trip transactions`, e);
-    throw new GraphQLError((e as Error)?.message ?? `Error fetching business trip transactions`);
+    console.error(`Error fetching business trip expenses`, e);
+    throw new GraphQLError((e as Error)?.message ?? `Error fetching business trip expenses`);
   }
 };
