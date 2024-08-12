@@ -245,7 +245,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
             localCurrencyDebitAmount1: amount,
             description: 'Exchange ledger record',
             isCreditorCounterparty,
-            invoiceDate: depositLedgerRecord.invoice_date,
+            invoiceDate: mainLedgerEntry.valueDate,
             valueDate: mainLedgerEntry.valueDate,
             currency: DEFAULT_LOCAL_CURRENCY,
             ownerId: mainLedgerEntry.ownerId,
