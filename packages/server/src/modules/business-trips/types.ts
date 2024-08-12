@@ -42,6 +42,9 @@ export type {
   IDeleteBusinessTripTransactionMatchParams,
   IDeleteBusinessTripTransactionMatchResult,
   IDeleteBusinessTripTransactionMatchQuery,
+  IDeleteSpecificBusinessTripTransactionMatchParams,
+  IDeleteSpecificBusinessTripTransactionMatchResult,
+  IDeleteSpecificBusinessTripTransactionMatchQuery,
 } from './__generated__/business-trips-transactions.types.js';
 export type {
   flight_class,

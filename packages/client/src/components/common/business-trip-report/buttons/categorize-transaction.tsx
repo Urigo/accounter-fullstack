@@ -7,9 +7,9 @@ import {
   BusinessTripTransactionCategories,
   CategorizeBusinessTripTransactionInput,
 } from '../../../../gql/graphql.js';
-import { useCategorizeBusinessTripTransaction } from '../../../../hooks/use-update-business-trip-transaction-category.js';
+import { useCategorizeBusinessTripTransaction } from '../../../../hooks/use-categorize-business-trip-transaction.js';
 
-export function SelectTransactionCategory(props: {
+export function CategorizeTransaction(props: {
   businessTripId: string;
   transactionId: string;
   onChange: () => void;

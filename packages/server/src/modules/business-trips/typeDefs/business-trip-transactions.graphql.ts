@@ -81,6 +81,13 @@ export default gql`
   extend type Mutation {
     categorizeBusinessTripTransaction(fields: CategorizeBusinessTripTransactionInput!): UUID!
       @auth(role: ACCOUNTANT)
+    categorizeIntoExistingBusinessTripTransaction(
+      fields: CategorizeIntoExistingBusinessTripTransactionInput!
+    ): UUID! @auth(role: ACCOUNTANT)
+    uncategorizePartialBusinessTripTransaction(
+      businessTripTransactionId: UUID!
+      transactionId: UUID!
+    ): Boolean! @auth(role: ACCOUNTANT)
     updateBusinessTripFlightsTransaction(fields: UpdateBusinessTripFlightsTransactionInput!): UUID!
       @auth(role: ACCOUNTANT)
     updateBusinessTripAccommodationsTransaction(
@@ -106,7 +113,7 @@ export default gql`
     ): UUID! @auth(role: ACCOUNTANT)
   }
 
-  " the input for updating a business trip transaction category "
+  " the input for categorizing a business trip transaction "
   input CategorizeBusinessTripTransactionInput {
     businessTripId: UUID!
     transactionId: UUID!
@@ -120,6 +127,13 @@ export default gql`
     FLIGHT
     TRAVEL_AND_SUBSISTENCE
     OTHER
+  }
+
+  " the input for categorizing into an existing business trip transaction "
+  input CategorizeIntoExistingBusinessTripTransactionInput {
+    businessTripTransactionId: UUID!
+    transactionId: UUID!
+    amount: Float
   }
 
   " the input for updating a business trip flights transaction "

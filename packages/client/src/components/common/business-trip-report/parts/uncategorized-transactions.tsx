@@ -17,7 +17,7 @@ import {
   EventDate,
   SourceID,
 } from '../../transactions-table/cells/index.js';
-import { SelectTransactionCategory } from '../buttons/select-transaction-category.js';
+import { CategorizeTransaction } from '../buttons/categorize-transaction.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -90,7 +90,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                 <SourceID data={uncategorizedTransaction.transaction} />
                 <Counterparty data={uncategorizedTransaction.transaction} />
                 <td>
-                  <SelectTransactionCategory
+                  <CategorizeTransaction
                     businessTripId={id}
                     transactionId={uncategorizedTransaction.transaction.id}
                     onChange={onChange}

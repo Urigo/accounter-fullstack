@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import {
   coreTransactionUpdate,
   generateChargeForEmployeePayment,
+  updateExistingTripExpense,
 } from '../helpers/business-trips-transactions.helper.js';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
@@ -32,43 +33,41 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
           });
         const id = businessTripTransaction.id;
 
-        const updateTransactionMatchPromise = injector
-          .get(BusinessTripTransactionsProvider)
-          .insertBusinessTripTransactionMatch({
-            businessTripTransactionId: id,
-            transactionId,
-            amount,
-          });
-        const insertToCategoryPromise = async () => {
-          switch (category) {
-            case 'FLIGHT':
-              return injector
-                .get(BusinessTripFlightsTransactionsProvider)
-                .insertBusinessTripFlightsTransaction({
-                  id,
-                });
-            case 'ACCOMMODATION':
-              return injector
-                .get(BusinessTripAccommodationsTransactionsProvider)
-                .insertBusinessTripAccommodationsTransaction({
-                  id,
-                });
-            case 'TRAVEL_AND_SUBSISTENCE':
-              return injector
-                .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
-                .insertBusinessTripTravelAndSubsistenceTransaction({ id });
-            case 'OTHER':
-              return injector
-                .get(BusinessTripOtherTransactionsProvider)
-                .insertBusinessTripOtherTransaction({
-                  id,
-                });
-            default:
-              throw new GraphQLError(`Invalid category ${category}`);
-          }
-        };
-        await Promise.all([updateTransactionMatchPromise, insertToCategoryPromise()]);
+        await updateExistingTripExpense(injector, id, transactionId, category, amount);
+
         return id;
+      } catch (e) {
+        console.error(`Error updating business trip transaction's category`, e);
+        throw new GraphQLError("Error updating charge's business trip");
+      }
+    },
+    categorizeIntoExistingBusinessTripTransaction: async (
+      _,
+      { fields: { businessTripTransactionId, transactionId, amount } },
+      { injector },
+    ) => {
+      try {
+        if (!transactionId) {
+          throw new GraphQLError(`Transaction ID is required`);
+        }
+
+        const businessTripTransaction = await injector
+          .get(BusinessTripTransactionsProvider)
+          .getBusinessTripsTransactionsByIdLoader.load(businessTripTransactionId);
+
+        if (!businessTripTransaction) {
+          throw new GraphQLError(
+            `Business trip transaction with id ${businessTripTransactionId} not found`,
+          );
+        }
+
+        await injector.get(BusinessTripTransactionsProvider).insertBusinessTripTransactionMatch({
+          businessTripTransactionId,
+          transactionId,
+          amount,
+        });
+
+        return businessTripTransaction.id!;
       } catch (e) {
         console.error(`Error updating business trip transaction's category`, e);
         throw new GraphQLError("Error updating charge's business trip");
@@ -208,6 +207,42 @@ export const businessTripTransactionsResolvers: BusinessTripsModule.Resolvers = 
       } catch (e) {
         console.error(`Error deleting business trip transaction`, e);
         throw new GraphQLError('Error deleting business trip transaction');
+      }
+    },
+    uncategorizePartialBusinessTripTransaction: async (
+      _,
+      { transactionId, businessTripTransactionId },
+      { injector },
+    ) => {
+      try {
+        await Promise.all([
+          injector
+            .get(BusinessTripFlightsTransactionsProvider)
+            .deleteBusinessTripFlightsTransaction({ businessTripTransactionId }),
+          injector
+            .get(BusinessTripAccommodationsTransactionsProvider)
+            .deleteBusinessTripAccommodationsTransaction({ businessTripTransactionId }),
+          injector
+            .get(BusinessTripOtherTransactionsProvider)
+            .deleteBusinessTripOtherTransaction({ businessTripTransactionId }),
+          injector
+            .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
+            .deleteBusinessTripTravelAndSubsistenceTransaction({ businessTripTransactionId }),
+          injector.get(BusinessTripEmployeePaymentsProvider).deleteBusinessTripEmployeePayment({
+            businessTripTransactionId,
+          }),
+          injector
+            .get(BusinessTripTransactionsProvider)
+            .deleteSpecificBusinessTripTransactionMatch({
+              businessTripTransactionId,
+              transactionId,
+            }),
+        ]);
+
+        return true;
+      } catch (e) {
+        console.error(`Error deleting business trip expense part`, e);
+        throw new GraphQLError('Error deleting business trip expense part');
       }
     },
     addBusinessTripFlightsTransaction: async (_, { fields }, { injector }) => {

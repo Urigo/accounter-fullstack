@@ -8,6 +8,8 @@ import type {
   IDeleteBusinessTripTransactionMatchQuery,
   IDeleteBusinessTripTransactionParams,
   IDeleteBusinessTripTransactionQuery,
+  IDeleteSpecificBusinessTripTransactionMatchParams,
+  IDeleteSpecificBusinessTripTransactionMatchQuery,
   IGetAllBusinessTripsTransactionsQuery,
   IGetBusinessTripsTransactionsByBusinessTripIdsQuery,
   IGetBusinessTripsTransactionsByChargeIdsQuery,
@@ -45,8 +47,8 @@ const getBusinessTripsTransactionsByBusinessTripIds = sql<IGetBusinessTripsTrans
 
 const getBusinessTripsTransactionsByTransactionIds = sql<IGetBusinessTripsTransactionsByTransactionIdsQuery>`
   SELECT *
-  FROM accounter_schema.extended_business_trip_transactions
-  WHERE ($isTransactionIds = 0 OR transaction_ids && $transactionIds);`;
+  FROM accounter_schema.business_trips_transactions_match
+  WHERE transaction_id in $$transactionIds;`;
 
 const getBusinessTripsTransactionsByIds = sql<IGetBusinessTripsTransactionsByIdsQuery>`
   SELECT *
@@ -82,6 +84,12 @@ const insertBusinessTripTransactionMatch = sql<IInsertBusinessTripTransactionMat
 const deleteBusinessTripTransactionMatch = sql<IDeleteBusinessTripTransactionMatchQuery>`
   DELETE FROM accounter_schema.business_trips_transactions_match
   WHERE business_trip_transaction_id = $businessTripTransactionId
+  RETURNING *;`;
+
+const deleteSpecificBusinessTripTransactionMatch = sql<IDeleteSpecificBusinessTripTransactionMatchQuery>`
+  DELETE FROM accounter_schema.business_trips_transactions_match
+  WHERE business_trip_transaction_id = $businessTripTransactionId
+    AND transaction_id = $transactionId
   RETURNING *;`;
 
 const deleteBusinessTripTransaction = sql<IDeleteBusinessTripTransactionQuery>`
@@ -170,14 +178,11 @@ export class BusinessTripTransactionsProvider {
   private async batchBusinessTripsTransactionsByTransactionIds(transactionIds: readonly string[]) {
     const businessTrips = await getBusinessTripsTransactionsByTransactionIds.run(
       {
-        isTransactionIds: transactionIds.length > 0 ? 1 : 0,
         transactionIds: transactionIds as stringArray,
       },
       this.dbProvider,
     );
-    return transactionIds.map(id =>
-      businessTrips.filter(record => record.transaction_ids?.includes(id)),
-    );
+    return transactionIds.map(id => businessTrips.filter(record => record.transaction_id === id));
   }
 
   public getBusinessTripsTransactionsByTransactionIdLoader = new DataLoader(
@@ -195,7 +200,7 @@ export class BusinessTripTransactionsProvider {
       },
       this.dbProvider,
     );
-    return transactionIds.map(id => businessTripsTransactions.filter(record => record.id === id));
+    return transactionIds.map(id => businessTripsTransactions.find(record => record.id === id));
   }
 
   public getBusinessTripsTransactionsByIdLoader = new DataLoader(
@@ -315,5 +320,11 @@ export class BusinessTripTransactionsProvider {
 
   public deleteBusinessTripTransactionMatch(params: IDeleteBusinessTripTransactionMatchParams) {
     return deleteBusinessTripTransactionMatch.run(params, this.dbProvider);
+  }
+
+  public deleteSpecificBusinessTripTransactionMatch(
+    params: IDeleteSpecificBusinessTripTransactionMatchParams,
+  ) {
+    return deleteSpecificBusinessTripTransactionMatch.run(params, this.dbProvider);
   }
 }

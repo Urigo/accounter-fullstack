@@ -8,6 +8,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripTravelAndSubsistenceTransaction } from '../../../../hooks/use-update-business-trip-travel-and-subsistence-transaction.js';
+import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripTransaction } from '../buttons/delete-business-trip-transaction.js';
 import { CoreTransactionRow } from './core-transaction-row.js';
 
@@ -119,6 +120,12 @@ export const TravelAndSubsistenceRow = ({
             </ActionIcon>
           </Tooltip>
         )}
+
+        <CategorizeIntoExistingExpense
+          businessTripTransactionId={travelAndSubsistenceTransaction.id}
+          businessTripId={businessTripId}
+          onChange={onChange}
+        />
 
         <DeleteBusinessTripTransaction
           businessTripTransactionId={travelAndSubsistenceTransaction.id}

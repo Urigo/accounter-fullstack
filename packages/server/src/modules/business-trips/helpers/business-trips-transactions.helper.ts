@@ -4,7 +4,12 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { BUSINESS_TRIP_TAX_CATEGORY_ID, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { BusinessTripTransactionCategories } from '@shared/gql-types';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
+import { BusinessTripAccommodationsTransactionsProvider } from '../providers/business-trips-transactions-accommodations.provider.js';
+import { BusinessTripFlightsTransactionsProvider } from '../providers/business-trips-transactions-flights.provider.js';
+import { BusinessTripOtherTransactionsProvider } from '../providers/business-trips-transactions-other.provider.js';
+import { BusinessTripTravelAndSubsistenceTransactionsProvider } from '../providers/business-trips-transactions-travel-and-subsistence.provider.js';
 import { BusinessTripTransactionsProvider } from '../providers/business-trips-transactions.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type {
@@ -117,7 +122,7 @@ export async function coreTransactionUpdate(
 ) {
   const { id, businessTripId, date, valueDate, amount, currency, employeeBusinessId, chargeId } =
     fields;
-  const [currentTransaction] = await injector
+  const currentTransaction = await injector
     .get(BusinessTripTransactionsProvider)
     .getBusinessTripsTransactionsByIdLoader.load(id);
 
@@ -190,3 +195,48 @@ export async function generateChargeForEmployeePayment(injector: Injector, busin
     throw new GraphQLError('Failed to generate charge for employee payment');
   }
 }
+
+export const updateExistingTripExpense = async (
+  injector: Injector,
+  businessTripTransactionId: string,
+  transactionId: string,
+  category?: BusinessTripTransactionCategories,
+  amount?: number | null,
+) => {
+  const updateTransactionMatchPromise = injector
+    .get(BusinessTripTransactionsProvider)
+    .insertBusinessTripTransactionMatch({
+      businessTripTransactionId,
+      transactionId,
+      amount,
+    });
+  const insertToCategoryPromise = async () => {
+    switch (category) {
+      case 'FLIGHT':
+        return injector
+          .get(BusinessTripFlightsTransactionsProvider)
+          .insertBusinessTripFlightsTransaction({
+            id: businessTripTransactionId,
+          });
+      case 'ACCOMMODATION':
+        return injector
+          .get(BusinessTripAccommodationsTransactionsProvider)
+          .insertBusinessTripAccommodationsTransaction({
+            id: businessTripTransactionId,
+          });
+      case 'TRAVEL_AND_SUBSISTENCE':
+        return injector
+          .get(BusinessTripTravelAndSubsistenceTransactionsProvider)
+          .insertBusinessTripTravelAndSubsistenceTransaction({ id: businessTripTransactionId });
+      case 'OTHER':
+        return injector
+          .get(BusinessTripOtherTransactionsProvider)
+          .insertBusinessTripOtherTransaction({
+            id: businessTripTransactionId,
+          });
+      default:
+        throw new GraphQLError(`Invalid category ${category}`);
+    }
+  };
+  await Promise.all([updateTransactionMatchPromise, insertToCategoryPromise()]);
+};
