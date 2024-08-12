@@ -110,6 +110,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
+        optionalVAT: fields.optionalVAT,
         chargeId,
       };
       try {
@@ -250,6 +251,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             type: fields?.isConversion ? 'CONVERSION' : undefined,
             isProperty: fields?.isProperty,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
+            optionalVAT: fields?.optionalVAT,
             ownerId: fields?.ownerId,
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
