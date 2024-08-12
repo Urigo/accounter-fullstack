@@ -45,6 +45,7 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
           }
           description
         }
+        optionalVAT
       }
     }
   }

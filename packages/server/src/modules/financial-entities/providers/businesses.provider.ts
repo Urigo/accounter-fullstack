@@ -68,7 +68,8 @@ const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
       b.website,
       b.website_login_screenshot,
       b.wizcloud_company_id,
-      b.wizcloud_token
+      b.wizcloud_token,
+      b.optional_vat
     FROM accounter_schema.charges c
     LEFT JOIN accounter_schema.businesses b
       ON  c.owner_id = b.id
@@ -210,6 +211,10 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   exempt_dealer = COALESCE(
     $exemptDealer,
     exempt_dealer
+  ),
+  optional_vat = COALESCE(
+    $optionalVat,
+    optional_vat
   )
   WHERE
     id = $businessId
@@ -217,8 +222,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusiness = sql<IInsertBusinessQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data)
-  VALUES($id, $hebrewName, $address, $email, $website, $phoneNumber, $governmentId, $exemptDealer, $suggestions)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat)
+  VALUES($id, $hebrewName, $address, $email, $website, $phoneNumber, $governmentId, $exemptDealer, $suggestions, $optionalVat)
   RETURNING *;`;
 
 @Injectable({

@@ -126,6 +126,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         hebrewName: fields.hebrewName,
         phoneNumber: fields.phoneNumber,
         website: fields.website,
+        optionalVat: fields.optionalVAT,
         businessId,
         suggestionData,
       };
@@ -221,6 +222,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           hebrewName: fields.hebrewName,
           phoneNumber: fields.phoneNumber,
           website: fields.website,
+          optionalVat: fields.optionalVAT,
           suggestions,
         });
 
@@ -318,6 +320,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       }
       return null;
     },
+    optionalVAT: DbBusiness => DbBusiness.optional_vat,
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,
