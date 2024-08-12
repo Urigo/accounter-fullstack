@@ -138,8 +138,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           fields.governmentId ||
           fields.phoneNumber ||
           fields.website ||
-          fields.exemptDealer ||
-          fields.suggestions
+          fields.exemptDealer != null ||
+          fields.suggestions ||
+          fields.optionalVAT != null
         ) {
           await injector
             .get(BusinessesProvider)
