@@ -24,6 +24,7 @@ import { CoreExpenseRow } from './core-expense-row.js';
     attendeesStay {
       id
       attendee {
+        id
         name
       }
       nightsCount
