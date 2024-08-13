@@ -49,6 +49,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
     defaultValues: {
       id: flightExpense.id,
       businessTripId,
+      attendeeIds: flightExpense.attendees?.map(attendee => attendee.id) ?? [],
     },
   });
 

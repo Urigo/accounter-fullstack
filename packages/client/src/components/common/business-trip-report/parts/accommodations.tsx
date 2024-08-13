@@ -41,6 +41,7 @@ export const Accommodations = ({ data, onChange }: Props): ReactElement => {
             <CoreExpenseHeader />
             <th>Location</th>
             <th>Nights</th>
+            <th>Attendees Stay</th>
             <th />
           </tr>
         </thead>

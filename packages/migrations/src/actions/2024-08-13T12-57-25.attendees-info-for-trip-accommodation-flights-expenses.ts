@@ -5,5 +5,8 @@ export default {
   run: ({ sql }) => sql`
     alter table accounter_schema.business_trips_transactions_flights
         add attendees uuid[] default array []::uuid[] not null;
+
+    alter table accounter_schema.business_trips_transactions_accommodations
+        add attendees_stay jsonb[] default array []::jsonb[] not null;
 `,
 } satisfies MigrationExecutor;

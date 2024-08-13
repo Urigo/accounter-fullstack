@@ -54,6 +54,10 @@ const updateBusinessTripAccommodationsExpense = sql<IUpdateBusinessTripAccommoda
   nights_count = COALESCE(
     $nightsCount,
     nights_count
+  ),
+  attendees_stay = COALESCE(
+    $attendeesStay,
+    attendees_stay
   )
   WHERE
     id = $businessTripExpenseId
@@ -61,8 +65,8 @@ const updateBusinessTripAccommodationsExpense = sql<IUpdateBusinessTripAccommoda
 `;
 
 const insertBusinessTripAccommodationsExpense = sql<IInsertBusinessTripAccommodationsExpenseQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count)
-  VALUES($id, $country, $nightsCount)
+  INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count, attendees_stay)
+  VALUES($id, $country, $nightsCount, $attendeesStay)
   RETURNING *;`;
 
 const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommodationsExpenseQuery>`

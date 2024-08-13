@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, List, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   UpdateBusinessTripAccommodationsExpenseInput,
@@ -10,6 +10,7 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/use-update-business-trip-accommodations-expense.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
+import { AttendeesStayInput } from './attendee-stay-input.js';
 import { CoreExpenseRow } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -20,6 +21,13 @@ import { CoreExpenseRow } from './core-expense-row.js';
     payedByEmployee
     country
     nightsCount
+    attendeesStay {
+      id
+      attendee {
+        name
+      }
+      nightsCount
+    }
   }
 `;
 
@@ -36,12 +44,17 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
   );
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripAccommodationsExpenseInput>({
+  const formManager = useForm<UpdateBusinessTripAccommodationsExpenseInput>({
     defaultValues: {
       id: accommodationExpense.id,
       businessTripId,
+      attendeesStay: accommodationExpense.attendeesStay.map(attendeeStay => ({
+        attendeeId: attendeeStay.id,
+        nightsCount: attendeeStay.nightsCount,
+      })),
     },
   });
+  const { control, handleSubmit } = formManager;
 
   const { updateBusinessTripAccommodationsExpense, fetching: updatingInProcess } =
     useUpdateBusinessTripAccommodationsExpense();
@@ -113,6 +126,29 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             </Text>
           )}
         </div>
+      </td>
+      <td>
+        {isEditMode ? (
+          <AttendeesStayInput
+            formManager={formManager}
+            attendeesStayPath="attendeesStay"
+            businessTripId={businessTripId}
+          />
+        ) : (
+          <List listStyleType="disc">
+            {accommodationExpense.attendeesStay?.length ? (
+              accommodationExpense.attendeesStay.map(attendeeStay => (
+                <List.Item key={attendeeStay.id}>
+                  {attendeeStay.attendee.name} ({attendeeStay.nightsCount})
+                </List.Item>
+              ))
+            ) : (
+              <Text c="red" fz="sm">
+                Missing
+              </Text>
+            )}
+          </List>
+        )}
       </td>
       <td>
         <Tooltip label="Edit">

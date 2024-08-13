@@ -49,19 +49,6 @@ export function AddFlightExpense(props: {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AttendeesByBusinessTrip($businessTripId: UUID!) {
-    businessTrip(id: $businessTripId) {
-      id
-      attendees {
-        id
-        name
-      }
-    }
-  }
-`;
-
 const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
   value,
   label: key,
@@ -144,7 +131,6 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                disabled={fetchingAttendees}
                 data={flightClasses}
                 value={field.value}
                 label="Flight Class"
@@ -162,6 +148,7 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
             render={({ field, fieldState }): ReactElement => (
               <MultiSelect
                 {...field}
+                disabled={fetchingAttendees}
                 data={attendeesData}
                 value={field.value ?? []}
                 label="Attendees"

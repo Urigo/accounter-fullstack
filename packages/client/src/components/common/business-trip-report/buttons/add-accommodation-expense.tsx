@@ -5,6 +5,7 @@ import { ActionIcon, Loader, Modal, NumberInput, Overlay, TextInput, Tooltip } f
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripAccommodationsExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripAccommodationsExpense } from '../../../../hooks/use-add-business-trip-accommodations-expense.js';
+import { AttendeesStayInput } from '../parts/attendee-stay-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddAccommodationExpense(props: {
@@ -43,9 +44,10 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripAccommodationsExpenseInput>({
+  const formManager = useForm<AddBusinessTripAccommodationsExpenseInput>({
     defaultValues: { businessTripId },
   });
+  const { control, handleSubmit } = formManager;
   const [fetching, setFetching] = useState(false);
 
   const { addBusinessTripAccommodationsExpense, fetching: addingInProcess } =
@@ -95,6 +97,12 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
                 label="Nights Count"
               />
             )}
+          />
+
+          <AttendeesStayInput
+            formManager={formManager}
+            attendeesStayPath="attendeesStay"
+            businessTripId={businessTripId}
           />
 
           <div className="flex justify-center mt-5 gap-3">

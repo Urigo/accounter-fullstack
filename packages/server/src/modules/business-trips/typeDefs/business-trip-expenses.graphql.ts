@@ -28,6 +28,7 @@ export default gql`
 
     country: String
     nightsCount: Int
+    attendeesStay: [BusinessTripAttendeeStay!]!
   }
 
   " represent a business trip flight expense "
@@ -77,6 +78,13 @@ export default gql`
     deductibleExpense: Boolean
     " פירוט "
     description: String
+  }
+
+  " represent a business trip attendee accommodation stay info "
+  type BusinessTripAttendeeStay {
+    id: UUID!
+    attendee: BusinessTripAttendee!
+    nightsCount: Int!
   }
 
   extend type Mutation {
@@ -173,6 +181,7 @@ export default gql`
 
     country: String
     nightsCount: Int
+    attendeesStay: [BusinessTripAttendeeStayInput!]!
   }
 
   " the input for updating a business trip other expense "
@@ -232,6 +241,7 @@ export default gql`
 
     country: String
     nightsCount: Int
+    attendeesStay: [BusinessTripAttendeeStayInput!]
   }
 
   " the input for adding a new business trip other expense "
@@ -259,5 +269,11 @@ export default gql`
     employeeBusinessId: UUID
 
     expenseType: String
+  }
+
+  " the input for attendee accommodation stay info "
+  input BusinessTripAttendeeStayInput {
+    attendeeId: UUID!
+    nightsCount: Int!
   }
 `;
