@@ -1,9 +1,23 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Select, TextInput, Tooltip } from '@mantine/core';
+import { useQuery } from 'urql';
+import {
+  ActionIcon,
+  Loader,
+  Modal,
+  MultiSelect,
+  Overlay,
+  Select,
+  TextInput,
+  Tooltip,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripFlightsExpenseInput, FlightClass } from '../../../../gql/graphql.js';
+import {
+  AddBusinessTripFlightsExpenseInput,
+  AttendeesByBusinessTripDocument,
+  FlightClass,
+} from '../../../../gql/graphql.js';
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -35,6 +49,19 @@ export function AddFlightExpense(props: {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query AttendeesByBusinessTrip($businessTripId: UUID!) {
+    businessTrip(id: $businessTripId) {
+      id
+      attendees {
+        id
+        name
+      }
+    }
+  }
+`;
+
 const flightClasses = Object.entries(FlightClass).map(([key, value]) => ({
   value,
   label: key,
@@ -53,6 +80,13 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
   });
   const [fetching, setFetching] = useState(false);
 
+  const [{ data, fetching: fetchingAttendees }] = useQuery({
+    query: AttendeesByBusinessTripDocument,
+    variables: {
+      businessTripId,
+    },
+  });
+
   const { addBusinessTripFlightsExpense, fetching: addingInProcess } =
     useAddBusinessTripFlightsExpense();
 
@@ -62,6 +96,12 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
       close();
     });
   };
+
+  const attendeesData =
+    data?.businessTrip?.attendees.map(attendee => ({
+      value: attendee.id,
+      label: attendee.name,
+    })) ?? [];
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
@@ -104,9 +144,27 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
+                disabled={fetchingAttendees}
                 data={flightClasses}
                 value={field.value}
                 label="Flight Class"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                withinPortal
+              />
+            )}
+          />
+          <Controller
+            name="attendeeIds"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                data={attendeesData}
+                value={field.value ?? []}
+                label="Attendees"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
                 searchable

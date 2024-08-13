@@ -44,6 +44,7 @@ export default gql`
     origin: String
     destination: String
     class: String
+    attendees: [BusinessTripAttendee!]!
   }
 
   " represent a business trip travel and subsistence expense "
@@ -148,6 +149,7 @@ export default gql`
     origin: String
     destination: String
     flightClass: FlightClass
+    attendeeIds: [UUID!]
   }
 
   " represent flight classes "
@@ -215,6 +217,7 @@ export default gql`
     origin: String
     destination: String
     flightClass: FlightClass
+    attendeeIds: [UUID!]
   }
 
   " the input for adding a new business trip accommodation expense "

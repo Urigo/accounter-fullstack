@@ -15,6 +15,10 @@ import { FlightsRow } from './flights-row.js';
       date
       ...BusinessTripReportFlightsRowFields
     }
+    attendees {
+      id
+      name
+    }
   }
 `;
 
@@ -24,7 +28,10 @@ interface Props {
 }
 
 export const Flights = ({ data, onChange }: Props): ReactElement => {
-  const { flightExpenses, id } = getFragmentData(BusinessTripReportFlightsFieldsFragmentDoc, data);
+  const { flightExpenses, id, attendees } = getFragmentData(
+    BusinessTripReportFlightsFieldsFragmentDoc,
+    data,
+  );
 
   if (!flightExpenses?.length) {
     return <AddFlightExpense businessTripId={id} onAdd={onChange} />;
@@ -37,6 +44,7 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
           <tr>
             <CoreExpenseHeader />
             <th>Flight</th>
+            <th>Attendees</th>
             <th />
           </tr>
         </thead>
@@ -57,6 +65,7 @@ export const Flights = ({ data, onChange }: Props): ReactElement => {
                 businessTripId={id}
                 onChange={onChange}
                 key={flightExpense.id}
+                attendees={attendees}
               />
             ))}
           <tr>
