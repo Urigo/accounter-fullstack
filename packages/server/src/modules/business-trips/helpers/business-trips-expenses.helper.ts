@@ -48,7 +48,7 @@ function validateTransactionAgainstBusinessTripsExpenses(
       0,
     );
 
-    if (Math.abs(Number(transaction.amount) - totalAmount) > 0.005) {
+    if (Math.abs(Number(transaction.amount) + totalAmount) > 0.005) {
       throw new LedgerError(
         `Transaction reference "${transaction.source_reference}" amount does not match the business trip expenses total amount`,
       );
@@ -107,7 +107,7 @@ export const getTransactionMatchedAmount = async (
       amount: Number(transaction.amount),
     };
   }
-  const isFullyMatched = Math.abs(Number(transaction.amount) - expensesSum) < 0.005;
+  const isFullyMatched = Math.abs(Number(transaction.amount) + expensesSum) < 0.005;
   return {
     isFullyMatched,
     amount: Number(transaction.amount),
