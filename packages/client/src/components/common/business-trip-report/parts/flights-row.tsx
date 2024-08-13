@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Select, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, List, MultiSelect, Select, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
@@ -22,6 +22,10 @@ import { CoreExpenseRow } from './core-expense-row.js';
     origin
     destination
     class
+    attendees {
+      id
+      name
+    }
   }
 `;
 
@@ -34,9 +38,10 @@ interface Props {
   data: FragmentType<typeof BusinessTripReportFlightsRowFieldsFragmentDoc>;
   businessTripId: string;
   onChange: () => void;
+  attendees: { id: string; name: string }[];
 }
 
-export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
+export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props): ReactElement => {
   const flightExpense = getFragmentData(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -44,6 +49,7 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
     defaultValues: {
       id: flightExpense.id,
       businessTripId,
+      attendeeIds: flightExpense.attendees?.map(attendee => attendee.id) ?? [],
     },
   });
 
@@ -56,6 +62,11 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
       setIsEditMode(false);
     });
   };
+
+  const attendeesData = attendees.map(attendee => ({
+    value: attendee.id,
+    label: attendee.name,
+  }));
 
   return (
     <tr key={flightExpense.id}>
@@ -144,6 +155,41 @@ export const FlightsRow = ({ data, businessTripId, onChange }: Props): ReactElem
             )}
           </div>
         </form>
+      </td>
+      <td>
+        {isEditMode ? (
+          <Controller
+            name="attendeeIds"
+            control={control}
+            defaultValue={flightExpense.attendees?.map(attendee => attendee.id) ?? undefined}
+            render={({ field, fieldState }): ReactElement => (
+              <MultiSelect
+                {...field}
+                form={`form ${flightExpense.id}`}
+                data={attendeesData}
+                value={field.value ?? []}
+                label="Attendees"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                withinPortal
+              />
+            )}
+          />
+        ) : (
+          <List listStyleType="disc">
+            {flightExpense.attendees?.length ? (
+              flightExpense.attendees.map(attendee => (
+                <List.Item key={attendee.id}>{attendee.name}</List.Item>
+              ))
+            ) : (
+              <Text c="red" fz="sm">
+                Missing
+              </Text>
+            )}
+          </List>
+        )}
       </td>
       <td>
         <Tooltip label="Edit">

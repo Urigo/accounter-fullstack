@@ -1,16 +1,21 @@
 import { GraphQLError } from 'graphql';
+import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import {
   coreExpenseUpdate,
   generateChargeForEmployeePayment,
   updateExistingTripExpense,
 } from '../helpers/business-trips-expenses.helper.js';
+import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
-import type { BusinessTripsModule } from '../types.js';
+import type {
+  BusinessTripsModule,
+  IGetBusinessTripsAttendeesByBusinessIdsResult,
+} from '../types.js';
 import { commonBusinessTripExpenseFields } from './common.js';
 
 export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
@@ -77,14 +82,15 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       try {
         const coreExpenseUpdatePromise = coreExpenseUpdate(injector, fields, 'FLIGHT');
 
-        const { id, origin, destination, flightClass } = fields;
-        const hasFlightFieldsToUpdate = origin || destination || flightClass;
+        const { id, origin, destination, flightClass, attendeeIds } = fields;
+        const hasFlightFieldsToUpdate = origin || destination || flightClass || attendeeIds?.length;
         const flightExpenseUpdate = hasFlightFieldsToUpdate
           ? injector.get(BusinessTripFlightsExpensesProvider).updateBusinessTripFlightsExpense({
               businessTripExpenseId: id,
               origin,
               destination,
               class: flightClass,
+              attendeeIds: fields.attendeeIds as string[] | undefined,
             })
           : Promise.resolve();
 
@@ -100,8 +106,8 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       try {
         const coreExpenseUpdatePromise = coreExpenseUpdate(injector, fields, 'ACCOMMODATION');
 
-        const { id, country, nightsCount } = fields;
-        const hasAccommodationFieldsToUpdate = country || nightsCount;
+        const { id, country, nightsCount, attendeesStay } = fields;
+        const hasAccommodationFieldsToUpdate = country || nightsCount || attendeesStay;
         const accommodationExpenseUpdate = hasAccommodationFieldsToUpdate
           ? injector
               .get(BusinessTripAccommodationsExpensesProvider)
@@ -109,6 +115,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
                 businessTripExpenseId: id,
                 country,
                 nightsCount,
+                attendeesStay: fields.attendeesStay as BusinessTripAttendeeStayInput[] | undefined,
               })
           : Promise.resolve();
 
@@ -263,6 +270,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
             origin: fields.origin,
             destination: fields.destination,
             class: fields.flightClass,
+            attendeeIds: fields.attendeeIds as string[] | undefined,
           }),
           injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({
             businessTripExpenseId: coreExpense.id,
@@ -308,6 +316,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
               id: coreExpense.id,
               country: fields.country,
               nightsCount: fields.nightsCount,
+              attendeesStay: fields.attendeesStay as BusinessTripAttendeeStayInput[] | undefined,
             }),
           injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({
             businessTripExpenseId: coreExpense.id,
@@ -419,6 +428,40 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
     ...commonBusinessTripExpenseFields,
     country: dbExpense => dbExpense.country,
     nightsCount: dbExpense => dbExpense.nights_count,
+    attendeesStay: async (dbExpense, _, { injector }) => {
+      if (dbExpense.attendees_stay.length === 0 || !dbExpense.business_trip_id) {
+        return [];
+      }
+      const attendeesStay = dbExpense.attendees_stay.filter(
+        Boolean,
+      ) as BusinessTripAttendeeStayInput[];
+      const attendees = await injector
+        .get(BusinessTripAttendeesProvider)
+        .getBusinessTripsAttendeesByBusinessIdLoader.loadMany(
+          attendeesStay.map(({ attendeeId }) => ({
+            businessId: attendeeId,
+            businessTripId: dbExpense.business_trip_id!,
+          })),
+        )
+        .then(
+          res =>
+            res.filter(r => {
+              if (!r) {
+                return false;
+              }
+              if (r instanceof Error) {
+                throw r;
+              }
+              return true;
+            }) as IGetBusinessTripsAttendeesByBusinessIdsResult[],
+        );
+      return attendees.map(attendee => ({
+        id: attendee.id,
+        attendee,
+        nightsCount:
+          attendeesStay.find(({ attendeeId }) => attendeeId === attendee.id)?.nightsCount ?? 0,
+      }));
+    },
   },
   BusinessTripFlightExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'FLIGHT',
@@ -426,6 +469,32 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
     origin: dbExpense => dbExpense.origin,
     destination: dbExpense => dbExpense.destination,
     class: dbExpense => dbExpense.class,
+    attendees: async (dbExpense, _, { injector }) => {
+      if (dbExpense.attendees.length === 0 || !dbExpense.business_trip_id) {
+        return [];
+      }
+      const attendees = await injector
+        .get(BusinessTripAttendeesProvider)
+        .getBusinessTripsAttendeesByBusinessIdLoader.loadMany(
+          dbExpense.attendees.map(attendee => ({
+            businessId: attendee,
+            businessTripId: dbExpense.business_trip_id!,
+          })),
+        )
+        .then(
+          res =>
+            res.filter(r => {
+              if (!r) {
+                return false;
+              }
+              if (r instanceof Error) {
+                throw r;
+              }
+              return true;
+            }) as IGetBusinessTripsAttendeesByBusinessIdsResult[],
+        );
+      return attendees;
+    },
   },
   BusinessTripTravelAndSubsistenceExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'TRAVEL_AND_SUBSISTENCE',

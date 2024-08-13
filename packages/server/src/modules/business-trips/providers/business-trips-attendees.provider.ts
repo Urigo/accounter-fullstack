@@ -6,6 +6,7 @@ import type {
   IAddBusinessTripAttendeesParams,
   IAddBusinessTripAttendeesQuery,
   IGetAllBusinessTripsAttendeesQuery,
+  IGetBusinessTripsAttendeesByBusinessIdsQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
   IGetBusinessTripsAttendeesByChargeIdsQuery,
   IRemoveBusinessTripAttendeesParams,
@@ -35,6 +36,15 @@ const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendee
   LEFT JOIN accounter_schema.businesses b
     ON bta.attendee_business_id = b.id
   WHERE ($isBusinessTripIds = 0 OR bta.business_trip_id IN $$businessTripIds);`;
+
+const getBusinessTripsAttendeesByBusinessIds = sql<IGetBusinessTripsAttendeesByBusinessIdsQuery>`
+  SELECT bta.business_trip_id, bta.arrival, bta.departure, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at
+  FROM accounter_schema.business_trips_attendees bta
+  LEFT JOIN accounter_schema.financial_entities fe
+    ON bta.attendee_business_id = fe.id
+  LEFT JOIN accounter_schema.businesses b
+    ON bta.attendee_business_id = b.id
+  WHERE (bta.attendee_business_id IN $$businessIds AND bta.business_trip_id IN $$businessTripIds);`;
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`
   INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure)
@@ -109,6 +119,31 @@ export class BusinessTripAttendeesProvider {
 
   public getBusinessTripsAttendeesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAttendeesByBusinessTripIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsAttendeesByBusinessIds(
+    keys: readonly { businessId: string; businessTripId: string }[],
+  ) {
+    const businesses = await getBusinessTripsAttendeesByBusinessIds.run(
+      {
+        businessIds: keys.map(key => key.businessId),
+        businessTripIds: keys.map(key => key.businessTripId),
+      },
+      this.dbProvider,
+    );
+    return keys.map(({ businessId, businessTripId }) =>
+      businesses.find(
+        business => business.id === businessId && business.business_trip_id === businessTripId,
+      ),
+    );
+  }
+
+  public getBusinessTripsAttendeesByBusinessIdLoader = new DataLoader(
+    (ids: readonly { businessId: string; businessTripId: string }[]) =>
+      this.batchBusinessTripsAttendeesByBusinessIds(ids),
     {
       cache: false,
     },

@@ -86,6 +86,10 @@ export const CoreExpenseRow = ({
     }
   }, [error]);
 
+  const linkedChargeIds = Array.from(
+    new Set(businessTripExpense.transactions?.map(t => t.chargeId)),
+  );
+
   return (
     <>
       <td>
@@ -219,15 +223,15 @@ export const CoreExpenseRow = ({
                   <ThemeIcon variant="default" radius="lg">
                     <X />
                   </ThemeIcon>
-                  {businessTripExpense.transactions?.length &&
-                    businessTripExpense.transactions.map(t => (
+                  {linkedChargeIds?.length &&
+                    linkedChargeIds.map(id => (
                       <NavLink
-                        key={t.id}
+                        key={id}
                         label="To Charge"
                         className="[&>*>.mantine-NavLink-label]:font-semibold"
                         onClick={event => {
                           event.stopPropagation();
-                          window.open(`/charges/${t.chargeId}`, '_blank', 'noreferrer');
+                          window.open(`/charges/${id}`, '_blank', 'noreferrer');
                         }}
                       />
                     ))}
