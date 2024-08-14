@@ -160,6 +160,7 @@ export class BusinessTripAccommodationsExpensesProvider {
   public insertBusinessTripAccommodationsExpense(
     params: IInsertBusinessTripAccommodationsExpenseParams,
   ) {
+    params.attendeesStay ||= [];
     return insertBusinessTripAccommodationsExpense.run(params, this.dbProvider);
   }
 
