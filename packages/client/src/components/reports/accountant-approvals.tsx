@@ -55,8 +55,6 @@ export const AccountantApprovals = (): ReactElement => {
     data?.allCharges?.nodes.filter(charge => charge.accountantApproval === true).length ?? 0;
   const approvalRate = (100 * approvedCharges) / charges;
 
-  console.log(approvedCharges / charges);
-
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
@@ -81,7 +79,7 @@ export const AccountantApprovals = (): ReactElement => {
             color="green"
             radius="xl"
             size="xl"
-            label={`${approvalRate.toFixed(2)}%`}
+            label={`${approvalRate.toFixed(2)}% (${approvedCharges} out of ${charges} total)`}
             value={approvalRate}
           />
         </div>
