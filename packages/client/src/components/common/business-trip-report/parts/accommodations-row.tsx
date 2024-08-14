@@ -1,10 +1,11 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Control, Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { ActionIcon, List, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   UpdateBusinessTripAccommodationsExpenseInput,
+  UpdateBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/use-update-business-trip-accommodations-expense.js';
@@ -72,7 +73,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
       <CoreExpenseRow
         data={accommodationExpense}
         isEditMode={isEditMode}
-        control={control}
+        control={control as unknown as Control<UpdateBusinessTripFlightsExpenseInput, unknown>}
         businessTripId={businessTripId}
       />
 
