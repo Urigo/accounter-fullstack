@@ -46,7 +46,7 @@ export const AccountantApprovals = (): ReactElement => {
     variables: {
       filters: filter,
       page: 1,
-      limit: 999,
+      limit: 999_999,
     },
   });
 
