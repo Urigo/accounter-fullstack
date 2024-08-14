@@ -56,7 +56,7 @@ export function CategorizeIntoExistingExpense(props: {
 
   return (
     <>
-      <Tooltip label="Categorize Another Transaction">
+      <Tooltip label="Attach Uncategorized Transaction">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
