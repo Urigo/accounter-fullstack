@@ -155,6 +155,7 @@ export class BusinessTripFlightsExpensesProvider {
   }
 
   public insertBusinessTripFlightsExpense(params: IInsertBusinessTripFlightsExpenseParams) {
+    params.attendeeIds ||= [];
     return insertBusinessTripFlightsExpense.run(params, this.dbProvider);
   }
 
