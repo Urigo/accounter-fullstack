@@ -324,107 +324,108 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // generate ledger from business trip transactions
     if (!isSelfClosingLedger && !accountingLedgerEntries.length) {
-      const businessTripExpensesPromises = businessTripExpenses.map(async businessTripExpense => {
-        if (!tripTaxCategory) {
-          return;
-        }
+      if (businessTripsEmployeePayments.length) {
+        const businessTripsEmployeePaymentsPromises = businessTripsEmployeePayments.map(
+          async businessTripsEmployeePayment => {
+            if (!tripTaxCategory) {
+              return;
+            }
+            if (
+              !businessTripsEmployeePayment.employee_business_id ||
+              !businessTripsEmployeePayment.date ||
+              !businessTripsEmployeePayment.amount ||
+              !businessTripsEmployeePayment.currency
+            ) {
+              errors.add(
+                `Business trip flight transaction ID="${businessTripsEmployeePayment.id}" is missing required fields`,
+              );
+              return;
+            }
 
-        const matchingEntry = financialAccountLedgerEntries.find(entry =>
-          businessTripExpense.transaction_ids?.includes(entry.id),
+            // preparations for core ledger entries
+            let exchangeRate: number | undefined = undefined;
+            if (businessTripsEmployeePayment.currency !== DEFAULT_LOCAL_CURRENCY) {
+              // get exchange rate for currency
+              exchangeRate = await injector
+                .get(ExchangeProvider)
+                .getExchangeRates(
+                  businessTripsEmployeePayment.currency as Currency,
+                  DEFAULT_LOCAL_CURRENCY,
+                  businessTripsEmployeePayment.date,
+                );
+            }
+
+            // set amounts
+            let amount = Number(businessTripsEmployeePayment.amount);
+            let foreignAmount: number | undefined = undefined;
+            if (exchangeRate) {
+              foreignAmount = amount;
+              // calculate amounts in ILS
+              amount = exchangeRate * amount;
+            }
+            const absAmount = Math.abs(amount);
+            const absForeignAmount = foreignAmount ? Math.abs(foreignAmount) : undefined;
+
+            const isCreditorCounterparty = amount > 0;
+            const ledgerEntry: StrictLedgerProto = {
+              id: businessTripsEmployeePayment.id!,
+              invoiceDate: businessTripsEmployeePayment.date,
+              valueDate: businessTripsEmployeePayment.date,
+              currency: businessTripsEmployeePayment.currency as Currency,
+              creditAccountID1: isCreditorCounterparty
+                ? businessTripsEmployeePayment.employee_business_id
+                : tripTaxCategory,
+              creditAmount1: absForeignAmount,
+              localCurrencyCreditAmount1: absAmount,
+              debitAccountID1: isCreditorCounterparty
+                ? tripTaxCategory
+                : businessTripsEmployeePayment.employee_business_id,
+              debitAmount1: absForeignAmount,
+              localCurrencyDebitAmount1: absAmount,
+              reference1: businessTripsEmployeePayment.id!,
+              isCreditorCounterparty,
+              ownerId: charge.owner_id,
+              currencyRate: exchangeRate,
+              chargeId: charge.id,
+            };
+
+            accountingLedgerEntries.push(ledgerEntry);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            dates.add(ledgerEntry.valueDate.getTime());
+            currencies.add(ledgerEntry.currency);
+          },
         );
-        if (!matchingEntry) {
-          return;
-        }
-
-        const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
-        const businessId = isCreditorCounterparty
-          ? matchingEntry.debitAccountID1
-          : matchingEntry.creditAccountID1;
-        const ledgerEntry: StrictLedgerProto = {
-          ...matchingEntry,
-          id: businessTripExpense.id!,
-          isCreditorCounterparty,
-          creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
-          debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
-        };
-
-        financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-      });
-
-      const businessTripsEmployeePaymentsPromises = businessTripsEmployeePayments.map(
-        async businessTripsEmployeePayment => {
+        await Promise.all(businessTripsEmployeePaymentsPromises);
+      } else {
+        const businessTripExpensesPromises = businessTripExpenses.map(async businessTripExpense => {
           if (!tripTaxCategory) {
             return;
           }
-          if (
-            !businessTripsEmployeePayment.employee_business_id ||
-            !businessTripsEmployeePayment.date ||
-            !businessTripsEmployeePayment.amount ||
-            !businessTripsEmployeePayment.currency
-          ) {
-            errors.add(
-              `Business trip flight transaction ID="${businessTripsEmployeePayment.id}" is missing required fields`,
-            );
+
+          const matchingEntry = financialAccountLedgerEntries.find(entry =>
+            businessTripExpense.transaction_ids?.includes(entry.id),
+          );
+          if (!matchingEntry) {
             return;
           }
 
-          // preparations for core ledger entries
-          let exchangeRate: number | undefined = undefined;
-          if (businessTripsEmployeePayment.currency !== DEFAULT_LOCAL_CURRENCY) {
-            // get exchange rate for currency
-            exchangeRate = await injector
-              .get(ExchangeProvider)
-              .getExchangeRates(
-                businessTripsEmployeePayment.currency as Currency,
-                DEFAULT_LOCAL_CURRENCY,
-                businessTripsEmployeePayment.date,
-              );
-          }
-
-          // set amounts
-          let amount = Number(businessTripsEmployeePayment.amount);
-          let foreignAmount: number | undefined = undefined;
-          if (exchangeRate) {
-            foreignAmount = amount;
-            // calculate amounts in ILS
-            amount = exchangeRate * amount;
-          }
-          const absAmount = Math.abs(amount);
-          const absForeignAmount = foreignAmount ? Math.abs(foreignAmount) : undefined;
-
-          const isCreditorCounterparty = amount > 0;
+          const isCreditorCounterparty = !matchingEntry.isCreditorCounterparty;
+          const businessId = isCreditorCounterparty
+            ? matchingEntry.debitAccountID1
+            : matchingEntry.creditAccountID1;
           const ledgerEntry: StrictLedgerProto = {
-            id: businessTripsEmployeePayment.id!,
-            invoiceDate: businessTripsEmployeePayment.date,
-            valueDate: businessTripsEmployeePayment.date,
-            currency: businessTripsEmployeePayment.currency as Currency,
-            creditAccountID1: isCreditorCounterparty
-              ? businessTripsEmployeePayment.employee_business_id
-              : tripTaxCategory,
-            creditAmount1: absForeignAmount,
-            localCurrencyCreditAmount1: absAmount,
-            debitAccountID1: isCreditorCounterparty
-              ? tripTaxCategory
-              : businessTripsEmployeePayment.employee_business_id,
-            debitAmount1: absForeignAmount,
-            localCurrencyDebitAmount1: absAmount,
-            reference1: businessTripsEmployeePayment.id!,
+            ...matchingEntry,
+            id: businessTripExpense.id!,
             isCreditorCounterparty,
-            ownerId: charge.owner_id,
-            currencyRate: exchangeRate,
-            chargeId: charge.id,
+            creditAccountID1: isCreditorCounterparty ? businessId : tripTaxCategory,
+            debitAccountID1: isCreditorCounterparty ? tripTaxCategory : businessId,
           };
 
-          financialAccountLedgerEntries.push(ledgerEntry);
+          accountingLedgerEntries.push(ledgerEntry);
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        },
-      );
-
-      await Promise.all([
-        ...businessTripExpensesPromises,
-        ...businessTripsEmployeePaymentsPromises,
-      ]);
+        });
+        await Promise.all(businessTripExpensesPromises);
+      }
     }
 
     const allowedUnbalancedBusinesses = new Set([
