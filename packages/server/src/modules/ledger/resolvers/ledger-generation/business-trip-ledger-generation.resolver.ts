@@ -11,6 +11,7 @@ import { ledgerEntryFromDocument } from '@modules/ledger/helpers/common-charge-l
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
@@ -109,6 +110,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const businessTripAttendeesPromise = injector
       .get(BusinessTripAttendeesProvider)
       .getBusinessTripsAttendeesByChargeIdLoader.load(chargeId);
+    const unbalancedBusinessesPromise = injector
+      .get(UnbalancedBusinessesProvider)
+      .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
     const [
       transactions,
       documents,
@@ -116,6 +120,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripExpenses,
       businessTripsEmployeePayments,
       businessTripAttendees,
+      chargeUnbalancedBusinesses,
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
@@ -123,6 +128,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripExpensesPromise,
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,
+      unbalancedBusinessesPromise,
     ]);
 
     // generate ledger from transactions
@@ -421,7 +427,10 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       ]);
     }
 
-    const allowedUnbalancedBusinesses = new Set(businessTripAttendees.map(attendee => attendee.id));
+    const allowedUnbalancedBusinesses = new Set([
+      ...businessTripAttendees.map(attendee => attendee.id),
+      ...chargeUnbalancedBusinesses.map(({ business_id }) => business_id),
+    ]);
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
@@ -474,8 +483,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     const mightRequireExchangeRateRecord =
       (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
-    const unbalancedBusinesses = ledgerBalanceInfo.unbalancedEntities.filter(({ entityId }) =>
-      ledgerBalanceInfo.financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
+    const unbalancedBusinesses = ledgerBalanceInfo.unbalancedEntities.filter(
+      ({ entityId }) =>
+        ledgerBalanceInfo.financialEntities.some(
+          fe => fe.id === entityId && fe.type === 'business',
+        ) && !chargeUnbalancedBusinesses.map(b => b.business_id).includes(entityId),
     );
 
     if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
