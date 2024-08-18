@@ -27,6 +27,9 @@ import { CategorizeExpense } from '../buttons/categorize-expense.js';
       transaction {
         id
         eventDate
+        amount {
+          raw
+        }
         ...TransactionsTableEventDateFields
         ...TransactionsTableDebitDateFields
         ...TransactionsTableAccountFields
@@ -94,6 +97,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                     businessTripId={id}
                     transactionId={uncategorizedTransaction.transaction.id}
                     onChange={onChange}
+                    defaultAmount={uncategorizedTransaction.transaction.amount.raw}
                   />
                 </td>
               </tr>

@@ -12,9 +12,10 @@ import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categori
 export function CategorizeExpense(props: {
   businessTripId: string;
   transactionId: string;
+  defaultAmount?: number;
   onChange: () => void;
 }): ReactElement {
-  const { businessTripId, transactionId, onChange } = props;
+  const { businessTripId, transactionId, onChange, defaultAmount } = props;
   const [opened, { close, open }] = useDisclosure(false);
 
   return (
@@ -38,6 +39,7 @@ export function CategorizeExpense(props: {
           opened={opened}
           close={close}
           onChange={onChange}
+          defaultAmount={defaultAmount}
         />
       )}
     </>
@@ -55,11 +57,13 @@ type ModalProps = {
   onChange: () => void;
   businessTripId: string;
   transactionId: string;
+  defaultAmount?: number;
 };
 
 function ModalContent({
   businessTripId,
   transactionId,
+  defaultAmount,
   opened,
   close,
   onChange,
@@ -104,6 +108,7 @@ function ModalContent({
           <Controller
             name="amount"
             control={control}
+            defaultValue={defaultAmount}
             render={({ field, fieldState }): ReactElement => (
               <NumberInput
                 {...field}
