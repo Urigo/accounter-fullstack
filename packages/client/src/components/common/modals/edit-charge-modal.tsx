@@ -1,10 +1,8 @@
 import { ReactElement } from 'react';
-import { Copy } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader } from '@mantine/core';
+import { Loader } from '@mantine/core';
 import { EditChargeDocument } from '../../../gql/graphql.js';
-import { writeToClipboard } from '../../../helpers/index.js';
-import { EditCharge, PopUpDrawer } from '../index.js';
+import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -80,13 +78,10 @@ export const EditChargeModalContent = ({
           <h1 className="sm:text-2xl font-small text-gray-900">Edit Charge:</h1>
           <div className="flex flex-row gap-2">
             ID: {chargeId}
-            <ActionIcon
-              variant="default"
-              onClick={(): void => writeToClipboard(chargeId)}
-              size={30}
-            >
-              <Copy size={20} />
-            </ActionIcon>
+            <CopyToClipboardButton
+              isLink
+              content={`${window.location.origin}/charges/${chargeId}`}
+            />
           </div>
         </div>
       }

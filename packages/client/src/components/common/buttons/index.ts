@@ -3,6 +3,7 @@ export * from './button-image.js';
 export * from './button-with-label.js';
 export * from './charge-navigate-button.js';
 export * from './confirm-mini-button.js';
+export * from './copy-to-clipboard-button.js';
 export * from './delete-charge-button.js';
 export * from './delete-document-button.js';
 export * from './edit-mini-button.js';

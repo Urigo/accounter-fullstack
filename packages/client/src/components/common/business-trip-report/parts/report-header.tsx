@@ -3,6 +3,7 @@ import { differenceInDays, format } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { CopyToClipboardButton } from '../../index.js';
 import { AccountantApproval } from '../buttons/accountant-approval.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -34,7 +35,13 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
     <Grid>
       <Grid.Col span={12} className="flex flex-row justify-between items-center">
         <Text fz="xl">{name}</Text>
-        <AccountantApproval data={businessTrip} onChange={onChange} />
+        <div className="flex flex-row gap-2">
+          <AccountantApproval data={businessTrip} onChange={onChange} />
+          <CopyToClipboardButton
+            isLink
+            content={`${window.location.origin}/business-trips/${businessTrip.id}`}
+          />
+        </div>
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>
         From Date:

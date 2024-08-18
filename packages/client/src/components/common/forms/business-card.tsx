@@ -1,17 +1,17 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { Copy } from 'tabler-icons-react';
 import { useQuery, UseQueryExecute } from 'urql';
-import { ActionIcon, Loader } from '@mantine/core';
+import { Loader } from '@mantine/core';
 import {
   AllBusinessesRowFieldsFragment,
   FetchBusinessDocument,
   FetchBusinessQuery,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker, writeToClipboard } from '../../../helpers/index.js';
+import { MakeBoolean, relevantDataPicker } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { CopyToClipboardButton } from '../index.js';
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -150,13 +150,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
             <h1 className="sm:text-2xl font-small text-gray-900">Edit Business:</h1>
             <div className="flex flex-row gap-2">
               ID: {business.id}
-              <ActionIcon
-                variant="default"
-                onClick={(): void => writeToClipboard(business.id)}
-                size={30}
-              >
-                <Copy size={20} />
-              </ActionIcon>
+              <CopyToClipboardButton content={business.id} />
             </div>
           </div>
           <div className="flex-row px-10 h-max justify-start block">
