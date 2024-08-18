@@ -1,8 +1,5 @@
 import { ReactElement } from 'react';
-import { Copy } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
-import { writeToClipboard } from '../../../helpers/index.js';
-import { PopUpDrawer, UploadDocument } from '../index.js';
+import { CopyToClipboardButton, PopUpDrawer, UploadDocument } from '../index.js';
 
 interface Props {
   chargeId: string;
@@ -24,13 +21,10 @@ export const UploadDocumentModal = ({
           <h1 className="sm:text-2xl font-small text-gray-900">Upload Document:</h1>
           <div className="flex flex-row gap-2">
             Charge ID: {chargeId}
-            <ActionIcon
-              variant="default"
-              onClick={(): void => writeToClipboard(chargeId)}
-              size={30}
-            >
-              <Copy size={20} />
-            </ActionIcon>
+            <CopyToClipboardButton
+              isLink
+              content={`${window.location.origin}/charges/${chargeId}`}
+            />
           </div>
         </div>
       }

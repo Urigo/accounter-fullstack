@@ -1,8 +1,10 @@
 import { ReactElement } from 'react';
-import { Copy } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
-import { writeToClipboard } from '../../../helpers/index.js';
-import { EditTransaction, PopUpDrawer, UnlinkTransactionButton } from '../index.js';
+import {
+  CopyToClipboardButton,
+  EditTransaction,
+  PopUpDrawer,
+  UnlinkTransactionButton,
+} from '../index.js';
 
 interface Props {
   transactionID?: string;
@@ -25,13 +27,7 @@ export const EditTransactionModal = ({
           <h1 className="sm:text-2xl font-small text-gray-900">Edit Transaction:</h1>
           <div className="flex flex-row gap-2">
             ID: {transactionID}
-            <ActionIcon
-              variant="default"
-              onClick={(): void => writeToClipboard(transactionID)}
-              size={30}
-            >
-              <Copy size={20} />
-            </ActionIcon>
+            <CopyToClipboardButton content={transactionID} />
             <UnlinkTransactionButton transactionId={transactionID} />
           </div>
         </div>
