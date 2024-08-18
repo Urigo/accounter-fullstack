@@ -39,6 +39,7 @@ import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/
           }
           amount {
             formatted
+            raw
           }
         }
       }
@@ -103,9 +104,10 @@ function ModalContent({
   close,
   onChange,
 }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<CategorizeIntoExistingBusinessTripExpenseInput>({
-    defaultValues: { businessTripExpenseId },
-  });
+  const { control, handleSubmit, setValue } =
+    useForm<CategorizeIntoExistingBusinessTripExpenseInput>({
+      defaultValues: { businessTripExpenseId },
+    });
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState<
     Array<ItemProps & { value: string }>
   >([]);
@@ -138,6 +140,7 @@ function ModalContent({
             referenceKey: transaction.referenceKey,
             counterparty: transaction.counterparty?.name,
             amount: transaction.amount.formatted,
+            rawAmount: transaction.amount.raw,
             value: transaction.id,
             label: `${transaction.eventDate} | ${transaction.counterparty?.name} | ${transaction.amount.formatted}`,
           }))
@@ -175,6 +178,15 @@ function ModalContent({
                 error={fieldState.error?.message}
                 withAsterisk
                 withinPortal
+                onChange={transactionId => {
+                  const transaction = uncategorizedTransactions.find(
+                    transaction => transaction.value === transactionId,
+                  );
+                  if (transaction?.rawAmount) {
+                    setValue('amount', transaction.rawAmount);
+                  }
+                  field.onChange(transactionId);
+                }}
               />
             )}
           />
@@ -218,6 +230,7 @@ interface ItemProps extends React.ComponentPropsWithoutRef<'div'> {
   referenceKey?: string | null;
   counterparty?: string | null;
   amount?: string | null;
+  rawAmount?: number | null;
 }
 
 // eslint-disable-next-line react/display-name
