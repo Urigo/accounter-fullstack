@@ -284,7 +284,7 @@ export class ChargesProvider {
       accountantReviewed: false,
       isProperty: false,
       userDescription: null,
-      optionalVat: false,
+      optionalVAT: false,
       ...params,
     };
     return generateCharge.run(fullParams, this.dbProvider);
