@@ -10,6 +10,7 @@ import {
   CreditcardBankChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
   FetchChargeDocument,
+  FetchChargeQuery,
   TableDocumentsFieldsFragmentDoc,
   TableLedgerRecordsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
@@ -77,11 +78,15 @@ export function ChargeExtendedInfo({
   onChange = (): void => void 0,
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
+  const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, { toggle }] = useDisclosure(false);
+  const [charge, setCharge] = useState<FetchChargeQuery['chargesByIDs'][number] | undefined>(
+    undefined,
+  );
   const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
-      chargeIDs: [chargeID],
+      chargeIDs: [chargeId],
     },
   });
 
@@ -90,7 +95,21 @@ export function ChargeExtendedInfo({
     onChange();
   }, [refetchExtensionInfo, onChange]);
 
-  const charge = data?.chargesByIDs?.[0];
+  useEffect(() => {
+    if (data?.chargesByIDs?.[0]) {
+      setCharge(data?.chargesByIDs?.[0]);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    refetchExtensionInfo();
+  }, [chargeId, refetchExtensionInfo]);
+
+  useEffect(() => {
+    if (chargeID !== chargeId) {
+      setChargeId(chargeID);
+    }
+  }, [chargeID, chargeId]);
 
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
@@ -179,7 +198,7 @@ export function ChargeExtendedInfo({
       {isFragmentReady(FetchChargeDocument, AllChargesErrorsFieldsFragmentDoc, charge) && (
         <ChargeErrors data={charge} />
       )}
-      {!fetching && charge && (
+      {charge && (
         <div className="flex flex-row">
           <Accordion
             className="w-full"
