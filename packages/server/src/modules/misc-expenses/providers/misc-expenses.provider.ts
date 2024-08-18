@@ -54,6 +54,7 @@ const updateExpense = sql<IUpdateExpenseQuery>`
   )
   WHERE
     transaction_id = $transactionId
+    AND counterparty = $counterpartyId
   RETURNING *;`;
 
 const insertExpense = sql<IInsertExpenseQuery>`
