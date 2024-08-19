@@ -3,62 +3,73 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Mutation {
-    toggleChargeAccountantApproval(chargeId: UUID!, approved: Boolean!): Boolean!
-      @auth(role: ACCOUNTANT)
-    toggleBusinessTripAccountantApproval(businessTripId: UUID!, approved: Boolean!): Boolean!
-      @auth(role: ACCOUNTANT)
+    updateChargeAccountantApproval(
+      chargeId: UUID!
+      approvalStatus: AccountantStatus!
+    ): AccountantStatus! @auth(role: ACCOUNTANT)
+    updateBusinessTripAccountantApproval(
+      businessTripId: UUID!
+      approvalStatus: AccountantStatus!
+    ): AccountantStatus! @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {
     " calculated based on ledger record and transaction approvals "
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type CommonCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type FinancialCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type ConversionCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type SalaryCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type InternalTransferCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type DividendCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type BusinessTripCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type MonthlyVatCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type BankDepositCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend type CreditcardBankCharge {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
   }
 
   extend input UpdateChargeInput {
-    accountantApproval: Boolean
+    accountantApproval: AccountantStatus
   }
 
   extend type BusinessTrip {
-    accountantApproval: Boolean!
+    accountantApproval: AccountantStatus!
+  }
+
+  " represents accountant approval status "
+  enum AccountantStatus {
+    UNAPPROVED
+    APPROVED
+    PENDING
   }
 `;

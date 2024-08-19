@@ -40,6 +40,7 @@ import migration_2024_08_06T15_00_00_enhance_business_trip_transactions_matching
 import migration_2024_08_12T09_53_52_fix_business_trip_transactions_view from './actions/2024-08-12T09-53-52.fix-business-trip-transactions-view.js';
 import migration_2024_08_12T17_21_10_optional_vat_flag from './actions/2024-08-12T17-21-10.optional-vat-flag.js';
 import migration_2024_08_13T12_57_25_attendees_info_for_trip_accommodation_flights_expenses from './actions/2024-08-13T12-57-25.attendees-info-for-trip-accommodation-flights-expenses.js';
+import migration_2024_08_19T18_05_19_enhance_accountant_approval from './actions/2024-08-19T18-05-19.enhance-accountant-approval.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -87,5 +88,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_08_12T09_53_52_fix_business_trip_transactions_view,
       migration_2024_08_12T17_21_10_optional_vat_flag,
       migration_2024_08_13T12_57_25_attendees_info_for_trip_accommodation_flights_expenses,
+      migration_2024_08_19T18_05_19_enhance_accountant_approval,
     ],
   });

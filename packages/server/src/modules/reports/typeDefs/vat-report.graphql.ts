@@ -25,7 +25,7 @@ export default gql`
 
   " Vat report record "
   type VatReportRecord {
-    chargeAccountantReviewed: Boolean
+    chargeAccountantStatus: AccountantStatus
     chargeId: UUID!
     documentId: UUID
     business: FinancialEntity

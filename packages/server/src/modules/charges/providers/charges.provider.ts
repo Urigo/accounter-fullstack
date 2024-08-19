@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { AccountantStatus } from '@shared/enums';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteChargesByIdsParams,
@@ -34,13 +35,13 @@ export type ChargeRequiredWrapper<
     id: unknown;
     owner_id: unknown;
     is_property: unknown;
-    accountant_reviewed: unknown;
+    accountant_status: unknown;
   },
-> = Omit<T, 'id' | 'owner_id' | 'is_property' | 'accountant_reviewed'> & {
+> = Omit<T, 'id' | 'owner_id' | 'is_property' | 'accountant_status'> & {
   id: NonNullable<T['id']>;
   owner_id: NonNullable<T['owner_id']>;
   is_property: NonNullable<T['is_property']>;
-  accountant_reviewed: NonNullable<T['accountant_reviewed']>;
+  accountant_status: NonNullable<T['accountant_status']>;
 };
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
@@ -99,9 +100,9 @@ const updateCharge = sql<IUpdateChargeQuery>`
     $isInvoicePaymentDifferentCurrency,
     invoice_payment_currency_diff
   ),
-  accountant_reviewed = COALESCE(
-    $accountantReviewed,
-    accountant_reviewed
+  accountant_status = COALESCE(
+    $accountantStatus,
+    accountant_status
   ),
   tax_category_id = COALESCE(
     $taxCategoryId,
@@ -119,15 +120,15 @@ const updateCharge = sql<IUpdateChargeQuery>`
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
   UPDATE accounter_schema.charges
   SET
-    accountant_reviewed = $accountantReviewed
+    accountant_status = $accountantStatus
   WHERE
     id = $chargeId
   RETURNING *;
 `;
 
 const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_reviewed, user_description, tax_category_id, optional_vat)
-  VALUES ($ownerId, $type, $isProperty, $accountantReviewed, $userDescription, $taxCategoryId, $optionalVAT)
+  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_status, user_description, tax_category_id, optional_vat)
+  VALUES ($ownerId, $type, $isProperty, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT)
   RETURNING *;
 `;
 
@@ -150,7 +151,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($withoutInvoice = FALSE OR COALESCE(ec.invoices_count, 0) = 0)
   AND ($withoutDocuments = FALSE OR COALESCE(ec.documents_count, 0) = 0)
   AND ($withoutLedger = FALSE OR COALESCE(ec.ledger_count, 0) = 0)
-  AND ($accountantApproval::BOOLEAN IS NULL OR ec.accountant_reviewed = $accountantApproval)
+  AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date)  END ASC,
@@ -281,7 +282,7 @@ export class ChargesProvider {
 
   public generateCharge(params: IGenerateChargeParams) {
     const fullParams = {
-      accountantReviewed: false,
+      approvalStatus: AccountantStatus.Unapproved,
       isProperty: false,
       userDescription: null,
       optionalVAT: false,
@@ -295,6 +296,7 @@ export class ChargesProvider {
     const isBusinessIds = !!params?.businessIds?.filter(Boolean).length;
     const isIDs = !!params?.IDs?.length;
     const isTags = !!params?.tags?.length;
+    const isAccountantStatuses = !!params?.accountantStatuses?.length;
 
     const defaults = {
       asc: false,
@@ -307,6 +309,7 @@ export class ChargesProvider {
       isBusinessIds: isBusinessIds ? 1 : 0,
       isIDs: isIDs ? 1 : 0,
       isTags: isTags ? 1 : 0,
+      isAccountantStatuses: isAccountantStatuses ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
@@ -318,6 +321,7 @@ export class ChargesProvider {
       withoutInvoice: params.withoutInvoice ?? false,
       withoutDocuments: params.withoutDocuments ?? false,
       withoutLedger: params.withoutLedger ?? false,
+      accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
     };
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetChargesByFiltersResult[]

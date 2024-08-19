@@ -1,37 +1,41 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
 import {
-  ToggleBusinessTripAccountantApprovalDocument,
-  ToggleBusinessTripAccountantApprovalMutationVariables,
+  AccountantStatus,
+  UpdateBusinessTripAccountantApprovalDocument,
+  UpdateBusinessTripAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation ToggleBusinessTripAccountantApproval($businessTripId: UUID!, $approved: Boolean!) {
-    toggleBusinessTripAccountantApproval(businessTripId: $businessTripId, approved: $approved)
+  mutation UpdateBusinessTripAccountantApproval(
+    $businessTripId: UUID!
+    $status: AccountantStatus!
+  ) {
+    updateBusinessTripAccountantApproval(businessTripId: $businessTripId, approvalStatus: $status)
   }
 `;
 
-type UseToggleBusinessTripAccountantApproval = {
+type UseUpdateBusinessTripAccountantApproval = {
   fetching: boolean;
-  toggleBusinessTripAccountantApproval: (
-    variables: ToggleBusinessTripAccountantApprovalMutationVariables,
-  ) => Promise<boolean>;
+  updateBusinessTripAccountantApproval: (
+    variables: UpdateBusinessTripAccountantApprovalMutationVariables,
+  ) => Promise<AccountantStatus>;
 };
 
-export const useToggleBusinessTripAccountantApproval =
-  (): UseToggleBusinessTripAccountantApproval => {
+export const useUpdateBusinessTripAccountantApproval =
+  (): UseUpdateBusinessTripAccountantApproval => {
     // TODO: add authentication
     // TODO: add local data update method after change
 
-    const [{ fetching }, mutate] = useMutation(ToggleBusinessTripAccountantApprovalDocument);
+    const [{ fetching }, mutate] = useMutation(UpdateBusinessTripAccountantApprovalDocument);
 
     return {
       fetching,
-      toggleBusinessTripAccountantApproval: (
-        variables: ToggleBusinessTripAccountantApprovalMutationVariables,
-      ): Promise<boolean> =>
-        new Promise<boolean>((resolve, reject) =>
+      updateBusinessTripAccountantApproval: (
+        variables: UpdateBusinessTripAccountantApprovalMutationVariables,
+      ): Promise<AccountantStatus> =>
+        new Promise<AccountantStatus>((resolve, reject) =>
           mutate(variables).then(res => {
             if (res.error) {
               console.error(
@@ -54,10 +58,10 @@ export const useToggleBusinessTripAccountantApproval =
               return reject('No data returned');
             }
             showNotification({
-              title: 'Toggle Success!',
+              title: 'Update Success!',
               message: 'Accountant approval was updated! 🎉',
             });
-            return resolve(res.data.toggleBusinessTripAccountantApproval);
+            return resolve(res.data.updateBusinessTripAccountantApproval);
           }),
         ),
     };

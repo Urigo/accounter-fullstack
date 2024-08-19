@@ -62,9 +62,9 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
     $tripPurpose,
     trip_purpose
   ),
-  accountant_reviewed = COALESCE(
-    $accountantReviewed,
-    accountant_reviewed
+  accountant_status = COALESCE(
+    $accountantStatus,
+    accountant_status
   )
   WHERE
     id = $businessTripId
@@ -79,7 +79,7 @@ const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
   UPDATE accounter_schema.business_trips
   SET
-    accountant_reviewed = $accountantReviewed
+    accountant_status = $accountantStatus
   WHERE
     id = $businessTripId
   RETURNING *;

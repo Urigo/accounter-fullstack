@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
@@ -61,7 +62,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             withoutDocuments: filters?.withoutDocuments,
             withoutLedger: filters?.withoutLedger,
             tags: filters?.byTags,
-            accountantApproval: filters?.accountantApproval,
+            accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
           })
           .catch(e => {
             throw new Error(e.message);

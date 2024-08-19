@@ -1,36 +1,37 @@
 import { useMutation } from 'urql';
 import { showNotification } from '@mantine/notifications';
 import {
-  ToggleChargeAccountantApprovalDocument,
-  ToggleChargeAccountantApprovalMutationVariables,
+  AccountantStatus,
+  UpdateChargeAccountantApprovalDocument,
+  UpdateChargeAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation ToggleChargeAccountantApproval($chargeId: UUID!, $approved: Boolean!) {
-    toggleChargeAccountantApproval(chargeId: $chargeId, approved: $approved)
+  mutation UpdateChargeAccountantApproval($chargeId: UUID!, $status: AccountantStatus!) {
+    updateChargeAccountantApproval(chargeId: $chargeId, approvalStatus: $status)
   }
 `;
 
-type UseToggleChargeAccountantApproval = {
+type UseUpdateChargeAccountantApproval = {
   fetching: boolean;
-  toggleChargeAccountantApproval: (
-    variables: ToggleChargeAccountantApprovalMutationVariables,
-  ) => Promise<boolean>;
+  updateChargeAccountantApproval: (
+    variables: UpdateChargeAccountantApprovalMutationVariables,
+  ) => Promise<AccountantStatus>;
 };
 
-export const useToggleChargeAccountantApproval = (): UseToggleChargeAccountantApproval => {
+export const useUpdateChargeAccountantApproval = (): UseUpdateChargeAccountantApproval => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(ToggleChargeAccountantApprovalDocument);
+  const [{ fetching }, mutate] = useMutation(UpdateChargeAccountantApprovalDocument);
 
   return {
     fetching,
-    toggleChargeAccountantApproval: (
-      variables: ToggleChargeAccountantApprovalMutationVariables,
-    ): Promise<boolean> =>
-      new Promise<boolean>((resolve, reject) =>
+    updateChargeAccountantApproval: (
+      variables: UpdateChargeAccountantApprovalMutationVariables,
+    ): Promise<AccountantStatus> =>
+      new Promise<AccountantStatus>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(
@@ -53,10 +54,10 @@ export const useToggleChargeAccountantApproval = (): UseToggleChargeAccountantAp
             return reject('No data returned');
           }
           showNotification({
-            title: 'Toggle Success!',
+            title: 'Update Success!',
             message: 'Accountant approval was updated! 🎉',
           });
-          return resolve(res.data.toggleChargeAccountantApproval);
+          return resolve(res.data.updateChargeAccountantApproval);
         }),
       ),
   };

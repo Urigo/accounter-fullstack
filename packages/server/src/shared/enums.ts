@@ -51,3 +51,9 @@ export enum ChargeTypeEnum {
   CreditcardBankCharge = 'CreditcardBankCharge',
   Financial = 'FinancialCharge',
 }
+
+export enum AccountantStatus {
+  Unapproved = 'UNAPPROVED',
+  Approved = 'APPROVED',
+  Pending = 'PENDING',
+}

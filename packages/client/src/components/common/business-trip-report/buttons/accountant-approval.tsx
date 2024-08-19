@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { Switch } from '@mantine/core';
 import { BusinessTripAccountantApprovalFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useToggleBusinessTripAccountantApproval } from '../../../../hooks/use-toggle-business-trip-accountant-approval.js';
+import { useUpdateBusinessTripAccountantApproval } from '../../../../hooks/use-update-business-trip-accountant-approval.js';
+import { UpdateAccountantStatus } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,31 +19,24 @@ interface Props {
 
 export function AccountantApproval({ data, onChange }: Props): ReactElement {
   const businessTrip = getFragmentData(BusinessTripAccountantApprovalFieldsFragmentDoc, data);
-  const [checked, setChecked] = useState(businessTrip.accountantApproval);
-  const { toggleBusinessTripAccountantApproval } = useToggleBusinessTripAccountantApproval();
+  const [status, setStatus] = useState(businessTrip.accountantApproval);
+  const { updateBusinessTripAccountantApproval } = useUpdateBusinessTripAccountantApproval();
 
   useEffect(() => {
-    if (checked == null && businessTrip.accountantApproval != null) {
-      setChecked(businessTrip.accountantApproval);
+    if (status == null && businessTrip.accountantApproval != null) {
+      setStatus(businessTrip.accountantApproval);
     }
-  }, [checked, businessTrip.accountantApproval]);
-
-  function onToggle(approved: boolean): void {
-    setChecked(approved);
-    toggleBusinessTripAccountantApproval({
-      businessTripId: businessTrip.id,
-      approved,
-    }).then(onChange);
-  }
+  }, [status, businessTrip.accountantApproval]);
 
   return (
-    <Switch
-      color="green"
-      checked={checked}
-      onChange={(event): void => {
-        event.stopPropagation();
-        onToggle(event.currentTarget.checked);
-      }}
+    <UpdateAccountantStatus
+      value={status}
+      onChange={status =>
+        updateBusinessTripAccountantApproval({
+          businessTripId: businessTrip.id,
+          status,
+        }).then(onChange)
+      }
     />
   );
 }

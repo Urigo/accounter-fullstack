@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { Switch } from '@mantine/core';
 import { AllChargesAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { useToggleChargeAccountantApproval } from '../../../hooks/use-toggle-charge-accountant-approval.js';
+import { useUpdateChargeAccountantApproval } from '../../../hooks/use-update-charge-accountant-approval.js';
+import { UpdateAccountantStatus } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,32 +19,25 @@ interface Props {
 
 export function AccountantApproval({ data, onChange }: Props): ReactElement {
   const charge = getFragmentData(AllChargesAccountantApprovalFieldsFragmentDoc, data);
-  const [checked, setChecked] = useState(charge.accountantApproval);
-  const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
+  const [status, setStatus] = useState(charge.accountantApproval);
+  const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
 
   useEffect(() => {
-    if (checked == null && charge.accountantApproval != null) {
-      setChecked(charge.accountantApproval);
+    if (status == null && charge.accountantApproval != null) {
+      setStatus(charge.accountantApproval);
     }
-  }, [checked, charge.accountantApproval]);
-
-  function onToggle(approved: boolean): void {
-    setChecked(approved);
-    toggleChargeAccountantApproval({
-      chargeId: charge.id,
-      approved,
-    }).then(onChange);
-  }
+  }, [status, charge.accountantApproval]);
 
   return (
     <td>
-      <Switch
-        color="green"
-        checked={checked}
-        onChange={(event): void => {
-          event.stopPropagation();
-          onToggle(event.currentTarget.checked);
-        }}
+      <UpdateAccountantStatus
+        value={status}
+        onChange={status =>
+          updateChargeAccountantApproval({
+            chargeId: charge.id,
+            status,
+          }).then(onChange)
+        }
       />
     </td>
   );

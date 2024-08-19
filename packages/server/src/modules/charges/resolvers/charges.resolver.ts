@@ -18,7 +18,12 @@ import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IGetChargesByIdsResult, IUpdateChargeParams } from '../types.js';
+import type {
+  accountant_statusArray,
+  ChargesModule,
+  IGetChargesByIdsResult,
+  IUpdateChargeParams,
+} from '../types.js';
 import {
   commonChargeFields,
   commonDocumentsFields,
@@ -83,7 +88,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           withoutDocuments: filters?.withoutDocuments,
           withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
-          accountantApproval: filters?.accountantApproval,
+          accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
         })
         .catch(e => {
           throw new Error(e.message);
@@ -103,7 +108,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
   Mutation: {
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
-        accountantReviewed: fields.accountantApproval,
+        accountantStatus: fields.accountantApproval,
         type: fields.isConversion ? 'CONVERSION' : undefined,
         isProperty: fields.isProperty,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
@@ -247,7 +252,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
-            accountantReviewed: fields?.accountantApproval,
+            accountantStatus: fields?.accountantApproval,
             type: fields?.isConversion ? 'CONVERSION' : undefined,
             isProperty: fields?.isProperty,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
