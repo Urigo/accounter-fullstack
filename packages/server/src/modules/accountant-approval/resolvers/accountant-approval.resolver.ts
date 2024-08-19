@@ -2,7 +2,6 @@ import { BusinessTripsTypes } from '@modules/business-trips/index.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import type { ChargesTypes } from '@modules/charges';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { AccountantStatus } from '@shared/enums';
 import type { AccountantApprovalModule } from '../types.js';
 import { commonChargeFields } from './common.js';
 
@@ -25,7 +24,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
       if (res[0].id) {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(res[0].id);
       }
-      return res[0].accountant_status || AccountantStatus.Unapproved;
+      return res[0].accountant_status || 'UNAPPROVED';
     },
     updateBusinessTripAccountantApproval: async (
       _,
@@ -44,7 +43,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         throw new Error(`Failed to update business trip ID='${businessTripId}'`);
       }
 
-      return res[0].accountant_status || AccountantStatus.Unapproved;
+      return res[0].accountant_status || 'UNAPPROVED';
     },
   },
   CommonCharge: commonChargeFields,
@@ -58,7 +57,6 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   BusinessTrip: {
-    accountantApproval: dbBusinessTrip =>
-      dbBusinessTrip.accountant_status ?? AccountantStatus.Unapproved,
+    accountantApproval: dbBusinessTrip => dbBusinessTrip.accountant_status ?? 'UNAPPROVED',
   },
 };

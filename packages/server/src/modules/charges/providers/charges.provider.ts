@@ -2,7 +2,6 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { AccountantStatus } from '@shared/enums';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   IDeleteChargesByIdsParams,
@@ -282,7 +281,7 @@ export class ChargesProvider {
 
   public generateCharge(params: IGenerateChargeParams) {
     const fullParams = {
-      approvalStatus: AccountantStatus.Unapproved,
+      approvalStatus: 'UNAPPROVED',
       isProperty: false,
       userDescription: null,
       optionalVAT: false,
