@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { AlertCircle } from 'tabler-icons-react';
-import { Popover, Table, Text } from '@mantine/core';
+import { NavLink, Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragment,
@@ -27,6 +27,7 @@ import { CategorizeExpense } from '../buttons/categorize-expense.js';
       transaction {
         id
         eventDate
+        chargeId
         amount {
           raw
         }
@@ -66,6 +67,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
             <th>Event Date</th>
             <th>Debit Date</th>
             <th>Amount</th>
+            <th />
             <th>Account</th>
             <th>Description</th>
             <th>Reference#</th>
@@ -88,6 +90,20 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                 <EventDate data={uncategorizedTransaction.transaction} />
                 <DebitDate data={uncategorizedTransaction.transaction} />
                 <Amount data={uncategorizedTransaction} />
+                <td>
+                  <NavLink
+                    label="To Charge"
+                    className="[&>*>.mantine-NavLink-label]:font-semibold"
+                    onClick={event => {
+                      event.stopPropagation();
+                      window.open(
+                        `/charges/${uncategorizedTransaction.transaction.chargeId}`,
+                        '_blank',
+                        'noreferrer',
+                      );
+                    }}
+                  />
+                </td>
                 <Account data={uncategorizedTransaction.transaction} />
                 <Description data={uncategorizedTransaction.transaction} />
                 <SourceID data={uncategorizedTransaction.transaction} />
