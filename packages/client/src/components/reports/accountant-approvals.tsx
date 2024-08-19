@@ -51,9 +51,25 @@ export const AccountantApprovals = (): ReactElement => {
   });
 
   const charges = data?.allCharges?.nodes.length ?? 0;
-  const approvedCharges =
-    data?.allCharges?.nodes.filter(charge => charge.accountantApproval === true).length ?? 0;
-  const approvalRate = (100 * approvedCharges) / charges;
+  let approved = 0;
+  let pending = 0;
+  let Unapproved = 0;
+  data?.allCharges?.nodes.map(charge => {
+    switch (charge.accountantApproval) {
+      case 'APPROVED':
+        approved += 1;
+        break;
+      case 'PENDING':
+        pending += 1;
+        break;
+      case 'UNAPPROVED':
+        Unapproved += 1;
+        break;
+    }
+  });
+  const approvalRate = (100 * approved) / charges;
+  const pendingRate = (100 * pending) / charges;
+  const UnapprovedRate = (100 * Unapproved) / charges;
 
   useEffect(() => {
     setFiltersContext(
@@ -74,13 +90,29 @@ export const AccountantApprovals = (): ReactElement => {
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <div className="mx-10 mt-5">
+        <div className="mx-10 mt-5 flex flex-col gap-5">
+          {`Total charges: ${charges}`}
           <Progress
             color="green"
             radius="xl"
             size="xl"
-            label={`${approvalRate.toFixed(2)}% (${approvedCharges} out of ${charges} total)`}
-            value={approvalRate}
+            sections={[
+              {
+                value: approvalRate,
+                color: 'green',
+                label: `${approvalRate.toFixed(1)}% (${approved})`,
+              },
+              {
+                value: pendingRate,
+                color: 'orange',
+                label: `${pendingRate.toFixed(1)}% (${pending})`,
+              },
+              {
+                value: UnapprovedRate,
+                color: 'red',
+                label: `${UnapprovedRate.toFixed(1)}% (${Unapproved})`,
+              },
+            ]}
           />
         </div>
       )}

@@ -1,14 +1,14 @@
-import { ReactElement, useState } from 'react';
-import { Switch } from '@mantine/core';
+import { ReactElement } from 'react';
 import { VatReportAccountantApprovalFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useToggleChargeAccountantApproval } from '../../../../hooks/use-toggle-charge-accountant-approval.js';
+import { useUpdateChargeAccountantApproval } from '../../../../hooks/use-update-charge-accountant-approval.js';
+import { UpdateAccountantStatus } from '../../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VatReportAccountantApprovalFields on VatReportRecord {
     chargeId
-    chargeAccountantReviewed
+    chargeAccountantStatus
   }
 `;
 
@@ -17,27 +17,22 @@ interface Props {
 }
 
 export function AccountantApproval({ data }: Props): ReactElement {
-  const { chargeId, chargeAccountantReviewed } = getFragmentData(
+  const { chargeId, chargeAccountantStatus } = getFragmentData(
     VatReportAccountantApprovalFieldsFragmentDoc,
     data,
   );
-  const [checked, setChecked] = useState(chargeAccountantReviewed ?? false);
-  const { toggleChargeAccountantApproval } = useToggleChargeAccountantApproval();
-
-  function onToggle(approved: boolean): void {
-    setChecked(approved);
-    toggleChargeAccountantApproval({
-      chargeId,
-      approved,
-    });
-  }
+  const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
 
   return (
     <td>
-      <Switch
-        color="green"
-        checked={checked}
-        onChange={(event): void => onToggle(event.currentTarget.checked)}
+      <UpdateAccountantStatus
+        value={chargeAccountantStatus ?? undefined}
+        onChange={status =>
+          updateChargeAccountantApproval({
+            chargeId,
+            status,
+          })
+        }
       />
     </td>
   );

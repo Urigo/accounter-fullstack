@@ -8,3 +8,4 @@ export * from './tag-input.js';
 export * from './tags-input.js';
 export * from './text-input.js';
 export * from './charge-spread-input.js';
+export * from '../inputs/update-accountant-status.js';

@@ -12,6 +12,7 @@ import {
   DEFAULT_VAT_PERCENTAGE,
 } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
+import type { AccountantStatus } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
@@ -24,7 +25,7 @@ export type RawVatReportRecord = {
   localAmountBeforeVAT?: number;
   foreignAmountBeforeVAT?: number;
   businessId: string | null;
-  chargeAccountantReviewed: boolean;
+  chargeAccountantStatus: AccountantStatus;
   chargeDate: Date;
   chargeId: string;
   currencyCode: Currency;
@@ -71,7 +72,7 @@ export function adjustTaxRecords(
 
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
-      chargeAccountantReviewed: charge.accountant_reviewed,
+      chargeAccountantStatus: charge.accountant_status,
       chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
       currencyCode: currency,

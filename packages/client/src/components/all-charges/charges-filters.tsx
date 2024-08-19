@@ -22,7 +22,12 @@ import {
 } from '../../gql/graphql.js';
 import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { PopUpModal, SelectTagItem, TextInput } from '../common/index.js';
+import {
+  accountantApprovalInputData,
+  PopUpModal,
+  SelectTagItem,
+  TextInput,
+} from '../common/index.js';
 
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
@@ -296,32 +301,16 @@ function ChargesFiltersForm({
             )}
           />
           <Controller
-            name="accountantApproval"
+            name="accountantStatus"
             control={control}
-            defaultValue={filter.accountantApproval}
+            defaultValue={filter.accountantStatus}
             render={({ field, fieldState }): ReactElement => (
-              <Select
+              <MultiSelect
                 {...field}
-                value={
-                  [true, 'TRUE'].includes(field.value!)
-                    ? 'TRUE'
-                    : [false, 'FALSE'].includes(field.value!)
-                      ? 'FALSE'
-                      : 'NULL'
-                }
-                onChange={(event): void =>
-                  setValue(
-                    'accountantApproval',
-                    event === 'TRUE' ? true : event === 'FALSE' ? false : undefined,
-                  )
-                }
-                data={[
-                  { label: 'Approved', value: 'TRUE' },
-                  { label: 'Not Approved', value: 'FALSE' },
-                  { label: 'All', value: 'NULL' },
-                ]}
+                value={field.value ?? []}
+                data={accountantApprovalInputData}
                 disabled={feFetching}
-                label="Accountant Reviewed"
+                label="Accountant Status"
                 placeholder="All"
                 maxDropdownHeight={160}
                 error={fieldState.error?.message}

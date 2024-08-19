@@ -4,20 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { IGetBalanceCancellationByChargesIdsQuery } from '../types.js';
 
-export type ChargeRequiredWrapper<
-  T extends {
-    id: unknown;
-    owner_id: unknown;
-    is_property: unknown;
-    accountant_reviewed: unknown;
-  },
-> = Omit<T, 'id' | 'owner_id' | 'is_property' | 'accountant_reviewed'> & {
-  id: NonNullable<T['id']>;
-  owner_id: NonNullable<T['owner_id']>;
-  is_property: NonNullable<T['is_property']>;
-  accountant_reviewed: NonNullable<T['accountant_reviewed']>;
-};
-
 const getBalanceCancellationByChargesIds = sql<IGetBalanceCancellationByChargesIdsQuery>`
     SELECT *
     FROM accounter_schema.charge_balance_cancellation
