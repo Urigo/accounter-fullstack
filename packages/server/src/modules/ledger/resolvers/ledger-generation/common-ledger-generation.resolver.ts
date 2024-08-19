@@ -337,6 +337,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           .get(BusinessesProvider)
           .getBusinessByIdLoader.load(charge.business_id);
         if (business?.no_invoices_required) {
+          const unbalancedBusinesses = unbalancedEntities.find(b => b.entityId === business.id);
+          if (unbalancedBusinesses) {
+            errors.add(`Business "${business.name}" is unbalanced (in the scope of this charge)`);
+          } else {
+            errors.add('Some businesses are not balanced in the scope of this charge');
+          }
           const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
 
           if (insertLedgerRecordsIfNotExists) {
