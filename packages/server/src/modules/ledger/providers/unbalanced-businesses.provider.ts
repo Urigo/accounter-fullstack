@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  IDeleteChargeUnbalancedBusinessesByChargeIdParams,
+  IDeleteChargeUnbalancedBusinessesByChargeIdQuery,
   IDeleteChargeUnbalancedBusinessesParams,
   IDeleteChargeUnbalancedBusinessesQuery,
   IGetChargeUnbalancedBusinessesByChargeIdsQuery,
@@ -27,6 +29,10 @@ const deleteChargeUnbalancedBusinesses = sql<IDeleteChargeUnbalancedBusinessesQu
     DELETE FROM accounter_schema.charge_unbalanced_ledger_businesses
     WHERE charge_id = $chargeId
         AND business_id IN $$businessIds;`;
+
+const deleteChargeUnbalancedBusinessesByChargeId = sql<IDeleteChargeUnbalancedBusinessesByChargeIdQuery>`
+    DELETE FROM accounter_schema.charge_unbalanced_ledger_businesses
+    WHERE charge_id = $chargeId;`;
 
 const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>`
   UPDATE accounter_schema.charge_unbalanced_ledger_businesses
@@ -69,6 +75,12 @@ export class UnbalancedBusinessesProvider {
 
   public deleteChargeUnbalancedBusinesses(params: IDeleteChargeUnbalancedBusinessesParams) {
     return deleteChargeUnbalancedBusinesses.run(params, this.dbProvider);
+  }
+
+  public deleteChargeUnbalancedBusinessesByChargeId(
+    params: IDeleteChargeUnbalancedBusinessesByChargeIdParams,
+  ) {
+    return deleteChargeUnbalancedBusinessesByChargeId.run(params, this.dbProvider);
   }
 
   public updateChargeUnbalancedBusiness(params: IUpdateChargeUnbalancedBusinessParams) {
