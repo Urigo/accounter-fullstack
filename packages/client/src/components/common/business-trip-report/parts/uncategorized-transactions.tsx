@@ -153,7 +153,7 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
       >
         <div className="flex gap-1">
           {amount?.formatted}
-          {errors.length && <ErrorsPopover errors={errors} />}
+          {errors.length > 0 && <ErrorsPopover errors={errors} />}
         </div>
         {categorizedAmountDiff && (
           <div className="text-gray-500 ml-2">{categorizedAmount.formatted} categorized </div>
