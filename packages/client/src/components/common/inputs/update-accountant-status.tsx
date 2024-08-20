@@ -1,4 +1,4 @@
-import { forwardRef, ReactElement, useState } from 'react';
+import { forwardRef, ReactElement, useEffect, useState } from 'react';
 import { Select, Text } from '@mantine/core';
 import { AccountantStatus } from '../../../gql/graphql.js';
 
@@ -31,6 +31,12 @@ export function UpdateAccountantStatus(props: {
     setStatus(status);
     onChange(status);
   }
+
+  useEffect(() => {
+    if (value) {
+      setStatus(value);
+    }
+  }, [value]);
 
   return (
     <Select
