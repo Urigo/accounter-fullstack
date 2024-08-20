@@ -14,14 +14,14 @@ import { BusinessTripExpensesProvider } from '../providers/business-trips-expens
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type {
   business_trip_transaction_type,
-  IGetBusinessTripsExpensesByTransactionIdsResult,
+  IGetBusinessTripsExpenseMatchesByTransactionIdsResult,
   IUpdateBusinessTripEmployeePaymentParams,
   IUpdateBusinessTripExpenseParams,
 } from '../types.js';
 
 function validateTransactionAgainstBusinessTripsExpenses(
   transaction: IGetTransactionsByChargeIdsResult,
-  transactionMatchingExpenses: IGetBusinessTripsExpensesByTransactionIdsResult[],
+  transactionMatchingExpenses: IGetBusinessTripsExpenseMatchesByTransactionIdsResult[],
 ): boolean {
   if (!transactionMatchingExpenses?.length) {
     throw new LedgerError(
@@ -63,7 +63,7 @@ export const validateTransactionAgainstBusinessTrips = async (
 ): Promise<boolean> => {
   const transactionMatchingExpenses = await injector
     .get(BusinessTripExpensesProvider)
-    .getBusinessTripsExpensesByTransactionIdLoader.load(transaction.id);
+    .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
   return validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
 };
@@ -74,7 +74,7 @@ export const getTransactionMatchedAmount = async (
 ): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
   const transactionMatchingExpenses = await injector
     .get(BusinessTripExpensesProvider)
-    .getBusinessTripsExpensesByTransactionIdLoader.load(transaction.id);
+    .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
   if (!transactionMatchingExpenses?.length) {
     return {
