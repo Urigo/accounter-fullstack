@@ -11,10 +11,11 @@ import type {
   IDeleteSpecificBusinessTripExpenseMatchParams,
   IDeleteSpecificBusinessTripExpenseMatchQuery,
   IGetAllBusinessTripsExpensesQuery,
+  IGetBusinessTripsExpenseMatchesByExpenseIdsQuery,
+  IGetBusinessTripsExpenseMatchesByTransactionIdsQuery,
   IGetBusinessTripsExpensesByBusinessTripIdsQuery,
   IGetBusinessTripsExpensesByChargeIdsQuery,
   IGetBusinessTripsExpensesByIdsQuery,
-  IGetBusinessTripsExpensesByTransactionIdsQuery,
   IGetTransactionsByBusinessTripIdParams,
   IGetTransactionsByBusinessTripIdQuery,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
@@ -45,10 +46,15 @@ const getBusinessTripsExpensesByBusinessTripIds = sql<IGetBusinessTripsExpensesB
   FROM accounter_schema.extended_business_trip_transactions
   WHERE ($isBusinessTripIds = 0 OR business_trip_id IN $$businessTripIds);`;
 
-const getBusinessTripsExpensesByTransactionIds = sql<IGetBusinessTripsExpensesByTransactionIdsQuery>`
+const getBusinessTripsExpenseMatchesByTransactionIds = sql<IGetBusinessTripsExpenseMatchesByTransactionIdsQuery>`
   SELECT *
   FROM accounter_schema.business_trips_transactions_match
   WHERE transaction_id in $$transactionIds;`;
+
+const getBusinessTripsExpenseMatchesByExpenseIds = sql<IGetBusinessTripsExpenseMatchesByExpenseIdsQuery>`
+  SELECT *
+  FROM accounter_schema.business_trips_transactions_match
+  WHERE business_trip_transaction_id in $$expenseIds;`;
 
 const getBusinessTripsExpensesByIds = sql<IGetBusinessTripsExpensesByIdsQuery>`
   SELECT *
@@ -173,8 +179,10 @@ export class BusinessTripExpensesProvider {
     },
   );
 
-  private async batchBusinessTripsExpensesByTransactionIds(transactionIds: readonly string[]) {
-    const businessTrips = await getBusinessTripsExpensesByTransactionIds.run(
+  private async batchBusinessTripsExpenseMatchesByTransactionIds(
+    transactionIds: readonly string[],
+  ) {
+    const businessTrips = await getBusinessTripsExpenseMatchesByTransactionIds.run(
       {
         transactionIds: transactionIds as stringArray,
       },
@@ -183,14 +191,33 @@ export class BusinessTripExpensesProvider {
     return transactionIds.map(id => businessTrips.filter(record => record.transaction_id === id));
   }
 
-  public getBusinessTripsExpensesByTransactionIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsExpensesByTransactionIds(ids),
+  public getBusinessTripsExpenseMatchesByTransactionIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByTransactionIds(ids),
     {
       cache: false,
     },
   );
 
-  private async batchBusinessTripsExpensesByIds(expenseIds: readonly string[]) {
+  private async batchBusinessTripsExpenseMatchesByExpenseIds(expenseIds: readonly string[]) {
+    const businessTrips = await getBusinessTripsExpenseMatchesByExpenseIds.run(
+      {
+        expenseIds: expenseIds as stringArray,
+      },
+      this.dbProvider,
+    );
+    return expenseIds.map(id =>
+      businessTrips.filter(record => record.business_trip_transaction_id === id),
+    );
+  }
+
+  public getBusinessTripsExpenseMatchesByExpenseIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByExpenseIds(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchBusinessTripsExpenseMatchesByIds(expenseIds: readonly string[]) {
     const businessTripsExpenses = await getBusinessTripsExpensesByIds.run(
       {
         isIds: expenseIds.length > 0 ? 1 : 0,
@@ -202,7 +229,7 @@ export class BusinessTripExpensesProvider {
   }
 
   public getBusinessTripsExpensesByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsExpensesByIds(ids),
+    (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByIds(ids),
     {
       cache: false,
     },
