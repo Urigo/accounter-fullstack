@@ -8,6 +8,9 @@ export default {
     alter table accounter_schema.business_trips_transactions_match
         alter column amount type numeric using amount::numeric;
 
+    alter table accounter_schema.business_trips_transactions_match
+        alter column amount set not null;
+
     create or replace view accounter_schema.extended_business_trip_transactions
             (id, business_trip_id, transaction_ids, charge_ids, category, date, value_date, amount, currency,
             employee_business_id, payed_by_employee)
