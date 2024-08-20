@@ -117,7 +117,7 @@ const BusinessTripWrapper = ({
     return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
   }, [trip]);
 
-  const indicatorUp = isError || !trip?.accountantApproval;
+  const indicatorUp = isError || trip?.accountantApproval !== 'APPROVED';
 
   return (
     <Accordion.Item value={trip.id}>

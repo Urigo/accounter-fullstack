@@ -28,32 +28,18 @@ function validateTransactionAgainstBusinessTripsExpenses(
       `Transaction reference "${transaction.source_reference}" is not part of a business trip`,
     );
   }
-  let hasManualSetAmounts = false;
-  let hasAutomatedSetAmounts = false;
-  transactionMatchingExpenses.map(expense => {
-    if (expense.amount) {
-      hasManualSetAmounts = true;
-    } else {
-      hasAutomatedSetAmounts = true;
-    }
-  });
-  if (hasManualSetAmounts && hasAutomatedSetAmounts) {
-    throw new LedgerError(
-      `Business expenses for transaction reference "${transaction.source_reference}" has both manual and automated set amounts. Please align the amounts`,
-    );
-  }
-  if (hasManualSetAmounts) {
-    const totalAmount = transactionMatchingExpenses.reduce(
-      (acc, expense) => acc + Number(expense.amount),
-      0,
-    );
 
-    if (Math.abs(Number(transaction.amount) + totalAmount) > 0.005) {
-      throw new LedgerError(
-        `Transaction reference "${transaction.source_reference}" amount does not match the business trip expenses total amount`,
-      );
-    }
+  const totalAmount = transactionMatchingExpenses.reduce(
+    (acc, expense) => acc + Number(expense.amount),
+    0,
+  );
+
+  if (Math.abs(Number(transaction.amount) - totalAmount) > 0.005) {
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}" amount does not match the business trip expenses total amount`,
+    );
   }
+
   return true;
 }
 
@@ -107,7 +93,7 @@ export const getTransactionMatchedAmount = async (
       amount: Number(transaction.amount),
     };
   }
-  const isFullyMatched = Math.abs(Number(transaction.amount) + expensesSum) < 0.005;
+  const isFullyMatched = Math.abs(Number(transaction.amount) - expensesSum) < 0.005;
   return {
     isFullyMatched,
     amount: Number(transaction.amount),
