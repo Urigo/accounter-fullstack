@@ -1686,10 +1686,10 @@
   dependencies:
     localforage "1.10.0"
 
-"@graphql-mesh/cli@0.94.2":
-  version "0.94.2"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.94.2.tgz#16d6f24b2eb75ce10eec3db3767c99a58476e02e"
-  integrity sha512-DCLn3oJcPDT7PoZrez+F/mQhrssGTXNbGl+AYPMYXzVO+LwHWHSPg2C2pY2VH8uIAIyKH1fxMcAO5CAo66dPOg==
+"@graphql-mesh/cli@0.94.3":
+  version "0.94.3"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.94.3.tgz#53de456d3db5fd57265cd5c98b84e251b1d82b6a"
+  integrity sha512-YV9j5h6j4ovrcRweVRBBe6jK34frPAENpCtI9Y0FM2Q4VcZTbCaQJN+sr2v5w9e1W73Y8Syg1jlcDH0oXSsLLw==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
@@ -1699,7 +1699,7 @@
     "@graphql-codegen/typescript-resolvers" "^4.0.0"
     "@graphql-mesh/config" "^0.103.1"
     "@graphql-mesh/cross-helpers" "^0.4.6"
-    "@graphql-mesh/http" "^0.102.0"
+    "@graphql-mesh/http" "^0.102.1"
     "@graphql-mesh/include" "^0.1.0"
     "@graphql-mesh/runtime" "^0.102.0"
     "@graphql-mesh/store" "^0.101.0"
@@ -1751,13 +1751,13 @@
   dependencies:
     path-browserify "1.0.1"
 
-"@graphql-mesh/http@0.102.0", "@graphql-mesh/http@^0.102.0":
-  version "0.102.0"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.102.0.tgz#fb694a269b89453acaa72c74d59dd17121ece33f"
-  integrity sha512-rQCA23Zbp0CDBerI11l3FHtlZRJm/plJG7UoN8TsMc+Ln0TcENGsldS+fpcGketsBdTNcFBqQsRdPJMyvmXLwA==
+"@graphql-mesh/http@0.102.1", "@graphql-mesh/http@^0.102.1":
+  version "0.102.1"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.102.1.tgz#7427c6881042970b720bb033cc7b64b7af845d35"
+  integrity sha512-IXq3AIYUlom4dDwUO2Yv/aLxaLkevLotji59Kd5vNr0fd2fsadLVHbKB5R2tw+Is7sx8udNxRprDWWuDQtv55A==
   dependencies:
     "@whatwg-node/server" "^0.9.46"
-    graphql-yoga "^5.6.0"
+    graphql-yoga "^5.7.0"
 
 "@graphql-mesh/include@^0.1.0":
   version "0.1.0"
@@ -7682,7 +7682,7 @@ graphql-yoga@5.3.1:
     lru-cache "^10.0.0"
     tslib "^2.5.2"
 
-graphql-yoga@5.7.0, graphql-yoga@^5.6.0:
+graphql-yoga@5.7.0, graphql-yoga@^5.7.0:
   version "5.7.0"
   resolved "https://registry.yarnpkg.com/graphql-yoga/-/graphql-yoga-5.7.0.tgz#7c9a6e14cd9483cf04d26b5a189f2eed4a8a7111"
   integrity sha512-QyGVvFAvGhMrzjJvhjsxsyoE+e4lNrj5f5qOsRYJuWIjyw7tHfbBvybZIwzNOGY0aB5sgA8BlVvu5hxjdKJ5tQ==
