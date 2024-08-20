@@ -1,6 +1,6 @@
 {
   "name": "@accounter/pcn874-generator",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "description": "Fully typed application that generates PCN874 text file",
   "repository": {
