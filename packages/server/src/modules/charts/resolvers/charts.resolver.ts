@@ -73,6 +73,7 @@ export const chartsResolvers: ChartsModule.Resolvers = {
         return {
           fromDate: filters.fromDate,
           toDate: filters.toDate,
+          currency,
           monthlyData,
         };
       } catch (e) {

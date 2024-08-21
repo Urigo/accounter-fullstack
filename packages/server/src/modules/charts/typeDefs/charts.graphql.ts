@@ -11,6 +11,7 @@ export default gql`
   type IncomeExpenseChart {
     fromDate: TimelessDate!
     toDate: TimelessDate!
+    currency: Currency!
     monthlyData: [IncomeExpenseChartMonthData!]!
   }
 
