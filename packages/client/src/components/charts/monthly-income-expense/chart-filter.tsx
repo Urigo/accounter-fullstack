@@ -4,6 +4,7 @@ import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { ActionIcon, Select, TextInput } from '@mantine/core';
+import { MonthPickerInput } from '@mantine/dates';
 import { Currency, IncomeExpenseChartFilters } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -16,7 +17,7 @@ interface ChartFilterFormProps {
 }
 
 function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps): ReactElement {
-  const { handleSubmit, control } = useForm<IncomeExpenseChartFilters>({
+  const { handleSubmit, control, trigger } = useForm<IncomeExpenseChartFilters>({
     defaultValues: { ...filter },
   });
 
@@ -44,11 +45,16 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <MonthPickerInput
             {...field}
-            value={field.value || ''}
-            error={fieldState.error?.message}
             label="From Date"
+            value={new Date(field.value)}
+            onChange={date => {
+              trigger('fromDate');
+              field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);
+            }}
+            error={fieldState.error?.message}
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -63,11 +69,16 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <MonthPickerInput
             {...field}
-            value={field.value || ''}
-            error={fieldState.error?.message}
             label="To Date"
+            value={new Date(field.value)}
+            onChange={date => {
+              trigger('toDate');
+              field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);
+            }}
+            error={fieldState.error?.message}
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -77,6 +88,7 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
         render={({ field, fieldState }): ReactElement => (
           <Select
             {...field}
+            label="Currency"
             defaultValue={Currency.Usd}
             error={fieldState.error?.message}
             data={Object.keys(Currency).map(key => Currency[key as keyof typeof Currency])}
