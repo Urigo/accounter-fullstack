@@ -43,9 +43,7 @@ export default gql`
     credit: FinancialAmount!
     debit: FinancialAmount!
     total: FinancialAmount!
-    eurSum: ForeignCurrencySum
-    gbpSum: ForeignCurrencySum
-    usdSum: ForeignCurrencySum
+    foreignCurrenciesSum: [ForeignCurrencySum!]!
   }
 
   " summary of foreign currency business transactions " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
@@ -53,6 +51,7 @@ export default gql`
     credit: FinancialAmount!
     debit: FinancialAmount!
     total: FinancialAmount!
+    currency: Currency!
   }
 
   " result type for businessTransactionsFromLedgerRecords "
