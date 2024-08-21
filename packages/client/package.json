@@ -37,7 +37,7 @@
     "@tanstack/react-query": "5.52.0",
     "@tanstack/react-table": "8.20.1",
     "@urql/exchange-auth": "2.2.0",
-    "chart.js": "4.4.3",
+    "chart.js": "4.4.4",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.1",
     "date-fns": "3.6.0",
@@ -62,7 +62,7 @@
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.3.3",
+    "@types/react": "18.3.4",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "autoprefixer": "10.4.20",
