@@ -55,6 +55,8 @@ module.exports = {
                 'FinancialIntAmount',
                 'FlagForeignFeeTransactionsResult',
                 'GeneratedLedgerRecords',
+                'IncomeExpenseChart',
+                'IncomeExpenseChartMonthData',
                 'Ledger',
                 'LedgerBalanceInfo',
                 'LedgerBalanceUnbalancedEntity',

@@ -78,7 +78,7 @@ export const sidelinks: SideLink[] = [
     ],
   },
   {
-    title: 'All Business',
+    title: 'All Businesses',
     label: '',
     href: '',
     icon: <Handshake size={18} />,
@@ -110,10 +110,24 @@ export const sidelinks: SideLink[] = [
     icon: <PlaneTakeoff size={18} />,
   },
   {
-    href: '/charts',
     title: 'Charts',
     label: '',
+    href: '',
     icon: <BarChartBig size={18} />,
+    sub: [
+      {
+        title: 'Main',
+        label: '',
+        href: '/charts/',
+        icon: <BarChartBig size={18} />,
+      },
+      {
+        title: 'Monthly Income/Expense',
+        label: '',
+        href: '/charts/monthly-income-expense',
+        icon: <BarChartBig size={18} />,
+      },
+    ],
   },
   {
     href: '/salaries',

@@ -10,8 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "11.13.0",
+    "@emotion/react": "11.13.3",
     "@emotion/server": "11.11.0",
+    "@emotion/styled": "11.13.0",
     "@hookform/resolvers": "3.9.0",
     "@mantine/carousel": "6.0.22",
     "@mantine/core": "6.0.22",
@@ -19,6 +20,8 @@
     "@mantine/dropzone": "6.0.22",
     "@mantine/hooks": "6.0.22",
     "@mantine/notifications": "6.0.22",
+    "@mui/material": "5.16.7",
+    "@mui/x-charts": "7.13.0",
     "@radix-ui/react-avatar": "1.1.0",
     "@radix-ui/react-collapsible": "^1.1.0",
     "@radix-ui/react-dialog": "1.1.1",
