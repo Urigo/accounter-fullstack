@@ -111,6 +111,7 @@ const config: CodegenConfig = {
           Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
           WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],
