@@ -9,6 +9,7 @@ import { BusinessTrips } from './components/business-trips/index.js';
 import { Businesses } from './components/businesses/index.js';
 import { ChargesLedgerValidation } from './components/charges-ledger-validation.js';
 import { ChartPage } from './components/charts/index.js';
+import { MonthlyIncomeExpenseChart } from './components/charts/monthly-income-expense/index.js';
 import { DocumentsReport } from './components/documents/index.js';
 import { DashboardLayout } from './components/layout/dashboard-layout.js';
 import { AccountantApprovals } from './components/reports/accountant-approvals.js';
@@ -40,7 +41,10 @@ export function App(): ReactElement {
             path="business-transactions/:businessId"
             element={<BusinessTransactionsSingle />}
           />
-          <Route path="charts" element={<ChartPage />} />
+          <Route path="charts">
+            <Route path="" element={<ChartPage />} />
+            <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
+          </Route>
           <Route path="documents" element={<DocumentsReport />} />
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
