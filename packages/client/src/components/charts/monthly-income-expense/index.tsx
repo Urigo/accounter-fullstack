@@ -1,12 +1,12 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, sub } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   IncomeExpenseChartFilters,
   MonthlyIncomeExpenseChartDocument,
 } from '../../../gql/graphql.js';
-import type { TimelessDateString } from '../../../helpers/dates.js';
+import { currencyCodeToSymbol, type TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
@@ -25,6 +25,12 @@ import { Chart } from './chart.js';
   }
 `;
 
+const defaultToDate = format(sub(new Date(), { months: 2 }), 'yyyy-MM-dd') as TimelessDateString; // past month
+const defaultFromDate = format(
+  sub(new Date(), { years: 1, months: 1 }),
+  'yyyy-MM-dd',
+) as TimelessDateString; // past year
+
 export const MonthlyIncomeExpenseChart = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { get } = useUrlQuery();
@@ -34,8 +40,8 @@ export const MonthlyIncomeExpenseChart = (): ReactElement => {
           decodeURIComponent(get('MonthlyIncomeExpenseChartFilters') as string),
         ) as IncomeExpenseChartFilters)
       : {
-          fromDate: '2023-01-01' as TimelessDateString,
-          toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
+          fromDate: defaultFromDate,
+          toDate: defaultToDate,
         },
   );
 
@@ -55,16 +61,16 @@ export const MonthlyIncomeExpenseChart = (): ReactElement => {
   }, [data, filter, fetching, setFiltersContext, error]);
 
   const description = useMemo(() => {
-    const basicDescription = 'Total Income and Expense per Month';
+    const basicDescription = 'Total Income and Expense';
     if (!data?.incomeExpenseChart) {
-      return basicDescription;
+      return basicDescription + ' per Month';
     }
 
-    return `${basicDescription}, currency ${data.incomeExpenseChart.currency}, ${data.incomeExpenseChart.fromDate.substring(0, 7)} - ${data.incomeExpenseChart.toDate.substring(0, 7)}`;
+    return `${basicDescription}, currency ${currencyCodeToSymbol(data.incomeExpenseChart.currency)}, ${format(new Date(data.incomeExpenseChart.fromDate), "MMM ''yy")} - ${format(new Date(data.incomeExpenseChart.toDate), "MMM ''yy")}`;
   }, [data?.incomeExpenseChart]);
 
   return (
-    <PageLayout title="Monthly Income/Expense Chart" description={description}>
+    <PageLayout title="Monthly Income / Expense Chart" description={description}>
       {fetching || !data ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (

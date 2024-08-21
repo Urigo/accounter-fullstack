@@ -1,5 +1,5 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { format, sub } from 'date-fns';
+import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -26,18 +26,11 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
     closeModal();
   };
 
-  const pastMonth = format(sub(new Date(), { months: 1 }), 'yyyy-MM-dd') as TimelessDateString;
-  const pastYear = format(
-    sub(new Date(), { years: 1, months: 1 }),
-    'yyyy-MM-dd',
-  ) as TimelessDateString;
-
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Controller
         name="fromDate"
         control={control}
-        defaultValue={pastYear}
         rules={{
           pattern: {
             value: TIMELESS_DATE_REGEX,
@@ -61,7 +54,6 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
       <Controller
         name="toDate"
         control={control}
-        defaultValue={pastMonth}
         rules={{
           pattern: {
             value: TIMELESS_DATE_REGEX,

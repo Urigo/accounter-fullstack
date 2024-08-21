@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BarChart } from '@mui/x-charts';
+import { BarChart, type BarSeriesType } from '@mui/x-charts';
 import { MonthlyIncomeExpenseChartInfoFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 
@@ -32,19 +32,34 @@ export const Chart: React.FC<BarChartProps> = ({ data }) => {
   const { monthlyData } = getFragmentData(MonthlyIncomeExpenseChartInfoFragmentDoc, data);
 
   const labels = monthlyData.map(month => month.date.substring(0, 7));
-  const series = useMemo(() => {
+  const series: Omit<BarSeriesType, 'type'>[] = useMemo(() => {
     const incomeData = [];
     const expenseData = [];
     const balanceData = [];
+    const cumulativeBalanceData = [];
     for (const month of monthlyData) {
       incomeData.push(month.income.raw);
       expenseData.push(-month.expense.raw);
-      balanceData.push(month.balance.raw);
+      balanceData.push(month.income.raw - month.expense.raw);
+      cumulativeBalanceData.push(month.balance.raw);
     }
     return [
-      { data: incomeData, label: 'Income', highlightScope, color: '#4caf50' },
-      { data: expenseData, label: 'Expense', highlightScope, color: '#f44336' },
-      { data: balanceData, label: 'Balance', highlightScope, color: '#2196f3' },
+      { data: incomeData, label: 'Income', highlightScope, color: '#4caf50', stack: 'stack1' },
+      { data: expenseData, label: 'Expense', highlightScope, color: '#f44336', stack: 'stack1' },
+      {
+        data: balanceData,
+        label: 'Month Balance',
+        highlightScope,
+        color: '#8658a4',
+        stack: 'stack2',
+      },
+      {
+        data: cumulativeBalanceData,
+        label: 'Cumulative Balance',
+        highlightScope,
+        color: '#2196f3',
+        stack: 'stack3',
+      },
     ];
   }, [monthlyData]);
   return (
@@ -59,6 +74,7 @@ export const Chart: React.FC<BarChartProps> = ({ data }) => {
         },
       ]}
       margin={{ top: 10, bottom: 30, left: 40, right: 10 }}
+      borderRadius={3}
     />
   );
 };
