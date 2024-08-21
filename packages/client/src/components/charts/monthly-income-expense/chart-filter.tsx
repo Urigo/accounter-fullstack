@@ -3,7 +3,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Select, TextInput } from '@mantine/core';
+import { ActionIcon, Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import { Currency, IncomeExpenseChartFilters } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX, TimelessDateString } from '../../../helpers/index.js';
