@@ -68,9 +68,7 @@ export default gql`
   type BusinessTransaction {
     amount: FinancialAmount!
     business: FinancialEntity!
-    eurAmount: FinancialAmount
-    gbpAmount: FinancialAmount
-    usdAmount: FinancialAmount
+    foreignAmount: FinancialAmount
     invoiceDate: TimelessDate!
     reference1: String
     reference2: String

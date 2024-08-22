@@ -235,28 +235,13 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
           return res;
         }),
-    eurAmount: parent =>
-      parent.currency === Currency.Eur
-        ? formatFinancialAmount(
-            Number.isNaN(parent.foreignAmount)
-              ? parent.foreignAmount
-              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
-            Currency.Eur,
-          )
-        : null,
-    gbpAmount: parent =>
-      parent.currency === Currency.Gbp
-        ? formatFinancialAmount(
-            Number.isNaN(parent.foreignAmount)
-              ? parent.foreignAmount
-              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
-            Currency.Gbp,
-          )
-        : null,
-    usdAmount: parent =>
-      parent.currency === Currency.Usd
-        ? formatFinancialAmount(parent.foreignAmount * (parent.isCredit ? 1 : -1), Currency.Usd)
-        : null,
+    foreignAmount: parent =>
+      formatFinancialAmount(
+        Number.isNaN(parent.foreignAmount)
+          ? parent.foreignAmount
+          : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
+        parent.currency,
+      ),
 
     invoiceDate: parent => dateToTimelessDateString(parent.date!),
     reference1: parent => parent.reference1 ?? null,
