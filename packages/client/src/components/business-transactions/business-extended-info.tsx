@@ -1,7 +1,8 @@
-import { ReactElement } from 'react';
+import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
+import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Mark, NavLink, Table } from '@mantine/core';
+import { ActionIcon, Mark, NavLink, Table, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
@@ -25,17 +26,10 @@ import { AccounterLoader } from '../common/index.js';
             id
             name
           }
-          eurAmount {
+          foreignAmount {
             formatted
             raw
-          }
-          gbpAmount {
-            formatted
-            raw
-          }
-          usdAmount {
-            formatted
-            raw
+            currency
           }
           invoiceDate
           reference1
@@ -57,12 +51,21 @@ import { AccounterLoader } from '../common/index.js';
   }
 `;
 
+type ExtendedTransaction = Extract<
+  BusinessTransactionsInfoQuery['businessTransactionsFromLedgerRecords'],
+  { __typename?: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult' }
+>['businessTransactions'][number] & {
+  ilsBalance: number;
+  [currencyBalance: string]: number;
+};
+
 interface Props {
   businessID: string;
   filter?: BusinessTransactionsFilter;
 }
 
 export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {
+  const [isExtendAllCurrencies, setISExtendAllCurrencies] = useState(false);
   const { fromDate, ownerIds, toDate } = filter ?? {};
   const [{ data, fetching }] = useQuery({
     query: BusinessTransactionsInfoDocument,
@@ -83,42 +86,46 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           a.invoiceDate > b.invoiceDate ? 1 : -1,
         ) ?? []);
 
-  const extendedTransactions: Array<
-    Extract<
-      BusinessTransactionsInfoQuery['businessTransactionsFromLedgerRecords'],
-      { __typename?: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult' }
-    >['businessTransactions'][number] & {
-      ilsBalance: number;
-      eurBalance: number;
-      gbpBalance: number;
-      usdBalance: number;
-    }
-  > = [];
+  const extendedTransactions: Array<ExtendedTransaction> = [];
   for (let i = 0; i < transactions.length; i++) {
-    extendedTransactions.push({
-      ...transactions[i],
-      ilsBalance:
-        i === 0
-          ? transactions[i].amount.raw
-          : (extendedTransactions[i - 1].ilsBalance ?? 0) + transactions[i].amount.raw,
-      eurBalance:
-        i === 0
-          ? (transactions[i].eurAmount?.raw ?? 0)
-          : (extendedTransactions[i - 1].eurBalance ?? 0) + (transactions[i].eurAmount?.raw ?? 0),
-      gbpBalance:
-        i === 0
-          ? (transactions[i].gbpAmount?.raw ?? 0)
-          : (extendedTransactions[i - 1].gbpBalance ?? 0) + (transactions[i].gbpAmount?.raw ?? 0),
-      usdBalance:
-        i === 0
-          ? (transactions[i].usdAmount?.raw ?? 0)
-          : (extendedTransactions[i - 1].usdBalance ?? 0) + (transactions[i].usdAmount?.raw ?? 0),
+    const { __typename, ...coreTransaction } = transactions[i];
+    const ilsBalance =
+      i === 0
+        ? coreTransaction.amount.raw
+        : (extendedTransactions[i - 1].ilsBalance ?? 0) + coreTransaction.amount.raw;
+    const foreignCurrenciesBalance: Record<string, number> = {};
+    Object.values(Currency).map(currency => {
+      if (currency !== Currency.Ils) {
+        const key = `${currency.toLowerCase()}Balance`;
+        foreignCurrenciesBalance[key] =
+          i === 0
+            ? ((coreTransaction.foreignAmount?.currency === currency
+                ? coreTransaction.foreignAmount?.raw
+                : 0) ?? 0)
+            : (extendedTransactions[i - 1]?.[key] ?? 0) +
+              (coreTransaction.foreignAmount?.currency === currency
+                ? coreTransaction.foreignAmount?.raw
+                : 0);
+      }
     });
+    extendedTransactions.push({
+      ...coreTransaction,
+      ilsBalance,
+      ...foreignCurrenciesBalance,
+    } as (typeof extendedTransactions)[number]);
   }
 
-  const isEur = transactions.some(item => item.eurAmount);
-  const isUsd = transactions.some(item => item.usdAmount);
-  const isGbp = transactions.some(item => item.gbpAmount);
+  const isEur =
+    isExtendAllCurrencies ||
+    transactions.some(item => item.foreignAmount?.currency === Currency.Eur);
+  const isUsd =
+    isExtendAllCurrencies ||
+    transactions.some(item => item.foreignAmount?.currency === Currency.Usd);
+  const isGbp =
+    isExtendAllCurrencies ||
+    transactions.some(item => item.foreignAmount?.currency === Currency.Gbp);
+
+  console.log(extendedTransactions);
 
   return (
     <div className="flex flex-row gap-5">
@@ -148,6 +155,31 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <>
                   <th>GBP Amount</th>
                   <th>GBP Balance</th>
+                </>
+              )}
+              <th>
+                <Tooltip label="Expand all currencies">
+                  <ActionIcon
+                    variant="default"
+                    onClick={(): void => setISExtendAllCurrencies(i => !i)}
+                    size={30}
+                  >
+                    {isExtendAllCurrencies ? (
+                      <ChevronsRightLeft size={20} />
+                    ) : (
+                      <ChevronsLeftRightEllipsis size={20} />
+                    )}
+                  </ActionIcon>
+                </Tooltip>
+              </th>
+              {isExtendAllCurrencies && (
+                <>
+                  {currenciesToExtend.map(currency => (
+                    <>
+                      <th>{currency} Amount</th>
+                      <th>{currency} Balance</th>
+                    </>
+                  ))}
                 </>
               )}
               <th>Reference1</th>
@@ -181,69 +213,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                     >{`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(row.ilsBalance)}`}</Mark>
                   )}
                 </td>
-                {isEur && (
-                  <>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {!!row.eurAmount && row.eurAmount.raw !== 0 && (
-                        <Mark color={row.eurAmount.raw > 0 ? 'green' : 'red'}>
-                          {row.eurAmount.formatted}
-                        </Mark>
-                      )}
-                    </td>
-                    <td>
-                      {(row.eurAmount?.raw ?? 0) !== 0 &&
-                        (row.eurBalance === 0 ? (
-                          `${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`
-                        ) : (
-                          <Mark
-                            color={row.eurBalance > 0 ? 'green' : 'red'}
-                          >{`${currencyCodeToSymbol(Currency.Eur)} ${formatStringifyAmount(row.eurBalance)}`}</Mark>
-                        ))}
-                    </td>
-                  </>
-                )}
-                {isUsd && (
-                  <>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {!!row.usdAmount && (row.usdAmount?.raw ?? 0) !== 0 && (
-                        <Mark color={row.usdAmount.raw > 0 ? 'green' : 'red'}>
-                          {row.usdAmount.formatted}
-                        </Mark>
-                      )}
-                    </td>
-                    <td>
-                      {row.usdAmount?.raw !== 0 &&
-                        (row.usdBalance === 0 ? (
-                          `${currencyCodeToSymbol(Currency.Usd)} ${formatStringifyAmount(row.usdBalance)}`
-                        ) : (
-                          <Mark
-                            color={row.usdBalance > 0 ? 'green' : 'red'}
-                          >{`${currencyCodeToSymbol(Currency.Usd)}  ${formatStringifyAmount(row.usdBalance)}`}</Mark>
-                        ))}
-                    </td>
-                  </>
-                )}
-                {isGbp && (
-                  <>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {!!row.gbpAmount && row.gbpAmount.raw !== 0 && (
-                        <Mark color={row.gbpAmount.raw > 0 ? 'green' : 'red'}>
-                          {row.gbpAmount.formatted}
-                        </Mark>
-                      )}
-                    </td>
-                    <td>
-                      {row.gbpAmount?.raw !== 0 &&
-                        (row.gbpBalance === 0 ? (
-                          `${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`
-                        ) : (
-                          <Mark
-                            color={row.gbpBalance > 0 ? 'green' : 'red'}
-                          >{`${currencyCodeToSymbol(Currency.Gbp)} ${formatStringifyAmount(row.gbpBalance)}`}</Mark>
-                        ))}
-                    </td>
-                  </>
-                )}
+                {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
+                {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
+                {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
+                <td />
+                {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
                 <td>{row.reference1}</td>
                 <td>{row.reference2}</td>
                 <td>{row.details}</td>
@@ -268,5 +242,50 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
         </Table>
       )}
     </div>
+  );
+}
+
+export function CurrencyCells({
+  currency,
+  data,
+}: {
+  currency: Currency;
+  data: ExtendedTransaction;
+}): ReactElement {
+  const foreignAmount =
+    data.foreignAmount && data.foreignAmount.currency === currency ? data.foreignAmount : null;
+  const key = `${currency.toLowerCase()}Balance`;
+  return (
+    <>
+      <td style={{ whiteSpace: 'nowrap' }}>
+        {!!foreignAmount && foreignAmount.raw !== 0 && (
+          <Mark color={foreignAmount.raw > 0 ? 'green' : 'red'}>{foreignAmount.formatted}</Mark>
+        )}
+      </td>
+      <td>
+        {(data[key] ?? 0) !== 0 &&
+          (data[key] === 0 ? (
+            `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(data[key])}`
+          ) : (
+            <Mark
+              color={data[key] > 0 ? 'green' : 'red'}
+            >{`${currencyCodeToSymbol(currency)} ${formatStringifyAmount(data[key])}`}</Mark>
+          ))}
+      </td>
+    </>
+  );
+}
+
+const currenciesToExtend = Object.values(Currency).filter(
+  currency => ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp].includes(currency),
+);
+
+export function ExtendedCurrencyCells({ data }: { data: ExtendedTransaction }): ReactElement {
+  return (
+    <>
+      {currenciesToExtend.map(currency => (
+        <CurrencyCells key={currency} currency={currency} data={data} />
+      ))}
+    </>
   );
 }
