@@ -1,11 +1,13 @@
 import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ChevronsLeftRightEllipsis, ChevronsRightLeft, Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Mark, Table, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
+  BusinessTransactionsSummeryQuery,
+  Currency,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
@@ -34,31 +36,8 @@ import { BusinessTransactionsFilters } from './business-transactions-filters.js'
             formatted
             raw
           }
-          eurSum {
-            credit {
-              formatted
-            }
-            debit {
-              formatted
-            }
-            total {
-              formatted
-              raw
-            }
-          }
-          gbpSum {
-            credit {
-              formatted
-            }
-            debit {
-              formatted
-            }
-            total {
-              formatted
-              raw
-            }
-          }
-          usdSum {
+          foreignCurrenciesSum {
+            currency
             credit {
               formatted
             }
@@ -80,10 +59,23 @@ import { BusinessTransactionsFilters } from './business-transactions-filters.js'
   }
 `;
 
+type BusinessTransactionsSum = Extract<
+  BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
+  { businessTransactionsSum: unknown }
+>['businessTransactionsSum'][number];
+
+type CellInfo = {
+  title: string | ReactNode;
+  disabled?: boolean;
+  value: (item: BusinessTransactionsSum) => string | ReactNode;
+  style?: React.CSSProperties;
+};
+
 export const BusinessTransactionsSummery = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
+  const [isExpandedCurrencies, setIsExpandedCurrencies] = useState<boolean>(false);
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
     get('transactionsFilters')
       ? (JSON.parse(
@@ -107,9 +99,30 @@ export const BusinessTransactionsSummery = (): ReactElement => {
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
+        <Tooltip label="Expand all currencies">
+          <ActionIcon
+            variant="default"
+            onClick={(): void => setIsExpandedCurrencies(i => !i)}
+            size={30}
+          >
+            {isExpandedCurrencies ? (
+              <ChevronsRightLeft size={20} />
+            ) : (
+              <ChevronsLeftRightEllipsis size={20} />
+            )}
+          </ActionIcon>
+        </Tooltip>
       </div>,
     );
-  }, [data, filter, setFiltersContext, setFilter, isAllOpened, setIsAllOpened]);
+  }, [
+    data,
+    filter,
+    setFiltersContext,
+    setFilter,
+    isAllOpened,
+    setIsAllOpened,
+    isExpandedCurrencies,
+  ]);
 
   const businessTransactionsSum = useMemo(() => {
     if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
@@ -123,12 +136,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     );
   }, [data?.businessTransactionsSumFromLedgerRecords]);
 
-  const columns: Array<{
-    title: string | ReactNode;
-    disabled?: boolean;
-    value: (item: (typeof businessTransactionsSum)[0]) => string | ReactNode;
-    style?: React.CSSProperties;
-  }> = [
+  const columns: Array<CellInfo> = [
     {
       title: 'Business Name',
       value: data => data.business.name,
@@ -159,90 +167,10 @@ export const BusinessTransactionsSummery = (): ReactElement => {
       ),
       style: { whiteSpace: 'nowrap' },
     },
-    {
-      title: 'EUR Debit / Credit',
-      value: data =>
-        data.eurSum ? (
-          <div className="flex flex-col items-center">
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="red">{data.eurSum.debit.formatted}</Text>
-            </p>
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="green">{data.eurSum.credit.formatted}</Text>
-            </p>
-          </div>
-        ) : null,
-      style: { whiteSpace: 'nowrap' },
-    },
-    {
-      title: 'EUR Total',
-      value: data =>
-        data.eurSum?.total?.raw &&
-        (data.eurSum.total.raw < -0.0001 || data.eurSum.total.raw > 0.0001) ? (
-          <Mark color={data.eurSum.total.raw > 0 ? 'green' : 'red'}>
-            {data.eurSum.total.formatted}
-          </Mark>
-        ) : (
-          data.eurSum?.total?.formatted
-        ),
-      style: { whiteSpace: 'nowrap' },
-    },
-    {
-      title: 'USD Debit / Credit',
-      value: data =>
-        data.usdSum ? (
-          <div className="flex flex-col items-center">
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="red">{data.usdSum.debit.formatted}</Text>
-            </p>
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="green">{data.usdSum.credit.formatted}</Text>
-            </p>
-          </div>
-        ) : null,
-      style: { whiteSpace: 'nowrap' },
-    },
-    {
-      title: 'USD Total',
-      value: data =>
-        data.usdSum?.total?.raw &&
-        (data.usdSum.total.raw < -0.0001 || data.usdSum.total.raw > 0.0001) ? (
-          <Mark color={data.usdSum.total.raw > 0 ? 'green' : 'red'}>
-            {data.usdSum.total.formatted}
-          </Mark>
-        ) : (
-          data.usdSum?.total?.formatted
-        ),
-      style: { whiteSpace: 'nowrap' },
-    },
-    {
-      title: 'GBP Debit / Credit',
-      value: data =>
-        data.gbpSum ? (
-          <div className="flex flex-col items-center">
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="red">{data.gbpSum.debit.formatted}</Text>
-            </p>
-            <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="green">{data.gbpSum.credit.formatted}</Text>
-            </p>
-          </div>
-        ) : null,
-      style: { whiteSpace: 'nowrap' },
-    },
-    {
-      title: 'GBP Total',
-      value: data =>
-        data.gbpSum?.total?.raw &&
-        (data.gbpSum.total.raw < -0.0001 || data.gbpSum.total.raw > 0.0001) ? (
-          <Mark color={data.gbpSum.total.raw > 0 ? 'green' : 'red'}>
-            {data.gbpSum.total.formatted}
-          </Mark>
-        ) : (
-          data.gbpSum?.total?.formatted
-        ),
-      style: { whiteSpace: 'nowrap' },
-    },
+    ...getCurrencyCells(Currency.Eur),
+    ...getCurrencyCells(Currency.Usd),
+    ...getCurrencyCells(Currency.Gbp),
+    ...getExtendedCurrencies(isExpandedCurrencies),
   ];
 
   return (
@@ -277,3 +205,53 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     </PageLayout>
   );
 };
+
+function getCurrencyCells(currency: Currency): CellInfo[] {
+  return [
+    {
+      title: `${currency} Debit / Credit`,
+      value: (data): ReactNode => {
+        const currencySum = data.foreignCurrenciesSum.find(c => c.currency === currency);
+        return currencySum ? (
+          <div className="flex flex-col items-center">
+            <p className="flex flex-row gap-2 whitespace-nowrap">
+              <Text c="red">{currencySum.debit.formatted}</Text>
+            </p>
+            <p className="flex flex-row gap-2 whitespace-nowrap">
+              <Text c="green">{currencySum.credit.formatted}</Text>
+            </p>
+          </div>
+        ) : null;
+      },
+      style: { whiteSpace: 'nowrap' },
+    },
+    {
+      title: `${currency} Total`,
+      value: (data): ReactNode => {
+        const currencySum = data.foreignCurrenciesSum.find(c => c.currency === currency);
+
+        return currencySum?.total?.raw &&
+          (currencySum.total.raw < -0.0001 || currencySum.total.raw > 0.0001) ? (
+          <Mark color={currencySum.total.raw > 0 ? 'green' : 'red'}>
+            {currencySum.total.formatted}
+          </Mark>
+        ) : (
+          currencySum?.total?.formatted
+        );
+      },
+      style: { whiteSpace: 'nowrap' },
+    },
+  ];
+}
+
+function getExtendedCurrencies(isExpandedCurrencies: boolean): CellInfo[] {
+  if (!isExpandedCurrencies) {
+    return [];
+  }
+
+  const currenciesToExtend = Object.values(Currency).filter(
+    currency => ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp].includes(currency),
+  );
+
+  return currenciesToExtend.map(getCurrencyCells).flat();
+}

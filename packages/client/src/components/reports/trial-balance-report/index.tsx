@@ -15,70 +15,10 @@ import { TrialBalanceTable } from './trial-balance-table.js';
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
-        businessTransactionsSum {
-          business {
-            id
-            name
-            sortCode {
-              id
-              name
-            }
-          }
-          credit {
-            formatted
-            raw
-          }
-          debit {
-            formatted
-            raw
-          }
-          total {
-            formatted
-            raw
-          }
-          eurSum {
-            credit {
-              formatted
-            }
-            debit {
-              formatted
-            }
-            total {
-              formatted
-              raw
-            }
-          }
-          gbpSum {
-            credit {
-              formatted
-            }
-            debit {
-              formatted
-            }
-            total {
-              formatted
-              raw
-            }
-          }
-          usdSum {
-            credit {
-              formatted
-              raw
-            }
-            debit {
-              formatted
-              raw
-            }
-            total {
-              formatted
-              raw
-            }
-          }
-        }
+        ...TrialBalanceTableFields
       }
       ... on CommonError {
         __typename
-        message
       }
     }
   }
@@ -119,19 +59,19 @@ export const TrialBalanceReport = (): ReactElement => {
     );
   }, [filter, isAllOpened, setFiltersContext]);
 
-  const businessTransactionsSum = useMemo(() => {
+  const businessTransactionsData = useMemo(() => {
     return data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'
-      ? []
-      : (data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum ?? []);
+      ? undefined
+      : data?.businessTransactionsSumFromLedgerRecords;
   }, [data?.businessTransactionsSumFromLedgerRecords]);
 
   return (
     <PageLayout title="Trial Balance Report" description="Trial balance report for all businesses">
-      {fetching ? (
+      {fetching || !businessTransactionsData ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <TrialBalanceTable
-          businessTransactionsSum={businessTransactionsSum}
+          data={businessTransactionsData}
           filter={filter}
           isAllOpened={isAllOpened}
         />

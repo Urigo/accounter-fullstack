@@ -1,10 +1,12 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
+  BusinessTransactionsSummeryQuery,
+  Currency,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
@@ -92,76 +94,52 @@ export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement 
             ),
           style: { whiteSpace: 'nowrap' },
         },
-        {
-          title: 'EUR Debit',
-          value: data => data.eurSum?.debit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'EUR Credit',
-          value: data => data.eurSum?.credit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'EUR Total',
-          value: data =>
-            data.eurSum?.total?.raw &&
-            (data.eurSum.total.raw < -0.0001 || data.eurSum.total.raw > 0.0001) ? (
-              <Mark color={data.eurSum.total.raw > 0 ? 'green' : 'red'}>
-                {data.eurSum.total.formatted}
-              </Mark>
-            ) : (
-              data.eurSum?.total?.formatted
-            ),
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'USD Debit',
-          value: data => data.usdSum?.debit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'USD Credit',
-          value: data => data.usdSum?.credit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'USD Total',
-          value: data =>
-            data.usdSum?.total?.raw &&
-            (data.usdSum.total.raw < -0.0001 || data.usdSum.total.raw > 0.0001) ? (
-              <Mark color={data.usdSum.total.raw > 0 ? 'green' : 'red'}>
-                {data.usdSum.total.formatted}
-              </Mark>
-            ) : (
-              data.usdSum?.total?.formatted
-            ),
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'GBP Debit',
-          value: data => data.gbpSum?.debit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'GBP Credit',
-          value: data => data.gbpSum?.credit?.formatted,
-          style: { whiteSpace: 'nowrap' },
-        },
-        {
-          title: 'GBP Total',
-          value: data =>
-            data.gbpSum?.total?.raw &&
-            (data.gbpSum.total.raw < -0.0001 || data.gbpSum.total.raw > 0.0001) ? (
-              <Mark color={data.gbpSum.total.raw > 0 ? 'green' : 'red'}>
-                {data.gbpSum.total.formatted}
-              </Mark>
-            ) : (
-              data.gbpSum?.total?.formatted
-            ),
-          style: { whiteSpace: 'nowrap' },
-        },
+        ...getCurrencyCells(Currency.Eur),
+        ...getCurrencyCells(Currency.Usd),
+        ...getCurrencyCells(Currency.Gbp),
       ]}
     />
   );
 };
+
+type BusinessTransactionsSum = Extract<
+  BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
+  { businessTransactionsSum: unknown }
+>['businessTransactionsSum'][number];
+
+type CellInfo = {
+  title: ReactNode;
+  value: (data: BusinessTransactionsSum) => string | ReactNode;
+  style?: React.CSSProperties;
+};
+
+function getCurrencyCells(currency: Currency): CellInfo[] {
+  return [
+    {
+      title: `${currency} Debit`,
+      value: data => data.foreignCurrenciesSum.find(c => c.currency === currency)?.debit?.formatted,
+      style: { whiteSpace: 'nowrap' },
+    },
+    {
+      title: `${currency} Credit`,
+      value: data =>
+        data.foreignCurrenciesSum.find(c => c.currency === currency)?.credit?.formatted,
+      style: { whiteSpace: 'nowrap' },
+    },
+    {
+      title: `${currency} Total`,
+      value: (data): ReactNode => {
+        const currencyData = data.foreignCurrenciesSum.find(c => c.currency === currency);
+        return currencyData?.total?.raw &&
+          (currencyData.total.raw < -0.0001 || currencyData.total.raw > 0.0001) ? (
+          <Mark color={currencyData.total.raw > 0 ? 'green' : 'red'}>
+            {currencyData.total.formatted}
+          </Mark>
+        ) : (
+          currencyData?.total?.formatted
+        );
+      },
+      style: { whiteSpace: 'nowrap' },
+    },
+  ];
+}

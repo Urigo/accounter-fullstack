@@ -1,12 +1,12 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon, Text, Tooltip } from '@mantine/core';
-import { TrialBalanceReportQuery } from '../../../gql/graphql.js';
+import { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedBusiness = Extract<
-  TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
+  TrialBalanceTableFieldsFragment,
   { businessTransactionsSum: unknown }
 >['businessTransactionsSum'][number];
 
