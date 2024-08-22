@@ -68,13 +68,7 @@ function getPartialEntryAmounts(
     return null;
   }
 
-  const mainAmount = Math.abs(
-    Math.max(
-      ...(entry.currency === DEFAULT_LOCAL_CURRENCY
-        ? [entry.localCurrencyDebitAmount1 ?? 0, entry.localCurrencyCreditAmount1 ?? 0]
-        : [entry.debitAmount1 ?? 0, entry.creditAmount1 ?? 0]),
-    ),
-  );
+  const mainAmount = getEntryMainAmount(entry);
 
   if ((entry.debitAmount1 || entry.creditAmount1) && partialAmount > mainAmount) {
     throw new LedgerError('Partial amount exceeds ledger record amount');
@@ -109,74 +103,27 @@ export async function handleCrossYearLedgerEntries(
   if (!spreadRecords?.length) {
     return null;
   }
-  if (accountingLedgerEntries.length > 1) {
-    throw new LedgerError('Unable to split multiple documents');
+  if (accountingLedgerEntries.length > 1 && spreadRecords.length > 1) {
+    throw new LedgerError('Unable to split multiple documents into multiple years');
   }
+
+  let yearsWithoutSpecifiedAmountCount = 0;
+  let predefinedAmount = 0;
+  spreadRecords.map(record => {
+    if (record.amount === null) {
+      yearsWithoutSpecifiedAmountCount += 1;
+    } else {
+      predefinedAmount += Number(record.amount);
+    }
+  });
 
   // calculate cross year entries
   const crossYearEntries: LedgerProto[] = [];
-  for (const entry of accountingLedgerEntries) {
-    const adjustedEntry = { ...entry };
-    if (entry.creditAccountID2 && entry.creditAccountID2 === INPUT_VAT_TAX_CATEGORY_ID) {
-      crossYearEntries.push({
-        ...entry,
-        creditAccountID1: entry.creditAccountID2,
-        creditAccountID2: undefined,
-        creditAmount1: entry.creditAmount2,
-        creditAmount2: undefined,
-        localCurrencyCreditAmount1: entry.localCurrencyCreditAmount2!,
-        localCurrencyCreditAmount2: undefined,
-        localCurrencyDebitAmount1: entry.localCurrencyCreditAmount2!,
-        localCurrencyDebitAmount2: undefined,
-      });
+  if (accountingLedgerEntries.length === 1) {
+    const entry = accountingLedgerEntries[0];
+    const { adjustedEntry, vatEntries } = splitVatPayments(entry);
+    crossYearEntries.push(...vatEntries);
 
-      // remove VAT from main entry
-      adjustedEntry.debitAmount1 &&= adjustedEntry.debitAmount1 - (entry.creditAmount2 ?? 0);
-      adjustedEntry.localCurrencyDebitAmount1 &&=
-        adjustedEntry.localCurrencyDebitAmount1 - entry.localCurrencyCreditAmount2!;
-      adjustedEntry.creditAccountID2 = undefined;
-      adjustedEntry.creditAmount2 = undefined;
-      adjustedEntry.localCurrencyCreditAmount2 = undefined;
-    } else if (entry.debitAccountID2 && entry.debitAccountID2 === OUTPUT_VAT_TAX_CATEGORY_ID) {
-      crossYearEntries.push({
-        ...entry,
-        debitAccountID1: entry.debitAccountID2,
-        debitAmount1: entry.debitAmount2,
-        localCurrencyDebitAmount1: entry.localCurrencyDebitAmount2!,
-
-        localCurrencyCreditAmount1: entry.localCurrencyDebitAmount2!,
-
-        debitAccountID2: undefined,
-        debitAmount2: undefined,
-        localCurrencyDebitAmount2: undefined,
-
-        creditAccountID2: undefined,
-        creditAmount2: undefined,
-        localCurrencyCreditAmount2: undefined,
-      });
-
-      // remove VAT from main entry
-      adjustedEntry.creditAmount1 &&= adjustedEntry.creditAmount1 - (entry.debitAmount2 ?? 0);
-      adjustedEntry.localCurrencyCreditAmount1 &&=
-        adjustedEntry.localCurrencyCreditAmount1 - entry.localCurrencyDebitAmount2!;
-      adjustedEntry.debitAccountID2 = undefined;
-      adjustedEntry.debitAmount2 = undefined;
-      adjustedEntry.localCurrencyDebitAmount2 = undefined;
-    }
-
-    let yearsWithoutSpecifiedAmountCount = 0;
-    let predefinedAmount = 0;
-    spreadRecords.map(record => {
-      if (record.amount === null) {
-        yearsWithoutSpecifiedAmountCount += 1;
-      } else {
-        predefinedAmount += Number(record.amount);
-      }
-    });
-
-    if (adjustedEntry.creditAmount1 !== adjustedEntry.debitAmount1) {
-      throw new LedgerError('Credit and debit amounts are not equal');
-    }
     const defaultAmounts = divideEntryAmounts(
       adjustedEntry,
       yearsWithoutSpecifiedAmountCount,
@@ -229,6 +176,152 @@ export async function handleCrossYearLedgerEntries(
         },
       );
     }
+  } else if (spreadRecords.length === 1) {
+    const spreadRecord = spreadRecords[0];
+    const yearDate = spreadRecord.year_of_relevance;
+
+    validateEntriesAmountsMatchesSpread(spreadRecord.amount, accountingLedgerEntries);
+
+    for (const entry of accountingLedgerEntries) {
+      const { adjustedEntry, vatEntries } = splitVatPayments(entry);
+      crossYearEntries.push(...vatEntries);
+
+      if (
+        adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
+        adjustedEntry.valueDate.getFullYear() === yearDate.getFullYear()
+      ) {
+        crossYearEntries.push(adjustedEntry);
+        continue;
+      }
+
+      const isYearOfRelevancePrior =
+        adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
+      const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
+        ? isYearOfRelevancePrior
+          ? EXPENSES_TO_PAY_TAX_CATEGORY
+          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+        : isYearOfRelevancePrior
+          ? INCOME_TO_COLLECT_TAX_CATEGORY
+          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+
+      const yearOfRelevanceDates = isYearOfRelevancePrior
+        ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
+        : { invoiceDate: new Date(yearDate.getFullYear(), 0, 1) };
+      crossYearEntries.push(
+        {
+          // first chronological entry
+          ...adjustedEntry,
+          ...(adjustedEntry.isCreditorCounterparty
+            ? { creditAccountID1: mediateTaxCategory }
+            : { debitAccountID1: mediateTaxCategory }),
+          ...yearOfRelevanceDates,
+          ...(isYearOfRelevancePrior ? { vat: undefined } : {}),
+        },
+        {
+          // second chronological entry
+          ...adjustedEntry,
+          ...(adjustedEntry.isCreditorCounterparty
+            ? { debitAccountID1: mediateTaxCategory }
+            : { creditAccountID1: mediateTaxCategory }),
+          ...(isYearOfRelevancePrior ? {} : { vat: undefined }),
+        },
+      );
+    }
   }
   return crossYearEntries;
+}
+
+function splitVatPayments(entry: LedgerProto): {
+  adjustedEntry: LedgerProto;
+  vatEntries: LedgerProto[];
+} {
+  const vatTaxIds = [INPUT_VAT_TAX_CATEGORY_ID, OUTPUT_VAT_TAX_CATEGORY_ID];
+  const vatEntries: LedgerProto[] = [];
+  const adjustedEntry = { ...entry };
+  if (vatTaxIds.includes(entry.creditAccountID2 ?? '')) {
+    vatEntries.push({
+      ...entry,
+      creditAccountID1: entry.creditAccountID2,
+      creditAccountID2: undefined,
+      creditAmount1: entry.creditAmount2,
+      creditAmount2: undefined,
+      localCurrencyCreditAmount1: entry.localCurrencyCreditAmount2!,
+      localCurrencyCreditAmount2: undefined,
+      localCurrencyDebitAmount1: entry.localCurrencyCreditAmount2!,
+      localCurrencyDebitAmount2: undefined,
+    });
+
+    // remove VAT from main entry
+    adjustedEntry.debitAmount1 &&= adjustedEntry.debitAmount1 - (entry.creditAmount2 ?? 0);
+    adjustedEntry.localCurrencyDebitAmount1 &&=
+      adjustedEntry.localCurrencyDebitAmount1 - entry.localCurrencyCreditAmount2!;
+    adjustedEntry.creditAccountID2 = undefined;
+    adjustedEntry.creditAmount2 = undefined;
+    adjustedEntry.localCurrencyCreditAmount2 = undefined;
+  } else if (vatTaxIds.includes(entry.debitAccountID2 ?? '')) {
+    vatEntries.push({
+      ...entry,
+      debitAccountID1: entry.debitAccountID2,
+      debitAmount1: entry.debitAmount2,
+      localCurrencyDebitAmount1: entry.localCurrencyDebitAmount2!,
+
+      localCurrencyCreditAmount1: entry.localCurrencyDebitAmount2!,
+
+      debitAccountID2: undefined,
+      debitAmount2: undefined,
+      localCurrencyDebitAmount2: undefined,
+
+      creditAccountID2: undefined,
+      creditAmount2: undefined,
+      localCurrencyCreditAmount2: undefined,
+    });
+
+    // remove VAT from main entry
+    adjustedEntry.creditAmount1 &&= adjustedEntry.creditAmount1 - (entry.debitAmount2 ?? 0);
+    adjustedEntry.localCurrencyCreditAmount1 &&=
+      adjustedEntry.localCurrencyCreditAmount1 - entry.localCurrencyDebitAmount2!;
+    adjustedEntry.debitAccountID2 = undefined;
+    adjustedEntry.debitAmount2 = undefined;
+    adjustedEntry.localCurrencyDebitAmount2 = undefined;
+  }
+
+  if (adjustedEntry.creditAmount1 !== adjustedEntry.debitAmount1) {
+    throw new LedgerError('Credit and debit amounts are not equal');
+  }
+
+  return { adjustedEntry, vatEntries };
+}
+
+function getEntryMainAmount(entry: LedgerProto): number {
+  const mainAmount = Math.abs(
+    Math.max(
+      ...(entry.currency === DEFAULT_LOCAL_CURRENCY
+        ? [entry.localCurrencyDebitAmount1 ?? 0, entry.localCurrencyCreditAmount1 ?? 0]
+        : [entry.debitAmount1 ?? 0, entry.creditAmount1 ?? 0]),
+    ),
+  );
+
+  return mainAmount;
+}
+
+function validateEntriesAmountsMatchesSpread(
+  spreadStringifiedAmount: string | null,
+  entries: LedgerProto[],
+): void {
+  if (spreadStringifiedAmount === null) {
+    return;
+  }
+  const spreadAmount = Number(spreadStringifiedAmount);
+  if (Number.isNaN(spreadAmount)) {
+    return;
+  }
+
+  const entriesAmount = entries.reduce((acc, entry) => {
+    const mainAmount = getEntryMainAmount(entry);
+    return acc + mainAmount;
+  }, 0);
+
+  if (spreadAmount !== entriesAmount) {
+    throw new LedgerError('Spread amount does not match ledger entries amounts');
+  }
 }
