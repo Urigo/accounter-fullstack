@@ -4016,10 +4016,10 @@
   resolved "https://registry.yarnpkg.com/@tanstack/table-core/-/table-core-8.20.1.tgz#74bfab10fa35bed51fa0bd2f3539a331d7e78f1b"
   integrity sha512-5Ly5TIRHnWH7vSDell9B/OVyV380qqIJVg7H7R7jU4fPEmOD4smqAX7VRflpYI09srWR8aj5OLD2Ccs1pI5mTg==
 
-"@theguild/eslint-config@0.12.0":
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.12.0.tgz#f19ead9b059602ff5b62bb42986c252eeb037cde"
-  integrity sha512-a9xlmrgK6aInWG3yvQuRtJlpg3hMwt631aZwjDoYTsf4p9RLUQDlrxTh0+g2Gv/MIS+iFMZ9SuNAydQB9QlKoQ==
+"@theguild/eslint-config@0.12.1":
+  version "0.12.1"
+  resolved "https://registry.yarnpkg.com/@theguild/eslint-config/-/eslint-config-0.12.1.tgz#cf6bf13dccf14018fe886a98dc8998c12b77f615"
+  integrity sha512-H/w0tiZ38Fc0OWRIDzrirp4dyP39kFXHNOj+eIs5AwCJ8gw//Sftk4Zf0HQQw+sdY/kkU54nl6tI/REswE7DZg==
   dependencies:
     "@rushstack/eslint-patch" "^1.10.4"
     "@typescript-eslint/eslint-plugin" "^7.18.0"
