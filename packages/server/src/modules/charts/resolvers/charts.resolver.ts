@@ -1,7 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
+import {
+  DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+  DEFAULT_FINANCIAL_ENTITY_ID,
+} from '@shared/constants';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -14,6 +17,7 @@ export const chartsResolvers: ChartsModule.Resolvers = {
         const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
           fromDebitDate: filters.fromDate,
           toDebitDate: filters.toDate,
+          ownerIDs: [DEFAULT_FINANCIAL_ENTITY_ID],
         });
 
         const currency = filters.currency ?? DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;

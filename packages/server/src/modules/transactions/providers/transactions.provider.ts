@@ -118,6 +118,7 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
     AND ($fromDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
     AND ($toDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
     AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
+    AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;
 `;
 
@@ -177,10 +178,12 @@ export class TransactionsProvider {
   public getTransactionsByFilters(params: IGetAdjustedTransactionsByFiltersParams) {
     const isIDs = !!params?.IDs?.length;
     const isBusinessIDs = !!params?.businessIDs?.length;
+    const isOwnerIDs = !!params?.ownerIDs?.length;
 
     const fullParams: IGetTransactionsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
+      isOwnerIDs: isOwnerIDs ? 1 : 0,
       fromEventDate: null,
       toEventDate: null,
       fromDebitDate: null,
@@ -188,6 +191,7 @@ export class TransactionsProvider {
       ...params,
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
+      ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
     return getTransactionsByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetTransactionsByFiltersResult[]
