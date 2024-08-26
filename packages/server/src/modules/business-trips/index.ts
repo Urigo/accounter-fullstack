@@ -9,6 +9,7 @@ import { BusinessTripFlightsExpensesProvider } from './providers/business-trips-
 import { BusinessTripOtherExpensesProvider } from './providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from './providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from './providers/business-trips-expenses.provider.js';
+import { BusinessTripTaxVariablesProvider } from './providers/business-trips-tax-variables.provider.js';
 import { BusinessTripsProvider } from './providers/business-trips.provider.js';
 import { businessTripAttendeesResolvers } from './resolvers/business-trip-attendees.resolver.js';
 import { businessTripExpensesResolvers } from './resolvers/business-trips-expenses.resolver.js';
@@ -34,6 +35,7 @@ export const businessTripsModule = createModule({
     BusinessTripOtherExpensesProvider,
     BusinessTripAttendeesProvider,
     BusinessTripEmployeePaymentsProvider,
+    BusinessTripTaxVariablesProvider,
   ],
 });
 

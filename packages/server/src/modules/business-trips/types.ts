@@ -3,6 +3,7 @@ import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
 export * from './__generated__/business-trips-attendees.types.js';
+export * from './__generated__/business-trips-tax-variables.types.js';
 export type {
   business_trip_transaction_type,
   currency,
