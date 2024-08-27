@@ -44,6 +44,7 @@ import migration_2024_08_19T18_05_19_enhance_accountant_approval from './actions
 import migration_2024_08_20T13_14_01_business_trip_transaction_match_amount_fix from './actions/2024-08-20T13-14-01.business-trip-transaction-match-amount-fix.js';
 import migration_2024_08_25T12_46_25_add_owner_to_extended_transactions from './actions/2024-08-25T12-46-25.add-owner-to-extended-transactions.js';
 import migration_2024_08_25T15_11_15_business_trip_tax_variables from './actions/2024-08-25T15-11-15.business-trip-tax-variables.js';
+import migration_2024_08_27T14_53_58_update_misc_transactions_amount_type from './actions/2024-08-27T14-53-58.update-misc-transactions-amount-type.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -95,5 +96,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_08_20T13_14_01_business_trip_transaction_match_amount_fix,
       migration_2024_08_25T12_46_25_add_owner_to_extended_transactions,
       migration_2024_08_25T15_11_15_business_trip_tax_variables,
+      migration_2024_08_27T14_53_58_update_misc_transactions_amount_type,
     ],
   });
