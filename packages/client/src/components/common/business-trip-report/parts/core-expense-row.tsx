@@ -223,18 +223,20 @@ export const CoreExpenseRow = ({
                   <ThemeIcon variant="default" radius="lg">
                     <X />
                   </ThemeIcon>
-                  {linkedChargeIds?.length &&
-                    linkedChargeIds.map(id => (
-                      <NavLink
-                        key={id}
-                        label="To Charge"
-                        className="[&>*>.mantine-NavLink-label]:font-semibold"
-                        onClick={event => {
-                          event.stopPropagation();
-                          window.open(`/charges/${id}`, '_blank', 'noreferrer');
-                        }}
-                      />
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {linkedChargeIds?.length &&
+                      linkedChargeIds.map(id => (
+                        <NavLink
+                          key={id}
+                          label="To Charge"
+                          className="[&>*>.mantine-NavLink-label]:font-semibold"
+                          onClick={event => {
+                            event.stopPropagation();
+                            window.open(`/charges/${id}`, '_blank', 'noreferrer');
+                          }}
+                        />
+                      ))}
+                  </div>
                 </>
               )}
             </div>
