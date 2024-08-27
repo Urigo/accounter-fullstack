@@ -218,22 +218,44 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // create a ledger record for fee transactions
       const feeTransactionsPromises = feeTransactions.map(async transaction => {
-        await getEntriesFromFeeTransaction(transaction, charge, injector)
-          .then(ledgerEntries => {
-            feeFinancialAccountLedgerEntries.push(...ledgerEntries);
-            ledgerEntries.map(ledgerEntry => {
-              updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-              dates.add(ledgerEntry.valueDate.getTime());
-              currencies.add(ledgerEntry.currency);
-            });
-          })
-          .catch(e => {
-            if (e instanceof LedgerError) {
-              errors.add(e.message);
-            } else {
-              throw e;
-            }
-          });
+        const ledgerEntryPromise = getEntriesFromFeeTransaction(
+          transaction,
+          charge,
+          injector,
+        ).catch(e => {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        });
+
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
+
+        const [ledgerEntries, miscExpensesLedger] = await Promise.all([
+          ledgerEntryPromise,
+          miscExpensesPromise,
+        ]);
+
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+
+        if (!ledgerEntries) {
+          return;
+        }
+
+        feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+        ledgerEntries.map(ledgerEntry => {
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          dates.add(ledgerEntry.valueDate.getTime());
+          currencies.add(ledgerEntry.currency);
+        });
       });
 
       entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
