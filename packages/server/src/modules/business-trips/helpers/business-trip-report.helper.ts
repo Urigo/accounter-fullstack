@@ -1,6 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
@@ -110,19 +114,110 @@ async function getDefaultCurrenciesAmountsAndExchangeRate(
   const [localRate, foreignRate] = await Promise.all([exchangeRatePromise, usdRatePromise]);
   const localAmount = localRate * amount;
   const foreignAmount = foreignRate * amount;
-  return { localAmount, exchangeRate: foreignRate / localRate, foreignAmount };
+  return { localAmount, foreignAmount };
 }
 
 async function getExpenseAmountsData(
   injector: Injector,
   businessTripExpense: IGetBusinessTripsExpensesByBusinessTripIdsResult,
 ) {
-  const { amount, currency, date } = getExpenseCoreData(businessTripExpense);
+  try {
+    const { amount, currency, date } = getExpenseCoreData(businessTripExpense);
 
-  const { localAmount, exchangeRate, foreignAmount } =
-    await getDefaultCurrenciesAmountsAndExchangeRate(injector, currency, amount, date);
+    const { localAmount, foreignAmount } = await getDefaultCurrenciesAmountsAndExchangeRate(
+      injector,
+      currency,
+      amount,
+      date,
+    );
 
-  return { localAmount, exchangeRate, foreignAmount, date };
+    return { localAmount, foreignAmount };
+  } catch (error) {
+    // handle merged transaction of different currencies
+    if (
+      !(error instanceof Error) ||
+      !error?.message?.includes('Currency, amount or date not found for business trip expense') ||
+      !businessTripExpense.transaction_ids ||
+      businessTripExpense.transaction_ids.length <= 1
+    ) {
+      throw error;
+    }
+
+    const transactionsPromise = injector
+      .get(TransactionsProvider)
+      .getTransactionByIdLoader.loadMany(businessTripExpense.transaction_ids);
+
+    const miscExpensesPromise = injector
+      .get(MiscExpensesProvider)
+      .getExpensesByTransactionIdLoader.loadMany(
+        Array.from(new Set(businessTripExpense.transaction_ids)),
+      );
+
+    const [transactions, miscExpenses] = await Promise.all([
+      transactionsPromise,
+      miscExpensesPromise,
+    ]);
+
+    const transactionsFromMiscExpenses = (
+      miscExpenses.filter(
+        expense => expense && !(expense instanceof Error),
+      ) as IGetExpensesByTransactionIdsResult[][]
+    ).flat();
+
+    const validTransactions = transactions.filter(
+      transaction => transaction && !(transaction instanceof Error),
+    ) as IGetTransactionsByIdsResult[];
+
+    const allTransactions = [
+      ...validTransactions,
+      ...transactionsFromMiscExpenses.map(expense => {
+        const originTransaction = validTransactions.find(
+          t => !!t && 'id' in t && t.id === expense.transaction_id,
+        );
+
+        if (!originTransaction) {
+          return null;
+        }
+
+        const transaction: IGetTransactionsByIdsResult = {
+          ...originTransaction,
+          amount: (Number(expense.amount) * -1).toString(),
+          source_description: expense.description,
+          event_date: expense.date ?? originTransaction.event_date,
+        };
+        return transaction;
+      }),
+    ];
+
+    let localAmount = 0;
+    let foreignAmount = 0;
+
+    await Promise.all(
+      allTransactions.map(async transaction => {
+        if (!transaction || transaction instanceof Error) {
+          return;
+        }
+        const amount = Number(transaction.amount);
+        const currency = transaction.currency as Currency;
+        const date =
+          transaction.debit_timestamp || transaction.debit_date || transaction.event_date;
+
+        if (!amount || !currency || !date) {
+          const errorMessage = `Currency, amount or date not found for transaction ID ${transaction.id}`;
+          console.error(errorMessage);
+          throw new GraphQLError(errorMessage);
+        }
+
+        const { localAmount: transactionLocalAmount, foreignAmount: transactionForeignAmount } =
+          await getDefaultCurrenciesAmountsAndExchangeRate(injector, currency, amount, date);
+
+        localAmount += transactionLocalAmount;
+        foreignAmount += transactionForeignAmount;
+      }),
+    );
+
+    return { localAmount, foreignAmount };
+  }
 }
 
 export async function flightExpenseDataCollector(

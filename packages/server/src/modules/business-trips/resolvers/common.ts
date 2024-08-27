@@ -2,6 +2,8 @@ import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
@@ -29,7 +31,80 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
   valueDate: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.value_date),
   amount: async (DbTripExpense, _, { injector }) => {
     if (!DbTripExpense.amount || !DbTripExpense.currency) {
-      return null;
+      if (!DbTripExpense.transaction_ids?.length) {
+        return null;
+      }
+
+      const transactionsPromise = injector
+        .get(TransactionsProvider)
+        .getTransactionByIdLoader.loadMany(DbTripExpense.transaction_ids);
+
+      const miscExpensesPromise = injector
+        .get(MiscExpensesProvider)
+        .getExpensesByTransactionIdLoader.loadMany(
+          Array.from(new Set(DbTripExpense.transaction_ids)),
+        );
+
+      const [transactions, miscExpenses] = await Promise.all([
+        transactionsPromise,
+        miscExpensesPromise,
+      ]);
+
+      const transactionsFromMiscExpenses = (
+        miscExpenses.filter(
+          expense => expense && !(expense instanceof Error),
+        ) as IGetExpensesByTransactionIdsResult[][]
+      ).flat();
+
+      const validTransactions = transactions.filter(
+        transaction => transaction && !(transaction instanceof Error),
+      ) as IGetTransactionsByIdsResult[];
+
+      const allTransactions = [
+        ...validTransactions,
+        ...transactionsFromMiscExpenses.map(expense => {
+          const originTransaction = validTransactions.find(
+            t => !!t && 'id' in t && t.id === expense.transaction_id,
+          );
+
+          if (!originTransaction) {
+            return null;
+          }
+
+          const transaction: IGetTransactionsByIdsResult = {
+            ...originTransaction,
+            amount: (Number(expense.amount) * -1).toString(),
+            source_description: expense.description,
+            event_date: expense.date ?? originTransaction.event_date,
+          };
+          return transaction;
+        }),
+      ];
+
+      let amount = 0;
+
+      await Promise.all(
+        allTransactions.map(async transaction => {
+          if (!transaction || transaction instanceof Error) {
+            return;
+          }
+          const date =
+            transaction.debit_timestamp || transaction.debit_date || transaction.event_date;
+
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(
+              transaction.currency as Currency,
+              DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+              date,
+            );
+
+          const transactionAmount = Number(transaction.amount) * exchangeRate;
+          amount += transactionAmount;
+        }),
+      );
+
+      return formatFinancialAmount(amount, DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY);
     }
 
     if (DbTripExpense.currency === DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY) {

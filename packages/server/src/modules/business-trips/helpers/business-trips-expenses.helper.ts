@@ -1,10 +1,12 @@
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
+import type { Injector } from 'graphql-modules';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import type { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { BUSINESS_TRIP_TAX_CATEGORY_ID, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
-import { BusinessTripExpenseCategories } from '@shared/gql-types';
+import type { BusinessTripExpenseCategories } from '@shared/gql-types';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
@@ -22,6 +24,7 @@ import type {
 function validateTransactionAgainstBusinessTripsExpenses(
   transaction: IGetTransactionsByChargeIdsResult,
   transactionMatchingExpenses: IGetBusinessTripsExpenseMatchesByTransactionIdsResult[],
+  miscExpenses: IGetExpensesByTransactionIdsResult[],
 ): boolean {
   if (!transactionMatchingExpenses?.length) {
     throw new LedgerError(
@@ -34,7 +37,9 @@ function validateTransactionAgainstBusinessTripsExpenses(
     0,
   );
 
-  if (Math.abs(Number(transaction.amount) - totalAmount) > 0.005) {
+  const miscExpensesAmount = miscExpenses.reduce((acc, expense) => acc + Number(expense.amount), 0);
+
+  if (Math.abs(Number(transaction.amount) - miscExpensesAmount - totalAmount) > 0.005) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" amount does not match the business trip expenses total amount`,
     );
@@ -47,20 +52,40 @@ export const validateTransactionAgainstBusinessTrips = async (
   injector: Injector,
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<boolean> => {
-  const transactionMatchingExpenses = await injector
+  const transactionMatchingExpensesPromise = injector
     .get(BusinessTripExpensesProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
+  const miscExpensesPromise = injector
+    .get(MiscExpensesProvider)
+    .getExpensesByTransactionIdLoader.load(transaction.id);
 
-  return validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
+  const [transactionMatchingExpenses, miscExpenses] = await Promise.all([
+    transactionMatchingExpensesPromise,
+    miscExpensesPromise,
+  ]);
+
+  return validateTransactionAgainstBusinessTripsExpenses(
+    transaction,
+    transactionMatchingExpenses,
+    miscExpenses,
+  );
 };
 
 export const getTransactionMatchedAmount = async (
   injector: Injector,
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
-  const transactionMatchingExpenses = await injector
+  const transactionMatchingExpensesPromise = injector
     .get(BusinessTripExpensesProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
+  const miscExpensesPromise = injector
+    .get(MiscExpensesProvider)
+    .getExpensesByTransactionIdLoader.load(transaction.id);
+
+  const [transactionMatchingExpenses, miscExpenses] = await Promise.all([
+    transactionMatchingExpensesPromise,
+    miscExpensesPromise,
+  ]);
 
   if (!transactionMatchingExpenses?.length) {
     return {
@@ -74,7 +99,11 @@ export const getTransactionMatchedAmount = async (
   );
 
   try {
-    validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses);
+    validateTransactionAgainstBusinessTripsExpenses(
+      transaction,
+      transactionMatchingExpenses,
+      miscExpenses,
+    );
   } catch (e) {
     const errors = [];
     if (e instanceof LedgerError) {
@@ -87,13 +116,9 @@ export const getTransactionMatchedAmount = async (
     };
   }
 
-  if (transactionMatchingExpenses[0].amount === null) {
-    return {
-      isFullyMatched: true,
-      amount: Number(transaction.amount),
-    };
-  }
-  const isFullyMatched = Math.abs(Number(transaction.amount) - expensesSum) < 0.005;
+  const miscExpensesAmount = miscExpenses.reduce((acc, expense) => acc + Number(expense.amount), 0);
+  const isFullyMatched =
+    Math.abs(Number(transaction.amount) - miscExpensesAmount - expensesSum) < 0.005;
   return {
     isFullyMatched,
     amount: Number(transaction.amount),
