@@ -5,7 +5,7 @@ import { Select, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   AddBusinessTripFlightsExpenseInput,
-  AllBusinessTripAttendeesDocument,
+  AttendeesByBusinessTripDocument,
   Currency,
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
@@ -24,7 +24,7 @@ export function AddExpenseFields({
 }: ModalProps): ReactElement {
   const [attendees, setAttendees] = useState<Array<{ value: string; label: string }>>([]);
   const [{ data, fetching: fetchingAttendees, error }] = useQuery({
-    query: AllBusinessTripAttendeesDocument,
+    query: AttendeesByBusinessTripDocument,
     variables: { businessTripId },
   });
 
