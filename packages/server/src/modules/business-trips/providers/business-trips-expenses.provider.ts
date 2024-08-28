@@ -28,6 +28,7 @@ import type {
   IUpdateBusinessTripExpenseQuery,
 } from '../types.js';
 import { BusinessTripAccommodationsExpensesProvider } from './business-trips-expenses-accommodations.provider.js';
+import { BusinessTripCarRentalExpensesProvider } from './business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from './business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from './business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from './business-trips-expenses-travel-and-subsistence.provider.js';
@@ -135,6 +136,7 @@ export class BusinessTripExpensesProvider {
     private accommodationsExpensesProvider: BusinessTripAccommodationsExpensesProvider,
     private travelAndSubsistenceExpensesProvider: BusinessTripTravelAndSubsistenceExpensesProvider,
     private otherExpensesProvider: BusinessTripOtherExpensesProvider,
+    private carRentalExpensesProvider: BusinessTripCarRentalExpensesProvider,
   ) {}
 
   public getAllBusinessTripsExpenses() {
@@ -291,6 +293,7 @@ export class BusinessTripExpensesProvider {
       accommodationsExpenses,
       travelAndSubsistenceExpenses,
       otherExpenses,
+      carRentalExpenses,
     ] = await Promise.all([
       this.getBusinessTripsExpensesByBusinessTripIdLoader.load(businessTripId),
       this.flightExpensesProvider.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(
@@ -305,6 +308,9 @@ export class BusinessTripExpensesProvider {
       this.otherExpensesProvider.getBusinessTripsOtherExpensesByBusinessTripIdLoader.load(
         businessTripId,
       ),
+      this.carRentalExpensesProvider.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(
+        businessTripId,
+      ),
     ]);
 
     const extendedIds = new Set<string>(
@@ -313,6 +319,7 @@ export class BusinessTripExpensesProvider {
         ...accommodationsExpenses,
         ...travelAndSubsistenceExpenses,
         ...otherExpenses,
+        ...carRentalExpenses,
       ].map(t => t.id),
     );
 
@@ -322,6 +329,7 @@ export class BusinessTripExpensesProvider {
       accommodationsExpenses,
       travelAndSubsistenceExpenses,
       otherExpenses,
+      carRentalExpenses,
     };
   }
 

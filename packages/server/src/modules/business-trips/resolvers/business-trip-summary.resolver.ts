@@ -5,6 +5,7 @@ import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
   calculateTotalReportSummaryCategory,
+  carRentalExpensesDataCollector,
   convertSummaryCategoryDataToRow,
   flightExpenseDataCollector,
   onlyUnique,
@@ -47,7 +48,13 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
 
     const [
-      { flightExpenses, accommodationsExpenses, travelAndSubsistenceExpenses, otherExpenses },
+      {
+        flightExpenses,
+        accommodationsExpenses,
+        travelAndSubsistenceExpenses,
+        otherExpenses,
+        carRentalExpenses,
+      },
       taxVariables,
       attendees,
     ] = await Promise.all([expensesPromise, taxVariablesPromise, attendeesPromise]);
@@ -118,6 +125,20 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
         } else {
           console.error(`Error handling other expenses`, e);
           throw new GraphQLError((e as Error)?.message ?? `Error handling other expenses`);
+        }
+      }),
+      carRentalExpensesDataCollector(
+        injector,
+        carRentalExpenses,
+        summaryData,
+        taxVariables,
+        dbBusinessTrip.destination,
+      ).catch(e => {
+        if (e instanceof BusinessTripError) {
+          errors.push(e.message);
+        } else {
+          console.error(`Error handling car rental expenses`, e);
+          throw new GraphQLError((e as Error)?.message ?? `Error handling car rental expenses`);
         }
       }),
     ]);

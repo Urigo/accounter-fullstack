@@ -9,6 +9,7 @@ import {
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
@@ -184,6 +185,28 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       } catch (e) {
         console.error(`Error updating business trip travel&subsistence expense`, e);
         throw new GraphQLError('Error updating business trip travel&subsistence expense');
+      }
+    },
+    updateBusinessTripCarRentalExpense: async (_, { fields }, { injector }) => {
+      try {
+        const coreExpenseUpdatePromise = coreExpenseUpdate(injector, fields, 'CAR_RENTAL');
+
+        const { id, days, isFuelExpense } = fields;
+        const hasCarRentalFieldsToUpdate = isFuelExpense != null || days != null;
+        const carRentalExpenseUpdate = hasCarRentalFieldsToUpdate
+          ? injector.get(BusinessTripCarRentalExpensesProvider).updateBusinessTripCarRentalExpense({
+              businessTripExpenseId: id,
+              days,
+              isFuelExpense,
+            })
+          : Promise.resolve();
+
+        await Promise.all([coreExpenseUpdatePromise, carRentalExpenseUpdate]);
+
+        return id;
+      } catch (e) {
+        console.error(`Error updating business trip car rental expense`, e);
+        throw new GraphQLError('Error updating business trip car rental expense');
       }
     },
     deleteBusinessTripExpense: async (_, { businessTripExpenseId }, { injector }) => {
@@ -432,6 +455,49 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip travel & subsistence expense');
       }
     },
+    addBusinessTripCarRentalExpense: async (_, { fields }, { injector }) => {
+      try {
+        const coreExpensePromise = injector
+          .get(BusinessTripExpensesProvider)
+          .insertBusinessTripExpense({
+            businessTripId: fields.businessTripId,
+            category: 'FLIGHT',
+          })
+          .then(res => res[0]);
+
+        const chargeGenerationPromise = generateChargeForEmployeePayment(
+          injector,
+          fields.businessTripId,
+        );
+
+        const [coreExpense, chargeId] = await Promise.all([
+          coreExpensePromise,
+          chargeGenerationPromise,
+        ]);
+
+        await Promise.all([
+          injector.get(BusinessTripCarRentalExpensesProvider).insertBusinessTripCarRentalExpense({
+            id: coreExpense.id,
+            days: fields.days ?? 0,
+            isFuelExpense: fields.isFuelExpense ?? false,
+          }),
+          injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({
+            businessTripExpenseId: coreExpense.id,
+            chargeId,
+            date: fields.date,
+            valueDate: fields.valueDate,
+            amount: fields.amount,
+            currency: fields.currency,
+            employeeBusinessId: fields.employeeBusinessId,
+          }),
+        ]);
+
+        return coreExpense.id;
+      } catch (e) {
+        console.error(`Error adding new business trip car rental expense`, e);
+        throw new GraphQLError('Error adding new business trip car rental expense');
+      }
+    },
   },
   BusinessTripAccommodationExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'ACCOMMODATION',
@@ -510,6 +576,12 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
     __isTypeOf: DbExpense => DbExpense.category === 'TRAVEL_AND_SUBSISTENCE',
     ...commonBusinessTripExpenseFields,
     expenseType: dbExpense => dbExpense.expense_type,
+  },
+  BusinessTripCarRentalExpense: {
+    __isTypeOf: DbExpense => DbExpense.category === 'CAR_RENTAL',
+    ...commonBusinessTripExpenseFields,
+    days: dbExpense => dbExpense.days,
+    isFuelExpense: dbExpense => dbExpense.is_fuel_expense,
   },
   BusinessTripOtherExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'OTHER',

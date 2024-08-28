@@ -50,6 +50,7 @@ export default gql`
     accommodationExpenses: [BusinessTripAccommodationExpense!]!
     travelAndSubsistenceExpenses: [BusinessTripTravelAndSubsistenceExpense!]!
     otherExpenses: [BusinessTripOtherExpense!]!
+    carRentalExpenses: [BusinessTripCarRentalExpense!]!
     summary: BusinessTripSummary!
     uncategorizedTransactions: [UncategorizedTransaction]!
   }
@@ -77,6 +78,7 @@ export default gql`
     ACCOMMODATION
     FLIGHT
     TRAVEL_AND_SUBSISTENCE
+    CAR_RENTAL
     OTHER
     TOTAL
   }
