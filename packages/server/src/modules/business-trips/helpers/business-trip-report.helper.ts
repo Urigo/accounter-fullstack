@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -73,7 +73,7 @@ function getExpenseCoreData(tripExpense: IGetBusinessTripsExpensesByBusinessTrip
 } {
   if (tripExpense.payed_by_employee) {
     if (!tripExpense.currency || !tripExpense.amount || !tripExpense.date) {
-      throw new GraphQLError(
+      throw new BusinessTripError(
         `Currency, amount or date not found for employee-paid trip expense ID ${tripExpense.id}`,
       );
     }
@@ -84,7 +84,7 @@ function getExpenseCoreData(tripExpense: IGetBusinessTripsExpensesByBusinessTrip
     };
   }
   if (!tripExpense.currency || !tripExpense.amount || !tripExpense.value_date) {
-    throw new GraphQLError(
+    throw new BusinessTripError(
       `Currency, amount or date not found for business trip expense ID ${tripExpense.id}`,
     );
   }
@@ -179,9 +179,11 @@ async function getExpenseAmountsData(
           return null;
         }
 
+        const direction = isSupplementalFeeTransaction(originTransaction) ? 1 : -1;
+
         const transaction: IGetTransactionsByIdsResult = {
           ...originTransaction,
-          amount: (Number(expense.amount) * -1).toString(),
+          amount: (Number(expense.amount) * direction).toString(),
           source_description: expense.description,
           event_date: expense.date ?? originTransaction.event_date,
         };
@@ -205,7 +207,7 @@ async function getExpenseAmountsData(
         if (!amount || !currency || !date) {
           const errorMessage = `Currency, amount or date not found for transaction ID ${transaction.id}`;
           console.error(errorMessage);
-          throw new GraphQLError(errorMessage);
+          throw new BusinessTripError(errorMessage);
         }
 
         const { localAmount: transactionLocalAmount, foreignAmount: transactionForeignAmount } =

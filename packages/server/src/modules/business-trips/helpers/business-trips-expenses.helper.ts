@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
@@ -26,7 +27,7 @@ function validateTransactionAgainstBusinessTripsExpenses(
   transactionMatchingExpenses: IGetBusinessTripsExpenseMatchesByTransactionIdsResult[],
   miscExpenses: IGetExpensesByTransactionIdsResult[],
 ): boolean {
-  if (!transactionMatchingExpenses?.length) {
+  if (!transactionMatchingExpenses?.length && !miscExpenses?.length) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" is not part of a business trip`,
     );
@@ -37,7 +38,12 @@ function validateTransactionAgainstBusinessTripsExpenses(
     0,
   );
 
-  const miscExpensesAmount = miscExpenses.reduce((acc, expense) => acc + Number(expense.amount), 0);
+  const direction = isSupplementalFeeTransaction(transaction) ? -1 : 1;
+
+  const miscExpensesAmount = miscExpenses.reduce(
+    (acc, expense) => Number(expense.amount) * direction + acc,
+    0,
+  );
 
   if (Math.abs(Number(transaction.amount) - miscExpensesAmount - totalAmount) > 0.005) {
     throw new LedgerError(
@@ -87,12 +93,6 @@ export const getTransactionMatchedAmount = async (
     miscExpensesPromise,
   ]);
 
-  if (!transactionMatchingExpenses?.length) {
-    return {
-      isFullyMatched: false,
-      amount: 0,
-    };
-  }
   const expensesSum = transactionMatchingExpenses.reduce(
     (acc, expense) => (expense.amount ? acc + Number(expense.amount) : acc),
     0,
@@ -116,9 +116,15 @@ export const getTransactionMatchedAmount = async (
     };
   }
 
-  const miscExpensesAmount = miscExpenses.reduce((acc, expense) => acc + Number(expense.amount), 0);
+  const direction = isSupplementalFeeTransaction(transaction) ? -1 : 1;
+
+  const miscExpensesAmount = miscExpenses.reduce(
+    (acc, expense) => Number(expense.amount) * direction + acc,
+    0,
+  );
   const isFullyMatched =
     Math.abs(Number(transaction.amount) - miscExpensesAmount - expensesSum) < 0.005;
+
   return {
     isFullyMatched,
     amount: Number(transaction.amount),
