@@ -80,6 +80,23 @@ export default gql`
     description: String
   }
 
+  " represent a business trip car rental expense "
+  type BusinessTripCarRentalExpense implements BusinessTripExpense {
+    id: UUID!
+    businessTrip: BusinessTrip!
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: FinancialAmount
+    employee: FinancialEntity
+    transactions: [Transaction!]
+    payedByEmployee: Boolean
+
+    " הוצאה מוכרת "
+    days: Int!
+    " פירוט "
+    isFuelExpense: Boolean!
+  }
+
   " represent a business trip attendee accommodation stay info "
   type BusinessTripAttendeeStay {
     id: UUID!
@@ -107,6 +124,8 @@ export default gql`
     updateBusinessTripTravelAndSubsistenceExpense(
       fields: UpdateBusinessTripTravelAndSubsistenceExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
+    updateBusinessTripCarRentalExpense(fields: UpdateBusinessTripCarRentalExpenseInput!): UUID!
+      @auth(role: ACCOUNTANT)
     deleteBusinessTripExpense(businessTripExpenseId: UUID!): Boolean! @auth(role: ACCOUNTANT)
 
     addBusinessTripFlightsExpense(fields: AddBusinessTripFlightsExpenseInput!): UUID!
@@ -118,6 +137,8 @@ export default gql`
     addBusinessTripTravelAndSubsistenceExpense(
       fields: AddBusinessTripTravelAndSubsistenceExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
+    addBusinessTripCarRentalExpense(fields: AddBusinessTripCarRentalExpenseInput!): UUID!
+      @auth(role: ACCOUNTANT)
   }
 
   " the input for categorizing a business trip expense "
@@ -133,6 +154,7 @@ export default gql`
     ACCOMMODATION
     FLIGHT
     TRAVEL_AND_SUBSISTENCE
+    CAR_RENTAL
     OTHER
   }
 
@@ -213,6 +235,21 @@ export default gql`
     expenseType: String
   }
 
+  " the input for updating a business trip car rental expense "
+  input UpdateBusinessTripCarRentalExpenseInput {
+    id: UUID!
+    businessTripId: UUID!
+
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: Float
+    currency: Currency
+    employeeBusinessId: UUID
+
+    days: Int
+    isFuelExpense: Boolean
+  }
+
   " the input for adding a new business trip flights expense "
   input AddBusinessTripFlightsExpenseInput {
     businessTripId: UUID!
@@ -269,6 +306,20 @@ export default gql`
     employeeBusinessId: UUID
 
     expenseType: String
+  }
+
+  " the input for adding a new business trip T&S expense "
+  input AddBusinessTripCarRentalExpenseInput {
+    businessTripId: UUID!
+
+    date: TimelessDate
+    valueDate: TimelessDate
+    amount: Float
+    currency: Currency
+    employeeBusinessId: UUID
+
+    days: Int
+    isFuelExpense: Boolean
   }
 
   " the input for attendee accommodation stay info "

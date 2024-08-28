@@ -18,6 +18,7 @@ import type {
   flight_class,
   IGetAllTaxVariablesResult,
   IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult,
   IGetBusinessTripsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult,
@@ -476,6 +477,65 @@ export async function travelAndSubsistenceExpensesDataCollector(
     (maxExpenseWithAccommodation * accommodatedDays +
       maxExpenseWithoutAccommodation * unAccommodatedDays) *
     increasedLimitDestination;
+
+  const taxableAmount = Math.min(
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
+    maxTaxableUsd,
+  );
+  const taxablePortion =
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total === 0
+      ? 0
+      : taxableAmount / category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total;
+
+  // update amounts
+  category[DEFAULT_LOCAL_CURRENCY].taxable +=
+    category[DEFAULT_LOCAL_CURRENCY].total * taxablePortion;
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += taxableAmount;
+
+  return void 0;
+}
+
+export async function carRentalExpensesDataCollector(
+  injector: Injector,
+  businessTripExpenses: IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult[],
+  partialSummaryData: Partial<SummaryData>,
+  taxVariables: IGetAllTaxVariablesResult,
+  destination: string | null,
+): Promise<void> {
+  // populate category
+  partialSummaryData['CAR_RENTAL'] ??= {};
+  const category = partialSummaryData['CAR_RENTAL'] as SummaryCategoryData;
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
+
+  const { max_car_rental_per_day } = taxVariables;
+  const maxDailyRentalAmount = Number(max_car_rental_per_day);
+
+  if (Number.isNaN(maxDailyRentalAmount)) {
+    throw new BusinessTripError('Tax variables are not set');
+  }
+
+  let rentalDays = 0;
+
+  await Promise.all(
+    businessTripExpenses.map(async businessTripExpense => {
+      if (!businessTripExpense.is_fuel_expense) {
+        rentalDays += businessTripExpense.days;
+      }
+
+      const { localAmount, foreignAmount } = await getExpenseAmountsData(
+        injector,
+        businessTripExpense,
+      );
+
+      category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
+      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
+    }),
+  );
+
+  const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+
+  const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination;
 
   const taxableAmount = Math.min(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,

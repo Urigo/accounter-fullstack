@@ -6,7 +6,7 @@ import { useQuery } from 'urql';
 import { NavLink, Select, Text, TextInput, ThemeIcon } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
-  AllBusinessTripAttendeesDocument,
+  AttendeesByBusinessTripDocument,
   BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
   Currency,
   UpdateBusinessTripFlightsExpenseInput,
@@ -59,7 +59,7 @@ export const CoreExpenseRow = ({
   const [attendees, setAttendees] = useState<Array<{ value: string; label: string }>>([]);
 
   const [{ data: attendeesData, fetching: fetchingAttendees, error }] = useQuery({
-    query: AllBusinessTripAttendeesDocument,
+    query: AttendeesByBusinessTripDocument,
     variables: { businessTripId },
   });
 

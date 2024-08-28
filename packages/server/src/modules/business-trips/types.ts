@@ -160,6 +160,29 @@ export type {
   IGetBusinessTripEmployeePaymentsByChargeIdsResult,
   IGetBusinessTripEmployeePaymentsByChargeIdsQuery,
 } from './__generated__/business-trips-employee-payments.types.js';
+export type {
+  IGetAllBusinessTripsCarRentalExpensesParams,
+  IGetAllBusinessTripsCarRentalExpensesResult,
+  IGetAllBusinessTripsCarRentalExpensesQuery,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsParams,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsResult,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsQuery,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsParams,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsQuery,
+  IGetBusinessTripsCarRentalExpensesByIdsParams,
+  IGetBusinessTripsCarRentalExpensesByIdsResult,
+  IGetBusinessTripsCarRentalExpensesByIdsQuery,
+  IUpdateBusinessTripCarRentalExpenseParams,
+  IUpdateBusinessTripCarRentalExpenseResult,
+  IUpdateBusinessTripCarRentalExpenseQuery,
+  IInsertBusinessTripCarRentalExpenseParams,
+  IInsertBusinessTripCarRentalExpenseResult,
+  IInsertBusinessTripCarRentalExpenseQuery,
+  IDeleteBusinessTripCarRentalExpenseParams,
+  IDeleteBusinessTripCarRentalExpenseResult,
+  IDeleteBusinessTripCarRentalExpenseQuery,
+} from './__generated__/business-trips-expenses-car-rental.types.js';
 export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
   id: NonNullable<IGetAllBusinessTripsResult['id']>;
   name: NonNullable<IGetAllBusinessTripsResult['name']>;

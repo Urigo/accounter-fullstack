@@ -74,6 +74,8 @@ const config: CodegenConfig = {
             '@modules/business-trips/types.js#IGetAllBusinessTripsOtherExpensesResult',
           BusinessTripTravelAndSubsistenceExpense:
             '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceExpensesResult',
+          BusinessTripCarRentalExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsCarRentalExpensesResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',

@@ -6,6 +6,7 @@ import { Accordion, Card } from '@mantine/core';
 import { EditableBusinessTripDocument, type EditableBusinessTripQuery } from '../../gql/graphql.js';
 import { Accommodations } from '../common/business-trip-report/parts/accommodations.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
+import { CarRental } from '../common/business-trip-report/parts/car-rental.js';
 import { Flights } from '../common/business-trip-report/parts/flights.js';
 import { Other } from '../common/business-trip-report/parts/other.js';
 import { ReportHeader } from '../common/business-trip-report/parts/report-header.js';
@@ -24,6 +25,7 @@ import { UncategorizedTransactions } from '../common/business-trip-report/parts/
       ...BusinessTripReportFlightsFields
       ...BusinessTripReportAccommodationsFields
       ...BusinessTripReportTravelAndSubsistenceFields
+      ...BusinessTripReportCarRentalFields
       ...BusinessTripReportOtherFields
       ...BusinessTripReportSummaryFields
       ... on BusinessTrip {
@@ -142,6 +144,15 @@ export function EditableBusinessTrip({ tripId, isExtended = false }: Props): Rea
               </Accordion.Control>
               <Accordion.Panel>
                 <Other data={trip} onChange={onChangeDo} />
+              </Accordion.Panel>
+            </Accordion.Item>
+
+            <Accordion.Item value="carRental">
+              <Accordion.Control onClick={() => toggleAccordionItem('carRental')}>
+                Car Rental
+              </Accordion.Control>
+              <Accordion.Panel>
+                <CarRental data={trip} onChange={onChangeDo} />
               </Accordion.Panel>
             </Accordion.Item>
 

@@ -10,6 +10,7 @@ import { BUSINESS_TRIP_TAX_CATEGORY_ID, DEFAULT_FINANCIAL_ENTITY_ID } from '@sha
 import type { BusinessTripExpenseCategories } from '@shared/gql-types';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
@@ -247,6 +248,14 @@ export const updateExistingTripExpense = async (
         return injector.get(BusinessTripOtherExpensesProvider).insertBusinessTripOtherExpense({
           id: businessTripExpenseId,
         });
+      case 'CAR_RENTAL':
+        return injector
+          .get(BusinessTripCarRentalExpensesProvider)
+          .insertBusinessTripCarRentalExpense({
+            id: businessTripExpenseId,
+            days: 0,
+            isFuelExpense: false,
+          });
       default:
         throw new GraphQLError(`Invalid category ${category}`);
     }
