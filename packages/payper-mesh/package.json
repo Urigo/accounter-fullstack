@@ -67,7 +67,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.95.4"
+    "@graphql-mesh/cli": "0.96.0"
   },
   "publishConfig": {
     "directory": "dist",
