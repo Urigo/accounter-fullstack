@@ -23,6 +23,9 @@ import { TaxReportFilter } from './tax-report-filters.js';
       researchAndDevelopmentExpensesForTax {
         formatted
       }
+      deprecationForTax {
+        formatted
+      }
       taxableIncome {
         formatted
       }
@@ -96,6 +99,12 @@ export const TaxReport = (): ReactElement => {
                     <td key={report.year}>
                       {report.researchAndDevelopmentExpensesForTax.formatted}
                     </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td>Deprecations For Tax</td>
+                  {yearlyReports.map(report => (
+                    <td key={report.year}>{report.deprecationForTax.formatted}</td>
                   ))}
                 </tr>
                 <tr>

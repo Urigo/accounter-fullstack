@@ -9,6 +9,8 @@ import type {
   IDeleteDeprecationRecordParams,
   IDeleteDeprecationRecordQuery,
   IGetDeprecationRecordsByChargeIdsQuery,
+  IGetDeprecationRecordsByDatesParams,
+  IGetDeprecationRecordsByDatesQuery,
   IGetDeprecationRecordsByIdsQuery,
   IInsertDeprecationRecordParams,
   IInsertDeprecationRecordQuery,
@@ -17,14 +19,30 @@ import type {
 } from '../types.js';
 
 const getDeprecationRecordsByChargeIds = sql<IGetDeprecationRecordsByChargeIdsQuery>`
-  SELECT *
-  FROM accounter_schema.deprecation
-  WHERE charge_id IN $$chargeIds;`;
+  SELECT d.*, (d.activation_date + (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date as expiration_date
+  FROM accounter_schema.deprecation d
+  LEFT JOIN accounter_schema.deprecation_categories dc
+            ON d.category = dc.id
+  WHERE d.charge_id IN $$chargeIds;`;
 
 const getDeprecationRecordsByIds = sql<IGetDeprecationRecordsByIdsQuery>`
+  SELECT d.*, (d.activation_date + (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date as expiration_date
+  FROM accounter_schema.deprecation d
+  LEFT JOIN accounter_schema.deprecation_categories dc
+            ON d.category = dc.id
+  WHERE d.id IN $$deprecationRecordIds;`;
+
+const getDeprecationRecordsByDates = sql<IGetDeprecationRecordsByDatesQuery>`
+  WITH deprecation AS (SELECT d.*,
+                              (activation_date +
+                              (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date AS expiration_date
+                      FROM accounter_schema.deprecation d
+                                LEFT JOIN accounter_schema.deprecation_categories dc
+                                          ON d.category = dc.id
+                      WHERE activation_date <= $toDate)
   SELECT *
-  FROM accounter_schema.deprecation
-  WHERE id IN $$deprecationRecordIds;`;
+  FROM deprecation
+  WHERE expiration_date >= $fromDate;`;
 
 const updateDeprecationRecord = sql<IUpdateDeprecationRecordQuery>`
   UPDATE accounter_schema.deprecation
@@ -120,6 +138,10 @@ export class DeprecationProvider {
       cacheMap: this.cache,
     },
   );
+
+  public getDeprecationRecordsByDates(params: IGetDeprecationRecordsByDatesParams) {
+    return getDeprecationRecordsByDates.run(params, this.dbProvider);
+  }
 
   public updateDeprecationRecord(params: IUpdateDeprecationRecordParams) {
     this.clearCache();

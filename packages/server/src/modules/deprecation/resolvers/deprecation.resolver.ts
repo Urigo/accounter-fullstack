@@ -1,12 +1,20 @@
 import { GraphQLError } from 'graphql';
 import { calculateTotalAmount } from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import type { Resolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { DeprecationCategoriesProvider } from '../providers/deprecation-categories.provider.js';
 import { DeprecationProvider } from '../providers/deprecation.provider.js';
 import type { DeprecationModule } from '../types.js';
 
-export const deprecationResolvers: DeprecationModule.Resolvers = {
+export const deprecationResolvers: DeprecationModule.Resolvers &
+  Pick<
+    Resolvers,
+    | 'InsertDeprecationRecordResult'
+    | 'UpdateDeprecationRecordResult'
+    | 'InsertDeprecationCategoryResult'
+    | 'UpdateDeprecationCategoryResult'
+  > = {
   Query: {
     deprecationCategories: (_, __, { injector }) => {
       return injector.get(DeprecationCategoriesProvider).getAllDeprecationCategories();
@@ -16,19 +24,28 @@ export const deprecationResolvers: DeprecationModule.Resolvers = {
     },
   },
   Mutation: {
-    updateDeprecationRecord: (_, { input }, { injector }) => {
+    updateDeprecationRecord: async (_, { input }, { injector }) => {
       try {
+        const deprecationRecords = await injector
+          .get(DeprecationProvider)
+          .updateDeprecationRecord(input);
+
+        if (!deprecationRecords || deprecationRecords.length === 0) {
+          return {
+            __typename: 'CommonError',
+            message: 'Error updating deprecation record',
+          };
+        }
         return injector
           .get(DeprecationProvider)
-          .updateDeprecationRecord(input)
-          .then(deprecationRecords => {
-            if (!deprecationRecords || deprecationRecords.length === 0) {
-              return {
-                __typename: 'CommonError',
-                message: 'Error updating deprecation record',
-              };
+          .getDeprecationRecordByIdLoader.load(deprecationRecords[0].id)
+          .then(deprecationRecord => {
+            if (!deprecationRecord) {
+              throw new GraphQLError(
+                `Deprecation record with id ${deprecationRecords[0].id} not found`,
+              );
             }
-            return deprecationRecords[0];
+            return deprecationRecord;
           });
       } catch (e) {
         console.error(e);
@@ -60,19 +77,28 @@ export const deprecationResolvers: DeprecationModule.Resolvers = {
         return false;
       }
     },
-    insertDeprecationRecord: (_, { input }, { injector }) => {
+    insertDeprecationRecord: async (_, { input }, { injector }) => {
       try {
+        const deprecationRecords = await injector
+          .get(DeprecationProvider)
+          .insertDeprecationRecord(input);
+
+        if (!deprecationRecords || deprecationRecords.length === 0) {
+          return {
+            __typename: 'CommonError',
+            message: 'Error inserting deprecation record',
+          };
+        }
         return injector
           .get(DeprecationProvider)
-          .insertDeprecationRecord(input)
-          .then(deprecationRecords => {
-            if (!deprecationRecords || deprecationRecords.length === 0) {
-              return {
-                __typename: 'CommonError',
-                message: 'Error inserting deprecation record',
-              };
+          .getDeprecationRecordByIdLoader.load(deprecationRecords[0].id)
+          .then(deprecationRecord => {
+            if (!deprecationRecord) {
+              throw new GraphQLError(
+                `Deprecation record with id ${deprecationRecords[0].id} not found`,
+              );
             }
-            return deprecationRecords[0];
+            return deprecationRecord;
           });
       } catch (e) {
         console.error(e);
@@ -136,6 +162,34 @@ export const deprecationResolvers: DeprecationModule.Resolvers = {
         console.error(e);
         return false;
       }
+    },
+  },
+  InsertDeprecationRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'DeprecationRecord';
+    },
+  },
+  UpdateDeprecationRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'DeprecationRecord';
+    },
+  },
+  InsertDeprecationCategoryResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'DeprecationCategory';
+    },
+  },
+  UpdateDeprecationCategoryResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'DeprecationCategory';
     },
   },
   CommonCharge: {
