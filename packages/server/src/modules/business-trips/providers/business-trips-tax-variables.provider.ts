@@ -8,7 +8,7 @@ import type { IGetAllTaxVariablesQuery } from '../types.js';
 const getAllTaxVariables = sql<IGetAllTaxVariablesQuery>`
   SELECT *
   FROM accounter_schema.business_trips_tax_variables
-  ORDER BY date ASC;`;
+  ORDER BY date DESC;`;
 
 @Injectable({
   scope: Scope.Singleton,
