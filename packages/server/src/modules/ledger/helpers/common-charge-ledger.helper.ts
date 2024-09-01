@@ -64,10 +64,12 @@ export async function ledgerEntryFromDocument(
   let vatTaxCategory: string | null = null;
 
   if (vatAmount) {
+    const isCreditInvoice = document.type === 'CREDIT_INVOICE';
     amountWithoutVat = amountWithoutVat - vatAmount;
-    vatTaxCategory = isCreditorCounterparty
-      ? OUTPUT_VAT_TAX_CATEGORY_ID
-      : INPUT_VAT_TAX_CATEGORY_ID;
+    vatTaxCategory =
+      isCreditorCounterparty === isCreditInvoice
+        ? INPUT_VAT_TAX_CATEGORY_ID
+        : OUTPUT_VAT_TAX_CATEGORY_ID;
 
     validateDocumentVat(document, message => {
       throw new LedgerError(message);
