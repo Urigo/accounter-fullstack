@@ -383,7 +383,9 @@ export async function accommodationExpenseDataCollector(
       maxTaxableUsd += 7 * upToSevenNights + remainingNights * upToSevenNights * 0.75;
     }
 
-    const taxableAmount = Math.min(foreignAmount, maxTaxableUsd);
+    maxTaxableUsd *= -1;
+
+    const taxableAmount = Math.max(foreignAmount, maxTaxableUsd);
     const taxablePortion = taxableAmount / foreignAmount;
 
     // update amounts
@@ -476,9 +478,10 @@ export async function travelAndSubsistenceExpensesDataCollector(
   const maxTaxableUsd =
     (maxExpenseWithAccommodation * accommodatedDays +
       maxExpenseWithoutAccommodation * unAccommodatedDays) *
-    increasedLimitDestination;
+    increasedLimitDestination *
+    -1;
 
-  const taxableAmount = Math.min(
+  const taxableAmount = Math.max(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
     maxTaxableUsd,
   );
@@ -535,9 +538,9 @@ export async function carRentalExpensesDataCollector(
 
   const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
 
-  const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination;
+  const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination * -1;
 
-  const taxableAmount = Math.min(
+  const taxableAmount = Math.max(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
     maxTaxableUsd,
   );

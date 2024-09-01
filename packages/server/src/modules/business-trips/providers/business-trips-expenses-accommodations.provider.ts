@@ -110,11 +110,12 @@ export class BusinessTripAccommodationsExpensesProvider {
   private async batchBusinessTripsAccommodationsExpensesByBusinessTripIds(
     businessTripIds: readonly string[],
   ) {
+    const uniqueIds = Array.from(new Set(businessTripIds));
     const businessTripsAccommodationsExpenses =
       await getBusinessTripsAccommodationsExpensesByBusinessTripIds.run(
         {
-          isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
-          businessTripIds,
+          isBusinessTripIds: uniqueIds.length > 0 ? 1 : 0,
+          businessTripIds: uniqueIds,
         },
         this.dbProvider,
       );
