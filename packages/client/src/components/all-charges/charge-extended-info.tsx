@@ -1,7 +1,17 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { FileUpload, Photo, PlaylistAdd, Plus, Search, Trash } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion, ActionIcon, Box, Burger, Collapse, Loader, Menu, Tooltip } from '@mantine/core';
+import {
+  Accordion,
+  ActionIcon,
+  Box,
+  Burger,
+  Collapse,
+  Loader,
+  Menu,
+  Modal,
+  Tooltip,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AllChargesErrorsFieldsFragmentDoc,
@@ -18,6 +28,7 @@ import {
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
+import { Deprecation } from '../common/deprecation/index.js';
 import {
   BusinessTripSummarizedReport,
   ConfirmationModal,
@@ -393,6 +404,8 @@ export function ChargeExtendedInfoMenu({
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
   const [modalOpened, setModalOpened] = useState(false);
+  const [deprecationOpened, { open: openDeprecation, close: closeDeprecation }] =
+    useDisclosure(false);
 
   function onDelete(): void {
     deleteCharge({
@@ -464,8 +477,29 @@ export function ChargeExtendedInfoMenu({
           >
             Match Document
           </Menu.Item>
+          <Menu.Label>Deprecation</Menu.Label>
+          <Menu.Item
+            icon={<Trash size={14} />}
+            onClick={(): void => {
+              openDeprecation();
+              closeMenu();
+            }}
+          >
+            Deprecation
+          </Menu.Item>
         </Menu.Dropdown>
       </Menu>
+      <Modal
+        withinPortal
+        size="xl"
+        centered
+        opened={deprecationOpened}
+        onClose={closeDeprecation}
+        title="Deprecation"
+        onClick={event => event.stopPropagation()}
+      >
+        <Deprecation chargeId={chargeId} onChange={closeDeprecation} />
+      </Modal>
     </>
   );
 }

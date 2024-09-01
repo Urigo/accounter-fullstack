@@ -113,7 +113,7 @@ export function adjustTaxRecords(
       const isDecreasedVat = false;
 
       // decorate record with additional fields
-      const vatAfterDeduction = doc.vat_amount! * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
+      const vatAfterDeduction = doc.vat_amount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
       const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
 
       partialRecord.foreignVatAfterDeduction = vatAfterDeduction;

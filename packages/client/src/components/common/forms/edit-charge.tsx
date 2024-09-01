@@ -262,7 +262,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
             control={chargeControl}
             defaultValue={charge.property}
             render={({ field: { value, ...field } }): ReactElement => (
-              <Switch {...field} checked={value === true} label="Is Property" />
+              <Switch disabled {...field} checked={value === true} label="Is Property" />
             )}
           />
           <Controller
