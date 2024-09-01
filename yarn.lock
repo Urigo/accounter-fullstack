@@ -463,10 +463,10 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.24.7"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.10.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.10", "@babel/runtime@^7.18.3", "@babel/runtime@^7.20.1", "@babel/runtime@^7.21.0", "@babel/runtime@^7.23.9", "@babel/runtime@^7.25.0", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
-  version "7.25.4"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.25.4.tgz#6ef37d678428306e7d75f054d5b1bdb8cf8aa8ee"
-  integrity sha512-DSgLeL/FNcpXuzav5wfYvHCGvynXkJbn3Zvc3823AEe9nPwW9IK4UoCSS5yGymmQzN0pCPvivtgS6/8U2kkm1w==
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.10.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.10", "@babel/runtime@^7.18.3", "@babel/runtime@^7.20.1", "@babel/runtime@^7.21.0", "@babel/runtime@^7.23.9", "@babel/runtime@^7.25.4", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
+  version "7.25.6"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.25.6.tgz#9afc3289f7184d8d7f98b099884c26317b9264d2"
+  integrity sha512-VBj9MYyDb9tuLq7yzqjgzt6Q+IBQLrGZfdjOekyEirZPHxXWoTSGUTMrpsfi58Up73d13NfYLv8HT9vmznjzhQ==
   dependencies:
     regenerator-runtime "^0.14.0"
 
@@ -3019,12 +3019,12 @@
     prop-types "^15.8.1"
     react-is "^18.3.1"
 
-"@mui/x-charts-vendor@7.14.0":
-  version "7.14.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.14.0.tgz#7dd2a0cce4448ae0e0fe812a8eb1395f22f9f9e2"
-  integrity sha512-hhEwqQ5Gt2uEFCIna7OPycyu/CzVlywmH5SIX9O3Rxe/y0muLhafEX2ooOQpopcrgGPmP+2/zTf7cssXPiMmAQ==
+"@mui/x-charts-vendor@7.15.0":
+  version "7.15.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.15.0.tgz#f0d486ad416bf2c63772c9d439d8edf463dc8d7b"
+  integrity sha512-5PNzV3//gdS3jlsbvAc/kj6k7KTikjNhprXVaTIrqj9/Jm2MU0cNtmwDwDVkekXLpjeXGGT6nrIehb129GIinw==
   dependencies:
-    "@babel/runtime" "^7.25.0"
+    "@babel/runtime" "^7.25.4"
     "@types/d3-color" "^3.1.3"
     "@types/d3-delaunay" "^6.0.4"
     "@types/d3-interpolate" "^3.0.4"
@@ -3040,15 +3040,14 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.14.0":
-  version "7.14.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.14.0.tgz#e81f1016e41ae944b38587581043493f7e71a34a"
-  integrity sha512-yjBEGk9fl7rMnCaTqibQEf2Dq8oVMzMVDkEXOztJbb8XG+iC/EtRPOWRahgFVi5xitiKR+lLJ/ezBWzuYK739A==
+"@mui/x-charts@7.15.0":
+  version "7.15.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.15.0.tgz#b072752bcf9ef05e423cf11e6a412cba23a21fd1"
+  integrity sha512-eAyrLWMrFt6NKKca1vCWvVoThapGSdTzvDSY76CiA5Q1eOzZIhIriafh26QFqQLSuLYnCwHdX+gBVmCoZorcWA==
   dependencies:
-    "@babel/runtime" "^7.25.0"
-    "@mui/system" "^5.16.7"
+    "@babel/runtime" "^7.25.4"
     "@mui/utils" "^5.16.6"
-    "@mui/x-charts-vendor" "7.14.0"
+    "@mui/x-charts-vendor" "7.15.0"
     "@react-spring/rafz" "^9.7.4"
     "@react-spring/web" "^9.7.4"
     clsx "^2.1.1"
