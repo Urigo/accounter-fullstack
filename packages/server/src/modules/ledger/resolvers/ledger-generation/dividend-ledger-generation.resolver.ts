@@ -1,6 +1,8 @@
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
@@ -9,7 +11,7 @@ import {
   DIVIDEND_WITHHOLDING_TAX_PERCENTAGE,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
 import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
 import {
@@ -37,16 +39,26 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
     // generate ledger from transactions
-    const coreLedgerEntries: LedgerProto[] = [];
+    const coreLedgerEntries: StrictLedgerProto[] = [];
     const withholdingTaxLedgerEntries: LedgerProto[] = [];
     const paymentLedgerEntries: LedgerProto[] = [];
     const miscLedgerEntries: LedgerProto[] = [];
     let mainAccountId: string | undefined = undefined;
 
     // Get all transactions
-    const transactions = await injector
+    const transactionsPromise = injector
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
+
+    const chargeBallanceCancellationsPromise = injector
+      .get(BalanceCancellationProvider)
+      .getBalanceCancellationByChargesIdLoader.load(chargeId);
+
+    const [transactions, balanceCancellations] = await Promise.all([
+      transactionsPromise,
+      chargeBallanceCancellationsPromise,
+    ]);
+
     const {
       withholdingTaxTransactions,
       paymentsTransactions,
@@ -147,7 +159,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         const dividendRecordAbsAmount = Math.abs(Number(dividendRecord.amount));
 
         // generate core ledger entries
-        const coreLedgerEntry: LedgerProto = {
+        const coreLedgerEntry: StrictLedgerProto = {
           currency: DEFAULT_LOCAL_CURRENCY,
           ownerId: dividendRecord.owner_id,
           id: dividendRecord.id,
@@ -271,6 +283,29 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
         miscLedgerEntries.push(currencyBalanceEntry2);
         updateLedgerBalanceByEntry(currencyBalanceEntry2, ledgerBalance);
+      }
+    }
+
+    // generate ledger from balance cancellation
+    for (const balanceCancellation of balanceCancellations) {
+      try {
+        const ledgerEntry = ledgerEntryFromBalanceCancellation(
+          balanceCancellation,
+          ledgerBalance,
+          coreLedgerEntries,
+          chargeId,
+          charge.owner_id,
+        );
+
+        miscLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      } catch (e) {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+          continue;
+        } else {
+          throw e;
+        }
       }
     }
 
