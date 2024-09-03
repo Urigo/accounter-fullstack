@@ -47,9 +47,7 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
     {
       type: 'input',
       name: 'SMSPassword',
-      message: {
-        message: 'Enter the code you got in SMS:'
-      },
+      message: 'Enter the code you got in SMS:',
     },
   );
 
@@ -86,9 +84,7 @@ async function replacePassword(previousCredentials: hapoalimCredentials, page: P
   const answers = await inquirer.prompt<{'newPassword': string}>({
       type: 'input',
       name: 'newPassword',
-      message: {
-        message: 'Enter your new wanted password:'
-      },
+      message: 'Enter your new wanted password:',
     });
 
   await page.type('[name="oldpassword"]', previousCredentials.password);
