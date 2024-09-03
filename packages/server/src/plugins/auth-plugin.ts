@@ -1,12 +1,7 @@
 import auth from 'basic-auth';
 import bcrypt from 'bcrypt';
-import { EnumValueNode } from 'graphql';
-import {
-  ResolveUserFn,
-  UnauthenticatedError,
-  useGenericAuth,
-  ValidateUserFn,
-} from '@envelop/generic-auth';
+import { GraphQLError } from 'graphql';
+import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import type { Role } from '@shared/gql-types';
 import { AccounterContext } from '@shared/types';
@@ -91,26 +86,23 @@ const getAcceptableRoles = (role?: string) => {
   }
 };
 
-const validateUser: ValidateUserFn<UserType> = ({ user, fieldAuthDirectiveNode }) => {
-  // Now you can use the fieldAuthDirectiveNode parameter to implement custom logic for user validation, with access
-  // to the resolver auth directive arguments.
+const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentType }) => {
   if (!user) {
-    return new UnauthenticatedError(`Unauthenticated!`);
+    return new GraphQLError(`Unauthenticated!`);
   }
 
-  const valueNode = fieldAuthDirectiveNode?.arguments?.find(arg => arg.name.value === 'role')
-    ?.value as EnumValueNode | undefined;
-  if (!valueNode) {
+  // case sub-field with no auth directive
+  if (!['Query', 'Mutation'].includes(parentType.name) && !fieldDirectives?.auth) {
     return;
   }
 
-  const role = valueNode.value;
+  const role = fieldDirectives?.auth?.find(arg => 'role' in arg)?.role;
   const acceptableRoles = getAcceptableRoles(role);
 
-  if (!user.role || !acceptableRoles.includes(user.role)) {
-    return new UnauthenticatedError(`No permissions!`);
+  if (user.role && acceptableRoles.includes(user.role)) {
+    return;
   }
-  return;
+  return new GraphQLError(`No permissions!`);
 };
 
 export const authPlugin = () =>
@@ -118,4 +110,5 @@ export const authPlugin = () =>
     resolveUserFn,
     validateUser,
     mode: 'protect-granular',
+    extractScopes: user => getAcceptableRoles(user.role),
   });
