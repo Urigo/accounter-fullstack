@@ -49,12 +49,13 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
       setIsUpdating(true);
       await updateMiscExpense({
         transactionId: expense.transactionId,
+        counterpartyId: expense.counterparty.id,
         fields: data,
       });
       onDone();
       setIsUpdating(false);
     },
-    [updateMiscExpense, onDone, expense.transactionId],
+    [updateMiscExpense, onDone, expense.transactionId, expense.counterparty.id],
   );
   const onSubmit: SubmitHandler<UpdateMiscExpenseInput> = data => {
     if (data && Object.keys(data).length > 0) {
