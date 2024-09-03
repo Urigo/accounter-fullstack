@@ -68,7 +68,7 @@
     "graphql": "16.9.0"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.96.0",
+    "@graphql-mesh/cli": "0.96.1",
     "tsup": "8.2.4"
   },
   "publishConfig": {
