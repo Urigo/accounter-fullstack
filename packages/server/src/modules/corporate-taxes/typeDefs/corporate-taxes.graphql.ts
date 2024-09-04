@@ -8,6 +8,7 @@ export default gql`
 
   " Corporate tax variables "
   type CorporateTax {
+    id: ID!
     corporateId: UUID!
     date: TimelessDate!
     taxRate: Float!
