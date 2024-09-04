@@ -1,7 +1,10 @@
 import { differenceInDays } from 'date-fns';
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
+import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
 import { DeprecationCategoriesProvider } from '@modules/deprecation/providers/deprecation-categories.provider.js';
 import { DeprecationProvider } from '@modules/deprecation/providers/deprecation.provider.js';
+import { TimelessDateString } from '@shared/types';
 
 export async function calculateTaxAmounts(
   injector: Injector,
@@ -16,11 +19,21 @@ export async function calculateTaxAmounts(
     researchAndDevelopmentExpensesAmount +
     researchAndDevelopmentExpensesForTax;
 
-  const taxRate = 0.23;
+  const deprecationAmountPromise = calculateDeprecationAmount(injector, year);
+  const taxRatePromise = injector
+    .get(CorporateTaxesProvider)
+    .getCorporateTaxesByDateLoader.load(`${year}-01-01` as TimelessDateString);
+  const [{ deprecationYearlyAmount }, taxRateVariables] = await Promise.all([
+    deprecationAmountPromise,
+    taxRatePromise,
+  ]);
+
+  if (!taxRateVariables) {
+    throw new GraphQLError('No tax rate for year');
+  }
+  const taxRate = Number(taxRateVariables.tax_rate) / 100;
 
   const annualTaxExpenseAmount = taxableIncomeAmount * taxRate;
-
-  const { deprecationYearlyAmount } = await calculateDeprecationAmount(injector, year);
 
   // מיסים
   // 3 סוגי התאמות:
