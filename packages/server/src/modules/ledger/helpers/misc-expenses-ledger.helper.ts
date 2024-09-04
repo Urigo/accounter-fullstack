@@ -1,12 +1,14 @@
 import type { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID, ISRACARD_BUSINESS_ID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import { isSupplementalFeeTransaction } from './fee-transactions.js';
 import {
   getFinancialAccountTaxCategoryId,
+  LedgerError,
   validateTransactionBasicVariables,
 } from './utils.helper.js';
 
@@ -32,6 +34,19 @@ export async function generateMiscExpensesLedger(
   let mainAccount = businessId;
   if (isSupplementalFee) {
     mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction);
+  } else if (mainAccount === ISRACARD_BUSINESS_ID && transaction.source_reference) {
+    const account = await injector
+      .get(FinancialAccountsProvider)
+      .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
+    if (!account) {
+      throw new LedgerError(
+        `Transaction reference "${transaction.source_reference}" is missing account`,
+      );
+    }
+    mainAccount = await getFinancialAccountTaxCategoryId(injector, {
+      ...transaction,
+      account_id: account.id,
+    });
   }
 
   const ledgerEntries: LedgerProto[] = [];
