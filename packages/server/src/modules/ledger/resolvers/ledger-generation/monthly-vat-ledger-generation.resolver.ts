@@ -3,6 +3,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -87,13 +88,23 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       .get(TaxCategoriesProvider)
       .taxCategoryByIDsLoader.load(OUTPUT_VAT_TAX_CATEGORY_ID);
 
-    const [vatRecords, transactions, inputsVatTaxCategory, outputsVatTaxCategory] =
-      await Promise.all([
-        Promise.all(vatRecordsPromises),
-        transactionsPromise,
-        inputsVatTaxCategoryPromise,
-        outputsVatTaxCategoryPromise,
-      ]);
+    const unbalancedBusinessesPromise = injector
+      .get(UnbalancedBusinessesProvider)
+      .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
+
+    const [
+      vatRecords,
+      transactions,
+      inputsVatTaxCategory,
+      outputsVatTaxCategory,
+      unbalancedBusinesses,
+    ] = await Promise.all([
+      Promise.all(vatRecordsPromises),
+      transactionsPromise,
+      inputsVatTaxCategoryPromise,
+      outputsVatTaxCategoryPromise,
+      unbalancedBusinessesPromise,
+    ]);
 
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
@@ -253,7 +264,16 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
+    const allowedUnbalancedBusinesses = new Set(
+      unbalancedBusinesses.map(({ business_id }) => business_id),
+    );
+
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(
+      injector,
+      ledgerBalance,
+      errors,
+      allowedUnbalancedBusinesses,
+    );
 
     const records = [
       ...financialAccountLedgerEntries,
