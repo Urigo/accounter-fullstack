@@ -48,6 +48,7 @@ import migration_2024_08_27T14_53_58_update_misc_transactions_amount_type from '
 import migration_2024_08_28T12_03_04_business_trip_car_rental_category from './actions/2024-08-28T12-03-04.business-trip-car-rental-category.js';
 import migration_2024_08_28T16_07_43_deprecation from './actions/2024-08-28T16-07-43.deprecation.js';
 import migration_2024_09_01T13_30_24_business_trip_transactions_view_fix from './actions/2024-09-01T13-30-24.business-trip-transactions-view-fix.js';
+import migration_2024_09_04T15_37_43_company_taxes from './actions/2024-09-04T15-37-43.company-taxes.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -103,5 +104,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_08_28T12_03_04_business_trip_car_rental_category,
       migration_2024_08_28T16_07_43_deprecation,
       migration_2024_09_01T13_30_24_business_trip_transactions_view_fix,
+      migration_2024_09_04T15_37_43_company_taxes,
     ],
   });
