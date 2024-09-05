@@ -1,15 +1,17 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Switch } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import { AllFinancialEntitiesDocument, BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { PopUpModal, TextInput } from '../../common/index.js';
+import { PopUpModal } from '../../common/index.js';
 
 export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;
@@ -114,17 +116,28 @@ function TrialBalanceReportFilterForm({
           control={control}
           defaultValue={filter.fromDate}
           rules={{
+            required: 'Required',
             pattern: {
               value: TIMELESS_DATE_REGEX,
               message: 'Date must be im format yyyy-mm-dd',
             },
           }}
           render={({ field, fieldState }): ReactElement => (
-            <TextInput
+            <DatePickerInput
               {...field}
-              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
-              error={fieldState.error?.message}
+              onChange={(date?: Date | string | null): void => {
+                const newDate = date
+                  ? typeof date === 'string'
+                    ? date
+                    : format(date, 'yyyy-MM-dd')
+                  : undefined;
+                if (newDate !== field.value) field.onChange(newDate);
+              }}
+              value={field.value ? new Date(field.value) : undefined}
               label="From Date"
+              error={fieldState.error?.message}
+              required
+              popoverProps={{ withinPortal: true }}
             />
           )}
         />
@@ -139,11 +152,21 @@ function TrialBalanceReportFilterForm({
             },
           }}
           render={({ field, fieldState }): ReactElement => (
-            <TextInput
+            <DatePickerInput
               {...field}
-              value={!field.value || (field.value as string) === 'Missing' ? '' : field.value}
-              error={fieldState.error?.message}
+              onChange={(date?: Date | string | null): void => {
+                const newDate = date
+                  ? typeof date === 'string'
+                    ? date
+                    : format(date, 'yyyy-MM-dd')
+                  : undefined;
+                if (newDate !== field.value) field.onChange(newDate);
+              }}
+              value={field.value ? new Date(field.value) : undefined}
               label="To Date"
+              error={fieldState.error?.message}
+              required
+              popoverProps={{ withinPortal: true }}
             />
           )}
         />

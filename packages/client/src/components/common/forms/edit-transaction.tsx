@@ -1,7 +1,9 @@
 import { ReactElement, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -10,7 +12,7 @@ import {
 } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
-import { SimpleGrid, TextInput } from '../index.js';
+import { SimpleGrid } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -153,12 +155,20 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                     },
                   }}
                   render={({ field, fieldState }): ReactElement => (
-                    <TextInput
+                    <DatePickerInput
                       {...field}
-                      value={field.value ?? undefined}
-                      error={fieldState.error?.message}
-                      isDirty={fieldState.isDirty}
+                      onChange={(date?: Date | string | null): void => {
+                        const newDate = date
+                          ? typeof date === 'string'
+                            ? date
+                            : format(date, 'yyyy-MM-dd')
+                          : undefined;
+                        if (newDate !== field.value) field.onChange(newDate);
+                      }}
+                      value={field.value ? new Date(field.value) : undefined}
                       label="Effective Date"
+                      error={fieldState.error?.message}
+                      popoverProps={{ withinPortal: true }}
                     />
                   )}
                 />

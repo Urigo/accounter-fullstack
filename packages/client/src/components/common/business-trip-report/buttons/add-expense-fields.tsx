@@ -1,7 +1,9 @@
 import { ReactElement, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Select, TextInput } from '@mantine/core';
+import { Select } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AddBusinessTripFlightsExpenseInput,
@@ -67,12 +69,21 @@ export function AddExpenseFields({
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <DatePickerInput
             data-autofocus
             {...field}
-            value={field.value ?? undefined}
+            onChange={(date?: Date | string | null): void => {
+              const newDate = date
+                ? typeof date === 'string'
+                  ? date
+                  : format(date, 'yyyy-MM-dd')
+                : undefined;
+              if (newDate !== field.value) field.onChange(newDate);
+            }}
+            value={field.value ? new Date(field.value) : undefined}
             error={fieldState.error?.message}
             label="Date"
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -86,11 +97,20 @@ export function AddExpenseFields({
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <DatePickerInput
             {...field}
-            value={field.value ?? undefined}
+            onChange={(date?: Date | string | null): void => {
+              const newDate = date
+                ? typeof date === 'string'
+                  ? date
+                  : format(date, 'yyyy-MM-dd')
+                : undefined;
+              if (newDate !== field.value) field.onChange(newDate);
+            }}
+            value={field.value ? new Date(field.value) : undefined}
             error={fieldState.error?.message}
             label="Value Date"
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />

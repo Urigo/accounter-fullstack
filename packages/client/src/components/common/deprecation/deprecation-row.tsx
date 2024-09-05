@@ -4,7 +4,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Select, Tooltip } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { DatePickerInput } from '@mantine/dates';
 import {
   AllDeprecationCategoriesDocument,
   DeprecationRecordRowFieldsFragmentDoc,
@@ -154,7 +154,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
               render={({ field: { value, ...field }, fieldState }): ReactElement => {
                 const date = value ? new Date(value) : undefined;
                 return (
-                  <DateInput
+                  <DatePickerInput
                     {...field}
                     form={`form ${deprecationRecord.id}`}
                     onChange={(date?: Date | string | null): void => {
@@ -167,7 +167,6 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
                     }}
                     value={date}
                     label="Activation Date"
-                    placeholder="Date"
                     error={fieldState.error?.message}
                     popoverProps={{ withinPortal: true }}
                   />
