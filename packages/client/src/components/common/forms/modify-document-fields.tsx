@@ -1,7 +1,9 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { Control, Controller, UseFormWatch } from 'react-hook-form';
+import { format } from 'date-fns';
+import { Controller, UseFormReturn } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
+import { DatePickerInput, MonthPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -22,18 +24,17 @@ import {
 import { CurrencyInput, SelectInput, TextInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
+  formManager: UseFormReturn<UpdateDocumentFieldsInput | InsertDocumentInput, unknown, undefined>;
   document?: EditDocumentQuery['documentById'];
-  control: Control<UpdateDocumentFieldsInput | InsertDocumentInput, object>;
-  watch: UseFormWatch<UpdateDocumentFieldsInput | InsertDocumentInput>;
   defaultCurrency?: Currency;
 }
 
 export const ModifyDocumentFields = ({
+  formManager,
   document,
-  control,
-  watch,
   defaultCurrency,
 }: ModifyDocumentFieldsProps): ReactElement => {
+  const { control, watch, trigger } = formManager;
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
@@ -122,12 +123,20 @@ export const ModifyDocumentFields = ({
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
+              <DatePickerInput
                 {...field}
-                value={field.value ?? undefined}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
-                isDirty={fieldState.isDirty}
                 label="Date"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />
@@ -232,6 +241,30 @@ export const ModifyDocumentFields = ({
                     currencyCodeProps={{ ...currencyCodeField, label: 'Currency' }}
                   />
                 )}
+              />
+            )}
+          />
+          <Controller
+            name="vatReportDateOverride"
+            control={control}
+            defaultValue={isDocumentProcessed ? document?.vatReportDateOverride : undefined}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be im format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <MonthPickerInput
+                {...field}
+                label="VAT report date"
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={date => {
+                  trigger('vatReportDateOverride');
+                  field.onChange(date ? `${format(date, 'yyyy-MM')}-15` : undefined);
+                }}
+                error={fieldState.error?.message}
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />

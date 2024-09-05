@@ -1,10 +1,8 @@
+import { Injector } from 'graphql-modules';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
-import {
-  getClosestRateForDate,
-  getRateForCurrency,
-} from '@modules/exchange-rates/helpers/exchange.helper.js';
-import type { IGetExchangeRatesByDatesResult } from '@modules/exchange-rates/types';
+import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
+import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import {
   DECREASED_VAT_RATIO,
@@ -45,13 +43,11 @@ export type RawVatReportRecord = {
   vatNumber?: string | null;
 };
 
-export function adjustTaxRecords(
-  rawRecords: Array<VatReportRecordSources>,
-  exchangeRatesList: Array<IGetExchangeRatesByDatesResult>,
-): RawVatReportRecord[] {
-  const records: RawVatReportRecord[] = [];
-
-  for (const rawRecord of rawRecords) {
+export async function adjustTaxRecord(
+  rawRecord: VatReportRecordSources,
+  injector: Injector,
+): Promise<RawVatReportRecord> {
+  try {
     const { charge, doc, business } = rawRecord;
     const currency = formatCurrency(doc.currency_code);
 
@@ -67,7 +63,9 @@ export function adjustTaxRecords(
     }
 
     // get exchange rate
-    const exchangeRates = getClosestRateForDate(doc.date, exchangeRatesList);
+    const exchangeRates = await injector
+      .get(FiatExchangeProvider)
+      .getExchangeRatesByDatesLoader.load(doc.date);
     const rate = getRateForCurrency(currency, exchangeRates);
 
     const partialRecord: RawVatReportRecord = {
@@ -124,8 +122,9 @@ export function adjustTaxRecords(
       partialRecord.eventLocalAmount = doc.total_amount * rate;
     }
 
-    records.push(partialRecord);
+    return partialRecord;
+  } catch (e) {
+    console.error(e);
+    throw e;
   }
-
-  return records;
 }

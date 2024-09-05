@@ -1,9 +1,9 @@
+import { endOfDay, startOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { VAT_REPORT_EXCLUDED_BUSINESS_NAMES } from '@shared/constants';
 import {
@@ -14,7 +14,7 @@ import {
   type ResolversTypes,
 } from '@shared/gql-types';
 import {
-  adjustTaxRecords,
+  adjustTaxRecord,
   type RawVatReportRecord,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
@@ -40,8 +40,8 @@ export const getVatRecords: ResolverFn<
     const relevantDocumentsPromise = injector
       .get(DocumentsProvider)
       .getDocumentsByFilters({
-        fromDate: filters?.fromDate,
-        toDate: filters?.toDate,
+        fromVatDate: filters?.fromDate,
+        toVatDate: filters?.toDate,
         ownerIDs: [filters?.financialEntityId],
       })
       .then(documents =>
@@ -49,8 +49,20 @@ export const getVatRecords: ResolverFn<
           if (doc.charge_id) {
             docsChargesIDs.add(doc.charge_id);
           }
-          // filter invoice documents with linked charge
+
+          // filter documents with vat_report_date_override outside of the date range
+          if (doc.vat_report_date_override) {
+            const isBeforeFromDate =
+              filters?.fromDate && doc.vat_report_date_override < startOfDay(filters.fromDate);
+            const isAfterToDate =
+              filters?.toDate && doc.vat_report_date_override > endOfDay(filters.toDate);
+            if (isBeforeFromDate || isAfterToDate) {
+              return false;
+            }
+          }
+
           if (!doc.charge_id || !doc.creditor_id || !doc.debtor_id) {
+            // filter invoice documents with linked charge
             return false;
           }
           const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(doc.type);
@@ -68,15 +80,10 @@ export const getVatRecords: ResolverFn<
       chargeType: filters?.chargesType,
     });
 
-    const exchangeRatesPromises = injector
-      .get(FiatExchangeProvider)
-      .getExchangeRatesByDates({ fromDate: filters?.fromDate, toDate: filters?.toDate });
-
-    const [relevantDocuments, businesses, charges, exchangeRates] = await Promise.all([
+    const [relevantDocuments, businesses, charges] = await Promise.all([
       relevantDocumentsPromise,
       businessesPromise,
       chargesPromise,
-      exchangeRatesPromises,
     ]);
 
     let docsCharges = charges.filter(charge => docsChargesIDs.has(charge.id));
@@ -145,8 +152,18 @@ export const getVatRecords: ResolverFn<
 
     if (incomeRecords.length + expenseRecords.length > 0) {
       // TODO: what if no exchange dates found?
-      response.income.push(...adjustTaxRecords(incomeRecords, exchangeRates));
-      response.expenses.push(...adjustTaxRecords(expenseRecords, exchangeRates));
+      await Promise.all([
+        ...incomeRecords.map(async rawRecord =>
+          adjustTaxRecord(rawRecord, injector).then(res => {
+            response.income.push(res);
+          }),
+        ),
+        ...expenseRecords.map(async rawRecord =>
+          adjustTaxRecord(rawRecord, injector).then(res => {
+            response.expenses.push(res);
+          }),
+        ),
+      ]);
     }
 
     // validate charges for missing info

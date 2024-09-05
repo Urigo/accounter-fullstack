@@ -46,6 +46,8 @@ export const commonFinancialDocumentsFields:
     documentRoot.vat_amount == null
       ? null
       : formatFinancialAmount(documentRoot.vat_amount, documentRoot.currency_code),
+  vatReportDateOverride: documentRoot =>
+    optionalDateToTimelessDateString(documentRoot.vat_report_date_override),
 };
 
 export const commonFinancialEntityFields:

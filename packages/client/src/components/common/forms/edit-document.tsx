@@ -17,7 +17,7 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
       file
       documentType
       __typename
-      ... on Invoice {
+      ... on FinancialDocument {
         vat {
           raw
           currency
@@ -36,86 +36,7 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
           id
           name
         }
-      }
-      ... on Proforma {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          currency
-        }
-        debtor {
-          id
-          name
-        }
-        creditor {
-          id
-          name
-        }
-      }
-      ... on Receipt {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          currency
-        }
-        debtor {
-          id
-          name
-        }
-        creditor {
-          id
-          name
-        }
-      }
-      ... on InvoiceReceipt {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          currency
-        }
-        debtor {
-          id
-          name
-        }
-        creditor {
-          id
-          name
-        }
-      }
-      ... on CreditInvoice {
-        vat {
-          raw
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          currency
-        }
-        debtor {
-          id
-          name
-        }
-        creditor {
-          id
-          name
-        }
+        vatReportDateOverride
       }
     }
   }
@@ -136,14 +57,13 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
   });
 
   const document = documentData?.documentById;
-
+  const formManager = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...document } });
   const {
-    control,
     handleSubmit,
     formState: { dirtyFields },
     setValue,
     watch,
-  } = useForm<UpdateDocumentFieldsInput>({ defaultValues: { ...document } });
+  } = formManager;
   const [openImage, setOpenImage] = useState<boolean>(false);
 
   const { updateDocument, fetching } = useUpdateDocument();
@@ -180,7 +100,7 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
           <div className="px-5 w-4/5 h-max justify-items-center">
             <form onSubmit={handleSubmit(onSubmit)}>
               <SimpleGrid cols={4}>
-                <ModifyDocumentFields document={document} watch={watch} control={control} />
+                <ModifyDocumentFields document={document} formManager={formManager} />
                 <ButtonWithLabel
                   target="_blank"
                   textLabel="File"

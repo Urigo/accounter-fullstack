@@ -86,6 +86,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
   }
 
   " invoice document "
@@ -100,6 +101,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
   }
 
   " proforma document "
@@ -114,6 +116,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
   }
 
   " receipt document "
@@ -126,6 +129,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
     isReviewed: Boolean
   }
 
@@ -141,6 +145,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
   }
 
   " Credit invoice document - חשבונית זיכוי "
@@ -155,6 +160,7 @@ export default gql`
     serialNumber: String
     date: TimelessDate
     amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
   }
 
   " input variables for updateDocument "
@@ -169,6 +175,7 @@ export default gql`
     chargeId: UUID
     creditorId: UUID
     debtorId: UUID
+    vatReportDateOverride: TimelessDate
   }
 
   " result type for updateCharge "
@@ -191,6 +198,7 @@ export default gql`
     chargeId: UUID
     creditorId: UUID
     debtorId: UUID
+    vatReportDateOverride: TimelessDate
   }
 
   " result type for insertDocument "

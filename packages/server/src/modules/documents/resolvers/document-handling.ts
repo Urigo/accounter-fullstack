@@ -53,6 +53,7 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       currencyCode: isCurrency(draft.expense.currency) ? draft.expense.currency : null,
       vat: draft.expense.vat ?? null,
       chargeId: chargeId ?? null,
+      vatReportDateOverride: null,
     };
     const res = await injector
       .get(DocumentsProvider)
