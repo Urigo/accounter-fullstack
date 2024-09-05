@@ -463,7 +463,7 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.24.7"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.10.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.10", "@babel/runtime@^7.18.3", "@babel/runtime@^7.21.0", "@babel/runtime@^7.23.9", "@babel/runtime@^7.25.0", "@babel/runtime@^7.25.4", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.10.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.10", "@babel/runtime@^7.18.3", "@babel/runtime@^7.21.0", "@babel/runtime@^7.23.9", "@babel/runtime@^7.25.0", "@babel/runtime@^7.25.6", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
   version "7.25.6"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.25.6.tgz#9afc3289f7184d8d7f98b099884c26317b9264d2"
   integrity sha512-VBj9MYyDb9tuLq7yzqjgzt6Q+IBQLrGZfdjOekyEirZPHxXWoTSGUTMrpsfi58Up73d13NfYLv8HT9vmznjzhQ==
@@ -2946,12 +2946,12 @@
     prop-types "^15.8.1"
     react-is "^18.3.1"
 
-"@mui/x-charts-vendor@7.15.0":
-  version "7.15.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.15.0.tgz#f0d486ad416bf2c63772c9d439d8edf463dc8d7b"
-  integrity sha512-5PNzV3//gdS3jlsbvAc/kj6k7KTikjNhprXVaTIrqj9/Jm2MU0cNtmwDwDVkekXLpjeXGGT6nrIehb129GIinw==
+"@mui/x-charts-vendor@7.16.0":
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.16.0.tgz#6f745457eac05955bfcfc6180562ceab576a8abf"
+  integrity sha512-MyMCCl7eAM53rLbjqP4zbMy5hYtdeqCjAYCH2jpvBKdgugm2eaPLKOPM8bUVfen0wHA8BXleQrIrNceytFPyZA==
   dependencies:
-    "@babel/runtime" "^7.25.4"
+    "@babel/runtime" "^7.25.6"
     "@types/d3-color" "^3.1.3"
     "@types/d3-delaunay" "^6.0.4"
     "@types/d3-interpolate" "^3.0.4"
@@ -2967,18 +2967,27 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.15.0":
-  version "7.15.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.15.0.tgz#b072752bcf9ef05e423cf11e6a412cba23a21fd1"
-  integrity sha512-eAyrLWMrFt6NKKca1vCWvVoThapGSdTzvDSY76CiA5Q1eOzZIhIriafh26QFqQLSuLYnCwHdX+gBVmCoZorcWA==
+"@mui/x-charts@7.16.0":
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.16.0.tgz#775495bbe01cc50120e7cd04291ac051736cb034"
+  integrity sha512-YnimCNnLpmSu93LEGYAy8HaMoa6xqqQNFRD8BtzGs492sk/coM9uh6OwHJekF5302fDpANu3rYSF0KEpFWZM2Q==
   dependencies:
-    "@babel/runtime" "^7.25.4"
+    "@babel/runtime" "^7.25.6"
     "@mui/utils" "^5.16.6"
-    "@mui/x-charts-vendor" "7.15.0"
+    "@mui/x-charts-vendor" "7.16.0"
+    "@mui/x-internals" "7.16.0"
     "@react-spring/rafz" "^9.7.4"
     "@react-spring/web" "^9.7.4"
     clsx "^2.1.1"
     prop-types "^15.8.1"
+
+"@mui/x-internals@7.16.0":
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-internals/-/x-internals-7.16.0.tgz#a019df121d2ab08516346dd7db74bb1d797b258c"
+  integrity sha512-ijer5XYmWlJqWaTmF6TGH1odG7EAupv8iDWYmDm2yVR9IQ+L2nQSuhiFClI+wmGx40KS2VKOlzDMPpF0t7/HCg==
+  dependencies:
+    "@babel/runtime" "^7.25.6"
+    "@mui/utils" "^5.16.6"
 
 "@next/env@14.2.8":
   version "14.2.8"
