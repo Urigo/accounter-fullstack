@@ -2,25 +2,25 @@ import { ReactElement, useCallback } from 'react';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useDeleteDeprecationRecord } from '../../../hooks/use-delete-deprecation-record.js';
-import { ConfirmationModal } from '../modals/confirmation-modal.js';
+import { useDeleteDepreciationRecord } from '../../../hooks/use-delete-depreciation-record.js';
+import { ConfirmationModal } from '../modals/confirmation-modal.jsx';
 
-export function DeleteDeprecationRecord(props: {
-  deprecationRecordId: string;
+export function DeleteDepreciationRecord(props: {
+  depreciationRecordId: string;
   onDelete?: () => void;
 }): ReactElement {
   const [opened, { close, open }] = useDisclosure(false);
 
-  const { fetching, deleteDeprecationRecord } = useDeleteDeprecationRecord();
+  const { fetching, deleteDepreciationRecord } = useDeleteDepreciationRecord();
 
   const onExecute = useCallback(() => {
-    deleteDeprecationRecord({
-      deprecationRecordId: props.deprecationRecordId,
+    deleteDepreciationRecord({
+      depreciationRecordId: props.depreciationRecordId,
     }).then(() => {
       props.onDelete?.();
       close();
     });
-  }, [props, deleteDeprecationRecord, close]);
+  }, [props, deleteDepreciationRecord, close]);
 
   return (
     <>
@@ -28,9 +28,9 @@ export function DeleteDeprecationRecord(props: {
         opened={opened}
         onClose={close}
         onConfirm={onExecute}
-        title="Are you sure you want to delete the deprecation record?"
+        title="Are you sure you want to delete the depreciation record?"
       />
-      <Tooltip label="Remove Deprecation">
+      <Tooltip label="Remove Depreciation">
         <ActionIcon variant="default" loading={fetching} size={30} onClick={open}>
           <Trash size={20} color="red" />
         </ActionIcon>

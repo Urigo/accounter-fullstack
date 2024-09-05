@@ -12,7 +12,7 @@ export default gql`
     profitBeforeTax: FinancialAmount!
     researchAndDevelopmentExpensesByRecords: FinancialAmount!
     researchAndDevelopmentExpensesForTax: FinancialAmount!
-    deprecationForTax: FinancialAmount!
+    depreciationForTax: FinancialAmount!
     taxableIncome: FinancialAmount!
     taxRate: Float!
     annualTaxExpense: FinancialAmount!

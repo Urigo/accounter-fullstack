@@ -7,15 +7,15 @@ import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/co
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  AllDeprecationCategoriesDocument,
-  InsertDeprecationRecordInput,
+  AllDepreciationCategoriesDocument,
+  InsertDepreciationRecordInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
-import { useAddDeprecationRecord } from '../../../hooks/use-add-deprecation-record.js';
+import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
 import { CurrencyInput } from '../index.js';
-import { deprecationTypes } from './index.js';
+import { depreciationTypes } from './index.js';
 
-export function AddDeprecationRecord(props: {
+export function AddDepreciationRecord(props: {
   chargeId: string;
   onAdd?: () => void;
 }): ReactElement {
@@ -24,7 +24,7 @@ export function AddDeprecationRecord(props: {
 
   return (
     <>
-      <Tooltip label="Add Deprecation Record">
+      <Tooltip label="Add Depreciation Record">
         <ActionIcon
           variant="default"
           onClick={(event): void => {
@@ -49,26 +49,26 @@ type ModalProps = {
 };
 
 function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<InsertDeprecationRecordInput>({
+  const { control, handleSubmit } = useForm<InsertDepreciationRecordInput>({
     defaultValues: { chargeId },
   });
   const [fetching, setFetching] = useState(false);
 
   const [{ data, fetching: fetchingCategories }] = useQuery({
-    query: AllDeprecationCategoriesDocument,
+    query: AllDepreciationCategoriesDocument,
   });
 
-  const { addDeprecationRecord, fetching: addingInProcess } = useAddDeprecationRecord();
+  const { addDepreciationRecord, fetching: addingInProcess } = useAddDepreciationRecord();
 
-  const onSubmit: SubmitHandler<InsertDeprecationRecordInput> = data => {
-    addDeprecationRecord({ fields: data }).then(() => {
+  const onSubmit: SubmitHandler<InsertDepreciationRecordInput> = data => {
+    addDepreciationRecord({ fields: data }).then(() => {
       onAdd?.();
       close();
     });
   };
 
   const categories =
-    data?.deprecationCategories?.map(category => ({
+    data?.depreciationCategories?.map(category => ({
       value: category.id,
       label: category.name,
     })) ?? [];
@@ -80,7 +80,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
 
   return (
     <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Deprecation Record</Modal.Title>
+      <Modal.Title>Add Depreciation Record</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Controller
@@ -157,7 +157,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                data={deprecationTypes}
+                data={depreciationTypes}
                 value={field.value}
                 label="Type"
                 placeholder="Scroll to see all options"

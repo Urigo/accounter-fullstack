@@ -2,16 +2,16 @@ import { ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Table } from '@mantine/core';
-import { ChargeDeprecationDocument, DeprecationType } from '../../../gql/graphql.js';
-import { AddDeprecationRecord } from './add-deprecation-record.js';
-import { DeprecationRow } from './deprecation-row.js';
+import { ChargeDepreciationDocument, DepreciationType } from '../../../gql/graphql.js';
+import { AddDepreciationRecord } from './add-depreciation-record.js';
+import { DepreciationRow } from './depreciation-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ChargeDeprecation($chargeId: UUID!) {
-    deprecationRecordsByCharge(chargeId: $chargeId) {
+  query ChargeDepreciation($chargeId: UUID!) {
+    depreciationRecordsByCharge(chargeId: $chargeId) {
       id
-      ...DeprecationRecordRowFields
+      ...DepreciationRecordRowFields
     }
   }
 `;
@@ -21,16 +21,16 @@ interface Props {
   onChange?: () => void;
 }
 
-export const Deprecation = ({ chargeId, onChange }: Props): ReactElement => {
+export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
   const [{ data, fetching }] = useQuery({
-    query: ChargeDeprecationDocument,
+    query: ChargeDepreciationDocument,
     variables: {
       chargeId,
     },
   });
 
-  if (!fetching && !data?.deprecationRecordsByCharge.length) {
-    return <AddDeprecationRecord chargeId={chargeId} onAdd={onChange} />;
+  if (!fetching && !data?.depreciationRecordsByCharge.length) {
+    return <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />;
   }
 
   console.log(data);
@@ -50,12 +50,12 @@ export const Deprecation = ({ chargeId, onChange }: Props): ReactElement => {
           </tr>
         </thead>
         <tbody>
-          {data?.deprecationRecordsByCharge.map(deprecation => (
-            <DeprecationRow data={deprecation} onChange={onChange} key={deprecation.id} />
+          {data?.depreciationRecordsByCharge.map(depreciation => (
+            <DepreciationRow data={depreciation} onChange={onChange} key={depreciation.id} />
           ))}
           <tr>
             <td colSpan={5}>
-              <AddDeprecationRecord chargeId={chargeId} onAdd={onChange} />
+              <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />
             </td>
           </tr>
         </tbody>
@@ -64,7 +64,7 @@ export const Deprecation = ({ chargeId, onChange }: Props): ReactElement => {
   );
 };
 
-export const deprecationTypes = Object.entries(DeprecationType).map(([key, value]) => ({
+export const depreciationTypes = Object.entries(DepreciationType).map(([key, value]) => ({
   value,
   label: key,
 }));
