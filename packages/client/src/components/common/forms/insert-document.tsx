@@ -13,13 +13,13 @@ type Props = {
 };
 
 export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): ReactElement => {
+  const formManager = useForm<InsertDocumentInput>();
   const {
-    control,
     handleSubmit,
     formState: { dirtyFields },
     setValue,
     watch,
-  } = useForm<InsertDocumentInput>();
+  } = formManager;
   const { insertDocument, fetching } = useInsertDocument();
   const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
     if (data && Object.keys(data).length > 0) {
@@ -52,7 +52,7 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
     <div className=" px-5 w-max h-max justify-items-center">
       <form onSubmit={handleSubmit(onSubmit)}>
         <SimpleGrid cols={5}>
-          <ModifyDocumentFields control={control} watch={watch} defaultCurrency={Currency.Ils} />
+          <ModifyDocumentFields formManager={formManager} defaultCurrency={Currency.Ils} />
         </SimpleGrid>
         <div className="flex justify-center gap-5 mt-5">
           <button

@@ -120,6 +120,10 @@ const updateDocument = sql<IUpdateDocumentQuery>`
   debtor_id = COALESCE(
     $debtorId,
     debtor_id
+  ),
+  vat_report_date_override = COALESCE(
+    $vatReportDateOverride,
+    vat_report_date_override
   )
   WHERE
     id = $documentId
@@ -142,7 +146,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       total_amount,
       currency_code,
       vat_amount,
-      charge_id
+      charge_id,
+      vat_report_date_override
     )
     VALUES $$document(
       image,
@@ -153,7 +158,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       amount,
       currencyCode,
       vat,
-      chargeId
+      chargeId,
+      vatReportDateOverride
     )
     RETURNING *;`;
 
@@ -165,6 +171,8 @@ const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(d.vat_report_date_override ,d.date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
+    AND ($toVatDate ::TEXT IS NULL OR COALESCE(d.vat_report_date_override ,d.date)::TEXT::DATE <= date_trunc('day', $toVatDate ::DATE))
     AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
     AND ($isUnmatched = 0 OR c.transactions_count = 0 OR c.transactions_count IS NULL)
@@ -252,6 +260,8 @@ export class DocumentsProvider {
       isOwnerIDs: isOwnerIDs ? 1 : 0,
       fromDate: null,
       toDate: null,
+      fromVatDate: null,
+      toVatDate: null,
       ...params,
       isUnmatched: params.unmatched ? 1 : 0,
       IDs: isIDs ? params.IDs! : [null],
