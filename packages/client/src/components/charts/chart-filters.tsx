@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, TextInput } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilter } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates.js';
 import { isObjectEmpty } from '../../helpers/form.js';
@@ -46,11 +47,20 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <DatePickerInput
             {...field}
-            value={field.value || ''}
+            onChange={(date?: Date | string | null): void => {
+              const newDate = date
+                ? typeof date === 'string'
+                  ? date
+                  : format(date, 'yyyy-MM-dd')
+                : undefined;
+              if (newDate !== field.value) field.onChange(newDate);
+            }}
+            value={field.value ? new Date(field.value) : undefined}
             error={fieldState.error?.message}
             label="From Date"
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -65,11 +75,20 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <DatePickerInput
             {...field}
-            value={field.value || ''}
+            onChange={(date?: Date | string | null): void => {
+              const newDate = date
+                ? typeof date === 'string'
+                  ? date
+                  : format(date, 'yyyy-MM-dd')
+                : undefined;
+              if (newDate !== field.value) field.onChange(newDate);
+            }}
+            value={field.value ? new Date(field.value) : undefined}
             error={fieldState.error?.message}
             label="To Date"
+            popoverProps={{ withinPortal: true }}
           />
         )}
       />

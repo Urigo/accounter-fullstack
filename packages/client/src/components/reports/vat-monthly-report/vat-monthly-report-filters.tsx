@@ -5,7 +5,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
-import { MonthPicker } from '@mantine/dates';
+import { MonthPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -105,10 +105,11 @@ function VatMonthlyReportFilterForm({
             />
           )}
         />
-        <MonthPicker
+        <MonthPickerInput
           defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           defaultDate={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
           onChange={onSelectDate}
+          popoverProps={{ withinPortal: true }}
         />
         <div className="flex justify-center mt-5 gap-3">
           <button

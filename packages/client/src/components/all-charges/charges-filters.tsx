@@ -1,4 +1,5 @@
 import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -12,6 +13,7 @@ import {
   SimpleGrid,
   Switch,
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -22,12 +24,7 @@ import {
 } from '../../gql/graphql.js';
 import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import {
-  accountantApprovalInputData,
-  PopUpModal,
-  SelectTagItem,
-  TextInput,
-} from '../common/index.js';
+import { accountantApprovalInputData, PopUpModal, SelectTagItem } from '../common/index.js';
 
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
@@ -226,11 +223,20 @@ function ChargesFiltersForm({
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
+              <DatePickerInput
                 {...field}
-                value={field.value || ''}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
                 label="From Date"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />
@@ -245,11 +251,20 @@ function ChargesFiltersForm({
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
+              <DatePickerInput
                 {...field}
-                value={field.value || ''}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
                 label="To Date"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />

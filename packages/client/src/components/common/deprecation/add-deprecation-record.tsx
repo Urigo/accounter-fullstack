@@ -4,7 +4,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AllDeprecationCategoriesDocument,
@@ -95,7 +95,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
             render={({ field: { value, ...field } }): ReactElement => {
               const date = value ? new Date(value) : undefined;
               return (
-                <DateInput
+                <DatePickerInput
                   {...field}
                   onChange={(date?: Date | string | null): void => {
                     const newDate = date
@@ -107,7 +107,6 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                   }}
                   value={date}
                   label="Activation Date"
-                  placeholder="Date"
                   popoverProps={{ withinPortal: true }}
                 />
               );

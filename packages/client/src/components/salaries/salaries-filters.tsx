@@ -5,7 +5,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, MultiSelect } from '@mantine/core';
-import { MonthPicker } from '@mantine/dates';
+import { MonthPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../helpers/index.js';
@@ -118,7 +118,7 @@ function SalariesFiltersForm({
     <>
       {employeesFetching ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
-        <MonthPicker
+        <MonthPickerInput
           type="range"
           numberOfColumns={2}
           defaultValue={[
@@ -127,6 +127,7 @@ function SalariesFiltersForm({
           ]}
           defaultDate={new Date(filter?.fromDate ?? defaultDates.fromDate)}
           onChange={onSelectDateRange}
+          popoverProps={{ withinPortal: true }}
         />
         <Controller
           name="employeeIDs"
