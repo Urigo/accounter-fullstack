@@ -28,7 +28,7 @@ import {
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
-import { Deprecation } from '../common/deprecation/index.js';
+import { Depreciation } from '../common/depreciation/index.js';
 import {
   BusinessTripSummarizedReport,
   ConfirmationModal,
@@ -404,7 +404,7 @@ export function ChargeExtendedInfoMenu({
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
   const [modalOpened, setModalOpened] = useState(false);
-  const [deprecationOpened, { open: openDeprecation, close: closeDeprecation }] =
+  const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
     useDisclosure(false);
 
   function onDelete(): void {
@@ -477,15 +477,15 @@ export function ChargeExtendedInfoMenu({
           >
             Match Document
           </Menu.Item>
-          <Menu.Label>Deprecation</Menu.Label>
+          <Menu.Label>Depreciation</Menu.Label>
           <Menu.Item
             icon={<Trash size={14} />}
             onClick={(): void => {
-              openDeprecation();
+              openDepreciation();
               closeMenu();
             }}
           >
-            Deprecation
+            Depreciation
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
@@ -493,12 +493,12 @@ export function ChargeExtendedInfoMenu({
         withinPortal
         size="xl"
         centered
-        opened={deprecationOpened}
-        onClose={closeDeprecation}
-        title="Deprecation"
+        opened={depreciationOpened}
+        onClose={closeDepreciation}
+        title="Depreciation"
         onClick={event => event.stopPropagation()}
       >
-        <Deprecation chargeId={chargeId} onChange={closeDeprecation} />
+        <Depreciation chargeId={chargeId} onChange={closeDepreciation} />
       </Modal>
     </>
   );

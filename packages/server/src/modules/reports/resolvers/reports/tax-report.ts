@@ -83,7 +83,7 @@ export const taxReport: ResolverFn<
 
     const {
       researchAndDevelopmentExpensesForTax,
-      deprecationForTax,
+      depreciationForTax,
       taxableIncomeAmount,
       taxRate,
       annualTaxExpenseAmount,
@@ -106,7 +106,7 @@ export const taxReport: ResolverFn<
         DEFAULT_LOCAL_CURRENCY,
       ),
 
-      deprecationForTax: formatFinancialAmount(deprecationForTax, DEFAULT_LOCAL_CURRENCY),
+      depreciationForTax: formatFinancialAmount(depreciationForTax, DEFAULT_LOCAL_CURRENCY),
       taxableIncome: formatFinancialAmount(taxableIncomeAmount, DEFAULT_LOCAL_CURRENCY),
       taxRate,
       annualTaxExpense: formatFinancialAmount(annualTaxExpenseAmount, DEFAULT_LOCAL_CURRENCY),

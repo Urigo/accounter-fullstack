@@ -88,8 +88,9 @@ const config: CodegenConfig = {
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
-          DeprecationCategory: '@modules/deprecation/types.js#IGetAllDeprecationCategoriesResult',
-          DeprecationRecord: '@modules/deprecation/types.js#IGetDeprecationRecordsByIdsResult',
+          DepreciationCategory:
+            '@modules/depreciation/types.js#IGetAllDepreciationCategoriesResult',
+          DepreciationRecord: '@modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
           ExchangeRates: 'TimelessDateString',

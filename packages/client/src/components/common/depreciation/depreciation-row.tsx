@@ -6,20 +6,20 @@ import { useQuery } from 'urql';
 import { ActionIcon, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
-  AllDeprecationCategoriesDocument,
-  DeprecationRecordRowFieldsFragmentDoc,
-  UpdateDeprecationRecordInput,
+  AllDepreciationCategoriesDocument,
+  DepreciationRecordRowFieldsFragmentDoc,
+  UpdateDepreciationRecordInput,
 } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
-import { useUpdateDeprecationRecord } from '../../../hooks/use-update-deprecation-record.js';
+import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { CurrencyInput } from '../index.js';
-import { DeleteDeprecationRecord } from './delete-deprecation-record.js';
-import { deprecationTypes } from './index.js';
+import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
+import { depreciationTypes } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment DeprecationRecordRowFields on DeprecationRecord {
+  fragment DepreciationRecordRowFields on DepreciationRecord {
     id
     amount {
       currency
@@ -45,17 +45,17 @@ import { deprecationTypes } from './index.js';
 `;
 
 interface Props {
-  data: FragmentType<typeof DeprecationRecordRowFieldsFragmentDoc>;
+  data: FragmentType<typeof DepreciationRecordRowFieldsFragmentDoc>;
   onChange?: () => void;
 }
 
-export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
-  const deprecationRecord = getFragmentData(DeprecationRecordRowFieldsFragmentDoc, data);
-  console.log('deprecationRecord', deprecationRecord);
+export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
+  const depreciationRecord = getFragmentData(DepreciationRecordRowFieldsFragmentDoc, data);
+  console.log('depreciationRecord', depreciationRecord);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [{ data: categoriesData, fetching: fetchingCategories }, fetchCategories] = useQuery({
-    query: AllDeprecationCategoriesDocument,
+    query: AllDepreciationCategoriesDocument,
     pause: true,
   });
 
@@ -63,19 +63,19 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<UpdateDeprecationRecordInput>({
+  } = useForm<UpdateDepreciationRecordInput>({
     defaultValues: {
-      id: deprecationRecord.id,
+      id: depreciationRecord.id,
     },
   });
 
-  const { updateDeprecationRecord, fetching: updatingInProcess } = useUpdateDeprecationRecord();
+  const { updateDepreciationRecord, fetching: updatingInProcess } = useUpdateDepreciationRecord();
 
-  const onSubmit: SubmitHandler<UpdateDeprecationRecordInput> = data => {
+  const onSubmit: SubmitHandler<UpdateDepreciationRecordInput> = data => {
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      updateDeprecationRecord({
-        fields: { ...data, id: deprecationRecord.id },
+      updateDepreciationRecord({
+        fields: { ...data, id: depreciationRecord.id },
       }).then(() => {
         onChange?.();
         setIsEditMode(false);
@@ -83,7 +83,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
     }
   };
 
-  const categories = categoriesData?.deprecationCategories.map(category => ({
+  const categories = categoriesData?.depreciationCategories.map(category => ({
     value: category.id,
     label: category.name,
   }));
@@ -93,9 +93,9 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
   }, [isEditMode, categoriesData, fetchCategories]);
 
   return (
-    <tr key={deprecationRecord.id}>
+    <tr key={depreciationRecord.id}>
       <td>
-        <form id={`form ${deprecationRecord.id}`} onSubmit={handleSubmit(onSubmit)}>
+        <form id={`form ${depreciationRecord.id}`} onSubmit={handleSubmit(onSubmit)}>
           {isEditMode ? (
             <Controller
               name="amount"
@@ -111,7 +111,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
                     <CurrencyInput
                       {...amountField}
                       defaultValue={
-                        deprecationRecord.amount?.raw ?? deprecationRecord.charge.totalAmount?.raw
+                        depreciationRecord.amount?.raw ?? depreciationRecord.charge.totalAmount?.raw
                       }
                       value={amountField.value ?? undefined}
                       error={
@@ -122,8 +122,8 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
                         ...currencyCodeField,
                         label: 'Currency',
                         defaultValue:
-                          deprecationRecord.amount?.currency ??
-                          deprecationRecord.charge.totalAmount?.currency,
+                          depreciationRecord.amount?.currency ??
+                          depreciationRecord.charge.totalAmount?.currency,
                       }}
                     />
                   )}
@@ -132,8 +132,8 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
             />
           ) : (
             <div>
-              {deprecationRecord.amount?.formatted ??
-                deprecationRecord.charge.totalAmount?.formatted}
+              {depreciationRecord.amount?.formatted ??
+                depreciationRecord.charge.totalAmount?.formatted}
             </div>
           )}
         </form>
@@ -144,7 +144,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
             <Controller
               name="activationDate"
               control={control}
-              defaultValue={deprecationRecord.activationDate}
+              defaultValue={depreciationRecord.activationDate}
               rules={{
                 pattern: {
                   value: TIMELESS_DATE_REGEX,
@@ -156,7 +156,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
                 return (
                   <DatePickerInput
                     {...field}
-                    form={`form ${deprecationRecord.id}`}
+                    form={`form ${depreciationRecord.id}`}
                     onChange={(date?: Date | string | null): void => {
                       const newDate = date
                         ? typeof date === 'string'
@@ -174,7 +174,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
               }}
             />
           ) : (
-            <div>{format(new Date(deprecationRecord.activationDate), 'dd/MM/yy')}</div>
+            <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>
           )}
         </div>
       </td>
@@ -186,7 +186,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                form={`form ${deprecationRecord.id}`}
+                form={`form ${depreciationRecord.id}`}
                 disabled={fetchingCategories}
                 data={categories ?? []}
                 label="Category"
@@ -200,7 +200,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
           />
         ) : (
           <div>
-            {deprecationRecord.category.name} ({deprecationRecord.category.percentage}%)
+            {depreciationRecord.category.name} ({depreciationRecord.category.percentage}%)
           </div>
         )}
       </td>
@@ -212,8 +212,8 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                form={`form ${deprecationRecord.id}`}
-                data={deprecationTypes}
+                form={`form ${depreciationRecord.id}`}
+                data={depreciationTypes}
                 value={field.value}
                 label="Type"
                 placeholder="Scroll to see all options"
@@ -225,7 +225,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
             )}
           />
         ) : (
-          <div>{deprecationRecord.type}</div>
+          <div>{depreciationRecord.type}</div>
         )}
       </td>
       <td>
@@ -246,7 +246,7 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
           <Tooltip label="Confirm Changes">
             <ActionIcon
               type="submit"
-              form={`form ${deprecationRecord.id}`}
+              form={`form ${depreciationRecord.id}`}
               variant="default"
               size={30}
             >
@@ -255,7 +255,10 @@ export const DeprecationRow = ({ data, onChange }: Props): ReactElement => {
           </Tooltip>
         )}
 
-        <DeleteDeprecationRecord deprecationRecordId={deprecationRecord.id} onDelete={onChange} />
+        <DeleteDepreciationRecord
+          depreciationRecordId={depreciationRecord.id}
+          onDelete={onChange}
+        />
       </td>
     </tr>
   );

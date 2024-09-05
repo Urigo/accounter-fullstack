@@ -2,8 +2,8 @@ import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
-import { DeprecationCategoriesProvider } from '@modules/deprecation/providers/deprecation-categories.provider.js';
-import { DeprecationProvider } from '@modules/deprecation/providers/deprecation.provider.js';
+import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { TimelessDateString } from '@shared/types';
 
 export async function calculateTaxAmounts(
@@ -19,12 +19,12 @@ export async function calculateTaxAmounts(
     researchAndDevelopmentExpensesAmount +
     researchAndDevelopmentExpensesForTax;
 
-  const deprecationAmountPromise = calculateDeprecationAmount(injector, year);
+  const depreciationAmountPromise = calculateDepreciationAmount(injector, year);
   const taxRatePromise = injector
     .get(CorporateTaxesProvider)
     .getCorporateTaxesByDateLoader.load(`${year}-01-01` as TimelessDateString);
-  const [{ deprecationYearlyAmount }, taxRateVariables] = await Promise.all([
-    deprecationAmountPromise,
+  const [{ depreciationYearlyAmount }, taxRateVariables] = await Promise.all([
+    depreciationAmountPromise,
     taxRatePromise,
   ]);
 
@@ -53,33 +53,35 @@ export async function calculateTaxAmounts(
     taxableIncomeAmount,
     taxRate,
     annualTaxExpenseAmount,
-    deprecationForTax: deprecationYearlyAmount,
+    depreciationForTax: depreciationYearlyAmount,
   };
 }
 
-export async function calculateDeprecationAmount(injector: Injector, year: number) {
+export async function calculateDepreciationAmount(injector: Injector, year: number) {
   const yearBeginning = new Date(year, 0, 1);
   const yearEnd = new Date(year, 11, 31);
 
-  const deprecationRecords = await injector.get(DeprecationProvider).getDeprecationRecordsByDates({
-    fromDate: yearBeginning,
-    toDate: yearEnd,
-  });
+  const depreciationRecords = await injector
+    .get(DepreciationProvider)
+    .getDepreciationRecordsByDates({
+      fromDate: yearBeginning,
+      toDate: yearEnd,
+    });
 
-  let deprecationYearlyAmount = 0;
+  let depreciationYearlyAmount = 0;
 
   await Promise.all(
-    deprecationRecords.map(async record => {
+    depreciationRecords.map(async record => {
       if (!record.expiration_date) {
-        console.error('No expiration date for deprecation record', record);
+        console.error('No expiration date for depreciation record', record);
         return;
       }
 
-      const deprecationCategory = await injector
-        .get(DeprecationCategoriesProvider)
-        .getDeprecationCategoriesByIdLoader.load(record.category);
-      if (!deprecationCategory) {
-        console.error('No deprecation category for deprecation record', record);
+      const depreciationCategory = await injector
+        .get(DepreciationCategoriesProvider)
+        .getDepreciationCategoriesByIdLoader.load(record.category);
+      if (!depreciationCategory) {
+        console.error('No depreciation category for depreciation record', record);
         return;
       }
 
@@ -92,15 +94,15 @@ export async function calculateDeprecationAmount(injector: Injector, year: numbe
         daysOfRelevance -= differenceInDays(yearEnd, record.expiration_date);
       }
       if (daysOfRelevance <= 0) {
-        console.error('No days of relevance for deprecation record', record);
+        console.error('No days of relevance for depreciation record', record);
         return;
       }
 
       const part = daysOfRelevance / yearDays;
-      const yearlyPercent = Number(deprecationCategory.percentage) / 100;
-      deprecationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+      const yearlyPercent = Number(depreciationCategory.percentage) / 100;
+      depreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
     }),
   );
 
-  return { deprecationYearlyAmount };
+  return { depreciationYearlyAmount };
 }
