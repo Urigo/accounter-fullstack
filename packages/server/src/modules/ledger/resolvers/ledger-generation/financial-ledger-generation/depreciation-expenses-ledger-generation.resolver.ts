@@ -1,22 +1,10 @@
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import {
-  decorateLedgerRecords,
-  getProfitLossReportAmounts,
-} from '@modules/reports/helpers/profit-and-loss.helper.js';
-import {
-  calculateDepreciationAmount,
-  calculateTaxAmounts,
-} from '@modules/reports/helpers/tax.helper.js';
+import { calculateDepreciationAmount } from '@modules/reports/helpers/tax.helper.js';
 import {
   ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
   DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
-  TAX_BUSINESS_ID,
-  TAX_EXPENSES_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
