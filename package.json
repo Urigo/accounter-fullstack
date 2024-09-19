@@ -1,6 +1,13 @@
 {
   "name": "accounter-monorepo",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/urigo/accounter-fullstack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/urigo/accounter-fullstack/issues"
+  },
   "license": "MIT",
   "private": true,
   "workspaces": {
