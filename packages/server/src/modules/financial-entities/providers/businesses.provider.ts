@@ -222,8 +222,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusiness = sql<IInsertBusinessQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat)
-  VALUES($id, $hebrewName, $address, $email, $website, $phoneNumber, $governmentId, $exemptDealer, $suggestions, $optionalVat)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country)
+  VALUES($id, $hebrewName, $address, $email, $website, $phoneNumber, $governmentId, $exemptDealer, $suggestions, $optionalVat, $country)
   RETURNING *;`;
 
 @Injectable({

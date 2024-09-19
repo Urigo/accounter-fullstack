@@ -33,3 +33,7 @@ export const stringComparer = (string1: string, string2: string): number => {
 export const containsHebrew = (str: string): boolean => {
   return /[\u0590-\u05FF]/.test(str);
 };
+
+export function capitalizeFirstLetter(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}

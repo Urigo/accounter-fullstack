@@ -38,7 +38,9 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
         }
         website
         suggestions {
-          phrases
+          phrases {
+            phrase
+          }
           tags {
             id
             name
@@ -110,7 +112,14 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
 
   // form management
   const useFormManager = useForm<UpdateBusinessInput>({
-    defaultValues: { ...business, sortCode: business?.sortCode?.id },
+    defaultValues: {
+      ...business,
+      sortCode: business?.sortCode?.id,
+      suggestions: {
+        ...business.suggestions,
+        phrases: business.suggestions?.phrases.map(phrase => ({ phrase })),
+      },
+    },
   });
 
   const {
@@ -130,6 +139,16 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
       if (dataToUpdate.suggestions?.tags) {
         dataToUpdate.suggestions.tags = dataToUpdate.suggestions.tags.map(tag => ({ id: tag.id }));
       }
+
+      if (dataToUpdate.suggestions?.phrases) {
+        dataToUpdate.suggestions.phrases = Object.values(dataToUpdate.suggestions.phrases).map(
+          phrase => ({
+            phrase: phrase.phrase,
+          }),
+        );
+      }
+
+      console.log('dataToUpdate', dataToUpdate);
 
       updateDbBusiness({
         businessId: business.id,

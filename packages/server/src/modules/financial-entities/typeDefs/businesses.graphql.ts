@@ -39,7 +39,7 @@ export default gql`
 
   " input for business suggestions "
   type Suggestions {
-    phrases: [String!]!
+    phrases: [Phrase!]!
     tags: [Tag!]!
     description: String
   }
@@ -79,6 +79,17 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+    country: Country
+  }
+
+  " represents accountant approval status "
+  enum Country {
+    ISRAEL
+    FOREIGN
+    FRANCE
+    POLAND
+    TURKEY
+    USA
   }
 
   " input for insertNewBusiness "
@@ -96,13 +107,24 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+    country: Country
   }
 
   " input for business suggestions "
   input SuggestionsInput {
-    phrases: [String!]
+    phrases: [PhraseInput!]
     tags: [TagInput!]
     description: String
+  }
+
+  " represents phrase "
+  type Phrase {
+    phrase: String!
+  }
+
+  " input phrase "
+  input PhraseInput {
+    phrase: String!
   }
 
   extend interface Charge {

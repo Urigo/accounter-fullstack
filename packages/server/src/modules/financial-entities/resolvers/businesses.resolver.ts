@@ -127,6 +127,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         phoneNumber: fields.phoneNumber,
         website: fields.website,
         optionalVat: fields.optionalVAT,
+        country: fields.country,
         businessId,
         suggestionData,
       };
@@ -140,7 +141,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           fields.website ||
           fields.exemptDealer != null ||
           fields.suggestions ||
-          fields.optionalVAT != null
+          fields.optionalVAT != null ||
+          fields.country
         ) {
           await injector
             .get(BusinessesProvider)
@@ -224,6 +226,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phoneNumber: fields.phoneNumber,
           website: fields.website,
           optionalVat: fields.optionalVAT,
+          country: fields.country,
           suggestions,
         });
 
@@ -311,7 +314,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               : [],
           phrases:
             'phrases' in DbBusiness.suggestion_data
-              ? (DbBusiness.suggestion_data.phrases as string[])
+              ? (DbBusiness.suggestion_data.phrases as string[]).map(phrase => ({ phrase }))
               : [],
           description:
             'description' in DbBusiness.suggestion_data
