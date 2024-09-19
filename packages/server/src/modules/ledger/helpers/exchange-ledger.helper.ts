@@ -12,7 +12,7 @@ export function validateExchangeRate(
     const exchangeAmount = calculateExchangeRate(businessId, ledgerRecords);
     if (
       (!exchangeAmount && !!amount) ||
-      (exchangeAmount && Math.abs(exchangeAmount).toFixed(2) !== amount.toFixed(2))
+      (exchangeAmount && Math.abs(exchangeAmount - amount) > 0.005)
     ) {
       return 'Exchange rate error';
     }

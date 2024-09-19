@@ -428,7 +428,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             ...feeFinancialAccountLedgerEntries,
             ...miscLedgerEntries,
           ],
-          amount,
+          balance.raw,
         );
         if (validation === true) {
           if (exchangeRateTaxCategory) {
