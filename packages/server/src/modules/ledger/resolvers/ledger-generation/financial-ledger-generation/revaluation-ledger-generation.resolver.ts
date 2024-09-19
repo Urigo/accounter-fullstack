@@ -126,7 +126,7 @@ export const generateLedgerRecordsForRevaluation: ResolverFn<
 
       const revaluationDiff = cumulativeLocalBalance - cumulativeForeignBalance * rate;
 
-      if (revaluationDiff === 0) {
+      if (Math.abs(revaluationDiff) < 0.005) {
         return;
       }
 
