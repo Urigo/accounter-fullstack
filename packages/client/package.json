@@ -20,7 +20,7 @@
     "@mantine/dropzone": "6.0.22",
     "@mantine/hooks": "6.0.22",
     "@mantine/notifications": "6.0.22",
-    "@mui/material": "6.1.0",
+    "@mui/material": "6.1.1",
     "@mui/x-charts": "7.17.0",
     "@radix-ui/react-avatar": "1.1.0",
     "@radix-ui/react-collapsible": "^1.1.0",
@@ -55,7 +55,7 @@
     "tailwind-merge": "2.5.2",
     "tailwindcss-animate": "1.0.7",
     "urql": "4.1.0",
-    "vaul": "0.9.3",
+    "vaul": "0.9.4",
     "zod": "3.23.8",
     "zustand": "4.5.5"
   },
