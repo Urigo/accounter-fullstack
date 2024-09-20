@@ -46,7 +46,7 @@
     "deep-equal": "2.2.3",
     "embla-carousel-react": "8.3.0",
     "lucide-react": "0.440.0",
-    "next": "14.2.12",
+    "next": "14.2.13",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "7.53.0",
@@ -62,7 +62,7 @@
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.3.7",
+    "@types/react": "18.3.8",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "autoprefixer": "10.4.20",
