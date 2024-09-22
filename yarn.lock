@@ -2947,10 +2947,10 @@
     prop-types "^15.8.1"
     react-is "^18.3.1"
 
-"@mui/x-charts-vendor@7.16.0":
-  version "7.16.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.16.0.tgz#6f745457eac05955bfcfc6180562ceab576a8abf"
-  integrity sha512-MyMCCl7eAM53rLbjqP4zbMy5hYtdeqCjAYCH2jpvBKdgugm2eaPLKOPM8bUVfen0wHA8BXleQrIrNceytFPyZA==
+"@mui/x-charts-vendor@7.18.0":
+  version "7.18.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.18.0.tgz#f8e26840bdc29311af629326063ea854b7a4608a"
+  integrity sha512-YPL7SP6W7t9jBIrK8WjmCtW/YoUmgr0BA7j2QE9bKX4VJLEUU498fEKik0ZJZyzyR7ov0MD3m7S+YCw1o5sqkw==
   dependencies:
     "@babel/runtime" "^7.25.6"
     "@types/d3-color" "^3.1.3"
@@ -2968,24 +2968,24 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.17.0":
-  version "7.17.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.17.0.tgz#3a7e68009c87f977b9ed7df95c55902161a6f3a6"
-  integrity sha512-xDH/lOnb57+VBIA7q+1KlC0Ht1O46d/N2MEl1tUq1JYIXhA2Owi5cp+bcaof8Rvw5ApCmkoBxyUIjqT0guNIwA==
+"@mui/x-charts@7.18.0":
+  version "7.18.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.18.0.tgz#73d7281cc374e0fd63226adf2715f3b7b619c482"
+  integrity sha512-XvCX6sBj2aRw7MZcOPjKTEIwhj4j+ixw256bArQScSd+Y2BuHxAyfl/L6NPPWamckAPqJwjQ678jFH2s5t1f1w==
   dependencies:
     "@babel/runtime" "^7.25.6"
     "@mui/utils" "^5.16.6"
-    "@mui/x-charts-vendor" "7.16.0"
-    "@mui/x-internals" "7.17.0"
+    "@mui/x-charts-vendor" "7.18.0"
+    "@mui/x-internals" "7.18.0"
     "@react-spring/rafz" "^9.7.4"
     "@react-spring/web" "^9.7.4"
     clsx "^2.1.1"
     prop-types "^15.8.1"
 
-"@mui/x-internals@7.17.0":
-  version "7.17.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-internals/-/x-internals-7.17.0.tgz#c5731b8deb07107fbc406e62277aaa5c3f0db0a7"
-  integrity sha512-FLlAGSJl/vsuaA/8hPGazXFppyzIzxApJJDZMoTS0geUmHd0hyooISV2ltllLmrZ/DGtHhI08m8GGnHL6/vVeg==
+"@mui/x-internals@7.18.0":
+  version "7.18.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-internals/-/x-internals-7.18.0.tgz#f079968d4f7ea93e63be9faf6ba8558d6f12923b"
+  integrity sha512-lzCHOWIR0cAIY1bGrWSprYerahbnH5C31ql/2OWCEjcngL2NAV1M6oKI2Vp4HheqzJ822c60UyWyapvyjSzY/A==
   dependencies:
     "@babel/runtime" "^7.25.6"
     "@mui/utils" "^5.16.6"
