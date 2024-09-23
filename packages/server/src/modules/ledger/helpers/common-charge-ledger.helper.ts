@@ -1,9 +1,7 @@
 import { Injector } from 'graphql-modules';
 import { validateDocumentVat } from '@modules/documents/helpers/validate-document-vat.helper.js';
 import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import {
@@ -13,7 +11,6 @@ import {
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
-import { Currency } from '@shared/enums';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
@@ -78,7 +75,9 @@ export async function ledgerEntryFromDocument(
 
   // handle non-local currencies
   if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
-    const exchangeRate = await getExchangeRateForDate(injector, document.date, currency);
+    const exchangeRate = await injector
+      .get(ExchangeProvider)
+      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, document.date);
 
     // Set foreign amounts
     foreignTotalAmount = totalAmount;
@@ -290,13 +289,6 @@ export function ledgerEntryFromBalanceCancellation(
   };
 
   return ledgerEntry;
-}
-
-async function getExchangeRateForDate(injector: Injector, date: Date, currency: Currency) {
-  const exchangeRates = await injector
-    .get(FiatExchangeProvider)
-    .getExchangeRatesByDatesLoader.load(date);
-  return getRateForCurrency(currency, exchangeRates);
 }
 
 export function isRefundCharge(description?: string | null): boolean {
