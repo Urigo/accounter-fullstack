@@ -78,7 +78,9 @@ export async function ledgerEntryFromDocument(
 
   // handle non-local currencies
   if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
-    const exchangeRate = await getExchangeRateForDate(injector, document.date, currency);
+    const exchangeRate = await injector
+      .get(ExchangeProvider)
+      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, document.date);
 
     // Set foreign amounts
     foreignTotalAmount = totalAmount;
@@ -290,13 +292,6 @@ export function ledgerEntryFromBalanceCancellation(
   };
 
   return ledgerEntry;
-}
-
-async function getExchangeRateForDate(injector: Injector, date: Date, currency: Currency) {
-  const exchangeRates = await injector
-    .get(FiatExchangeProvider)
-    .getExchangeRatesByDatesLoader.load(date);
-  return getRateForCurrency(currency, exchangeRates);
 }
 
 export function isRefundCharge(description?: string | null): boolean {
