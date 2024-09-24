@@ -1,9 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
-import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
-import { EMPTY_UUID } from '@shared/constants';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
@@ -197,14 +196,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     type: DbTransaction => (Number(DbTransaction.amount) > 0 ? 'QUOTE' : 'BASE'),
     bankRate: DbTransaction => DbTransaction.currency_rate,
     officialRateToLocal: async (DbTransaction, _, { injector }) => {
-      const officialRate = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(DbTransaction.event_date);
-      if (!officialRate) {
-        console.error(`Conversion transaction ID="${DbTransaction.id}" has no official rate`);
-        throw new GraphQLError('Conversion transaction must have official rate');
-      }
-      return getRateForCurrency(formatCurrency(DbTransaction.currency), officialRate);
+      return injector
+        .get(ExchangeProvider)
+        .getExchangeRates(
+          DEFAULT_LOCAL_CURRENCY,
+          formatCurrency(DbTransaction.currency),
+          DbTransaction.event_date,
+        );
     },
   },
   CommonTransaction: {

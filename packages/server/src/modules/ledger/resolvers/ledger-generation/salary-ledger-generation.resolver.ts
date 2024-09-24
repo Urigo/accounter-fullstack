@@ -266,7 +266,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
       const balance =
         (matchingTransaction?.localCurrencyCreditAmount1 ?? 0) *
-          (matchingTransaction?.isCreditorCounterparty ? -1 : 1) -
+          (matchingTransaction?.isCreditorCounterparty ? 1 : -1) +
         entry.localCurrencyCreditAmount1;
       if (balance === 0) {
         continue;
@@ -283,13 +283,13 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       }
 
       const amount = Math.abs(balance);
-      const isCreditorCounterparty = balance > 0;
+      const isCreditorCounterparty = balance < 0;
 
       // validate exchange rate
       const validation = validateExchangeRate(
         businessId,
         [...accountingLedgerEntries, ...financialAccountLedgerEntries],
-        amount,
+        balance,
       );
       if (validation === true) {
         const ledgerEntry: StrictLedgerProto = {

@@ -1,8 +1,7 @@
 import { Injector } from 'graphql-modules';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
-import { getRateForCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
-import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import {
   DECREASED_VAT_RATIO,
@@ -63,10 +62,9 @@ export async function adjustTaxRecord(
     }
 
     // get exchange rate
-    const exchangeRates = await injector
-      .get(FiatExchangeProvider)
-      .getExchangeRatesByDatesLoader.load(doc.date);
-    const rate = getRateForCurrency(currency, exchangeRates);
+    const rate = await injector
+      .get(ExchangeProvider)
+      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, doc.date);
 
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,

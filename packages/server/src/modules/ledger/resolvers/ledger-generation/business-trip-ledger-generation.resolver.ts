@@ -545,7 +545,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           ...accountingLedgerEntries,
           ...miscLedgerEntries,
         ],
-        amount,
+        balance.raw,
       );
       if (validation === true) {
         if (exchangeRateTaxCategory) {
