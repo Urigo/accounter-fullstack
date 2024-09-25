@@ -191,30 +191,24 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].debit, DEFAULT_LOCAL_CURRENCY),
     total: rawSum =>
       formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].total, DEFAULT_LOCAL_CURRENCY),
-    eurSum: rawSum =>
-      rawSum[Currency.Eur].credit || rawSum[Currency.Eur].debit
-        ? {
-            credit: formatFinancialAmount(rawSum[Currency.Eur].credit, Currency.Eur),
-            debit: formatFinancialAmount(rawSum[Currency.Eur].debit, Currency.Eur),
-            total: formatFinancialAmount(rawSum[Currency.Eur].total, Currency.Eur),
-          }
-        : null,
-    gbpSum: rawSum =>
-      rawSum[Currency.Gbp].credit || rawSum[Currency.Gbp].debit
-        ? {
-            credit: formatFinancialAmount(rawSum[Currency.Gbp].credit, Currency.Gbp),
-            debit: formatFinancialAmount(rawSum[Currency.Gbp].debit, Currency.Gbp),
-            total: formatFinancialAmount(rawSum[Currency.Gbp].total, Currency.Gbp),
-          }
-        : null,
-    usdSum: rawSum =>
-      rawSum[Currency.Usd].credit | rawSum[Currency.Usd].debit
-        ? {
-            credit: formatFinancialAmount(rawSum[Currency.Usd].credit, Currency.Usd),
-            debit: formatFinancialAmount(rawSum[Currency.Usd].debit, Currency.Usd),
-            total: formatFinancialAmount(rawSum[Currency.Usd].total, Currency.Usd),
-          }
-        : null,
+    foreignCurrenciesSum: rawSum => {
+      const currencies = [];
+      for (const key in rawSum) {
+        if (!Object.values(Currency).includes(key as Currency)) continue;
+        const currency = key as Currency;
+        if (currency === DEFAULT_LOCAL_CURRENCY) continue;
+        const currencySum = rawSum[currency];
+        if (currencySum.credit || currencySum.debit) {
+          currencies.push({
+            credit: formatFinancialAmount(currencySum.credit, currency),
+            debit: formatFinancialAmount(currencySum.debit, currency),
+            total: formatFinancialAmount(currencySum.total, currency),
+            currency,
+          });
+        }
+      }
+      return currencies;
+    },
   },
   BusinessTransactionsFromLedgerRecordsResult: {
     __resolveType: parent =>
@@ -241,28 +235,13 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
           return res;
         }),
-    eurAmount: parent =>
-      parent.currency === Currency.Eur
-        ? formatFinancialAmount(
-            Number.isNaN(parent.foreignAmount)
-              ? parent.foreignAmount
-              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
-            Currency.Eur,
-          )
-        : null,
-    gbpAmount: parent =>
-      parent.currency === Currency.Gbp
-        ? formatFinancialAmount(
-            Number.isNaN(parent.foreignAmount)
-              ? parent.foreignAmount
-              : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
-            Currency.Gbp,
-          )
-        : null,
-    usdAmount: parent =>
-      parent.currency === Currency.Usd
-        ? formatFinancialAmount(parent.foreignAmount * (parent.isCredit ? 1 : -1), Currency.Usd)
-        : null,
+    foreignAmount: parent =>
+      formatFinancialAmount(
+        Number.isNaN(parent.foreignAmount)
+          ? parent.foreignAmount
+          : Number(parent.foreignAmount) * (parent.isCredit ? 1 : -1),
+        parent.currency,
+      ),
 
     invoiceDate: parent => dateToTimelessDateString(parent.date!),
     reference1: parent => parent.reference1 ?? null,

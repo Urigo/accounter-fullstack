@@ -5,6 +5,7 @@ import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
@@ -124,6 +125,11 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       return injector
         .get(BusinessTripOtherExpensesProvider)
         .getBusinessTripsOtherExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
+    },
+    carRentalExpenses: async (dbBusinessTrip, _, { injector }) => {
+      return injector
+        .get(BusinessTripCarRentalExpensesProvider)
+        .getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
     summary: businessTripSummary,
     uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {

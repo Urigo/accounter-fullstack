@@ -83,10 +83,16 @@ export const taxReport: ResolverFn<
 
     const {
       researchAndDevelopmentExpensesForTax,
+      depreciationForTax,
       taxableIncomeAmount,
       taxRate,
       annualTaxExpenseAmount,
-    } = calculateTaxAmounts(researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount);
+    } = await calculateTaxAmounts(
+      injector,
+      year,
+      researchAndDevelopmentExpensesAmount,
+      profitBeforeTaxAmount,
+    );
 
     yearlyReports.push({
       year,
@@ -99,6 +105,8 @@ export const taxReport: ResolverFn<
         researchAndDevelopmentExpensesForTax,
         DEFAULT_LOCAL_CURRENCY,
       ),
+
+      depreciationForTax: formatFinancialAmount(depreciationForTax, DEFAULT_LOCAL_CURRENCY),
       taxableIncome: formatFinancialAmount(taxableIncomeAmount, DEFAULT_LOCAL_CURRENCY),
       taxRate,
       annualTaxExpense: formatFinancialAmount(annualTaxExpenseAmount, DEFAULT_LOCAL_CURRENCY),

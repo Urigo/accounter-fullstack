@@ -12,19 +12,7 @@ import { EditDocumentModal } from '../../common/index.js';
     additionalDocuments {
       id
       image
-      ... on Invoice {
-        documentType
-      }
-      ... on Proforma {
-        documentType
-      }
-      ... on Receipt {
-        documentType
-      }
-      ... on InvoiceReceipt {
-        documentType
-      }
-      ... on CreditInvoice {
+      ... on FinancialDocument {
         documentType
       }
     }

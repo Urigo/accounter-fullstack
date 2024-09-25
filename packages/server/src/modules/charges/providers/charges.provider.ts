@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
+  accountant_status,
   IDeleteChargesByIdsParams,
   IDeleteChargesByIdsQuery,
   IGenerateChargeParams,
@@ -281,10 +282,10 @@ export class ChargesProvider {
 
   public generateCharge(params: IGenerateChargeParams) {
     const fullParams = {
-      approvalStatus: 'UNAPPROVED',
       isProperty: false,
       userDescription: null,
       optionalVAT: false,
+      accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
     return generateCharge.run(fullParams, this.dbProvider);

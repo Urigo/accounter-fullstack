@@ -1,18 +1,14 @@
 import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
-  FEE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto } from '@shared/types';
 import {
-  isSupplementalFeeTransaction,
+  getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
 import {
@@ -142,95 +138,44 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
 
       try {
-        const isSupplementalFee = isSupplementalFeeTransaction(transaction);
-        const { currency, valueDate, transactionBusinessId } =
-          validateTransactionBasicVariables(transaction);
+        const ledgerEntryPromise = getEntriesFromFeeTransaction(
+          transaction,
+          charge,
+          injector,
+        ).catch(e => {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        });
 
-        let amount = Number(transaction.amount);
-        if (amount === 0) {
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
+
+        const [ledgerEntries, miscExpensesLedger] = await Promise.all([
+          ledgerEntryPromise,
+          miscExpensesPromise,
+        ]);
+
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+
+        if (!ledgerEntries) {
           return;
         }
-        let foreignAmount: number | undefined = undefined;
 
-        if (currency !== DEFAULT_LOCAL_CURRENCY) {
-          // get exchange rate for currency
-          const exchangeRate = await injector
-            .get(ExchangeProvider)
-            .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
-
-          foreignAmount = amount;
-          // calculate amounts in ILS
-          amount = exchangeRate * amount;
-        }
-
-        const isCreditorCounterparty = amount > 0;
-
-        if (isSupplementalFee) {
-          const financialAccountTaxCategoryId = await getFinancialAccountTaxCategoryId(
-            injector,
-            transaction,
-          );
-
-          const ledgerEntry: StrictLedgerProto = {
-            id: transaction.id,
-            invoiceDate: transaction.event_date,
-            valueDate,
-            currency,
-            creditAccountID1: isCreditorCounterparty
-              ? FEE_TAX_CATEGORY_ID
-              : financialAccountTaxCategoryId,
-            creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyCreditAmount1: Math.abs(amount),
-            debitAccountID1: isCreditorCounterparty
-              ? financialAccountTaxCategoryId
-              : FEE_TAX_CATEGORY_ID,
-            debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyDebitAmount1: Math.abs(amount),
-            description: transaction.source_description ?? undefined,
-            reference1: transaction.source_id,
-            isCreditorCounterparty,
-            ownerId: charge.owner_id,
-            currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-            chargeId,
-          };
-
-          feeFinancialAccountLedgerEntries.push(ledgerEntry);
+        feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+        ledgerEntries.map(ledgerEntry => {
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-        } else {
-          const businessTaxCategory = await injector
-            .get(TaxCategoriesProvider)
-            .taxCategoryByBusinessAndOwnerIDsLoader.load({
-              businessId: transactionBusinessId,
-              ownerId: charge.owner_id,
-            });
-          if (!businessTaxCategory) {
-            throw new LedgerError(`Business ID="${transactionBusinessId}" is missing tax category`);
-          }
-
-          const ledgerEntry: LedgerProto = {
-            id: transaction.id,
-            invoiceDate: transaction.event_date,
-            valueDate,
-            currency,
-            creditAccountID1: isCreditorCounterparty ? businessTaxCategory.id : undefined,
-            creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyCreditAmount1: Math.abs(amount),
-            debitAccountID1: isCreditorCounterparty ? undefined : businessTaxCategory.id,
-            debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-            localCurrencyDebitAmount1: Math.abs(amount),
-            description: transaction.source_description ?? undefined,
-            reference1: transaction.source_id,
-            isCreditorCounterparty: !isCreditorCounterparty,
-            ownerId: charge.owner_id,
-            currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-            chargeId,
-          };
-
-          feeFinancialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-          dates.add(valueDate.getTime());
-          currencies.add(currency);
-        }
+          dates.add(ledgerEntry.valueDate.getTime());
+          currencies.add(ledgerEntry.currency);
+        });
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);

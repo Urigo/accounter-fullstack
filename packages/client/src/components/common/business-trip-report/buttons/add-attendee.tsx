@@ -1,8 +1,10 @@
 import { ReactElement, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader, Modal, Overlay, Select, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { AllBusinessesDocument, InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
@@ -119,11 +121,20 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
+              <DatePickerInput
                 {...field}
-                value={field.value ?? undefined}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
                 label="Arrival"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />
@@ -138,11 +149,20 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
+              <DatePickerInput
                 {...field}
-                value={field.value ?? undefined}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
                 label="Departure"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />

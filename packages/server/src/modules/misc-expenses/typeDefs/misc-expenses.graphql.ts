@@ -7,8 +7,11 @@ export default gql`
   }
 
   extend type Mutation {
-    updateMiscExpense(transactionId: UUID!, fields: UpdateMiscExpenseInput!): MiscExpense!
-      @auth(role: ACCOUNTANT)
+    updateMiscExpense(
+      transactionId: UUID!
+      counterpartyId: UUID!
+      fields: UpdateMiscExpenseInput!
+    ): MiscExpense! @auth(role: ACCOUNTANT)
     insertMiscExpense(fields: InsertMiscExpenseInput!): MiscExpense! @auth(role: ACCOUNTANT)
   }
 

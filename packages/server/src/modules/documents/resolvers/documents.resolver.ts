@@ -121,6 +121,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           totalAmount: fields.amount?.raw ?? null,
           type: fields.documentType ?? null,
           vatAmount: fields.vat?.raw ?? null,
+          vatReportDateOverride: fields.vatReportDateOverride
+            ? new Date(fields.vatReportDateOverride)
+            : null,
           isReviewed: true,
         };
         const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
@@ -187,6 +190,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           currencyCode: record.amount?.currency ?? null,
           vat: record.vat?.raw ?? null,
           chargeId: record.chargeId ?? null,
+          vatReportDateOverride: record.vatReportDateOverride
+            ? new Date(record.vatReportDateOverride)
+            : null,
         };
         const res = await injector
           .get(DocumentsProvider)
@@ -269,6 +275,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               currencyCode: formatCurrency(greenInvoiceDoc.currency),
               vat: greenInvoiceDoc.vat,
               chargeId: charge.id,
+              vatReportDateOverride: null,
             };
             const newDocument = await injector
               .get(DocumentsProvider)

@@ -2,6 +2,7 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
+  getExchangeDates,
   isRefundCharge,
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
@@ -218,22 +219,44 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // create a ledger record for fee transactions
       const feeTransactionsPromises = feeTransactions.map(async transaction => {
-        await getEntriesFromFeeTransaction(transaction, charge, injector)
-          .then(ledgerEntries => {
-            feeFinancialAccountLedgerEntries.push(...ledgerEntries);
-            ledgerEntries.map(ledgerEntry => {
-              updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-              dates.add(ledgerEntry.valueDate.getTime());
-              currencies.add(ledgerEntry.currency);
-            });
-          })
-          .catch(e => {
-            if (e instanceof LedgerError) {
-              errors.add(e.message);
-            } else {
-              throw e;
-            }
-          });
+        const ledgerEntryPromise = getEntriesFromFeeTransaction(
+          transaction,
+          charge,
+          injector,
+        ).catch(e => {
+          if (e instanceof LedgerError) {
+            errors.add(e.message);
+          } else {
+            throw e;
+          }
+        });
+
+        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
+
+        const [ledgerEntries, miscExpensesLedger] = await Promise.all([
+          ledgerEntryPromise,
+          miscExpensesPromise,
+        ]);
+
+        // add misc expenses ledger entries
+        miscExpensesLedger.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+
+        if (!ledgerEntries) {
+          return;
+        }
+
+        feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+        ledgerEntries.map(ledgerEntry => {
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          dates.add(ledgerEntry.valueDate.getTime());
+          currencies.add(ledgerEntry.currency);
+        });
       });
 
       entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
@@ -371,7 +394,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
-        const documentEntry = accountingLedgerEntries[0];
+        const [invoiceDate, valueDate] = getExchangeDates(
+          financialAccountLedgerEntries,
+          accountingLedgerEntries,
+        );
 
         const { entityId, balance } = unbalancedBusinesses[0];
         const amount = Math.abs(balance.raw);
@@ -406,7 +432,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             ...feeFinancialAccountLedgerEntries,
             ...miscLedgerEntries,
           ],
-          amount,
+          balance.raw,
         );
         if (validation === true) {
           if (exchangeRateTaxCategory) {
@@ -418,8 +444,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               localCurrencyDebitAmount1: amount,
               description: 'Exchange ledger record',
               isCreditorCounterparty,
-              invoiceDate: documentEntry.invoiceDate,
-              valueDate: transactionEntry.valueDate,
+              invoiceDate,
+              valueDate,
               currency: DEFAULT_LOCAL_CURRENCY,
               ownerId: transactionEntry.ownerId,
               chargeId,
@@ -473,9 +499,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       errors: Array.from(errors),
     };
   } catch (e) {
+    const message = `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`;
+    console.error(message);
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
+      message,
     };
   }
 };

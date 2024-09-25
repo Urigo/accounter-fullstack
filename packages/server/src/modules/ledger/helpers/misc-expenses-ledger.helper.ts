@@ -1,22 +1,16 @@
 import type { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID, ISRACARD_BUSINESS_ID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
-import { validateTransactionBasicVariables } from './utils.helper.js';
-
-// async function doesIncludeAuthority(
-//   transaction: IGetTransactionsByChargeIdsResult,
-//   injector: Injector,
-// ): Promise<boolean> {
-//   const authorities = await injector.get(MiscExpensesProvider).getAllAuthorities();
-//   const authoritiesIds = authorities.map(authority => authority.id);
-//   if (transaction.business_id && authoritiesIds.includes(transaction.business_id)) {
-//     return true;
-//   }
-//   return false;
-// }
+import { isSupplementalFeeTransaction } from './fee-transactions.js';
+import {
+  getFinancialAccountTaxCategoryId,
+  LedgerError,
+  validateTransactionBasicVariables,
+} from './utils.helper.js';
 
 export async function generateMiscExpensesLedger(
   transaction: IGetTransactionsByChargeIdsResult,
@@ -34,6 +28,26 @@ export async function generateMiscExpensesLedger(
     valueDate,
     transactionBusinessId: businessId,
   } = validateTransactionBasicVariables(transaction);
+
+  const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+
+  let mainAccount = businessId;
+  if (isSupplementalFee) {
+    mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction);
+  } else if (mainAccount === ISRACARD_BUSINESS_ID && transaction.source_reference) {
+    const account = await injector
+      .get(FinancialAccountsProvider)
+      .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
+    if (!account) {
+      throw new LedgerError(
+        `Transaction reference "${transaction.source_reference}" is missing account`,
+      );
+    }
+    mainAccount = await getFinancialAccountTaxCategoryId(injector, {
+      ...transaction,
+      account_id: account.id,
+    });
+  }
 
   const ledgerEntries: LedgerProto[] = [];
   for (const expense of expenses) {
@@ -63,12 +77,12 @@ export async function generateMiscExpensesLedger(
       }),
       ...(isCreditorCounterparty
         ? {
-            creditAccountID1: businessId,
+            creditAccountID1: mainAccount,
             debitAccountID1: expense.counterparty,
           }
         : {
             creditAccountID1: expense.counterparty,
-            debitAccountID1: businessId,
+            debitAccountID1: mainAccount,
           }),
       localCurrencyCreditAmount1: Math.abs(amount),
       localCurrencyDebitAmount1: Math.abs(amount),

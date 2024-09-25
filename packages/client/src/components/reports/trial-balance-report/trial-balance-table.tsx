@@ -1,11 +1,40 @@
 import { ReactElement, useMemo } from 'react';
 import { Table } from '@mantine/core';
-import type { TrialBalanceReportQuery } from '../../../gql/graphql.js';
+import { TrialBalanceTableFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers/index.js';
 import { DownloadCSV } from './download-csv.js';
 import type { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceReportGroup } from './trial-balance-report-group.js';
 import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment TrialBalanceTableFields on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+    businessTransactionsSum {
+      business {
+        id
+        name
+        sortCode {
+          id
+          name
+        }
+      }
+      credit {
+        formatted
+        raw
+      }
+      debit {
+        formatted
+        raw
+      }
+      total {
+        formatted
+        raw
+      }
+    }
+  }
+`;
 
 function roundNearest100(num: number): number {
   return Math.floor(num / 100) * 100;
@@ -21,19 +50,13 @@ export type SortCodeGroup = {
 };
 
 type Props = {
-  businessTransactionsSum: Extract<
-    TrialBalanceReportQuery['businessTransactionsSumFromLedgerRecords'],
-    { businessTransactionsSum: unknown }
-  >['businessTransactionsSum'];
+  data: FragmentType<typeof TrialBalanceTableFieldsFragmentDoc>;
   filter: TrialBalanceReportFilters;
   isAllOpened: boolean;
 };
 
-export const TrialBalanceTable = ({
-  businessTransactionsSum,
-  filter,
-  isAllOpened,
-}: Props): ReactElement => {
+export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactElement => {
+  const { businessTransactionsSum } = getFragmentData(TrialBalanceTableFieldsFragmentDoc, data);
   const sortCodesGroups = useMemo(() => {
     const adjustedSortCodes: Record<number, SortCodeGroup> = {};
 

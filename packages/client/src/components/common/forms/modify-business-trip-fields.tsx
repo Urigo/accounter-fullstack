@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-import { DateInput } from '@mantine/dates';
+import { DatePickerInput } from '@mantine/dates';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { TextInput } from '../index.js';
@@ -38,7 +38,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         render={({ field: { value, ...field } }): ReactElement => {
           const date = value ? new Date(value) : undefined;
           return (
-            <DateInput
+            <DatePickerInput
               {...field}
               onChange={(date?: Date | string | null): void => {
                 const newDate = date
@@ -50,7 +50,6 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
               }}
               value={date}
               label="Start Date"
-              placeholder="Start Date"
               popoverProps={{ withinPortal: true }}
             />
           );
@@ -68,7 +67,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         render={({ field: { value, ...field } }): ReactElement => {
           const date = value ? new Date(value) : undefined;
           return (
-            <DateInput
+            <DatePickerInput
               {...field}
               onChange={(date?: Date | string | null): void => {
                 const newDate = date
@@ -80,7 +79,6 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
               }}
               value={date}
               label="End Date"
-              placeholder="End Date"
               popoverProps={{ withinPortal: true }}
             />
           );

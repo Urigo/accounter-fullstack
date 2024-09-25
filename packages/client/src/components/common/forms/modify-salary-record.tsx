@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
-import { MonthPicker } from '@mantine/dates';
+import { MonthPickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllEmployeesByEmployerDocument,
@@ -218,10 +218,11 @@ export const ModifySalaryRecord = ({
       <div className="flex-row px-10 h-max justify-start block">
         <SimpleGrid cols={4}>
           <div className="flex-column h-max justify-start block">
-            <MonthPicker
+            <MonthPickerInput
               defaultDate={defaultMonth ? new Date(defaultMonth) : undefined}
               defaultValue={defaultMonth ? new Date(defaultMonth) : undefined}
               onChange={onSelectMonth}
+              popoverProps={{ withinPortal: true }}
             />
             <Controller
               name="employer"

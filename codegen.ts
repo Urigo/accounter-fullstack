@@ -74,6 +74,8 @@ const config: CodegenConfig = {
             '@modules/business-trips/types.js#IGetAllBusinessTripsOtherExpensesResult',
           BusinessTripTravelAndSubsistenceExpense:
             '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceExpensesResult',
+          BusinessTripCarRentalExpense:
+            '@modules/business-trips/types.js#IGetAllBusinessTripsCarRentalExpensesResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
@@ -81,10 +83,14 @@ const config: CodegenConfig = {
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          CorporateTax: '@modules/corporate-taxes/types.js#IGetAllCorporateTaxesResult',
           CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
+          DepreciationCategory:
+            '@modules/depreciation/types.js#IGetAllDepreciationCategoriesResult',
+          DepreciationRecord: '@modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
           ExchangeRates: 'TimelessDateString',
@@ -111,6 +117,7 @@ const config: CodegenConfig = {
           Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
           WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],

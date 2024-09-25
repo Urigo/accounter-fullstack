@@ -35,11 +35,11 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
         throw new GraphQLError((e as Error)?.message ?? 'Error inserting misc expense');
       }
     },
-    updateMiscExpense: async (_, { transactionId, fields }, { injector }) => {
+    updateMiscExpense: async (_, { transactionId, counterpartyId, fields }, { injector }) => {
       try {
         return await injector
           .get(MiscExpensesProvider)
-          .updateExpense({ transactionId, ...fields })
+          .updateExpense({ transactionId, originalCounterpartyId: counterpartyId, ...fields })
           .then(res => {
             if (!res.length) {
               throw new GraphQLError('Error updating misc expense');

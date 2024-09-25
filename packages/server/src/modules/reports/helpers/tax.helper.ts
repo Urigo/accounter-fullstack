@@ -1,4 +1,14 @@
-export function calculateTaxAmounts(
+import { differenceInDays } from 'date-fns';
+import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
+import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
+import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
+import { TimelessDateString } from '@shared/types';
+
+export async function calculateTaxAmounts(
+  injector: Injector,
+  year: number,
   researchAndDevelopmentExpensesAmount: number,
   profitBeforeTaxAmount: number,
 ) {
@@ -9,7 +19,19 @@ export function calculateTaxAmounts(
     researchAndDevelopmentExpensesAmount +
     researchAndDevelopmentExpensesForTax;
 
-  const taxRate = 0.23;
+  const depreciationAmountPromise = calculateDepreciationAmount(injector, year);
+  const taxRatePromise = injector
+    .get(CorporateTaxesProvider)
+    .getCorporateTaxesByDateLoader.load(`${year}-01-01` as TimelessDateString);
+  const [{ depreciationYearlyAmount }, taxRateVariables] = await Promise.all([
+    depreciationAmountPromise,
+    taxRatePromise,
+  ]);
+
+  if (!taxRateVariables) {
+    throw new GraphQLError('No tax rate for year');
+  }
+  const taxRate = Number(taxRateVariables.tax_rate) / 100;
 
   const annualTaxExpenseAmount = taxableIncomeAmount * taxRate;
 
@@ -31,5 +53,56 @@ export function calculateTaxAmounts(
     taxableIncomeAmount,
     taxRate,
     annualTaxExpenseAmount,
+    depreciationForTax: depreciationYearlyAmount,
   };
+}
+
+export async function calculateDepreciationAmount(injector: Injector, year: number) {
+  const yearBeginning = new Date(year, 0, 1);
+  const yearEnd = new Date(year, 11, 31);
+
+  const depreciationRecords = await injector
+    .get(DepreciationProvider)
+    .getDepreciationRecordsByDates({
+      fromDate: yearBeginning,
+      toDate: yearEnd,
+    });
+
+  let depreciationYearlyAmount = 0;
+
+  await Promise.all(
+    depreciationRecords.map(async record => {
+      if (!record.expiration_date) {
+        console.error('No expiration date for depreciation record', record);
+        return;
+      }
+
+      const depreciationCategory = await injector
+        .get(DepreciationCategoriesProvider)
+        .getDepreciationCategoriesByIdLoader.load(record.category);
+      if (!depreciationCategory) {
+        console.error('No depreciation category for depreciation record', record);
+        return;
+      }
+
+      const yearDays = differenceInDays(yearEnd, yearBeginning) + 1;
+      let daysOfRelevance = yearDays;
+      if (record.activation_date.getTime() > yearBeginning.getTime()) {
+        daysOfRelevance -= differenceInDays(record.activation_date, yearBeginning);
+      }
+      if (record.expiration_date.getTime() < yearEnd.getTime()) {
+        daysOfRelevance -= differenceInDays(yearEnd, record.expiration_date);
+      }
+      if (daysOfRelevance <= 0) {
+        console.error('No days of relevance for depreciation record', record);
+        return;
+      }
+
+      const part = daysOfRelevance / yearDays;
+      const yearlyPercent = Number(depreciationCategory.percentage) / 100;
+      depreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+    }),
+  );
+
+  return { depreciationYearlyAmount };
 }

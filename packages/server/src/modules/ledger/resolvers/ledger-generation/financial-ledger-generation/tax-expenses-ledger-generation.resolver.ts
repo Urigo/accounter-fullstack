@@ -90,7 +90,9 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
       getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    const { annualTaxExpenseAmount } = calculateTaxAmounts(
+    const { annualTaxExpenseAmount } = await calculateTaxAmounts(
+      injector,
+      year,
       researchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );

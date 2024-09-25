@@ -238,6 +238,9 @@
         },
         "requestNumber": {
           "type": "null"
+        },
+        "accountErrorCode": {
+          "type": "null"
         }
       },
       "patternProperties": {
@@ -329,6 +332,9 @@
                 "type": "null"
               },
               "requestNumber": {
+                "type": "null"
+              },
+              "accountErrorCode": {
                 "type": "null"
               }
             }
@@ -595,6 +601,9 @@
                     "requestNumber": {
                       "type": "null"
                     },
+                    "accountErrorCode": {
+                      "type": "null"
+                    },
                     "kodMatbeaMekori": {
                       "type": "null"
                     }
@@ -824,6 +833,9 @@
                     "requestNumber": {
                       "type": "null"
                     },
+                    "accountErrorCode": {
+                      "type": "null"
+                    },
                     "kodMatbeaMekori": {
                       "type": ["string", "null"],
                       "enum": ["ש\"ח", "דולר", null]
@@ -924,6 +936,9 @@
             "type": "null"
           },
           "requestNumber": {
+            "type": "null"
+          },
+          "accountErrorCode": {
             "type": "null"
           }
         }

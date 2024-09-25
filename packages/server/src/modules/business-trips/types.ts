@@ -3,6 +3,7 @@ import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
 export * from './__generated__/business-trips-attendees.types.js';
+export * from './__generated__/business-trips-tax-variables.types.js';
 export type {
   business_trip_transaction_type,
   currency,
@@ -30,9 +31,12 @@ export type {
   IDeleteBusinessTripExpenseParams,
   IDeleteBusinessTripExpenseResult,
   IDeleteBusinessTripExpenseQuery,
-  IGetBusinessTripsExpensesByTransactionIdsParams,
-  IGetBusinessTripsExpensesByTransactionIdsResult,
-  IGetBusinessTripsExpensesByTransactionIdsQuery,
+  IGetBusinessTripsExpenseMatchesByTransactionIdsParams,
+  IGetBusinessTripsExpenseMatchesByTransactionIdsResult,
+  IGetBusinessTripsExpenseMatchesByTransactionIdsQuery,
+  IGetBusinessTripsExpenseMatchesByExpenseIdsParams,
+  IGetBusinessTripsExpenseMatchesByExpenseIdsResult,
+  IGetBusinessTripsExpenseMatchesByExpenseIdsQuery,
   IInsertBusinessTripExpenseMatchParams,
   IInsertBusinessTripExpenseMatchResult,
   IInsertBusinessTripExpenseMatchQuery,
@@ -156,6 +160,29 @@ export type {
   IGetBusinessTripEmployeePaymentsByChargeIdsResult,
   IGetBusinessTripEmployeePaymentsByChargeIdsQuery,
 } from './__generated__/business-trips-employee-payments.types.js';
+export type {
+  IGetAllBusinessTripsCarRentalExpensesParams,
+  IGetAllBusinessTripsCarRentalExpensesResult,
+  IGetAllBusinessTripsCarRentalExpensesQuery,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsParams,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsResult,
+  IGetBusinessTripsCarRentalExpensesByChargeIdsQuery,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsParams,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult,
+  IGetBusinessTripsCarRentalExpensesByBusinessTripIdsQuery,
+  IGetBusinessTripsCarRentalExpensesByIdsParams,
+  IGetBusinessTripsCarRentalExpensesByIdsResult,
+  IGetBusinessTripsCarRentalExpensesByIdsQuery,
+  IUpdateBusinessTripCarRentalExpenseParams,
+  IUpdateBusinessTripCarRentalExpenseResult,
+  IUpdateBusinessTripCarRentalExpenseQuery,
+  IInsertBusinessTripCarRentalExpenseParams,
+  IInsertBusinessTripCarRentalExpenseResult,
+  IInsertBusinessTripCarRentalExpenseQuery,
+  IDeleteBusinessTripCarRentalExpenseParams,
+  IDeleteBusinessTripCarRentalExpenseResult,
+  IDeleteBusinessTripCarRentalExpenseQuery,
+} from './__generated__/business-trips-expenses-car-rental.types.js';
 export type BusinessTripProto = Omit<IGetAllBusinessTripsResult, 'id' | 'name'> & {
   id: NonNullable<IGetAllBusinessTripsResult['id']>;
   name: NonNullable<IGetAllBusinessTripsResult['name']>;

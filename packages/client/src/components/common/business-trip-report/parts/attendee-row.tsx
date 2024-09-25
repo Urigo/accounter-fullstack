@@ -1,7 +1,9 @@
 import { ReactElement, useState } from 'react';
+import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import {
   BusinessTripAttendeeUpdateInput,
   BusinessTripReportAttendeeRowFieldsFragmentDoc,
@@ -67,12 +69,21 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <TextInput
+                <DatePickerInput
                   {...field}
+                  onChange={(date?: Date | string | null): void => {
+                    const newDate = date
+                      ? typeof date === 'string'
+                        ? date
+                        : format(date, 'yyyy-MM-dd')
+                      : undefined;
+                    if (newDate !== field.value) field.onChange(newDate);
+                  }}
                   data-autofocus
-                  value={field.value ?? undefined}
+                  value={field.value ? new Date(field.value) : undefined}
                   error={fieldState.error?.message}
                   label="Arrival"
+                  popoverProps={{ withinPortal: true }}
                 />
               )}
             />
@@ -94,12 +105,20 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                form={`form ${attendee.id}`}
+              <DatePickerInput
                 {...field}
-                value={field.value ?? undefined}
+                onChange={(date?: Date | string | null): void => {
+                  const newDate = date
+                    ? typeof date === 'string'
+                      ? date
+                      : format(date, 'yyyy-MM-dd')
+                    : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                value={field.value ? new Date(field.value) : undefined}
                 error={fieldState.error?.message}
                 label="Departure"
+                popoverProps={{ withinPortal: true }}
               />
             )}
           />

@@ -7,6 +7,7 @@ import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolve
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import {
+  DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   TAX_EXPENSES_TAX_CATEGORY_ID,
@@ -394,6 +395,67 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating tax expenses charge');
+      }
+    },
+    generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
+      try {
+        const [charge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
+          type: 'FINANCIAL',
+          taxCategoryId: DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+        });
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const newExtendedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+
+        if (!newExtendedCharge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const tagName = 'financial';
+
+        const addTagPromise = async () => {
+          const tag = await injector
+            .get(TagsProvider)
+            .getTagByNameLoader.load(tagName)
+            .catch(() => {
+              throw new GraphQLError(`Error adding "${tagName}" tag`);
+            });
+
+          if (!tag) {
+            throw new GraphQLError(`"${tagName}" tag not found`);
+          }
+
+          await injector
+            .get(ChargeTagsProvider)
+            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .catch(() => {
+              throw new GraphQLError(
+                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
+              );
+            });
+        };
+
+        const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
+          newExtendedCharge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
+
+        await Promise.all([addTagPromise(), generateLedgerPromise]);
+
+        return newExtendedCharge;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating depreciation charge');
       }
     },
   },

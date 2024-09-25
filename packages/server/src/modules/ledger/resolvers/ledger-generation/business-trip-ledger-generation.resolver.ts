@@ -7,7 +7,10 @@ import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { ledgerEntryFromDocument } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
+import {
+  getExchangeDates,
+  ledgerEntryFromDocument,
+} from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -248,24 +251,44 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     });
 
     // create a ledger record for fee transactions
-    const feeTransactionsPromises = feeTransactions.map(async transaction =>
-      getEntriesFromFeeTransaction(transaction, charge, injector)
-        .then(entries => {
-          entries.map(entry => {
-            feeFinancialAccountLedgerEntries.push(entry);
-            updateLedgerBalanceByEntry(entry, ledgerBalance);
-            dates.add(entry.valueDate.getTime());
-            currencies.add(entry.currency);
-          });
-        })
-        .catch(e => {
+    const feeTransactionsPromises = feeTransactions.map(async transaction => {
+      const ledgerEntryPromise = getEntriesFromFeeTransaction(transaction, charge, injector).catch(
+        e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
           } else {
             throw e;
           }
-        }),
-    );
+        },
+      );
+
+      const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
+
+      const [ledgerEntries, miscExpensesLedger] = await Promise.all([
+        ledgerEntryPromise,
+        miscExpensesPromise,
+      ]);
+
+      // add misc expenses ledger entries
+      miscExpensesLedger.map(entry => {
+        entry.ownerId = charge.owner_id;
+        feeFinancialAccountLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance);
+        dates.add(entry.valueDate.getTime());
+        currencies.add(entry.currency);
+      });
+
+      if (!ledgerEntries) {
+        return;
+      }
+
+      feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+      ledgerEntries.map(ledgerEntry => {
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        dates.add(ledgerEntry.valueDate.getTime());
+        currencies.add(ledgerEntry.currency);
+      });
+    });
 
     // generate ledger from documents
     if (gotRelevantDocuments) {
@@ -493,7 +516,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
       const transactionEntry = financialAccountLedgerEntries[0];
-      const documentEntry = accountingLedgerEntries[0];
+
+      const [invoiceDate, valueDate] = getExchangeDates(
+        financialAccountLedgerEntries,
+        accountingLedgerEntries,
+      );
 
       const { entityId, balance } = unbalancedBusinesses[0];
       const amount = Math.abs(balance.raw);
@@ -525,7 +552,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           ...accountingLedgerEntries,
           ...miscLedgerEntries,
         ],
-        amount,
+        balance.raw,
       );
       if (validation === true) {
         if (exchangeRateTaxCategory) {
@@ -537,8 +564,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             localCurrencyDebitAmount1: amount,
             description: 'Exchange ledger record',
             isCreditorCounterparty,
-            invoiceDate: documentEntry.invoiceDate,
-            valueDate: transactionEntry.valueDate,
+            invoiceDate,
+            valueDate,
             currency: DEFAULT_LOCAL_CURRENCY,
             ownerId: transactionEntry.ownerId,
             chargeId,

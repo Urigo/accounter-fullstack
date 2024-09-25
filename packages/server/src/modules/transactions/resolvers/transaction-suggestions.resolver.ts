@@ -101,6 +101,8 @@ const missingInfoSuggestions = async (
     if (!business.suggestion_data) continue;
     const suggestionData = business.suggestion_data as SuggestionData;
 
+    if (!suggestionData.phrases) continue;
+
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         business: business.id,

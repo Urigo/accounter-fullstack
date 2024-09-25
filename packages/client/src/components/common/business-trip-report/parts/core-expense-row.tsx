@@ -3,10 +3,11 @@ import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 import { Check, X } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { NavLink, Select, Text, TextInput, ThemeIcon } from '@mantine/core';
+import { NavLink, Select, Text, ThemeIcon } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
-  AllBusinessTripAttendeesDocument,
+  AttendeesByBusinessTripDocument,
   BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
   Currency,
   UpdateBusinessTripFlightsExpenseInput,
@@ -59,7 +60,7 @@ export const CoreExpenseRow = ({
   const [attendees, setAttendees] = useState<Array<{ value: string; label: string }>>([]);
 
   const [{ data: attendeesData, fetching: fetchingAttendees, error }] = useQuery({
-    query: AllBusinessTripAttendeesDocument,
+    query: AttendeesByBusinessTripDocument,
     variables: { businessTripId },
   });
 
@@ -107,13 +108,22 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <TextInput
+                  <DatePickerInput
                     {...field}
-                    data-autofocus
                     form={`form ${businessTripExpense.id}`}
-                    value={field.value ?? undefined}
-                    error={fieldState.error?.message}
+                    data-autofocus
+                    onChange={(date?: Date | string | null): void => {
+                      const newDate = date
+                        ? typeof date === 'string'
+                          ? date
+                          : format(date, 'yyyy-MM-dd')
+                        : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    value={field.value ? new Date(field.value) : undefined}
                     label="Date"
+                    error={fieldState.error?.message}
+                    popoverProps={{ withinPortal: true }}
                   />
                 )}
               />
@@ -128,12 +138,21 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <TextInput
+                  <DatePickerInput
                     {...field}
                     form={`form ${businessTripExpense.id}`}
-                    value={field.value ?? undefined}
-                    error={fieldState.error?.message}
+                    onChange={(date?: Date | string | null): void => {
+                      const newDate = date
+                        ? typeof date === 'string'
+                          ? date
+                          : format(date, 'yyyy-MM-dd')
+                        : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    value={field.value ? new Date(field.value) : undefined}
                     label="Value Date"
+                    error={fieldState.error?.message}
+                    popoverProps={{ withinPortal: true }}
                   />
                 )}
               />
@@ -223,18 +242,20 @@ export const CoreExpenseRow = ({
                   <ThemeIcon variant="default" radius="lg">
                     <X />
                   </ThemeIcon>
-                  {linkedChargeIds?.length &&
-                    linkedChargeIds.map(id => (
-                      <NavLink
-                        key={id}
-                        label="To Charge"
-                        className="[&>*>.mantine-NavLink-label]:font-semibold"
-                        onClick={event => {
-                          event.stopPropagation();
-                          window.open(`/charges/${id}`, '_blank', 'noreferrer');
-                        }}
-                      />
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {linkedChargeIds?.length &&
+                      linkedChargeIds.map(id => (
+                        <NavLink
+                          key={id}
+                          label="To Charge"
+                          className="[&>*>.mantine-NavLink-label]:font-semibold"
+                          onClick={event => {
+                            event.stopPropagation();
+                            window.open(`/charges/${id}`, '_blank', 'noreferrer');
+                          }}
+                        />
+                      ))}
+                  </div>
                 </>
               )}
             </div>

@@ -41,6 +41,16 @@ import migration_2024_08_12T09_53_52_fix_business_trip_transactions_view from '.
 import migration_2024_08_12T17_21_10_optional_vat_flag from './actions/2024-08-12T17-21-10.optional-vat-flag.js';
 import migration_2024_08_13T12_57_25_attendees_info_for_trip_accommodation_flights_expenses from './actions/2024-08-13T12-57-25.attendees-info-for-trip-accommodation-flights-expenses.js';
 import migration_2024_08_19T18_05_19_enhance_accountant_approval from './actions/2024-08-19T18-05-19.enhance-accountant-approval.js';
+import migration_2024_08_20T13_14_01_business_trip_transaction_match_amount_fix from './actions/2024-08-20T13-14-01.business-trip-transaction-match-amount-fix.js';
+import migration_2024_08_25T12_46_25_add_owner_to_extended_transactions from './actions/2024-08-25T12-46-25.add-owner-to-extended-transactions.js';
+import migration_2024_08_25T15_11_15_business_trip_tax_variables from './actions/2024-08-25T15-11-15.business-trip-tax-variables.js';
+import migration_2024_08_27T14_53_58_update_misc_transactions_amount_type from './actions/2024-08-27T14-53-58.update-misc-transactions-amount-type.js';
+import migration_2024_08_28T12_03_04_business_trip_car_rental_category from './actions/2024-08-28T12-03-04.business-trip-car-rental-category.js';
+import migration_2024_08_28T16_07_43_deprecation from './actions/2024-08-28T16-07-43.deprecation.js';
+import migration_2024_09_01T13_30_24_business_trip_transactions_view_fix from './actions/2024-09-01T13-30-24.business-trip-transactions-view-fix.js';
+import migration_2024_09_04T15_37_43_company_taxes from './actions/2024-09-04T15-37-43.company-taxes.js';
+import migration_2024_09_04T18_34_03_vat_report_date_override from './actions/2024-09-04T18-34-03.vat-report-date-override.js';
+import migration_2024_09_05T15_51_41_depreciation from './actions/2024-09-05T15-51-41.depreciation.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -89,5 +99,15 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_08_12T17_21_10_optional_vat_flag,
       migration_2024_08_13T12_57_25_attendees_info_for_trip_accommodation_flights_expenses,
       migration_2024_08_19T18_05_19_enhance_accountant_approval,
+      migration_2024_08_20T13_14_01_business_trip_transaction_match_amount_fix,
+      migration_2024_08_25T12_46_25_add_owner_to_extended_transactions,
+      migration_2024_08_25T15_11_15_business_trip_tax_variables,
+      migration_2024_08_27T14_53_58_update_misc_transactions_amount_type,
+      migration_2024_08_28T12_03_04_business_trip_car_rental_category,
+      migration_2024_08_28T16_07_43_deprecation,
+      migration_2024_09_01T13_30_24_business_trip_transactions_view_fix,
+      migration_2024_09_04T15_37_43_company_taxes,
+      migration_2024_09_04T18_34_03_vat_report_date_override,
+      migration_2024_09_05T15_51_41_depreciation,
     ],
   });

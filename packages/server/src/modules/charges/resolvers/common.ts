@@ -1,23 +1,9 @@
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
-import { ChargeResolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { calculateTotalAmount } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
-
-const calculateTotalAmount: ChargeResolvers['totalAmount'] = async charge => {
-  if (charge.type === 'PAYROLL' && charge.transactions_event_amount != null) {
-    return formatFinancialAmount(charge.transactions_event_amount, DEFAULT_LOCAL_CURRENCY);
-  }
-  if (charge.documents_event_amount != null && charge.documents_currency) {
-    return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
-  }
-  if (charge.transactions_event_amount != null && charge.transactions_currency) {
-    return formatFinancialAmount(charge.transactions_event_amount, charge.transactions_currency);
-  }
-  return null;
-};
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
   id: DbCharge => DbCharge.id,
@@ -25,7 +11,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     DbCharge.documents_vat_amount != null && DbCharge.documents_currency
       ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
       : null,
-  totalAmount: calculateTotalAmount,
+  totalAmount: dbCharge => calculateTotalAmount(dbCharge),
   property: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.type === 'CONVERSION',
   salary: DbCharge => DbCharge.type === 'PAYROLL',
