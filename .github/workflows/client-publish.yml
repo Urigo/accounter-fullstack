@@ -39,7 +39,7 @@ jobs:
             ${{runner.os}}-19-yarn-
 
       - name: Install Dependencies
-        run: yarn
+        run: yarn install
 
       - name: Generate GraphQL
         run: yarn generate:graphql
