@@ -413,20 +413,6 @@ const missingInfoSuggestions: Resolver<
         : `Advance Tax for ${previousMonth}/2022`,
     };
   }
-  if (description.includes('גורניצקי')) {
-    const current = new Date();
-    current.setMonth(current.getMonth() - 1);
-    const previousMonth = current.toLocaleString('default', {
-      month: '2-digit',
-    });
-    return {
-      description: `${previousMonth}/2022 lawyer support`,
-      tags: await injector
-        .get(TagsProvider)
-        .getTagByNameLoader.load('business')
-        .then(res => (res ? [res] : [])),
-    };
-  }
   if (description.includes('המכס ומעמ-גביי תשלום') || description.includes('CUSTOM + V.A.T')) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
@@ -447,18 +433,6 @@ const missingInfoSuggestions: Resolver<
       tags: await injector
         .get(TagsProvider)
         .getTagByNameLoader.load('transportation')
-        .then(res => (res ? [res] : [])),
-    };
-  }
-  if (description.includes('ETANA')) {
-    const current = new Date();
-    current.setMonth(current.getMonth() - 1);
-    const previousMonth = current.toLocaleString('default', { month: 'long' });
-    return {
-      description: `The Guild Enterprise Support - ${previousMonth} 2022`,
-      tags: await injector
-        .get(TagsProvider)
-        .getTagByNameLoader.load('business')
         .then(res => (res ? [res] : [])),
     };
   }
