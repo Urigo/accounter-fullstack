@@ -32,7 +32,7 @@
     "bcrypt": "5.1.1",
     "cloudinary": "2.5.0",
     "dataloader": "2.2.2",
-    "date-fns": "3.6.0",
+    "date-fns": "4.1.0",
     "dotenv": "16.4.5",
     "dotenv-cli": "7.4.2",
     "graphql": "16.9.0",
