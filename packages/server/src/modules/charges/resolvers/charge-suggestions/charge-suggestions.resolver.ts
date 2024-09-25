@@ -123,6 +123,8 @@ const missingInfoSuggestions: Resolver<
       };
     }
 
+    if (!suggestionData.phrases) continue;
+
     for (const phrase of suggestionData.phrases) {
       suggestions[phrase] = {
         description: suggestionData.description,
