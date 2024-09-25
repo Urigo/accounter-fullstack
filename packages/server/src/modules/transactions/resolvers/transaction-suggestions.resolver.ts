@@ -269,11 +269,6 @@ const missingInfoSuggestions = async (
         : '9d3a8a88-6958-4119-b509-d50a7cdc0744', //name: 'Tax',
     };
   }
-  if (description.includes('גורניצקי')) {
-    return {
-      business: 'fe11b834-c218-472b-a129-8ac296553258', //name: 'Gornitzky & Co., Advocates',
-    };
-  }
   if (description.includes('המכס ומעמ-גביי תשלום') || description.includes('CUSTOM + V.A.T')) {
     return {
       business: 'c7fdf6f6-e075-44ee-b251-cbefea366826', //name: 'VAT',
@@ -284,11 +279,6 @@ const missingInfoSuggestions = async (
       business: description.includes('אחוזות החוף')
         ? 'b51aeb4d-48ed-43e5-84a2-f12b6905fd51' //name: 'Ahuzot',
         : 'ed7b54f1-f695-4bc2-b8af-887e3115bfcc', //name: 'Parking',
-    };
-  }
-  if (description.includes('ETANA')) {
-    return {
-      business: '4ea86b9b-1c8f-46de-b25e-532f8e34001c', //name: 'Etana',
     };
   }
   if (description.includes('deel')) {
