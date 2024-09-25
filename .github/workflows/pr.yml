@@ -87,15 +87,27 @@ jobs:
         #   preCommit: ${{ inputs.preCommit }}
 
   snapshot:
-    if: ${{ github.event.pull_request.title != 'Upcoming Release Changes' }}
-    permissions:
-      contents: read
-      id-token: write
-    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@v1
-    with:
-      npmTag: alpha
-      buildScript: build
-      node-version-file: .node-version
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
-      npmToken: ${{ secrets.NPM_TOKEN }}
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: alpha release
+        id: changesets
+        uses: the-guild-org/changesets-snapshot-action@main
+        with:
+          tag: alpha
+          prepareScript: yarn run build
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
