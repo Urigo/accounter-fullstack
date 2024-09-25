@@ -7,7 +7,10 @@ import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { ledgerEntryFromDocument } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
+import {
+  getExchangeDates,
+  ledgerEntryFromDocument,
+} from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -513,7 +516,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
       const transactionEntry = financialAccountLedgerEntries[0];
-      const documentEntry = accountingLedgerEntries[0];
+
+      const [invoiceDate, valueDate] = getExchangeDates(
+        financialAccountLedgerEntries,
+        accountingLedgerEntries,
+      );
 
       const { entityId, balance } = unbalancedBusinesses[0];
       const amount = Math.abs(balance.raw);
@@ -557,8 +564,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             localCurrencyDebitAmount1: amount,
             description: 'Exchange ledger record',
             isCreditorCounterparty,
-            invoiceDate: documentEntry.invoiceDate,
-            valueDate: transactionEntry.valueDate,
+            invoiceDate,
+            valueDate,
             currency: DEFAULT_LOCAL_CURRENCY,
             ownerId: transactionEntry.ownerId,
             chargeId,
