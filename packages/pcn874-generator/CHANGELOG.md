@@ -1,20 +1,34 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.4.2
+
+### Patch Changes
+
+- [#470](https://github.com/Urigo/accounter-fullstack/pull/470)
+  [`4c86678`](https://github.com/Urigo/accounter-fullstack/commit/4c866780ef1c78880f9b62854d5ab9a5eb74db95)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate accounter-toolkit into the monorepo
+
 ## 0.4.1
 
 ### Patch Changes
 
-- [#223](https://github.com/gilgardosh/accounter-toolkit/pull/223) [`85f09d5`](https://github.com/gilgardosh/accounter-toolkit/commit/85f09d53793b1de36fc63d3caea2428236af2b61) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Minor fix
+- [#223](https://github.com/gilgardosh/accounter-toolkit/pull/223)
+  [`85f09d5`](https://github.com/gilgardosh/accounter-toolkit/commit/85f09d53793b1de36fc63d3caea2428236af2b61)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Minor fix
 
 ## 0.4.0
 
 ### Minor Changes
 
-- [#210](https://github.com/gilgardosh/accounter-toolkit/pull/210) [`c84416c`](https://github.com/gilgardosh/accounter-toolkit/commit/c84416cb9c9f501b5f53b039985f5d2b24ea93c2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Drop support for NPM <18
+- [#210](https://github.com/gilgardosh/accounter-toolkit/pull/210)
+  [`c84416c`](https://github.com/gilgardosh/accounter-toolkit/commit/c84416cb9c9f501b5f53b039985f5d2b24ea93c2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Drop support for NPM <18
 
 ### Patch Changes
 
-- [#222](https://github.com/gilgardosh/accounter-toolkit/pull/222) [`02f95ec`](https://github.com/gilgardosh/accounter-toolkit/commit/02f95ece06f2a3f6c4ed82acd3ffa772f382c2cf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Export EntryType enum
+- [#222](https://github.com/gilgardosh/accounter-toolkit/pull/222)
+  [`02f95ec`](https://github.com/gilgardosh/accounter-toolkit/commit/02f95ece06f2a3f6c4ed82acd3ffa772f382c2cf)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Export EntryType enum
 
 ## 0.3.0
 
