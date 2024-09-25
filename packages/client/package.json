@@ -40,7 +40,7 @@
     "chart.js": "4.4.4",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.1",
-    "date-fns": "3.6.0",
+    "date-fns": "4.1.0",
     "dayjs": "1.11.13",
     "decimal.js": "10.4.3",
     "deep-equal": "2.2.3",
