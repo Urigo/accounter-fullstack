@@ -126,5 +126,6 @@ module.exports = {
     '.eslintrc.cjs',
     '.*rc.*js',
     '.bob/',
+    '.yarn/',
   ],
 };

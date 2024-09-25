@@ -71,4 +71,4 @@ runs:
     - name: Generate Postgres Types
       if: ${{ inputs.pgTyped == 'true' && inputs.localDB == 'true' }}
       shell: bash
-      run: yarn pgtyped -c docker/pgconfig.json
+      run: yarn --cwd packages/server pgtyped -c docker/pgconfig.json
