@@ -12988,7 +12988,6 @@ typescript@5.6.2, typescript@^5.4.2:
 
 "uWebSockets.js@uNetworking/uWebSockets.js#semver:^20":
   version "20.48.0"
-  uid "51ae1d1fd92dff77cbbdc7c431021f85578da1a6"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/51ae1d1fd92dff77cbbdc7c431021f85578da1a6"
 
 ua-parser-js@^1.0.35:

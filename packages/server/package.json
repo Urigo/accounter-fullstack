@@ -1,6 +1,6 @@
 {
   "name": "@accounter/server",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "type": "module",
   "description": "",
   "license": "MIT",
@@ -19,7 +19,7 @@
     "start": "node dist/server/src/index.js"
   },
   "dependencies": {
-    "@accounter/green-invoice-graphql": "^0.6.0",
+    "@accounter/green-invoice-graphql": "^0.7.1",
     "@accounter/pcn874-generator": "^0.4.1",
     "@envelop/generic-auth": "8.0.0",
     "@envelop/graphql-modules": "6.0.0",
