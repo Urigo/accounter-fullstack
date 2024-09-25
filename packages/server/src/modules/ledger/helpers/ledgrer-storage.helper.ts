@@ -131,7 +131,7 @@ function isExactMatch(
     }
 
     if (typeof storageRecord[key] === 'string' && !Number.isNaN(Number(storageRecord[key]))) {
-      return Number(storageRecord[key]).toFixed(2) === Number(newRecord[key]).toFixed(2);
+      return Math.abs(Number(storageRecord[key]) - Number(newRecord[key])) < 0.005;
     }
 
     return storageRecord[key] === newRecord[key];

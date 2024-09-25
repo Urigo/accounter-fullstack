@@ -300,3 +300,38 @@ export function isRefundCharge(description?: string | null): boolean {
     normalizedDescription.includes('refund') || normalizedDescription.includes('reimbursement')
   );
 }
+
+export function getExchangeDates(
+  financialAccountLedgerEntries: StrictLedgerProto[],
+  accountingLedgerEntries: LedgerProto[],
+): [Date, Date] {
+  const [accountingMin, accountingMax] = accountingLedgerEntries
+    .map(entry => entry.invoiceDate)
+    .reduce(
+      ([minTime, maxTime], newDate) => {
+        const newDateTime = newDate.getTime();
+        const newMinTime = newDateTime < minTime ? newDateTime : minTime;
+        const newMaxTime = newDateTime > maxTime ? newDateTime : maxTime;
+        return [newMinTime, newMaxTime];
+      },
+      [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER],
+    );
+
+  const [financialAccountMin, financialAccountMax] = financialAccountLedgerEntries
+    .map(entry => entry.valueDate)
+    .reduce(
+      ([minTime, maxTime], newDate) => {
+        const newDateTime = newDate.getTime();
+        const newMinTime = newDateTime < minTime ? newDateTime : minTime;
+        const newMaxTime = newDateTime > maxTime ? newDateTime : maxTime;
+        return [newMinTime, newMaxTime];
+      },
+      [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER],
+    );
+
+  if (accountingMin < financialAccountMax) {
+    return [new Date(accountingMin), new Date(financialAccountMax)];
+  }
+
+  return [new Date(accountingMax), new Date(financialAccountMin)];
+}

@@ -2,6 +2,7 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
+  getExchangeDates,
   isRefundCharge,
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
@@ -393,7 +394,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
-        const documentEntry = accountingLedgerEntries[0];
+        const [invoiceDate, valueDate] = getExchangeDates(
+          financialAccountLedgerEntries,
+          accountingLedgerEntries,
+        );
 
         const { entityId, balance } = unbalancedBusinesses[0];
         const amount = Math.abs(balance.raw);
@@ -440,8 +444,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               localCurrencyDebitAmount1: amount,
               description: 'Exchange ledger record',
               isCreditorCounterparty,
-              invoiceDate: documentEntry.invoiceDate,
-              valueDate: transactionEntry.valueDate,
+              invoiceDate,
+              valueDate,
               currency: DEFAULT_LOCAL_CURRENCY,
               ownerId: transactionEntry.ownerId,
               chargeId,
@@ -495,9 +499,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       errors: Array.from(errors),
     };
   } catch (e) {
+    const message = `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`;
+    console.error(message);
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
+      message,
     };
   }
 };
