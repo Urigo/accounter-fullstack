@@ -1,5 +1,57 @@
 # @accounter/server
 
+## 0.0.2
+
+### Patch Changes
+
+- [#1104](https://github.com/Urigo/accounter-fullstack/pull/1104)
+  [`9e659bc`](https://github.com/Urigo/accounter-fullstack/commit/9e659bcebea37b4628ede218ecc09f6a1ecc8a16)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@whatwg-node/fetch@0.9.21` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.9.21)
+    (from `0.9.20`, in `dependencies`)
+
+- [#1150](https://github.com/Urigo/accounter-fullstack/pull/1150)
+  [`120e61f`](https://github.com/Urigo/accounter-fullstack/commit/120e61f4842852d50701d0e40a49f22d2b7b7486)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@envelop/generic-auth@8.0.0` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/8.0.0)
+    (from `7.0.0`, in `dependencies`)
+
+- [#1155](https://github.com/Urigo/accounter-fullstack/pull/1155)
+  [`f957c2f`](https://github.com/Urigo/accounter-fullstack/commit/f957c2fe71704ff85534ed46efb20b9c1e49d32d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@envelop/generic-auth@7.0.0` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/7.0.0)
+    (from `8.0.0`, in `dependencies`)
+
+- [#1189](https://github.com/Urigo/accounter-fullstack/pull/1189)
+  [`9c4f4ab`](https://github.com/Urigo/accounter-fullstack/commit/9c4f4abcbba070616730595861882e8a461a70a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`cloudinary@2.5.0` ↗︎](https://www.npmjs.com/package/cloudinary/v/2.5.0)
+    (from `2.4.0`, in `dependencies`)
+
+- [#1193](https://github.com/Urigo/accounter-fullstack/pull/1193)
+  [`bd80324`](https://github.com/Urigo/accounter-fullstack/commit/bd80324efed9ab40e3d01e35e45f72d289de202c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`pg@8.13.0` ↗︎](https://www.npmjs.com/package/pg/v/8.13.0) (from `8.12.0`,
+    in `dependencies`)
+- Updated dependencies
+  [[`32489f3`](https://github.com/Urigo/accounter-fullstack/commit/32489f38a9bbca43b1e128f0643e3b16949a199f),
+  [`a5d144a`](https://github.com/Urigo/accounter-fullstack/commit/a5d144aa5ecf63491677a13568727ce49ced5b1a),
+  [`9e659bc`](https://github.com/Urigo/accounter-fullstack/commit/9e659bcebea37b4628ede218ecc09f6a1ecc8a16),
+  [`e5ae050`](https://github.com/Urigo/accounter-fullstack/commit/e5ae0509ab03b8fb2df74a962b15fd19cd509d23),
+  [`62d2729`](https://github.com/Urigo/accounter-fullstack/commit/62d272915d75063206f53305a3bfcf8a5b6277e8),
+  [`f2910cf`](https://github.com/Urigo/accounter-fullstack/commit/f2910cf1862f04899641bb13b5e691e5646f83b4),
+  [`b9bd839`](https://github.com/Urigo/accounter-fullstack/commit/b9bd8396bf73d77eccbf7f8681eeffebf2a5471b),
+  [`cd4be2b`](https://github.com/Urigo/accounter-fullstack/commit/cd4be2bb680eda1826e740e54c9a92d55accad18),
+  [`d67572c`](https://github.com/Urigo/accounter-fullstack/commit/d67572cbc82d7da308e7f37430c0d05ef8573915)]:
+  - @accounter/green-invoice-graphql@0.7.1
+
 ## 0.0.1
 
 ### Patch Changes
