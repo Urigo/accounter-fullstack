@@ -44,6 +44,10 @@ runs:
         node-version-file: .node-version
         # cache: ${{ inputs.installDependencies == 'true' && 'yarn' }}
 
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
     - name: Install Dependencies
       shell: bash
       if: ${{ inputs.installDependencies == 'true' }}
