@@ -323,7 +323,7 @@ export async function accommodationExpenseDataCollector(
       attendeesStay.map(({ attendeeId, nightsCount }) => {
         attendeesStayNightsCount += nightsCount;
 
-        if (!attendeesMap.has(attendeeId)) {
+        if (!attendeesAccommodationMap.has(attendeeId)) {
           attendeesAccommodationMap.set(attendeeId, {
             nights: nightsCount,
             localAmount: localAmountPerNight * nightsCount,
