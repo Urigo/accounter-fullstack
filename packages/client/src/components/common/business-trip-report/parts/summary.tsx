@@ -16,18 +16,22 @@ import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
         excessTax
         rows {
           type
-          totalForeignCurrencies {
-            currency
+          totalForeignCurrency {
             formatted
           }
           totalLocalCurrency {
             formatted
           }
-          taxableForeignCurrencies {
-            currency
+          taxableForeignCurrency {
             formatted
           }
           taxableLocalCurrency {
+            formatted
+          }
+          maxTaxableForeignCurrency {
+            formatted
+          }
+          maxTaxableLocalCurrency {
             formatted
           }
           excessExpenditure {
@@ -59,14 +63,6 @@ export const Summary = ({ data }: Props): ReactElement => {
     return <Text>Loading...</Text>;
   }
 
-  const foreignCurrencies = Array.from(
-    new Set<Currency>(
-      summary.rows.flatMap(
-        row => row.totalForeignCurrencies?.map(({ currency }) => currency) ?? [],
-      ),
-    ),
-  );
-
   return (
     <div className="flex flex-col gap-2 mt-5">
       {summary.errors?.length && (
@@ -85,14 +81,11 @@ export const Summary = ({ data }: Props): ReactElement => {
         <thead>
           <tr>
             <th>Expense Type</th>
-            {foreignCurrencies.map(currency => (
-              <th key={currency}>Total {currencyCodeToSymbol(currency)}</th>
-            ))}
+            <th>Total {currencyCodeToSymbol(Currency.Usd)}</th>
             <th>Total {currencyCodeToSymbol(Currency.Ils)}</th>
 
-            {foreignCurrencies.map(currency => (
-              <th key={currency}>Taxable {currencyCodeToSymbol(currency)}</th>
-            ))}
+            <th>Max Taxable {currencyCodeToSymbol(Currency.Usd)}</th>
+            <th>Taxable {currencyCodeToSymbol(Currency.Usd)}</th>
             <th>Taxable {currencyCodeToSymbol(Currency.Ils)}</th>
             <th>Excess Expenditure</th>
           </tr>
@@ -101,20 +94,10 @@ export const Summary = ({ data }: Props): ReactElement => {
           {summary.rows.map(row => (
             <tr key={row.type}>
               <td>{normalizeSnakeCase(row.type)}</td>
-              {foreignCurrencies.map(currency => (
-                <td key={currency}>
-                  {row.totalForeignCurrencies?.find(({ currency: c }) => c === currency)?.formatted}
-                </td>
-              ))}
+              <td>{row.totalForeignCurrency?.formatted}</td>
               <td>{row.totalLocalCurrency?.formatted}</td>
-              {foreignCurrencies.map(currency => (
-                <td key={currency}>
-                  {
-                    row.taxableForeignCurrencies?.find(({ currency: c }) => c === currency)
-                      ?.formatted
-                  }
-                </td>
-              ))}
+              <td>{row.maxTaxableForeignCurrency?.formatted}</td>
+              <td>{row.taxableForeignCurrency?.formatted}</td>
               <td>{row.taxableLocalCurrency?.formatted}</td>
               <td>{row.excessExpenditure?.formatted}</td>
             </tr>

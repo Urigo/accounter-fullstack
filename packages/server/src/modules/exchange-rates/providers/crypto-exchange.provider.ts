@@ -42,7 +42,7 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
 })
 export class CryptoExchangeProvider {
   cache = getCacheInstance({
-    stdTTL: 60 * 5,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
   fiatCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
 
