@@ -11,7 +11,7 @@ interface Props {
 
 export const DownloadCSV = ({ data, fromDate, toDate }: Props): ReactElement => {
   const downloadCSV = (): void => {
-    const csvData = new Blob([convertToCSV(data)], { type: 'text/csv' });
+    const csvData = new Blob([convertToCSV(data)], { type: 'text/csv;charset=utf-8' });
     const csvURL = URL.createObjectURL(csvData);
     const link = document.createElement('a');
     link.href = csvURL;
