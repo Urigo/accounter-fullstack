@@ -27,7 +27,7 @@ import type {
 export type SummaryCategoryData = Partial<
   Record<
     typeof DEFAULT_LOCAL_CURRENCY | typeof DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
-    { total: number; taxable: number }
+    { total: number; taxable: number; maxTaxable: number }
   >
 >;
 export type SummaryData = Record<BusinessTripSummaryCategories, SummaryCategoryData>;
@@ -43,14 +43,18 @@ export function convertSummaryCategoryDataToRow(
 ): BusinessTripSummaryRow {
   return {
     type: category,
-    totalForeignCurrencies: Object.entries(data)
-      .filter(row => row[0] !== Currency.Ils)
-      .map(([currency, { total }]) => formatFinancialAmount(total, currency)),
-    taxableForeignCurrencies: Object.entries(data)
-      .filter(row => row[0] !== Currency.Ils)
-      .map(([currency, { taxable }]) => formatFinancialAmount(taxable, currency)),
+    totalForeignCurrency: formatFinancialAmount(data[Currency.Usd]?.total ?? 0, Currency.Usd),
+    taxableForeignCurrency: formatFinancialAmount(data[Currency.Usd]?.taxable ?? 0, Currency.Usd),
+    maxTaxableForeignCurrency: formatFinancialAmount(
+      data[Currency.Usd]?.maxTaxable ?? 0,
+      Currency.Usd,
+    ),
     totalLocalCurrency: formatFinancialAmount(data[Currency.Ils]?.total ?? 0, Currency.Ils),
     taxableLocalCurrency: formatFinancialAmount(data[Currency.Ils]?.taxable ?? 0, Currency.Ils),
+    maxTaxableLocalCurrency: formatFinancialAmount(
+      data[Currency.Ils]?.maxTaxable ?? 0,
+      Currency.Ils,
+    ),
     excessExpenditure: formatFinancialAmount(0, Currency.Ils),
   };
 }
@@ -58,7 +62,7 @@ export function convertSummaryCategoryDataToRow(
 export function calculateTotalReportSummaryCategory(data: Partial<SummaryData>) {
   const totalSumCategory = Object.values(data).reduce((acc, category) => {
     Object.entries(category).map(([currency, { total, taxable }]) => {
-      acc[currency as 'ILS' | 'USD'] ||= { total: 0, taxable: 0 };
+      acc[currency as 'ILS' | 'USD'] ||= { total: 0, taxable: 0, maxTaxable: 0 };
       acc[currency as 'ILS' | 'USD']!.total += total;
       acc[currency as 'ILS' | 'USD']!.taxable += taxable;
     });
@@ -254,12 +258,14 @@ export async function flightExpenseDataCollector(
   const foreignTaxable = foreignAmount;
 
   // update amounts
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
   category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
   category[DEFAULT_LOCAL_CURRENCY].taxable += localTaxable;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
+  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += localTaxable;
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total += foreignAmount;
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += foreignTaxable;
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += foreignTaxable;
 
   return void 0;
 }
@@ -275,6 +281,11 @@ export async function accommodationExpenseDataCollector(
   // populate category
   partialSummaryData['ACCOMMODATION'] ??= {};
   const category = partialSummaryData['ACCOMMODATION'] as SummaryCategoryData;
+
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+
+  // set actual expense amounts and collect attendee accommodation data
   const attendeesAccommodationMap = new Map<
     string,
     { localAmount: number; foreignAmount: number; nights: number }
@@ -309,25 +320,25 @@ export async function accommodationExpenseDataCollector(
       ) as BusinessTripAttendeeStayInput[];
       let attendeesStayNightsCount = 0;
 
-      attendeesStay.map(attendeeStay => {
-        attendeesStayNightsCount += attendeeStay.nightsCount;
-        const attendeeAccommodation = attendeesAccommodationMap.get(attendeeStay.attendeeId);
-        if (attendeeAccommodation) {
-          attendeesAccommodationMap.set(attendeeStay.attendeeId, {
-            nights: attendeeAccommodation.nights + attendeeStay.nightsCount,
-            localAmount:
-              attendeeAccommodation.localAmount + localAmountPerNight * attendeeStay.nightsCount,
-            foreignAmount:
-              attendeeAccommodation.foreignAmount +
-              foreignAmountPerNight * attendeeStay.nightsCount,
+      attendeesStay.map(({ attendeeId, nightsCount }) => {
+        attendeesStayNightsCount += nightsCount;
+
+        if (!attendeesMap.has(attendeeId)) {
+          attendeesAccommodationMap.set(attendeeId, {
+            nights: nightsCount,
+            localAmount: localAmountPerNight * nightsCount,
+            foreignAmount: foreignAmountPerNight * nightsCount,
           });
-        } else {
-          attendeesAccommodationMap.set(attendeeStay.attendeeId, {
-            nights: attendeeStay.nightsCount,
-            localAmount: localAmountPerNight * attendeeStay.nightsCount,
-            foreignAmount: foreignAmountPerNight * attendeeStay.nightsCount,
-          });
+          return;
         }
+
+        const attendeeAccommodationData = attendeesAccommodationMap.get(attendeeId)!;
+        attendeesAccommodationMap.set(attendeeId, {
+          nights: attendeeAccommodationData.nights + nightsCount,
+          localAmount: attendeeAccommodationData.localAmount + localAmountPerNight * nightsCount,
+          foreignAmount:
+            attendeeAccommodationData.foreignAmount + foreignAmountPerNight * nightsCount,
+        });
       });
 
       if (attendeesStayNightsCount !== businessTripExpense.nights_count) {
@@ -337,9 +348,7 @@ export async function accommodationExpenseDataCollector(
         throw new BusinessTripError('Accommodation expenses: attendees nights count mismatch');
       }
 
-      category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-      category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
+      category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
       category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
     }),
   );
@@ -349,13 +358,47 @@ export async function accommodationExpenseDataCollector(
     destination,
     taxVariables,
   );
+
+  function calculateMaxTaxableAttendeeAmount(totalAttendeeNights: number) {
+    let maxTaxableUsd = 0;
+
+    if (totalAttendeeNights <= 7) {
+      // up to 7 days
+      maxTaxableUsd += totalAttendeeNights * upToSevenNights;
+    } else if (totalAttendeeNights > 90) {
+      // over 90 days
+      maxTaxableUsd += 90 * eightOrMoreNights;
+    } else {
+      // 8 to 90 days
+      const remainingNights = totalAttendeeNights - 7;
+      maxTaxableUsd += 7 * upToSevenNights + remainingNights * upToSevenNights * 0.75;
+    }
+
+    maxTaxableUsd *= -1;
+
+    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
+
+    return maxTaxableUsd;
+  }
+
   let unAccommodatedDays = 0;
 
-  for (const [
-    attendeeId,
-    { nights: accommodationNights, localAmount, foreignAmount },
-  ] of Array.from(attendeesAccommodationMap.entries())) {
-    const totalNights = attendeesMap.get(attendeeId)?.nightsCount ?? 0;
+  // set taxable amounts
+  for (const [attendeeId, { nightsCount: totalNights }] of Array.from(attendeesMap.entries())) {
+    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(totalNights);
+
+    if (!attendeesAccommodationMap.has(attendeeId)) {
+      unAccommodatedDays += totalNights;
+      continue;
+    }
+
+    const {
+      nights: accommodationNights,
+      localAmount,
+      foreignAmount,
+    } = attendeesAccommodationMap.get(attendeeId)!;
+
     if (accommodationNights > totalNights) {
       console.error(
         `Accommodated nights (${accommodationNights}) exceed total nights (${totalNights})`,
@@ -366,24 +409,8 @@ export async function accommodationExpenseDataCollector(
     }
 
     if (totalNights > accommodationNights) {
-      unAccommodatedDays += totalNights - accommodationNights + 1;
+      unAccommodatedDays += totalNights - accommodationNights;
     }
-
-    let maxTaxableUsd = 0;
-
-    if (accommodationNights <= 7) {
-      // up to 7 days
-      maxTaxableUsd += accommodationNights * upToSevenNights;
-    } else if (accommodationNights > 90) {
-      // over 90 days
-      maxTaxableUsd += 90 * eightOrMoreNights;
-    } else {
-      // 8 to 90 days
-      const remainingNights = accommodationNights - 7;
-      maxTaxableUsd += 7 * upToSevenNights + remainingNights * upToSevenNights * 0.75;
-    }
-
-    maxTaxableUsd *= -1;
 
     const taxableAmount = Math.max(foreignAmount, maxTaxableUsd);
     const taxablePortion = taxableAmount / foreignAmount;
@@ -404,8 +431,8 @@ export async function otherExpensesDataCollector(
   // populate category
   partialSummaryData['OTHER'] ??= {};
   const category = partialSummaryData['OTHER'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   if (otherExpenses.length === 0) {
     return void 0;
@@ -420,8 +447,10 @@ export async function otherExpensesDataCollector(
 
       category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
       category[DEFAULT_LOCAL_CURRENCY]!.taxable += localAmount;
+      category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += localAmount;
       category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
       category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.taxable += foreignAmount;
+      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += foreignAmount;
     }),
   );
 
@@ -444,9 +473,10 @@ export async function travelAndSubsistenceExpensesDataCollector(
   // populate category
   partialSummaryData['TRAVEL_AND_SUBSISTENCE'] ??= {};
   const category = partialSummaryData['TRAVEL_AND_SUBSISTENCE'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
+  // calculate max taxable amounts
   const { max_tns_with_accommodation, max_tns_without_accommodation } = taxVariables;
   const maxExpenseWithAccommodation = Number(max_tns_with_accommodation);
   const maxExpenseWithoutAccommodation = Number(max_tns_without_accommodation);
@@ -455,6 +485,24 @@ export async function travelAndSubsistenceExpensesDataCollector(
     throw new BusinessTripError('Tax variables are not set');
   }
 
+  const totalBusinessDays = Array.from(attendees.values()).reduce(
+    (acc, attendee) => acc + attendee.daysCount,
+    0,
+  );
+  const accommodatedDays = totalBusinessDays - unAccommodatedDays;
+
+  const increasedLimitFactor = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+
+  const maxTaxableUsd =
+    (maxExpenseWithAccommodation * accommodatedDays +
+      maxExpenseWithoutAccommodation * unAccommodatedDays) *
+    increasedLimitFactor *
+    -1;
+
+  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += 0; // TODO: calculate
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += maxTaxableUsd;
+
+  // set actual expense amounts
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense => {
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
@@ -467,20 +515,7 @@ export async function travelAndSubsistenceExpensesDataCollector(
     }),
   );
 
-  const totalBusinessDays = Array.from(attendees.values()).reduce(
-    (acc, attendee) => acc + attendee.daysCount,
-    0,
-  );
-  const accommodatedDays = totalBusinessDays - unAccommodatedDays;
-
-  const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
-
-  const maxTaxableUsd =
-    (maxExpenseWithAccommodation * accommodatedDays +
-      maxExpenseWithoutAccommodation * unAccommodatedDays) *
-    increasedLimitDestination *
-    -1;
-
+  // set taxable amounts
   const taxableAmount = Math.max(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
     maxTaxableUsd,
@@ -490,7 +525,6 @@ export async function travelAndSubsistenceExpensesDataCollector(
       ? 0
       : taxableAmount / category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total;
 
-  // update amounts
   category[DEFAULT_LOCAL_CURRENCY].taxable +=
     category[DEFAULT_LOCAL_CURRENCY].total * taxablePortion;
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += taxableAmount;
@@ -508,18 +542,12 @@ export async function carRentalExpensesDataCollector(
   // populate category
   partialSummaryData['CAR_RENTAL'] ??= {};
   const category = partialSummaryData['CAR_RENTAL'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0 };
-
-  const { max_car_rental_per_day } = taxVariables;
-  const maxDailyRentalAmount = Number(max_car_rental_per_day);
-
-  if (Number.isNaN(maxDailyRentalAmount)) {
-    throw new BusinessTripError('Tax variables are not set');
-  }
+  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   let rentalDays = 0;
 
+  // set actual expense amounts
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense => {
       if (!businessTripExpense.is_fuel_expense) {
@@ -536,10 +564,22 @@ export async function carRentalExpensesDataCollector(
     }),
   );
 
+  // set max taxable amounts
+  const { max_car_rental_per_day } = taxVariables;
+  const maxDailyRentalAmount = Number(max_car_rental_per_day);
+
+  if (Number.isNaN(maxDailyRentalAmount)) {
+    throw new BusinessTripError('Tax variables are not set');
+  }
+
   const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
 
   const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination * -1;
 
+  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += 0; // TODO: calculate
+  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += maxTaxableUsd;
+
+  // set taxable amounts
   const taxableAmount = Math.max(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
     maxTaxableUsd,
@@ -549,7 +589,6 @@ export async function carRentalExpensesDataCollector(
       ? 0
       : taxableAmount / category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total;
 
-  // update amounts
   category[DEFAULT_LOCAL_CURRENCY].taxable +=
     category[DEFAULT_LOCAL_CURRENCY].total * taxablePortion;
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += taxableAmount;

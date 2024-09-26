@@ -37,7 +37,7 @@ const getExchangeRatesByDates = sql<IGetExchangeRatesByDatesQuery>`
 })
 export class FiatExchangeProvider {
   cache = getCacheInstance({
-    stdTTL: 60 * 5,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
 
   constructor(private dbProvider: DBProvider) {}

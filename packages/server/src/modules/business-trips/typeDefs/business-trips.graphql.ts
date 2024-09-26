@@ -66,10 +66,12 @@ export default gql`
   " represent business trip summary data row "
   type BusinessTripSummaryRow {
     type: BusinessTripSummaryCategories!
-    totalForeignCurrencies: [FinancialAmount!]!
+    totalForeignCurrency: FinancialAmount!
     totalLocalCurrency: FinancialAmount
-    taxableForeignCurrencies: [FinancialAmount!]!
+    taxableForeignCurrency: FinancialAmount!
     taxableLocalCurrency: FinancialAmount
+    maxTaxableForeignCurrency: FinancialAmount!
+    maxTaxableLocalCurrency: FinancialAmount
     excessExpenditure: FinancialAmount
   }
 
