@@ -7,7 +7,7 @@ import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/ty
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
 import type { LedgerBalanceInfoType, LedgerProto, StrictLedgerProto } from '@shared/types';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
@@ -257,7 +257,9 @@ export async function getLedgerBalanceInfo(
           businessIdentification = `"${businessName}"`;
         }
       }
-      errors.add(`Business ${businessIdentification} is unbalanced (By ${amount})`);
+      errors.add(
+        `Business ${businessIdentification} is unbalanced (By ${amount.toFixed(2)}${getCurrencySymbol(DEFAULT_LOCAL_CURRENCY)})`,
+      );
       isBalanced = false;
     }
     unbalancedEntities.push({
