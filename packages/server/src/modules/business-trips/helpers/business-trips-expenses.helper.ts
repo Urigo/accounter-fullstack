@@ -1,13 +1,22 @@
-import { GraphQLError } from 'graphql';
+import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
+import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { BUSINESS_TRIP_TAX_CATEGORY_ID, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
-import type { BusinessTripExpenseCategories } from '@shared/gql-types';
+import {
+  BUSINESS_TRIP_TAG_ID,
+  BUSINESS_TRIP_TAX_CATEGORY_ID,
+  DEFAULT_FINANCIAL_ENTITY_ID,
+} from '@shared/constants';
+import type {
+  AddBusinessTripTravelAndSubsistenceExpenseInput,
+  BusinessTripExpenseCategories,
+} from '@shared/gql-types';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
@@ -193,12 +202,16 @@ export async function coreExpenseUpdate(
   return updatedTripExpense;
 }
 
-export async function generateChargeForEmployeePayment(injector: Injector, businessTripId: string) {
+export async function generateChargeForEmployeePayment(
+  injector: Injector,
+  businessTripId: string,
+  description?: string,
+) {
   try {
     const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
       ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       taxCategoryId: BUSINESS_TRIP_TAX_CATEGORY_ID,
-      userDescription: 'Employee payment charge',
+      userDescription: description || 'Employee payment charge',
     });
 
     if (!chargeId) {
@@ -262,3 +275,66 @@ export const updateExistingTripExpense = async (
   };
   await Promise.all([updateTransactionMatchPromise, insertToCategoryPromise()]);
 };
+
+export async function createTravelAndSubsistenceExpense(
+  injector: Injector,
+  fields: AddBusinessTripTravelAndSubsistenceExpenseInput,
+): Promise<string> {
+  try {
+    const coreExpensePromise = injector
+      .get(BusinessTripExpensesProvider)
+      .insertBusinessTripExpense({
+        businessTripId: fields.businessTripId,
+        category: 'TRAVEL_AND_SUBSISTENCE',
+      })
+      .then(res => res[0]);
+
+    const chargeGenerationPromise = generateChargeForEmployeePayment(
+      injector,
+      fields.businessTripId,
+      fields.expenseType ?? undefined,
+    );
+
+    const [coreExpense, chargeId] = await Promise.all([
+      coreExpensePromise,
+      chargeGenerationPromise,
+    ]);
+
+    const [charge] = await Promise.all([
+      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+      injector
+        .get(BusinessTripTravelAndSubsistenceExpensesProvider)
+        .insertBusinessTripTravelAndSubsistenceExpense({
+          id: coreExpense.id,
+          expenseType: fields.expenseType,
+        }),
+      injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({
+        businessTripExpenseId: coreExpense.id,
+        chargeId,
+        date: fields.date,
+        valueDate: fields.valueDate,
+        amount: fields.amount,
+        currency: fields.currency,
+        employeeBusinessId: fields.employeeBusinessId,
+      }),
+      injector.get(ChargeTagsProvider).insertChargeTag({ chargeId, tagId: BUSINESS_TRIP_TAG_ID }),
+    ]);
+
+    if (!charge) {
+      throw new GraphQLError('Failed to generate charge for employee payment');
+    }
+
+    // generate ledger records
+    await generateLedgerRecordsForBusinessTrip(
+      charge,
+      { insertLedgerRecordsIfNotExists: true },
+      { injector },
+      {} as GraphQLResolveInfo,
+    );
+
+    return coreExpense.id;
+  } catch (e) {
+    console.error(`Error adding new business trip travel & subsistence expense`, e);
+    throw new GraphQLError('Error adding new business trip travel & subsistence expense');
+  }
+}

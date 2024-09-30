@@ -137,6 +137,8 @@ export default gql`
     addBusinessTripTravelAndSubsistenceExpense(
       fields: AddBusinessTripTravelAndSubsistenceExpenseInput!
     ): UUID! @auth(role: ACCOUNTANT)
+    creditShareholdersBusinessTripTravelAndSubsistence(businessTripId: UUID!): [UUID!]!
+      @auth(role: ACCOUNTANT)
     addBusinessTripCarRentalExpense(fields: AddBusinessTripCarRentalExpenseInput!): UUID!
       @auth(role: ACCOUNTANT)
   }

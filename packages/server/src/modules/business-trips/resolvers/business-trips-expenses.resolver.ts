@@ -3,6 +3,7 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import {
   coreExpenseUpdate,
+  createTravelAndSubsistenceExpense,
   generateChargeForEmployeePayment,
   updateExistingTripExpense,
 } from '../helpers/business-trips-expenses.helper.js';
@@ -19,6 +20,7 @@ import type {
   IGetBusinessTripsAttendeesByBusinessIdsResult,
 } from '../types.js';
 import { commonBusinessTripExpenseFields } from './common.js';
+import { creditShareholdersBusinessTripTravelAndSubsistence } from './credit-shareholders-business-trip-travel-and-subsistence.resolver.js';
 
 export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
@@ -411,57 +413,15 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip other expense');
       }
     },
-    addBusinessTripTravelAndSubsistenceExpense: async (_, { fields }, { injector }) => {
-      try {
-        const coreExpensePromise = injector
-          .get(BusinessTripExpensesProvider)
-          .insertBusinessTripExpense({
-            businessTripId: fields.businessTripId,
-            category: 'FLIGHT',
-          })
-          .then(res => res[0]);
-
-        const chargeGenerationPromise = generateChargeForEmployeePayment(
-          injector,
-          fields.businessTripId,
-        );
-
-        const [coreExpense, chargeId] = await Promise.all([
-          coreExpensePromise,
-          chargeGenerationPromise,
-        ]);
-
-        await Promise.all([
-          injector
-            .get(BusinessTripTravelAndSubsistenceExpensesProvider)
-            .insertBusinessTripTravelAndSubsistenceExpense({
-              id: coreExpense.id,
-              expenseType: fields.expenseType,
-            }),
-          injector.get(BusinessTripEmployeePaymentsProvider).insertBusinessTripEmployeePayment({
-            businessTripExpenseId: coreExpense.id,
-            chargeId,
-            date: fields.date,
-            valueDate: fields.valueDate,
-            amount: fields.amount,
-            currency: fields.currency,
-            employeeBusinessId: fields.employeeBusinessId,
-          }),
-        ]);
-
-        return coreExpense.id;
-      } catch (e) {
-        console.error(`Error adding new business trip travel & subsistence expense`, e);
-        throw new GraphQLError('Error adding new business trip travel & subsistence expense');
-      }
-    },
+    addBusinessTripTravelAndSubsistenceExpense: async (_, { fields }, { injector }) =>
+      createTravelAndSubsistenceExpense(injector, fields),
     addBusinessTripCarRentalExpense: async (_, { fields }, { injector }) => {
       try {
         const coreExpensePromise = injector
           .get(BusinessTripExpensesProvider)
           .insertBusinessTripExpense({
             businessTripId: fields.businessTripId,
-            category: 'FLIGHT',
+            category: 'CAR_RENTAL',
           })
           .then(res => res[0]);
 
@@ -498,6 +458,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip car rental expense');
       }
     },
+    creditShareholdersBusinessTripTravelAndSubsistence,
   },
   BusinessTripAccommodationExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'ACCOMMODATION',

@@ -131,7 +131,8 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         .get(BusinessTripCarRentalExpensesProvider)
         .getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    summary: businessTripSummary,
+    summary: async (dbBusinessTrip, _, { injector }) =>
+      businessTripSummary(injector, dbBusinessTrip),
     uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
       const transactions = (await injector
         .get(BusinessTripExpensesProvider)
