@@ -1,5 +1,30 @@
 # @accounter/client
 
+## 0.0.3
+
+### Patch Changes
+
+- [#1194](https://github.com/Urigo/accounter-fullstack/pull/1194)
+  [`29bde12`](https://github.com/Urigo/accounter-fullstack/commit/29bde12f28b47ecbe7e3d699aa4cbcbb809dca62)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`date-fns@4.1.0` ↗︎](https://www.npmjs.com/package/date-fns/v/4.1.0) (from
+    `3.6.0`, in `dependencies`)
+
+- [#1214](https://github.com/Urigo/accounter-fullstack/pull/1214)
+  [`328fbc4`](https://github.com/Urigo/accounter-fullstack/commit/328fbc4af3595b3705a65d1b23f969f034046c9a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.446.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.446.0) (from
+    `0.445.0`, in `dependencies`)
+
+- [#1226](https://github.com/Urigo/accounter-fullstack/pull/1226)
+  [`3ed9c7b`](https://github.com/Urigo/accounter-fullstack/commit/3ed9c7ba32f0563144ca7383de913d74580859eb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`vaul@0.9.9` ↗︎](https://www.npmjs.com/package/vaul/v/0.9.9) (from `0.9.6`,
+    in `dependencies`)
+
 ## 0.0.2
 
 ### Patch Changes
