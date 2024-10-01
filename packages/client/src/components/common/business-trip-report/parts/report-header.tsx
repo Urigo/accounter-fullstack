@@ -5,6 +5,7 @@ import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graph
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { CopyToClipboardButton } from '../../index.js';
 import { AccountantApproval } from '../buttons/accountant-approval.js';
+import { BusinessTripToggleMenu } from './business-trip-toggle-menu.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,6 +42,7 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
             isLink
             content={`${window.location.origin}/business-trips/${businessTrip.id}`}
           />
+          <BusinessTripToggleMenu businessTripId={businessTrip.id} />
         </div>
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>

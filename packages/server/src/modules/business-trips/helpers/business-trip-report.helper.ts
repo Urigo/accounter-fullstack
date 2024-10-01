@@ -37,6 +37,11 @@ export type AttendeeInfo = {
   nightsCount: number;
 };
 
+type AccommodationTaxVariables = {
+  upToSevenNights: number;
+  eightOrMoreNights: number;
+};
+
 export function convertSummaryCategoryDataToRow(
   category: BusinessTripSummaryCategories,
   data: SummaryCategoryData,
@@ -71,7 +76,12 @@ export function calculateTotalReportSummaryCategory(data: Partial<SummaryData>) 
   return totalSumCategory;
 }
 
-function getExpenseCoreData(tripExpense: IGetBusinessTripsExpensesByBusinessTripIdsResult): {
+export function getExpenseCoreData(
+  tripExpense: Pick<
+    IGetBusinessTripsExpensesByBusinessTripIdsResult,
+    'payed_by_employee' | 'amount' | 'date' | 'currency' | 'value_date' | 'id'
+  >,
+): {
   amount: number;
   currency: Currency;
   date: Date;
@@ -320,7 +330,7 @@ export async function accommodationExpenseDataCollector(
       ) as BusinessTripAttendeeStayInput[];
       let attendeesStayNightsCount = 0;
 
-      attendeesStay.map(({ attendeeId, nightsCount }) => {
+      attendeesStay.map(({ attendeeId, nightsCount = 0 }) => {
         attendeesStayNightsCount += nightsCount;
 
         if (!attendeesAccommodationMap.has(attendeeId)) {
@@ -354,39 +364,16 @@ export async function accommodationExpenseDataCollector(
   );
 
   // calculate taxable amount
-  const { upToSevenNights, eightOrMoreNights } = accommodationMaxTaxableUSD(
-    destination,
-    taxVariables,
-  );
-
-  function calculateMaxTaxableAttendeeAmount(totalAttendeeNights: number) {
-    let maxTaxableUsd = 0;
-
-    if (totalAttendeeNights <= 7) {
-      // up to 7 days
-      maxTaxableUsd += totalAttendeeNights * upToSevenNights;
-    } else if (totalAttendeeNights > 90) {
-      // over 90 days
-      maxTaxableUsd += 90 * eightOrMoreNights;
-    } else {
-      // 8 to 90 days
-      const remainingNights = totalAttendeeNights - 7;
-      maxTaxableUsd += 7 * upToSevenNights + remainingNights * upToSevenNights * 0.75;
-    }
-
-    maxTaxableUsd *= -1;
-
-    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
-
-    return maxTaxableUsd;
-  }
+  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destination, taxVariables);
 
   let unAccommodatedDays = 0;
 
   // set taxable amounts
   for (const [attendeeId, { nightsCount: totalNights }] of Array.from(attendeesMap.entries())) {
-    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(totalNights);
+    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(totalNights, accommodationTaxVariables);
+
+    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
 
     if (!attendeesAccommodationMap.has(attendeeId)) {
       unAccommodatedDays += totalNights;
@@ -476,28 +463,17 @@ export async function travelAndSubsistenceExpensesDataCollector(
   category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
-  // calculate max taxable amounts
-  const { max_tns_with_accommodation, max_tns_without_accommodation } = taxVariables;
-  const maxExpenseWithAccommodation = Number(max_tns_with_accommodation);
-  const maxExpenseWithoutAccommodation = Number(max_tns_without_accommodation);
-
-  if (Number.isNaN(maxExpenseWithAccommodation) || Number.isNaN(maxExpenseWithoutAccommodation)) {
-    throw new BusinessTripError('Tax variables are not set');
-  }
-
   const totalBusinessDays = Array.from(attendees.values()).reduce(
     (acc, attendee) => acc + attendee.daysCount,
     0,
   );
-  const accommodatedDays = totalBusinessDays - unAccommodatedDays;
 
-  const increasedLimitFactor = isIncreasedLimitDestination(destination) ? 1.25 : 1;
-
-  const maxTaxableUsd =
-    (maxExpenseWithAccommodation * accommodatedDays +
-      maxExpenseWithoutAccommodation * unAccommodatedDays) *
-    increasedLimitFactor *
-    -1;
+  const maxTaxableUsd = getAttendeeTravelAndSubsistenceMaxTax(
+    totalBusinessDays,
+    unAccommodatedDays,
+    destination,
+    taxVariables,
+  );
 
   category[DEFAULT_LOCAL_CURRENCY].maxTaxable += 0; // TODO: calculate
   category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += maxTaxableUsd;
@@ -633,10 +609,10 @@ function isIncreasedLimitDestination(destination: string | null) {
   return increasedLimitDestinations.includes(destination.toLowerCase());
 }
 
-function accommodationMaxTaxableUSD(
+function getAccommodationTaxVariablesUSD(
   destination: string | null,
   taxVariables: IGetAllTaxVariablesResult,
-) {
+): AccommodationTaxVariables {
   const { max_accommodation_per_night_first_7_nights, max_accommodation_per_night_nights_8_to_90 } =
     taxVariables;
   const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
@@ -658,4 +634,64 @@ function accommodationMaxTaxableUSD(
 
 export function onlyUnique(value: string, index: number, array: string[]) {
   return array.indexOf(value) === index;
+}
+
+function calculateMaxTaxableAttendeeAmount(
+  totalAttendeeNights: number,
+  { upToSevenNights, eightOrMoreNights }: AccommodationTaxVariables,
+) {
+  let maxTaxableUsd = 0;
+
+  if (totalAttendeeNights <= 7) {
+    // up to 7 days
+    maxTaxableUsd += totalAttendeeNights * upToSevenNights;
+  } else if (totalAttendeeNights > 90) {
+    // over 90 days
+    maxTaxableUsd += 90 * eightOrMoreNights;
+  } else {
+    // 8 to 90 days
+    const remainingNights = totalAttendeeNights - 7;
+    maxTaxableUsd += 7 * upToSevenNights + remainingNights * upToSevenNights * 0.75;
+  }
+
+  maxTaxableUsd *= -1;
+
+  return maxTaxableUsd;
+}
+
+export function getAttendeeAccommodationMaxTax(
+  totalAttendeeNights: number,
+  destination: string | null,
+  taxVariables: IGetAllTaxVariablesResult,
+): number {
+  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destination, taxVariables);
+
+  return calculateMaxTaxableAttendeeAmount(totalAttendeeNights, accommodationTaxVariables);
+}
+
+export function getAttendeeTravelAndSubsistenceMaxTax(
+  totalBusinessDays: number,
+  unAccommodatedDays: number,
+  destination: string | null,
+  taxVariables: IGetAllTaxVariablesResult,
+): number {
+  const { max_tns_with_accommodation, max_tns_without_accommodation } = taxVariables;
+  const maxExpenseWithAccommodation = Number(max_tns_with_accommodation);
+  const maxExpenseWithoutAccommodation = Number(max_tns_without_accommodation);
+
+  if (Number.isNaN(maxExpenseWithAccommodation) || Number.isNaN(maxExpenseWithoutAccommodation)) {
+    throw new BusinessTripError('Tax variables are not set');
+  }
+
+  const accommodatedDays = totalBusinessDays - unAccommodatedDays;
+
+  const increasedLimitFactor = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+
+  const maxTaxableUsd =
+    (maxExpenseWithAccommodation * accommodatedDays +
+      maxExpenseWithoutAccommodation * unAccommodatedDays) *
+    increasedLimitFactor *
+    -1;
+
+  return maxTaxableUsd;
 }

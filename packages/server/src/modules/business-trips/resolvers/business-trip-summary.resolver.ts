@@ -1,6 +1,7 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import type { BusinessTripSummaryCategories } from '@shared/gql-types';
+import { Injector } from 'graphql-modules';
+import type { BusinessTripSummaryCategories, ResolversTypes } from '@shared/gql-types';
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
@@ -16,7 +17,7 @@ import {
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripTaxVariablesProvider } from '../providers/business-trips-tax-variables.provider.js';
-import type { BusinessTripsModule } from '../types.js';
+import type { BusinessTripProto } from '../types.js';
 
 export class BusinessTripError extends Error {
   constructor(message: string) {
@@ -24,11 +25,10 @@ export class BusinessTripError extends Error {
   }
 }
 
-export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['summary'] = async (
-  dbBusinessTrip,
-  _,
-  { injector },
-) => {
+export async function businessTripSummary(
+  injector: Injector,
+  dbBusinessTrip: BusinessTripProto,
+): Promise<Awaited<ResolversTypes['BusinessTripSummary']>> {
   try {
     if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
       return {
@@ -143,7 +143,6 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
       }),
     ]);
 
-    // TODO: handle T&S
     await travelAndSubsistenceExpensesDataCollector(
       injector,
       travelAndSubsistenceExpenses,
@@ -178,4 +177,4 @@ export const businessTripSummary: BusinessTripsModule.BusinessTripResolvers['sum
     console.error(`Error fetching business trip expenses`, e);
     throw new GraphQLError((e as Error)?.message ?? `Error fetching business trip expenses`);
   }
-};
+}
