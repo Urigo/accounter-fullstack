@@ -2972,10 +2972,10 @@
     prop-types "^15.8.1"
     react-is "^18.3.1"
 
-"@mui/x-charts-vendor@7.18.0":
-  version "7.18.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.18.0.tgz#f8e26840bdc29311af629326063ea854b7a4608a"
-  integrity sha512-YPL7SP6W7t9jBIrK8WjmCtW/YoUmgr0BA7j2QE9bKX4VJLEUU498fEKik0ZJZyzyR7ov0MD3m7S+YCw1o5sqkw==
+"@mui/x-charts-vendor@7.19.0":
+  version "7.19.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts-vendor/-/x-charts-vendor-7.19.0.tgz#fb3fcfe3157f3bf2929a52bc87a2f909259f1f46"
+  integrity sha512-idHOi6U8mmX1ezKclv2p4QBrWxQIUSS+bd7rp2PGnf7XAPtUY/X9VTZvU1mDRawtyKjyzQD+vmSbYx9piytqAg==
   dependencies:
     "@babel/runtime" "^7.25.6"
     "@types/d3-color" "^3.1.3"
@@ -2993,14 +2993,14 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.18.0":
-  version "7.18.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.18.0.tgz#73d7281cc374e0fd63226adf2715f3b7b619c482"
-  integrity sha512-XvCX6sBj2aRw7MZcOPjKTEIwhj4j+ixw256bArQScSd+Y2BuHxAyfl/L6NPPWamckAPqJwjQ678jFH2s5t1f1w==
+"@mui/x-charts@7.19.0":
+  version "7.19.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.19.0.tgz#9fc201dbf777646792ba29dd3975165c69964a34"
+  integrity sha512-gOiSmb+bLIoGOGs+5uzEb7sau7KmjAKJI4+hORCjHUAOefmtHdiw39gZVne1Gcah+h6BIrWMkNJHk5djcCaGsg==
   dependencies:
     "@babel/runtime" "^7.25.6"
     "@mui/utils" "^5.16.6"
-    "@mui/x-charts-vendor" "7.18.0"
+    "@mui/x-charts-vendor" "7.19.0"
     "@mui/x-internals" "7.18.0"
     "@react-spring/rafz" "^9.7.4"
     "@react-spring/web" "^9.7.4"
