@@ -28,7 +28,7 @@
     "uuid": "10.0.0"
   },
   "devDependencies": {
-    "@types/lodash": "4.17.9",
+    "@types/lodash": "4.17.10",
     "@types/pg": "8.11.10",
     "@types/uuid": "10.0.0"
   }
