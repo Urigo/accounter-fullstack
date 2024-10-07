@@ -36,12 +36,19 @@ export type ChargeRequiredWrapper<
     owner_id: unknown;
     is_property: unknown;
     accountant_status: unknown;
+    updated_at: unknown;
+    created_at: unknown;
   },
-> = Omit<T, 'id' | 'owner_id' | 'is_property' | 'accountant_status'> & {
+> = Omit<
+  T,
+  'id' | 'owner_id' | 'is_property' | 'accountant_status' | 'updated_at' | 'created_at'
+> & {
   id: NonNullable<T['id']>;
   owner_id: NonNullable<T['owner_id']>;
   is_property: NonNullable<T['is_property']>;
   accountant_status: NonNullable<T['accountant_status']>;
+  updated_at: NonNullable<T['updated_at']>;
+  created_at: NonNullable<T['created_at']>;
 };
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`

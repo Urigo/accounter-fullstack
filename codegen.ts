@@ -46,6 +46,11 @@ const config: CodegenConfig = {
             input: 'string',
             output: 'string',
           },
+          URL: 'URL | string',
+          DateTime: {
+            input: 'Date',
+            output: 'Date',
+          },
         },
         enumValues: {
           ChargeSortByField: '@shared/enums#ChargeSortByField',
@@ -55,7 +60,7 @@ const config: CodegenConfig = {
           TransactionDirection: '@shared/enums#TransactionDirection',
         },
         mappers: {
-          MiscExpense: '@modules/misc-expenses/types.js#IGetExpensesByTransactionIdsResult',
+          MiscExpense: '@modules/misc-expenses/types.js#IGetExpensesByChargeIdsResult',
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',

@@ -1,13 +1,12 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Control, Controller } from 'react-hook-form';
+import { Controller, UseFormReturn } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
-  type Currency,
   type InsertMiscExpenseInput,
   type UpdateMiscExpenseInput,
 } from '../../../gql/graphql.js';
@@ -16,18 +15,14 @@ import { CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
-  control: Control<
-    T extends true ? Omit<InsertMiscExpenseInput, 'transacionId'> : UpdateMiscExpenseInput,
-    object
-  >;
-  currency: Currency;
+  formManager: UseFormReturn<InsertMiscExpenseInput | UpdateMiscExpenseInput, unknown, undefined>;
 }
 
 export const ModifyMiscExpenseFields = ({
-  control,
-  currency,
+  formManager,
   isInsert,
 }: Props<boolean>): ReactElement => {
+  const { control } = formManager;
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -68,10 +63,10 @@ export const ModifyMiscExpenseFields = ({
   return (
     <>
       <Controller
-        name="counterpartyId"
+        name="creditorId"
         control={control}
         rules={{
-          required: isInsert,
+          required: isInsert ? 'Required' : undefined,
         }}
         render={({ field, fieldState }): ReactElement => (
           <Select
@@ -80,7 +75,28 @@ export const ModifyMiscExpenseFields = ({
             data={financialEntities}
             value={field.value}
             disabled={fetchingFinancialEntities}
-            label="Counterparty"
+            label="Creditor"
+            placeholder="Scroll to see all options"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
+          />
+        )}
+      />
+      <Controller
+        name="debtorId"
+        control={control}
+        rules={{
+          required: isInsert ? 'Required' : undefined,
+        }}
+        render={({ field, fieldState }): ReactElement => (
+          <Select
+            {...field}
+            required={isInsert}
+            data={financialEntities}
+            value={field.value}
+            disabled={fetchingFinancialEntities}
+            label="Debtor"
             placeholder="Scroll to see all options"
             maxDropdownHeight={160}
             searchable
@@ -92,23 +108,40 @@ export const ModifyMiscExpenseFields = ({
         name="amount"
         control={control}
         rules={{
-          required: isInsert,
+          required: isInsert ? 'Required' : undefined,
         }}
-        render={({ field, fieldState }): ReactElement => (
-          <CurrencyInput
-            {...field}
-            required={isInsert}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            label="Amount"
-            currencyCodeProps={{ value: currency, label: 'Currency', disabled: true }}
+        render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
+          <Controller
+            name="currency"
+            control={control}
+            rules={{
+              required: isInsert ? 'Required' : undefined,
+            }}
+            render={({
+              field: currencyCodeField,
+              fieldState: currencyCodeFieldState,
+            }): ReactElement => (
+              <CurrencyInput
+                {...amountField}
+                required={isInsert}
+                value={amountField.value ?? undefined}
+                error={amountFieldState.error?.message || currencyCodeFieldState.error?.message}
+                label="Amount"
+                currencyCodeProps={{
+                  ...currencyCodeField,
+                  required: isInsert,
+                  label: 'Currency',
+                }}
+              />
+            )}
           />
         )}
       />
       <Controller
-        name="date"
+        name="invoiceDate"
         control={control}
         rules={{
+          required: isInsert ? 'Required' : undefined,
           pattern: {
             value: TIMELESS_DATE_REGEX,
             message: 'Date must be im format yyyy-mm-dd',
@@ -119,6 +152,7 @@ export const ModifyMiscExpenseFields = ({
           return (
             <DatePickerInput
               {...field}
+              required={isInsert}
               onChange={(date?: Date | string | null): void => {
                 const newDate = date
                   ? typeof date === 'string'
@@ -128,18 +162,41 @@ export const ModifyMiscExpenseFields = ({
                 if (newDate !== value) field.onChange(newDate);
               }}
               value={date}
-              label="Date"
+              label="Invoice Date"
               popoverProps={{ withinPortal: true }}
             />
           );
         }}
       />
       <Controller
+        name="valueDate"
+        control={control}
+        rules={{
+          required: isInsert ? 'Required' : undefined,
+          pattern: {
+            value: TIMELESS_DATE_REGEX,
+            message: 'Date must be im format yyyy-mm-dd',
+          },
+        }}
+        render={({ field }): ReactElement => (
+          <DatePickerInput
+            {...field}
+            required={isInsert}
+            label="Value Date"
+            popoverProps={{ withinPortal: true }}
+          />
+        )}
+      />
+      <Controller
         name="description"
         control={control}
+        rules={{
+          required: isInsert ? 'Required' : undefined,
+        }}
         render={({ field, fieldState }): ReactElement => (
           <TextInput
             {...field}
+            required={isInsert}
             value={field.value ?? undefined}
             error={fieldState.error?.message}
             label="Description"

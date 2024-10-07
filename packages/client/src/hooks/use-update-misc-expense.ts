@@ -8,17 +8,9 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateMiscExpense(
-    $transactionId: UUID!
-    $counterpartyId: UUID!
-    $fields: UpdateMiscExpenseInput!
-  ) {
-    updateMiscExpense(
-      transactionId: $transactionId
-      counterpartyId: $counterpartyId
-      fields: $fields
-    ) {
-      transactionId
+  mutation UpdateMiscExpense($id: UUID!, $fields: UpdateMiscExpenseInput!) {
+    updateMiscExpense(id: $id, fields: $fields) {
+      id
     }
   }
 `;
@@ -44,9 +36,7 @@ export const useUpdateMiscExpense = (): UseUpdateMiscExpense => {
       new Promise<UpdateMiscExpenseMutation['updateMiscExpense']>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
-            console.error(
-              `Error updating misc expense for transaction ID [${variables.transactionId}]: ${res.error}`,
-            );
+            console.error(`Error updating misc expense ID [${variables.id}]: ${res.error}`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
@@ -54,9 +44,7 @@ export const useUpdateMiscExpense = (): UseUpdateMiscExpense => {
             return reject(res.error.message);
           }
           if (!res.data) {
-            console.error(
-              `Error updating misc expense for transaction ID [${variables.transactionId}]: No data returned`,
-            );
+            console.error(`Error updating misc expense ID [${variables.id}]: No data returned`);
             showNotification({
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',

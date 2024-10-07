@@ -7,40 +7,47 @@ export default gql`
   }
 
   extend type Mutation {
-    updateMiscExpense(
-      transactionId: UUID!
-      counterpartyId: UUID!
-      fields: UpdateMiscExpenseInput!
-    ): MiscExpense! @auth(role: ACCOUNTANT)
+    updateMiscExpense(id: UUID!, fields: UpdateMiscExpenseInput!): MiscExpense!
+      @auth(role: ACCOUNTANT)
     insertMiscExpense(fields: InsertMiscExpenseInput!): MiscExpense! @auth(role: ACCOUNTANT)
+    deleteMiscExpense(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " a misc expense  "
   type MiscExpense {
-    transaction: Transaction!
-    transactionId: UUID!
+    id: UUID!
     charge: Charge!
-    counterparty: FinancialEntity!
+    chargeId: UUID!
+    creditor: FinancialEntity!
+    debtor: FinancialEntity!
     amount: FinancialAmount!
     description: String
-    date: TimelessDate
+    valueDate: TimelessDate!
+    invoiceDate: TimelessDate!
   }
 
   " input variables for updateMiscExpense "
   input UpdateMiscExpenseInput {
+    chargeId: UUID
+    creditorId: UUID
+    debtorId: UUID
     amount: Float
+    currency: Currency
     description: String
-    date: TimelessDate
-    counterpartyId: UUID
+    valueDate: DateTime
+    invoiceDate: TimelessDate
   }
 
   " input variables for insertMiscExpense "
   input InsertMiscExpenseInput {
-    transactionId: UUID!
-    amount: Float
+    chargeId: UUID!
+    creditorId: UUID!
+    debtorId: UUID!
+    amount: Float!
+    currency: Currency!
     description: String
-    date: TimelessDate
-    counterpartyId: UUID
+    valueDate: DateTime!
+    invoiceDate: TimelessDate!
   }
 
   extend interface Charge {

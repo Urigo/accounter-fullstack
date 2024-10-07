@@ -4,7 +4,7 @@ import type { CommonModule } from '../types.js';
 import { TimelessDateScalar } from './timeless-date.js';
 
 export const scalarsResolvers: CommonModule.Resolvers = {
-  Date: DateTimeResolver,
+  DateTime: DateTimeResolver,
   URL: URLResolver,
   TimelessDate: TimelessDateScalar,
   UUID: UUIDResolver as GraphQLScalarType<string, string>,

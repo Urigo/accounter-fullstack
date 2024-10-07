@@ -40,7 +40,6 @@ module.exports = {
             exceptions: {
               types: [
                 'AccountantApproval',
-                'MiscExpense',
                 'BusinessTripSummary',
                 'BusinessTripSummaryRow',
                 'ChargeMetadata',

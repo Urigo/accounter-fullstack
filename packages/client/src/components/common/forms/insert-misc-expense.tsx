@@ -1,82 +1,78 @@
-import { ReactElement, useCallback, useMemo, useState } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { useQuery } from 'urql';
-import { Loader } from '@mantine/core';
-import {
-  InsertMiscExpenseInput,
-  MiscExpenseTransactionFieldsDocument,
-} from '../../../gql/graphql.js';
+import { InsertMiscExpenseInput } from '../../../gql/graphql.js';
 import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query MiscExpenseTransactionFields($transactionId: UUID!) {
-    transactionsByIDs(transactionIDs: [$transactionId]) {
-      id
-      amount {
-        currency
-      }
-    }
-  }
-`;
-
 type Props = {
   onDone: () => void;
-  transactionId: string;
+  defaultValues?: Partial<Omit<InsertMiscExpenseInput, 'chargeId'>>;
+  chargeId: string;
 };
 
-type Input = Omit<InsertMiscExpenseInput, 'transactionId'>;
-
-export const InsertMiscExpense = ({ onDone, transactionId }: Props): ReactElement => {
-  const [isInserting, setIsInserting] = useState(false);
-  const {
-    control,
-    handleSubmit,
-    formState: { dirtyFields },
-  } = useForm<Input>();
+export const InsertMiscExpense = ({
+  onDone,
+  defaultValues = {},
+  chargeId,
+}: Props): ReactElement => {
   const { insertMiscExpense, fetching } = useInsertMiscExpense();
 
-  const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
-    query: MiscExpenseTransactionFieldsDocument,
-    variables: {
-      transactionId,
-    },
-  });
-
-  const transaction = useMemo(() => {
-    return transactionData?.transactionsByIDs[0];
-  }, [transactionData]);
-
   const onInsertDone = useCallback(
-    async (data: Input) => {
-      setIsInserting(true);
+    async (data: InsertMiscExpenseInput) => {
       await insertMiscExpense({
-        fields: { ...data, transactionId },
+        fields: data,
       });
       onDone();
-      setIsInserting(false);
     },
-    [insertMiscExpense, onDone, transactionId],
+    [insertMiscExpense, onDone],
   );
-  const onSubmit: SubmitHandler<Input> = data => {
+
+  return (
+    <InsertForm
+      chargeId={chargeId}
+      defaultValues={defaultValues}
+      onInsertDone={onInsertDone}
+      fetching={fetching}
+    />
+  );
+};
+
+type FormProps = {
+  onInsertDone: (data: InsertMiscExpenseInput) => Promise<void>;
+  chargeId: string;
+  defaultValues: Partial<Omit<InsertMiscExpenseInput, 'chargeId'>>;
+  fetching: boolean;
+};
+
+export const InsertForm = ({
+  onInsertDone,
+  chargeId,
+  defaultValues,
+  fetching,
+}: FormProps): ReactElement => {
+  const onSubmit: SubmitHandler<InsertMiscExpenseInput> = data => {
     if (data && Object.keys(data).length > 0) {
       onInsertDone({ ...data });
     }
   };
 
-  const isLoading = useMemo(() => {
-    return isInserting || fetchingTransaction || !transaction;
-  }, [isInserting, fetchingTransaction, transaction]);
+  const formManager = useForm<InsertMiscExpenseInput>({
+    defaultValues: {
+      chargeId,
+      ...defaultValues,
+    },
+  });
 
-  return isLoading ? (
-    <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
-  ) : (
+  const {
+    handleSubmit,
+    formState: { dirtyFields },
+  } = formManager;
+
+  return (
     <form>
       <div className="px-5 flex flex-col gap-5">
         <ModifyMiscExpenseFields
-          control={control}
-          currency={transaction!.amount.currency}
+          formManager={formManager as Parameters<typeof ModifyMiscExpenseFields>[0]['formManager']}
           isInsert
         />
         <div className="flex justify-right gap-5 mt-5">

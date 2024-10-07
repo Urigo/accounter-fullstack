@@ -27,6 +27,8 @@ export type TransactionRequiredWrapper<
     event_date: unknown;
     amount: unknown;
     current_balance: unknown;
+    created_at: unknown;
+    updated_at: unknown;
   },
 > = Omit<
   T,
@@ -38,6 +40,8 @@ export type TransactionRequiredWrapper<
   | 'event_date'
   | 'amount'
   | 'current_balance'
+  | 'created_at'
+  | 'updated_at'
 > & {
   id: NonNullable<T['id']>;
   account_id: NonNullable<T['account_id']>;
@@ -47,6 +51,8 @@ export type TransactionRequiredWrapper<
   event_date: NonNullable<T['event_date']>;
   amount: NonNullable<T['amount']>;
   current_balance: NonNullable<T['current_balance']>;
+  created_at: NonNullable<T['created_at']>;
+  updated_at: NonNullable<T['updated_at']>;
 };
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`

@@ -2,8 +2,6 @@ import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
-import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
-import { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
@@ -39,47 +37,11 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         .get(TransactionsProvider)
         .getTransactionByIdLoader.loadMany(DbTripExpense.transaction_ids);
 
-      const miscExpensesPromise = injector
-        .get(MiscExpensesProvider)
-        .getExpensesByTransactionIdLoader.loadMany(
-          Array.from(new Set(DbTripExpense.transaction_ids)),
-        );
+      const [transactions] = await Promise.all([transactionsPromise]);
 
-      const [transactions, miscExpenses] = await Promise.all([
-        transactionsPromise,
-        miscExpensesPromise,
-      ]);
-
-      const transactionsFromMiscExpenses = (
-        miscExpenses.filter(
-          expense => expense && !(expense instanceof Error),
-        ) as IGetExpensesByTransactionIdsResult[][]
-      ).flat();
-
-      const validTransactions = transactions.filter(
+      const allTransactions = transactions.filter(
         transaction => transaction && !(transaction instanceof Error),
       ) as IGetTransactionsByIdsResult[];
-
-      const allTransactions = [
-        ...validTransactions,
-        ...transactionsFromMiscExpenses.map(expense => {
-          const originTransaction = validTransactions.find(
-            t => !!t && 'id' in t && t.id === expense.transaction_id,
-          );
-
-          if (!originTransaction) {
-            return null;
-          }
-
-          const transaction: IGetTransactionsByIdsResult = {
-            ...originTransaction,
-            amount: (Number(expense.amount) * -1).toString(),
-            source_description: expense.description,
-            event_date: expense.date ?? originTransaction.event_date,
-          };
-          return transaction;
-        }),
-      ];
 
       let amount = 0;
 
