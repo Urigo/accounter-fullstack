@@ -45,11 +45,11 @@ export default gql`
     " user custom description "
     userDescription: String
     " minimal event date from linked transactions "
-    minEventDate: Date
+    minEventDate: DateTime
     " minimal debit date from linked transactions "
-    minDebitDate: Date
+    minDebitDate: DateTime
     " minimal date from linked documents "
-    minDocumentsDate: Date
+    minDocumentsDate: DateTime
     " metadata about the charge "
     metadata: ChargeMetadata
     " the tax year in which the action took place "
@@ -69,9 +69,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -88,9 +88,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -107,9 +107,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -126,9 +126,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -145,9 +145,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -164,9 +164,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -183,9 +183,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -202,9 +202,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -221,9 +221,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -240,9 +240,9 @@ export default gql`
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: Date
-    minDebitDate: Date
-    minDocumentsDate: Date
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -299,7 +299,7 @@ export default gql`
 
   " input variables for updateCharge "
   input UpdateChargeInput {
-    # createdAt: Date!
+    # createdAt: DateTime!
     # additionalDocument: [Linkable!]!
 
     # transactions: [Transaction!]!
@@ -346,9 +346,9 @@ export default gql`
   " represent charge's metadata"
   type ChargeMetadata {
     " when the initial charge was created from the first event we found "
-    createdAt: Date!
+    createdAt: DateTime!
     " when the charge was last updated "
-    updatedAt: Date!
+    updatedAt: DateTime!
     invoicesCount: Int!
     receiptsCount: Int!
     documentsCount: Int!

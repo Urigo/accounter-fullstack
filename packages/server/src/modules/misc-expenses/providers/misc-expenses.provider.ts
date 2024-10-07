@@ -3,64 +3,69 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
-  IGetAllAuthoritiesQuery,
+  IDeleteExpenseParams,
+  IDeleteExpenseQuery,
   IGetExpensesByChargeIdsQuery,
   IGetExpensesByChargeIdsResult,
-  IGetExpensesByTransactionIdsQuery,
   IInsertExpenseParams,
   IInsertExpenseQuery,
   IUpdateExpenseParams,
   IUpdateExpenseQuery,
 } from '../types.js';
 
-const getAllAuthorities = sql<IGetAllAuthoritiesQuery>`
-  SELECT * FROM accounter_schema.businesses
-  WHERE is_authority IS TRUE;`;
-
-const getExpensesByTransactionIds = sql<IGetExpensesByTransactionIdsQuery>`
-  SELECT *
-  FROM accounter_schema.authorities_misc_expenses
-  WHERE transaction_id IN $$transactionIds;`;
-
 const getExpensesByChargeIds = sql<IGetExpensesByChargeIdsQuery>`
-  SELECT t.charge_id, e.*
-  FROM accounter_schema.authorities_misc_expenses e
-  LEFT JOIN accounter_schema.transactions t
-    ON e.transaction_id = t.id
-  WHERE t.charge_id IN $$chargeIds;`;
+  SELECT e.*
+  FROM accounter_schema.misc_expenses e
+  WHERE e.charge_id IN $$chargeIds;`;
 
 const updateExpense = sql<IUpdateExpenseQuery>`
-  UPDATE accounter_schema.authorities_misc_expenses
+  UPDATE accounter_schema.misc_expenses
   SET
-  transaction_id = COALESCE(
-    $transactionId,
-    transaction_id
+  charge_id = COALESCE(
+    $chargeId,
+    charge_id
   ),
-  counterparty = COALESCE(
-    $counterpartyId,
-    counterparty
+  creditor_id = COALESCE(
+    $creditorId,
+    creditor_id
+  ),
+  debtor_id = COALESCE(
+    $debtorId,
+    debtor_id
   ),
   amount = COALESCE(
     $amount,
     amount
   ),
+  currency = COALESCE(
+    $currency,
+    currency
+  ),
   description = COALESCE(
     $description,
     description
   ),
-  date = COALESCE(
-    $date,
-    date
+  invoice_date = COALESCE(
+    $invoiceDate,
+    invoice_date
+  ),
+  value_date = COALESCE(
+    $valueDate,
+    value_date
   )
   WHERE
-    transaction_id = $transactionId
-    AND counterparty = $originalCounterpartyId
+    id = $miscExpenseId
   RETURNING *;`;
 
 const insertExpense = sql<IInsertExpenseQuery>`
-  INSERT INTO accounter_schema.authorities_misc_expenses (transaction_id, counterparty, amount, description, date)
-  VALUES ($transactionId, $counterpartyId, $amount, $description, $date)
-  RETURNING *`;
+  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
+  VALUES ($chargeId, $creditorId, $debtorId, $amount, $currency, $description, $invoiceDate, $valueDate)
+  RETURNING *;`;
+
+const deleteExpense = sql<IDeleteExpenseQuery>`
+  DELETE FROM accounter_schema.misc_expenses
+  WHERE id = $id
+  RETURNING id;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -68,22 +73,6 @@ const insertExpense = sql<IInsertExpenseQuery>`
 })
 export class MiscExpensesProvider {
   constructor(private dbProvider: DBProvider) {}
-
-  public getAllAuthorities() {
-    return getAllAuthorities.run(undefined, this.dbProvider);
-  }
-
-  private async batchExpensesByTransactionIds(transactionIds: readonly string[]) {
-    const expenses = await getExpensesByTransactionIds.run({ transactionIds }, this.dbProvider);
-    return transactionIds.map(id => expenses.filter(expense => expense.transaction_id === id));
-  }
-
-  public getExpensesByTransactionIdLoader = new DataLoader(
-    (transactionIds: readonly string[]) => this.batchExpensesByTransactionIds(transactionIds),
-    {
-      cache: false,
-    },
-  );
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
     const expenses = await getExpensesByChargeIds.run({ chargeIds }, this.dbProvider);
@@ -111,5 +100,9 @@ export class MiscExpensesProvider {
 
   public insertExpense(params: IInsertExpenseParams) {
     return insertExpense.run(params, this.dbProvider);
+  }
+
+  public deleteMiscExpense(params: IDeleteExpenseParams) {
+    return deleteExpense.run(params, this.dbProvider);
   }
 }

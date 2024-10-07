@@ -1,6 +1,7 @@
 import { ReactElement } from 'react';
 import { TableMiscExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.js';
 import { EditMiscExpenseModal } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -8,16 +9,22 @@ import { EditMiscExpenseModal } from '../../common/index.js';
   fragment TableMiscExpensesFields on Charge {
     id
     miscExpenses {
+      id
       amount {
         formatted
       }
       description
-      date
-      counterparty {
+      invoiceDate
+      valueDate
+      creditor {
         id
         name
       }
-      transactionId
+      debtor {
+        id
+        name
+      }
+      chargeId
       ...EditMiscExpenseFields
     }
   }
@@ -36,30 +43,39 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
     <table className="w-full h-full">
       <thead>
         <tr>
-          <th>Counterparty</th>
+          <th>Creditor</th>
+          <th>Debtor</th>
           <th>Amount</th>
-          <th>Date</th>
+          <th>Invoice Date</th>
+          <th>Value Date</th>
           <th>Description</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {miscExpenses?.map(expense => (
-          <tr key={`${expense?.transactionId}-${expense?.counterparty}-${expense?.date}`}>
+          <tr key={expense?.id}>
             <td>
-              <div>{expense?.counterparty?.name}</div>
+              <div>{expense.creditor?.name}</div>
             </td>
             <td>
-              <div>{expense?.amount?.formatted}</div>
+              <div>{expense.debtor?.name}</div>
             </td>
             <td>
-              <div>{expense?.date}</div>
+              <div>{expense.amount?.formatted}</div>
             </td>
             <td>
-              <div>{expense?.description}</div>
+              <div>{expense.invoiceDate}</div>
+            </td>
+            <td>
+              <div>{expense.valueDate}</div>
+            </td>
+            <td>
+              <div>{expense.description}</div>
             </td>
             <td>
               <EditMiscExpenseModal onDone={onChange} data={expense} />
+              <DeleteMiscExpenseButton miscExpenseId={expense.id} />
             </td>
           </tr>
         ))}

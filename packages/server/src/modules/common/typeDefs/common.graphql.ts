@@ -32,7 +32,7 @@ export default gql`
   # Scalars
 
   " Date "
-  scalar Date
+  scalar DateTime
   " Date with no time of day "
   scalar TimelessDate
   " Rate "

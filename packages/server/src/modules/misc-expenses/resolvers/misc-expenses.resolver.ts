@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
 import type { MiscExpensesModule } from '../types.js';
@@ -35,11 +34,11 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
         throw new GraphQLError((e as Error)?.message ?? 'Error inserting misc expense');
       }
     },
-    updateMiscExpense: async (_, { transactionId, counterpartyId, fields }, { injector }) => {
+    updateMiscExpense: async (_, { id, fields }, { injector }) => {
       try {
         return await injector
           .get(MiscExpensesProvider)
-          .updateExpense({ transactionId, originalCounterpartyId: counterpartyId, ...fields })
+          .updateExpense({ miscExpenseId: id, ...fields })
           .then(res => {
             if (!res.length) {
               throw new GraphQLError('Error updating misc expense');
@@ -51,52 +50,55 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
         throw new GraphQLError((e as Error)?.message ?? 'Error updating misc expense');
       }
     },
+    deleteMiscExpense: async (_, { id }, { injector }) => {
+      try {
+        return await injector
+          .get(MiscExpensesProvider)
+          .deleteMiscExpense({ id })
+          .then(() => true);
+      } catch (e) {
+        console.error('Error deleting misc expense', e);
+        throw new GraphQLError((e as Error)?.message ?? 'Error deleting misc expense');
+      }
+    },
   },
   MiscExpense: {
-    transaction: async (dbExpense, _, { injector }) =>
-      injector
-        .get(TransactionsProvider)
-        .getTransactionByIdLoader.load(dbExpense.transaction_id)
-        .then(transaction => {
-          if (!transaction) {
-            throw new GraphQLError(`Transaction ID="${dbExpense.transaction_id}" not found`);
-          }
-          return transaction;
-        }),
-    transactionId: dbExpense => dbExpense.transaction_id,
+    id: dbExpense => dbExpense.id,
+    chargeId: dbExpense => dbExpense.charge_id,
     charge: async (dbExpense, _, { injector }) =>
       injector
         .get(ChargesProvider)
-        .getChargeByTransactionIdLoader.load(dbExpense.transaction_id)
+        .getChargeByIdLoader.load(dbExpense.charge_id)
         .then(charge => {
           if (!charge) {
-            throw new GraphQLError(
-              `Charge for transaction ID="${dbExpense.transaction_id}" not found`,
-            );
+            throw new GraphQLError(`Charge ID="${dbExpense.charge_id}" not found`);
           }
           return charge;
         }),
-    counterparty: async (dbExpense, _, { injector }) =>
+    creditor: async (dbExpense, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(dbExpense.counterparty)
+        .getFinancialEntityByIdLoader.load(dbExpense.creditor_id)
         .then(entity => {
           if (!entity) {
-            throw new GraphQLError(`Financial entity ID="${dbExpense.counterparty}" not found`);
+            throw new GraphQLError(`Financial entity ID="${dbExpense.creditor_id}" not found`);
           }
           return entity;
         }),
-    amount: async (dbExpense, _, { injector }) => {
-      const transaction = await injector
-        .get(TransactionsProvider)
-        .getTransactionByIdLoader.load(dbExpense.transaction_id);
-      if (!transaction) {
-        throw new GraphQLError(`Transaction ID="${dbExpense.transaction_id}" not found`);
-      }
-      return formatFinancialAmount(dbExpense.amount, transaction.currency);
-    },
+    debtor: async (dbExpense, _, { injector }) =>
+      injector
+        .get(FinancialEntitiesProvider)
+        .getFinancialEntityByIdLoader.load(dbExpense.debtor_id)
+        .then(entity => {
+          if (!entity) {
+            throw new GraphQLError(`Financial entity ID="${dbExpense.debtor_id}" not found`);
+          }
+          return entity;
+        }),
+    amount: dbExpense => formatFinancialAmount(dbExpense.amount, dbExpense.currency),
     description: dbExpense => dbExpense.description,
-    date: dbExpense => (dbExpense.date ? dateToTimelessDateString(dbExpense.date) : null),
+    invoiceDate: dbExpense => dateToTimelessDateString(dbExpense.invoice_date),
+    valueDate: dbExpense => dateToTimelessDateString(dbExpense.value_date),
   },
   BankDepositCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,

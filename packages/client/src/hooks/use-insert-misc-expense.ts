@@ -10,7 +10,7 @@ import {
 /* GraphQL */ `
   mutation InsertMiscExpense($fields: InsertMiscExpenseInput!) {
     insertMiscExpense(fields: $fields) {
-      transactionId
+      id
     }
   }
 `;

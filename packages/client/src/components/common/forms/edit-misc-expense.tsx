@@ -9,14 +9,18 @@ import { ModifyMiscExpenseFields } from './index.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment EditMiscExpenseFields on MiscExpense {
-    transactionId
+    id
     amount {
       raw
       currency
     }
     description
-    date
-    counterparty {
+    invoiceDate
+    valueDate
+    creditor {
+      id
+    }
+    debtor {
       id
     }
   }
@@ -30,32 +34,34 @@ type Props = {
 export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
   const [isUpdating, setIsUpdating] = useState(false);
   const expense = getFragmentData(EditMiscExpenseFieldsFragmentDoc, data);
-  const {
-    control,
-    handleSubmit,
-    formState: { dirtyFields },
-  } = useForm<UpdateMiscExpenseInput>({
+  const formManager = useForm<UpdateMiscExpenseInput>({
     defaultValues: {
       amount: expense.amount.raw,
+      currency: expense.amount.currency,
       description: expense.description,
-      date: expense.date,
-      counterpartyId: expense.counterparty?.id,
+      valueDate: new Date(expense.valueDate),
+      invoiceDate: expense.invoiceDate,
+      creditorId: expense.creditor.id,
+      debtorId: expense.debtor.id,
     },
   });
+  const {
+    handleSubmit,
+    formState: { dirtyFields },
+  } = formManager;
   const { updateMiscExpense, fetching } = useUpdateMiscExpense();
 
   const onUpdateDone = useCallback(
     async (data: UpdateMiscExpenseInput) => {
       setIsUpdating(true);
       await updateMiscExpense({
-        transactionId: expense.transactionId,
-        counterpartyId: expense.counterparty.id,
+        id: expense.id,
         fields: data,
       });
       onDone();
       setIsUpdating(false);
     },
-    [updateMiscExpense, onDone, expense.transactionId, expense.counterparty.id],
+    [updateMiscExpense, onDone, expense.id],
   );
   const onSubmit: SubmitHandler<UpdateMiscExpenseInput> = data => {
     if (data && Object.keys(data).length > 0) {
@@ -68,11 +74,7 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
   ) : (
     <form>
       <div className="px-5 flex flex-col gap-5">
-        <ModifyMiscExpenseFields
-          control={control}
-          currency={expense.amount.currency}
-          isInsert={false}
-        />
+        <ModifyMiscExpenseFields formManager={formManager} isInsert={false} />
         <div className="flex justify-right gap-5 mt-5">
           <button
             type="button"

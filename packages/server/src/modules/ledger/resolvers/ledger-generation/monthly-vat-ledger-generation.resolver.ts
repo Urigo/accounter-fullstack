@@ -107,32 +107,16 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
         // preparations for core ledger entries
         let exchangeRate: number | undefined = undefined;
-        const exchangeRatePromise = async () => {
-          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
-            // get exchange rate for currency
-            exchangeRate = await injector
-              .get(ExchangeProvider)
-              .getExchangeRates(
-                transaction.currency,
-                DEFAULT_LOCAL_CURRENCY,
-                transaction.debit_timestamp,
-              );
-          }
-        };
-
-        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
-
-        const [miscExpensesLedger] = await Promise.all([
-          miscExpensesPromise,
-          exchangeRatePromise(),
-        ]);
-
-        // add misc expenses ledger entries
-        miscExpensesLedger.map(entry => {
-          entry.ownerId = charge.owner_id;
-          miscExpensesLedgerEntries.push(entry);
-          updateLedgerBalanceByEntry(entry, ledgerBalance);
-        });
+        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          // get exchange rate for currency
+          exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(
+              transaction.currency,
+              DEFAULT_LOCAL_CURRENCY,
+              transaction.debit_timestamp,
+            );
+        }
 
         const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
 
@@ -165,7 +149,15 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     });
 
-    await Promise.all(mainTransactionsPromises);
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        miscExpensesLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance);
+      });
+    });
+
+    await Promise.all([...mainTransactionsPromises, miscExpensesLedgerPromise]);
     for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {
       const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
         income as RawVatReportRecord[],

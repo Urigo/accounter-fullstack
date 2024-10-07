@@ -138,7 +138,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
 
       try {
-        const ledgerEntryPromise = getEntriesFromFeeTransaction(
+        const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
           charge,
           injector,
@@ -148,22 +148,6 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           } else {
             throw e;
           }
-        });
-
-        const miscExpensesPromise = generateMiscExpensesLedger(transaction, injector);
-
-        const [ledgerEntries, miscExpensesLedger] = await Promise.all([
-          ledgerEntryPromise,
-          miscExpensesPromise,
-        ]);
-
-        // add misc expenses ledger entries
-        miscExpensesLedger.map(entry => {
-          entry.ownerId = charge.owner_id;
-          feeFinancialAccountLedgerEntries.push(entry);
-          updateLedgerBalanceByEntry(entry, ledgerBalance);
-          dates.add(entry.valueDate.getTime());
-          currencies.add(entry.currency);
         });
 
         if (!ledgerEntries) {
@@ -185,9 +169,21 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     });
 
+    // create ledger records for misc expenses
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        feeFinancialAccountLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance);
+        dates.add(entry.valueDate.getTime());
+        currencies.add(entry.currency);
+      });
+    });
+
     await Promise.all([
       ...feeFinancialAccountLedgerEntriesPromises,
       ...mainFinancialAccountLedgerEntriesPromises,
+      miscExpensesLedgerPromise,
     ]);
 
     for (const ledgerEntry of mainFinancialAccountLedgerEntries) {

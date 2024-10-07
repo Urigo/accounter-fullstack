@@ -4,8 +4,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
-import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
-import type { IGetExpensesByTransactionIdsResult } from '@modules/misc-expenses/types.js';
+import type { IGetExpensesByChargeIdsResult } from '@modules/misc-expenses/types.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import {
@@ -35,7 +34,7 @@ import type {
 function validateTransactionAgainstBusinessTripsExpenses(
   transaction: IGetTransactionsByChargeIdsResult,
   transactionMatchingExpenses: IGetBusinessTripsExpenseMatchesByTransactionIdsResult[],
-  miscExpenses: IGetExpensesByTransactionIdsResult[],
+  miscExpenses: IGetExpensesByChargeIdsResult[],
 ): boolean {
   if (!transactionMatchingExpenses?.length && !miscExpenses?.length) {
     throw new LedgerError(
@@ -68,22 +67,14 @@ export const validateTransactionAgainstBusinessTrips = async (
   injector: Injector,
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<boolean> => {
-  const transactionMatchingExpensesPromise = injector
+  const transactionMatchingExpenses = await injector
     .get(BusinessTripExpensesProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
-  const miscExpensesPromise = injector
-    .get(MiscExpensesProvider)
-    .getExpensesByTransactionIdLoader.load(transaction.id);
-
-  const [transactionMatchingExpenses, miscExpenses] = await Promise.all([
-    transactionMatchingExpensesPromise,
-    miscExpensesPromise,
-  ]);
 
   return validateTransactionAgainstBusinessTripsExpenses(
     transaction,
     transactionMatchingExpenses,
-    miscExpenses,
+    [],
   );
 };
 
@@ -94,14 +85,8 @@ export const getTransactionMatchedAmount = async (
   const transactionMatchingExpensesPromise = injector
     .get(BusinessTripExpensesProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
-  const miscExpensesPromise = injector
-    .get(MiscExpensesProvider)
-    .getExpensesByTransactionIdLoader.load(transaction.id);
 
-  const [transactionMatchingExpenses, miscExpenses] = await Promise.all([
-    transactionMatchingExpensesPromise,
-    miscExpensesPromise,
-  ]);
+  const [transactionMatchingExpenses] = await Promise.all([transactionMatchingExpensesPromise]);
 
   const expensesSum = transactionMatchingExpenses.reduce(
     (acc, expense) => (expense.amount ? acc + Number(expense.amount) : acc),
@@ -109,11 +94,7 @@ export const getTransactionMatchedAmount = async (
   );
 
   try {
-    validateTransactionAgainstBusinessTripsExpenses(
-      transaction,
-      transactionMatchingExpenses,
-      miscExpenses,
-    );
+    validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses, []);
   } catch (e) {
     const errors = [];
     if (e instanceof LedgerError) {
@@ -126,14 +107,7 @@ export const getTransactionMatchedAmount = async (
     };
   }
 
-  const direction = isSupplementalFeeTransaction(transaction) ? -1 : 1;
-
-  const miscExpensesAmount = miscExpenses.reduce(
-    (acc, expense) => Number(expense.amount) * direction + acc,
-    0,
-  );
-  const isFullyMatched =
-    Math.abs(Number(transaction.amount) - miscExpensesAmount - expensesSum) < 0.005;
+  const isFullyMatched = Math.abs(Number(transaction.amount) - expensesSum) < 0.005;
 
   return {
     isFullyMatched,

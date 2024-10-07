@@ -33,7 +33,8 @@ import {
   TypeCell,
   Vat,
 } from './cells/index.js';
-import { ChargeExtendedInfo, ChargeExtendedInfoMenu } from './charge-extended-info.js';
+import { ChargeExtendedInfoMenu } from './charge-extended-info-menu.js';
+import { ChargeExtendedInfo } from './charge-extended-info.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
