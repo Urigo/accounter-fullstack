@@ -10874,15 +10874,15 @@ pg-pool@^3.7.0:
   resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.7.0.tgz#d4d3c7ad640f8c6a2245adc369bafde4ebb8cbec"
   integrity sha512-ZOBQForurqh4zZWjrgSwwAtzJ7QiRX0ovFkZr2klsen3Nm0aoh33Ls0fzfv3imeH/nw/O27cjdz5kzYJfeGp/g==
 
-pg-promise@11.10.0:
-  version "11.10.0"
-  resolved "https://registry.yarnpkg.com/pg-promise/-/pg-promise-11.10.0.tgz#31bb133c48252e39e349e5b931342fc4e81e83ac"
-  integrity sha512-Dc4GjtwUaN+hTUmU4bVAy/CXFEFoGdTMdUTh2la/HUmvkwTeNXxiBcaD3E6GMcOnU4YZ/YsWn+SfaYSCycssnQ==
+pg-promise@11.10.1:
+  version "11.10.1"
+  resolved "https://registry.yarnpkg.com/pg-promise/-/pg-promise-11.10.1.tgz#929f7b8eecd37a440d42c95d832d9f14db46d958"
+  integrity sha512-TceugkypE+VkHTjlklMmLYLN5hUDbM9dIhKZQq2onxN9F//6X6Q5czQ7Ms5sCi0JB5pkbt8fgoC7OLHM2EVI7Q==
   dependencies:
     assert-options "0.8.2"
     pg "8.13.0"
     pg-minify "1.6.5"
-    spex "3.3.0"
+    spex "3.4.0"
 
 pg-protocol@*, pg-protocol@^1.6.0, pg-protocol@^1.7.0:
   version "1.7.0"
@@ -12221,10 +12221,10 @@ spdx-license-ids@^3.0.0:
   resolved "https://registry.yarnpkg.com/spdx-license-ids/-/spdx-license-ids-3.0.20.tgz#e44ed19ed318dd1e5888f93325cee800f0f51b89"
   integrity sha512-jg25NiDV/1fLtSgEgyvVyDunvaNHbuwF9lfNV17gSmPFAlYzdfNBlLtLzXTevwkPj7DhGbmN9VnmJIgLnhvaBw==
 
-spex@3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/spex/-/spex-3.3.0.tgz#169ecc6146f2eb070d5e846d32046ea355096920"
-  integrity sha512-VNiXjFp6R4ldPbVRYbpxlD35yRHceecVXlct1J4/X80KuuPnW2AXMq3sGwhnJOhKkUsOxAT6nRGfGE5pocVw5w==
+spex@3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/spex/-/spex-3.4.0.tgz#7eb6220492231f9efdc7c7f538ccfd689e345346"
+  integrity sha512-8JeZJ7QlEBnSj1W1fKXgbB2KUPA8k4BxFMf6lZX/c1ZagU/1b9uZWZK0yD6yjfzqAIuTNG4YlRmtMpQiXuohsg==
 
 split2@^4.0.0, split2@^4.1.0:
   version "4.2.0"
