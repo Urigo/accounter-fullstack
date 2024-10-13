@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/pg": "8.11.10",
     "got": "14.4.3",
-    "pg-promise": "11.9.1",
+    "pg-promise": "11.10.0",
     "slonik": "38.0.0",
     "tslib": "2.7.0",
     "zod": "3.23.8"
