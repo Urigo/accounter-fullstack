@@ -20,7 +20,7 @@
     "ajv-formats": "3.0.1",
     "inquirer": "10.2.2",
     "node-fetch": "3.3.2",
-    "puppeteer": "23.5.1",
+    "puppeteer": "23.5.2",
     "uuid": "10.0.0"
   },
   "devDependencies": {
