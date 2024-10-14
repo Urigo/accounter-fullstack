@@ -4,6 +4,7 @@ import salaries from './typeDefs/salaries.graphql.js';
 import { createModule } from 'graphql-modules';
 import { EmployeesProvider } from './providers/employees.provider.js';
 import { FundsProvider } from './providers/funds.provider.js';
+import { RecoveryProvider } from './providers/recovery.provider.js';
 import { SalariesProvider } from './providers/salaries.provider.js';
 import { employeesResolvers } from './resolvers/employees.resolvers.js';
 import { fundsResolvers } from './resolvers/funds.resolvers.js';
@@ -16,7 +17,7 @@ export const salariesModule = createModule({
   dirname: __dirname,
   typeDefs: [salaries, employees, funds],
   resolvers: [salariesResolvers, employeesResolvers, fundsResolvers],
-  providers: () => [SalariesProvider, EmployeesProvider, FundsProvider],
+  providers: () => [SalariesProvider, EmployeesProvider, FundsProvider, RecoveryProvider],
 });
 
 export * as SalariesTypes from './types.js';
