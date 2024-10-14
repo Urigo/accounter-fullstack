@@ -52,6 +52,7 @@ import migration_2024_09_04T15_37_43_company_taxes from './actions/2024-09-04T15
 import migration_2024_09_04T18_34_03_vat_report_date_override from './actions/2024-09-04T18-34-03.vat-report-date-override.js';
 import migration_2024_09_05T15_51_41_depreciation from './actions/2024-09-05T15-51-41.depreciation.js';
 import migration_2024_10_01T12_37_42_refactor_misc_expenses from './actions/2024-10-01T12-37-42.refactor-misc-expenses.js';
+import migration_2024_10_10T15_56_41_recovery_reserve from './actions/2024-10-10T15-56-41.recovery-reserve.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -111,5 +112,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_09_04T18_34_03_vat_report_date_override,
       migration_2024_09_05T15_51_41_depreciation,
       migration_2024_10_01T12_37_42_refactor_misc_expenses,
+      migration_2024_10_10T15_56_41_recovery_reserve,
     ],
   });
