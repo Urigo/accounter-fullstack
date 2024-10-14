@@ -11,9 +11,6 @@ export default {
         day_value numeric(6, 2) not null
     );
 
-    alter table accounter_schema.recovery
-        owner to accounter_prod_user;
-
     create unique index if not exists recovery_year_uindex
         on accounter_schema.recovery (year);
     
