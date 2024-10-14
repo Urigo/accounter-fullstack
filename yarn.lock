@@ -1852,14 +1852,14 @@
     jiti "^1.21.6"
     sucrase "^3.35.0"
 
-"@graphql-mesh/json-schema@0.106.8":
-  version "0.106.8"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/json-schema/-/json-schema-0.106.8.tgz#e7855ed0d3c0d83c577faa0367004a3fe3b04e65"
-  integrity sha512-P+Pv8T0hviF062e+c8bwdqDitjY5PgwbbXROP0XbrQt1yp/DKhQaAnVX411OLTUCFkhXBK1e2hxa0j46qBJcCQ==
+"@graphql-mesh/json-schema@0.107.0":
+  version "0.107.0"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/json-schema/-/json-schema-0.107.0.tgz#e9ba2de892a4ca8fcbaad043383655c8a9eb379f"
+  integrity sha512-zh7WhFyHv9fVfEQn90TKUxcDmPszAJMQm3YicsWBi2RWy7r83xjoTY7IlCEzWbeZap6wceDSjPksEmEZPQKMnQ==
   dependencies:
     "@graphql-mesh/string-interpolation" "0.5.6"
     "@json-schema-tools/meta-schema" "1.7.5"
-    "@omnigraph/json-schema" "0.106.8"
+    "@omnigraph/json-schema" "0.107.0"
     graphql-compose "9.0.11"
     json-machete "0.97.4"
 
@@ -3321,10 +3321,10 @@
   dependencies:
     which "^4.0.0"
 
-"@omnigraph/json-schema@0.106.8":
-  version "0.106.8"
-  resolved "https://registry.yarnpkg.com/@omnigraph/json-schema/-/json-schema-0.106.8.tgz#227dd5d51c6947d5a1a3a6e33310ce3261660f36"
-  integrity sha512-6XcLx1/zSUXmCMWGefcrysRlF9jgOH4/CdhvlWREkUvIKPQ3yJp/iLyN6NYEr413zTO8BpT/mDK3nuaZ0qMn5A==
+"@omnigraph/json-schema@0.107.0":
+  version "0.107.0"
+  resolved "https://registry.yarnpkg.com/@omnigraph/json-schema/-/json-schema-0.107.0.tgz#a92c9be3cbcac8914a7cbb32e2c5e9b04f7908ef"
+  integrity sha512-lkxGwydImnlOXGeT/t+j/vglGfhu3rX5A/Rgd2XFymRyAzF6X2mRfSl+DiAB8bL66EqM+Gc2b6R9dqH4UeK3Yw==
   dependencies:
     "@graphql-mesh/string-interpolation" "0.5.6"
     "@graphql-mesh/transport-common" "^0.7.7"
