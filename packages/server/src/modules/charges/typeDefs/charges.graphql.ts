@@ -25,6 +25,8 @@ export default gql`
       @auth(role: ACCOUNTANT)
     generateRecoveryReservesCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
+    generateVacationReserveCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
+      @auth(role: ACCOUNTANT)
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "

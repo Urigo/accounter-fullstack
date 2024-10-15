@@ -10,6 +10,8 @@ export const UUID_REGEX =
 export const DEFAULT_VAT_PERCENTAGE = 0.17;
 export const DECREASED_VAT_RATIO = 2 / 3;
 
+export const AVERAGE_MONTHLY_WORK_DAYS = 21.67;
+
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 
 //////////////////////////////////////////////////////
@@ -32,6 +34,7 @@ export const BUSINESS_TRIP_TAX_CATEGORY_ID = 'd311c118-a4a3-4b79-8f0c-628d5957a3
 export const DEFAULT_TAX_CATEGORY = '0a593022-5d9c-4529-b154-fedefde05bb7';
 export const RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID = '2a594abe-c7d4-4890-83f4-884d8e01e54c';
 export const RECOVERY_RESERVE_TAX_CATEGORY_ID = '680e9c61-657d-433c-8316-64fc2d008d50';
+export const VACATION_RESERVE_TAX_CATEGORY_ID = 'b895f83c-2c3a-4a71-9b15-0967fb594a0f';
 
 // cross year tax categories
 export const EXPENSES_TO_PAY_TAX_CATEGORY = '4c8f76c5-9eaa-49fa-945e-0652c0f80c20';

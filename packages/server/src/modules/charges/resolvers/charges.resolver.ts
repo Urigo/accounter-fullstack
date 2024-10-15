@@ -12,6 +12,7 @@ import {
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
   TAX_EXPENSES_TAX_CATEGORY_ID,
+  VACATION_RESERVE_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -518,6 +519,67 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating recovery reserves charge');
+      }
+    },
+    generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
+      try {
+        const [charge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Vacation reserves charge for ${year.substring(0, 4)}`,
+          type: 'FINANCIAL',
+          taxCategoryId: VACATION_RESERVE_TAX_CATEGORY_ID,
+        });
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const newExtendedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+
+        if (!newExtendedCharge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const tagName = 'financial';
+
+        const addTagPromise = async () => {
+          const tag = await injector
+            .get(TagsProvider)
+            .getTagByNameLoader.load(tagName)
+            .catch(() => {
+              throw new GraphQLError(`Error adding "${tagName}" tag`);
+            });
+
+          if (!tag) {
+            throw new GraphQLError(`"${tagName}" tag not found`);
+          }
+
+          await injector
+            .get(ChargeTagsProvider)
+            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .catch(() => {
+              throw new GraphQLError(
+                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
+              );
+            });
+        };
+
+        const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
+          newExtendedCharge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
+
+        await Promise.all([addTagPromise(), generateLedgerPromise]);
+
+        return newExtendedCharge;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating vacation reserves charge');
       }
     },
   },

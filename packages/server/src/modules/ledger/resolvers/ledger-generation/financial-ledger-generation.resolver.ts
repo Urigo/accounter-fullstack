@@ -3,12 +3,14 @@ import {
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
   TAX_EXPENSES_TAX_CATEGORY_ID,
+  VACATION_RESERVE_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
 import { generateLedgerRecordsForRecoveryReservesExpenses } from './financial-ledger-generation/recovery-reserves-ledger-generation.resolver.js';
 import { generateLedgerRecordsForRevaluation } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForTaxExpenses } from './financial-ledger-generation/tax-expenses-ledger-generation.resolver.js';
+import { generateLedgerRecordsForVacationReserveExpenses } from './financial-ledger-generation/vacation-reserve-ledger-generation.resolver.js';
 
 export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';
 
@@ -49,6 +51,13 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
         );
       case RECOVERY_RESERVE_TAX_CATEGORY_ID:
         return generateLedgerRecordsForRecoveryReservesExpenses(
+          charge,
+          { insertLedgerRecordsIfNotExists },
+          context,
+          info,
+        );
+      case VACATION_RESERVE_TAX_CATEGORY_ID:
+        return generateLedgerRecordsForVacationReserveExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
