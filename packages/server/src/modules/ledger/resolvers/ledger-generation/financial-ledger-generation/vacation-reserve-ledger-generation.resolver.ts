@@ -3,6 +3,7 @@ import { calculateVacationReserveAmount } from '@modules/ledger/helpers/vacation
 import {
   DEFAULT_LOCAL_CURRENCY,
   EMPTY_UUID,
+  VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
   VACATION_RESERVE_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -52,7 +53,7 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
       currency: DEFAULT_LOCAL_CURRENCY,
       isCreditorCounterparty: true,
       creditAccountID1: VACATION_RESERVE_TAX_CATEGORY_ID,
-      debitAccountID1: VACATION_RESERVE_TAX_CATEGORY_ID,
+      debitAccountID1: VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
       localCurrencyCreditAmount1: Math.abs(vacationReserveAmount),
       localCurrencyDebitAmount1: Math.abs(vacationReserveAmount),
       description: `Vacation reserve for ${year}`,
