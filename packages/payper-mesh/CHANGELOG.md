@@ -1,5 +1,45 @@
 # @accounter-toolkit/payper-mesh
 
+## 0.2.3
+
+### Patch Changes
+
+- [#1261](https://github.com/Urigo/accounter-fullstack/pull/1261)
+  [`f5ae7a3`](https://github.com/Urigo/accounter-fullstack/commit/f5ae7a346d7309a7d24a04641c667de0a483aff4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.104.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.104.7)
+    (from `0.104.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.103.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.103.7)
+    (from `0.103.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.106.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.106.8)
+    (from `0.106.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.103.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.103.7)
+    (from `0.103.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.102.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.102.6)
+    (from `0.102.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-rename@0.102.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-rename/v/0.102.6)
+    (from `0.102.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.102.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.102.6)
+    (from `0.102.5`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.102.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.102.6)
+    (from `0.102.5`, in `dependencies`)
+
+- [#1265](https://github.com/Urigo/accounter-fullstack/pull/1265)
+  [`147de78`](https://github.com/Urigo/accounter-fullstack/commit/147de78aead9f79589c6c7a2fae5e84be6b6c545)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.107.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.107.0)
+    (from `0.106.8`, in `dependencies`)
+
 ## 0.2.2
 
 ### Patch Changes
