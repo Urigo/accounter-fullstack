@@ -1,5 +1,34 @@
 # @accounter/server
 
+## 0.0.3
+
+### Patch Changes
+
+- [#1194](https://github.com/Urigo/accounter-fullstack/pull/1194)
+  [`29bde12`](https://github.com/Urigo/accounter-fullstack/commit/29bde12f28b47ecbe7e3d699aa4cbcbb809dca62)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`date-fns@4.1.0` ↗︎](https://www.npmjs.com/package/date-fns/v/4.1.0) (from
+    `3.6.0`, in `dependencies`)
+
+- [#1220](https://github.com/Urigo/accounter-fullstack/pull/1220)
+  [`a4624cb`](https://github.com/Urigo/accounter-fullstack/commit/a4624cb4ea83055d3043a81a0bd860186efbfbab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@accounter/green-invoice-graphql@^0.7.1` ↗︎](https://www.npmjs.com/package/@accounter/green-invoice-graphql/v/0.7.1)
+    (from `^0.6.0`, in `dependencies`)
+
+- [#1255](https://github.com/Urigo/accounter-fullstack/pull/1255)
+  [`b1388db`](https://github.com/Urigo/accounter-fullstack/commit/b1388db7e1dde486f5f5a4c0155e954fefd323e8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`cloudinary@2.5.1` ↗︎](https://www.npmjs.com/package/cloudinary/v/2.5.1)
+    (from `2.5.0`, in `dependencies`)
+- Updated dependencies
+  [[`f5ae7a3`](https://github.com/Urigo/accounter-fullstack/commit/f5ae7a346d7309a7d24a04641c667de0a483aff4),
+  [`147de78`](https://github.com/Urigo/accounter-fullstack/commit/147de78aead9f79589c6c7a2fae5e84be6b6c545)]:
+  - @accounter/green-invoice-graphql@0.7.2
+
 ## 0.0.2
 
 ### Patch Changes
