@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@types/puppeteer": "7.0.4",
-    "pino-pretty": "11.2.2"
+    "pino-pretty": "11.3.0"
   },
   "publishConfig": {
     "directory": "dist",
