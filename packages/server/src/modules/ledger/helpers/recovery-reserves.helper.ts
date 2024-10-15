@@ -1,4 +1,4 @@
-import { endOfMonth, endOfYear } from 'date-fns';
+import { differenceInYears, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
@@ -145,7 +145,8 @@ export async function calculateRecoveryReservesAmount(injector: Injector, year: 
       throw new GraphQLError(`No recovery day value for year ${year}`);
     }
 
-    const yearsWorked = year - employee.startDate.getFullYear() + 1;
+    const yearsWorked =
+      differenceInYears(endOfMonth(new Date(`${year}-${month}-01`)), employee.startDate) + 1;
     const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked) / 12;
     const monthPart = calculateMonthPart(year, month, employee.startDate, employee.endDate); // TODO: calculate month part
     const jobPercentage = 1; // TODO: calculate job percentage
