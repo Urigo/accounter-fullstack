@@ -23,7 +23,7 @@ export default gql`
       @auth(role: ACCOUNTANT)
     generateDepreciationCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
-    generateRecoveryReservesCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
+    generateRecoveryReserveCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
     generateVacationReserveCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)

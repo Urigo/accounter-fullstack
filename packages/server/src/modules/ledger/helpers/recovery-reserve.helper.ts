@@ -45,7 +45,7 @@ function calculateMonthPart(year: number, month: number, startDate: Date, endDat
   return 1;
 }
 
-export async function calculateRecoveryReservesAmount(injector: Injector, year: number) {
+export async function calculateRecoveryReserveAmount(injector: Injector, year: number) {
   const salariesPromise = injector
     .get(SalariesProvider)
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
@@ -161,15 +161,15 @@ export async function calculateRecoveryReservesAmount(injector: Injector, year: 
     }
   }
 
-  let recoveryReservesAmount = 0;
+  let recoveryReserveAmount = 0;
 
-  let reservesPrompt = `Recovery reserves for ${year}:`;
+  let reservePrompt = `Recovery reserve for ${year}:`;
   for (const employeeData of Array.from(employeeMap.values())) {
     const employeeReserve = employeeData.totalRecoveryAmount - employeeData.payedRecoveryAmount;
-    reservesPrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeReserve}`;
-    recoveryReservesAmount += employeeReserve;
+    reservePrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeReserve}`;
+    recoveryReserveAmount += employeeReserve;
   }
-  console.debug(reservesPrompt);
+  console.debug(reservePrompt);
 
-  return { recoveryReservesAmount };
+  return { recoveryReserveAmount };
 }
