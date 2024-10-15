@@ -1,5 +1,5 @@
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { calculateRecoveryReservesAmount } from '@modules/ledger/helpers/recovery-reserves.helper.js';
+import { calculateRecoveryReserveAmount } from '@modules/ledger/helpers/recovery-reserve.helper.js';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EMPTY_UUID,
@@ -10,7 +10,7 @@ import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
-export const generateLedgerRecordsForRecoveryReservesExpenses: ResolverFn<
+export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
@@ -21,7 +21,7 @@ export const generateLedgerRecordsForRecoveryReservesExpenses: ResolverFn<
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
-        message: `Recovery reserves charge must include user description with designated year`,
+        message: `Recovery reserve charge must include user description with designated year`,
       };
     }
 
@@ -31,7 +31,7 @@ export const generateLedgerRecordsForRecoveryReservesExpenses: ResolverFn<
     if (!matches?.length) {
       return {
         __typename: 'CommonError',
-        message: `Recovery reserves charge description must include full year`,
+        message: `Recovery reserve charge description must include full year`,
       };
     }
 
@@ -40,11 +40,11 @@ export const generateLedgerRecordsForRecoveryReservesExpenses: ResolverFn<
     if (Number.isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
       return {
         __typename: 'CommonError',
-        message: `Recovery reserves charge description must include valid year (2000 - current year)`,
+        message: `Recovery reserve charge description must include valid year (2000 - current year)`,
       };
     }
 
-    const { recoveryReservesAmount } = await calculateRecoveryReservesAmount(injector, year);
+    const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(injector, year);
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
@@ -54,9 +54,9 @@ export const generateLedgerRecordsForRecoveryReservesExpenses: ResolverFn<
       isCreditorCounterparty: true,
       creditAccountID1: RECOVERY_RESERVE_TAX_CATEGORY_ID,
       debitAccountID1: RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
-      localCurrencyCreditAmount1: Math.abs(recoveryReservesAmount),
-      localCurrencyDebitAmount1: Math.abs(recoveryReservesAmount),
-      description: `Recovery reserves for ${year}`,
+      localCurrencyCreditAmount1: Math.abs(recoveryReserveAmount),
+      localCurrencyDebitAmount1: Math.abs(recoveryReserveAmount),
+      description: `Recovery reserve for ${year}`,
       ownerId: charge.owner_id,
       chargeId: charge.id,
       currencyRate: 1,

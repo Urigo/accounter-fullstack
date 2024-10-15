@@ -459,12 +459,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError('Error generating depreciation charge');
       }
     },
-    generateRecoveryReservesCharge: async (_, { year, ownerId }, context, info) => {
+    generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
-          userDescription: `Recovery reserves charge for ${year.substring(0, 4)}`,
+          userDescription: `Recovery reserve charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
           taxCategoryId: RECOVERY_RESERVE_TAX_CATEGORY_ID,
         });
@@ -517,7 +517,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         return newExtendedCharge;
       } catch (e) {
         console.error(e);
-        throw new GraphQLError('Error generating recovery reserves charge');
+        throw new GraphQLError('Error generating recovery reserve charge');
       }
     },
   },
