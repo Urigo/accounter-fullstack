@@ -5,6 +5,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { VAT_REPORT_EXCLUDED_BUSINESS_NAMES } from '@shared/constants';
 import {
   DocumentType,
@@ -35,6 +36,7 @@ export const getVatRecords: ResolverFn<
     };
 
     const docsChargesIDs = new Set<string>();
+    const reportIssuerId = filters?.financialEntityId;
 
     // get all documents by date filters
     const relevantDocumentsPromise = injector
@@ -42,7 +44,7 @@ export const getVatRecords: ResolverFn<
       .getDocumentsByFilters({
         fromVatDate: filters?.fromDate,
         toVatDate: filters?.toDate,
-        ownerIDs: [filters?.financialEntityId],
+        ownerIDs: [reportIssuerId],
       })
       .then(documents =>
         documents.filter(doc => {
@@ -76,7 +78,7 @@ export const getVatRecords: ResolverFn<
     const chargesPromise = injector.get(ChargesProvider).getChargesByFilters({
       fromDate: filters?.fromDate,
       toDate: filters?.toDate,
-      ownerIds: filters?.financialEntityId ? [filters?.financialEntityId] : undefined,
+      ownerIds: reportIssuerId ? [reportIssuerId] : undefined,
       chargeType: filters?.chargesType,
     });
 
@@ -90,7 +92,7 @@ export const getVatRecords: ResolverFn<
     if (docsCharges.length < docsChargesIDs.size) {
       const moreDocsCharges = await injector.get(ChargesProvider).getChargesByFilters({
         IDs: Array.from(docsChargesIDs).filter(id => !docsCharges.find(charge => charge.id === id)),
-        ownerIds: [filters?.financialEntityId],
+        ownerIds: [reportIssuerId],
       });
 
       charges.push(...moreDocsCharges);
@@ -130,8 +132,13 @@ export const getVatRecords: ResolverFn<
         );
       }
 
+      const isReimbursement = isRefundCharge(charge.user_description);
+
       // add charge to income/expense records
-      if (doc.vat_amount && doc.debtor_id === filters?.financialEntityId) {
+      if (
+        (doc.vat_amount && doc.debtor_id === reportIssuerId) ||
+        (isReimbursement && doc.creditor_id === reportIssuerId)
+      ) {
         includedChargeIDs.add(charge.id);
         if (filters?.chargesType !== 'EXPENSE') {
           expenseRecords.push({ charge, doc, business });
@@ -139,8 +146,8 @@ export const getVatRecords: ResolverFn<
       } else if (
         doc.vat_amount != null &&
         (doc.type === DocumentType.CreditInvoice
-          ? doc.debtor_id === filters?.financialEntityId
-          : doc.creditor_id === filters?.financialEntityId) &&
+          ? doc.debtor_id === reportIssuerId
+          : doc.creditor_id === reportIssuerId) &&
         Number(doc.total_amount) > 0
       ) {
         includedChargeIDs.add(charge.id);
