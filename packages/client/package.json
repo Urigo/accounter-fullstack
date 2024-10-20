@@ -54,7 +54,7 @@
     "tabler-icons-react": "1.56.0",
     "tailwind-merge": "2.5.4",
     "tailwindcss-animate": "1.0.7",
-    "urql": "4.1.0",
+    "urql": "4.2.0",
     "zod": "3.23.8",
     "zustand": "5.0.0"
   },
