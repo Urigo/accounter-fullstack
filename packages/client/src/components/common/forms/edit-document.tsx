@@ -37,6 +37,7 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
           name
         }
         vatReportDateOverride
+        noVatAmount
       }
     }
   }

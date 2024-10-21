@@ -87,6 +87,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " invoice document "
@@ -102,6 +103,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " proforma document "
@@ -117,6 +119,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " receipt document "
@@ -130,6 +133,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
     isReviewed: Boolean
   }
 
@@ -146,6 +150,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " Credit invoice document - חשבונית זיכוי "
@@ -161,6 +166,7 @@ export default gql`
     date: TimelessDate
     amount: FinancialAmount
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " input variables for updateDocument "
@@ -176,6 +182,7 @@ export default gql`
     creditorId: UUID
     debtorId: UUID
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " result type for updateCharge "
@@ -199,6 +206,7 @@ export default gql`
     creditorId: UUID
     debtorId: UUID
     vatReportDateOverride: TimelessDate
+    noVatAmount: Float
   }
 
   " result type for insertDocument "

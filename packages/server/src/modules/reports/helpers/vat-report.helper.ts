@@ -90,7 +90,9 @@ export async function adjustTaxRecord(
     // set default amountBeforeVAT
     if (!doc.vat_amount) {
       partialRecord.localAmountBeforeVAT =
-        doc.total_amount * rate * (doc.type === DocumentType.CreditInvoice ? -1 : 1);
+        (doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0)) *
+        rate *
+        (doc.type === DocumentType.CreditInvoice ? -1 : 1);
     } else if (partialRecord.businessId) {
       // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
       const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
