@@ -135,10 +135,7 @@ export const getVatRecords: ResolverFn<
       const isReimbursement = isRefundCharge(charge.user_description);
 
       // add charge to income/expense records
-      if (
-        (doc.vat_amount && doc.debtor_id === reportIssuerId) ||
-        (isReimbursement && doc.creditor_id === reportIssuerId)
-      ) {
+      if (doc.vat_amount && doc.debtor_id === reportIssuerId) {
         includedChargeIDs.add(charge.id);
         if (filters?.chargesType !== 'EXPENSE') {
           expenseRecords.push({ charge, doc, business });
@@ -148,7 +145,8 @@ export const getVatRecords: ResolverFn<
         (doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id === reportIssuerId
           : doc.creditor_id === reportIssuerId) &&
-        Number(doc.total_amount) > 0
+        Number(doc.total_amount) > 0 &&
+        !isReimbursement
       ) {
         includedChargeIDs.add(charge.id);
         if (filters?.chargesType !== 'INCOME') {
