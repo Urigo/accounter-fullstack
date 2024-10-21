@@ -27,7 +27,7 @@
     "@graphql-yoga/plugin-defer-stream": "3.7.0",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
-    "@whatwg-node/fetch": "0.9.21",
+    "@whatwg-node/fetch": "0.9.22",
     "basic-auth": "2.0.1",
     "bcrypt": "5.1.1",
     "cloudinary": "2.5.1",
