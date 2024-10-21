@@ -121,6 +121,10 @@ const updateDocument = sql<IUpdateDocumentQuery>`
     $debtorId,
     debtor_id
   ),
+  no_vat_amount = COALESCE(
+    $noVatAmount,
+    no_vat_amount
+  ),
   vat_report_date_override = COALESCE(
     $vatReportDateOverride,
     vat_report_date_override
@@ -147,7 +151,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       currency_code,
       vat_amount,
       charge_id,
-      vat_report_date_override
+      vat_report_date_override,
+      no_vat_amount
     )
     VALUES $$document(
       image,
@@ -159,7 +164,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       currencyCode,
       vat,
       chargeId,
-      vatReportDateOverride
+      vatReportDateOverride,
+      noVatAmount
     )
     RETURNING *;`;
 

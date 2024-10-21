@@ -268,6 +268,31 @@ export const ModifyDocumentFields = ({
               />
             )}
           />
+          <Controller
+            name="noVatAmount"
+            control={control}
+            defaultValue={isDocumentProcessed ? (document?.noVatAmount ?? undefined) : undefined}
+            render={({ field: noVatField, fieldState: noVatFieldState }): ReactElement => (
+              <Controller
+                name="amount.currency"
+                control={control}
+                defaultValue={
+                  isDocumentProcessed
+                    ? (document?.amount?.currency ?? Currency.Ils)
+                    : defaultCurrency
+                }
+                render={({ field: currencyCodeField }): ReactElement => (
+                  <CurrencyInput
+                    {...noVatField}
+                    value={noVatField.value ?? undefined}
+                    error={noVatFieldState.error?.message}
+                    label="no VAT amount"
+                    currencyCodeProps={{ ...currencyCodeField, label: 'Currency', disabled: true }}
+                  />
+                )}
+              />
+            )}
+          />
         </>
       )}
       <Controller

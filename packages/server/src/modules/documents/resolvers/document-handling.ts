@@ -54,6 +54,7 @@ export const uploadDocument: DocumentsModule.MutationResolvers['uploadDocument']
       vat: draft.expense.vat ?? null,
       chargeId: chargeId ?? null,
       vatReportDateOverride: null,
+      noVatAmount: null,
     };
     const res = await injector
       .get(DocumentsProvider)
