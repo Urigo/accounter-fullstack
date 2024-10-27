@@ -208,6 +208,15 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         const isCreditorCounterparty = balanceSum > 0;
 
+        const latestDate = new Date(
+          Math.max(
+            originEntry.valueDate.getTime(),
+            originEntry.invoiceDate.getTime(),
+            destinationEntry.valueDate.getTime(),
+            destinationEntry.invoiceDate.getTime(),
+          ),
+        );
+
         const ledgerEntry: LedgerProto = {
           id: destinationEntry.id, // NOTE: this field is dummy
           creditAccountID1: isCreditorCounterparty ? undefined : EXCHANGE_RATE_TAX_CATEGORY_ID,
@@ -218,8 +227,8 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
-          invoiceDate: originEntry.invoiceDate,
-          valueDate: destinationEntry.valueDate,
+          invoiceDate: latestDate,
+          valueDate: latestDate,
           currency: DEFAULT_LOCAL_CURRENCY,
           ownerId: destinationEntry.ownerId,
           chargeId,

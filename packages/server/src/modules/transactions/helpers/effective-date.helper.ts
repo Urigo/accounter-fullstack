@@ -2,7 +2,9 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import type { IGetTransactionsByIdsResult } from '../types.js';
 
 export function effectiveDateSupplement(transaction: IGetTransactionsByIdsResult) {
-  // if debit_date exists - use it
+  if (transaction.debit_timestamp) {
+    return dateToTimelessDateString(transaction.debit_timestamp);
+  }
   if (transaction.debit_date) {
     return dateToTimelessDateString(transaction.debit_date);
   }
