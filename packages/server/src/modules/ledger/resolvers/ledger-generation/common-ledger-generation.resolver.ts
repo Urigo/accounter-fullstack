@@ -374,10 +374,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
         const transactionEntry = financialAccountLedgerEntries[0];
-        const [invoiceDate, valueDate] = getExchangeDates(
-          financialAccountLedgerEntries,
-          accountingLedgerEntries,
-        );
+        const entryDate = getExchangeDates(financialAccountLedgerEntries);
 
         const { entityId, balance } = unbalancedBusinesses[0];
         const amount = Math.abs(balance.raw);
@@ -424,8 +421,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               localCurrencyDebitAmount1: amount,
               description: 'Exchange ledger record',
               isCreditorCounterparty,
-              invoiceDate,
-              valueDate,
+              invoiceDate: entryDate,
+              valueDate: entryDate,
               currency: DEFAULT_LOCAL_CURRENCY,
               ownerId: transactionEntry.ownerId,
               chargeId,
