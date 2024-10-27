@@ -7,7 +7,7 @@ import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument, BusinessTransactionsFilter } from '../../gql/graphql.js';
+import { AllBusinessesDocument, BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
@@ -29,31 +29,31 @@ function BusinessTransactionsFilterForm({
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
-  const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
-    query: AllFinancialEntitiesDocument,
+  const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
+    query: AllBusinessesDocument,
   });
 
   const { userContext } = useContext(UserContext);
 
   useEffect(() => {
-    if (feError) {
+    if (businessesError) {
       showNotification({
         title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+        message: 'Oh no!, we have an error fetching businesses! 🤥',
       });
     }
-  }, [feError]);
+  }, [businessesError]);
 
   const businesses = useMemo(() => {
     return (
-      feData?.allFinancialEntities?.nodes
+      businessesData?.allBusinesses?.nodes
         .map(entity => ({
           value: entity.id,
           label: entity.name,
         }))
         .sort((a, b) => (a.label > b.label ? 1 : -1)) ?? []
     );
-  }, [feData]);
+  }, [businessesData]);
 
   const onSubmit: SubmitHandler<BusinessTransactionsFilter> = data => {
     setFilter(data);
@@ -69,7 +69,7 @@ function BusinessTransactionsFilterForm({
 
   return (
     <>
-      {feLoading ? <div>Loading...</div> : <div />}
+      {businessesLoading ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <Controller
           name="ownerIds"
@@ -80,7 +80,7 @@ function BusinessTransactionsFilterForm({
               {...field}
               data={businesses}
               value={field.value ?? [userContext?.ownerId]}
-              disabled={feLoading}
+              disabled={businessesLoading}
               label="Owners"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
@@ -99,7 +99,7 @@ function BusinessTransactionsFilterForm({
                 {...field}
                 data={businesses}
                 value={field.value ?? undefined}
-                disabled={feLoading}
+                disabled={businessesLoading}
                 label="Businesses"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
