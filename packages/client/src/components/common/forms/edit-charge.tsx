@@ -4,8 +4,8 @@ import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
+  AllBusinessesDocument,
   AllBusinessTripsDocument,
-  AllFinancialEntitiesDocument,
   AllTaxCategoriesDocument,
   EditChargeQuery,
   UpdateChargeInput,
@@ -33,19 +33,13 @@ type Props = {
 
 export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => {
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
-  const [
+  const [{ data: businessesData, fetching: fetchingBusinesses, error: businessesError }] = useQuery(
     {
-      data: financialEntitiesData,
-      fetching: fetchingFinancialEntities,
-      error: financialEntitiesError,
+      query: AllBusinessesDocument,
     },
-  ] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
+  );
 
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
+  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
   const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
   const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
 
@@ -89,19 +83,19 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   };
 
   useEffect(() => {
-    if (financialEntitiesError) {
+    if (businessesError) {
       showNotification({
         title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+        message: 'Oh no!, we have an error fetching businesses! 🤥',
       });
     }
-  }, [financialEntitiesError]);
+  }, [businessesError]);
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        financialEntitiesData.allFinancialEntities.nodes
+    if (businessesData?.allBusinesses?.nodes.length) {
+      setBusinesses(
+        businessesData.allBusinesses.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,
@@ -109,7 +103,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
       );
     }
-  }, [financialEntitiesData, setFinancialEntities]);
+  }, [businessesData, setBusinesses]);
 
   // handle tax categories
   const [{ data: taxCategoriesData, fetching: fetchingTaxCategories, error: taxCategoriesError }] =
@@ -208,9 +202,9 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                data={financialEntities}
+                data={businesses}
                 value={field.value}
-                disabled={fetchingFinancialEntities}
+                disabled={fetchingBusinesses}
                 label="Owner"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}

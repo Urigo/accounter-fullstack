@@ -3,7 +3,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Modal, Select } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AllFinancialEntitiesDocument } from '../../../gql/graphql.js';
+import { AllBusinessesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
 
 type ModalProps = {
@@ -13,11 +13,9 @@ type ModalProps = {
 };
 
 export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-  const [{ data, fetching: fetchingBusinesses, error: financialEntitiesError }] = useQuery({
-    query: AllFinancialEntitiesDocument,
+  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
+  const [{ data, fetching: fetchingBusinesses, error: businessesError }] = useQuery({
+    query: AllBusinessesDocument,
   });
 
   const { control, handleSubmit } = useForm<{ ownerId: string }>({
@@ -26,9 +24,9 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
-    if (data?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        data.allFinancialEntities.nodes
+    if (data?.allBusinesses?.nodes.length) {
+      setBusinesses(
+        data.allBusinesses.nodes
           .map(entity => ({
             value: entity.id,
             label: entity.name,
@@ -36,16 +34,16 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
           .sort((a, b) => (a.label > b.label ? 1 : -1)),
       );
     }
-  }, [data, setFinancialEntities]);
+  }, [data, setBusinesses]);
 
   useEffect(() => {
-    if (financialEntitiesError) {
+    if (businessesError) {
       showNotification({
         title: 'Error!',
         message: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
-  }, [financialEntitiesError]);
+  }, [businessesError]);
 
   const { fetchIncomeDocuments, fetching: fetchingDocuments } = useFetchIncomeDocuments();
 
@@ -70,7 +68,7 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                data={financialEntities}
+                data={businesses}
                 value={field.value}
                 disabled={fetchingBusinesses}
                 label="Owner:"
