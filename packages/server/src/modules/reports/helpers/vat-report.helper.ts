@@ -66,6 +66,11 @@ export async function adjustTaxRecord(
       .get(ExchangeProvider)
       .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, doc.date);
 
+    const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
+    const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
+    const totalAmount = doc.total_amount * creditInvoiceFactor;
+    const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
+
     const partialRecord: RawVatReportRecord = {
       businessId: charge.business_id,
       chargeAccountantStatus: charge.accountant_status,
@@ -76,9 +81,9 @@ export async function adjustTaxRecord(
       documentId: doc.id,
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
-      documentAmount: String((doc.type === DocumentType.CreditInvoice ? -1 : 1) * doc.total_amount),
-      foreignVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? null : doc.vat_amount,
-      localVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? doc.vat_amount : null,
+      documentAmount: String(creditInvoiceFactor * totalAmount),
+      foreignVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? null : vatAmount,
+      localVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? vatAmount : null,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
       isExpense:
@@ -88,21 +93,17 @@ export async function adjustTaxRecord(
     };
 
     // set default amountBeforeVAT
-    if (!doc.vat_amount) {
-      partialRecord.localAmountBeforeVAT =
-        (doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0)) *
-        rate *
-        (doc.type === DocumentType.CreditInvoice ? -1 : 1);
+    if (!vatAmount) {
+      partialRecord.localAmountBeforeVAT = (totalAmount - noVatAmount) * rate;
     } else if (partialRecord.businessId) {
       // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
       const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
-      const tiplessTotalAmount =
-        doc.total_amount - (doc.no_vat_amount ? Number(doc.no_vat_amount) : 0);
-      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - doc.vat_amount);
+      const tiplessTotalAmount = totalAmount - noVatAmount;
+      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - vatAmount);
       if (vatDiff > 0.005) {
         console.error(
           `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
-            doc.vat_amount / (tiplessTotalAmount - doc.vat_amount)
+            vatAmount / (tiplessTotalAmount - vatAmount)
           } for invoice ID=${doc.id}`,
         );
       }
@@ -111,15 +112,15 @@ export async function adjustTaxRecord(
       const isDecreasedVat = false;
 
       // decorate record with additional fields
-      const vatAfterDeduction = doc.vat_amount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
-      const amountBeforeVAT = doc.total_amount - vatAfterDeduction;
+      const vatAfterDeduction = vatAmount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
+      const amountBeforeVAT = totalAmount - vatAfterDeduction;
 
       partialRecord.foreignVatAfterDeduction = vatAfterDeduction;
       partialRecord.localVatAfterDeduction = vatAfterDeduction * rate;
       partialRecord.foreignAmountBeforeVAT = amountBeforeVAT;
       partialRecord.localAmountBeforeVAT = amountBeforeVAT * rate;
       partialRecord.roundedVATToAdd = Math.round(vatAfterDeduction * rate);
-      partialRecord.eventLocalAmount = doc.total_amount * rate;
+      partialRecord.eventLocalAmount = totalAmount * rate;
     }
 
     return partialRecord;
