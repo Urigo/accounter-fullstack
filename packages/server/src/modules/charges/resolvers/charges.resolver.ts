@@ -696,7 +696,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     ledgerCount: DbCharge => Number(DbCharge.ledger_count) ?? 0,
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
-        const generatedledgerPromise = ledgerGenerationByCharge(DbCharge)(
+        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge)(
           DbCharge,
           { insertLedgerRecordsIfNotExists: false },
           context,
@@ -709,7 +709,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         const [currentRecord, generated] = await Promise.all([
           currentRecordPromise,
-          generatedledgerPromise,
+          generatedLedgerPromise,
         ]);
 
         if (
