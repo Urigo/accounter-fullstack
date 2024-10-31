@@ -31,6 +31,7 @@ yarn local:setup
 5. Run client and server:
 
 ```sh
+yarn build
 yarn client:dev
 yarn server:dev
 ```
