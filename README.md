@@ -1,4 +1,44 @@
-# Node ES Modules with TypeScript
+# Accounter
+
+Manage your taxes.
+
+## Getting started
+
+1. Switch to the correct version of Node.js:
+
+```sh
+nvm use $(cat .node-version)
+```
+
+2. Install dependencies:
+
+```sh
+yarn install
+```
+
+3. Create `.env` file:
+
+```sh
+cp .env.template .env
+```
+
+4. Run setup:
+
+```sh
+yarn local:setup
+```
+
+5. Run client and server:
+
+```sh
+yarn client:dev
+yarn server:dev
+```
+
+6. Visit [http://localhost:3001/](http://localhost:3001/) to sign in. Choose any credentials you
+   want.
+
+## Node ES Modules with TypeScript
 
 Latest Typescript and Node - as bare-bone as possible example app
 
