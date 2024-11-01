@@ -36,8 +36,8 @@ yarn client:dev
 yarn server:dev
 ```
 
-6. Visit [http://localhost:3001/](http://localhost:3001/) to sign in. Choose any credentials you
-   want.
+6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in. The credentials to log in are
+   in your `.env` file under `AUTHORIZED_USERS`.
 
 ## Node ES Modules with TypeScript
 
