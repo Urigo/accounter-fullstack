@@ -16,7 +16,7 @@ import {
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
-  AllBusinessesDocument,
+  AllFinancialEntitiesDocument,
   AllTagsDocument,
   ChargeFilter,
   ChargeFilterType,
@@ -63,15 +63,21 @@ function ChargesFiltersForm({
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
-  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
+  const [financialEntities, setFinancialEntities] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [tags, setTags] = useState<Array<{ value: string; label: string; description?: string }>>(
     [],
   );
-  const [{ data: businessesData, fetching: businessesFetching, error: businessesError }] = useQuery(
+  const [
     {
-      query: AllBusinessesDocument,
+      data: financialEntitiesData,
+      fetching: financialEntitiesFetching,
+      error: financialEntitiesError,
     },
-  );
+  ] = useQuery({
+    query: AllFinancialEntitiesDocument,
+  });
   const [{ data: tagsData, fetching: tagsFetching, error: tagsError }] = useQuery({
     query: AllTagsDocument,
   });
@@ -87,13 +93,13 @@ function ChargesFiltersForm({
   }, [sortByField, enableAsc]);
 
   useEffect(() => {
-    if (businessesError) {
+    if (financialEntitiesError) {
       showNotification({
         title: 'Error!',
         message: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
-  }, [businessesError]);
+  }, [financialEntitiesError]);
 
   useEffect(() => {
     if (tagsError) {
@@ -120,9 +126,9 @@ function ChargesFiltersForm({
 
   // On every new financial entities data fetch, reorder results by name
   useEffect(() => {
-    if (businessesData?.allBusinesses?.nodes.length) {
-      setBusinesses(
-        businessesData.allBusinesses.nodes
+    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
+      setFinancialEntities(
+        financialEntitiesData.allFinancialEntities.nodes
           .sort((a, b) => (a.name > b.name ? 1 : -1))
           .map(entity => ({
             value: entity.id,
@@ -130,7 +136,7 @@ function ChargesFiltersForm({
           })),
       );
     }
-  }, [businessesData, setBusinesses]);
+  }, [financialEntitiesData, setFinancialEntities]);
 
   // On every new tags data fetch, reorder results by name
   useEffect(() => {
@@ -147,7 +153,7 @@ function ChargesFiltersForm({
 
   return (
     <>
-      {businessesFetching ? <div>Loading...</div> : <div />}
+      {financialEntitiesFetching ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <SimpleGrid cols={2}>
           <Controller
@@ -157,9 +163,9 @@ function ChargesFiltersForm({
             render={({ field, fieldState }): ReactElement => (
               <MultiSelect
                 {...field}
-                data={businesses}
+                data={financialEntities}
                 value={field.value ?? []}
-                disabled={businessesFetching}
+                disabled={financialEntitiesFetching}
                 label="Owners"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
@@ -176,10 +182,10 @@ function ChargesFiltersForm({
             render={({ field, fieldState }): ReactElement => (
               <MultiSelect
                 {...field}
-                data={businesses}
+                data={financialEntities}
                 value={field.value ?? []}
-                disabled={businessesFetching}
-                label="Main Businesses"
+                disabled={financialEntitiesFetching}
+                label="Financial Entities"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
                 searchable
@@ -277,7 +283,7 @@ function ChargesFiltersForm({
                 {...field}
                 data={chargesTypeFilterOptions}
                 value={field.value ?? ChargeFilterType.All}
-                disabled={businessesFetching}
+                disabled={financialEntitiesFetching}
                 label="Charge Type"
                 placeholder="Filter income/expense"
                 maxDropdownHeight={160}
@@ -324,7 +330,7 @@ function ChargesFiltersForm({
                 {...field}
                 value={field.value ?? []}
                 data={accountantApprovalInputData}
-                disabled={businessesFetching}
+                disabled={financialEntitiesFetching}
                 label="Accountant Status"
                 placeholder="All"
                 maxDropdownHeight={160}
@@ -365,7 +371,7 @@ function ChargesFiltersForm({
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
-            disabled={businessesFetching || tagsFetching}
+            disabled={financialEntitiesFetching || tagsFetching}
             className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
           >
             Filter
