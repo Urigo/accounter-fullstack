@@ -24,7 +24,7 @@
     "@envelop/generic-auth": "8.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-yoga/node": "3.9.1",
-    "@graphql-yoga/plugin-defer-stream": "3.7.0",
+    "@graphql-yoga/plugin-defer-stream": "3.8.0",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@whatwg-node/fetch": "0.9.22",
@@ -37,7 +37,7 @@
     "dotenv-cli": "7.4.2",
     "graphql": "16.9.0",
     "graphql-modules": "2.4.0",
-    "graphql-yoga": "5.7.0",
+    "graphql-yoga": "5.8.0",
     "node-cache": "5.1.2",
     "pg": "8.13.1",
     "reflect-metadata": "0.2.2"
