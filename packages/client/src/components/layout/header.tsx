@@ -23,6 +23,11 @@ export function Header(): JSX.Element {
           </Link>
         </div>
         <div className="hidden md:visible md:flex flex-row justify-start gap-3">
+          <img
+            src="../../../icons/accounter-logo.svg"
+            alt="nature"
+            className="w-[25px] h-[25px] object-cover"
+          />
           <h1 className="text-xl font-semibold">Accounter</h1>
           {titleByPath && (
             <>
