@@ -155,4 +155,14 @@ export class GreenInvoiceProvider {
     const sdk = await this.getSDK();
     return sdk.searchDocuments_query(...params).then(res => res.searchDocuments);
   }
+
+  public async addDocuments(...params: Parameters<Sdk['addDocument_mutation']>) {
+    const sdk = await this.getSDK();
+    return sdk.addDocument_mutation(...params).then(res => res.addDocument);
+  }
+
+  public async previewDocuments(...params: Parameters<Sdk['previewDocument_query']>) {
+    const sdk = await this.getSDK();
+    return sdk.previewDocument_query(...params).then(res => res.previewDocument);
+  }
 }

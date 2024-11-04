@@ -1,15 +1,11 @@
 import type {
-  mutation_addExpense_oneOf_0_allOf_0_documentType,
-  query_searchDocuments_items_items_payment_items_ref_items,
+  ExpenseDocumentType,
+  DocumentType as GreenInvoiceDocumentType,
 } from '@accounter/green-invoice-graphql';
 import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
-  rawType?:
-    | mutation_addExpense_oneOf_0_allOf_0_documentType
-    | query_searchDocuments_items_items_payment_items_ref_items
-    | number
-    | null,
+  rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
 ): DocumentType {
   if (!rawType) {
     return DocumentType.Unprocessed;
@@ -47,5 +43,22 @@ export function normalizeDocumentType(
     default:
       console.log(`Got a new document type from Green Invoice: ${rawType}`);
       return DocumentType.Unprocessed;
+  }
+}
+
+export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenInvoiceDocumentType {
+  switch (documentType) {
+    case DocumentType.Invoice:
+      return '_305';
+    case DocumentType.Proforma:
+      return '_300';
+    case DocumentType.InvoiceReceipt:
+      return '_320';
+    case DocumentType.CreditInvoice:
+      return '_330';
+    case DocumentType.Receipt:
+      return '_400';
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
   }
 }

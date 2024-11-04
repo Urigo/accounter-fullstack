@@ -152,7 +152,9 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       vat_amount,
       charge_id,
       vat_report_date_override,
-      no_vat_amount
+      no_vat_amount,
+      creditor_id,
+      debtor_id
     )
     VALUES $$document(
       image,
@@ -165,7 +167,9 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       vat,
       chargeId,
       vatReportDateOverride,
-      noVatAmount
+      noVatAmount,
+      creditorId,
+      debtorId
     )
     RETURNING *;`;
 

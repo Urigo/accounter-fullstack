@@ -14,6 +14,20 @@ sources:
             requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseRequest
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseResponse
 
+          - type: Mutation
+            field: addDocument
+            path: /documents
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentResponse
+
+          - type: Query
+            field: previewDocument
+            path: /documents/preview
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentResponse
+
           - type: Query
             field: getExpense
             path: /expenses/{args.id}
