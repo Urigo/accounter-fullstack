@@ -1,19 +1,118 @@
-<svg id="eNj6udp3irV1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 600 600" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" project-id="fd6d05ce25394204ba60d83d7c3cb7cd" export-id="18321185012c41d39670f61ed5c9a6d5" cached="false">
-    <rect width="50" height="386" rx="0" ry="0" transform="translate(75 107)" fill="#fff" stroke="#000" stroke-width="14"/>
-    <rect width="50" height="386" rx="0" ry="0" transform="translate(475 107)" fill="#fff" stroke="#000102" stroke-width="14"/>
-    <ellipse rx="25" ry="25" transform="translate(500 500)" fill="#fff" stroke="#000102" stroke-width="14"/>
-    <ellipse rx="25" ry="25" transform="translate(500 100)" fill="#fff" stroke="#000102" stroke-width="14"/>
-    <rect width="35" height="400" rx="0" ry="0" transform="translate(482.5 100)" fill="#fff" stroke="#fff"/>
-    <ellipse rx="25" ry="25" transform="translate(100 500)" fill="#fff" stroke="#000102" stroke-width="14"/>
-    <ellipse rx="25" ry="25" transform="translate(100 100)" fill="#fff" stroke="#000" stroke-width="14"/>
-    <rect width="35" height="400" rx="0" ry="0" transform="translate(82.5 100)" fill="#fff" stroke="#fff"/>
-    <line x1="-175" y1="0" x2="175" y2="0" transform="translate(300 450)" fill="none" stroke="#000102" stroke-width="14"/>
-    <line x1="-175" y1="0" x2="175" y2="0" transform="translate(300 300)" fill="none" stroke="#000102" stroke-width="14"/>
-    <line x1="-175" y1="0" x2="175" y2="0" transform="translate(300 145)" fill="none" stroke="#000102" stroke-width="14"/>
-    <ellipse rx="45" ry="45" transform="translate(250 145)" stroke-width="0"/>
-    <ellipse rx="45" ry="45" transform="translate(200 300)" stroke-width="0"/>
-    <ellipse rx="45" ry="45" transform="translate(300 300)" stroke-width="0"/>
-    <ellipse rx="45" ry="45" transform="translate(350 450)" stroke-width="0"/>
-    <ellipse rx="45" ry="45" transform="translate(400 300)" stroke-width="0"/>
-    <ellipse rx="45" ry="45" transform="translate(400 145)" stroke-width="0"/>
+<svg
+  id="eNj6udp3irV1"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 600 600"
+  shape-rendering="geometricPrecision"
+  text-rendering="geometricPrecision"
+  project-id="fd6d05ce25394204ba60d83d7c3cb7cd"
+  export-id="18321185012c41d39670f61ed5c9a6d5"
+  cached="false"
+>
+  <rect
+    width="50"
+    height="386"
+    rx="0"
+    ry="0"
+    transform="translate(75 107)"
+    fill="#fff"
+    stroke="#000"
+    stroke-width="14"
+  />
+  <rect
+    width="50"
+    height="386"
+    rx="0"
+    ry="0"
+    transform="translate(475 107)"
+    fill="#fff"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <ellipse
+    rx="25"
+    ry="25"
+    transform="translate(500 500)"
+    fill="#fff"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <ellipse
+    rx="25"
+    ry="25"
+    transform="translate(500 100)"
+    fill="#fff"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <rect
+    width="35"
+    height="400"
+    rx="0"
+    ry="0"
+    transform="translate(482.5 100)"
+    fill="#fff"
+    stroke="#fff"
+  />
+  <ellipse
+    rx="25"
+    ry="25"
+    transform="translate(100 500)"
+    fill="#fff"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <ellipse
+    rx="25"
+    ry="25"
+    transform="translate(100 100)"
+    fill="#fff"
+    stroke="#000"
+    stroke-width="14"
+  />
+  <rect
+    width="35"
+    height="400"
+    rx="0"
+    ry="0"
+    transform="translate(82.5 100)"
+    fill="#fff"
+    stroke="#fff"
+  />
+  <line
+    x1="-175"
+    y1="0"
+    x2="175"
+    y2="0"
+    transform="translate(300 450)"
+    fill="none"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <line
+    x1="-175"
+    y1="0"
+    x2="175"
+    y2="0"
+    transform="translate(300 300)"
+    fill="none"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <line
+    x1="-175"
+    y1="0"
+    x2="175"
+    y2="0"
+    transform="translate(300 145)"
+    fill="none"
+    stroke="#000102"
+    stroke-width="14"
+  />
+  <ellipse rx="45" ry="45" transform="translate(250 145)" stroke-width="0" />
+  <ellipse rx="45" ry="45" transform="translate(200 300)" stroke-width="0" />
+  <ellipse rx="45" ry="45" transform="translate(300 300)" stroke-width="0" />
+  <ellipse rx="45" ry="45" transform="translate(350 450)" stroke-width="0" />
+  <ellipse rx="45" ry="45" transform="translate(400 300)" stroke-width="0" />
+  <ellipse rx="45" ry="45" transform="translate(400 145)" stroke-width="0" />
 </svg>
