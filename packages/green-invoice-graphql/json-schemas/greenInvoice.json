@@ -502,8 +502,7 @@
           "description": "Results per page"
         },
         "number": {
-          "type": "number",
-          "description": "Document number"
+          "$ref": "#/definitions/DocumentTaxNumber"
         },
         "type": {
           "type": "array",
@@ -1238,11 +1237,15 @@
       "allOf": [{ "$ref": "#/definitions/DocumentCore" }],
       "additionalProperties": false,
       "properties": {
-        "id": true,
+        "id": {
+          "$ref": "#/definitions/DocumentId"
+        },
         "lang": {
           "$ref": "#/definitions/DocumentLang"
         },
-        "number": true,
+        "number": {
+          "$ref": "#/definitions/DocumentTaxNumber"
+        },
         "signed": true,
         "url": true
       },
@@ -1277,14 +1280,18 @@
         },
         "documentDate": true,
         "downloaded": true,
-        "id": true,
+        "id": {
+          "$ref": "#/definitions/DocumentId"
+        },
         "income": {
           "$ref": "#/definitions/DocumentIncome"
         },
         "lang": {
           "$ref": "#/definitions/DocumentLang"
         },
-        "number": true,
+        "number": {
+          "$ref": "#/definitions/DocumentTaxNumber"
+        },
         "payment": true,
         "ref": true,
         "remarks": {
@@ -1300,7 +1307,9 @@
         "url": true,
         "vat": true,
         "vatRate": true,
-        "vatType": true
+        "vatType": {
+          "$ref": "#/definitions/VatType"
+        }
       },
       "required": [
         "amount",
@@ -1375,7 +1384,9 @@
         "lang": {
           "$ref": "#/definitions/DocumentLang"
         },
-        "vatType": true,
+        "vatType": {
+          "$ref": "#/definitions/VatType"
+        },
         "discount": {
           "description": "TODO: implement",
           "type": "object"
@@ -1504,8 +1515,7 @@
           "type": "boolean"
         },
         "id": {
-          "description": "Document ID",
-          "type": "string"
+          "$ref": "#/definitions/DocumentId"
         },
         "income": {
           "$ref": "#/definitions/DocumentIncome"
@@ -1514,8 +1524,7 @@
           "$ref": "#/definitions/DocumentLang"
         },
         "number": {
-          "description": "Document tax number",
-          "type": "string"
+          "$ref": "#/definitions/DocumentTaxNumber"
         },
         "payment": {
           "type": "array",
@@ -1568,35 +1577,26 @@
           "type": "number"
         },
         "vatType": {
-          "description": "VAT type",
-          "type": "number",
-          "examples": [0]
+          "$ref": "#/definitions/VatType"
         }
       }
     },
     "Expense": {
-      "allOf": [{ "$ref": "#/definitions/ExpensePartial" }],
-      "properties": {
-        "currency": true,
-        "vat": true,
-        "amount": true,
-        "date": true,
-        "reportingDate": true,
-        "documentType": true,
-        "number": true,
-        "supplier": true,
-        "accountingClassification": true
-      },
-      "required": [
-        "currency",
-        "vat",
-        "amount",
-        "date",
-        "reportingDate",
-        "documentType",
-        "number",
-        "supplier",
-        "accountingClassification"
+      "allOf": [
+        { "$ref": "#/definitions/ExpensePartial" },
+        {
+          "required": [
+            "currency",
+            "vat",
+            "amount",
+            "date",
+            "reportingDate",
+            "documentType",
+            "number",
+            "supplier",
+            "accountingClassification"
+          ]
+        }
       ]
     },
     "ExpensePartial": {
@@ -1887,9 +1887,7 @@
           "description": "VAT rate"
         },
         "vatType": {
-          "type": "number",
-          "description": "VAT type",
-          "examples": [0, 1, 2]
+          "$ref": "#/definitions/VatType"
         }
       },
       "required": ["description", "quantity", "price", "currency", "vatType"]
@@ -2111,6 +2109,19 @@
       "items": {
         "$ref": "#/definitions/Income"
       }
+    },
+    "VatType": {
+      "description": "VAT type",
+      "type": "number",
+      "examples": [0]
+    },
+    "DocumentId": {
+      "description": "Document ID",
+      "type": "string"
+    },
+    "DocumentTaxNumber": {
+      "description": "Document tax number",
+      "type": "string"
     }
   }
 }
