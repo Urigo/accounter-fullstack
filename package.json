@@ -65,7 +65,7 @@
     "@theguild/prettier-config": "2.0.7",
     "@types/node": "22.8.7",
     "bob-the-bundler": "^7.0.1",
-    "concurrently": "9.0.1",
+    "concurrently": "9.1.0",
     "eslint": "8.57.1",
     "glob": "11.0.0",
     "husky": "9.1.6",
