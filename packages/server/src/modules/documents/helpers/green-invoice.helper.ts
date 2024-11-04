@@ -1,15 +1,11 @@
 import type {
-  mutation_addDocument_oneOf_0_allOf_0_payment_items_ref_items,
-  mutation_addExpense_oneOf_0_allOf_0_documentType,
+  ExpenseDocumentType,
+  DocumentType as GreenInvoiceDocumentType,
 } from '@accounter/green-invoice-graphql';
 import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
-  rawType?:
-    | mutation_addExpense_oneOf_0_allOf_0_documentType
-    | mutation_addDocument_oneOf_0_allOf_0_payment_items_ref_items
-    | number
-    | null,
+  rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
 ): DocumentType {
   if (!rawType) {
     return DocumentType.Unprocessed;

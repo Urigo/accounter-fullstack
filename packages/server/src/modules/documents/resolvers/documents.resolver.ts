@@ -233,12 +233,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         return [];
       }
 
-      data.items.map(item => {
-        if (item?.amount < 0) {
-          console.log('Negative amount:', item);
-        }
-      });
-
       const documents = await injector.get(DocumentsProvider).getAllDocuments();
       const newDocuments = data.items.filter(
         item =>

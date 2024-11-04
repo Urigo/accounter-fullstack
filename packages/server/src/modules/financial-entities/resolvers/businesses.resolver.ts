@@ -312,7 +312,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
           const documentInput: DocumentInput_Input & { businessName: string } = {
             businessName: business.name,
-            type: 300,
+            type: '_300',
             remarks: businessGreenInvoiceMatch.remark ?? undefined,
             date: monthStart,
             dueDate: monthEnd,
