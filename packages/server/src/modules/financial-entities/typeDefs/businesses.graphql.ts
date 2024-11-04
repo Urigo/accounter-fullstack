@@ -59,8 +59,6 @@ export default gql`
     ): UpdateBusinessResponse! @auth(role: ACCOUNTANT)
     insertNewBusiness(fields: InsertNewBusinessInput!): UpdateBusinessResponse!
       @auth(role: ACCOUNTANT)
-    generateMonthlyProformaDocuments: GenerateMonthlyProformaDocumentsResult!
-      @auth(role: ACCOUNTANT)
   }
 
   " result type for updateBusiness "
@@ -105,12 +103,6 @@ export default gql`
     phrases: [String!]
     tags: [TagInput!]
     description: String
-  }
-
-  " result type for generateMonthlyProformaDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
-  type GenerateMonthlyProformaDocumentsResult {
-    success: Boolean!
-    errors: [String!]
   }
 
   extend interface Charge {

@@ -45,3 +45,20 @@ export function normalizeDocumentType(
       return DocumentType.Unprocessed;
   }
 }
+
+export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenInvoiceDocumentType {
+  switch (documentType) {
+    case DocumentType.Invoice:
+      return '_305';
+    case DocumentType.Proforma:
+      return '_300';
+    case DocumentType.InvoiceReceipt:
+      return '_320';
+    case DocumentType.CreditInvoice:
+      return '_330';
+    case DocumentType.Receipt:
+      return '_400';
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}

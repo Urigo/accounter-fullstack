@@ -27,6 +27,27 @@
         }
       ]
     },
+    "previewDocumentRequest": {
+      "$ref": "#/definitions/DocumentInput"
+    },
+    "previewDocumentResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "description": "Preview document file in Base64",
+              "type": "string"
+            }
+          },
+          "required": ["file"]
+        },
+        {
+          "$ref": "#/definitions/ErrorResponse"
+        }
+      ]
+    },
     "addExpenseDraftByFileRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -1493,10 +1514,6 @@
           "description": "Attach the document in the email sent to recipient?",
           "type": "boolean"
         },
-        "maxPayments": {
-          "description": "Deprecated (use paymentRequestData), Max payments allowed (valid only on supported accounts)",
-          "type": "number"
-        },
         "paymentRequestData": {
           "description": "TODO: implement",
           "type": "object"
@@ -1526,6 +1543,11 @@
         "linkedPaymentId": {
           "description": "Linked payment ID (valid for document type 305 only). allows you to define the paymentId that the document is going to be relevant to, this can be attached only to invoice documents (type 305).",
           "type": "string"
+        },
+        "linkType": {
+          "description": "Reference type (applicable only when using linkedDocumentIds)",
+          "type": "string",
+          "enum": ["link", "cancel"]
         }
       },
       "required": ["type", "lang", "currency", "vatType"]
