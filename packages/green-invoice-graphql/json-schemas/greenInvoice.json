@@ -14,6 +14,19 @@
         }
       ]
     },
+    "addDocumentRequest": {
+      "$ref": "#/definitions/DocumentInput"
+    },
+    "addDocumentResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/AddedDocument"
+        },
+        {
+          "$ref": "#/definitions/ErrorResponse"
+        }
+      ]
+    },
     "addExpenseDraftByFileRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -1221,10 +1234,189 @@
         "HRK"
       ]
     },
-    "Document": {
-      "type": "object",
+    "AddedDocument": {
+      "allOf": [{ "$ref": "#/definitions/DocumentCore" }],
       "additionalProperties": false,
+      "properties": {
+        "id": true,
+        "lang": {
+          "$ref": "#/definitions/DocumentLang"
+        },
+        "number": true,
+        "signed": true,
+        "url": true
+      },
+      "required": ["id", "lang", "number", "signed", "url"]
+    },
+    "Document": {
       "description": "A Single Document",
+      "allOf": [{ "$ref": "#/definitions/DocumentCore" }],
+      "additionalProperties": false,
+      "properties": {
+        "amount": true,
+        "amountDueVat": true,
+        "amountExemptVat": true,
+        "amountLocal": true,
+        "amountOpened": true,
+        "business": true,
+        "calculatedAmountLocal": true,
+        "calculatedAmountOpenedLocal": true,
+        "calculatedIncomeAmountExcludeLocal": true,
+        "calculatedIncomeAmountLocal": true,
+        "calculatedPaymentAmountLocal": true,
+        "cancellable": true,
+        "client": {
+          "$ref": "#/definitions/Client"
+        },
+        "creationDate": true,
+        "currency": true,
+        "currencyRate": true,
+        "data": true,
+        "description": {
+          "$ref": "#/definitions/DocumentDescription"
+        },
+        "documentDate": true,
+        "downloaded": true,
+        "id": true,
+        "income": {
+          "$ref": "#/definitions/DocumentIncome"
+        },
+        "lang": {
+          "$ref": "#/definitions/DocumentLang"
+        },
+        "number": true,
+        "payment": true,
+        "ref": true,
+        "remarks": {
+          "type": "string"
+        },
+        "reverseCharge": true,
+        "rounding": true,
+        "signed": true,
+        "skinId": true,
+        "status": true,
+        "templateId": true,
+        "type": true,
+        "url": true,
+        "vat": true,
+        "vatRate": true,
+        "vatType": true
+      },
+      "required": [
+        "amount",
+        "amountDueVat",
+        "amountExemptVat",
+        "amountLocal",
+        "amountOpened",
+        "business",
+        "calculatedAmountLocal",
+        "calculatedAmountOpenedLocal",
+        "calculatedIncomeAmountExcludeLocal",
+        "calculatedIncomeAmountLocal",
+        "calculatedPaymentAmountLocal",
+        "cancellable",
+        "client",
+        "creationDate",
+        "currency",
+        "currencyRate",
+        "data",
+        "description",
+        "documentDate",
+        "downloaded",
+        "id",
+        "income",
+        "lang",
+        "number",
+        "payment",
+        "ref",
+        "remarks",
+        "reverseCharge",
+        "rounding",
+        "signed",
+        "skinId",
+        "status",
+        "templateId",
+        "type",
+        "url",
+        "vat",
+        "vatRate",
+        "vatType"
+      ]
+    },
+    "DocumentInput": {
+      "allOf": [{ "$ref": "#/definitions/DocumentCore" }],
+      "description": "A New Document",
+      "additionalProperties": false,
+      "properties": {
+        "remarks": {
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/definitions/DocumentDescription"
+        },
+        "footer": {
+          "description": "Texts appearing in footer",
+          "type": "string"
+        },
+        "emailContent": {
+          "description": "Custom extra text appearing in email sent to customer",
+          "type": "string"
+        },
+        "type": true,
+        "date": {
+          "description": "Document date in the format YYYY-MM-DD",
+          "type": "string"
+        },
+        "dueDate": {
+          "description": "Document payment due date in the format YYYY-MM-DD",
+          "type": "string"
+        },
+        "currency": true,
+        "lang": {
+          "$ref": "#/definitions/DocumentLang"
+        },
+        "vatType": true,
+        "discount": {
+          "description": "TODO: implement",
+          "type": "object"
+        },
+        "rounding": true,
+        "signed": true,
+        "attachment": {
+          "description": "Attach the document in the email sent to recipient?",
+          "type": "boolean"
+        },
+        "maxPayments": {
+          "description": "Deprecated (use paymentRequestData), Max payments allowed (valid only on supported accounts)",
+          "type": "number"
+        },
+        "paymentRequestData": {
+          "description": "TODO: implement",
+          "type": "object"
+        },
+        "client": {
+          "$ref": "#/definitions/Client"
+        },
+        "income": {
+          "$ref": "#/definitions/DocumentIncome"
+        },
+        "payment": true,
+        "linkedDocumentIds": {
+          "description": "Linked document IDs. allows you to state the related / relevant documents, e.g.: when creating a receipt, attach your original invoice document ID as one of the ids in the linkedDocumentIds - this in turn will automatically close the original invoice if needed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "linkedPaymentId": {
+          "description": "Linked payment ID (valid for document type 305 only). allows you to define the paymentId that the document is going to be relevant to, this can be attached only to invoice documents (type 305).",
+          "type": "string"
+        }
+      },
+      "required": ["type", "lang", "currency", "vatType"]
+    },
+    "DocumentCore": {
+      "type": "object",
       "properties": {
         "amount": {
           "description": "Total amount, in requested currency (including the VAT, Discount & Rounding)",
@@ -1302,8 +1494,7 @@
           }
         },
         "description": {
-          "description": "The type of the document",
-          "type": "string"
+          "$ref": "#/definitions/DocumentDescription"
         },
         "documentDate": {
           "description": "Document reference date",
@@ -1317,15 +1508,10 @@
           "type": "string"
         },
         "income": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Income"
-          }
+          "$ref": "#/definitions/DocumentIncome"
         },
         "lang": {
-          "description": "Document language",
-          "type": "string",
-          "enum": ["en", "he"]
+          "$ref": "#/definitions/DocumentLang"
         },
         "number": {
           "description": "Document tax number",
@@ -1386,64 +1572,31 @@
           "type": "number",
           "examples": [0]
         }
-      },
-      "required": [
-        "amount",
-        "amountDueVat",
-        "amountExemptVat",
-        "amountLocal",
-        "amountOpened",
-        "business",
-        "calculatedAmountLocal",
-        "calculatedAmountOpenedLocal",
-        "calculatedIncomeAmountExcludeLocal",
-        "calculatedIncomeAmountLocal",
-        "calculatedPaymentAmountLocal",
-        "cancellable",
-        "client",
-        "creationDate",
-        "currency",
-        "currencyRate",
-        "data",
-        "description",
-        "documentDate",
-        "downloaded",
-        "id",
-        "income",
-        "lang",
-        "number",
-        "payment",
-        "ref",
-        "remarks",
-        "reverseCharge",
-        "rounding",
-        "signed",
-        "skinId",
-        "status",
-        "templateId",
-        "type",
-        "url",
-        "vat",
-        "vatRate",
-        "vatType"
-      ]
+      }
     },
     "Expense": {
-      "allOf": [
-        { "$ref": "#/definitions/ExpensePartial" },
-        {
-          "required": [
-            "currency",
-            "vat",
-            "amount",
-            "date",
-            "reportingDate",
-            "documentType",
-            "number",
-            "supplier",
-            "accountingClassification"
-          ]
-        }
+      "allOf": [{ "$ref": "#/definitions/ExpensePartial" }],
+      "properties": {
+        "currency": true,
+        "vat": true,
+        "amount": true,
+        "date": true,
+        "reportingDate": true,
+        "documentType": true,
+        "number": true,
+        "supplier": true,
+        "accountingClassification": true
+      },
+      "required": [
+        "currency",
+        "vat",
+        "amount",
+        "date",
+        "reportingDate",
+        "documentType",
+        "number",
+        "supplier",
+        "accountingClassification"
       ]
     },
     "ExpensePartial": {
@@ -1943,6 +2096,21 @@
         }
       },
       "required": ["he", "origin"]
+    },
+    "DocumentLang": {
+      "description": "Document language",
+      "type": "string",
+      "enum": ["en", "he"]
+    },
+    "DocumentDescription": {
+      "description": "Document's description",
+      "type": "string"
+    },
+    "DocumentIncome": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Income"
+      }
     }
   }
 }

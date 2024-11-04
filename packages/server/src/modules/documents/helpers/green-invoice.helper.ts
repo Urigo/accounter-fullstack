@@ -1,13 +1,13 @@
 import type {
+  mutation_addDocument_oneOf_0_allOf_0_payment_items_ref_items,
   mutation_addExpense_oneOf_0_allOf_0_documentType,
-  query_searchDocuments_items_items_payment_items_ref_items,
 } from '@accounter/green-invoice-graphql';
 import { DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
   rawType?:
     | mutation_addExpense_oneOf_0_allOf_0_documentType
-    | query_searchDocuments_items_items_payment_items_ref_items
+    | mutation_addDocument_oneOf_0_allOf_0_payment_items_ref_items
     | number
     | null,
 ): DocumentType {

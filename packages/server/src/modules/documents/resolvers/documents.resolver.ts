@@ -4,6 +4,7 @@ import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -195,6 +196,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             ? new Date(record.vatReportDateOverride)
             : null,
           noVatAmount: record.noVatAmount ?? null,
+          creditorId: record.creditorId ?? null,
+          debtorId: record.debtorId ?? null,
         };
         const res = await injector
           .get(DocumentsProvider)
@@ -219,7 +222,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
-    fetchIncomeDocuments: async (_, { ownerId }, { injector }) => {
+    fetchIncomeDocuments: async (_, { ownerId }, { injector, currentUser }) => {
       const data = await injector.get(GreenInvoiceProvider).searchDocuments({
         input: { pageSize: 100, sort: 'creationDate' },
       });
@@ -229,6 +232,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (data.items.length === 0) {
         return [];
       }
+
+      data.items.map(item => {
+        if (item?.amount < 0) {
+          console.log('Negative amount:', item);
+        }
+      });
 
       const documents = await injector.get(DocumentsProvider).getAllDocuments();
       const newDocuments = data.items.filter(
@@ -250,27 +259,47 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             // ignore if no doc or חשבונית עסקה
             return;
           }
+
+          const documentType = normalizeDocumentType(greenInvoiceDoc.type);
+          const isOwnerCreditor =
+            greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
+
           try {
             // generate preview image via cloudinary
-            const { imageUrl } = await injector
+            const imagePromise = injector
               .get(CloudinaryProvider)
               .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
 
             // Generate parent charge
-            const [charge] = await injector.get(ChargesProvider).generateCharge({
+            const chargePromise = injector.get(ChargesProvider).generateCharge({
               ownerId,
               userDescription: greenInvoiceDoc.description ?? 'Green Invoice generated charge',
             });
+
+            // Get matching business
+            const businessPromise = injector
+              .get(BusinessesGreenInvoiceMatcherProvider)
+              .getBusinessMatchByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
+
+            const [{ imageUrl }, [charge], business] = await Promise.all([
+              imagePromise,
+              chargePromise,
+              businessPromise,
+            ]);
+
             if (!charge) {
               throw new Error('Failed to generate charge');
             }
+
+            const counterpartyId = business?.business_id ?? null;
+
             console.log('Generated charge:', charge.id);
 
             // insert document
             const rawDocument: IInsertDocumentsParams['document']['0'] = {
               image: imageUrl,
               file: greenInvoiceDoc.url.origin,
-              documentType: normalizeDocumentType(greenInvoiceDoc.type),
+              documentType,
               serialNumber: greenInvoiceDoc.number,
               date: greenInvoiceDoc.documentDate,
               amount: greenInvoiceDoc.amount,
@@ -279,6 +308,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               chargeId: charge.id,
               vatReportDateOverride: null,
               noVatAmount: null,
+              creditorId: isOwnerCreditor ? currentUser.userId : counterpartyId,
+              debtorId: isOwnerCreditor ? counterpartyId : currentUser.userId,
             };
             const newDocument = await injector
               .get(DocumentsProvider)

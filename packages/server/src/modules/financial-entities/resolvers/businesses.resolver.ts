@@ -1,9 +1,14 @@
+import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { Currency, DocumentInput_Input } from '@accounter/green-invoice-graphql';
+import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, UUID_REGEX } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
+import { BusinessesGreenInvoiceMatcherProvider } from '../providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -25,6 +30,12 @@ type Tag = RequireAtLeastOne<{
   name: string;
   id: string;
 }>;
+
+type TEMP = {
+  businessId: string;
+  amount: number;
+  currency: Currency;
+};
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<Resolvers, 'Business' | 'UpdateBusinessResponse'> = {
@@ -258,6 +269,93 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           message: `Failed to create business`,
         };
       }
+    },
+    generateMonthlyProformaDocuments: async (_, __, { injector }) => {
+      const jsonArray: Array<TEMP> = [
+        {
+          businessId: '147d3415-55e3-497f-acba-352dcc37cb8d', // uri test
+          amount: 1000,
+          currency: 'ILS',
+        },
+      ];
+
+      const errors: string[] = [];
+
+      const proformaProtos = await Promise.all(
+        jsonArray.map(async json => {
+          const businessPromise = injector
+            .get(BusinessesProvider)
+            .getBusinessByIdLoader.load(json.businessId);
+          const businessGreenInvoiceMatchPromise = injector
+            .get(BusinessesGreenInvoiceMatcherProvider)
+            .getBusinessMatchByIdLoader.load(json.businessId);
+          const [business, businessGreenInvoiceMatch] = await Promise.all([
+            businessPromise,
+            businessGreenInvoiceMatchPromise,
+          ]);
+
+          if (!business) {
+            throw new GraphQLError(`Business ID="${json.businessId}" not found`);
+          }
+
+          if (!businessGreenInvoiceMatch) {
+            throw new GraphQLError(
+              `Green invoice match not found for business ID="${json.businessId}"`,
+            );
+          }
+
+          const today = new Date();
+          const monthStart = dateToTimelessDateString(startOfMonth(today));
+          const monthEnd = dateToTimelessDateString(endOfMonth(today));
+          const year = today.getFullYear();
+          const month = format(subMonths(today, 1), 'MMMM');
+
+          const documentInput: DocumentInput_Input & { businessName: string } = {
+            businessName: business.name,
+            type: 300,
+            remarks: businessGreenInvoiceMatch.remark ?? undefined,
+            date: monthStart,
+            dueDate: monthEnd,
+            lang: 'en',
+            currency: json.currency,
+            vatType: 1,
+            rounding: false,
+            signed: true,
+            attachment: true,
+            client: {
+              id: businessGreenInvoiceMatch.green_invoice_id,
+              emails: [...(businessGreenInvoiceMatch.emails ?? []), 'uri@the-guild.dev'],
+            },
+            income: [
+              {
+                description: `GraphQL Hive Enterprise License - ${month} ${year}`,
+                quantity: 1,
+                price: json.amount,
+                currency: json.currency,
+                vatType: 1,
+              },
+            ],
+          };
+
+          return documentInput;
+        }),
+      );
+
+      for (const proformaProto of proformaProtos) {
+        const { businessName, ...input } = proformaProto;
+        await injector
+          .get(GreenInvoiceProvider)
+          .addDocuments({ input })
+          .catch(e => {
+            console.error(e);
+            errors.push(`${businessName}: ${e.message}`);
+          });
+      }
+
+      return {
+        success: true,
+        errors,
+      };
     },
   },
   Business: {
