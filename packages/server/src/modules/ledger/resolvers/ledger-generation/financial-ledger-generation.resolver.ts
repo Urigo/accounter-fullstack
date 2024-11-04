@@ -8,7 +8,7 @@ import {
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
 import { generateLedgerRecordsForRecoveryReserveExpenses } from './financial-ledger-generation/recovery-reserve-ledger-generation.resolver.js';
-import { generateLedgerRecordsForRevaluation } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
+import { generateLedgerRecordsForExchangeRevaluation } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForTaxExpenses } from './financial-ledger-generation/tax-expenses-ledger-generation.resolver.js';
 import { generateLedgerRecordsForVacationReserveExpenses } from './financial-ledger-generation/vacation-reserve-ledger-generation.resolver.js';
 
@@ -29,7 +29,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
     }
     switch (charge.tax_category_id) {
       case EXCHANGE_REVALUATION_TAX_CATEGORY_ID:
-        return generateLedgerRecordsForRevaluation(
+        return generateLedgerRecordsForExchangeRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,

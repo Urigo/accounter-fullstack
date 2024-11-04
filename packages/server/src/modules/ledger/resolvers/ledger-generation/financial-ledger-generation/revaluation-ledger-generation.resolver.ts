@@ -22,7 +22,7 @@ import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js'
 
 export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';
 
-export const generateLedgerRecordsForRevaluation: ResolverFn<
+export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
@@ -118,7 +118,11 @@ export const generateLedgerRecordsForRevaluation: ResolverFn<
       const cumulativeSums = accountsCumulativeBalance.find(
         balance => balance.businessId === account.id,
       );
-      if (!cumulativeSums || cumulativeSums[account.currency].total === 0) {
+      if (
+        !cumulativeSums ||
+        (cumulativeSums[account.currency].total === 0 &&
+          cumulativeSums[DEFAULT_LOCAL_CURRENCY].total === 0)
+      ) {
         return;
       }
       const cumulativeLocalBalance = cumulativeSums[DEFAULT_LOCAL_CURRENCY].total;
