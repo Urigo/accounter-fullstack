@@ -280,7 +280,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             // Generate parent charge
             const chargePromise = injector.get(ChargesProvider).generateCharge({
               ownerId,
-              userDescription: greenInvoiceDoc.description ?? 'Green Invoice generated charge',
+              userDescription:
+                greenInvoiceDoc.description && greenInvoiceDoc.description !== ''
+                  ? greenInvoiceDoc.description
+                  : 'Green Invoice generated charge',
             });
 
             // Get matching business
