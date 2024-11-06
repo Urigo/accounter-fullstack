@@ -256,14 +256,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               doc.total_amount === item.amount &&
               doc.serial_number === item.number &&
               optionalDateToTimelessDateString(doc.date) === item.documentDate,
-          ),
+          ) &&
+          item.type !== '_300',
       );
       const addedDocs: IInsertDocumentsResult[] = [];
 
       await Promise.all(
         newDocuments.map(async greenInvoiceDoc => {
-          if (!greenInvoiceDoc || greenInvoiceDoc.type === '_300') {
-            // ignore if no doc or חשבונית עסקה
+          if (!greenInvoiceDoc) {
             return;
           }
 
@@ -321,9 +321,38 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               creditorId: isOwnerCreditor ? currentUser.userId : counterpartyId,
               debtorId: isOwnerCreditor ? counterpartyId : currentUser.userId,
             };
-            const newDocument = await injector
+
+            const newDocumentPromise = injector
               .get(DocumentsProvider)
               .insertDocuments({ document: [rawDocument] });
+
+            const chargeDescriptionUpdate = new Promise(resolve => {
+              const income = greenInvoiceDoc.income;
+              if (
+                !income ||
+                income.length === 0 ||
+                !income[0]?.description ||
+                income[0].description === ''
+              ) {
+                resolve(undefined);
+              }
+
+              const userDescription = income
+                .filter(item => item?.description)
+                .map(item => item!.description)
+                .join(', ');
+
+              injector
+                .get(ChargesProvider)
+                .updateCharge({
+                  chargeId: charge.id,
+                  userDescription,
+                })
+                .then(() => resolve(undefined));
+            });
+
+            const [newDocument] = await Promise.all([newDocumentPromise, chargeDescriptionUpdate]);
+
             addedDocs.push(newDocument[0]);
           } catch (e) {
             throw new GraphQLError(

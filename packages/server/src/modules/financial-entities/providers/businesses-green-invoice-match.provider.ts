@@ -7,6 +7,7 @@ import type {
   IDeleteBusinessMatchParams,
   IDeleteBusinessMatchQuery,
   IGetAllBusinessMatchesQuery,
+  IGetBusinessesMatchesByGreenInvoiceIdsQuery,
   IGetBusinessesMatchesByIdsQuery,
   IInsertBusinessMatchParams,
   IInsertBusinessMatchQuery,
@@ -23,6 +24,12 @@ const getBusinessesMatchesByIds = sql<IGetBusinessesMatchesByIdsQuery>`
   SELECT *
   FROM accounter_schema.businesses_green_invoice_match
   WHERE business_id IN $$businessIds;
+`;
+
+const getBusinessesMatchesByGreenInvoiceIds = sql<IGetBusinessesMatchesByGreenInvoiceIdsQuery>`
+  SELECT *
+  FROM accounter_schema.businesses_green_invoice_match
+  WHERE green_invoice_id IN $$greenInvoiceBusinessIds;
 `;
 
 const updateBusinessMatch = sql<IUpdateBusinessMatchQuery>`
@@ -95,8 +102,8 @@ export class BusinessesGreenInvoiceMatcherProvider {
 
   private async batchBusinessesMatchByGreenInvoiceIds(greenInvoiceIds: readonly string[]) {
     try {
-      const matches = await getBusinessesMatchesByIds.run(
-        { businessIds: greenInvoiceIds },
+      const matches = await getBusinessesMatchesByGreenInvoiceIds.run(
+        { greenInvoiceBusinessIds: greenInvoiceIds },
         this.dbProvider,
       );
 
