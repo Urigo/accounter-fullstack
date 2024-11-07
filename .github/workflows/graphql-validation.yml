@@ -1,0 +1,24 @@
+on:
+  workflow_call:
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
+
+jobs:
+  validate-schema:
+    name: Validate GraphQL schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: Validate GraphQL schema
+        run: yarn graphql:validate
