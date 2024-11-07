@@ -1,0 +1,22 @@
+on:
+  workflow_call:
+    secrets:
+      hiveToken:
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    environment: accounter-fullstack
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: schema publish
+        env:
+          HIVE_TOKEN: ${{ secrets.hiveToken }}
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+          hive schema:publish "packages/services/api/src/modules/*/module.graphql.ts" --github
