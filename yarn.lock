@@ -1537,6 +1537,15 @@
     lodash.sortby "4.7.0"
     tiny-lru "8.0.2"
 
+"@graphql-hive/yoga@^0.38.2":
+  version "0.38.2"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.38.2.tgz#d873f25529116a1d0dd11c3aa17885eaf0b8bb7f"
+  integrity sha512-gVYWQERt/bTNeflMQDdSyWzFPM6cAyk/5dPE3YMt1OulgAsssYbJi5HbrjIdoZK50Y4uAhryxmGix6B+NsA6kw==
+  dependencies:
+    "@graphql-hive/core" "0.8.2"
+    "@graphql-yoga/plugin-persisted-operations" "^3.3.1"
+    tiny-lru "8.0.2"
+
 "@graphql-inspector/audit-command@5.0.6":
   version "5.0.6"
   resolved "https://registry.yarnpkg.com/@graphql-inspector/audit-command/-/audit-command-5.0.6.tgz#e42dde00865f0a61108e55271390680dccb5363b"
@@ -2628,7 +2637,7 @@
   dependencies:
     "@graphql-tools/utils" "^10.0.0"
 
-"@graphql-yoga/plugin-persisted-operations@^3.0.0":
+"@graphql-yoga/plugin-persisted-operations@^3.0.0", "@graphql-yoga/plugin-persisted-operations@^3.3.1":
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/@graphql-yoga/plugin-persisted-operations/-/plugin-persisted-operations-3.8.0.tgz#c23d6acf9bfbbab686c091f5c283f68afcf0b51e"
   integrity sha512-MIEv/Zq+AgyDJPraDbXasn+ha9y/Mk+T0Fh3SYl35uKwKdoVIt2UxnRxFPYCxNe7Hp8ywODXfIB1DOvxFJarlw==

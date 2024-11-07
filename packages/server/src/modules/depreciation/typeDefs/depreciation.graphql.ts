@@ -3,8 +3,8 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    depreciationCategories: [DepreciationCategory!]!
-    depreciationRecordsByCharge(chargeId: UUID!): [DepreciationRecord!]!
+    depreciationCategories: [DepreciationCategory!]! @auth(role: ACCOUNTANT)
+    depreciationRecordsByCharge(chargeId: UUID!): [DepreciationRecord!]! @auth(role: ACCOUNTANT)
   }
 
   extend type CommonCharge {
