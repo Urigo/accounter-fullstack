@@ -14,7 +14,7 @@ export default {
 
     create type accounter_schema.document_type as enum ('INVOICE', 'RECEIPT', 'INVOICE_RECEIPT', 'PROFORMA', 'UNPROCESSED', 'CREDIT_INVOICE');
 
-    create type accounter_schema.tags_enum as enum ('Amazon Web Services EMEA SARL', 'beauty', 'business', 'clothes', 'Clothes', 'communications', 'computer', 'computers', 'conversion', 'creditcard', 'dotan', 'else', 'family', 'financial', 'financil', 'food', 'friends', 'fun', 'health', 'house', 'income', 'investments', 'learn', 'learning', 'love', 'lover', 'mistake', 'music', 'sports', 'stupid', 'stupidity', 'transportation', 'salary', 'Business Trip');
+    create type accounter_schema.tags_enum as enum ('business', 'Business Trip', 'conversion', 'creditcard', 'financial', 'investments', 'mistake', 'salary', 'transportation');
 
     create type accounter_schema.business_trip_transaction_type as enum ('FLIGHT', 'ACCOMMODATION', 'TRAVEL_AND_SUBSISTENCE', 'OTHER');
 
