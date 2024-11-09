@@ -475,40 +475,9 @@ $$
     );
 
     insert into accounter_schema.tags (name)
-    values ('Amazon Web Services EMEA SARL'),
-        ('beauty'),
+    values 
         ('business'),
-        ('clothes'),
-        ('Clothes'),
-        ('communications'),
-        ('computer'),
-        ('computers'),
-        ('conversion'),
-        ('creditcard'),
-        ('dotan'),
-        ('else'),
-        ('family'),
-        ('financial'),
-        ('financil'),
-        ('food'),
-        ('friends'),
-        ('fun'),
-        ('health'),
-        ('house'),
-        ('income'),
-        ('investments'),
-        ('learn'),
-        ('learning'),
-        ('love'),
-        ('lover'),
-        ('mistake'),
-        ('music'),
-        ('sports'),
-        ('stupid'),
-        ('stupidity'),
-        ('transportation'),
-        ('salary'),
-        ('Business Trip');
+        ('financial');
 
     alter table accounter_schema.charge_tags
         add tag_id uuid;
