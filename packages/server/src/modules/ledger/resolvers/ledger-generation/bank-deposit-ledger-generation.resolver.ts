@@ -2,12 +2,19 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
-import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import type {
+  Currency,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
   convertLedgerRecordToProto,
@@ -35,7 +42,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+    const ledgerBalance = new Map<
+      string,
+      {
+        amount: number;
+        entityId: string;
+        foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
+      }
+    >();
 
     const transactionsPromise = injector
       .get(TransactionsProvider)
@@ -158,7 +172,20 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
     });
 
-    entriesPromises.push(mainTransactionPromise(), ...interestTransactionsPromises);
+    // generate ledger from misc expenses
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        feeFinancialAccountLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance);
+      });
+    });
+
+    entriesPromises.push(
+      mainTransactionPromise(),
+      ...interestTransactionsPromises,
+      expensesLedgerPromise,
+    );
 
     await Promise.all(entriesPromises);
 
@@ -180,10 +207,22 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           throw new LedgerError('Multiple deposit transactions found');
         }
 
+        const mainBusinessBalance = mainTransaction.business_id
+          ? ledgerBalance.get(mainTransaction.business_id)
+          : undefined;
+        const mainBusinessBalanceByCurrency =
+          mainTransaction.currency === DEFAULT_LOCAL_CURRENCY
+            ? mainBusinessBalance?.amount
+            : mainBusinessBalance?.foreignAmounts?.[mainTransaction.currency]?.foreign;
+        const mainBusinessAbsBalance = mainBusinessBalanceByCurrency
+          ? Math.abs(mainBusinessBalanceByCurrency)
+          : undefined;
+
         const depositTransaction = depositTransactions[0];
+        const depositTransactionAmount = Math.abs(Number(depositTransaction.amount));
 
         if (
-          mainTransaction.amount.replace('-', '') !== depositTransaction.amount.replace('-', '') ||
+          mainBusinessAbsBalance !== depositTransactionAmount ||
           mainTransaction.currency !== depositTransaction.currency
         ) {
           throw new LedgerError('Deposit transaction does not match the withdrawal transaction');
