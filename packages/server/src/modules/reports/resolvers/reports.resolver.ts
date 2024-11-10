@@ -12,6 +12,7 @@ import {
   corporateTaxRulingComplianceReport,
   corporateTaxRulingComplianceReportDifferences,
 } from './reports/corporate-tax-ruling-compliance-report.js';
+import { depreciationReport } from './reports/depreciation-report.js';
 import {
   profitAndLossReport,
   profitAndLossReportYearMapper,
@@ -28,6 +29,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
+    depreciationReport,
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,
