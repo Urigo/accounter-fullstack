@@ -125,5 +125,6 @@ module.exports = {
     '.eslintrc.cjs',
     '.*rc.*js',
     '.bob/',
+    '**/tsup.config.ts',
   ],
 };

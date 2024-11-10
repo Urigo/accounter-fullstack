@@ -12,7 +12,7 @@ function authToken(): string | null {
       return `Basic ${user.authdata}`;
     }
   } catch (e) {
-    /* empty */
+    console.error(e);
   }
   return null;
 }
@@ -51,7 +51,7 @@ export function currentUser(): User | null {
   try {
     return JSON.parse(localStorage.getItem('user')!);
   } catch (e) {
-    /* empty */
+    console.error(e);
   }
   return null;
 }

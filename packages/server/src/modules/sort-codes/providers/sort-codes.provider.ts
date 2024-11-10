@@ -82,6 +82,7 @@ export class SortCodesProvider {
         sortCodes.find(sortCode => sortCode.financial_entity_id === id),
       );
     } catch (e) {
+      console.error(e);
       throw new GraphQLError('Error fetching sort codes');
     }
   }

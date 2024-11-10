@@ -1,4 +1,4 @@
-const { readFileSync, writeFileSync } = require('node:fs');
+import { readFileSync, writeFileSync } from 'node:fs';
 
 var pgconfigPath = 'pgconfig.json';
 
@@ -15,6 +15,7 @@ if (process.env['POSTGRES_SSL'] !== '1') {
 
     pgconfigPath = 'pgconfig.local.json';
   } catch (err) {
+    console.error(err);
     /* empty */
   }
 }

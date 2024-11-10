@@ -17,6 +17,7 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers = {
           .validateCreditCardTransactionsAmountByChargeIdLoader.load(dbCharge.id);
         return res ?? false;
       } catch (error) {
+        console.error(error);
         return false;
       }
     },

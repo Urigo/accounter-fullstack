@@ -728,6 +728,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         return fullMatching.isFullyMatched ? 'VALID' : 'DIFF';
       } catch (err) {
+        console.error(err);
         return 'INVALID';
       }
     },

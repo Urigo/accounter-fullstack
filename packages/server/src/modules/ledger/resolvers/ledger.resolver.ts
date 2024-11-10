@@ -119,6 +119,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               handledCharges++;
               push({ progress: calculateProgress(), charge });
             } catch (err) {
+              console.error(err);
               handledCharges++;
               push({ progress: calculateProgress(), charge });
             }
@@ -381,6 +382,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           errors: generated.errors,
         };
       } catch (err) {
+        console.error(err);
         return {
           isValid: false,
           differences: [],
