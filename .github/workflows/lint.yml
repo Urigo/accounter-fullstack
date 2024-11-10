@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+        with:
+          localDB: 'false'
+          codegen: 'false'
+          pgTyped: 'false'
+
+      - name: Lint ESLint
+        run: yarn lint
+
+      - name: Lint Prettier
+        run: yarn prettier:check

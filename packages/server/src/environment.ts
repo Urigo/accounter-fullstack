@@ -57,11 +57,19 @@ const AuthorizationModel = zod.union([
   zod.void(),
 ]);
 
+const HiveModel = zod.union([
+  zod.object({
+    HIVE_TOKEN: zod.string(),
+  }),
+  zod.void(),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
   authorization: AuthorizationModel.safeParse(process.env),
+  hive: HiveModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -89,6 +97,7 @@ const postgres = extractConfig(configs.postgres);
 const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
+const hive = extractConfig(configs.hive);
 
 export const env = {
   postgres: {
@@ -110,5 +119,8 @@ export const env = {
   },
   authorization: {
     users: authorization?.AUTHORIZED_USERS,
+  },
+  hive: {
+    hiveToken: hive?.HIVE_TOKEN,
   },
 } as const;

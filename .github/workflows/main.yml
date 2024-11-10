@@ -1,0 +1,32 @@
+name: Main
+on:
+  push:
+    branches:
+      - main
+      - prod
+
+jobs:
+  lint:
+    name: Lint
+    uses: ./.github/workflows/lint.yml
+
+  graphql-breaking-changes:
+    name: Hive schema check
+    uses: ./.github/workflows/graphql-schema-check.yml
+    secrets:
+      hiveToken: ${{ secrets.HIVE_TOKEN }}
+
+  validate-schema:
+    name: Validate GraphQL schema
+    uses: ./.github/workflows/graphql-validation.yml
+
+  schema-publish:
+    name: schema publish
+    needs: [graphql-breaking-changes, validate-schema]
+    uses: ./.github/workflows/graphql-schema-publish.yml
+    secrets:
+      hiveToken: ${{ secrets.HIVE_TOKEN }}
+
+  client-publish:
+    name: client publish
+    uses: ./.github/workflows/client-publish.yml

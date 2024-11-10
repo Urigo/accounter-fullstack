@@ -1,15 +1,28 @@
-name: Client Publish
-
 on:
-  push:
-    paths:
-      - 'packages/client/**'
-    branches:
-      - main
-      - prod
+  workflow_call:
 
 jobs:
+  client-changes-detector:
+    runs-on: ubuntu-22.04
+    outputs:
+      client_changes_present: ${{ steps.client_changes_present.outputs.client_changes }}
+    steps:
+      - name: Get changed files
+        id: client-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            packages/client/**
+
+      - name: check for client app changes
+        id: client_changes_present
+        run:
+          echo "client_changes=${{ steps.client-files.outputs.any_changed == 'true' }}" >>
+          $GITHUB_OUTPUT
+
   client-publish:
+    needs: client-changes-detector
+    if: needs.client-changes-detector.outputs.client_changes_present == 'true'
     runs-on: ubuntu-latest
     environment: accounter-fullstack
     permissions:

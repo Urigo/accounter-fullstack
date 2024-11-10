@@ -1,0 +1,48 @@
+on:
+  workflow_call:
+    secrets:
+      hiveToken:
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
+
+jobs:
+  search-token:
+    runs-on: ubuntu-22.04
+    environment: accounter-fullstack
+    outputs:
+      hive_token_present: ${{ steps.secrets_present.outputs.hive_token }}
+    steps:
+      - name: check for Hive token presence
+        env:
+          HIVE_TOKEN: ${{ secrets.hiveToken }}
+        id: secrets_present
+        run: echo "hive_token=${{ env.HIVE_TOKEN != '' }}" >> $GITHUB_OUTPUT
+
+  check:
+    runs-on: ubuntu-22.04
+    environment: accounter-fullstack
+    needs: search-token
+    if: needs.search-token.outputs.hive_token_present == 'true'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: check pull request label
+        if: contains(github.event.pull_request.labels.*.name, 'non-breaking')
+        run: echo "safeFlag=--forceSafe" >> $GITHUB_OUTPUT
+        id: pr-label-check
+
+      - name: schema check
+        env:
+          HIVE_TOKEN: ${{ secrets.hiveToken }}
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+          hive schema:check "packages/server/src/modules/*/typeDefs/*.graphql.ts" ${{steps.pr-label-check.outputs.safeFlag }} --github

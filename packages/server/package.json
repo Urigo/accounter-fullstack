@@ -23,6 +23,7 @@
     "@accounter/pcn874-generator": "^0.4.1",
     "@envelop/generic-auth": "8.0.0",
     "@envelop/graphql-modules": "6.0.0",
+    "@graphql-hive/yoga": "^0.38.2",
     "@graphql-yoga/node": "3.9.1",
     "@graphql-yoga/plugin-defer-stream": "3.9.0",
     "@pgtyped/cli": "2.3.0",
