@@ -9,7 +9,7 @@
     "deploy": "git push heroku master",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon dist/old-accounter/src/index.js\"",
     "get": "dotenv -e ../../.env node dist/old-accounter/src/scrape.js",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "eslint .",
     "month": "node dist/taxMonthlyReport/taxesForMonth.js",
     "prettier": "prettier --ignore-path .gitignore --write --list-different .",
     "prettier:check": "prettier --ignore-path .gitignore --check .",
