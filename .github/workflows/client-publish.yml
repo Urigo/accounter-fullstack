@@ -1,16 +1,19 @@
 on:
   workflow_call:
+    secrets:
+      apiToken:
+      accountId:
 
 jobs:
   client-changes-detector:
+    name: Check for Client app changes
     runs-on: ubuntu-latest
+    environment: accounter-fullstack
     outputs:
       client_changes_present: ${{ steps.client_changes_present.outputs.client_changes }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Get changed files
         id: client-files
@@ -19,15 +22,29 @@ jobs:
           files: |
             packages/client/**
 
-      - name: check for client app changes
+      - name: check for changes
         id: client_changes_present
         run:
           echo "client_changes=${{ steps.client-files.outputs.any_changed == 'true' }}" >>
           $GITHUB_OUTPUT
 
+  search-token:
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    outputs:
+      api_token_present: ${{ steps.secrets_present.outputs.api_token }}
+    steps:
+      - name: check for Hive token presence
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.apiToken }}
+        id: secrets_present
+        run: echo "api_token=${{ env.CLOUDFLARE_API_TOKEN != '' }}" >> $GITHUB_OUTPUT
+
   client-publish:
-    needs: client-changes-detector
-    if: needs.client-changes-detector.outputs.client_changes_present == 'true'
+    needs: [client-changes-detector, search-token]
+    if:
+      ${{needs.client-changes-detector.outputs.client_changes_present == 'true' &&
+      needs.search-token.outputs.api_token_present == 'true'}}
     runs-on: ubuntu-latest
     environment: accounter-fullstack
     permissions:
@@ -70,12 +87,9 @@ jobs:
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         with:
-          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.apiToken }}
+          accountId: ${{ secrets.accountId }}
           projectName:
             ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref ==
             'refs/heads/prod' && 'accounter-prod') || '' }}

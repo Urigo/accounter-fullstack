@@ -43,8 +43,8 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
     metadata {
       ... on ChargeMetadata @defer {
         documentsCount
-        transactionsCount
         ledgerCount
+        transactionsCount
       }
     }
     ...AllChargesAccountantApprovalFields @defer
