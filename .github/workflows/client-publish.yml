@@ -7,6 +7,11 @@ jobs:
     outputs:
       client_changes_present: ${{ steps.client_changes_present.outputs.client_changes }}
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
       - name: Get changed files
         id: client-files
         uses: tj-actions/changed-files@v44
