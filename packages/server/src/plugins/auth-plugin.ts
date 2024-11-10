@@ -69,7 +69,7 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
       role,
     };
   } catch (e) {
-    console.error('Failed to validate token');
+    console.error('Failed to validate token', e);
 
     return null;
   }
@@ -110,5 +110,5 @@ export const authPlugin = () =>
     resolveUserFn,
     validateUser,
     mode: 'protect-granular',
-    extractScopes: user => getAcceptableRoles(user.role),
+    extractScopes: user => getAcceptableRoles(user?.role),
   });
