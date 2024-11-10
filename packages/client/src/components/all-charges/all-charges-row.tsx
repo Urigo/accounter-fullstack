@@ -42,8 +42,8 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
     id
     metadata {
       ... on ChargeMetadata @defer {
-        transactionsCount
         documentsCount
+        transactionsCount
         ledgerCount
       }
     }
