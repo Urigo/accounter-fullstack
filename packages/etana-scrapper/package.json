@@ -11,11 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.10.0",
+    "@whatwg-node/fetch": "0.10.1",
     "csv-parse": "5.5.6",
     "diary": "0.4.5",
     "dotenv": "16.4.5",
-    "pg-promise": "11.10.1"
+    "pg-promise": "11.10.2"
   },
   "devDependencies": {
     "tsup": "8.3.5"
