@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { readFileSync, writeFileSync } = require('node:fs');
 
 var pgconfigPath = 'pgconfig.json';
 

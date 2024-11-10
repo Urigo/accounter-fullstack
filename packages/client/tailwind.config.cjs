@@ -1,5 +1,4 @@
-import tailwindCssAnimate from 'tailwindcss-animate';
-
+/* eslint-disable @typescript-eslint/no-require-imports */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{ts,tsx}', './index.html'],
@@ -28,5 +27,5 @@ module.exports = {
       },
     },
   },
-  plugins: [tailwindCssAnimate],
+  plugins: [require('tailwindcss-animate')],
 };
