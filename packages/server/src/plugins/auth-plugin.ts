@@ -17,7 +17,7 @@ function getAuthorizedUsers(): Record<string, string> {
   try {
     return JSON.parse(env.authorization.users ?? '{}');
   } catch (e) {
-    console.error('Failed to read authorized users from env file.');
+    console.error('Failed to read authorized users from env file.', e);
     return {};
   }
 }
@@ -69,7 +69,7 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
       role,
     };
   } catch (e) {
-    console.error('Failed to validate token');
+    console.error('Failed to validate token', e);
 
     return null;
   }

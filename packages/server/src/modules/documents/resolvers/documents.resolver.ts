@@ -112,6 +112,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
                 try {
                   await deleteCharges([charge.id], injector);
                 } catch (e) {
+                  console.error(e);
                   throw new GraphQLError(
                     `Failed to delete the empty former charge ID="${charge.id}"`,
                   );

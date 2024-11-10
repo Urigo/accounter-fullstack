@@ -48,7 +48,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
             }
             return res[0];
           } catch (e) {
-            /* empty */
+            console.error(e);
           }
 
           try {
@@ -91,7 +91,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
             }
             return res[0];
           } catch (e) {
-            /* empty */
+            console.error(e);
           }
 
           throw new Error(
