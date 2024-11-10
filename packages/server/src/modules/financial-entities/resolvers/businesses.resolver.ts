@@ -160,6 +160,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           try {
             await injector.get(TaxCategoriesProvider).insertBusinessTaxCategory(texCategoryParams);
           } catch (error) {
+            console.error(error);
             await injector
               .get(TaxCategoriesProvider)
               .updateBusinessTaxCategory(texCategoryParams)

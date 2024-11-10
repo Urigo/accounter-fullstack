@@ -41,6 +41,7 @@ export function LoginPage(): ReactElement {
         variant: 'default',
       });
     } catch (error) {
+      console.error(error);
       toast({
         title: 'Error',
         description: 'Invalid credentials. Please try again.',
