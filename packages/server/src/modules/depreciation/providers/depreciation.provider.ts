@@ -77,7 +77,7 @@ const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
 
 const insertDepreciationRecord = sql<IInsertDepreciationRecordQuery>`
   INSERT INTO accounter_schema.depreciation (charge_id, amount, currency, activation_date, type, category)
-  VALUES ($charge_id, $amount, $currency, $activationDate, $type, $categoryId)
+  VALUES ($chargeId, $amount, $currency, $activationDate, $type, $categoryId)
   RETURNING *`;
 
 const deleteDepreciationRecord = sql<IDeleteDepreciationRecordQuery>`
