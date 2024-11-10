@@ -13,7 +13,7 @@ env:
 
 jobs:
   search-token:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment: accounter-fullstack
     outputs:
       hive_token_present: ${{ steps.secrets_present.outputs.hive_token }}
@@ -25,7 +25,7 @@ jobs:
         run: echo "hive_token=${{ env.HIVE_TOKEN != '' }}" >> $GITHUB_OUTPUT
 
   check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment: accounter-fullstack
     needs: search-token
     if: needs.search-token.outputs.hive_token_present == 'true'
