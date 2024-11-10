@@ -30,3 +30,6 @@ jobs:
   client-publish:
     name: client publish
     uses: ./.github/workflows/client-publish.yml
+    secrets:
+      apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
