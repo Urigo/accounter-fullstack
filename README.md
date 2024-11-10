@@ -37,7 +37,12 @@ yarn server:dev
 ```
 
 6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in. The credentials to log in are
-   in your `.env` file under `AUTHORIZED_USERS`.
+   in your `.env` file under `AUTHORIZED_USERS`. Set the hashed password in the `.env` file. e.g.
+   replace `SECRET` with `$2b$10$SuqbDX5r6qZidiMbAcGnFOPloNQSRQrLEPShZjplabtfdN.QzS4ba`. And then
+   use the password `SECRET` to log in.
+
+7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
+   `yarn seed`.
 
 ## Node ES Modules with TypeScript
 
