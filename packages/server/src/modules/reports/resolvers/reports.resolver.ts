@@ -12,6 +12,7 @@ import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
 import type { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
+import { depreciationReport } from './reports/depreciation-report.js';
 import { profitAndLossReport } from './reports/profit-and-loss-report.resolver.js';
 import { taxReport } from './reports/tax-report.js';
 
@@ -43,6 +44,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     },
     profitAndLossReport,
     taxReport,
+    depreciationReport,
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,
