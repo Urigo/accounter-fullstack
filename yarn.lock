@@ -2141,13 +2141,13 @@
     lodash.sortby "4.7.0"
     tiny-lru "8.0.2"
 
-"@graphql-hive/yoga@^0.38.2":
-  version "0.38.2"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.38.2.tgz#d873f25529116a1d0dd11c3aa17885eaf0b8bb7f"
-  integrity sha512-gVYWQERt/bTNeflMQDdSyWzFPM6cAyk/5dPE3YMt1OulgAsssYbJi5HbrjIdoZK50Y4uAhryxmGix6B+NsA6kw==
+"@graphql-hive/yoga@^0.39.0":
+  version "0.39.0"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.39.0.tgz#64e11701dfb8f178a71086d39e356a029d94a45b"
+  integrity sha512-STvrWZJHiCL3zgBUfYWfXZ02B9aDh3Qq3d5YO4c9UOLjGk+MTJ4nUpWgnmFQxp/txtz4W2Wme8H5fOD1oZMgxQ==
   dependencies:
     "@graphql-hive/core" "0.8.2"
-    "@graphql-yoga/plugin-persisted-operations" "^3.3.1"
+    "@graphql-yoga/plugin-persisted-operations" "^3.9.0"
     tiny-lru "8.0.2"
 
 "@graphql-inspector/audit-command@5.0.6":
@@ -2834,7 +2834,7 @@
     "@graphql-tools/utils" "^9.2.1"
     tslib "^2.4.0"
 
-"@graphql-tools/graphql-tag-pluck@8.3.1":
+"@graphql-tools/graphql-tag-pluck@8.3.1", "@graphql-tools/graphql-tag-pluck@^8.0.0":
   version "8.3.1"
   resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.3.1.tgz#fb6154d626a427f1910f76dff860e7a6cc61a4aa"
   integrity sha512-ujits9tMqtWQQq4FI4+qnVPpJvSEn7ogKtyN/gfNT+ErIn6z1e4gyVGQpTK5sgAUXq1lW4gU/5fkFFC5/sL2rQ==
@@ -2845,19 +2845,6 @@
     "@babel/traverse" "^7.16.8"
     "@babel/types" "^7.16.8"
     "@graphql-tools/utils" "^10.0.13"
-    tslib "^2.4.0"
-
-"@graphql-tools/graphql-tag-pluck@^8.0.0":
-  version "8.3.3"
-  resolved "https://registry.yarnpkg.com/@graphql-tools/graphql-tag-pluck/-/graphql-tag-pluck-8.3.3.tgz#84ccdc352f50303c0c6f9cde7a4a85a800298860"
-  integrity sha512-G+8UNUa54ct/f9hNHo7Ez61BeAoaeXYhtfq8rYu0m9Upr/BCgsQmuvEgyHBRSFVkqOQj56H5aBwKW68SPrrU8g==
-  dependencies:
-    "@babel/core" "^7.22.9"
-    "@babel/parser" "^7.16.8"
-    "@babel/plugin-syntax-import-assertions" "^7.20.0"
-    "@babel/traverse" "^7.16.8"
-    "@babel/types" "^7.16.8"
-    "@graphql-tools/utils" "^10.5.5"
     tslib "^2.4.0"
 
 "@graphql-tools/import@6.7.18":
@@ -3180,10 +3167,10 @@
   dependencies:
     "@graphql-tools/utils" "^10.0.0"
 
-"@graphql-yoga/plugin-persisted-operations@^3.0.0", "@graphql-yoga/plugin-persisted-operations@^3.3.1":
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/@graphql-yoga/plugin-persisted-operations/-/plugin-persisted-operations-3.9.0.tgz#3e928c32fea6ff80595850fadf09f69ebc2322c5"
-  integrity sha512-oeayVu5FBScQ7P5WXZR9NdmrfJp9P1lFBLVvZt7EtaMHuO19S9UgTe/z9HIDtVcoB4f5TAg/RfofVanROkP66g==
+"@graphql-yoga/plugin-persisted-operations@^3.0.0", "@graphql-yoga/plugin-persisted-operations@^3.9.0":
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/@graphql-yoga/plugin-persisted-operations/-/plugin-persisted-operations-3.10.0.tgz#e920f83f865d657739de89b113679acefc22a1c3"
+  integrity sha512-I62sWqQosXQq1c+Va5g1T72AwniVM7/N7OawNQ0d+J/CJsCSaJR7j9Mt3xNItoiBhRNTqLDAvGqcNyF0G5sHvg==
 
 "@graphql-yoga/subscription@^3.1.0":
   version "3.1.0"
