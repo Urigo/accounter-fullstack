@@ -7,7 +7,13 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import { AVERAGE_MONTHLY_WORK_DAYS, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import {
+  AVERAGE_MONTHLY_WORK_DAYS,
+  DEFAULT_FINANCIAL_ENTITY_ID,
+  VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
+  VACATION_RESERVE_TAX_CATEGORY_ID,
+} from '@shared/constants';
+import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function roundHalf(n: number) {
   return Math.round(n * 2) / 2;
@@ -39,7 +45,14 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
   const employeesPromise = injector
     .get(EmployeesProvider)
     .getEmployeesByEmployerLoader.load(DEFAULT_FINANCIAL_ENTITY_ID);
-  const [salaries, employees] = await Promise.all([salariesPromise, employeesPromise]);
+  const vacationLedgerRecordsPromise = injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByFinancialEntityIdLoader.load(VACATION_RESERVE_TAX_CATEGORY_ID);
+  const [salaries, employees, vacationLedgerRecords] = await Promise.all([
+    salariesPromise,
+    employeesPromise,
+    vacationLedgerRecordsPromise,
+  ]);
 
   const employeeMap = new Map<
     string,
@@ -126,6 +139,20 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     reservesPrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeData.vacationDays} days; ${dailySalary.toFixed(2)} daily payment; ${employeeReserve}`;
     vacationReserveAmount += employeeReserve;
   }
+
+  const prevVacationReserveAmount = vacationLedgerRecords.reduce((acc, record) => {
+    if (
+      record.credit_entity1 !== VACATION_RESERVE_TAX_CATEGORY_ID ||
+      record.debit_entity1 !== VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID ||
+      record.value_date.getTime() >= new Date(year, 11, 31).getTime()
+    ) {
+      return acc;
+    }
+    return acc + Number(record.credit_local_amount1);
+  }, 0);
+  reservesPrompt += `\n- Prev reserve: ${prevVacationReserveAmount}`;
+  vacationReserveAmount -= prevVacationReserveAmount;
+
   console.debug(reservesPrompt);
 
   return { vacationReserveAmount };
