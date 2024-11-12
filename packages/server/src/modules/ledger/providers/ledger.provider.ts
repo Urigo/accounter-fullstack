@@ -230,7 +230,7 @@ export class LedgerProvider {
     const ledgerRecords = await getLedgerRecordsByFinancialEntityIds.run(
       {
         financialEntityIds: ids,
-        ownerId: this.context.currentUser.userId,
+        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       },
       this.dbProvider,
     );
@@ -256,7 +256,7 @@ export class LedgerProvider {
 
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
     return getLedgerRecordsByDates.run(
-      { ...params, ownerId: params.ownerId ?? this.context.currentUser.userId },
+      { ...params, ownerId: params.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID },
       this.dbProvider,
     );
   }
@@ -264,7 +264,7 @@ export class LedgerProvider {
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
     this.clearCache();
     return updateLedgerRecord.run(
-      { ...params, ownerId: params.ownerId ?? this.context.currentUser.userId },
+      { ...params, ownerId: params.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID },
       this.dbProvider,
     );
   }
@@ -282,7 +282,7 @@ export class LedgerProvider {
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
-        ownerId: this.context.currentUser.userId,
+        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       },
       this.dbProvider,
     );
@@ -298,7 +298,7 @@ export class LedgerProvider {
     await deleteLedgerRecordsByChargeIds.run(
       {
         chargeIds,
-        ownerId: this.context.currentUser.userId,
+        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       },
       this.dbProvider,
     );
