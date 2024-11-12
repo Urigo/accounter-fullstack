@@ -32,17 +32,41 @@ function recoveryDaysPerYearsOfExperience(years: number) {
   return 0;
 }
 
-function calculateMonthPart(year: number, month: number, startDate: Date, endDate: Date | null) {
-  if (startDate.getFullYear() === year && startDate.getMonth() === month - 1) {
-    return 1 - (startDate.getDate() - 1) / endOfMonth(startDate).getDate();
+// returns the parts of the month that the employee worked, first is pre-anniversary
+function calculateMonthPart(
+  year: number,
+  month: number,
+  startDate: Date,
+  endDate: Date | null,
+): [number, number] {
+  const isAnniversaryMonth = startDate.getMonth() + 1;
+  const isTerminationMonth =
+    endDate && endDate.getFullYear() === year && endDate.getMonth() + 1 === month;
+  if (isAnniversaryMonth) {
+    if (isTerminationMonth) {
+      // case both anniversary month and termination month
+      const isPreAnniversaryTermination = endDate.getDate() < startDate.getDate();
+      const tillTerminationPart = (endDate.getDate() - 1) / endOfMonth(endDate).getDate();
+      if (isPreAnniversaryTermination) {
+        return [tillTerminationPart, 0];
+      }
+
+      const inBetweenPart =
+        (endDate.getDate() - startDate.getDate()) / endOfMonth(endDate).getDate();
+      return [tillTerminationPart - inBetweenPart, inBetweenPart];
+    }
+
+    const part1 = (startDate.getDate() - 1) / endOfMonth(startDate).getDate();
+    return [part1, 1 - part1];
   }
-  if (endDate && endDate.getFullYear() === year && endDate.getMonth() === month - 1) {
-    return (endDate.getDate() - 1) / endOfMonth(endDate).getDate();
+  if (isTerminationMonth) {
+    const part1 = (endDate.getDate() - 1) / endOfMonth(endDate).getDate();
+    return [part1, 0];
   }
 
   // TODO: calculate working days / unpaid leave days / any other relevant factor
 
-  return 1;
+  return [1, 0];
 }
 
 export async function calculateRecoveryReserveAmount(injector: Injector, year: number) {
@@ -145,13 +169,28 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
       throw new GraphQLError(`No recovery day value for year ${year}`);
     }
 
+    const isAnniversaryMonth = employee.startDate.getMonth() + 1 === month;
+    const isLastSalary =
+      employee.endDate &&
+      employee.endDate.getFullYear() === year &&
+      employee.endDate.getMonth() + 1 === month;
+    const monthParts =
+      isAnniversaryMonth || isLastSalary
+        ? calculateMonthPart(year, month, employee.startDate, employee.endDate)
+        : [1, 0];
+
     const yearsWorked =
-      differenceInYears(endOfMonth(new Date(`${year}-${month}-01`)), employee.startDate) + 1;
+      differenceInYears(endOfMonth(new Date(`${year}-${month}-01`)), employee.startDate) +
+      (isAnniversaryMonth ? 0 : 1);
     const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked) / 12;
-    const monthPart = calculateMonthPart(year, month, employee.startDate, employee.endDate); // TODO: calculate month part
     const jobPercentage = 1; // TODO: calculate job percentage
 
-    employee.totalRecoveryAmount += recoveryDays * monthPart * jobPercentage * dayValue;
+    employee.totalRecoveryAmount += recoveryDays * monthParts[0] * jobPercentage * dayValue;
+
+    if (isAnniversaryMonth) {
+      const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked + 1) / 12;
+      employee.totalRecoveryAmount += recoveryDays * monthParts[1] * jobPercentage * dayValue;
+    }
 
     employee.salaries[year] ??= {};
     employee.salaries[year][month] = salaryRecord;
