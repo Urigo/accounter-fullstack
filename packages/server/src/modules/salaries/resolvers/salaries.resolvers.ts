@@ -8,6 +8,7 @@ import { filterSalaryRecordsByCharge } from '../helpers/filter-salaries-by-charg
 import { getSalaryMonth } from '../helpers/get-month.helper.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
+import { insertSalaryRecordsFromFile } from './insert-salary-records-from-file.resolvers.js';
 import { insertSalaryRecords } from './insert-salary.resolver.js';
 import { updateSalaryRecord } from './update-salary.resolver.js';
 
@@ -113,6 +114,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
         };
       }
     },
+    insertSalaryRecordsFromFile,
   },
   UpdateSalaryRecordResult: {
     __resolveType: obj => {
