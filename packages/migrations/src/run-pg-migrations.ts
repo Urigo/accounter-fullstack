@@ -54,6 +54,7 @@ import migration_2024_09_05T15_51_41_depreciation from './actions/2024-09-05T15-
 import migration_2024_10_01T12_37_42_refactor_misc_expenses from './actions/2024-10-01T12-37-42.refactor-misc-expenses.js';
 import migration_2024_10_10T15_56_41_recovery_reserve from './actions/2024-10-10T15-56-41.recovery-reserve.js';
 import migration_2024_11_03T14_42_42_green_invoice_business_match from './actions/2024-11-03T14-42-42.green-invoice-business-match.js';
+import migration_2024_11_11T09_54_23_financial_accounts_enum_type from './actions/2024-11-11T09-54-23.financial-accounts-enum-type.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -115,5 +116,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_10_01T12_37_42_refactor_misc_expenses,
       migration_2024_10_10T15_56_41_recovery_reserve,
       migration_2024_11_03T14_42_42_green_invoice_business_match,
+      migration_2024_11_11T09_54_23_financial_accounts_enum_type,
     ],
   });
