@@ -8,7 +8,12 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import {
+  DEFAULT_FINANCIAL_ENTITY_ID,
+  RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
+  RECOVERY_RESERVE_TAX_CATEGORY_ID,
+} from '@shared/constants';
+import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function recoveryDaysPerYearsOfExperience(years: number) {
   if (years === 1) {
@@ -86,10 +91,14 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
       }
       return recoveryDayValueByYear;
     });
-  const [salaries, employees, recoveryDayValueByYear] = await Promise.all([
+  const recoveryLedgerRecordsPromise = injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByFinancialEntityIdLoader.load(RECOVERY_RESERVE_TAX_CATEGORY_ID);
+  const [salaries, employees, recoveryDayValueByYear, recoveryLedgerRecords] = await Promise.all([
     salariesPromise,
     employeesPromise,
     recoveryDataPromise,
+    recoveryLedgerRecordsPromise,
   ]);
 
   const employeeMap = new Map<
@@ -208,6 +217,20 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
     reservePrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeReserve}`;
     recoveryReserveAmount += employeeReserve;
   }
+
+  const prevRecoveryReserveAmount = recoveryLedgerRecords.reduce((acc, record) => {
+    if (
+      record.credit_entity1 !== RECOVERY_RESERVE_TAX_CATEGORY_ID ||
+      record.debit_entity1 !== RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID ||
+      record.value_date.getTime() >= new Date(year, 11, 31).getTime()
+    ) {
+      return acc;
+    }
+    return acc + Number(record.credit_local_amount1);
+  }, 0);
+  recoveryReserveAmount -= prevRecoveryReserveAmount;
+  reservePrompt += `\n- Prev reserve: ${prevRecoveryReserveAmount}`;
+
   console.debug(reservePrompt);
 
   return { recoveryReserveAmount };
