@@ -54,6 +54,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     health_payment_amount,
     hourly_rate,
     hours,
+    job_percentage,
     month,
     pension_employee_amount,
     pension_employee_percentage,
@@ -89,6 +90,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     healthPaymentAmount,
     hourlyRate,
     hours,
+    jobPercentage,
     month,
     pensionEmployeeAmount,
     pensionEmployeePercentage,
@@ -166,6 +168,10 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
     hours = COALESCE(
       $hours,
       hours
+    ),
+    job_percentage = COALESCE(
+      $jobPercentage,
+      job_percentage
     ),
     pension_employee_amount = COALESCE(
       $pensionEmployeeAmount,

@@ -21,6 +21,7 @@ export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalary
       healthPaymentAmount: salaryRecord.healthPaymentAmount ?? null,
       hourlyRate: salaryRecord.hourlyRate ?? null,
       hours: salaryRecord.hours ?? null,
+      jobPercentage: salaryRecord.jobPercentage ?? null,
       month:
         salaryRecord.month && salaryRecord.month.length !== 7
           ? format(new Date(salaryRecord.month), 'yyyy-MM')

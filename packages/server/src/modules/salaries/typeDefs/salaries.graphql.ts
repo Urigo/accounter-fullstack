@@ -38,6 +38,7 @@ export default gql`
     healthPaymentAmount: Float
     hourlyRate: Float
     hours: Float
+    jobPercentage: Float
     month: String!
     pensionEmployeeAmount: Float
     pensionEmployeePercentage: Float
@@ -116,7 +117,6 @@ export default gql`
 
   extend type SalaryCharge {
     salaryRecords: [Salary!]!
-    salaryRecordsSuggestions: [Salary!]!
     employees: [LtdFinancialEntity!]!
   }
 
