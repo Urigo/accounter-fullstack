@@ -447,8 +447,5 @@ export default {
     FROM accounter_schema.business_trips_transactions btt
             LEFT JOIN transactions_by_business_trip_transaction t ON t.business_trip_transaction_id = btt.id
             LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id;
-
-    alter table accounter_schema.extended_business_trip_transactions
-        owner to accounter_prod_user;
 `,
 } satisfies MigrationExecutor;
