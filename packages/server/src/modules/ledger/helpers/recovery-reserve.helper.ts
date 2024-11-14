@@ -9,6 +9,7 @@ import {
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
 import {
+  AVERAGE_MONTHLY_WORK_HOURS,
   DEFAULT_FINANCIAL_ENTITY_ID,
   RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
@@ -183,20 +184,25 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
       employee.endDate &&
       employee.endDate.getFullYear() === year &&
       employee.endDate.getMonth() + 1 === month;
-    const monthParts =
-      isAnniversaryMonth || isLastSalary
-        ? calculateMonthPart(year, month, employee.startDate, employee.endDate)
-        : [1, 0];
+    const isHourlyPayed =
+      Number.isNaN(Number(salaryRecord.job_percentage)) ||
+      Number(salaryRecord.job_percentage) === 0;
+    const shouldCalculateMonthParts = (isAnniversaryMonth || isLastSalary) && !isHourlyPayed;
+    const monthParts = shouldCalculateMonthParts
+      ? calculateMonthPart(year, month, employee.startDate, employee.endDate)
+      : [1, 0];
 
     const yearsWorked =
       differenceInYears(endOfMonth(new Date(`${year}-${month}-01`)), employee.startDate) +
-      (isAnniversaryMonth ? 0 : 1);
+      (isAnniversaryMonth && !isHourlyPayed ? 0 : 1);
     const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked) / 12;
-    const jobPercentage = 1; // TODO: calculate job percentage
+    const jobPercentage = isHourlyPayed
+      ? Number(salaryRecord.hours) / AVERAGE_MONTHLY_WORK_HOURS
+      : Number(salaryRecord.job_percentage) / 100;
 
     employee.totalRecoveryAmount += recoveryDays * monthParts[0] * jobPercentage * dayValue;
 
-    if (isAnniversaryMonth) {
+    if (isAnniversaryMonth && !isHourlyPayed) {
       const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked + 1) / 12;
       employee.totalRecoveryAmount += recoveryDays * monthParts[1] * jobPercentage * dayValue;
     }

@@ -167,6 +167,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
 
           workDays: validateNumericCellWrapper('ימי עבודה'),
           hours: validateNumericCellWrapper('שעות עבודה'),
+          jobPercentage: null, // TODO: data missing from file format
           vacationDaysBalance: -1 * validateNumericCellWrapper('ניצול חופשה', true),
           sicknessDaysBalance: -1 * validateNumericCellWrapper('ניצול מחלה', true),
 

@@ -4,8 +4,6 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import { filterSalaryRecordsByCharge } from '../helpers/filter-salaries-by-charge.js';
-import { getSalaryMonth } from '../helpers/get-month.helper.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 import { insertSalaryRecordsFromFile } from './insert-salary-records-from-file.resolvers.js';
@@ -66,6 +64,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
               healthPaymentAmount: salaryRecord.healthPaymentAmount ?? null,
               hourlyRate: salaryRecord.hourlyRate ?? null,
               hours: salaryRecord.hours ?? null,
+              jobPercentage: salaryRecord.jobPercentage ?? null,
               pensionEmployeeAmount: salaryRecord.pensionEmployeeAmount ?? null,
               pensionEmployeePercentage: salaryRecord.pensionEmployeePercentage ?? null,
               pensionEmployerAmount: salaryRecord.pensionEmployerAmount ?? null,
@@ -131,20 +130,6 @@ export const salariesResolvers: SalariesModule.Resolvers &
   SalaryCharge: {
     salaryRecords: (DbCharge, _, { injector }) => {
       return injector.get(SalariesProvider).getSalaryRecordsByChargeIdLoader.load(DbCharge.id);
-    },
-    salaryRecordsSuggestions: (DbCharge, _, { injector }) => {
-      const dateString = DbCharge.transactions_min_event_date?.toISOString().slice(0, 7);
-      if (!dateString) {
-        return [];
-      }
-      const month = getSalaryMonth(DbCharge);
-      if (!month) {
-        return [];
-      }
-      return injector
-        .get(SalariesProvider)
-        .getSalaryRecordsByMonthLoader.load(month)
-        .then(res => filterSalaryRecordsByCharge(DbCharge, res));
     },
     employees: async (DbCharge, _, { injector }) => {
       const salaryRecords = await injector

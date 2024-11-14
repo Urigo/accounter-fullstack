@@ -1,4 +1,4 @@
-import { differenceInDays, endOfMonth, endOfYear } from 'date-fns';
+import { differenceInDays, endOfMonth, endOfYear, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
@@ -9,6 +9,7 @@ import {
 } from '@modules/salaries/types';
 import {
   AVERAGE_MONTHLY_WORK_DAYS,
+  AVERAGE_MONTHLY_WORK_HOURS,
   DEFAULT_FINANCIAL_ENTITY_ID,
   VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
   VACATION_RESERVE_TAX_CATEGORY_ID,
@@ -59,30 +60,31 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     {
       employee: IGetEmployeesByEmployerResult;
       vacationDays: number;
+      startWorkDate: Date;
+      firstSalary: IGetSalaryRecordsByDatesResult | null;
       latestSalary: IGetSalaryRecordsByDatesResult | null;
-      latestSalaryAmount: number | null;
-      salaries: Record<number, Record<number, IGetSalaryRecordsByDatesResult>>;
+      salaries: IGetSalaryRecordsByDatesResult[];
+      isHourly: boolean;
     }
   >();
+  const yearEnd = endOfYear(new Date(`${year}-01-01`));
 
   for (const employee of employees) {
     if (employee.start_work_date!.getFullYear() > year) {
       continue;
     }
-    const yearEnd = endOfYear(new Date(`${year}-01-01`));
     if (employee.end_work_date && employee.end_work_date.getTime() < yearEnd.getTime()) {
       continue;
     }
 
-    const seniority = differenceInDays(yearEnd, employee.start_work_date) / 365;
-    const cumulativeVacationDays = vacationDaysPerYearsOfExperience(seniority);
-
     employeeMap.set(employee.business_id, {
       employee,
-      vacationDays: cumulativeVacationDays,
+      vacationDays: 0,
+      startWorkDate: employee.start_work_date,
+      firstSalary: null,
       latestSalary: null,
-      latestSalaryAmount: null,
-      salaries: {},
+      salaries: [],
+      isHourly: false,
     });
   }
 
@@ -112,31 +114,68 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
       continue;
     }
 
-    if (
-      salaryRecord.base_salary &&
-      (!employee.latestSalary || salaryRecord.month > employee.latestSalary.month)
-    ) {
+    if (!employee.firstSalary || salaryRecord.month < employee.firstSalary.month) {
+      employee.firstSalary = salaryRecord;
+    }
+
+    if (!employee.latestSalary || salaryRecord.month > employee.latestSalary.month) {
       employee.latestSalary = salaryRecord;
-      employee.latestSalaryAmount = Number(salaryRecord.base_salary);
     }
 
     if (salaryRecord.vacation_days_balance) {
       const daysExploit = Number(salaryRecord.vacation_days_balance);
       employee.vacationDays += daysExploit;
     }
+
+    employee.salaries.push(salaryRecord);
   }
 
   let vacationReserveAmount = 0;
 
   let reservesPrompt = `Vacation reserve for ${year}:`;
   for (const employeeData of Array.from(employeeMap.values())) {
-    if (!employeeData.latestSalaryAmount) {
+    if (!employeeData.latestSalary || !employeeData.firstSalary) {
       throw new GraphQLError(`Employee ${employeeData.employee.first_name} has no salary records`);
     }
-    const partMonth = 1; // TODO: calculate part month
-    const dailySalary = (employeeData.latestSalaryAmount * partMonth) / AVERAGE_MONTHLY_WORK_DAYS;
-    const employeeReserve = Math.round(employeeData.vacationDays * dailySalary);
-    reservesPrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeData.vacationDays} days; ${dailySalary.toFixed(2)} daily payment; ${employeeReserve}`;
+    // calculate cumulative vacation days by seniority
+    const isFirstSalaryHourly =
+      Number.isNaN(Number(employeeData.firstSalary.job_percentage)) ||
+      Number(employeeData.firstSalary.job_percentage) === 0;
+    const formalEmployeeStartDate = employeeData.employee.start_work_date;
+    const adjustedEmployeeStartDate = isFirstSalaryHourly
+      ? startOfMonth(formalEmployeeStartDate)
+      : formalEmployeeStartDate;
+    const seniority = differenceInDays(yearEnd, adjustedEmployeeStartDate) / 365;
+    const cumulativeVacationDays = vacationDaysPerYearsOfExperience(seniority);
+
+    employeeData.vacationDays += cumulativeVacationDays;
+
+    const averageJobPercentage =
+      employeeData.salaries.reduce((accumulator, salary) => {
+        let part = 0;
+        if (!Number.isNaN(Number(salary.job_percentage)) && Number(salary.job_percentage) !== 0) {
+          part = Number(salary.job_percentage) / 100;
+        } else if (!Number.isNaN(Number(salary.hours)) && Number(salary.hours) !== 0) {
+          part = Number(salary.hours) / AVERAGE_MONTHLY_WORK_HOURS;
+        }
+        return accumulator + part;
+      }, 0) / employeeData.salaries.length;
+    const vacationDaysByJobPercentage = employeeData.vacationDays * averageJobPercentage;
+
+    const isLatestSalaryHourly =
+      Number.isNaN(Number(employeeData.latestSalary.job_percentage)) ||
+      Number(employeeData.latestSalary.job_percentage) === 0;
+    const latestSalaryAmount = isLatestSalaryHourly
+      ? Number(employeeData.latestSalary.hourly_rate) * AVERAGE_MONTHLY_WORK_HOURS
+      : Number(employeeData.latestSalary.base_salary);
+    if (!latestSalaryAmount || Number.isNaN(latestSalaryAmount)) {
+      throw new GraphQLError(
+        `Employee ${employeeData.employee.first_name} has no valid salary amount for last month`,
+      );
+    }
+    const dailySalary = latestSalaryAmount / AVERAGE_MONTHLY_WORK_DAYS;
+    const employeeReserve = Math.round(vacationDaysByJobPercentage * dailySalary);
+    reservesPrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${vacationDaysByJobPercentage} days; ${dailySalary.toFixed(2)} daily payment; ${employeeReserve}`;
     vacationReserveAmount += employeeReserve;
   }
 
