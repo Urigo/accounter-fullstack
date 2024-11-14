@@ -60,7 +60,7 @@
     "@graphql-codegen/typescript-resolvers": "4.4.0",
     "@graphql-eslint/eslint-plugin": "3.20.1",
     "@graphql-hive/cli": "0.44.3",
-    "@graphql-inspector/cli": "5.0.6",
+    "@graphql-inspector/cli": "5.0.7",
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.13.0",
     "@theguild/prettier-config": "3.0.0",
@@ -76,7 +76,7 @@
     "ts-node": "10.9.2",
     "typescript": "5.6.3",
     "vite-tsconfig-paths": "5.1.2",
-    "vitest": "2.1.4"
+    "vitest": "2.1.5"
   },
   "resolutions": {
     "graphql": "16.9.0"
