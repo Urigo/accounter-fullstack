@@ -40,6 +40,7 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 /* GraphQL */ `
   fragment AllChargesRowFields on Charge {
     id
+    __typename
     metadata {
       ... on ChargeMetadata @defer {
         documentsCount
@@ -271,6 +272,7 @@ export const AllChargesRow = ({
           <div className="flex flex-col gap-2">
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
+              chargeType={charge.__typename}
               setInsertDocument={() => setInsertDocument(onChange)}
               setMatchDocuments={setMatchDocuments}
               setUploadDocument={() => setUploadDocument(onChange)}

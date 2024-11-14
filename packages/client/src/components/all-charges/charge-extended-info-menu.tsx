@@ -1,23 +1,29 @@
 import { ReactElement, useState } from 'react';
-import { FileUpload, PlaylistAdd, Search, Trash } from 'tabler-icons-react';
+import 'tabler-icons-react';
+import { ArrowDownWideNarrow, FilePlus2, ListPlus, Search, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { AllChargesRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.jsx';
-import { ConfirmationModal, InsertMiscExpense } from '../common/index.js';
+import { ConfirmationModal, InsertMiscExpense, UploadPayrollFile } from '../common/index.js';
 
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
+  chargeType: AllChargesRowFieldsFragment['__typename'];
   setInsertDocument: () => void;
   setMatchDocuments: () => void;
   setUploadDocument: () => void;
+  onChange?: () => void;
 }
 
 export function ChargeExtendedInfoMenu({
   chargeId,
+  chargeType,
   setInsertDocument,
   setMatchDocuments,
   setUploadDocument,
+  onChange,
 }: ChargeExtendedInfoMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
@@ -26,12 +32,15 @@ export function ChargeExtendedInfoMenu({
     useDisclosure(false);
   const [miscExpensesOpened, { open: openMiscExpenses, close: closeMiscExpenses }] =
     useDisclosure(false);
+  const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
+    useDisclosure(false);
 
   function onDelete(): void {
     deleteCharge({
       chargeId,
     });
     setModalOpened(false);
+    onChange?.();
   }
 
   function closeMenu(): void {
@@ -72,7 +81,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Divider />
           <Menu.Label>Documents</Menu.Label>
           <Menu.Item
-            icon={<PlaylistAdd size={14} />}
+            icon={<ListPlus size={14} />}
             onClick={(event): void => {
               event.stopPropagation();
               setInsertDocument();
@@ -82,7 +91,7 @@ export function ChargeExtendedInfoMenu({
             Insert Document
           </Menu.Item>
           <Menu.Item
-            icon={<FileUpload size={14} />}
+            icon={<FilePlus2 size={14} />}
             onClick={(event): void => {
               event.stopPropagation();
               setUploadDocument();
@@ -103,7 +112,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Divider />
           <Menu.Label>Misc Expenses</Menu.Label>
           <Menu.Item
-            icon={<Search size={14} />}
+            icon={<ListPlus size={14} />}
             onClick={(event): void => {
               event.stopPropagation();
               closeMenu();
@@ -112,18 +121,38 @@ export function ChargeExtendedInfoMenu({
           >
             Add expense
           </Menu.Item>
-          <Menu.Divider />
-          <Menu.Label>Depreciation</Menu.Label>
-          <Menu.Item
-            icon={<Trash size={14} />}
-            onClick={(event): void => {
-              event.stopPropagation();
-              openDepreciation();
-              closeMenu();
-            }}
-          >
-            Depreciation
-          </Menu.Item>
+          {chargeType === 'CommonCharge' && (
+            <>
+              <Menu.Divider />
+              <Menu.Label>Depreciation</Menu.Label>
+              <Menu.Item
+                icon={<ArrowDownWideNarrow size={14} />}
+                onClick={(event): void => {
+                  event.stopPropagation();
+                  openDepreciation();
+                  closeMenu();
+                }}
+              >
+                Depreciation
+              </Menu.Item>
+            </>
+          )}
+          {chargeType === 'SalaryCharge' && (
+            <>
+              <Menu.Divider />
+              <Menu.Label>Salaries</Menu.Label>
+              <Menu.Item
+                icon={<FilePlus2 size={14} />}
+                onClick={(event): void => {
+                  event.stopPropagation();
+                  closeMenu();
+                  openUploadSalaries();
+                }}
+              >
+                Payroll file upload
+              </Menu.Item>
+            </>
+          )}
         </Menu.Dropdown>
       </Menu>
       <Modal
@@ -135,7 +164,13 @@ export function ChargeExtendedInfoMenu({
         title="Depreciation"
         onClick={event => event.stopPropagation()}
       >
-        <Depreciation chargeId={chargeId} onChange={closeDepreciation} />
+        <Depreciation
+          chargeId={chargeId}
+          onChange={() => {
+            closeDepreciation();
+            onChange?.();
+          }}
+        />
       </Modal>
       <Modal
         centered
@@ -144,7 +179,28 @@ export function ChargeExtendedInfoMenu({
         title="Insert Misc Expense"
         onClick={event => event.stopPropagation()}
       >
-        <InsertMiscExpense onDone={closeMiscExpenses} chargeId={chargeId} />
+        <InsertMiscExpense
+          onDone={() => {
+            closeMiscExpenses();
+            onChange?.();
+          }}
+          chargeId={chargeId}
+        />
+      </Modal>
+      <Modal
+        centered
+        opened={uploadSalariesOpened}
+        onClose={closeUploadSalaries}
+        title="Insert Misc Expense"
+        onClick={event => event.stopPropagation()}
+      >
+        <UploadPayrollFile
+          onDone={() => {
+            closeUploadSalaries();
+            onChange?.();
+          }}
+          chargeId={chargeId}
+        />
       </Modal>
     </>
   );

@@ -67,7 +67,8 @@ function validateNumericCell(
 export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['insertSalaryRecordsFromFile'] =
   async (_, { file, chargeId }, { injector, currentUser }) => {
     try {
-      const workSheetsFromFile = xlsx.parse(file ?? `./myFile.xlsx`);
+      const buffer = await file.arrayBuffer();
+      const workSheetsFromFile = xlsx.parse(buffer);
       if (!workSheetsFromFile) {
         throw new SalaryError('No salary data file found');
       }

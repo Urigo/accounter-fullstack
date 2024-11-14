@@ -18,7 +18,8 @@ export default gql`
       @auth(role: ADMIN)
     insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
       @auth(role: ADMIN)
-    insertSalaryRecordsFromFile(file: FileScalar, chargeId: UUID): Boolean! @auth(role: ACCOUNTANT)
+    insertSalaryRecordsFromFile(file: FileScalar!, chargeId: UUID!): Boolean!
+      @auth(role: ACCOUNTANT)
   }
 
   " input variables for insert salary records "
