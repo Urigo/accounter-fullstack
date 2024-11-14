@@ -13,7 +13,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     },
   },
   BankFinancialAccount: {
-    __isTypeOf: DbAccount => DbAccount.type === 'bank',
+    __isTypeOf: DbAccount => DbAccount.type === 'BANK_ACCOUNT',
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number!.toString(),
@@ -21,14 +21,14 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     name: DbAccount => `${DbAccount.bank_number}-${DbAccount.account_number}`,
   },
   CardFinancialAccount: {
-    __isTypeOf: DbAccount => DbAccount.type === 'creditcard',
+    __isTypeOf: DbAccount => DbAccount.type === 'CREDIT_CARD',
     ...commonFinancialAccountFields,
     number: DbAccount => DbAccount.account_number,
     fourDigits: DbAccount => DbAccount.account_number,
     name: DbAccount => DbAccount.account_number,
   },
   CryptoWalletFinancialAccount: {
-    __isTypeOf: DbAccount => DbAccount.type === 'crypto',
+    __isTypeOf: DbAccount => DbAccount.type === 'CRYPTO_WALLET',
     ...commonFinancialAccountFields,
     number: DbAccount => DbAccount.account_number,
     name: DbAccount =>

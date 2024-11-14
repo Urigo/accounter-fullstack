@@ -19,7 +19,7 @@ const getCreditCardTransactionsByChargeIds = sql<IGetCreditCardTransactionsByCha
       left join accounter_schema.financial_accounts a
         on a.id = t.account_id) t
       on t.account_number = origin_transaction.source_reference
-        and t.type = 'creditcard'
+        and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and t.debit_date = origin_transaction.debit_date
   WHERE origin_transaction.charge_id in $$chargeIds;`;
@@ -36,7 +36,7 @@ const validateCreditCardTransactionsAmountByChargeIds = sql<IValidateCreditCardT
         on a.id = t.account_id
     ) t
       on t.account_number = origin_transaction.source_reference
-        and t.type = 'creditcard'
+        and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and t.debit_date = origin_transaction.debit_date
 WHERE origin_transaction.charge_id in $$chargeIds

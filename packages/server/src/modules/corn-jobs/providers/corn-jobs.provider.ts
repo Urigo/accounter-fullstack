@@ -26,7 +26,7 @@ const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
       AND array_length(g.charge_ids, 1) > 1
       AND t.source_reference NOT IN (
         SELECT account_number FROM accounter_schema.financial_accounts
-        WHERE owner = $ownerId AND type = 'creditcard'
+        WHERE owner = $ownerId AND type = 'CREDIT_CARD'
       )
       AND t.source_reference <> '15997109' -- CUSTOM + V.A.T
   ORDER BY t.source_reference;`;
