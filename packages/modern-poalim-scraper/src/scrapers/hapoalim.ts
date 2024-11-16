@@ -32,7 +32,7 @@ declare namespace window {
   };
 }
 
-async function businessLogin(credentials: hapoalimCredentials, page: Page) {
+async function businessLogin(credentials: HapoalimCredentials, page: Page) {
   const BASE_URL = 'https://biz2.bankhapoalim.co.il/authenticate/logon/main';
   await page.goto(BASE_URL);
 
@@ -60,7 +60,7 @@ async function businessLogin(credentials: hapoalimCredentials, page: Page) {
   ]);
 }
 
-async function personalLogin(credentials: hapoalimCredentials, page: Page) {
+async function personalLogin(credentials: HapoalimCredentials, page: Page) {
   const BASE_URL = 'https://login.bankhapoalim.co.il/ng-portals/auth/he/';
   await page.goto(BASE_URL);
 
@@ -78,7 +78,7 @@ async function personalLogin(credentials: hapoalimCredentials, page: Page) {
   return 0;
 }
 
-async function replacePassword(previousCredentials: hapoalimCredentials, page: Page) {
+async function replacePassword(previousCredentials: HapoalimCredentials, page: Page) {
   await page.waitForSelector('#buttonAction');
 
   const answers = await inquirer.prompt<{'newPassword': string}>({
@@ -105,8 +105,8 @@ async function replacePassword(previousCredentials: hapoalimCredentials, page: P
 
 export async function hapoalim(
   page: Page,
-  credentials: hapoalimCredentials,
-  options?: hapoalimOptions,
+  credentials: HapoalimCredentials,
+  options?: HapoalimOptions,
 ) {
   if (options?.isBusiness) {
     await businessLogin(credentials, page);
@@ -408,18 +408,18 @@ export async function hapoalim(
   };
 }
 
-export class hapoalimOptions {
+export class HapoalimOptions {
   validateSchema?: boolean = false;
   isBusiness?: boolean = true;
   duration?: number = 12;
   getTransactionsDetails?: boolean = false;
 }
 
-class hapoalimPersonalCredentials {
+class HapoalimPersonalCredentials {
   userCode: string = '';
   password: string = '';
 }
 
-class hapoalimBusinessCredentials extends hapoalimPersonalCredentials {}
+class HapoalimBusinessCredentials extends HapoalimPersonalCredentials {}
 
-export type hapoalimCredentials = hapoalimPersonalCredentials | hapoalimBusinessCredentials;
+export type HapoalimCredentials = HapoalimPersonalCredentials | HapoalimBusinessCredentials;

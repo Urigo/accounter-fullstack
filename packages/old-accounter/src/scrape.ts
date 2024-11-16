@@ -5,7 +5,7 @@ import lodash from 'lodash';
 import pg from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/__generated__/isracardCardsTransactionsList.js';
-import type { isracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
+import type { IsracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
 import { getCurrencyRates } from './data/currency.js';
 import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
 
@@ -541,25 +541,26 @@ async function getForeignDepositsAndSave(
 async function getCreditCardTransactionsAndSave(
   month: Date,
   pool: pg.Pool,
-  newIsracardInstance: IsracardScraper,
+  newCardInstance: IsracardScraper | AmexScraper,
   id: string,
+  type: 'isracard' | 'amex',
 ) {
-  console.log(`Getting from isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
-  const monthTransactions = await newIsracardInstance.getMonthTransactions(month);
+  console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  const monthTransactions = await newCardInstance.getMonthTransactions(month);
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
     console.log(
-      `newIsracardInstance.getMonthTransactions ${JSON.stringify(id)} schema error: `,
+      `newCardInstance.getMonthTransactions ${JSON.stringify(id)} schema error: `,
       'errors' in monthTransactions ? monthTransactions.errors : null,
     );
   }
   if (monthTransactions?.data?.Header?.Status != '1') {
-    console.error(`Replace password for creditcard ${id}`);
+    console.error(`Replace password for ${type} ${id}`);
     console.log(JSON.stringify(monthTransactions.data?.Header));
   }
 
   if (!monthTransactions.data) {
-    console.log(`No data for isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    console.log(`No data for ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
     return;
   }
 
@@ -578,32 +579,81 @@ async function getCreditCardTransactionsAndSave(
     '9270',
     '5084',
     '7086',
+    '2294',
     '70 *',
   ];
+
   const onlyWantedCreditCardsTransactions = allData.filter(transaction =>
     wantedCreditCards.includes(transaction.card),
   );
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
     console.log(`saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
-    await saveTransactionsToDB(onlyWantedCreditCardsTransactions, 'isracard', null, pool);
-    console.log(`finished saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    await saveTransactionsToDB(onlyWantedCreditCardsTransactions, type, null, pool);
+    console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   }
 }
 
-async function getCreditCardData(
+async function getAmexCreditCardData(
   pool: pg.Pool,
   scraper: Scraper,
-  credentials: Partial<isracardCredentials>,
+  credentials: Partial<IsracardCredentials>,
 ) {
-  console.log('start getCreditCardData');
+  console.log('start getAmexCreditCardData');
   if (!credentials.ID || !credentials.password || !credentials.card6Digits) {
-    console.error('Missing credentials for creditcard');
+    console.error('Missing credentials for amex creditcard');
     return;
   }
   const id = credentials.ID;
 
-  console.log('Creditcard Login');
+  console.log('Amex Creditcard Login');
+  const newAmexInstance = await scraper.amex(
+    {
+      ID: id,
+      password: credentials.password,
+      card6Digits: credentials.card6Digits,
+    },
+    {
+      validateSchema: true,
+    },
+  );
+
+  let monthToFetch = subYears(new Date(), 2);
+  const allMonthsToFetch = [];
+  const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
+
+  while (isBefore(monthToFetch, lastMonthToFetch)) {
+    allMonthsToFetch.push(monthToFetch);
+    monthToFetch = addMonths(monthToFetch, 1);
+  }
+
+  await Promise.allSettled(
+    allMonthsToFetch.map(async currentMonthToFetch => {
+      await getCreditCardTransactionsAndSave(
+        currentMonthToFetch,
+        pool,
+        newAmexInstance,
+        id,
+        'amex',
+      );
+    }),
+  );
+  console.log(`after all amex creditcard months - ${credentials.ID}`);
+}
+
+async function getIsracardData(
+  pool: pg.Pool,
+  scraper: Scraper,
+  credentials: Partial<IsracardCredentials>,
+) {
+  console.log('start getIsracardData');
+  if (!credentials.ID || !credentials.password || !credentials.card6Digits) {
+    console.error('Missing credentials for isracard');
+    return;
+  }
+  const id = credentials.ID;
+
+  console.log('Isracard Login');
   const newIsracardInstance = await scraper.isracard(
     {
       ID: id,
@@ -626,10 +676,16 @@ async function getCreditCardData(
 
   await Promise.allSettled(
     allMonthsToFetch.map(async currentMonthToFetch => {
-      await getCreditCardTransactionsAndSave(currentMonthToFetch, pool, newIsracardInstance, id);
+      await getCreditCardTransactionsAndSave(
+        currentMonthToFetch,
+        pool,
+        newIsracardInstance,
+        id,
+        'isracard',
+      );
     }),
   );
-  console.log(`after all creditcard months - ${credentials.ID}`);
+  console.log(`after all isracard months - ${credentials.ID}`);
 }
 
 async function getForeignSwiftTransactionsfromBankAndSave(
@@ -1214,15 +1270,20 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const thirdScraperInstance = await init();
   console.log('After Init scraper');
   await Promise.allSettled([
-    getCreditCardData(pool, newScraperInstance, {
+    getIsracardData(pool, newScraperInstance, {
       ID: process.env.ISRACARD_ID,
       password: process.env.ISRACARD_PASSWORD,
       card6Digits: process.env.ISRACARD_6_DIGITS,
     }),
-    getCreditCardData(pool, thirdScraperInstance, {
+    getIsracardData(pool, thirdScraperInstance, {
       ID: process.env.DOTAN_ISRACARD_ID,
       password: process.env.DOTAN_ISRACARD_PASSWORD,
       card6Digits: process.env.DOTAN_ISRACARD_6_DIGITS,
+    }),
+    getAmexCreditCardData(pool, thirdScraperInstance, {
+      ID: process.env.AMEX_ID,
+      password: process.env.AMEX_PASSWORD,
+      card6Digits: process.env.AMEX_6_DIGITS,
     }),
     getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),
@@ -1241,4 +1302,5 @@ async function getForeignSwiftTransactionsfromBankAndSave(
 
 type Scraper = Awaited<ReturnType<typeof init>>;
 type IsracardScraper = Awaited<ReturnType<Scraper['isracard']>>;
+type AmexScraper = Awaited<ReturnType<Scraper['amex']>>;
 type PoalimScraper = Exclude<Awaited<ReturnType<Scraper['hapoalim']>>, 'Unknown Error'>;

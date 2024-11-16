@@ -16,9 +16,10 @@ export type AccountTypes =
   | 'gbp'
   | 'deposits'
   | 'foreign_deposits'
-  | 'isracard';
+  | 'isracard'
+  | 'amex';
 
-type TransactionTypeSelector<T extends AccountTypes> = T extends 'isracard'
+type TransactionTypeSelector<T extends AccountTypes> = T extends 'isracard' | 'amex'
   ? DecoratedTransaction
   : any;
 
@@ -72,6 +73,9 @@ export async function saveTransactionsToDB<
     if (accountType == 'isracard') {
       tableName = 'isracard_creditcard_transactions';
     }
+    if (accountType == 'amex') {
+      tableName = 'amex_creditcard_transactions';
+    }
     const columnNamesResult = await pool.query<{
       column_name: string;
       data_type: string;
@@ -114,7 +118,7 @@ export async function saveTransactionsToDB<
     } else if (accountType == 'deposits') {
       // TODO: Check if we want to save it to DB
       optionalTransactionKeys = ['data0ExpectedRepaymentSwitch'];
-    } else if (accountType == 'isracard') {
+    } else if (accountType == 'isracard' || accountType == 'amex') {
       optionalTransactionKeys = [
         'clientIpAddress',
         'bcKey',
@@ -617,7 +621,7 @@ function transactionValuesToArray<
       transaction.branchNumber,
       transaction.accountNumber,
     ];
-  } else if (accountType == 'isracard') {
+  } else if (accountType == 'isracard' || accountType == 'amex') {
     const temp: DecoratedTransaction = transaction;
     values = [
       temp.specificDate,
