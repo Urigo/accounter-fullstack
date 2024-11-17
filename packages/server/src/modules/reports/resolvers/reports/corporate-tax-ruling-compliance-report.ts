@@ -109,7 +109,7 @@ function validateCorporateTaxRule(
 
 function validateForeignDevelopmentOfRnd(percentage: number): CorporateTaxRule {
   return validateCorporateTaxRule(
-    'Foreign development expenses are less than 10% of R&D expenses',
+    'Foreign development expenses should be less than 10% of R&D expenses',
     percentage,
     value => value * 100 < 10,
   );
@@ -117,7 +117,7 @@ function validateForeignDevelopmentOfRnd(percentage: number): CorporateTaxRule {
 
 function validateLocalDevelopmentOfRnd(percentage: number): CorporateTaxRule {
   return validateCorporateTaxRule(
-    'Local development expenses are less than 10% of R&D expenses',
+    'Local development expenses should be less than 10% of R&D expenses',
     percentage,
     value => value * 100 < 10,
   );
@@ -125,7 +125,7 @@ function validateLocalDevelopmentOfRnd(percentage: number): CorporateTaxRule {
 
 function validateRndOfIncome(percentage: number): CorporateTaxRule {
   return validateCorporateTaxRule(
-    'R&D expenses are at least 7% of total incomes',
+    'R&D expenses should be at least 7% of total incomes',
     percentage,
     value => value * 100 >= 7,
   );

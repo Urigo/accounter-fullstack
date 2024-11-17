@@ -23,7 +23,7 @@ export default gql`
   type CorporateTaxRule {
     rule: String!
     isCompliant: Boolean!
-    percentage: CorporateTaxRulePercentage
+    percentage: CorporateTaxRulePercentage!
   }
 
   type CorporateTaxRulePercentage {

@@ -70,6 +70,12 @@ export const sidelinks: SideLink[] = [
         icon: <ParkingMeter size={18} />,
       },
       {
+        title: 'Corporate Tax Ruling Compliance Report',
+        label: '',
+        href: '/reports/corporate-tax-ruling-compliance',
+        icon: <ParkingMeter size={18} />,
+      },
+      {
         title: 'Accountant Approvals',
         label: '',
         href: '/accountant-approvals',
