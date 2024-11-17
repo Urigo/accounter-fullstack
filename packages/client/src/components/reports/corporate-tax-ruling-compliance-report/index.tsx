@@ -123,7 +123,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                     <td
                       key={report.year}
                       className={
-                        report.rndRelativeToIncome.isCompliant ? undefined : 'text-red-500'
+                        report.rndRelativeToIncome.isCompliant ? 'text-green-500' : 'text-red-500'
                       }
                     >
                       {report.rndRelativeToIncome.percentage.formatted}
@@ -152,7 +152,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       key={report.year}
                       className={
                         report.localDevelopmentRelativeToRnd.isCompliant
-                          ? undefined
+                          ? 'text-green-500'
                           : 'text-red-500'
                       }
                     >
@@ -182,7 +182,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       key={report.year}
                       className={
                         report.foreignDevelopmentRelativeToRnd.isCompliant
-                          ? undefined
+                          ? 'text-green-500'
                           : 'text-red-500'
                       }
                     >
