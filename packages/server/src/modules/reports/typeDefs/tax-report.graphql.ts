@@ -6,7 +6,7 @@ export default gql`
     taxReport(years: [Int!]!): [TaxReport!]! @auth(role: ACCOUNTANT)
   }
 
-  " result type for profitAndLossReport "
+  " result type for taxReport "
   type TaxReport {
     year: Int!
     profitBeforeTax: FinancialAmount!
